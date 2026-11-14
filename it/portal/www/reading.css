@@ -9,6 +9,12 @@
 .io > .io-in { position: sticky; top: 68px; }      /* 위 막대(52px) 아래에 붙어 따라온다 */
 .io-in :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
 .io-in .fieldset + .fieldset { margin-top: 20px; }
+.io-fields { display: grid; gap: 14px; }      /* 조건 판의 입력 칸 묶음(머리 없이) */
+.io-more { margin-top: 12px; }
+.io-more > .fold-body { padding-left: 0; }
+.eval-runs tr[data-run] { cursor: pointer; }
+.eval-runs tr[data-run]:hover td { background: #f8f9fb; }
+.eval-runs tr[data-pick] td { background: var(--brand-soft); }
 .io-in .form-foot { justify-content: flex-start; }
 .io-in .form-foot > .btn:first-child { flex: 1; }
 .io-in .seg { display: flex; }
@@ -80,3 +86,5 @@
 /* ---------------- 문서 등록 · 조치 방법 ---------------- */
 #manualSteps { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 
+.dec-more > .fold-body { padding-left: 0; }
+.dec-h { margin: 16px 0 6px; font-size: var(--fs-sm); font-weight: 600; }

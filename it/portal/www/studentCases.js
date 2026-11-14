@@ -9,14 +9,14 @@
     const base = () => typeof API !== 'undefined' ? API.process : '';
     const request = (path, init) => requestJ(base() + path, init);
     host.innerHTML = `<section class="cases" data-kit><div class="sec-head"><h2>내 사례</h2></div>
-      <p class="muted">흐름 · 에이전트 · 스킬 · 도구 서버를 사례 이름으로 묶어, 사례 하나를 파일로 받습니다. 줄마다 사례 이름을 적고 저장하세요. 이름을 비우고 저장하면 묶음에서 빠집니다. 기본 제공 흐름도 사례에 넣을 수 있어 함께 나옵니다 — 「구분」 칸이 내가 만든 것과 가릅니다.</p>
+      <p class="muted">구성에 사례 이름을 적어 묶고, 사례를 골라 파일로 받습니다. 이름을 비우면 묶음에서 빠집니다.</p>
       <div class="admin-tools"><div role="group" class="field"><label for="caseFilter">사례</label><select class="select" id="caseFilter"><option value="">전체 구성</option></select></div>
-        <button type="button" class="btn" data-variant="outline" data-size="sm" id="caseReload">다시 읽기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="caseExport" disabled>이 사례 파일 받기</button><span class="muted" id="caseExportWhy"></span></div>
+        <button type="button" class="btn" data-variant="outline" data-size="sm" id="caseExport" disabled>${UI.actHtml('export', '이 사례 파일 받기')}</button><span class="muted" id="caseExportWhy"></span><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="caseReload" aria-label="${h(UI.acts.reload[0])}" data-tooltip="${h(UI.acts.reload[0])}" data-side="top">${UI.icon(UI.acts.reload[1])}</button></div>
       <p id="caseMessage" class="muted" role="status"></p><div id="caseAssets"></div></section>`;
     const $ = id => host.querySelector('#' + id);
     const message = (text, bad = false) => { const m = $('caseMessage'); m.textContent = text; if (bad) m.dataset.tone = 'danger'; else delete m.dataset.tone; };
     // [이 사례 파일 받기]는 사례를 골랐을 때만 켜진다 — 꺼져 있으면 까닭을 옆에 쓴다
-    const exportState = () => { $('caseExport').disabled = !filter || busy; $('caseExportWhy').textContent = filter ? '이 사례와 실행에 필요한 연결 구성을 파일로 받습니다.' : '사례를 고르면 받을 수 있습니다.'; };
+    const exportState = () => { $('caseExport').disabled = !filter || busy; $('caseExportWhy').textContent = filter ? '' : '사례를 고르면 받을 수 있습니다.'; };
     // 구분: 이 목록의 응답(/api/config/cases)에는 기본 제공 표시가 없어, 흐름 목록(/api/flows 의 class_flow)에서 읽는다. 흐름이 아닌 줄은 내가 만든 것만 온다(서버가 그렇게 고른다)
     const origin = row => row.kind !== 'flows' ? '<span class="tag" data-tone="brand" data-plain>내가 만든 것</span>' : baseFlows == null ? '<span class="muted">구분을 읽지 못함</span>'
       : baseFlows.has(row.asset_id) ? '<span class="tag" data-plain>기본 제공</span>' : '<span class="tag" data-tone="brand" data-plain>내가 만든 것</span>';
@@ -26,15 +26,15 @@
       $('caseFilter').innerHTML = '<option value="">전체 구성</option>' + labels.map(label => `<option value="${h(label)}" ${label === filter ? 'selected' : ''}>${h(label)}</option>`).join('');
       exportState();
       const shown = rows.map((row, index) => ({ row, index })).filter(({ row }) => !filter || row.label === filter);
-      $('caseAssets').innerHTML = shown.length ? `<div class="table-container"><table class="table"><thead><tr><th>구성</th><th>종류</th><th>구분</th><th>사례 이름</th><th></th></tr></thead><tbody>` +
+      $('caseAssets').innerHTML = shown.length ? `<div class="table-container"><table class="table"><thead><tr><th>구성</th><th>종류</th><th>구분</th><th>사례 이름</th></tr></thead><tbody>` +
         shown.map(({ row, index }) => `<tr data-case-row="${index}"><td>${h(row.name)}</td><td>${h(row.kind_name)}</td><td>${origin(row)}</td>` +
-          `<td><input class="input" data-case-label maxlength="60" value="${h(drafts.get(key(row)) ?? row.label)}" aria-label="${h(row.name)} 사례 이름"></td>` +
-          `<td><button type="button" class="btn" data-variant="outline" data-size="sm" data-case-save>저장</button> <span class="muted" data-case-status role="status"></span></td></tr>`).join('') + '</tbody></table></div>'
+          `<td><input class="input" data-case-label maxlength="60" value="${h(drafts.get(key(row)) ?? row.label)}" placeholder="사례 이름" aria-label="${h(row.name)} 사례 이름"> <span class="muted" data-case-status role="status"></span></td></tr>`).join('') + '</tbody></table></div>'
         : UI.empty('아직 묶을 구성이 없습니다', '흐름 · 에이전트 · 스킬 · 도구 서버를 만들면 여기에 나옵니다.', 'compact');
       $('caseAssets').querySelectorAll('[data-case-label]').forEach(input => input.addEventListener('input', () => drafts.set(key(rows[+input.closest('[data-case-row]').dataset.caseRow]), input.value)));
-      $('caseAssets').querySelectorAll('[data-case-save]').forEach(button => button.addEventListener('click', async () => {
-        if (busy) return;
-        const line = button.closest('[data-case-row]'), row = rows[+line.dataset.caseRow], input = line.querySelector('[data-case-label]'), status = line.querySelector('[data-case-status]');
+      // 줄마다 [저장] 단추를 두지 않는다: 이름을 적고 칸을 떠나거나 Enter 를 누르면(change) 그 줄이 저장된다
+      $('caseAssets').querySelectorAll('[data-case-label]').forEach(button => button.addEventListener('change', async () => {
+        const line = button.closest('[data-case-row]'), row = rows[+line.dataset.caseRow], input = button, status = line.querySelector('[data-case-status]');
+        if (busy || input.value === (row.label || '')) return;
         busy = true; button.disabled = true; $('caseReload').disabled = true; $('caseFilter').disabled = true; exportState();
         try {
           const result = await request('/api/config/cases/tag', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: row.kind, asset_id: row.asset_id, label: input.value }) });

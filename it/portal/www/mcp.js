@@ -154,8 +154,9 @@
     if (!S.servers.length) { box.innerHTML = `<div class="pane-list-note">${UI.empty('등록된 도구 서버가 없습니다', '기본 제공 도구 서버가 없으면 시작 파일을 다시 실행하세요. 내 서버는 화면 위의 [서버 등록]으로 붙입니다.')}</div>`; return; }
     box.innerHTML = S.servers.map(s => {
       const r = S.tools[s.name] || {};
-      const count = r.status === 'ok' ? `도구 ${r.tools.length}개 · ` : '';
-      const sub = s.config_error ? '연결 설정 오류' : stampGap(s, r) || count + (s.selectable ? '에이전트 도구로 고를 수 있음' : s.reason || '에이전트 도구로 고를 수 없음');
+      // 줄의 보조 글: 도구 수만. 에이전트 도구로 고를 수 있는 것은 보통이라 줄마다 되풀이하지 않고, 고를 수 없을 때만 그 까닭을 적는다
+      const count = r.status === 'ok' ? `도구 ${r.tools.length}개` : '';
+      const sub = s.config_error ? '연결 설정 오류' : stampGap(s, r) || (s.selectable ? count || '도구 목록을 읽는 중' : [count, s.reason || '에이전트 도구로 고를 수 없음'].filter(Boolean).join(' · '));
       return `<button type="button" class="row" data-name="${esc(s.name)}"${s.name === S.sel && !S.form ? ' aria-current="true"' : ''}><span class="row-ic">${icon('plug')}</span>` +
         `<span class="row-title">${esc(serverLabel(s.name))}</span>${statusTag(s.name)}<span class="row-meta">${esc(sub)}</span></button>`;
     }).join('');
@@ -382,7 +383,7 @@
     if (gap) return line('warn', esc(gap));
     const c = s.check || {};
     const when = c.checked_at ? ` · ${esc(UI.dateTime(c.checked_at))}` : '';
-    if (s.selectable && s.origin === 'seed') return line('ok', '에이전트 도구로 고를 수 있음 — 기본 제공 서버라 기본 제공 에이전트도 이 서버를 씁니다');
+    if (s.selectable && s.origin === 'seed') return '';      // 기본 제공 서버가 연결돼 있다는 것은 머리의 뱃지가 이미 말한다 — 같은 상태를 한 판에 두 번 적지 않는다
     if (s.selectable) return line('ok', `에이전트 도구로 고를 수 있음 — 연결 검사 통과${when}, 읽기 전용 도구만 에이전트에 붙습니다`);
     return line('warn', `에이전트 도구로 고를 수 없음 — ${esc(s.reason || CHECK[c.status] || '연결 검사 전')}${when}`);
   }

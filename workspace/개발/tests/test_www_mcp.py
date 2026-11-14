@@ -53,5 +53,8 @@ def test_고를_수_있는_학생_서버가_지금_연결되지_않으면_카드
             b.close()
     finally:
         served.close()
-    assert said in text and said in detail, (text, detail)
+    if tools['status'] == 'ok':      # 고를 수 있는 것은 보통이라 목록 줄에는 도구 수만 두고(줄마다 같은 말을 되풀이하지 않는다), 그 말은 상세에 한 번 있다
+        assert '도구 1개' in text and said not in text and said in detail, (text, detail)
+    else:
+        assert said in text and said in detail, (text, detail)
     assert tools['status'] == 'ok' or ('에이전트 도구로 고를 수 있음' not in text and '에이전트 도구로 고를 수 있음' not in detail), (text, detail)

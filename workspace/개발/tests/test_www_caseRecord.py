@@ -26,7 +26,7 @@ def test_같은_순간에_끝난_시스템_단계는_흐름_순서대로_보인�
     """W1-01: 정비 오더 등록과 결과 보고가 한 트랜잭션에서 같은 시각에 끝나 「결과 보고 → 정비 오더」로 거꾸로 보였다."""
     wis = [{'id': 'w2', 'activity_id': 'R_ok', 'activity_name': '결과 보고: 정상', 'start_date': T, 'end_date': T},
            {'id': 'w1', 'activity_id': 'T_wo', 'activity_name': '작업지시 등록', 'start_date': T, 'end_date': T}]
-    assert titles(view(wis, ['T_wo', 'R_ok'])) == ['시작', '작업지시 등록', '결과 보고: 정상', '처리 완료']
+    assert titles(view(wis, ['T_wo', 'R_ok'])) == ['시작', '정비 요청 등록', '결과 보고: 정상', '처리 완료']      # 옛 판본의 단계 이름 「작업지시 등록」은 지금 이름으로 보인다(ui.js flow.name)
 
 
 def test_처리_기록을_그려도_다른_화면의_값_이름이_정의_설명문으로_바뀌지_않는다():
@@ -51,7 +51,7 @@ def test_효과_확인_문장은_설비_시간과_실제_시간을_한_형식으
                            'points': [{'t': a, 'v': 60.8}, {'t': b, 'v': 51.2}]}}
     wis = [{'id': 'w1', 'activity_id': 'T_reobs', 'activity_name': '재관측', 'tool': 'incident:reobserve', 'start_date': a, 'end_date': b, 'output': {'recovered': True}}]
     v = view(wis, ['T_reobs'], variables=[('incident', 'INC-1'), ('recovered', True)])
-    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); out(m.steps.find(s => s.title === '재관측').sentence)",
+    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); out(m.steps.find(s => s.title === '효과 확인').sentence)",
               {'v': v, 'inc': inc})
     assert got.startswith(expected) and '기준(55 ℃ 아래) 안에 있던 시간 64 %' in got, got
 
@@ -96,3 +96,23 @@ def test_워커가_아직_가져가지_않은_AI_단계는_사람_단계로_그�
     v['instance']['status'] = 'RUNNING'
     got = run(FILES, "out(hydRecord.build(DATA.v, DATA.ext, []).steps.map(s => [s.type, s.lane]))", {'v': v, 'ext': {'agents': [], 'people': []}})
     assert got[1] == ['agent', 'agent']
+
+
+def test_정비_수행_문장은_서버가_적은_정비_완료_공지를_그대로_쓰고_화면이_복구를_지어_말하지_않는다():
+    """화면 정돈 2단계: 승인한 조치가 다루는 구성 요소만 고친다(서버 maintenance.notice · scope). 전에는 화면이 「설비 … 복구를 기록했습니다」를 지어 붙여
+    틀린 조치를 승인한 건도 고친 것처럼 읽혔다."""
+    notice = 'HYD-01 정비 완료 — WO-1 완료. 승인한 조치 방법 SOP-X이(가) 다루는 팬 베어링은(는) 가상 설비에서 이미 정상이라 바꾼 것이 없습니다'
+    wis = [{'id': 'w1', 'activity_id': 'T_m', 'activity_name': '정비 수행', 'tool': 'plant:restore', 'start_date': T, 'end_date': T,
+            'output': {'maintenance': {'asset': 'HYD-01', 'component': None, 'work_order': 'WO-1', 'notice': notice, 'scope': {'sop': 'SOP-X', 'targets': [], 'why': '다루는 구성 요소 없음'}}}}]
+    got = run(FILES, "const s = hydRecord.build(DATA, { agents: [], people: [] }, []).steps.find(s => s.title === '정비 수행'); out([s.sentence, s.sections.filter(Boolean).map(x => x.title)])", view(wis, ['T_m']))
+    assert got[0] == notice and '복구를 기록' not in got[0]
+    assert '승인한 조치가 고친 것' in got[1] and '정비 완료 알림' not in got[1]
+
+
+@pytest.mark.parametrize('received, rejected, state, word', [(False, 2, 'bad', '일부만 입고됐습니다 — 불합격 2개 반품'), (True, 0, 'ok', '입고 · 검수')])
+def test_검수에서_일부가_불합격인_입고는_정상이_아니라_기준_밖으로_보인다(received, rejected, state, word):
+    """화면 정돈 2단계: 서버는 부분 입고를 received=false 로 넘겨 「미달」 가지로 보낸다. 전에는 입고 기록이 있기만 하면 화면이 초록 체크와 「기록했습니다」로 그렸다."""
+    wis = [{'id': 'w1', 'activity_id': 'T_gr', 'activity_name': '입고 확인', 'tool': 'enterprise:GR_CONFIRM', 'start_date': T, 'end_date': T,
+            'output': {'received': received, 'goods_receipt': {'ref': 'GR-1', 'detail': '씰 키트 6개 가운데 4개 입고', 'after': {'rejected_qty': rejected}}}}]
+    got = run(FILES, "const s = hydRecord.build(DATA, { agents: [], people: [] }, []).steps.find(s => s.title === '입고 확인'); out([s.type, s.state || 'ok', s.sentence])", view(wis, ['T_gr']))
+    assert got[0] == 'check' and got[1] == state and word in got[2], got

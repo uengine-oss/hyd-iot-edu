@@ -157,12 +157,17 @@
     const key = `${def.processDefinitionId}@${def.version}`;
     if (XML.has(key)) return XML.get(key);
     const job = (async () => {
+      // 모든 흐름에서 서버에 그림 원본을 묻는다(가져온 흐름의 .bpmn, 기본 제공 흐름의 사람이 배치한 그림). 200 이면 그 그림을 쓰고, 그림이 없으면(204 · 404) 정의에서 만들어 자동으로 놓는다.
+      // 그 밖의 상태는 오류다(조용히 자동 배치로 떨어지지 않는다). 서버는 그림의 id 를 xid 규칙(task:draft → task_x3a_draft)으로 바꿔 내준다 — 받은 그림을 쓸 때는
+      // 정의의 모든 id 에 xid 를 불러 정의 id ↔ 그림 id 대응(DEF_ID)을 채운다(정의에서 만들 때는 defToXml 이 같은 일을 한다). 상태 표시 · 누름(defIdOf)이 이 대응을 쓴다
       let xml, source = 'definition';
-      if (def.bpmnImport) {
-        const r = await fetch(`${API.process}/api/flows/${encodeURIComponent(def.processDefinitionId)}/versions/${encodeURIComponent(def.version)}/bpmn`);
-        if (r.ok) { xml = await r.text(); source = 'file'; }
-        else if (r.status !== 404) throw new Error(`흐름 그림 원본을 읽지 못했습니다(${r.status})`);
+      const r = await fetch(`${API.process}/api/flows/${encodeURIComponent(def.processDefinitionId)}/versions/${encodeURIComponent(def.version)}/bpmn`);
+      if (r.status === 200) {
+        xml = await r.text(); source = 'file';
+        if (!/^\s*</.test(xml)) throw new Error('흐름 그림 원본이 BPMN 이 아닙니다(서버가 다른 것을 돌려주었습니다)');
+        ['events', 'activities', 'gateways', 'sequences'].forEach(k => (def[k] || []).forEach(x => { if (x && x.id != null) xid(x.id); }));
       }
+      else if (r.status !== 204 && r.status !== 404) throw new Error(`흐름 그림 원본을 읽지 못했습니다(${r.status})`);
       if (!xml) xml = defToXml(def);
       return laidOutSrc({ xml, source });
     })();
@@ -199,7 +204,12 @@
       canvas.addMarker(el.id, s === 'done' ? 'is-done' : s === 'now' ? 'is-now' : s === 'hold' ? 'is-hold' : s === 'fail' ? 'is-fail' : 'is-todo');
       if (s === 'done' && isBox(el)) overlays.add(el.id, { position: { top: -8, right: 10 }, html: '<div class="bpmn-check"></div>' });
     });
-    m.now.forEach(id => { const el = reg.get(xid(id)); if (!el || skip(el)) return; const s = m.st[id]; overlays.add(el.id, { position: { top: -12, left: el.width / 2 }, html: `<div class="bpmn-tip" data-state="${e(s)}"><i></i>${e(tipText(view, id, s, mine))}</div>` }); });
+    // 지금 단계 꼬리표는 상자 위 가운데에 둔다. 그 자리에 선 이름(「전달」 · 「예」)이 놓여 있으면 가리지 않게 상자 아래로 내린다
+    const labels = reg.filter(x => x.type === 'label' && x.labelTarget && x.labelTarget.waypoints);
+    m.now.forEach(id => { const el = reg.get(xid(id)); if (!el || skip(el)) return; const s = m.st[id];
+      const text = tipText(view, id, s, mine), half = Math.max(40, text.length * 7 + 20) / 2, cx = el.x + el.width / 2;      // 꼬리표가 차지할 자리(글자 수로 어림한 폭, 높이 24 + 꼬리 12)
+      const hit = labels.some(l => l.x < cx + half && l.x + l.width > cx - half && l.y < el.y && l.y + l.height > el.y - 40);
+      overlays.add(el.id, { position: hit ? { bottom: -12, left: el.width / 2 } : { top: -12, left: el.width / 2 }, html: `<div class="bpmn-tip" data-state="${e(s)}"${hit ? ' data-side="below"' : ''}><i></i>${e(text)}</div>` }); });
     D.marks = m;
     return m;
   }
@@ -369,5 +379,5 @@
     return dlg;
   }
 
-  window.hydFlow = { pathModel, marksOf, defToXml, xmlOf, mount, show, openFull };
+  window.hydFlow = { pathModel, marksOf, defToXml, xmlOf, xid, defIdOf, mount, show, openFull };
 })();

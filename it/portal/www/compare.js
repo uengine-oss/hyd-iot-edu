@@ -95,20 +95,20 @@
     const box = (kind, name, label, off, i) => `<div role="group" class="field" data-orientation="horizontal"><input type="checkbox" class="input" id="cmpDrop-${kind}-${i}" data-drop="${kind}" value="${esc(name)}" ${off ? '' : 'checked'}><label for="cmpDrop-${kind}-${i}">${label}</label></div>`;
     const dropped = S.dropTools.length + S.dropSkills.length;
     return head + `<div class="panel-sec">` +
-      UI.section('무엇을 견주나',
-        UI.field({ label: '시나리오', input: `<select data-f="scenario"><option value="">시나리오 선택</option>${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>`, required: true, hint: '시험할 수 있는 상황은 가상 설비 3기의 경보 셋으로 정해져 있습니다. ' + HOLD }) +
+      UI.section('',
+        UI.field({ label: '시나리오', input: `<select data-f="scenario"><option value="">시나리오 선택</option>${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>`, hint: '가상 설비 3기의 경보 셋 가운데 고릅니다. 그 설비에 지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다.' }).replace('<p class="field-hint">', `<p class="field-hint" title="${esc(HOLD)}">`) +
         UI.field({ label: '에이전트 A', input: `<select data-f="a">${opt(o.agents, a => a.id, a => a.name, S.form.a)}</select>`, hint: hint(S.form.a) }) +
         UI.field({ label: '에이전트 B', input: `<select data-f="b">${opt(o.agents, a => a.id, a => a.name, S.form.b)}</select>`, hint: hint(S.form.b) }) +
         UI.field({ label: '입력', input: `<select data-f="input"><option value="new" ${S.form.input === 'new' ? 'selected' : ''}>지금 값을 새로 읽어 고정</option><option value="latest" ${S.form.input === 'latest' ? 'selected' : ''}>이 시나리오의 직전 입력 다시 쓰기</option></select>`, hint: '두 에이전트는 늘 같은 입력으로 계산합니다.' })) +
       (S.loadError ? note(`시험 설정을 다시 읽지 못해 앞서 읽은 목록을 보이고 있습니다: ${esc(S.loadError)}`, ' data-tone="danger" role="status"') : '') +
       `<footer class="form-foot"><button type="button" class="btn" data-act="run" ${S.busy ? 'disabled' : ''}>${UI.icon('play')}시험 실행</button></footer>` +
       (S.error ? note(esc(S.error), ' data-tone="danger" role="alert"') : '') + `</div>` +
-      `<div class="panel-sec"><fieldset class="fieldset"><legend>B에서 빼 보기${dropped ? ` · ${dropped}개 뺌` : ''}</legend><div role="group">` +
-        note('체크를 풀면 B의 구성에서 그 도구 서버나 스킬을 빼고 계산합니다. 이번 시험에만 쓰고 저장하지 않습니다.') +
+      `<div class="panel-sec"><details class="fold io-more" data-cmp-drop${dropped || S.dropOpen ? ' open' : ''}><summary>B에서 빼 보기<span class="muted num">${dropped ? `${dropped}개 뺌` : ''}</span></summary><div class="fold-body">` +
+        note('체크를 풀면 B에서 그 도구 서버나 스킬을 빼고 계산합니다. 저장하지 않습니다.') +
         `<div class="field"><label>도구 서버</label>${b.tools.length ? b.tools.map((t, i) => box('tool', t, esc(serverName(t) || t), S.dropTools.includes(t), i)).join('') : note('없음')}</div>` +
         `<div class="field"><label>스킬</label>${b.skills.length ? b.skills.map((k, i) => box('skill', k.name, esc(UI.skillLabel(k).label), S.dropSkills.includes(k.name), i)).join('') : note('없음')}</div>` +
-      `</div></fieldset><footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="reset" ${dropped ? '' : 'disabled'}>${UI.icon('rotate-ccw')}원래대로</button>` +
-        `<button type="button" class="btn" data-variant="link" data-go-tab="agents">에이전트 · 스킬 열기${UI.icon('arrow-right')}</button></footer>${note(WHAT, ' data-cmp-what')}</div>`;
+      `<footer class="form-foot">${dropped ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-act="reset">${UI.actHtml('revert')}</button>` : ''}` +
+        `<button type="button" class="btn" data-variant="link" data-go-tab="agents">에이전트 · 스킬 열기${UI.icon('arrow-right')}</button></footer>${note(WHAT, ' data-cmp-what')}</div></details></div>`;
   }
 
   // 무엇이 다른가: 한 줄씩(아이콘 + 문장). 접지 않는다
@@ -294,6 +294,7 @@
 
   function bind(el) {
     el.addEventListener('submit', e => e.preventDefault());
+    el.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('[data-cmp-drop]')) S.dropOpen = e.target.open; }, true);      // 다시 그려도 펼친 채로
     el.addEventListener('change', e => {
       const t = e.target;
       if (t.dataset.f) { S.form[t.dataset.f] = t.value; if (t.dataset.f === 'b') { S.dropTools = []; S.dropSkills = []; } if (t.dataset.f === 'scenario') S.error = null; render(); }
@@ -305,6 +306,7 @@
       } else if (t.dataset.pick) { S.pick[t.dataset.pick] = t.value; render(); }
     });
     el.addEventListener('click', e => {
+      const sum = e.target.closest('[data-cmp-drop] > summary'); if (sum) S.dropOpen = !sum.parentNode.open;      // 펼침은 누른 순간에 적어 둔다(toggle 사건은 다시 그린 뒤에 올 수 있다)
       const act = e.target.closest('[data-act]')?.dataset.act;
       if (e.target.closest('[data-retry]')) { load(); return; }
       if (act === 'run') runTrial();

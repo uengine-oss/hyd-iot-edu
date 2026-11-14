@@ -1,7 +1,7 @@
 /* 처리 건 화면의 배치 — 목록 · 한 건(머리 → 내가 할 일 → 진행 길 → 단계 기록) · 자세한 기록.
    부품의 모양은 키트(portal-kit.css)가 갖는다: .seg · .rows/.row · .turn · .canvas/.bpmn · .steps/.step · .step-card/.result/.evid · .opts · .stream/.line · .fold · .code.
    이 파일은 그 부품을 이 화면에 놓는 치수와, 키트에 없는 이 화면만의 조각(접기 안의 감사 기록 · 승인 판의 펼친 자리)만 갖는다.
-   기준: 디자인기준.md 5-1 · 5-2 · 6-2 · 7절, 견본 _sample/case.html.
+   기준: 디자인기준.md 5-1 · 5-2 · 6-2 · 7절.
    그리는 코드: instances.js(목록 · 한 건) · caseRecord.js(단계 기록) · flow.js(진행 길) · approvalCard.js · taskDetail.js · inbox.js(알림) */
 
 /* ───────── 목록(왼쪽) ───────── */
@@ -13,6 +13,8 @@
 .case-side .rows > .empty, .case-side .rows > .alert { border: 0; border-radius: 0; }
 .rows-more { padding: 6px 12px 10px; }
 .rows > a.row { text-decoration: none; color: inherit; }
+/* 알림 · 자세한 기록은 늘 보이는 접기가 아니다: 종 · 더 보기 메뉴로 열었을 때만 보이고, 닫으면 다시 숨는다 */
+#noticeFold:not([open]), #caseMore:not([open]) { display: none; }
 #noticeFold > summary .muted[hidden] { display: none; }
 #noticeFold .fold-body { padding-left: 0; }
 #noticeFold .rows { max-height: 320px; overflow-y: auto; }

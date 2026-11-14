@@ -164,13 +164,17 @@ def test_설비_회로는_처리_건으로_보내는_줄만_갖고_상태_이름
         {'id': 'INC-b', 'asset': 'HYD-01', 'alertId': 'ALT-b', 'state': 'RE_OBSERVING', 'terminal': False, 'created': '2026-01-01T01:00:00Z'},
         {'id': 'INC-c', 'asset': 'HYD-02', 'alertId': 'ALT-c', 'state': 'CLOSED', 'terminal': True, 'created': '2026-01-01T02:00:00Z', 'closed': '2026-01-01T02:05:00Z'}]
     page.goto(w.base + '/index.html#/incidents')
-    page.wait_for_selector('#incList .row')
-    assert page.eval_on_selector_all('#incList .row .tag', 'ns => ns.map(n => n.textContent)') == ['처리 완료', '진행 중']      # 고른 설비(HYD-01)의 것만
+    page.wait_for_selector('#incList .case-link')
+    # 고른 설비(HYD-01)의 것만 센다: 두 건 가운데 진행 중 하나. 목록의 사본은 없고, 링크는 진행 중인 그 처리 건을 연다
+    assert page.eval_on_selector_all('#incList .case-link b', 'ns => ns.map(n => n.textContent)') == ['2', '1'] and page.locator('#incList .row').count() == 0
+    assert page.get_attribute('#incList .case-link .btn', 'data-open-incident') == 'INC-b'
     text = page.inner_text('#view-incidents')
     assert not any(word in text for word in ('반려', '종결', '효과 확인', '재관측', '사건'))
     assert '열린 처리 건이 있습니다' in page.inner_text('#scadaInfo') and page.get_attribute('#scadaInfo .open', 'data-open-incident') == 'INC-b'
     page.click("#scada [data-asset='HYD-03']")
-    assert page.inner_text('#scadaInfo .open').strip() == '결함 시뮬레이션 열기' and page.locator('#incList .row').count() == 0
+    assert page.inner_text('#scadaInfo .open').strip() == '결함 시뮬레이션 열기'
+    assert page.eval_on_selector_all('#incList .case-link b', 'ns => ns.map(n => n.textContent)') == [] or page.inner_text('#incList .case-link b') == '0'      # HYD-03 은 열린 적이 없다
+    assert page.get_attribute('#incList .case-link .btn', 'data-go-tab') == 'scenario'
 
 
 def test_거래_기록은_무엇을_어느_설비에_어느_조치_방법으로_언제_누가를_칸으로_나눠_보인다(world):
@@ -185,12 +189,19 @@ def test_거래_기록은_무엇을_어느_설비에_어느_조치_방법으로_
     page.goto(w.base + '/index.html#/process')
     page.wait_for_selector('#txList .event-record')
     page.evaluate("UI.names['skill:x'] = '팬 최대 운전'; UI.namesVersion += 1")
-    page.wait_for_function("document.querySelector('#txList .bz-kv').innerText.includes('팬 최대 운전')", timeout=8000)
-    assert page.inner_text('#txList .line-text b') == '정비 요청' and '정비 관리' in page.inner_text('#txList .line-sub')
-    cells = page.eval_on_selector_all('#txList .bz-kv > div', "ns => Object.fromEntries(ns.map(n => [n.querySelector('dt').textContent, n.querySelector('dd').textContent]))")
-    assert cells == {'설비': 'HYD-01', '조치 방법': '팬 최대 운전', '정비 시점': '야간 정비 시간 11-14 19:00', '번호': 'WO-1', '누가': cells['누가']} and cells['누가'] not in ('', 'user:me')
-    shown = page.evaluate("[...document.querySelectorAll('#txList .line, #txList .bz-kv')].map(n => n.innerText).join(' ')")
-    assert '작업지시' not in shown and 'CMMS' not in page.inner_text('#txList .line-text b')
+    page.wait_for_function("document.querySelector('#txList details.tx summary').innerText.includes('팬 최대 운전')", timeout=8000)
+    # 표의 머리 줄과 그 줄의 칸이 같은 차례다 — 칸 이름으로 값을 읽는다
+    assert page.eval_on_selector_all('#txList .tx-head span', 'ns => ns.map(n => n.textContent).filter(Boolean)') == ['시각', '종류', '업무 시스템', '설비', '조치 방법', '정비 시점', '번호', '누가']
+    cells = page.eval_on_selector_all('#txList details.tx summary > span', "ns => Object.fromEntries(ns.map(n => [n.dataset.col, n.textContent]))")
+    assert {k: cells[k] for k in ('종류', '업무 시스템', '설비', '조치 방법', '정비 시점', '번호')} == {'종류': '정비 요청', '업무 시스템': cells['업무 시스템'], '설비': 'HYD-01', '조치 방법': '팬 최대 운전',
+                                                                                 '정비 시점': '야간 정비 시간 11-14 19:00', '번호': 'WO-1'}
+    assert '정비 관리' in cells['업무 시스템'] and cells['누가'] not in ('', 'user:me')
+    shown = page.inner_text('#txList details.tx summary')
+    assert '작업지시' not in shown and 'CMMS' not in shown
+    # 줄을 누르면 그 줄 아래에 변경 전 · 후와 원문이 열린다(원문은 접힌 채)
+    page.click('#txList details.tx summary')
+    assert page.evaluate("(() => { const d = document.querySelector('#txList details.tx'); return [d.open, !!d.querySelector('.tx-body table'), d.querySelector('.tx-body details.raw').open]; })()") == [True, True, False]
+    page.click('#bzTabs [data-bz-view="now"]')
     # 정비 관리 표도 같은 칸으로 — 정비 시점이 보인다
     assert page.eval_on_selector_all('#sysBoards table tbody tr:first-child td', 'ns => ns.map(n => n.textContent)') == ['WO-1', 'HYD-01', '팬 최대 운전', '야간 정비 시간 11-14 19:00', '배정됨']
 

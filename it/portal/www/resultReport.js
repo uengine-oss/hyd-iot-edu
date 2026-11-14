@@ -19,7 +19,6 @@
   const num = x => (typeof x === 'number' && Number.isFinite(x) ? x.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : x == null || x === '' ? '–' : x === true ? '예' : x === false ? '아니요' : x);
   const orderWarned = new Set();   // 흐름 순서 없음 경고를 이미 남긴 처리 건
   const LABEL = { ok: '정상', fail: '미달', rejected: '반려', other: '확인 결과', wait: '확인 중' };
-  const PLAIN_END = new Set(['끝', '종료', '완료', 'end', 'End', '']);      // 끝 이벤트의 이름이 이런 말이면 「끝난 곳」으로 따로 보일 것이 없다
 
   // Stored receipt and report remain immutable; derive only this known system receipt's display.
   function receiptDetail(receipt) {
@@ -113,7 +112,7 @@
     const who = chosen || v.approved_by ? `<dt>승인한 안</dt><dd>${e(UI.idText(chosen || '–'))}${approver ? ` <span class="muted">· ${e(approver)}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}</span>` : ''}</dd>` : '';
     // 결론 카드(키트 .step-card > .result): 상태 뱃지 + 보고 제목 → 결과 한 문장 → 값 · 승인한 안. 끝 이벤트의 이름이 「끝」처럼 뜻 없는 말이면 그 줄을 그리지 않는다
     const TONE = { ok: 'success', fail: 'danger', wait: 'accent', other: 'neutral' };
-    const endLine = end && !PLAIN_END.has(String(end).trim()) ? `처리 건은 「${end}」에서 끝났습니다.` : '';
+    const endLine = end && !UI.plainEnd(end) ? `처리 건은 「${end}」에서 끝났습니다.` : '';
     return `<section class="step-card case-result" data-tone="${tone}" aria-label="결과"><div class="result">
       <div class="result-label">${UI.chipText(label, TONE[tone])}${e((rep && rep.title) || '결과')}</div>
       <div class="result-main">${e(summary || label)}</div>

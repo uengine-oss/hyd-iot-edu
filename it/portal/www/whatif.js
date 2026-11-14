@@ -105,7 +105,7 @@
     let left = `<div class="panel-head"><div><h2>시험 조건</h2></div></div><div class="panel-sec">` +
       UI.section('시험 기준',
         UI.field({ label: '설비', input: `<select id="wiAsset" ${W.assets && W.assets.length ? '' : 'disabled'}>${(W.assets || []).map(a => `<option ${a === W.asset ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select>` }) +
-        UI.field({ label: '이상 패턴', input: `<select id="wiPattern">${pats}</select>`, hint: '판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 이 계산에만 쓰고 업무 DB · 지식 · 순위 정책은 그대로 둡니다.' })) +
+        UI.field({ label: '이상 패턴', input: `<select id="wiPattern">${pats}</select>`, hint: '판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 저장되지 않습니다.' })) +
       foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
       (stale ? note(`설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [다시 불러오기]를 눌러야 바뀝니다.`, ' role="status"') : '') + `</div>`;
     if (v) left += `<div class="panel-sec"><fieldset class="fieldset"><legend>바꿔 볼 것</legend><div role="group">` +

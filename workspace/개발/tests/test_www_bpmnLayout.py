@@ -55,7 +55,8 @@ def page():
         with sync_playwright() as p:
             browser = p.chromium.launch()
             pg = browser.new_page()
-            pg.route('**/svc/**', lambda route: route.abort() if route.request.url.endswith('/stream') else route.fulfill(json={}))
+            # 그림 원본(GET …/bpmn)은 「없음」(204)으로 답한다 — 이 파일은 정의에서 만든 그림의 자동 배치를 본다(서버가 그림을 줄 때의 길은 test_www_flow.py)
+            pg.route('**/svc/**', lambda route: route.abort() if route.request.url.endswith('/stream') else route.fulfill(status=204) if route.request.url.split('?')[0].endswith('/bpmn') else route.fulfill(json={}))
             pg.goto(served.url + '/index.html')
             pg.wait_for_function("typeof UI !== 'undefined' && !!window.hydFlow")
             yield pg

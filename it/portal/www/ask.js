@@ -194,8 +194,8 @@
     const off = A.sending || !A.draft.trim();
     return `<div class="panel-sec ask-compose">${readyHtml()}
         ${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}${agentLine()}
-        ${UI.field({ label: '질문', hint: 'Enter 보내기 · Shift+Enter 줄바꿈', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}" placeholder="에이전트가 자기 도구로 조회해 답할 수 있는 것을 묻습니다"></textarea>` })}${replay() ? picks() : ''}
-        <footer class="form-foot"><span class="muted" role="status" data-ask-why>${A.draft.trim() ? '' : '질문을 적으면 보낼 수 있습니다.'}</span><button type="button" class="btn" id="askSend" ${off ? 'disabled' : ''}>${icon('send')}보내기</button></footer></div>`;
+        ${UI.field({ label: '질문', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}" placeholder="에이전트가 자기 도구로 조회해 답할 수 있는 것을 묻습니다 (Enter 보내기 · Shift+Enter 줄바꿈)"></textarea>` })}${replay() ? picks() : ''}
+        <footer class="form-foot"><span class="muted" role="status" data-ask-why></span><button type="button" class="btn" id="askSend" ${off ? 'disabled' : ''}>${icon('send')}보내기</button></footer></div>`;
   }
   const layout = () => `<div class="ask-layout"><div class="ask-main"><section class="panel" data-ask-form aria-label="질문 보내기"></section><div data-ask-err class="pane-msg"></div><div class="ask-thread" data-ask-thread></div></div>
         <aside class="ask-side pane-side"><div class="sec-head"><h2>지난 질문</h2><button type="button" class="btn" data-variant="ghost" data-size="sm" id="askReset" hidden>${icon('trash-2')}끝난 기록 지우기</button></div><div class="rows" data-ask-history></div><div data-ask-kept class="pane-msg"></div></aside></div>`;
@@ -208,7 +208,7 @@
     const b = form.querySelector('#askSend'), why = form.querySelector('[data-ask-why]');
     if (b) b.disabled = A.sending || !A.draft.trim();
     const q = A.draft.trim();
-    if (why) why.textContent = !q ? '질문을 적으면 보낼 수 있습니다.'
+    if (why) why.textContent = !q ? ''
       : replay() && recorded().length && !recorded().includes(q) ? 'AI 키가 없을 때 쓰는 재생 모드에서는 위의 질문에만 답합니다. 이 질문은 보내도 답을 받지 못합니다.' : '';
   };
   function render() {

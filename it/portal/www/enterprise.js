@@ -162,8 +162,17 @@ function groupOf(label) {
 }
 // A141: the graph API fills `name` with the id when a node has no name (Rule nodes) — then the names.json dictionary (annotation) applies
 // 이름 · 설명 속 경보 패턴 코드(COOLER_DEGRADATION 등)는 UI.words 가 사람 이름으로 바꾼다
+// 사건 · 판단 사례는 이름이 번호뿐이다(INC-1113-01-0532 · case:DEC-1113-mcp-002-…) — 지도의 점 이름은 사람 말로(어느 설비의 무슨 경보 · 몇 월 며칠 몇 번째), 번호는 고른 항목 판의 ID 줄에 있다
+function caseNodeName(n) {
+  const p = n.props || {}, m = /(?:INC|DEC)-(\d\d)(\d\d)-(?:[a-z]+-)?0*(\d+)/i.exec(String(n.id));
+  let alert = null; try { alert = typeof p.sourceAlert === 'string' ? JSON.parse(p.sourceAlert) : p.sourceAlert || null; } catch (_) { alert = null; }
+  const asset = p.asset || (alert && alert.asset) || '', pattern = p.pattern || (alert && alert.pattern) || '';
+  const what = n.label === 'Incident' ? (pattern ? UI.patternName(pattern) + ' 사건' : '사건') : '판단 사례';
+  return [asset, what, m ? `${+m[1]}.${+m[2]} ${+m[3]}번째` : ''].filter(Boolean).join(' · ');
+}
 const nodeName = n => {
   if (n.name && n.name !== n.id) return UI.words(n.name);
+  if (n.label === 'Incident' || n.label === 'DecisionCase') return caseNodeName(n);
   if (n.props?.annotation || n.props?.title) return UI.words(n.props.annotation || n.props.title);
   const id = n.props?.definition_id || n.id;
   if (n.label === 'Process' || n.label === 'ProcessVersion') {
@@ -874,7 +883,7 @@ async function runDecision() {
 // 원인 한 줄과 그 증거 줄(충족 여부는 상태 뱃지와 글로) — 판단 결과의 「근거」와 판단 보류 판이 함께 쓴다
 const decEvidenceLines = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
   const unit = window.hydWords.unit(e.tag);
-  return `<li>${UI.icon(unknown ? 'circle-dashed' : e.passed ? 'check' : 'x')}<span><b>${esc(e.name)}</b> ${UI.chipText(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'), unknown ? 'neutral' : e.passed ? 'success' : 'danger')} ${esc(UI.t('inc.observed'))} <span class="num">${esc(fmt(e.value, 3))}</span>${unit ? ' ' + esc(unit) : ''}</span></li>`; }).join('')
+  return `<li>${UI.icon(unknown ? 'circle-dashed' : e.passed ? 'check' : 'x')}<span><b>${esc(e.name)}</b> <span class="muted">${esc(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'))} ·</span> ${esc(UI.t('inc.observed'))} <span class="num">${esc(fmt(e.value, 3))}</span>${unit ? ' ' + esc(unit) : ''}</span></li>`; }).join('')
   || `<li>${UI.icon('info')}<span>${esc(UI.t('inc.noEvidence'))}</span></li>`;
 const decCauseLine = c => `<li>${UI.icon('search')}<span><b>${esc(UI.idText(c.name))}</b>${c.failureMode ? ' · 고장 유형 ' + esc(UI.idText(c.failureMode)) : ''} · ${esc(UI.t('card.score'))} <span class="num">${esc(c.score)}</span></span></li>`;
 const decAssumed = facts => Object.entries(facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${k === 'standby_ready' ? (v ? '쓸 수 있음' : '정비 중') : factValue(k, v)}`);      // 예비 펌프는 고르기 칸의 말 그대로
@@ -942,9 +951,9 @@ function renderDecision() {
   const fact = (label, value) => `<div><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
 
   // 머리: 결론(큰 글) · 무엇을 언제 판단했나 · 숫자 넷
-  let html = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론 ${UI.chip(d.status)}</div><h2>${esc(first)}</h2>` +
+  let html = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론${d.status === 'EVALUATED' ? '' : ' ' + UI.chip(d.status)}</div><h2>${esc(first)}</h2>` +
     `<p>${esc([d.asset, UI.idText((d.scenario || {}).name || ''), '모의 판단 ' + UI.dateTime(d.created)].filter(Boolean).join(' · '))}</p></div></div>` +
-    `<dl class="turn-facts">${fact(UI.t('dec.causeTop') + ' 원인', c0 ? esc(UI.idText(c0.name)) : '없음')}${fact('1순위 점수', top && Number.isFinite(top.score) ? `<span class="num">${signNum(top.score)}</span>${gap}` : '–')}` +
+    `<dl class="turn-facts">${fact(UI.t('dec.causeTop') + ' 원인', c0 ? esc(UI.idText(c0.name)) : '없음')}${fact('1순위 점수', top && Number.isFinite(top.score) ? `<span class="num">${Number(top.score).toFixed(2)}</span>${gap}` : '–')}` +
     `${fact(UI.t('dec.candidates'), `<span class="num">${feasible.length}</span><small>개 가능${opts.length - feasible.length ? ` · ${opts.length - feasible.length}개 제외` : ''}</small>`)}` +
     `${fact('발동한 규칙', `<span class="num">${trace.filter(t => t.fired).length}</span><small>/ ${trace.length}개</small>`)}</dl>`;
   // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
@@ -986,23 +995,29 @@ function renderDecision() {
   const prov = d.provenance || [];
   const tr = trace.slice().sort((a, b) => (b.fired ? 1 : 0) - (a.fired ? 1 : 0) || (b.skill ? 1 : 0) - (a.skill ? 1 : 0));      // 발동한 규칙이 위로
   const target = t => t.skill ? UI.idText((opts.find(o => o.id === t.skill) || {}).name || t.skill) : '';
-  html += '<div class="panel-sec">' +
-    (text ? UI.fold('판단 엔진 설명 전문<span class="muted">같은 사유가 달린 조치는 한 번으로 묶음</span>', `<p class="result-sub">${esc(dedupeText(text))}</p>`) : '') +
-    UI.fold(`${esc(UI.t('dec.inputs'))}<span class="muted">${prov.length}개 · 출처와 가져온 방법</span>`, prov.length
+  // 결론 · 숫자 · 후보 표 · 근거 아래에는 접기 하나(「자세히 보기」)만 둔다. 그 안은 밑줄 탭 넷: 판단에 쓴 값 · 후보별 근거 · 적용한 규칙 · 원문
+  const firedN = tr.filter(t => t.fired).length;
+  const panes = [
+    ['inputs', UI.t('dec.inputs'), prov.length, prov.length
       ? `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
         prov.map(p => `<tr><td>${esc(p.name)}</td><td>${p.error ? `<span class="muted" data-tone="danger">${esc(p.error)}</span>` : esc(factValue(p.variable, p.value))}</td><td>${esc(p.sourceName || UI.who(p.source))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table></div>'
-      : `<p class="muted">이 판단은 입력 값의 출처를 남기지 않았습니다.</p>`) +
-    UI.fold(`조치 후보별 근거 · 예측 · 절차<span class="muted">${opts.length}개</span>`, `<div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { ...r, facts: d.facts, origin: d.origin } })).join('') + '</div>') +
-    (r.rankRule ? UI.fold(esc(UI.t('card.scoreHow')), `<p class="muted">${esc(r.rankRule.annotation || '')}</p>`) : '') +
-    UI.fold(`${esc(UI.t('dec.rules'))}<span class="muted">${tr.filter(t => t.fired).length}개 발동 · 전체 ${tr.length}개</span>`,
+      : `<p class="muted">이 판단은 입력 값의 출처를 남기지 않았습니다.</p>`],
+    ['options', '후보별 근거', opts.length, `<div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { ...r, facts: d.facts, origin: d.origin } })).join('') + '</div>'],
+    ['rules', UI.t('dec.rules'), `${firedN}/${tr.length}`,
       `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
-      tr.map(t => `<tr><td>${esc(UI.ruleLabel(t))}<p class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</p>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`)}</td><td>${esc(target(t))}</td>` +
-        `<td>${t.fired ? UI.chipText(UI.t('dec.fired'), 'accent') : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.map(k => window.hydWords.fieldName(k)).join(', '))}</span>` : `<span class="muted">${esc(UI.t('dec.notApplicable'))}</span>`)}</td></tr>`).join('') + '</tbody></table></div>') +
-    UI.fold(`${esc(UI.t('dec.trace'))} 원문<span class="muted">판단 번호 포함</span>`, `<dl class="kv"><dt>판단 번호</dt><dd class="mono">${esc(d.id)}</dd></dl>` + decTrace(d.steps || [])) +
-    '</div>';
+      tr.map(t => `<tr><td title="${esc([t.rule, t.when].filter(Boolean).join(' — '))}">${esc(UI.ruleLabel(t))}<p class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</p></td><td>${esc(target(t))}</td>` +
+        `<td>${t.fired ? UI.chipText(UI.t('dec.fired'), 'accent') : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.map(k => window.hydWords.fieldName(k)).join(', '))}</span>` : `<span class="muted">${esc(UI.t('dec.notApplicable'))}</span>`)}</td></tr>`).join('') + '</tbody></table></div>'],
+    ['raw', UI.t('raw'), null, `<dl class="kv"><dt>판단 번호</dt><dd>${UI.id(d.id)}</dd></dl>` + (text ? `<h4 class="dec-h">판단 엔진 설명 전문</h4><p class="result-sub">${esc(dedupeText(text))}</p>` : '') +
+      (r.rankRule && r.rankRule.annotation ? `<h4 class="dec-h">${esc(UI.t('card.scoreHow'))}</h4><p class="muted">${esc(r.rankRule.annotation)}</p>` : '') + `<h4 class="dec-h">${esc(UI.t('dec.trace'))}</h4>` + decTrace(d.steps || [])],
+  ];
+  html += `<div class="panel-sec"><details class="fold dec-more"><summary>자세히 보기</summary><div class="fold-body">${UI.viewTabs(panes.map(([k, l, n]) => [k, l, n]), 'inputs', 'data-dec-pane', { label: '판단 자세히', small: true })}` +
+    panes.map(([k, , , body], i) => `<div data-dec-body="${k}"${i ? ' hidden' : ''}>${body}</div>`).join('') + '</div></details></div>';
   const scope = UI.evaluationHtml(r, d);      // 평가 범위(모의 순위인지 실행 조건 검사인지)는 서버 기록 그대로, 맨 아래 한 줄
   if (scope) html += `<div class="panel-sec">${scope}</div>`;
   box.innerHTML = html + '</section>';
+  box.querySelector('.dec-more')?.addEventListener('click', e => { const b = e.target.closest('[data-dec-pane]'); if (!b) return;
+    UI.markViewTab(b.closest('.view-tabs'), x => x === b);
+    box.querySelectorAll('[data-dec-body]').forEach(p => { p.hidden = p.dataset.decBody !== b.dataset.decPane; }); });
 }
 
 $('#decForm').addEventListener('submit', e => { e.preventDefault(); runDecision(); });
@@ -1100,53 +1115,70 @@ function systemBoards(s) {
       ...s.erp.goods_receipts.map(g => ({ a: g.id, b: `${g.part_no || ''} ${g.qty}개 입고`, c: `검수 ${UI.status(g.inspection)}` }))], ['a', 'b', 'c'], ['번호', '대상', '상태']],
   ];
 }
-// 거래 한 줄: 무엇을(정비 요청 · 발주 · 입고 …) 어느 업무 시스템에 · 어느 설비에 · 어느 조치 방법으로 · 언제 · 누가 — 칸으로 나눠 보인다. 서버가 이어 붙인 문장(detail)은 원문 접기 안에 있다.
+// 거래 기록은 표 하나다: 한 줄 = 언제 · 무엇을(정비 요청 · 발주 · 입고 …) · 어느 업무 시스템에 · 어느 설비에 · 어느 조치 방법으로 · 정비 시점 · 번호 · 누가.
+// 줄을 누르면 그 줄 아래에 변경 전 · 후와 원문이 열린다. 서버가 이어 붙인 문장(detail)은 원문 안에만 있다.
 // 「정비 요청」은 용어 정본의 이름이다(지식 그래프의 조치 이름 「정비 오더 발행」 대신 — UIUX_PLAN 4절)
+const TX_COLS = ['시각', '종류', '업무 시스템', '설비', '조치 방법', '정비 시점', '번호', '누가'];
+const txWhat = x => (x.skill === 'skill:schedule-maintenance' ? UI.t('workOrder') : UI.name(x.skill) || '거래') + (x.compensates ? ' 되돌림' : '');
 function txRecordHtml(x) {
-  const system = window.hydWords.system(x.system), product = UI.who(x.system);
-  const what = x.skill === 'skill:schedule-maintenance' ? UI.t('workOrder') : UI.name(x.skill) || '거래';
-  const after = x.after || {}, when = after.window_label || '';
-  const rows = [['설비', esc(x.asset || '–')], ['조치 방법', esc((x.option && UI.names[x.option]) || '–')], when ? ['정비 시점', esc(when)] : null,
-    ['번호', `<span class="mono">${esc(x.ref || x.id)}</span>`], ['누가', esc(UI.who(x.by))]].filter(Boolean);
-  return `<article class="event-record"><div class="line">${UI.icon(x.compensates ? 'rotate-ccw' : 'receipt-text')}<span class="line-text"><b>${esc(what)}${x.compensates ? ' 되돌림' : ''}</b>` +
-    `<span class="line-sub">${esc(system)}${product !== system ? ` (${esc(product)})` : ''}</span></span><time class="line-time num" title="${esc(UI.dateTime(x.t))}">${esc(UI.dateTime(x.t))}</time></div>` +
-    `<dl class="bz-kv">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>${txDiffFold(x)}` +
-    UI.raw(x) + '</article>';
+  const system = window.hydWords.system(x.system);
+  const cells = [`<time class="num" title="${esc(UI.dateTime(x.t))}">${esc(UI.dateTime(x.t))}</time>`, `<b>${esc(txWhat(x))}</b>`, esc(system), esc(x.asset || '–'), esc((x.option && UI.names[x.option]) || '–'),
+    esc((x.after || {}).window_label || '–'), `<span class="mono">${esc(x.ref || x.id || '–')}</span>`, esc(UI.who(x.by))];
+  return `<article class="event-record"><details class="tx"><summary>${cells.map((c, i) => `<span data-col="${esc(TX_COLS[i])}">${c}</span>`).join('')}${UI.icon('chevron-down')}</summary>` +
+    `<div class="tx-body">${txDiff(x)}${UI.raw(x)}</div></details></article>`;
 }
 function renderSystems() {
   const box = $('#sysBoards'); const s = ent.entState;
   // 2.5초마다 불리지만 값이 같으면 다시 그리지 않는다 — 다시 그리면 펴 둔 「변경 전·후」 접기가 2.5초마다 닫힌다
-  const sig = JSON.stringify([s, ent.tx, ent.entError, UI.namesVersion]);
+  const sig = JSON.stringify([s, ent.tx, ent.entError, UI.namesVersion, ent.bzView, ent.txKind]);
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const sum = $('#bzSummary');
   if (!s) {
-    sum.innerHTML = ''; $('#txList').innerHTML = '';
+    sum.innerHTML = ''; $('#txList').innerHTML = ''; $('#txKinds').innerHTML = ''; $('#bzTabs').innerHTML = '';
+    box.hidden = false;
     box.innerHTML = ent.entError ? UI.errorBlock(UI.t('proc.noEnt'), ent.entError + ' — 2.5초마다 다시 읽습니다') : '<div class="skeleton" style="height:180px"></div>'.repeat(3);
     return;
   }
   const boards = systemBoards(s);
   // 결론 먼저: 조치가 남긴 거래가 몇 건인가(이 화면의 몫) → 업무 시스템마다 지금 있는 기록 수(원래 있던 것 포함) → 거래 기록 → 시스템마다 표 한 장
   const STAT = { '생산 관리': '지금 있는 생산 오더', '정비 관리': '지금 있는 정비 요청', '구매 · 재고 관리': '지금 있는 구매 요청 · 입고' };
-  sum.innerHTML = `<div class="stat"><span class="stat-label">조치가 남긴 거래</span><span class="stat-value num">${ent.tx.length}<small>건${ent.tx.length >= 12 ? ' (최근 12건)' : ''}</small></span></div>` +
+  sum.innerHTML = `<div class="stat"><span class="stat-label">조치가 남긴 거래</span><span class="stat-value num">${ent.tx.length}<small>건</small></span></div>` +
     boards.map(([sys, rows]) => `<div class="stat"><span class="stat-label">${esc(STAT[sys] || sys)}</span><span class="stat-value num">${rows.length}<small>건</small></span></div>`).join('');
   // 표 한 장 = 업무 시스템 하나. 숫자 칸은 오른쪽 맞춤, 여섯 줄까지 보이고 나머지는 몇 건인지 적는다
   const cell = v => `<td${typeof v === 'number' ? ' class="num"' : ''}>${esc(v ?? '–')}</td>`;
   const t = (rows, cols, labels) => rows.length ? '<div class="table-container" tabindex="0"><table class="table"><thead><tr>' + labels.map((x, i) => `<th${rows.every(r => typeof r[cols[i]] === 'number') ? ' class="num"' : ''}>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' +
-    rows.slice(0, 6).map(r => '<tr>' + cols.map(c => cell(r[c])).join('') + '</tr>').join('') + '</tbody></table></div>' + (rows.length > 6 ? `<p class="bz-note">${rows.length}건 가운데 6건만 보입니다(외 ${rows.length - 6}건).</p>` : '') : `<p class="bz-none">${esc(UI.t('proc.noChange'))}</p>`;
+    rows.slice(0, 6).map(r => '<tr>' + cols.map(c => cell(r[c])).join('') + '</tr>').join('') + '</tbody></table></div>' + (rows.length > 6 ? `<p class="bz-note">최근 6건 · 외 ${rows.length - 6}건</p>` : '') : `<p class="bz-none">${esc(UI.t('proc.noChange'))}</p>`;
   box.innerHTML = boards.map(([sys, rows, cols, labels]) => `<section class="panel bz-board"><div class="panel-head"><h2>${esc(sys)}</h2></div>${t(rows, cols, labels)}</section>`).join('');
-  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(txRecordHtml).join('') : `<p class="bz-none">아직 거래가 없습니다. 처리 건에서 조치를 승인하면 업무 시스템이 실행한 거래가 여기에 남습니다.</p>`;
+  // 보기 둘: 거래 기록(조치가 남긴 것) · 지금 기록(업무 시스템에 지금 있는 것 — 원래 있던 것 포함)
+  const view = ent.bzView === 'now' ? 'now' : 'tx';
+  $('#bzTabs').innerHTML = UI.viewTabs([['tx', '거래 기록', ent.tx.length], ['now', '지금 기록', boards.reduce((n, [, rows]) => n + rows.length, 0)]], view, 'data-bz-view', { label: '업무 시스템 기록 보기' });
+  document.querySelectorAll('#view-process [data-bz-pane]').forEach(p => { p.hidden = p.dataset.bzPane !== view; });
+  // 종류로 거르기: 거래가 두 종류 넘게 있을 때만 묶음 단추를 둔다
+  const kinds = [...new Set(ent.tx.map(txWhat))];
+  if (ent.txKind && !kinds.includes(ent.txKind)) ent.txKind = '';
+  $('#txKinds').innerHTML = kinds.length > 1 ? [['', '전체', ent.tx.length], ...kinds.map(k => [k, k, ent.tx.filter(x => txWhat(x) === k).length])].map(([k, l, n]) =>
+    `<button type="button" aria-pressed="${k === (ent.txKind || '')}" data-tx-kind="${esc(k)}">${esc(l)}<span class="num">${n}</span></button>`).join('') : '';
+  $('#txKinds').hidden = kinds.length < 2;
+  const shown = ent.tx.filter(x => !ent.txKind || txWhat(x) === ent.txKind);
+  const openIds = new Set([...document.querySelectorAll('#txList details.tx[open]')].map(d => d.dataset.tx));
+  $('#txList').innerHTML = shown.length ? `<div class="tx-head" aria-hidden="true">${TX_COLS.map(c => `<span>${esc(c)}</span>`).join('')}<span></span></div>` + shown.map(txRecordHtml).join('')
+    : UI.empty({ icon: 'receipt-text', title: '아직 거래가 없습니다', sub: '처리 건에서 조치를 승인하면 업무 시스템이 실행한 거래가 여기에 남습니다.', action: { label: '처리 건 열기', tab: 'instances' } });
+  $('#txList').querySelectorAll('details.tx').forEach((d, i) => { d.dataset.tx = shown[i].id || shown[i].ref || String(i); if (openIds.has(d.dataset.tx)) d.open = true; });
 }
+document.getElementById('view-process').addEventListener('click', e => {
+  const v = e.target.closest('[data-bz-view]'); if (v) { ent.bzView = v.dataset.bzView; renderSystems(); return; }
+  const k = e.target.closest('[data-tx-kind]'); if (k) { ent.txKind = k.dataset.txKind; renderSystems(); }
+});
 // A147: 거래가 바꾼 행의 변경 전·후 — 바뀐 항목만, 기본 닫힘. 기록이 없는 거래(before/after 둘 다 없음)는 접기도 없다
-function txDiffFold(x) {
+function txDiff(x) {
   const b = x.before || null, a = x.after || null;
   if (!b && !a) return '';
   const show = v => v == null || v === '' ? '–' : typeof v === 'object' ? JSON.stringify(v) : /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(String(v)) ? UI.dateTime(v) : String(v);
   const keys = [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])].filter(k => JSON.stringify((b || {})[k] ?? null) !== JSON.stringify((a || {})[k] ?? null));
-  const body = !keys.length ? `<p class="muted">${esc(UI.t('tx.noDiff'))}</p>`
+  return !keys.length ? `<p class="muted">${esc(UI.t('tx.noDiff'))}</p>`
     : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
-      keys.map(k => `<tr><td title="${esc(k)}">${esc(window.hydWords.fieldName(k))}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table></div>';
-  return UI.fold(`${esc(UI.t('tx.beforeAfter'))} ${keys.length}`, body);
+      keys.map(k => `<tr><td title="${esc(k)}">${esc(window.hydWords.fieldName(k))}</td><td>${esc(show((b || {})[k]))}</td><td>${esc(show((a || {})[k]))}</td></tr>`).join('') + '</tbody></table></div>';
 }
 
 initOntology();

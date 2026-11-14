@@ -366,11 +366,11 @@ async function pollHealth() {
   } finally { pollHealth.busy = false; }
 }
 
-/* ---------------- 관리: 목록 + 상세. 왼쪽 줄이 오른쪽 판(details)의 열림을 바꾼다 — 딸린 모듈은 자기 판이 열릴 때(toggle) 읽는다 ---------------- */
+/* ---------------- 관리: 보기 탭(내 설정 · 접수 기록)이 판(details)의 열림을 바꾼다 — 딸린 모듈은 자기 판이 열릴 때(toggle) 읽는다 ---------------- */
 {
   const list = $('#adminList');
   const pick = id => {
-    list.querySelectorAll('[data-admin]').forEach(b => b.setAttribute('aria-current', String(b.dataset.admin === id)));
+    UI.markViewTab(list, b => b.dataset.admin === id);
     document.querySelectorAll('.admin-pane').forEach(d => { d.open = d.id === id; });
   };
   list.addEventListener('click', e => { const b = e.target.closest('[data-admin]'); if (b) pick(b.dataset.admin); });
@@ -452,12 +452,12 @@ function bizAlertHtml(asset) {
   if (state.biz === undefined) return '<span class="tag">확인 중</span>';
   if (state.biz && state.biz.failed) return `<span class="tag" data-tone="danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
   const b = bizOf(asset); if (!b) return '';
-  if (b.running) return `<a href="#/instances" class="tag" data-tone="brand" data-open-inst="${esc(b.running.instance)}" title="처리 건에서 보기">처리 중 →</a>`;
+  if (b.running) return '<span class="tag" data-tone="brand">처리 중</span>';      // 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 「처리 건에서 보기」 한 줄이다(뱃지를 링크로 쓰지 않는다)
   // 반려 뒤 [초기화]를 눌렀으면 표시가 「반려」로 남지 않는다 — 마지막 처리 건이 끝난 뒤의 [초기화]면 다시 도래/필요
   const press = state.biz && state.biz.presses && state.biz.presses[asset];
   const resetAfter = press && press.button === '초기화' && b.last && b.last.ended_at && Date.parse(press.at) >= Date.parse(b.last.ended_at);
   if (b.alert && (b.last?.outcome !== '반려' || resetAfter)) return `<span class="tag" data-tone="warn" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
-  if (b.last && !b.running) return `<a href="#/instances" class="tag" data-tone="${b.last.outcome === '반려' ? 'danger' : 'ok'}" data-open-inst="${esc(b.last.instance)}" title="처리 건에서 보기">${b.last.outcome === '반려' ? '반려' : `처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}`} →</a>`;
+  if (b.last && !b.running) return `<span class="tag"${b.last.outcome === '반려' ? ' data-tone="danger"' : ['미달', '지연'].includes(b.last.outcome) ? ' data-tone="warn"' : ' data-tone="ok"'}>${b.last.outcome === '반려' ? '반려' : `처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}`}</span>`;
   return b.error ? `<span class="tag" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
 }
 // 설비마다 마지막으로 누른 단추(서버의 감사 기록 — 처리 건이 없는 [초기화]도 남는다). 화면 아래 「조작 기록」 접기 안에 보인다
@@ -472,6 +472,9 @@ function bizFactLine(b) {
 }
 // 결함 절: 절 이름과 단추. 무엇을 하는 단추인지는 단추의 도움말(올리거나 초점을 주면 나온다)이, 누른 뒤의 일은 과정 판이 말한다 — 설명 문단을 깔지 않는다.
 // 업무 사건은 그 사건이 왜 생기는지의 사실 한 줄만 둔다. 주 단추는 화면에 하나(쿨러 열화 주입)다
+// 업무 사건 카드의 바깥 사건 단추(서버 GET /api/scenario/status 의 scenarios.<키>.events — 이름 · 누를 수 있는지 · 못 누르는 까닭 · 부를 길을 서버가 준다).
+// 지금 누를 수 없으면 흐리게 두고, 누르면 그 까닭을 카드 아래 한 줄로 말한다(눌러서 아무 일도 없는 단추를 두지 않는다)
+const eventBtn = ev => `<button type="button" class="btn" data-variant="outline" data-size="sm" data-act="biz-event" data-event="${esc(ev.act)}"${ev.enabled ? '' : ' aria-disabled="true"'} data-tooltip="${esc(ev.enabled ? ev.help || '' : ev.why || '지금은 누를 수 없습니다')}" data-side="top" data-align="start">${UI.icon('clock')}${esc(ev.button)}</button>`;
 function expHtml(asset) {
   const btn = (act, label, variant, icon, tip) => `<button type="button" class="btn"${variant ? ` data-variant="${variant}"` : ''} data-size="sm" data-act="${act}" data-tooltip="${esc(tip)}" data-side="top" data-align="start">${icon ? UI.icon(icon) : ''}${esc(label)}</button>`;
   if (asset === FAULT_UNIT.asset) return `<h3>설비 결함 · ${esc(UI.patternName(FAULT_UNIT.pattern))}</h3><p class="lab-fact"></p>
@@ -481,7 +484,7 @@ function expHtml(asset) {
   const b = bizOf(asset);
   if (!b) return '<h3>업무 사건</h3><p>이 설비에 걸린 업무 사건이 없습니다.</p>';
   return `<h3>업무 사건 · ${esc(b.title)} <span class="biz-alert"></span></h3><p>${esc(bizFactLine(b))}</p>
-    <div class="lab-buttons">${btn('biz-start', `${b.title} 시작`, 'outline', 'play', '설비를 거치지 않고 처리 건이 바로 열립니다')}${btn('biz-reset', '업무 데이터 초기화', 'ghost', 'rotate-ccw', '업무 데이터를 처음 값으로 되돌립니다')}</div>`;
+    <div class="lab-buttons">${btn('biz-start', `${b.title} 시작`, 'outline', 'play', '설비를 거치지 않고 처리 건이 바로 열립니다')}${(b.events || []).map(eventBtn).join('')}${btn('biz-reset', '업무 데이터 초기화', 'ghost', 'rotate-ccw', '업무 데이터를 처음 값으로 되돌립니다')}</div>`;
 }
 function renderUnits() {
   const box = $('#units');
@@ -494,14 +497,12 @@ function renderUnits() {
       card = el('article', 'unit'); card.dataset.asset = asset; card.setAttribute('aria-label', `${asset} 설비`);
       card.innerHTML = unitCardHtml(asset, { cells: ['CE', 'FanSpeedSP', 'LoadSP'] }) + `<section class="lab-exp" aria-label="결함 넣기"></section>
         <a class="unit-go" href="#/instances" hidden><span>처리 건에서 보기</span>${UI.icon('arrow-right')}</a>
-        <details class="fold"><summary>현장 패널</summary><div class="fold-body">
-          <h4>${esc(UI.t('plant.modes'))}</h4>
-          <div class="seg" role="group" aria-label="${esc(UI.t('plant.modes'))}"><button type="button" data-act="mode" data-mode="REMOTE_AUTO" title="승인된 원격 명령을 설비가 받는 운전 모드입니다. 명령은 사람이 승인한 뒤에만 나갑니다.">원격 자동</button><button type="button" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button><button type="button" data-act="mode" data-mode="LOCAL">현장 제어</button></div>
-          <h4>수동 조작</h4>
-          <div class="lab-buttons"><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="fan" data-tooltip="적용하면 원격 수동으로 바뀝니다" data-side="top" data-align="start">팬 80 %</button><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="load" data-tooltip="적용하면 원격 수동으로 바뀝니다" data-side="top">부하 70 %</button><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="reset">보호 정지 해제</button></div>
-        </div></details>
-        <details class="fold"><summary>그 밖의 값</summary><div class="fold-body"><dl class="kv">${kv([[UI.t('plant.ps1'), 'num ps1'], [UI.t('plant.fs1'), 'num fs1'], [UI.t('plant.vs1'), 'num vs1'], [UI.t('plant.cp'), 'num cp'],
-          [UI.t('plant.pump'), 'pump'], [UI.t('plant.health'), 'num health'], [UI.t('plant.state'), 'plc'], [UI.t('plant.lastCmd'), 'ack']])}</dl></div></details>`;
+        <details class="fold"><summary>현장 패널</summary><div class="fold-body lab-panel">
+          <div role="group" class="field"><label for="mode-${esc(asset)}">${esc(UI.t('plant.modes'))}</label><select class="select" id="mode-${esc(asset)}" data-mode-pick><option value="REMOTE_AUTO">원격 자동 — 승인된 원격 명령을 받음</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
+          <div class="lab-buttons" role="group" aria-label="수동 조작"><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="fan" data-tooltip="적용하면 원격 수동으로 바뀝니다" data-side="top" data-align="start">팬 80 %</button><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="load" data-tooltip="적용하면 원격 수동으로 바뀝니다" data-side="top">부하 70 %</button><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="reset">보호 정지 해제</button></div>
+          <dl class="kv">${kv([[UI.t('plant.state'), 'plc'], [UI.t('plant.lastCmd'), 'ack']])}</dl>
+        </div></details>`;
+      card.querySelector('[data-mode-pick]').addEventListener('change', e => unitAction(asset, 'mode', e.target.value, null));
       card.addEventListener('click', e => { const b = e.target.closest('button[data-act]'); if (b) unitAction(asset, b.dataset.act, b.dataset.mode, b); });
       box.append(card);
     }
@@ -510,7 +511,7 @@ function renderUnits() {
     card.querySelector('[data-f="mode"]').title = s.mode === 'REMOTE_AUTO' ? '원격 자동 — 승인된 원격 명령을 설비가 받는 운전 모드입니다. 저절로 조치하지 않으며, 명령은 사람이 승인한 뒤에만 나갑니다.' : '';
     // 결함 절은 내용이 바뀔 때만 다시 그린다(누르는 동안 단추가 바뀌지 않게). 뱃지 · 안내 줄은 그 아래에서 따로 맞춘다
     const exp = card.querySelector('.lab-exp'), b = bizOf(asset);
-    const expSig = asset === FAULT_UNIT.asset ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b)]]);
+    const expSig = asset === FAULT_UNIT.asset ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
     if (exp._sig !== expSig) {
       exp._sig = expSig;
       exp.innerHTML = expHtml(asset) + '<p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
@@ -525,8 +526,11 @@ function renderUnits() {
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${active.join(' · ')}` : '');
     // 열린 처리 건이 있으면 그리로 가는 줄 하나(경과 · 승인은 처리 건에서)
     const openInc = openIncidentFor(asset), go = card.querySelector('.unit-go');
-    go.hidden = !openInc || !own;      // 업무 사건 카드는 절 머리의 「처리 중 →」 뱃지가 같은 길이다 — 두 번 두지 않는다
-    if (openInc) go.dataset.openIncident = openInc.id; else delete go.dataset.openIncident;
+    // 설비 결함 카드는 열린 사건의 처리 건으로, 업무 사건 카드는 진행 중(없으면 마지막) 처리 건으로
+    const bizCase = !own && b ? (b.running || b.last) : null;
+    go.hidden = own ? !openInc : !bizCase;
+    if (own && openInc) go.dataset.openIncident = openInc.id; else delete go.dataset.openIncident;
+    if (bizCase) go.dataset.openInst = bizCase.instance; else delete go.dataset.openInst;
     if (asset === FAULT_UNIT.asset) {
       const phase = d.patterns?.[FAULT_UNIT.pattern]?.phase;
       // 사실 한 줄: 이 결함이 바꾸는 값(쿨러 성능)의 지금 값 — 업무 사건 카드의 근거 한 줄과 같은 자리
@@ -541,16 +545,10 @@ function renderUnits() {
       // 화면을 다시 열었는데 결함이 진행 중이면 그 과정을 이어서 보인다(한 번만 — 닫았으면 다시 열지 않는다)
       if (!labFollow && !renderUnits.resumed && state.incidentsRead && !handled && ((u.faults || []).includes(FAULT_UNIT.fault) || ['CANDIDATE', 'RAISED'].includes(phase))) { renderUnits.resumed = true; followFault(true); }
     }
-    card.querySelector('.ps1').textContent = fmt(t.PS1, 0) + ' bar';
-    card.querySelector('.fs1').textContent = fmt(t.FS1, 1) + ' L/min';
-    card.querySelector('.vs1').textContent = fmt(t.VS1, 2) + ' mm/s';
-    card.querySelector('.cp').textContent = fmt(t.CP, 1) + ' kW';
-    card.querySelector('.pump').textContent = s.pump ? `${s.pump}${s.pump === 'B' ? ` (${UI.t('plant.standby')})` : ''}` : '–';
-    card.querySelector('.health').textContent = fmt(s.cooler_health * 100, 0) + ' %';
     card.querySelector('.plc').textContent = UI.status(s.state) + (s.trip_text && s.trip_text !== '–' ? ' · ' + s.trip_text : '');
     card.querySelector('.ack').textContent = s.cmdId ? UI.status(s.result) + (s.reason ? ' · ' + s.reason : '') : UI.t('plant.none');
     card.querySelector('.ack').title = s.cmdId ? `${s.cmdId}${s.reason ? ' · ' + s.reason : ''}` : '';
-    card.querySelectorAll('[data-mode]').forEach(m => m.setAttribute('aria-pressed', String(m.dataset.mode === s.mode)));
+    const pickMode = card.querySelector('[data-mode-pick]'); if (document.activeElement !== pickMode && pickMode.value !== s.mode) pickMode.value = s.mode;
   }
 }
 /* 주입 뒤의 과정(디자인 기준 7절): 결함 주입 → 유온이 오름 → 감지기가 조건을 잡음 → 경보 → 처리 건 열림. 줄마다 그 사실이 실제로 일어났는지를 1초마다 확인하고,
@@ -627,6 +625,15 @@ async function unitAction(asset, act, mode, button) {
       if (state.tab === 'scenario') renderUnits();
       logLine(`${asset} ${b.title} 처리 건 시작 · 근거 ${b.pattern === 'PM_DUE' ? `운전 시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}${anchorNote(r)}`);
     }
+    else if (act === 'biz-event') {
+      const ev = (b.events || []).find(x => x.act === button.dataset.event);
+      if (!ev) throw new Error('이 단추의 상태를 다시 읽는 중입니다. 잠시 뒤 다시 누르세요');
+      if (!ev.enabled) { logLine(`[${ev.button}]을 지금 누를 수 없습니다 — ${ev.why || '까닭을 읽지 못했습니다'}`, true); return; }
+      const r = await postJ(API.process + ev.path, pressedBy());
+      logLine(`${asset} ${r.button} · 발주 ${r.purchase_order}의 납기를 ${r.days}일 늦췄습니다`);
+      await refreshBiz();
+      if (state.tab === 'scenario') renderUnits();
+    }
     else if (act === 'biz-reset') {
       state.biz = await postJ(API.process + `/api/scenario/${b.key}/reset`, pressedBy());
       logLine(`${asset} ${b.title} 초기화 — 업무 데이터를 처음 값으로 되돌렸습니다${anchorNote(state.biz)}`);
@@ -702,7 +709,7 @@ function renderScada() {
     if (!card) {
       card = el('div', 'ucard'); card.dataset.asset = asset; keyboardItem(card);
       card.innerHTML = `<header class="hc-head"><h2>${esc(asset)}</h2><span class="hc-state"></span></header>${unitSvg(asset)}`;
-      card.addEventListener('click', () => { state.selectedAsset = asset; state.showAll = false; state.incShown = UI.PAGE; renderScada(); renderIncList(); });
+      card.addEventListener('click', () => { state.selectedAsset = asset; renderScada(); renderIncList(); });
       box.append(card);
     }
     const t = u.tags, s = u.status, d = detOf(asset), st = unitState(s, d), running = s.state === 'RUN';
@@ -733,31 +740,20 @@ function renderScada() {
     `<p>감지기 <b>${esc(phaseText(d))}</b> · ${inc ? '<b>열린 처리 건이 있습니다</b>' : '열린 처리 건 없음'}${s.cmdId ? ` · ${esc(UI.t('plant.lastCmd'))} <b>${esc(UI.status(s.result))}</b>` : ''}</p>`;
   if (info._html !== html) { info.innerHTML = html; info._html = html; }
 }
-$('#btnAllInc').addEventListener('click', () => { state.showAll = true; state.incShown = UI.PAGE; renderIncList(); });
-// 이 설비의 경보로 열린 처리 건으로 가는 줄(또는 모든 설비). 줄은 처리 건 화면의 거르기와 같은 말(진행 중 / 처리 완료)만 하고 누르면 그 처리 건이 열린다 —
-// 처리 건의 상태 이름 · 색은 처리 건 화면이 정본이라 여기서 따로 부르지 않는다(같은 것을 두 이름으로 보이지 않는다)
+// 고른 설비의 경보로 열린 처리 건: 몇 건이고 그중 몇 건이 진행 중인지 한 줄 + 처리 건 화면으로 가는 링크 하나.
+// 처리 건의 목록 · 상태 이름 · 색은 처리 건 화면이 정본이다 — 이 화면에 그 목록의 사본을 두지 않는다(같은 것을 두 곳 · 두 이름으로 보이지 않는다)
 function renderIncList() {
   const box = $('#incList');
-  const sig = JSON.stringify([state.selectedAsset, state.showAll, state.incidents, state.incidentError, state.incShown, state.incidentsRead, UI.namesVersion]);
+  const sig = JSON.stringify([state.selectedAsset, state.incidents.map(i => [i.id, i.asset, i.terminal]), state.incidentError, state.incidentsRead]);
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
-  const narrowed = !!state.selectedAsset && !state.showAll;
-  const rows = narrowed ? incidentsFor(state.selectedAsset) : state.incidents;
-  const openN = rows.filter(i => !i.terminal).length;
-  $('#incListTitle').textContent = `${narrowed ? `${state.selectedAsset}의 경보로` : '모든 설비의 경보로'} 열린 처리 건 ${rows.length}건${rows.length ? ` · ${UI.t('inst.running')} ${openN} · 처리 완료 ${rows.length - openN}` : ''}`;
-  $('#btnAllInc').hidden = !narrowed || rows.length === state.incidents.length;      // 눌러도 바뀌는 것이 없으면 단추를 두지 않는다
-  const error = state.incidentError ? UI.errorBlock('처리 건 목록을 읽지 못했습니다', `${state.incidentError}${state.incidents.length ? ' — 마지막으로 읽은 목록입니다.' : ''}`) : '';
-  if (!rows.length) {
-    box.innerHTML = error || (!state.incidentsRead ? '<div class="skeleton" style="height:56px"></div>'
-      : UI.emptyGo(narrowed ? '이 설비의 경보로 열린 처리 건이 없습니다' : '경보로 열린 처리 건이 없습니다', '결함 시뮬레이션에서 결함을 넣으면 경보가 나고 처리 건이 열립니다.', 'scenario', `${UI.t('nav.scenario')} 열기`));
-    return;
-  }
-  const paged = UI.page(rows, state.incShown, () => false);
-  box.innerHTML = error + `<div class="rows">${paged.rows.map(inc => `<button type="button" class="row" data-open-incident="${esc(inc.id)}" title="${esc(inc.id)}"><span class="row-ic">${UI.icon(inc.terminal ? 'circle-check' : 'triangle-alert')}</span>` +
-    `<span class="row-title">${esc(inc.asset)} 처리 건 · 경보 ${esc(UI.dateTime(inc.created))}</span><span class="tag"${inc.terminal ? '' : ' data-tone="brand"'}>${inc.terminal ? '처리 완료' : esc(UI.t('inst.running'))}</span>` +
-    `<span class="row-meta">${inc.closed ? `${esc(UI.dateTime(inc.closed))} 처리 완료` : '처리 건에서 이어서 봅니다'}</span></button>`).join('')}</div>` +
-    (paged.rest ? `<p>${UI.moreButton(paged.rest)}</p>` : '');
-  box.querySelector('[data-more]')?.addEventListener('click', () => { state.incShown += UI.PAGE; renderIncList(); });
+  const asset = state.selectedAsset, rows = asset ? incidentsFor(asset) : state.incidents, open = rows.filter(i => !i.terminal);
+  if (state.incidentError && !state.incidents.length) { box.innerHTML = UI.errorBlock('처리 건 목록을 읽지 못했습니다', state.incidentError); return; }
+  if (!state.incidentsRead) { box.innerHTML = '<div class="skeleton" style="height:44px"></div>'; return; }
+  const go = open.length ? `data-open-incident="${esc(open[0].id)}"` : 'data-go-tab="instances"';
+  box.innerHTML = `<div class="case-link"><span>${UI.icon('inbox')}<span>${asset ? `${esc(asset)}의 경보로` : '경보로'} 열린 처리 건 <b class="num">${rows.length}</b>건${rows.length ? ` · ${esc(UI.t('inst.running'))} <b class="num">${open.length}</b>` : ''}</span></span>` +
+    (rows.length ? `<button type="button" class="btn" data-variant="link" ${go}>${open.length ? '진행 중인 처리 건 열기' : '처리 건에서 보기'}${UI.icon('arrow-right')}</button>`
+      : `<button type="button" class="btn" data-variant="link" data-go-tab="scenario">${esc(UI.t('nav.scenario'))}에서 결함 넣기${UI.icon('arrow-right')}</button>`) + '</div>';
 }
 
 /* ---------------- 실시간 모니터링: 설비 카드 셋 + 추이 판(uPlot) — 디자인 기준 5-5 ----------------

@@ -93,10 +93,14 @@ def test_규칙_판단은_설비_목록을_서버에서_읽고_긴_첫_문장은
         page.wait_for_selector('#decResult .panel-head h2', timeout=8000)
         assert [body for url, body in sent if url.endswith('/api/agent/decide')] == [{'asset': 'PRESS-08', 'pattern': 'SEAL_WEAR', 'facts': {}}]
         assert page.inner_text('#decResult .panel-head h2') == '씰 마모 — 후보 3장 모두 규정상 제외됐다.'
-        # 나머지 설명문은 버리지 않되 첫 화면에 줄글로 펼치지 않는다 — 「판단 엔진 설명 전문」 접기 안에 있고 접혀서 시작한다
+        # 나머지 설명문은 버리지 않되 첫 화면에 줄글로 펼치지 않는다 — 결과 아래의 하나뿐인 접기(「자세히 보기」)의 「원문」 보기 안에 있고 접혀서 시작한다
         fold = page.locator('#decResult details', has=page.locator('.result-sub'))
         assert 'SOP-X-3 조치 3' in fold.locator('.result-sub').text_content() and fold.evaluate('d => d.open') is False
-        assert '판단 엔진 설명 전문' in fold.locator('summary').inner_text()
+        assert page.locator('#decResult details').count() == page.locator('#decResult details.raw').count() + page.locator('#decResult .hitl-opts details').count() + page.locator('#decResult .panel-sec > details').count()      # 근거 줄 사이에 따로 선 접기가 없다
+        assert fold.locator('summary').first.inner_text().strip() == '자세히 보기'
+        fold.locator('summary').first.click(); page.click('#decResult [data-dec-pane="raw"]')
+        shown = page.inner_text('#decResult [data-dec-body="raw"]')
+        assert '판단 엔진 설명 전문' in shown and 'SOP-X-3 조치 3' in shown and page.locator('#decResult [data-dec-body="inputs"]').is_hidden()
     finally:
         close()
 
@@ -199,8 +203,13 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
         title, body = trial('fan')
         assert title.startswith('B만 판단에 이르지 못했습니다') and '판단 시스템 도구 서버가 없어' in title and 'hyd-dmn' not in body
         # 이 시험이 무엇을 하지 않는지: 스킬 문서의 뜻을 읽지 않는다 · 지금 이상 값이 없으면 보류한다
+        # 보류 조건은 시나리오 칸 아래에 늘 보이고, 스킬 문서를 어떻게 다루는지는 스킬을 고르는 접기(「B에서 빼 보기」)를 펼치면 그 목록 아래에 있다
         form = page.inner_text('#compareView form')
-        assert '스킬 문서는 뜻을 읽지 않습니다' in form and '지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다' in form
+        assert '지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다' in form
+        if not page.evaluate("document.querySelector('#compareView [data-cmp-drop]').open"):      # 뺀 것이 있으면 이미 펼쳐져 있다
+            assert '스킬 문서는 뜻을 읽지 않습니다' not in form
+            page.click('#compareView [data-cmp-drop] > summary')
+        page.wait_for_function("document.querySelector('#compareView [data-cmp-drop]').innerText.includes('스킬 문서는 뜻을 읽지 않습니다')", timeout=5000)      # 접기가 펼쳐지는 움직임이 끝난 뒤에 보인다
 
         # 지난 시험과 비교: 고르기 줄이 무엇의 시험인지 말하고, 서로 다른 시나리오의 시험 둘은 견주지 않는다
         page.locator("#compareView [data-act='history']").click()

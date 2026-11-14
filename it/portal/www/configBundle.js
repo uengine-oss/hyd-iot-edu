@@ -71,9 +71,9 @@
     const part = (icon, title, note, body) => `<div class="panel-sec"><h3>${UI.icon(icon)}${title}</h3><p class="muted">${note}</p>${body}</div>`;
     const foot = (button, msgId) => `<footer class="form-foot"><span class="muted" id="${msgId}" role="status"></span>${button}</footer>`;
     el.innerHTML = '<div class="panel-sec"><div id="studentCasesView"></div></div>' +
-      part('download', '출발본 내보내기', '지금 내가 만든 구성을 파일 하나로 받습니다. 기본 제공 에이전트 · 스킬 · 도구 서버와 비밀값은 들어가지 않습니다. 기본 제공 흐름은 지금 배포된 판본이 함께 담깁니다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문입니다).',
+      part('download', '출발본 내보내기', '내가 만든 구성을 파일 하나로 받습니다. 기본 제공 에이전트 · 스킬 · 도구 서버와 비밀값은 담기지 않습니다.',
         foot(`<button type="button" class="btn" data-variant="outline" id="cfgExport">${UI.icon('download')}파일 받기</button>`, 'cfgExportMsg')) +
-      part('upload', '출발본 불러오기', '받은 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
+      part('upload', '출발본 불러오기', '출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일대로 다시 세웁니다.',
         `<div role="group" class="field"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div>
           <div id="cfgSecrets"></div>` +
           foot(`<button type="button" class="btn" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}불러오기</button>`, 'cfgImportMsg') +

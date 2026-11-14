@@ -6,7 +6,7 @@
    그 목표로 다시 판정한다. 지식 그래프의 목표값은 그대로이고 "원래대로"는 시험 목표를 비운다.
    상태 이름 · 기간 이름 · 사유 문장은 서버(kpi.py STATUS · PERIODS · DEFINITIONS)가 학생 말로 보낸 것을 그대로 쓴다(화면 사본 없음).
    짜임(결론 먼저 · 근거 다음 · 원문 접기): 제목 · 한 문장 · 기간 고르기 → 결론(지표 몇 개 가운데 미달 · 달성 몇 개) → (연 것이 있으면) 미달 원인 찾기 →
-   관점마다 판 하나(목표별 지표 표: 지표 · 실적 · 목표 · 달성률 · 판정) → 접기 둘(목표값 바꿔 보기 · 계산 정의 표). 계산 근거는 그 지표의 [계산 근거]를 눌렀을 때 줄 아래에 열린다. */
+   관점마다 계산된 지표의 카드 격자(이름 · 실적 · 목표와 달성률 · 판정) → 접기 셋(계산할 수 없는 지표 · 목표값 바꿔 보기 · 계산 정의). 계산 근거는 그 카드의 [계산 근거]를 누르면 옆 판으로 열린다. */
 (function () {
   const TONE = { met: 'success', missed: 'danger', no_target: 'neutral', incomparable: 'neutral', partial: 'warning', no_data: 'neutral', unavailable: 'neutral', error: 'danger' };
   let STATUS = {};                                     // 서버 summary.labels (첫 응답에서 받는다)
@@ -50,20 +50,31 @@
     if (per.length) rows.push(['설비별', per.map(([a, v]) => `${escH(a)} ${num(v)}${m.perAssetMet && m.perAssetMet[a] === false ? ' (미달)' : ''}`).join(' · ')]);
     return kv(rows) + table(m.detail);
   }
-  function measureRow(st, m) {
-    const [roleLabel, roleHelp] = ROLE[m.kpiRole] || ['', ''];
+  /* 지표 카드 하나(계산된 지표만): 이름 · 큰 실적 · 목표와 달성률 한 줄 · 판정 뱃지. 누르면 계산 근거가 옆 판으로 열린다. 미달이면 [원인 찾기] */
+  const calcOk = m => !['unavailable', 'no_data', 'error'].includes(m.status);
+  function measureCard(st, m, objective) {
+    const [roleLabel] = ROLE[m.kpiRole] || [''];
     const unit = escH(unitText(m.displayUnit || m.unit));
-    const o = m.original;          // B5: 시험 목표가 걸린 지표 — 원래 목표 · 원래 판정을 그 줄의 둘째 줄에
-    const trial = o ? `<small>시험 목표 적용 중 — 원래 목표 ${o.target == null ? '없음' : num(o.target) + ' ' + escH(unitText(m.unit))} · 원래 판정 ${escH(STATUS[o.status] || o.status)}${o.rate == null ? '' : ` (달성률 ${num(o.rate)} %)`}</small>` : '';
-    const open = st.openMeasure === m.id, hasBasis = m.status !== 'unavailable';
-    const actions = (m.status === 'missed' ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-kpi-trace="${escH(m.id)}">원인 찾기</button>` : '') +
-      (hasBasis ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-kpi-basis="${escH(m.id)}" aria-expanded="${open}">${open ? '근거 닫기' : '계산 근거'}</button>` : '');
-    return `<tr data-kpi="${escH(m.id)}"><td>${escH(m.name)}${roleLabel ? `<small title="${escH(roleHelp)}">${escH(roleLabel)}</small>` : ''}${m.reason ? `<small>${escH(m.reason)}</small>` : ''}${trial}</td>` +
-      `<td class="num">${m.value == null ? '–' : `${num(m.value)} ${unit}`}</td><td class="num">${m.target == null ? '–' : `${num(m.target)} ${escH(unitText(m.unit))}`}</td>` +
-      `<td class="num">${m.rate == null ? '–' : num(m.rate) + ' %'}</td>` +
-      `<td>${m.status === 'missed' || m.status === 'error' ? chip(STATUS[m.status] || m.status, TONE[m.status]) : escH(STATUS[m.status] || m.status)}</td>` +
-      `<td>${actions}</td></tr>` +
-      (open && hasBasis ? `<tr class="kpi-more"><td colspan="6">${basis(m)}</td></tr>` : '');
+    const o = m.original;          // B5: 시험 목표가 걸린 지표 — 원래 목표 · 원래 판정을 카드 아래 한 줄에
+    const judged = m.status === 'met' || m.status === 'missed';
+    const tag = judged || m.status === 'partial' ? chip(STATUS[m.status] || m.status, TONE[m.status]) : `<span class="badge" data-variant="secondary">${escH(STATUS[m.status] || m.status)}</span>`;
+    const line = [m.target == null ? '' : `목표 ${num(m.target)} ${escH(unitText(m.unit))}`, m.rate == null ? '' : `달성률 ${num(m.rate)} %`].filter(Boolean).join(' · ');
+    return `<article class="kpi-card" data-kpi="${escH(m.id)}" data-status="${escH(m.status)}"><header><h4 title="${escH(objective)}">${escH(m.name)}</h4>${tag}</header>` +
+      `<p class="kpi-val num">${m.value == null ? '–' : num(m.value)}<small>${unit}</small></p><p class="kpi-goal muted num">${line || escH(roleLabel)}</p>` +
+      (o ? `<p class="kpi-note">시험 목표 적용 중 · 원래 ${o.target == null ? '목표 없음' : '목표 ' + num(o.target)} · ${escH(STATUS[o.status] || o.status)}</p>` : m.reason ? `<p class="kpi-note" title="${escH(m.reason)}">${escH(m.reason)}</p>` : '') +
+      `<footer>${m.status === 'missed' ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-kpi-trace="${escH(m.id)}">${UI.icon('search')}원인 찾기</button>` : ''}` +
+      `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-kpi-basis="${escH(m.id)}" aria-haspopup="dialog">계산 근거${UI.icon('chevron-right')}</button></footer></article>`;
+  }
+  // 계산 근거 옆 판: 지표 이름 · 관점과 목표 · 식 · 원천 · 읽은 행
+  function basisSheet(st) {
+    const hit = st.openMeasure && st.data ? st.data.perspectives.flatMap(p => p.objectives.flatMap(o => o.measures.map(m => ({ p, o, m })))).find(x => x.m.id === st.openMeasure) : null;
+    if (!hit) return '';
+    const { p, o, m } = hit, [roleLabel, roleHelp] = ROLE[m.kpiRole] || ['', ''];
+    return `<dialog class="sheet" data-kpi-sheet aria-label="계산 근거"><header class="sheet-head"><div><h2>${escH(m.name)}</h2><p class="muted">${escH(p.name)} › ${escH(o.name)}</p></div>` +
+      `<button type="button" class="btn" data-variant="ghost" data-size="icon" data-kpi-sheet-close aria-label="닫기" data-tooltip="닫기" data-side="left">${UI.icon('x')}</button></header>` +
+      `<div class="sheet-body">${kv([['실적', m.value == null ? '–' : `${num(m.value)} ${escH(unitText(m.displayUnit || m.unit))}`], ['목표', m.target == null ? '없음' : `${num(m.target)} ${escH(unitText(m.unit))}`], ['달성률', m.rate == null ? '' : num(m.rate) + ' %'],
+        ['판정', escH(STATUS[m.status] || m.status)], ['지표 종류', roleLabel ? `${escH(roleLabel)} <span class="muted">— ${escH(roleHelp)}</span>` : ''], ['받치는 목표', o.supports.map(x => escH(x.name)).join(' · ')], ['까닭', m.reason ? escH(m.reason) : '']])}` +
+      `<h3 class="kpi-sheet-h">계산 근거</h3>${basis(m) || '<p class="muted">계산 근거가 기록되지 않았습니다.</p>'}</div></dialog>`;
   }
 
   /* ---------------- 역추적 ---------------- */
@@ -139,20 +150,25 @@
       const head = `<section class="panel kpi-result result"><p class="result-label">결론</p>` +
         `<p class="result-main">지표 ${s.total}개 가운데 ${chip(`미달 ${s.missed}개`, s.missed > 0 ? 'danger' : 'neutral')} ${chip(`달성 ${s.met}개`, s.met > 0 ? 'success' : 'neutral')}</p>` +
         `<p class="result-sub">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''}</p>` +
-        kv([['목표 판정 없음', noVerdict ? `${noVerdict}개 <span class="muted">(목표 없음 ${s.no_target} · 단위가 달라 판정 안 함 ${s.incomparable} · 부분 실적 ${s.partial})</span>` : ''],
-          ['계산 불가 · 기록 없음', noCalc ? `${noCalc}개 <span class="muted">(원천 없음 ${s.unavailable} · 기록 없음 ${s.no_data} · 조회 실패 ${s.error})</span>` : '']]) + '</section>';
-      const persp = d.perspectives.map(p => `<section class="panel kpi-persp"><div class="panel-head"><h2>${escH(p.name)}</h2></div>${p.objectives.map(o =>
-        group(`${escH(o.name)}${o.supports.length ? ` <span class="muted">→ 받치는 목표: ${o.supports.map(x => escH(x.name)).join(' · ')}</span>` : ''}`,
-          `<div class="table-container"><table class="table kpi-table"><thead><tr><th>지표</th><th class="num">실적</th><th class="num">목표</th><th class="num">달성률</th><th>판정</th><th></th></tr></thead><tbody>${o.measures.map(m => measureRow(st, m)).join('')}</tbody></table></div>`)).join('')}</section>`).join('');
+        (noVerdict || noCalc ? `<p class="muted kpi-rest">${[noVerdict ? `목표로 판정하지 않은 지표 ${noVerdict}개` : '', noCalc ? `계산할 수 없는 지표 ${noCalc}개` : ''].filter(Boolean).join(' · ')}</p>` : '') + '</section>';
+      // 관점마다 계산된 지표의 카드 격자. 계산할 수 없는 지표(원천 없음 · 기록 없음 · 조회 실패)는 맨 아래 접기 한 곳의 표로 — 「값이 없습니다」가 화면을 채우지 않게
+      const persp = d.perspectives.map(p => {
+        const cards = p.objectives.flatMap(o => o.measures.filter(calcOk).map(m => measureCard(st, m, o.name)));
+        return cards.length ? `<section class="kpi-persp" aria-label="${escH(p.name)}"><div class="sec-head"><h2>${escH(p.name)}</h2><span class="muted num">${cards.length}</span></div><div class="kpi-grid">${cards.join('')}</div></section>` : '';
+      }).join('');
+      const dead = d.perspectives.flatMap(p => p.objectives.flatMap(o => o.measures.filter(m => !calcOk(m)).map(m => `<tr data-kpi="${escH(m.id)}"><td>${escH(m.name)}</td><td>${escH(p.name)}</td><td>${m.status === 'error' ? chip(STATUS[m.status] || m.status, 'danger') : escH(STATUS[m.status] || m.status)}</td><td>${escH(m.reason || (m.definition || {}).reason || '')}</td></tr>`)));
+      const deadFold = dead.length ? `<details class="fold" data-kpi-dead><summary>계산할 수 없는 지표<span class="muted num">${dead.length}</span></summary><div class="fold-body"><div class="table-container"><table class="table kpi-dead"><thead><tr><th>지표</th><th>관점</th><th>상태</th><th>까닭</th></tr></thead><tbody>${dead.join('')}</tbody></table></div></div></details>` : '';
       const defs = `<div class="table-container"><table class="table"><thead><tr><th>지표</th><th class="num">목표</th><th>원천 (표 · 열)</th><th>식 또는 계산 불가 사유</th></tr></thead><tbody>${all.map(m => {
         const df = m.definition || {};
         const src = (df.sources || []).map(x => `${escH(x.system)} <code>${escH(x.table)}</code> ${escH(x.columns)}`).join('<br>') || '–';
         return `<tr><td>${escH(m.name)}</td><td class="num">${m.target == null ? '–' : num(m.target) + ' ' + escH(unitText(m.unit))}</td><td>${src}</td><td>${df.kind === 'unavailable' ? '계산 불가: ' + escH(df.reason) : escH(df.formula)}</td></tr>`;
       }).join('')}</tbody></table></div>`;
-      body = head + errorsHtml(d.sourceErrors) + trialNotice(st, d) + tracePanel(st) + persp + trialPanel(st, all) +
-        UI.fold(`지표별 계산 정의 표 <span class="muted">${all.length}개 · 원천과 식</span>`, defs);
+      body = head + errorsHtml(d.sourceErrors) + trialNotice(st, d) + tracePanel(st) + (persp || UI.empty({ icon: 'gauge', title: '이 기간에 계산된 지표가 없습니다', sub: '기간을 넓히거나, 처리 건이 끝난 뒤 다시 읽으세요.' })) +
+        `<div class="kpi-folds">${deadFold}${trialPanel(st, all)}${UI.fold(`지표별 계산 정의<span class="muted num">${all.length}</span>`, defs)}</div>` + basisSheet(st);
     }
-    el.innerHTML = UI.pageHead('kpi', { sub: '관점과 목표마다 지표의 실적 · 목표 · 달성 여부를 보고, 미달의 원인을 처리 건까지 따라갑니다.', more: [{ act: 'reload', attrs: 'data-kpi-reload' }] }) + tools + body;
+    el.innerHTML = UI.pageHead('kpi', { sub: '지표의 실적과 달성 여부를 보고, 미달의 원인을 처리 건까지 따라갑니다.', more: [{ act: 'reload', attrs: 'data-kpi-reload' }] }) + tools + body;
+    const sheet = el.querySelector('[data-kpi-sheet]');
+    if (sheet) { sheet.showModal(); sheet.addEventListener('close', () => { if (st.openMeasure) { st.openMeasure = null; render(st); } }); }
   }
 
   async function load(st) {
@@ -204,7 +220,8 @@
       if (t) { openTrace(st, t.dataset.kpiTrace); return; }
       if (e.target.closest('[data-kpi-close]')) { st.trace = null; render(st); return; }
       const b = e.target.closest('[data-kpi-basis]');
-      if (b) { st.openMeasure = st.openMeasure === b.dataset.kpiBasis ? null : b.dataset.kpiBasis; render(st); return; }
+      if (b) { st.openMeasure = b.dataset.kpiBasis; render(st); return; }
+      if (e.target.closest('[data-kpi-sheet-close]') || e.target.matches('[data-kpi-sheet]')) { st.openMeasure = null; render(st); return; }
       if (e.target.closest('[data-kpi-trial-run]')) {
         st.trialOpen = true; st.applied = {};
         for (const [k, v] of Object.entries(st.targets)) if (v !== '' && v != null) st.applied[k] = Number(v);

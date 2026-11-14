@@ -165,6 +165,8 @@ const UI = {
     // 흐름도 (정의 이름 → 화면 이름, UIUX_PLAN §4)
     'flow.lane.agent': '에이전트', 'flow.lane.human': '담당자', 'flow.lane.system': '시스템',
     'flow.name.경보 수신': '설비 경보', 'flow.name.원인 진단': '원인 진단', 'flow.name.조치 후보 조회': '조치 후보 조회', 'flow.name.규정 검토': '규정 검토', 'flow.name.우선순위 · 카드 작성': '조치 후보 정리',
+    // 옛 판본으로 돈 처리 건은 옛 단계 이름을 갖는다 — 지금 이름으로 보인다
+    'flow.name.재관측': '효과 확인', 'flow.name.작업지시 등록': '정비 요청 등록', 'flow.name.결과 보고: 거절': '결과 보고: 반려', 'flow.name.거절 종결': '반려 종결',
     'flow.name.조치 카드 선택 (HITL)': '조치 선택', 'flow.name.상급자 호출': '책임자 확인', 'flow.name.PLC 명령 발행': '설비에 명령', 'flow.name.재관측 (15분)': '효과 확인 (15분)', 'flow.name.정비 작업지시': '정비 요청',
     'flow.name.선택 시간 초과': '선택 시간 초과', 'flow.name.종결': '종결', 'flow.name.에스컬레이션 종료': '책임자 확인으로 종료',
     'flow.name.즉시 제어 포함?': '설비 제어가 있나?', 'flow.name.회복?': '회복됐나?',
@@ -184,6 +186,10 @@ const UI = {
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace('{' + k + '}', v);
     return s;
   },
+  // 끝 이벤트의 이름이 이런 말이면 「어디서 끝났는지」로 따로 보일 것이 없다(그냥 처리 완료다) — 「처리 건은 「처리 완료」에서 끝났습니다」 같은 문장을 만들지 않는다.
+  // 처리 건 목록(instances.js) · 단계 기록(caseRecord.js) · 결과 보고(resultReport.js)가 이 한 곳을 쓴다
+  PLAIN_ENDS: new Set(['끝', '종료', '완료', '처리 완료', 'end', 'End', '']),
+  plainEnd(name) { return this.PLAIN_ENDS.has(String(name ?? '').trim()); },
   /* definition names (process definition JSON) → display names; the definition itself is not changed */
   flowName(name) { return this.terms['flow.name.' + name] || name; },
   // 조건식 이름(교대 흐름의 sender_decision == 'approve')은 그림에 사람 말로 보인다 — 「인계자 승인」

@@ -42,7 +42,7 @@
     outcome: ['처리 결과', 'outcome'], title: ['보고 제목', 'text'], summary: ['보고 내용', 'textarea'], notify: ['추가 보고 대상', 'array'],
     mail: ['공지 메일', 'object'], component: ['정비할 부품', 'component'], sop: ['조치 방법', 'text'],
     work_order_var: ['정비 요청이 담긴 값', 'text'], purchase_order_var: ['발주가 담긴 값', 'text'],
-    immediate: ['바로 입고 처리', 'boolean'], criteria: ['확인 기준', 'object'], settle: ['안정될 때까지 기다릴 시간', 'text'],
+    criteria: ['확인 기준', 'object'], settle: ['안정될 때까지 기다릴 시간', 'text'],
     reset_counter: ['통과하면 운전시간 초기화', 'boolean'], window_var: ['정비 예정 시간이 담긴 값', 'text']
   };
   function configValue(key, raw) {
@@ -204,7 +204,7 @@
   function drawHead() {
     const item = itemOf(S.sel), head = $('flowHead'); if (!item || !head) return;
     const p = S.view && S.view.parsed, st = window.hydDefinitionDeploy.status();
-    const state = item.deployed ? tag(`운영 중 · 판본 ${item.deployed}`, 'ok') : stateTag(item);
+    const state = item.deployed ? tag('운영 중', 'ok') + tag(`판본 ${item.deployed}`, '', true) : stateTag(item);      // 상태(점 있는 이름표)와 판본(종류 뱃지)을 한 뱃지에 섞지 않는다
     const what = S.viewError ? '' : p ? `단계 ${p.tasks.length}개 · 갈림 ${p.gateways.length}개 · 연결선 ${p.flows.length}개${item.mine && S.view.file_name ? ` · ${S.view.file_name}` : ''}.`
       : item.draft ? '단계 설정을 읽는 중입니다.' : '그림 파일 없이 정의로 등록된 흐름입니다. 단계 설정은 정의에 들어 있어 여기서 고치지 않습니다.';
     const start = st ? (st.alert_entry ? `경보(${(st.alert_patterns || []).map(x => UI.patternName(x)).join(' · ') || '시작 조건의 경보'})가 나면 시작합니다.` : '직접 시작하는 흐름입니다 — 배포 없이, 등록한 판본으로 엽니다.') : '';
@@ -362,14 +362,33 @@
     if (fold.dataset.for !== item.id) { fold.dataset.for = item.id; fold.open = !S.view.class_flow; }      // 내가 가져온 흐름은 펼쳐서, 기본 제공은 접어서 연다
     renderEditor();
   }
+  /* 기본 제공 흐름의 단계 설정은 읽기 전용 표다(고칠 수 없는 것을 꺼진 입력 칸 수십 개로 그리지 않는다): 이름–값 한 벌(흐름 이름 · 시작 조건 · 칸마다의 역할)
+     → 단계 표(단계 · 종류 · 누가 · 기한) → 갈림 표(갈림 · 가는 곳 · 조건). 고쳐 쓰려면 그림을 받아 bpmn.io 에서 고친 뒤 다른 이름으로 가져온다 */
+  function readOnlyEditor(v, p, m) {
+    const start = m.start || {};
+    const agentName = id => { const a = S.cat.agents.find(x => x.id === id); return a && a.name && a.name !== a.id ? a.name : UI.who(id) !== id ? UI.who(id) : 'AI 에이전트'; };
+    const timers = {}; p.boundaries.forEach(b => { const host = p.tasks.find(t => t.id === b.attached_to), part = host && S.cat.parts.find(x => x.key === (m.tasks[host.id] || {}).part);
+      const iso = m.timers[b.id] || b.timer || (part && part.default_timer); if (host && iso) timers[host.id] = `${minutesOf(iso)}분 · ${b.name || '시간 초과'}`; });
+    const steps = p.tasks.map(t => { const tm = m.tasks[t.id] || {}, part = S.cat.parts.find(x => x.key === tm.part), lane = (p.lanes.find(l => l.id === t.lane) || {}).name;
+      const who = !part ? '–' : part.kind === 'agent' ? agentName(tm.agent || part.agent || '') : part.kind === 'service' ? '시스템' : tm.role || part.role || m.lanes[t.lane] || lane || '–';
+      return `<tr><td><b>${h(UI.flowName(t.name || '(이름 없음)'))}</b></td><td>${h(part ? partName(part) : '정해지지 않음')}</td><td>${h(who)}</td><td class="muted">${h(timers[t.id] || '')}</td></tr>`; }).join('');
+    const branches = p.gateways.filter(g => g.gateway_type === 'exclusiveGateway').flatMap(g => { const outs = p.flows.filter(f => f.source === g.id); if (outs.length < 2) return [];
+      return outs.map((f, i) => `<tr>${i ? '' : `<td rowspan="${outs.length}"><b>${h(UI.flowName(g.name || '(이름 없는 갈림)'))}</b></td>`}<td>${h(branchWords(m.flows[f.id] || {}) || UI.flowSeq(f.name) || f.name || '조건 없음')}</td><td>${h(UI.flowName(nodeName(f.target)))}</td></tr>`); }).join('');
+    const kv = [['흐름 이름', h(m.name || p.process.name || '')], ['시작', start.kind === 'alert' ? `경보로 시작 — ${(start.patterns || []).map(x => h(UI.patternName(x))).join(' · ') || '경보 종류 없음'}` : start.kind === 'human' ? `사람 입력으로 시작${(start.fields || []).length ? ` — ${start.fields.map(f => h(f.text || f.key)).join(' · ')}` : ''}` : '–'],
+      ...p.lanes.filter(l => m.lanes[l.id]).map(l => [`칸 「${h(l.name || '이름 없음')}」`, h(m.lanes[l.id])])];
+    return `<section aria-label="단계 설정" class="flow-editor flow-readonly"><dl class="kv">${kv.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join('')}</dl>
+      <div class="table-container"><table class="table"><thead><tr><th>단계</th><th>종류</th><th>누가</th><th>기한</th></tr></thead><tbody>${steps}</tbody></table></div>
+      ${branches ? `<div class="table-container"><table class="table"><thead><tr><th>갈림</th><th>조건</th><th>가는 곳</th></tr></thead><tbody>${branches}</tbody></table></div>` : ''}
+      <p class="muted">기본 제공 흐름은 읽기만 합니다. 고쳐 쓰려면 그림을 받아 bpmn.io에서 고친 뒤 다른 흐름 구분 이름으로 가져옵니다.</p></section>`;
+  }
   function renderEditor() {
     const v = S.view, p = v.parsed, m = S.mapping, box = $('flowEditor');
+    $('flowEditorSum').textContent = `단계 ${p.tasks.length} · 갈림 ${p.gateways.length}${v.class_flow ? '' : v.check && v.check.ok ? ' · 검사 통과' : ` · 고칠 곳 ${((v.check || {}).problems || []).length}`}`;
+    if (v.class_flow) { box.innerHTML = readOnlyEditor(v, p, m); drawRegister(); drawHead(); drawSteps(); return; }
     const start = m.start || {};
     const patterns = S.cat.patterns.map(pt => `<label class="pane-opt"><input type="checkbox" class="input" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}>${h(UI.patternName(pt))}</label>`).join('');
     const lanes = p.lanes.map(l => UI.field({ label: l.name || '(이름 없는 칸)', input: `<select data-lane="${h(l.id)}"><option value="">(고르지 않음)</option>${roleOpts(m.lanes[l.id] || '', false)}</select>` })).join('');
-    $('flowEditorSum').textContent = `단계 ${p.tasks.length} · 갈림 ${p.gateways.length}${v.class_flow ? ' · 읽기만' : v.check && v.check.ok ? ' · 검사 통과' : ` · 고칠 곳 ${((v.check || {}).problems || []).length}`}`;
     box.innerHTML = `<section aria-label="단계 설정" class="flow-editor">
-        ${v.class_flow ? infoBox('기본 제공 흐름이라 단계 설정은 읽기만 할 수 있습니다', '저장과 판본 등록은 하지 않습니다. 고쳐 쓰려면 그림을 받아 bpmn.io에서 고친 뒤 다른 흐름 구분 이름으로 가져옵니다.') : ''}
         <div data-editable-note></div>
         ${UI.section('흐름', UI.field({ label: '흐름 이름', input: `<input id="flowName" value="${h(m.name || p.process.name || '')}">` }))}
         ${UI.section('시작 조건', `
@@ -386,7 +405,6 @@
     fieldEditors(box);
     // 잠금은 칸 줄 편집기(fieldEditors)가 줄 · 단추를 그린 뒤에 건다 — 전에는 그 앞이라 시작 입력 · 출력 칸 줄이 잠기지 않았다(한바퀴3)
     const controls = 'section input, section select, section textarea, section button[data-add], section button[data-del]';
-    if (v.class_flow) box.querySelectorAll(controls).forEach(n => { n.disabled = true; });   // 기본 제공 흐름: 읽기만
     const editable = hydCourseAccess.handoverEditable;   // 수업 단계의 제공 교대 흐름: 서버가 정한 칸만 연다(W3-08) — PBL 이면 null
     if (!v.class_flow && editable && v.definition_id === hydCourseAccess.access?.importable_flow) {
       const agentOk = new Set(editable.agent_tasks || []);
@@ -761,8 +779,7 @@
       const d = await defOf(id, version);
       if (!slot.isConnected) return;
       if (d.alertPolicy) {
-        slot.innerHTML = `<p class="muted">경보로 시작하는 흐름입니다. ${item.deployed ? `운영 판본 ${h(item.deployed)}${h(window.hydWords.josa(String(item.deployed), '이/가'))} 배포되어 있어 경보가 나면 처리 건이 열립니다.` : '위 「판본 · 배포」에서 배포한 뒤 경보가 나면 처리 건이 열립니다.'} 경보는 유압 설비의 결함 시뮬레이션이나 오일 분석 입력으로 만듭니다.</p>` +
-          `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-go-tab="oil">오일 분석 입력${icon('arrow-right')}</button><button type="button" class="btn" data-variant="outline" data-go-tab="scenario">결함 시뮬레이션${icon('arrow-right')}</button></footer>`;
+        slot.innerHTML = `<footer class="form-foot"><span class="muted" role="status">${item.deployed ? '경보가 나면 처리 건이 열립니다.' : '배포한 뒤 경보가 나면 처리 건이 열립니다.'}</span><button type="button" class="btn" data-variant="outline" data-go-tab="oil">오일 분석 입력${icon('arrow-right')}</button><button type="button" class="btn" data-variant="outline" data-go-tab="scenario">결함 시뮬레이션${icon('arrow-right')}</button></footer>`;
         return;
       }
       const fields = (d.startForm && d.startForm.fields_json) || [], blocked = hydCourseAccess.startBlocked(id);
@@ -807,6 +824,10 @@
     S.el = el;
     $('flowImportOpen').addEventListener('click', openImport);
     $('flowReload').addEventListener('click', () => once('reload', null, async () => { S.defCache.clear(); await Promise.all([loadCatalog(), loadList()]); await window.hydDefinitionDeploy.reload(); }));
+    // 보기 탭: 흐름(목록 + 고른 흐름) · 경보별 운영 흐름
+    $('flowViews').addEventListener('click', e => { const b = e.target.closest('[data-flow-view]'); if (!b) return;
+      UI.markViewTab($('flowViews'), x => x === b);
+      document.querySelectorAll('#view-flows [data-flow-pane]').forEach(p => { p.hidden = p.dataset.flowPane !== b.dataset.flowView; }); });
     $('flowKind').addEventListener('click', e => { const b = e.target.closest('[data-flow-kind]'); if (b) { S.kind = b.dataset.flowKind; renderList(); } });
     $('flowList').addEventListener('click', e => {
       const row = e.target.closest('[data-open]');

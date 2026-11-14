@@ -633,7 +633,7 @@
   // 단계 기록이 그려진 뒤 처리 건 화면이 이 함수를 다시 부른다
   function place() {
     if (typeof document === 'undefined' || !T.host || !document.querySelector) return;
-    const slot = T.wid ? document.querySelector(`#instDetail li[data-step="${CSS.escape(T.wid)}"] [data-step-slot]`) : null;
+    const slot = T.wid ? document.querySelector(`#instDetail [data-step="${CSS.escape(T.wid)}"] [data-step-slot]`) : null;
     const home = T.home || (T.home = T.host.parentElement);
     const target = slot || home;
     if (target && T.host.parentElement !== target && !(T.host.contains(document.activeElement))) target.appendChild(T.host);

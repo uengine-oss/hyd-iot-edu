@@ -78,3 +78,42 @@ def test_갈림이_없는_남은_길은_끝까지_잇는다():
     view = {'definition': DEF, 'instance': {'status': 'RUNNING'}, 'workitems': [wi('T_agent', 'DONE', '01'), wi('T_approve', 'DONE', '02'), wi('T_cmd', 'IN_PROGRESS', '03')]}
     got = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out([m.nodes.map(n => [n.id, n.state]), m.end && m.end.id, m.fork])", view)
     assert got == [[['T_agent', 'done'], ['T_approve', 'done'], ['T_cmd', 'now']], 'E_end', None]
+
+
+FILE_XML = '<bpmn:definitions xmlns:bpmn="b" xmlns:bpmndi="d"><bpmn:process id="p"/><bpmndi:BPMNDiagram id="D"/></bpmn:definitions>'      # 배치 정보가 든 그림(자동 배치를 거치지 않는다)
+ASK = """const calls = [];
+fetch = async u => { calls.push(u); return { status: DATA.status, ok: DATA.status === 200, text: async () => DATA.xml }; };
+UI.need = async () => {}; window.hydBpmnLayout = { ensureLayout: async xml => ({ xml, laidOut: true }) };      // 브라우저 부품(자동 배치) 대역 — 정의에서 만든 그림은 이 길로 간다
+let got; try { const s = await hydFlow.xmlOf(DATA.def); got = { source: s.source, file: s.xml === DATA.xml, laidOut: !!s.laidOut }; } catch (e) { got = { error: e.message }; }
+out({ got, calls, back: hydFlow.defIdOf('task_x3a_draft'), seq: hydFlow.defIdOf('seq_x3a_0') });"""
+
+
+def ask(status, **more):
+    d = {'processDefinitionId': 'c3_cooling', 'version': '2', 'events': [{'id': 'ev:start', 'type': 'startEvent'}], 'gateways': [],
+         'activities': [{'id': 'task:draft', 'name': '초안', 'type': 'userTask'}], 'sequences': [{'id': 'seq:0', 'source': 'ev:start', 'target': 'task:draft'}], **more}
+    return run(FILES, ASK, {'def': d, 'status': status, 'xml': FILE_XML}, prelude="var API = { process: '' };")      # API 주소 표(app.js)의 대역
+
+
+def test_흐름_그림은_가져온_흐름이_아니어도_서버에_먼저_묻고_받은_그림의_id를_정의의_id와_잇는다():
+    """기본 제공 흐름에도 사람이 배치한 그림이 서버에 있다 — 전에는 정의에 bpmnImport 가 있을 때만 물어 기본 제공 흐름이 늘 자동 배치로 그려졌다.
+    서버는 그림의 id 를 xid 규칙(task:draft → task_x3a_draft)으로 바꿔 내주므로, 받은 그림을 쓸 때 정의의 모든 id 의 대응을 채워야 상태 표시와 누름이 그 단계를 찾는다."""
+    got = ask(200)      # bpmnImport 가 없는 흐름
+    assert got['calls'] == ['/api/flows/c3_cooling/versions/2/bpmn']
+    assert got['got'] == {'source': 'file', 'file': True, 'laidOut': False}
+    assert got['back'] == 'task:draft' and got['seq'] == 'seq:0'
+
+
+def test_서버에_그림이_없으면_정의에서_만들어_자동으로_놓고_그_밖의_실패는_오류로_드러낸다():
+    for status in (204, 404):
+        got = ask(status)
+        assert got['got'] == {'source': 'definition', 'file': False, 'laidOut': True} and len(got['calls']) == 1, (status, got)
+    assert ask(500)['got'] == {'error': '흐름 그림 원본을 읽지 못했습니다(500)'}
+
+
+def test_끝_이름이_처리_완료이면_어디서_끝났는지를_따로_말하지_않는다():
+    """새 판본의 끝 이벤트 이름은 「처리 완료」다 — 「처리 건은 「처리 완료」에서 끝났습니다」 같은 문장이 나오지 않게 한 곳(UI.plainEnd)에서 가른다."""
+    assert run(['ui.js'], "out(['처리 완료', '끝', ' 종료 ', '', null, '반려 종결', '책임자 확인으로 종료'].map(x => UI.plainEnd(x)))") == [True, True, True, True, True, False, False]
+
+
+def test_옛_판본으로_돈_처리_건의_옛_단계_이름은_지금_이름으로_보인다():
+    assert run(['ui.js'], "out(['재관측', '작업지시 등록', '결과 보고: 거절', '거절 종결', '원인 진단'].map(x => UI.flowName(x)))") == ['효과 확인', '정비 요청 등록', '결과 보고: 반려', '반려 종결', '원인 진단']

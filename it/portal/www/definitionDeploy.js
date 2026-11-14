@@ -24,7 +24,7 @@
     const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(nameOf(f.definition, f.name))}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다.</p>`).join('');
     $d('deployRoutes').innerHTML = (body ? `<div class="table-container"><table class="table"><thead><tr><th>경보</th><th>여는 흐름</th><th class="num">운영 판본</th>${marked ? '<th>구분</th>' : ''}</tr></thead><tbody>${body}</tbody></table></div>`
       : UI.empty('경보로 시작하는 흐름이 없습니다', '경보로 시작하는 흐름을 배포하면 어느 경보가 어느 흐름을 여는지 여기에 보입니다.')) + shadow;
-    $d('deployRoutesNote').textContent = r.reset_needed ? '내가 배포한 흐름이 경보를 엽니다' : '다음 경보부터 이 표대로 열립니다';
+    $d('deployRoutesNote').textContent = r.reset_needed ? '내가 배포한 흐름이 경보를 엽니다.' : '경보가 나면 이 표의 흐름과 판본으로 처리 건이 열립니다.';
   }
   const panel = hydDefinitions.task($d('definitionDeployPanel'), $d('deployMessage'), syncButtons), action = panel.run, message = panel.say;
   // 담당자 = 이 PC의 담당자(inbox.js me). 화면에 담당자 칸은 없고 숨은 칸(deployBy)에 이름만 둔다 — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
@@ -78,8 +78,8 @@
     const s = status;
     $d('deploySummary').textContent = s.deployed_version ? `운영 판본 ${s.deployed_version}` : '배포한 판본 없음';
     $d('deployStatus').innerHTML = `<p class="muted">${esc(s.alert_entry
-      ? `경보(${(s.alert_patterns || []).map(patName).join(' · ') || '시작 조건의 경보'})로 시작하는 흐름입니다. 배포하면 다음 경보부터 그 판본으로 처리 건이 열리고, 이미 열린 처리 건은 자기 판본으로 끝납니다.`
-      : '직접 시작하는 흐름입니다. 배포는 경보로 시작하는 흐름에만 필요합니다 — 이 흐름은 아래 「시작」에서 등록한 판본을 골라 엽니다.')}</p>`;
+      ? '배포한 판본이 다음 경보부터 처리 건을 엽니다. 이미 열린 처리 건은 자기 판본으로 끝납니다.'
+      : '직접 시작하는 흐름은 배포하지 않습니다.')}</p>`;
     // 다음에 배포할 판본(아직 배포하지 않은 가장 새 판본)에 표시만 단다 — 주 단추로 할지는 흐름 화면이 단계 줄에 맞춰 정한다(flows.js markPrimary).
     // 직접 시작하는 흐름에는 배포를 권하지 않는다(표시를 달지 않는다)
     const next = s.alert_entry ? [...s.versions].reverse().find(v => !v.deployed && v.deployable) : null;

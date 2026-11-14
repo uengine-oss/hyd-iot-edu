@@ -61,11 +61,10 @@
     return isSystemJob(x) ? 'file-text' : o.tone === 'danger' || o.verdict === 'rejected' || x.status === 'CANCELLED' ? 'circle-x' : 'circle-check';
   }
   // 끝난 건의 보조 줄: 「처리 완료」(결과는 같은 줄의 뱃지가 말한다). 결과 보고가 없는 건만 끝 이벤트의 이름을 덧붙인다 — 「끝」 같은 뜻 없는 이름은 적지 않는다
-  const PLAIN_END = new Set(['끝', '종료', '완료', 'end', 'End', '']);
   function endText(x) {
     const o = outcomeOf(x); if (!o) return '';
     const end = String(x.end_label || '').trim();
-    const word = !o.verdict && !PLAIN_END.has(end) && end !== o.label ? end : o.label;      // 결과 보고가 없는 건만 끝 이벤트의 이름으로 말한다
+    const word = !o.verdict && !UI.plainEnd(end) && end !== o.label ? end : o.label;      // 결과 보고가 없는 건만 끝 이벤트의 이름으로 말한다
     return word === o.label ? '처리 완료' : `처리 완료 · ${word}`;
   }
   // 지금 단계가 AI 에이전트의 단계인가(그 흐름 정의에서 읽은 것 — 이름으로 짐작하지 않는다)
@@ -274,13 +273,21 @@
   }
 
   /* ------------------------------------------------ 목록: 한 줄 = 무슨 사건인지(이름 · 설비) · 지금 상태 칩 하나 · 둘째 줄(시작 시각 · 지금 단계) */
-  function rowHtml(x, task) {
+  // 같은 날의 건은 날짜 묶음 머리(오늘 · 어제 · 11월 13일) 아래에 모이고, 줄에는 시각만 적는다(같은 이름이 열 줄 이어져도 날짜와 시각으로 가려진다)
+  const dayKey = t => { const d = new Date(t); return isNaN(d) ? '' : `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+  function dayLabel(t) {
+    const d = new Date(t); if (isNaN(d)) return '날짜 기록 없음';
+    const now = new Date(), y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    return dayKey(d) === dayKey(now) ? '오늘' : dayKey(d) === dayKey(y) ? '어제' : `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  }
+  const clock = t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  function rowHtml(x, task, short) {
     const names = I.defNames[`${x.proc_def_id}@${x.proc_def_version}`] || {};
     const step = task ? UI.flowName(task.activity_name)
       : x.attention ? (x.attention.steps || []).map(s => UI.flowName(typeof s === 'string' ? s : s.name)).join(' · ')
       : x.status === 'RUNNING' ? (x.current_activity_ids || []).map(id => UI.flowName(names[id] || id.replace(/^task:|^ev:/, ''))).join(' · ') : '';
     const due = task ? dueOf(task) : null;
-    const bits = [isSystemJob(x) ? '시스템 작업' : '', x.start_date ? `${UI.dateTime(x.start_date)} 시작` : '',
+    const bits = [isSystemJob(x) ? '시스템 작업' : '', x.start_date ? `${short ? clock(x.start_date) : UI.dateTime(x.start_date)} 시작` : '',
       step ? `${step} 단계` : x.status !== 'RUNNING' ? endText(x) : '', task ? who(task.user_id) : '', due ? `기한 ${UI.dateTime(due)}` : ''].filter(Boolean);
     const chip = task ? UI.chipText(turnWord(task), 'warning') : stateChip(x);
     return `<span class="row-ic">${UI.icon(rowIcon(x, task))}</span><span class="row-title">${esc(x.proc_inst_name || '이름 없는 처리 건')}</span>${chip}<span class="row-meta">${esc(bits.join(' · '))}</span>`;
@@ -329,8 +336,13 @@
     const ordered = rows.filter(x => mine.has(x.proc_inst_id) && x.status === 'RUNNING').concat(rows.filter(x => !(mine.has(x.proc_inst_id) && x.status === 'RUNNING')));
     const paged = UI.page(ordered, I.listShown, x => x.proc_inst_id === I.sel);
     setTimeout(() => { const cur = box.querySelector('.row[aria-current="true"]'); if (cur && box.scrollHeight > box.clientHeight && (cur.offsetTop < box.scrollTop || cur.offsetTop + cur.offsetHeight > box.scrollTop + box.clientHeight)) box.scrollTop = Math.max(0, cur.offsetTop - 8); }, 0);      // 목록이 잘리는 폭에서도 고른 줄이 보이게
-    paged.rows.forEach(x => add(x.proc_inst_id === I.sel, isSystemJob(x), rowHtml(x, null),
-      () => pick(x.proc_inst_id, x.proc_inst_id === I.sel ? I.taskSel : null), { inst: x.proc_inst_id }));   // 같은 이름의 처리 건(같은 설비 · 같은 흐름)을 처리 건 id로 구별한다
+    let group = null;
+    paged.rows.forEach(x => {
+      const g = mine.has(x.proc_inst_id) && x.status === 'RUNNING' ? '내가 할 일' : dayLabel(x.start_date);
+      if (g !== group) { group = g; box.appendChild(el('div', 'rows-group', esc(g))); }
+      add(x.proc_inst_id === I.sel, isSystemJob(x), rowHtml(x, null, g !== '내가 할 일'),
+        () => pick(x.proc_inst_id, x.proc_inst_id === I.sel ? I.taskSel : null), { inst: x.proc_inst_id });
+    });   // 같은 이름의 처리 건(같은 설비 · 같은 흐름)을 처리 건 id로 구별한다
     more(paged.rest);
   }
 
@@ -806,7 +818,7 @@
     if (I.skelFor !== pid || !box.querySelector('#casePath')) {
       box.innerHTML = `<header class="case-head"><div><h2 class="case-title"></h2><div class="case-meta"></div></div>
           <div class="dropdown-menu" id="caseMenu"><button type="button" class="btn" data-variant="outline" data-size="icon-sm" id="caseMenu-trigger" aria-haspopup="menu" aria-controls="caseMenu-menu" aria-expanded="false" aria-label="더 보기" data-tooltip="더 보기" data-side="left">${UI.icon('ellipsis')}</button>
-            <div id="caseMenu-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="caseMenu-menu" aria-labelledby="caseMenu-trigger"><div role="menuitem" id="instReload" data-case-act="reload">${UI.actHtml('reload')}</div>${alertIdOf(inst) ? `<div role="menuitem" data-id-copy="${esc(alertIdOf(inst))}">${UI.actHtml('copy', '경보 번호 복사')}</div>` : ''}<div role="menuitem" data-case-act="flow">${UI.icon('maximize-2')}전체 흐름 보기</div><div role="menuitem" data-case-act="more">${UI.icon('file-json')}자세한 기록 펼치기</div></div></div></div></header>
+            <div id="caseMenu-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="caseMenu-menu" aria-labelledby="caseMenu-trigger"><div role="menuitem" id="instReload" data-case-act="reload">${UI.actHtml('reload')}</div>${alertIdOf(inst) ? `<div role="menuitem" data-id-copy="${esc(alertIdOf(inst))}">${UI.actHtml('copy', '경보 번호 복사')}</div>` : ''}<div role="menuitem" data-case-act="flow">${UI.icon('maximize-2')}전체 흐름 보기</div><div role="menuitem" data-case-act="more">${UI.icon('file-json')}자세한 기록</div></div></div></div></header>
         <div id="todoPanel"></div><div id="caseTop"></div>
         <section aria-label="진행 길"><div class="sec-head"><h2>진행 길</h2><span class="muted" data-path-side></span></div><div id="casePath"></div><div id="caseNotes"></div></section>
         <section aria-label="단계 기록"><div class="sec-head"><h2>단계 기록</h2><span class="muted case-live" data-record-side></span></div><div id="instRecord"></div><div id="taskDetailPanel"></div></section>`;

@@ -44,7 +44,7 @@
       <div data-view="run">
         <div class="io"><form class="panel io-in" data-r="runform" aria-label="채점 조건"></form>
           <div class="io-out" aria-live="polite"><div data-r="live" hidden></div><div data-r="cands" hidden></div><div data-r="detail"></div>
-            <section class="panel"><div class="panel-head"><div><h2>지난 실행</h2><p>한 줄을 누르면 위에 그 실행의 결과가 열립니다.</p></div></div><div class="panel-sec" data-r="runs"></div></section></div></div>
+            <section class="panel"><div class="panel-head"><div><h2>지난 실행</h2></div></div><div class="panel-sec" data-r="runs"></div></section></div></div>
       </div>
       <div data-view="golden" hidden>
         <div class="io-out">
@@ -189,15 +189,16 @@
       : `채점할 항목: ${picked.length ? picked.map(it => it.title).join(' · ') : `정답표 전체 (${E.golden.length}개)`}`;
     const toGolden = (label) => `<button type="button" class="btn" data-variant="link" data-act="view" data-to="golden">${label}${UI.icon('arrow-right')}</button>`;
     q('[data-r="runform"]').innerHTML = `<div class="panel-head"><div><h2>채점 조건</h2></div></div><div class="panel-sec">` +
-      UI.section('무엇으로 판단하나',
-        UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: String(E.paths[path] || '') }) + // 경로 안내는 서버 문장(judgment_eval.PATH_NOTES) 그대로
-        (path === 'worker' ? '' : UI.field({ label: '반복 횟수', input: `<input data-f="repeats" type="number" min="1" max="${E.maxRepeats}" value="${esc(E.repeats || 1)}">`,
-          hint: '같은 항목을 여러 번 판단해 결과가 흔들리는지 봅니다. 모두 같으면 「N회 모두 같음」으로 보입니다.' })) +
-        UI.field({ label: UI.t('form.note'), input: `<input data-f="runNote" placeholder="예: 관계 하나 끊기 전">` })) +
+      // 고를 것(판단 경로)만 위에 둔다. 어느 경로가 AI 인지는 한 줄로 말하고, 고른 경로의 자세한 안내(서버 문장 judgment_eval.PATH_NOTES)는 그 줄의 도움말(올리면 나온다)에 둔다. 반복 횟수 · 메모는 기본값으로 접는다
+      `<div class="io-fields">${UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: 'AI가 판단하는 것은 「지난 처리 건」 하나입니다. 나머지 둘은 AI 모델 없이 계산합니다.' }).replace('<p class="field-hint">', `<p class="field-hint" data-eval-ai-note title="${esc(String(E.paths[path] || ''))}">`)}</div>` +
+      `<details class="fold io-more"${E.moreOpen ? ' open' : ''} data-eval-more><summary>더 정하기<span class="muted">반복 ${esc(E.repeats || 1)}회</span></summary><div class="fold-body io-fields">` +
+        (path === 'worker' ? '' : UI.field({ label: '반복 횟수', input: `<input data-f="repeats" type="number" min="1" max="${E.maxRepeats}" value="${esc(E.repeats || 1)}">`, hint: '여러 번 판단해 결과가 흔들리는지 봅니다.' })) +
+        UI.field({ label: UI.t('form.note'), input: `<input data-f="runNote" placeholder="예: 관계 하나 끊기 전">` }) + '</div></details>' +
       (E.golden.length ? note(`${esc(target)}${path === 'worker' ? '' : ' ' + toGolden('정답표에서 고르기')}`)
         : E.goldenError ? '' : note(`정답표가 비어 있어 채점할 수 없습니다. ${toGolden('정답표 적기')}`, ' role="status"')) +
       `<footer class="form-foot"><button type="button" class="btn" data-act="run" ${E.golden.length && !E.busy ? '' : 'disabled'}>${UI.icon('play')}채점 실행</button></footer>` + msgLine('run') +
-      `</div><div class="panel-sec">${note('세 판단 경로 가운데 AI가 판단하는 것은 「지난 처리 건」 하나입니다. 「규칙 판단」과 「규칙 읽기 평가」는 AI 모델 없이 판단 엔진만으로 계산합니다. 채점은 처리 건, 설비 명령, 기준 데이터를 바꾸지 않습니다.', ' data-eval-ai-note')}</div>`;
+      `</div>`;
+    q('[data-eval-more]')?.addEventListener('toggle', e => { E.moreOpen = e.target.open; });
     const cands = q('[data-r="cands"]'); cands.hidden = path !== 'worker'; cands.innerHTML = path === 'worker' ? renderCands() : '';
     showRunWait();
   }
@@ -280,14 +281,13 @@
   }
 
   /* ---------------------------------------------------------------- 3. 실행 기록 */
-  // 지난 실행: 목록의 줄(키트 .rows > .row). 줄을 누르면 위 결과 자리에 그 실행이 열린다
+  // 지난 실행: 표 한 장(시각 · 판단 경로 · 항목 · 평균 · 메모). 줄을 누르면(또는 Enter) 위 결과 자리에 그 실행이 열린다
   function renderRuns() {
     const host = q('[data-r="runs"]');
     if (!E.runs.length) { host.innerHTML = UI.empty('아직 채점 실행이 없습니다', '정답표를 적고 [채점 실행]을 누르면 여기에 남습니다.', 'compact'); return; }
-    host.innerHTML = `<div class="rows">${E.runs.map(r =>
-      `<button type="button" class="row" data-run="${esc(r.id)}"${r.id === E.sel ? ' aria-current="true"' : ''}><span class="row-ic">${UI.icon('clipboard-check')}</span>` +
-        `<span class="row-title">${esc(UI.dateTime(r.created))} · ${esc(PATH[r.path] || r.path)}</span><span class="badge" data-variant="secondary">평균 ${esc(r.summary.score)}점</span>` +
-        `<span class="row-meta">항목 ${esc(r.summary.items)}개${r.note ? ' · ' + esc(r.note) : ''}</span></button>`).join('')}</div>`;
+    host.innerHTML = `<div class="table-container"><table class="table eval-runs"><thead><tr><th>시각</th><th>판단 경로</th><th class="num">항목</th><th class="num">평균</th><th>메모</th></tr></thead><tbody>${E.runs.map(r =>
+      `<tr data-run="${esc(r.id)}" tabindex="0" role="button"${r.id === E.sel ? ' data-pick aria-current="true"' : ''}><td>${esc(UI.dateTime(r.created))}</td><td>${esc(PATH[r.path] || r.path)}</td><td class="num">${esc(r.summary.items)}</td><td class="num"><b>${esc(r.summary.score)}</b>점</td><td class="muted">${esc(r.note || '')}</td></tr>`).join('')}</tbody></table></div>`;
+    host.querySelectorAll('tr[data-run]').forEach(tr => tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tr.click(); } }));
   }
   // 검사 한 줄: 맞음 · 틀림은 상태 뱃지(점 + 글)로, 그 뒤에 판단과 정답
   function checkLine(key, c) {
