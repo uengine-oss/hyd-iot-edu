@@ -916,7 +916,7 @@ function renderDecision() {
   // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
   const unused = unusedFacts(ent.facts, trace);
   // 무엇을 가정하고 낸 결론인지 결론 바로 아래에 적는다 — 조건을 바꿔 가며 견줄 때 지금 보는 결과가 어느 조건의 것인지 헷갈리지 않게
-  const assumed = Object.entries(ent.facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${factValue(k, v)}`);
+  const assumed = Object.entries(ent.facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${k === 'standby_ready' ? (v ? '쓸 수 있음' : '정비 중') : factValue(k, v)}`);      // 예비 펌프는 고르기 칸의 말 그대로
   const notes = `<p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p>` + (rest ? `<p class="result-sub">${esc(rest)}</p>` : '') +
     (unused.length ? `<p class="muted" role="status">${esc(unused.map(k => UI.t(FACT_LABEL[k])).join(', '))}: 지금 지식의 규칙 가운데 이 조건을 읽는 규칙이 없어 결과에 영향이 없습니다.</p>` : '') +
     (d.moneyError ? `<p class="muted" data-tone="danger" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>` : '');
