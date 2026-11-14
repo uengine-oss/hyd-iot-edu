@@ -15,7 +15,7 @@ GOOD = {'citations': ['cause:a', 'evd:a', 'skill:x'], 'causes': [{'id': 'cause:a
     ({'freshness': {'ok': False, 'age_s': 90}}, '90초'),
     ({'cmdId': 'CMD-1'}, "설비 명령 칸 'cmdId'"),
     ({'causes': [{'id': 'cause:a', 'evidence': [{'id': 'evd:a', 'status': 'UNKNOWN', 'passed': None}]}]}, '판정이 미확인'),
-    ({'skills': [{'id': 'skill:y'}]}, '조치 방법 skill:y을(를) 인용하지 않았습니다'),
+    ({'skills': [{'id': 'skill:y'}]}, '조치 방법 skill:y를 인용하지 않았습니다'),
     ({'withheld': True}, '보류'),
 ], ids=['정상', '인용 없음', '오래된 데이터', '명령 칸', '미확인 근거', '조치 방법 미인용', '보류 카드'])
 def test_가이드_카드_가드레일은_어긴_것마다_한국어_사유를_낸다(change, needle):

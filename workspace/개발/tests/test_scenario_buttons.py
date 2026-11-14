@@ -52,9 +52,16 @@ def test_버튼_경보는_업무_감시와_같은_계약이고_누른_사람과_
 
 
 def test_같은_시나리오_처리_건이_진행_중이면_다시_누름을_거절한다(world):
-    _press(world, 'C')
-    with pytest.raises(sb.Refused, match='이미 진행 중입니다'):
+    started = _press(world, 'C')
+    with pytest.raises(sb.Refused, match='이미 진행 중입니다') as caught:
         sb.refusal('C', world.instance_mode.enterprise_read, world.rt, world.main._scenario_route)
+    # 어느 건인지 말하고(시작한 때), 화면에 없는 「카드의 '처리 중' 표시」가 아니라 있는 단추를 가리킨다
+    assert '시작)' in str(caught.value) and '[처리 건에서 보기]' in str(caught.value) and "'처리 중' 표시" not in str(caught.value), str(caught.value)
+    # 시작 단추의 거절 응답(409)이 그 건을 칸으로 싣는다
+    status, refused = world.api('POST', '/api/scenario/C/start', {'by': '담당자', 'user_id': 'user:me', 'roles': ['role:purchasing']}, source_loop=True)
+    assert status == 409 and refused['detail'] == str(caught.value), refused
+    assert refused['instance'] == caught.value.instance and refused['started_at'], refused
+    assert started is None or refused['instance'] == started, (refused, started)
 
 
 def test_시나리오_처리_건이_진행_중이면_초기화를_거절한다(world):

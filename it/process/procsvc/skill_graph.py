@@ -1,4 +1,5 @@
 """Atomic knowledge authoring with optimistic review and durable request receipts."""
+from hydcommon.words import josa, particle
 from copy import deepcopy
 import hashlib
 import json
@@ -62,7 +63,7 @@ def ensure_candidate_rule(tx, failure_mode):
         "MATCH (t:DecisionTable {id:'dt:action-candidates'}), (i:InputData {id:'in:failure-mode'}), (f:FailureMode {id:$fm}) "
         "OPTIONAL MATCH (t)-[:HAS_RULE]->(other:Rule) WITH t, i, f, coalesce(max(other.order), 0) + 1 AS ord "
         "CREATE (r:Rule {id:$id, order:ord, effect:'SELECT', `when`:i.variable + ' == ' + \"'\" + $fm + \"'\", "
-        "annotation:'「' + coalesce(f.name, $fm) + '」(으)로 판정되면 조치 방법 화면에서 이 고장 유형에 연결한 조치 방법을 후보로 낸다'}) "
+        "annotation:'「' + coalesce(f.name, $fm) + '」 판정이 나오면 조치 방법 화면에서 이 고장 유형에 연결한 조치 방법을 후보로 낸다'}) "
         "CREATE (t)-[:HAS_RULE]->(r) CREATE (r)-[:TESTS {operator:'==', value:$fm}]->(i) RETURN r.id AS id",
         id=failure_mode_rule_id(failure_mode), fm=failure_mode).data()
     if len(made) != 1:
@@ -79,7 +80,7 @@ def link_candidate_rules(tx, sid, failure_mode):
 
 
 def _relation_refused(rel):
-    return f"고장 유형과 조치 방법의 관계 '{rel}' 은(는) 쓸 수 없습니다 — 근본 조치 · 즉시 완화 · 예방 조치 가운데 고르세요"
+    return f"고장 유형과 조치 방법의 관계 '{rel}'{particle(rel, '은')} 쓸 수 없습니다 — 근본 조치 · 즉시 완화 · 예방 조치 가운데 고르세요"
 
 
 def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by):
@@ -126,7 +127,7 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
                 # 설비 명령 조치는 어떤 명령을 어떤 값으로 내는지(원자 조치)가 있어야 실행된다. 이 화면은 그 칸이 없어, 만들어도 승인 뒤 「실행할 조치
                 # 없음」으로 끝났다 — 저장을 받지 않고 길을 말한다.
                 raise ValueError('설비 명령 조치 방법은 이 화면에서 만들 수 없습니다 — 어떤 명령을 어떤 값으로 낼지(팬 속도 · 부하 등)는 원문 절차에서 '
-                                 '정하므로 [문서 등록]으로 넣으세요. 이 화면에서는 작업지시 조치 방법을 만듭니다')
+                                 '정하므로 [문서 등록]으로 넣으세요. 이 화면에서는 정비 요청 조치 방법을 만듭니다')
             performer='sys:cmms'
             for label,nid in [('FailureMode',values['failureMode']),('System',performer)]:
                 target=tx.run(f'MATCH (n:{label} {{id:$id}}) SET n.id=n.id RETURN n.id AS id',id=nid).data()
@@ -144,7 +145,7 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
             # 없으면 승인 뒤 흐름이 이 SOP 가 아니라 「선택한 조치 이후 정비 점검」이라는 일반 오더를 냈다.
             if len(tx.run("MATCH (k:Skill {id:$id}),(a:Action {code:'WO_CREATE'}) CREATE (k)-[:CONSISTS_OF {seq:1,value:$sop}]->(a) RETURN a.id AS id",
                           id=sid,sop=values['sopId']).data())!=1:
-                raise ValueError('정비 작업지시 동작(WO_CREATE)이 지식에 없거나 중복되어 생성하지 않았습니다')
+                raise ValueError('정비 요청 동작(WO_CREATE)이 지식에 없거나 중복되어 생성하지 않았습니다')
         elif values.get('failureMode'):
             rel=values.get('relation') or 'REMEDIED_BY'
             if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError(_relation_refused(rel))

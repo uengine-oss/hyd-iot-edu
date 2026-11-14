@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import re
 from copy import deepcopy
 
@@ -167,7 +168,7 @@ def validate_link(sop, link, *, sops, require_failure_mode):
         out['relation'] = link['relation']
     if link.get('kind') is not None:
         if link['kind'] not in SKILL_KINDS:
-            raise ValueError(f'{sop}: 조치 방법 종류는 설비 명령(control) 또는 작업지시(work_order)입니다')
+            raise ValueError(f'{sop}: 조치 방법 종류는 설비 명령(control) 또는 정비 요청(work_order)입니다')
         out['kind'] = link['kind']
     if link.get('approver') is not None:
         out['approver'] = _ref(link['approver'], 'role', f'{sop} 승인 역할')
@@ -486,7 +487,7 @@ def graph_semantics(plan, catalog):
                     elif p['supplier_policy'] == 'oem' and not any(s.get('oem') is True for s in available):
                         # 순정 여부는 공급사 노드의 oem 속성 하나로 본다(표시 이름 글자가 아니다 — 이름을 바꿔도 판정이 같다)
                         issue('PURCHASE_OEM_SOURCE_MISSING', p['id'], 'link.supplier_policy',
-                              f"{p['id']}: {part}을(를) 공급하는 순정(제조사) 공급사가 지식에 없습니다(공급사의 순정 표시 oem)")
+                              f"{p['id']}: {part}{particle(part, '을')} 공급하는 순정(제조사) 공급사가 지식에 없습니다(공급사의 순정 표시 oem)")
                 elif p.get('executable') and not p.get('supplier_policy'):
                     supplier = (p.get('actions') or [{}])[0].get('value')
                     if not any(s.get('supplier') == supplier for s in parts[part].get('suppliers') or []):
@@ -509,7 +510,7 @@ def graph_semantics(plan, catalog):
             elif act['code'] == 'PR_CREATE' and v not in suppliers and not (p.get('scope') == 'purchase' and p.get('supplier_policy') and v is None):
                 issue('SUPPLIER_NOT_FOUND', p['id'], 'link.actions', f"{where}: 구매요청 값은 공급사 id여야 합니다({v!r})")
             elif act['code'] in ('WO_CREATE','WO_RESCHEDULE') and v not in own_sops and v not in sops:
-                issue('SOP_NOT_FOUND', p['id'], 'link.actions', f"{where}: 작업지시 값은 SOP 번호여야 합니다({v!r})")
+                issue('SOP_NOT_FOUND', p['id'], 'link.actions', f"{where}: 정비 요청 값은 SOP 번호여야 합니다({v!r})")
             if act['kind'] == 'command' and p['kind'] != 'control':
                 issue('COMMAND_IN_WORK_ORDER', p['id'], 'link.actions', f"{where}: 설비 명령({act['code']})은 control 스킬에만 둡니다")
     for r in knowledge.get('rules') or []:

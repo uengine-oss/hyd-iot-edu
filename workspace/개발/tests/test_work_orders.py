@@ -24,7 +24,7 @@ def test_작업지시_요청은_승인한_카드의_조치_방법과_값으로_�
 
 
 @pytest.mark.parametrize('card, error', [
-    (dict(WO_CARD, actions=WO_CARD['actions'] * 2), '작업지시 동작이 둘 이상'),
+    (dict(WO_CARD, actions=WO_CARD['actions'] * 2), '정비 요청 동작이 둘 이상'),
     (dict(CARD, sopId=None), '조치 방법\\(SOP\\)이 없어'),
     (dict(WO_CARD, actions=[dict(WO_CARD['actions'][0], target='sys:erp')]), '정비 시스템\\(CMMS\\)으로만'),
     (dict(CARD, source_id='doc:1', actions=[]), '빈 Action을 새 정비 오더'),
@@ -48,7 +48,7 @@ def _ctx(state, card=CARD):
 @pytest.mark.parametrize('state, card, error', [
     ('RESOLVED', CARD, None),
     ('AWAITING_APPROVAL', WO_CARD, None),
-    ('AWAITING_APPROVAL', CARD, '회복이 확인됐거나 작업지시만 고른 승인 뒤'),
+    ('AWAITING_APPROVAL', CARD, '회복이 확인됐거나 정비 요청만 고른 승인 뒤'),
     ('ESCALATED', CARD, '회복이 확인됐거나'),
 ], ids=['명령 뒤 회복 확인', '작업지시만 고른 승인', '명령 뒤 회복 전', '에스컬레이션'])
 def test_작업지시는_회복_확인_뒤나_작업지시만_고른_승인_뒤에_요청을_저장하고_보낸다(state, card, error):

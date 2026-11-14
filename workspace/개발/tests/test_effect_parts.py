@@ -122,8 +122,8 @@ def test_부품_설정은_오타나_빠진_칸을_조용히_넘기지_않는다(
 @pytest.mark.parametrize('condition, problems', [
     ('accepted == True', []),
     ('accepted > 3', ["accepted(Boolean)에는 '>' 비교를 쓸 수 없습니다"]),
-    ("count == '예'", ["count(Number)을(를) '예' 와 비교합니다 — 자료형이 다릅니다"]),
-    ('status', ['status(Text)은(는) 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다']),
+    ("count == '예'", ["count(Number)을 '예' 와 비교합니다 — 자료형이 다릅니다"]),
+    ('status', ['status(Text)는 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다']),
 ], ids=['맞는 비교', '참거짓을 크기 비교', '수를 글과 비교', '글을 그대로 조건'])
 def test_분기_조건은_꺼낸_값의_자료형대로_써야_한다(condition, problems):
     assert ep.condition_type_problems(condition, {'accepted': 'Boolean', 'count': 'Number', 'status': 'Text'}) == problems

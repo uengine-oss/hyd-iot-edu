@@ -4,6 +4,7 @@ check() 는 가이드 카드(원인 · 근거 · 조치 방법 목록)를, check
 그 카드 묶음을 판단으로 쓸 수 있다(이 서비스는 제출하지 않는다 — 판단 등록은 dmn-mcp 의 submit_decision · submit_purchase).
 문장은 처리 기록 · 판단 채점 화면에 그대로 보인다 — 학생이 읽는 한국어로 쓴다(검진 G1-10).
 """
+from hydcommon.words import particle
 FORBIDDEN_KEYS = {"writes", "cmdId", "expiresAt", "mqtt", "topic"}
 
 
@@ -22,21 +23,21 @@ def check(card: dict) -> list[str]:
 
     # command authority: the agent must never emit command-shaped fields
     for k in sorted(FORBIDDEN_KEYS & set(card.keys())):
-        v.append(f"카드에 설비 명령 칸 '{k}'이(가) 있습니다 — 에이전트는 명령 권한이 없습니다")
+        v.append(f"카드에 설비 명령 칸 '{k}'{particle(k, '이')} 있습니다 — 에이전트는 명령 권한이 없습니다")
 
     for c in card.get("causes") or []:
         if not c.get("id"):
             v.append(f"원인 '{c.get('name')}'에 지식 노드 id 가 없습니다")
         elif c["id"] not in cites:
-            v.append(f"원인 {c['id']}을(를) 인용하지 않았습니다")
+            v.append(f"원인 {c['id']}{particle(c['id'], '을')} 인용하지 않았습니다")
         for e in c.get("evidence") or []:
             if e.get('status') == 'UNKNOWN' or e.get('error') or ('passed' in e and e['passed'] is None):
                 v.append(f"근거 {e.get('id')}의 판정이 미확인입니다")
             if e.get("id") and e["id"] not in cites:
-                v.append(f"근거 {e['id']}을(를) 인용하지 않았습니다")
+                v.append(f"근거 {e['id']}{particle(e['id'], '을')} 인용하지 않았습니다")
     for k in card.get("skills") or []:
         if k.get("id") and k["id"] not in cites:
-            v.append(f"조치 방법 {k['id']}을(를) 인용하지 않았습니다")
+            v.append(f"조치 방법 {k['id']}{particle(k['id'], '을')} 인용하지 않았습니다")
     return v
 
 

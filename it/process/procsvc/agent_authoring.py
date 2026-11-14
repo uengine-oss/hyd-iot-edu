@@ -25,6 +25,7 @@ AgentSelectField.vue(단계의 담당 에이전트 — 제품은 정의 activity
 """
 from __future__ import annotations
 
+from hydcommon.words import josa, particle
 import logging
 import re
 import secrets
@@ -96,7 +97,7 @@ def _protect(row: dict, what: str) -> None:
     if origin_of(row) != USER:
         kind = "시스템 수행자" if (row.get("agent_type") or "agent") == "system" else "기본 에이전트"
         tail = " '복제해서 고치기'로 사본을 만들어 고치세요." if kind == "기본 에이전트" else ""
-        raise AuthoringError(f"{kind} '{_name(row)}'은(는) {what} 수 없습니다 — 기본 제공 구성이라 보호합니다.{tail}", 403)
+        raise AuthoringError(f"{kind} '{_name(row)}'{particle(_name(row), '은')} {what} 수 없습니다 — 기본 제공 구성이라 보호합니다.{tail}", 403)
 
 
 # ---------------------------------------------------------------- 에이전트
@@ -187,7 +188,7 @@ def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *
     """기본이든 내가 만든 것이든 사본(origin=user)을 만든다. 시스템 수행자(SCADA · CMMS …)는 에이전트 설정이 없어 복제하지 않는다."""
     src = get_agent(repo, tenant_id, agent_id)
     if (src.get("agent_type") or "agent") != "agent":
-        raise AuthoringError(f"시스템 수행자 '{_name(src)}'은(는) 정해진 업무를 하는 시스템이라 복제할 수 없습니다", 403)
+        raise AuthoringError(f"시스템 수행자 '{_name(src)}'{particle(_name(src), '은')} 정해진 업무를 하는 시스템이라 복제할 수 없습니다", 403)
     taken = {_name(u).strip().lower() for u in repo.list_users(None, tenant_id) if u.get("is_agent")}
     name = str((body or {}).get("name") or "").strip()
     if not name:
@@ -262,7 +263,7 @@ def delete_agent(rt, agent_id: str, *, by: str) -> dict:
     _protect(row, "지울")
     busy = running_rows(repo, tenant_id, [agent_id])
     if busy:
-        raise AuthoringError(f"'{_name(row)}'이(가) 지금 실행 중인 작업이 {len(busy)}건 있습니다 — 끝난 뒤 다시 지우세요", 409)
+        raise AuthoringError(f"'{_name(row)}'{particle(_name(row), '이')} 지금 실행 중인 작업이 {len(busy)}건 있습니다 — 끝난 뒤 다시 지우세요", 409)
     moved = return_open_rows(rt, [agent_id], f"에이전트 '{_name(row)}' 삭제 — 기본 담당으로", by)
     maps = [m for m in repo.list_agent_map(tenant_id) if m["agent_id"] == agent_id]
     repo.remove_agent(tenant_id, agent_id)
@@ -310,7 +311,7 @@ def update_skill(repo, tenant_id: str, name: str, body: dict, *, by: str | None 
     if row is None:
         raise AuthoringError(f"그런 스킬이 없습니다: {name}", 404)
     if origin_of(row) != USER:
-        raise AuthoringError(f"기본 스킬 '{name}'은(는) 고칠 수 없습니다 — 기본 제공 스킬이라 보호합니다. 새 이름으로 스킬을 만들어 쓰세요.", 403)
+        raise AuthoringError(f"기본 스킬 '{name}'{particle(name, '은')} 고칠 수 없습니다 — 기본 제공 스킬이라 보호합니다. 새 이름으로 스킬을 만들어 쓰세요.", 403)
     f = skill_fields(name, body)
     repo.write_skill({**row, **f}, create=False)
     return repo.get_skill(tenant_id, name)
@@ -321,7 +322,7 @@ def delete_skill(repo, tenant_id: str, name: str, *, by: str | None = None) -> d
     if row is None:
         raise AuthoringError(f"그런 스킬이 없습니다: {name}", 404)
     if origin_of(row) != USER:
-        raise AuthoringError(f"기본 스킬 '{name}'은(는) 지울 수 없습니다 — 기본 제공 스킬이라 보호합니다.", 403)
+        raise AuthoringError(f"기본 스킬 '{name}'{particle(name, '은')} 지울 수 없습니다 — 기본 제공 스킬이라 보호합니다.", 403)
     attached = [r["user_id"] for r in repo.list_agent_skills(tenant_id) if r["skill_name"] == name]
     repo.remove_skill(tenant_id, name)
     from .student_cases import Store
@@ -428,7 +429,7 @@ def set_assignment(rt, definition_id: str, activity_id: str, agent_id: str, *, b
     if (row.get("agent_type") or "agent") != "agent":
         raise AuthoringError(f"시스템 수행자 '{_name(row)}'에게는 에이전트 단계를 배정할 수 없습니다")
     if agent_id in step["default_agents"]:
-        raise AuthoringError(f"'{_name(row)}'은(는) 이 단계의 기본 담당입니다 — 기본으로 돌리려면 배정을 지우세요")
+        raise AuthoringError(f"'{_name(row)}'{particle(_name(row), '은')} 이 단계의 기본 담당입니다 — 기본으로 돌리려면 배정을 지우세요")
     repo.put_agent_map({"tenant_id": tenant_id, "proc_def_id": definition_id, "activity_id": activity_id, "agent_id": agent_id,
                         "origin": USER, "by_user": by})
     return {"definition_id": definition_id, "activity_id": activity_id, "agent_id": agent_id, "name": _name(row)}

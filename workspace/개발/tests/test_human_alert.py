@@ -56,6 +56,8 @@ def test_같은_설비의_같은_오일_이상이_처리_중이면_두_번째_�
     assert first == 200 and body['raised'] is True and body['instance'], body
     second, refused = world.api('POST', '/api/human-alerts', dict(BODY, item='tan', value=2.1), source_loop=True)
     assert second == 409 and '아직 진행 중입니다' in refused['detail'], refused
+    # 어느 건인지: 문장은 시작한 때를 말하고, 응답은 그 건을 칸으로 싣는다(화면이 그 처리 건으로 바로 간다)
+    assert refused['instance'] == body['instance'] and refused['started_at'] and '시작)' in refused['detail'], refused
     other_asset, body2 = world.api('POST', '/api/human-alerts', dict(BODY, asset='HYD-02'), source_loop=True)
     assert other_asset == 200 and body2['instance'] != body['instance'], '다른 설비는 따로 연다'
 

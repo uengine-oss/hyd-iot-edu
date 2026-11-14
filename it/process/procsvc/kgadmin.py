@@ -107,7 +107,7 @@ def validate_skill(body: dict, create: bool = False, *, source_backed: bool = Fa
         raise ValueError("조치 방법을 고장 유형에 연결하세요 — 검토 화면의 고장 유형 칸에서 고릅니다(구매 · 참고 절차는 업무 범위를 바꿉니다)")
     kind = body.get("kind") or "work_order"
     if kind not in ("control", "work_order"):
-        raise ValueError("조치 방법 종류는 설비 명령(control) 또는 작업지시(work_order)입니다")
+        raise ValueError("조치 방법 종류는 설비 명령(control) 또는 정비 요청(work_order)입니다")
     relation = body.get("relation") or "REMEDIED_BY"
     if relation not in FAILURE_RELATIONS:
         raise ValueError(FAILURE_RELATION_HELP)

@@ -31,6 +31,11 @@ def _final(word: str) -> str | None:
     return None
 
 
+def particle(word, particle: str) -> str:
+    """word 뒤에 올 조사만(「을」 또는 「를」). 낱말과 조사 사이에 따옴표 · 괄호가 끼는 문장('{이름}'은 …)에서 쓴다 — josa 와 같은 판정이다."""
+    return josa(word, particle)[len(str(word)):]
+
+
 def josa(word, particle: str) -> str:
     """word 에 맞는 조사를 붙인 글. particle 은 조사 쌍 가운데 아무 쪽(「을」 · 「를」 · 「이」 · 「으로」 …). 마지막 글자의 소리를 알 수
     없으면(기호 · 다른 문자) 두 꼴을 함께 적는다 — 틀린 조사를 내는 것보다 낫다."""

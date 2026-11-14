@@ -1138,11 +1138,11 @@ def test_흐름A의_정비는_승인한_조치가_다루는_원인만_고쳐_틀
     assert (report['outcome'], world.incident(pid).state) == (outcome, state), (report, after['TS1'], done['notice'])
     if outcome == '정상':
         assert [t['id'] for t in done['scope']['targets']] == ['sv:fouling'] and done['restored']['targets'] == {'cooler_health': 1.0}
-        assert '승인한 조치 방법 SOP-COOL-14이(가) 다루는 원인(쿨러 핀 오염)에 따라 가상 설비의 쿨러 핀 오염도을(를) 정상으로 되돌렸습니다' in done['notice']
+        assert '승인한 조치 방법 SOP-COOL-14가 다루는 원인(쿨러 핀 오염)에 따라 가상 설비의 쿨러 핀 오염도를 정상으로 되돌렸습니다' in done['notice']
         assert served_plant.units[asset].state.cooler_health == 1.0 and after['TS1'] < 55
     else:
         assert done['scope']['targets'] == [] and done['restored']['targets'] == {}, done
-        assert 'SOP-COOL-15이(가) 다루는 원인(주변 온도 상승)이 설비의 어느 상태를 바꾸는지 지식 지도에 없습니다 — 가상 설비의 상태는 바꾸지 않았습니다' in done['notice']
+        assert 'SOP-COOL-15가 다루는 원인(주변 온도 상승)이 설비의 어느 상태를 바꾸는지 지식 지도에 없습니다 — 가상 설비의 상태는 바꾸지 않았습니다' in done['notice']
         assert served_plant.units[asset].state.cooler_health < 1.0 and after['TS1'] > 55, '틀린 조치인데 설비 결함이 사라졌다'
 
 

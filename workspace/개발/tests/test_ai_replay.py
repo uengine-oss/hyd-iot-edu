@@ -180,6 +180,38 @@ def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_
         assert '조회 결과' not in (text or '')
 
 
+# ---------------------------------------------------------------- 사람이 넣은 글 견주기
+MEMO = '쿨러 핀 세척 뒤 유온 51 ℃ 안정. 팬 소음은 확인 안 됨.'
+
+
+@pytest.mark.parametrize('change, said', [
+    ({'work_notes': MEMO}, True),
+    ({'as_of': '2026-11-02T09:00:00+00:00'}, False),
+    ({'work_notes': None}, False),
+], ids=['다른 메모', '시각만 다름', '띄어쓰기 · 끝 마침표만 다름'])
+def test_지금_넣은_글이_저장된_실행의_입력과_다르면_멈추지_않고_그_글을_두고_쓴_답이_아니라고_말한다(tmp_path, tool_servers, change, said):
+    """한 바퀴 실측(2026-11-14): 학생이 넣은 메모는 「쿨러 핀 세척 뒤 유온 51 ℃ 안정 …」인데 재생한 인계안은 「정비 완료 메모와 달리 …」
+    「부품 도착 예정은 …」처럼 준비 당시의 메모를 두고 말했고 아무 알림이 없었다. 데이터를 고르는 입력과 달리 멈추지는 않는다(키 없는
+    PC에서 이 단계를 해 볼 길이 없어진다) — 결과는 그대로 내고, 무엇을 두고 쓴 글인지를 처리 과정에 말한다. 같은 글이면 말이 없다."""
+    doc = COURSE_LIB.load(ai_replay.course_key('handover/draft-1', ''))
+    run = doc['runs'][0]
+    recorded = run['context']['inputs']['work_notes']
+    if change.get('work_notes', '') is None:
+        change = {'work_notes': '  ' + recorded.replace(' ', '  ').rstrip('.') + ' '}
+    wd, _ = workdir_for(tmp_path, run, tool_servers, inputs=dict(run['context']['inputs'], **change))
+    c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot='handover/draft-1', case='', attempt=(0, 0), request_key=None,
+                                                    step=doc['step'], provider='claude-code', source={}, accepted=lambda s: True,
+                                                    skills=['my-shift-handover-review'])
+    assert play(c, wd) and (wd / 'output' / 'result.json').is_file()           # 멈추지 않는다
+    text = c.notice() or ''
+    if said:
+        assert text.startswith(ai_replay.REPLAY), text
+        assert f'결과 글은 준비 당시의 입력을 두고 쓴 것이고, 지금 넣은 입력과 다릅니다: 준비 당시 「{recorded}」 · 지금 「{MEMO}」.' in text, text
+        assert not FORBIDDEN.search(text) and not WORKER_TALK.search(text) and 'work_notes' not in text, text
+    else:
+        assert '지금 넣은 입력' not in text, text
+
+
 # ---------------------------------------------------------------- 읽기 조회 견주기
 # 조회문 안의 EXTRACT(… FROM 칸)은 자료를 읽는 FROM 이 아니다 — 알림이 칸 이름을 자료 이름으로 말하면 안 된다
 STOCK_SQL = 'SELECT part_no, on_hand, reserved, on_order, updated_at, extract(year FROM updated_at) AS y FROM ent.spare_stock ORDER BY part_no'
@@ -251,7 +283,7 @@ def test_저장된_조회가_이_PC의_지금_값과_같으면_말이_없고_다
     n = len(orders['rows'])
     assert said and said.startswith(ai_replay.REPLAY) and '결과 글 안의 조회 결과는 준비 당시 값입니다' in said, said
     assert '같은 조회 2개를 이 PC에서 다시 해 보니 2개가 지금 값과 다릅니다' in said, said
-    # 조회를 가리키는 말: 데이터 원천의 이름(정본 hydcommon.fabric.SOURCES — 데이터 원천 화면의 이름)이 앞, 표 이름은 괄호
+    # 조회를 가리키는 말: 데이터 원천의 이름(정본 hydcommon.data_sources.SOURCES — 데이터 원천 화면의 이름)이 앞, 표 이름은 괄호
     assert f'업무 DB 조회(ent.work_orders) — 준비 당시 {n}건 · 지금 {n + 1}건' in said, said
     assert f"업무 DB 조회(ent.spare_stock) — {len(stock['rows'])}건으로 같고 값이 다름" in said and 'updated_at 조회' not in said, said
     assert '견주지 못했습니다' not in said

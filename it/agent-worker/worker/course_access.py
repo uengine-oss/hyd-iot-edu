@@ -9,6 +9,7 @@ course_ledger.py). 주소는 PROCESS_URL 하나, 인증은 실행기 인증 파�
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import json
 import urllib.error
 import urllib.parse
@@ -103,13 +104,13 @@ class CourseAccess:
         except urllib.error.HTTPError as exc:
             detail = _detail(exc)
             if exc.code == 401:                      # 실행기 인증 거절(course_policy.require_worker) — 수업 경계가 아니라 연결 문제
-                raise RuntimeConnectionError(f'{what}을(를) 받지 못했습니다 — process 가 이 워커의 실행기 인증을 받지 않았습니다'
+                raise RuntimeConnectionError(f'{what}{particle(what, "을")} 받지 못했습니다 — process 가 이 워커의 실행기 인증을 받지 않았습니다'
                                              '(인증 파일이 process 의 것과 다릅니다). 시작.bat을 다시 실행하세요.') from None
             if exc.code == 403 and detail:          # process 가 학생 말로 쓴 거절: 장부(코드가 실린 것)와 수업 경계(문장만)
                 raise (ledger_denial(detail) or CourseDenied(detail)) from None
-            raise RuntimeConnectionError(f'{what}을(를) 받지 못했습니다({exc.code}){" — " + detail if detail else ""}') from None
+            raise RuntimeConnectionError(f'{what}{particle(what, "을")} 받지 못했습니다({exc.code}){" — " + detail if detail else ""}') from None
         except (OSError, ValueError):
-            raise RuntimeConnectionError(f'{what}을(를) 받지 못했습니다 — process 서비스에 닿지 않습니다. 시작.bat을 다시 실행하세요.') from None
+            raise RuntimeConnectionError(f'{what}{particle(what, "을")} 받지 못했습니다 — process 서비스에 닿지 않습니다. 시작.bat을 다시 실행하세요.') from None
         if not isinstance(reply, dict):
             raise RuntimeConnectionError(f'{what} 응답 형식이 올바르지 않습니다')
         return reply

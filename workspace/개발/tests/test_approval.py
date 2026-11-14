@@ -62,7 +62,7 @@ def test_판단_근거가_빠진_판단으로는_현재_조건을_다시_계산�
 def test_원래_카드에_없는_선택은_검사하지_않는다():
     with pytest.raises(ValueError) as e:
         approval.assess(None, None, {'id': 'DEC-1', 'options': []}, 'SOP-COOL-12', 'role:operator')
-    assert '원래 카드가 없습니다' in str(e.value)
+    assert '원래 조치 후보가 없습니다' in str(e.value)
 
 
 # ---------------------------------------------------------------- 실제 처리 건의 판단으로
@@ -135,7 +135,7 @@ def test_사람이_본_예측이_검토_기한보다_오래됐으면_거절하�
                           {'decision': seen, 'option': card['id'], 'role': card['approver']['id'],
                            'consented_at': datetime.now(timezone.utc).isoformat()})          # 40분 전 예측을 지금 동의했다
     assert status == 200 and report['allowed'] is False and report['needs_new_preview'] is True, report.get('reasons')
-    assert any('새 카드 검토가 필요합니다' in r for r in report['reasons'])
+    assert any('새 조치 후보 검토가 필요합니다' in r for r in report['reasons'])
 
 
 def test_승인_검사도_지금_세우는_카드를_정지한_설비로_다시_예측한다(decided):

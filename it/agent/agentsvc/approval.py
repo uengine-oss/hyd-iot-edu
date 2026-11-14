@@ -3,6 +3,7 @@
 No decision submission or execution occurs here. An unknown applicable rule is
 not proof of compliance; material changes require a new human-reviewed decision.
 """
+from hydcommon.words import particle
 from datetime import datetime, timezone
 from copy import deepcopy
 import hashlib
@@ -138,7 +139,7 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     """Reread policy and sources. No supplied fact overrides are trusted."""
     old = next((o for o in decision.get('options', []) if o.get('id') == option_id), None)
     if old is None:
-        raise ValueError('선택할 원래 카드가 없습니다')
+        raise ValueError('선택할 원래 조치 후보가 없습니다')
     from hydcommon.execution_scope import require_decision_option
     require_decision_option(decision, old)
     review = old.get('reviewed_choice')
@@ -186,7 +187,7 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
         # human saw. Continuous sensor changes matter through reevaluated rules.
         for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence', 'supplier_policy', 'resolvedSupplier', 'maintenancePlan', 'economicComparison'):
             if canonical(consented(key, old.get(key))) != canonical(consented(key, current.get(key))):
-                reasons.append(f'카드의 {CARD_FIELDS.get(key, key)} 내용이 바뀌었습니다. 새 판단을 검토하세요')
+                reasons.append(f'조치 후보의 {CARD_FIELDS.get(key, key)} 내용이 바뀌었습니다. 새 판단을 검토하세요')
         need = current.get('approver') or {}
         actual_role = roles.get(role)
         if not actual_role or (role != need.get('id') and int(actual_role.get('level') or 0) <= int(need.get('level') or 0)):
@@ -206,7 +207,7 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     for key in (() if economic else ('order_due_h', 'order_penalty_per_h', 'order_customer_tier', 'hot_lot_claim', 'hot_lot_qty')):
         if key in prior or key in facts:
             if not unchanged(key):
-                reasons.append(f'업무 판단 입력 {label(key)}이(가) 바뀌었거나 확인되지 않습니다')
+                reasons.append(f'업무 판단 입력 {label(key)}{particle(label(key), "이")} 바뀌었거나 확인되지 않습니다')
     # Explicit physical inputs used by current rules are also human consent
     # context. Equal values from a different column/meaning are not equivalent.
     relevant = {t.get('variable') for r in rules for t in r.get('tests') or []
@@ -222,12 +223,12 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
         else:
             changed = (key in prior) != (key in facts) or canonical(prior.get(key)) != canonical(facts.get(key))
         if changed:
-            reasons.append(f'순위 판단 입력 {label(key)}이(가) 바뀌었습니다. 새 판단을 검토하세요')
+            reasons.append(f'순위 판단 입력 {label(key)}{particle(label(key), "이")} 바뀌었습니다. 새 판단을 검토하세요')
     after = {p['variable']: p.get('binding') for p in provenance if p.get('binding')}
     for key in sorted(relevant & (before.keys() | after.keys())):
         if canonical(before.get(key)) != canonical(after.get(key)):
             reasons.append(f'업무 판단 입력 {label(key)}의 업무 DB 출처나 뜻이 바뀌었습니다')
         if not unchanged(key):
-            reasons.append(f'업무 판단 입력 {label(key)}이(가) 바뀌었거나 확인되지 않습니다')
+            reasons.append(f'업무 판단 입력 {label(key)}{particle(label(key), "이")} 바뀌었거나 확인되지 않습니다')
     report['allowed'] = not reasons
     return report

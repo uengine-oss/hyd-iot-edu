@@ -3,6 +3,7 @@
 Product reference: vue3 ProcessGPTBackend.putRawDefinition/getExecutionDefinition.
 HYD deliberately requires an exact version and rejects unsupported execution shapes.
 """
+from hydcommon.words import particle
 import json
 from copy import deepcopy
 from hydcommon.process_contracts import pinned_form, validate_fields
@@ -49,7 +50,7 @@ def validate_definition(raw):
         field = 'name' if collection in ('roles','data') else 'id'
         ids = [v.get(field) for v in values]
         if collection in ('activities', 'events', 'gateways', 'sequences') and len(values) > MAX_NODES:
-            raise ValueError(f'{_COLLECTION_WORDS[collection]}이(가) {len(values)}개로 한도 {MAX_NODES}개를 넘습니다. 흐름을 나누세요')
+            raise ValueError(f'{_COLLECTION_WORDS[collection]}{particle(_COLLECTION_WORDS[collection], "이")} {len(values)}개로 한도 {MAX_NODES}개를 넘습니다. 흐름을 나누세요')
         if any(not isinstance(i,str) or not i.strip() for i in ids) or len(set(ids)) != len(ids):
             raise ValueError(f'{collection}의 {field}가 없거나 중복됩니다')
         if collection in ('activities','events','gateways'):
@@ -287,7 +288,7 @@ def _condition_variables(defn):
                  if str(defn.data[n].get('type') or '').lower() in _CONDITION_TYPES}
         problems = effect_parts.condition_type_problems(cond, types)
         if problems:
-            raise ValueError(f"분기 {s.get('id')}의 조건 {cond!r}이(가) 값의 자료형과 맞지 않습니다: {'; '.join(problems)}")
+            raise ValueError(f"분기 {s.get('id')}의 조건 {cond!r}{particle(cond, '이')} 값의 자료형과 맞지 않습니다: {'; '.join(problems)}")
         unproduced = sorted(n for n in names if n not in produced)
         if unproduced:
             raise ValueError(f"분기 {s.get('id')}의 조건 변수 {', '.join(unproduced)}를 어떤 활동도 내지 않습니다 (outputData)")

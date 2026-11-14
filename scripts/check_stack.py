@@ -28,7 +28,7 @@ import prepare_ports  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 H = 'http://127.0.0.1'
-BY = '실습 스택 점검'                       # 점검이 업무 기록에 남기는 행위자(점검.bat — 설치와 무관)
+BY = '시스템 점검'                       # 점검이 업무 기록에 남기는 행위자(점검.bat — 설치와 무관)
 WHO = {'by': BY, 'user_id': None, 'roles': []}
 DONE = {'DONE', 'COMPLETED'}
 PASS, FAIL, NA = '통과', '실패', '해당 없음'
@@ -190,10 +190,10 @@ def check_ai(root: Path, *, call: bool = False, relay_fn=relay, health_fn=None) 
     if want == 'replay':
         saved = health.get('replay_recordings')         # 워커가 켜질 때 실제로 읽은 녹화 수(깨진 녹화면 워커가 켜지지 않는다)
         if not isinstance(saved, int):
-            return FAIL, 'AI 워커가 읽은 강사 녹화 수를 알리지 않습니다 — 새 판의 워커가 아닙니다. 시작 파일을 다시 실행하세요.'
+            return FAIL, 'AI 워커가 준비된 AI 응답 수를 알리지 않습니다 — 새 판의 워커가 아닙니다. 시작 파일을 다시 실행하세요.'
         if not saved:
-            return FAIL, '강사가 미리 진행한 AI 결과(it/agent-worker/replay/)가 이 판에 없습니다. README 「새 판 받기」대로 새 판을 받으세요. AI 단계가 없는 실습은 그대로 할 수 있습니다.'
-        return NA, f'키 없는 수업 — AI 단계는 강사가 저장한 응답 {saved}개를 재생합니다(강의 중계는 부르지 않습니다).'
+            return FAIL, 'AI 키 없이 쓸 준비된 AI 응답(it/agent-worker/replay/)이 이 판에 없습니다. README 「새 판 받기」대로 새 판을 받으세요. AI 단계가 없는 기능은 그대로 쓸 수 있습니다.'
+        return NA, f'AI 키 없음 — AI 단계는 준비된 응답 {saved}개를 재생합니다(강의 중계는 부르지 않습니다).'
     try:
         out = relay_fn(call)
     except CheckError as exc:
@@ -220,9 +220,9 @@ def agent_outcome(view: dict, ai_mode: str):
     if approve.get('status') == 'IN_PROGRESS':
         return 'approval', approve
     if agent.get('status') == 'PENDING' and any(e.get('event_type') == 'task_deferred' for e in view.get('events') or []):
-        raise CheckError('AI 판단이 보류됐습니다 — 수업용 기본 지식이 없는 것 같습니다. 시작 파일을 다시 실행하세요(7단계가 기본 지식을 넣습니다).')
+        raise CheckError('AI 판단이 보류됐습니다 — 기본 지식(쿨러 · 정기 정비 · 구매 매뉴얼)이 없는 것 같습니다. 시작 파일을 다시 실행하세요(7단계가 기본 지식을 넣습니다).')
     if agent.get('status') in ('FAILED', 'ERROR', 'CANCELLED'):
-        hint = ('README 「새 판 받기」대로 강사가 저장한 AI 응답이 든 새 판을 받았는지 확인하세요' if ai_mode == 'replay'
+        hint = ('README 「새 판 받기」대로 준비된 AI 응답이 든 새 판을 받았는지 확인하세요' if ai_mode == 'replay'
                 else '.env 의 LLM_API_KEY 와 인터넷 연결을 확인하세요(점검 끝의 「강의 중계」 줄에 까닭이 나옵니다)')
         raise CheckError(f'AI 워커가 판단하지 못했습니다({agent["status"]}): {str(agent.get("log") or "").strip()[:200]} — {hint}')
     return None
@@ -232,11 +232,11 @@ def pick_approval(decision: dict, people: list[dict]) -> tuple[str, str, str]:
     """추천 카드(option) · 그 승인 역할 · 그 역할을 가진 사람(이 PC의 담당자) — 포털에서 [승인]을 누르는 것과 같다."""
     option = next((o for o in decision.get('options') or [] if o.get('id') == decision.get('recommended')), None)
     if option is None:
-        raise CheckError('AI 판단에 추천 카드가 없습니다 — 포털 「처리 건」에서 판단 · 제안 단계의 기록을 확인하세요.')
+        raise CheckError('AI 판단에 권장 조치 후보가 없습니다 — 포털 「처리 건」에서 판단 · 제안 단계의 기록을 확인하세요.')
     role = (option.get('approver') or {}).get('id')
     person = next((p['id'] for p in people if role in (p.get('roles') or [])), None)
     if not role or not person:
-        raise CheckError(f'추천 카드의 승인 역할({role or "없음"})을 가진 사람이 업무 DB에 없습니다 — 시작 파일을 다시 실행하세요.')
+        raise CheckError(f'권장 조치 후보의 승인 역할({role or "없음"})을 가진 사람이 업무 DB에 없습니다 — 시작 파일을 다시 실행하세요.')
     return option['id'], role, person
 
 
@@ -245,15 +245,15 @@ def flow_result(view: dict) -> tuple[bool, str]:
     status = lambda a: (rows.get(a) or {}).get('status')
     if all(status(a) in DONE for a in ('T_cmd', 'T_reobs', 'T_wo', 'R_ok')):
         ref = (variables(view).get('work_order') or {}).get('ref') if isinstance(variables(view).get('work_order'), dict) else None
-        return True, f'승인 → 냉각 명령 → 재관측(정상) → 작업지시{f" {ref}" if ref else ""} → 결과 보고(정상)'
+        return True, f'승인 → 냉각 명령 → 효과 확인(정상) → 정비 요청{f" {ref}" if ref else ""} → 결과 보고(정상)'
     if all(status(a) in DONE for a in ('T_wo_only', 'T_fix', 'T_reobs_wo', 'R_wo_only')):   # 작업지시만인 카드(흐름 A 승인 뒤 갈래 — chosen_skill_kind)
         ref = (variables(view).get('work_order') or {}).get('ref') if isinstance(variables(view).get('work_order'), dict) else None
-        return True, f'승인 → 작업지시{f" {ref}" if ref else ""}(설비 명령 없는 카드) → 정비 수행 → 재관측(정상) → 결과 보고(정상)'
+        return True, f'승인 → 정비 요청{f" {ref}" if ref else ""}(설비 명령 없는 조치) → 정비 수행 → 효과 확인(정상) → 결과 보고(정상)'
     if status('R_kind') in DONE:
-        return False, '승인한 카드에 설비 명령도 작업지시도 없어 냉각 흐름이 실행하지 않았습니다(결과 보고: 실행하지 않음) — 다시 판단해 다른 카드를 고르세요.'
+        return False, '승인한 조치 후보에 설비 명령도 정비 요청도 없어 냉각 흐름이 실행하지 않았습니다(결과 보고: 실행하지 않음) — 다시 판단해 다른 조치 후보를 고르세요.'
     if status('R_fail') in DONE:
         how = '정비 뒤' if status('T_reobs_wo') in DONE else '냉각 명령 뒤'
-        return False, f'승인한 조치({how})의 재관측에서 유온이 기준까지 내려가지 않았습니다(결과 보고: 미달) — 포털 「처리 건」에서 재관측 기록을 확인하세요.'
+        return False, f'승인한 조치({how})의 효과 확인에서 유온이 기준까지 내려가지 않았습니다(결과 보고: 미달) — 포털 「처리 건」에서 효과 확인 기록을 확인하세요.'
     steps = ' · '.join(f'{a} {status(a) or "-"}' for a in ('T_approve', 'T_cmd', 'T_reobs', 'T_wo', 'R_ok'))
     return False, f'처리 건이 정상 결과 보고에 닿지 않았습니다({view["instance"]["status"]}: {steps}) — 포털 「처리 건」에서 멈춘 단계를 확인하세요.'
 
@@ -287,7 +287,7 @@ def approve(process: str, task_id: str, body: dict) -> None:
         http('POST', f'{process}/api/todolist/{task_id}/select', body, timeout=60)
     except ApiError as exc:
         if exc.reason_code != REVIEW_REQUIRED:
-            raise CheckError(f'추천 카드 승인이 거절됐습니다: {exc.detail}') from None
+            raise CheckError(f'권장 조치 후보의 승인을 서버가 받지 않았습니다: {exc.detail}') from None
         review = http('POST', f'{process}/api/todolist/{task_id}/decision-preview',
                       {'decision': body['decision'], 'option': body['option'], 'parameters': {}}, timeout=60)
         http('POST', f'{process}/api/todolist/{task_id}/select', dict(body, review_id=review['id']), timeout=60)
@@ -319,7 +319,7 @@ def cooler_round(root: Path, record) -> None:
         pid = found['proc_inst_id']
         if found.get('proc_def_id') != 'c3_cooling':
             raise CheckError(f'처리 건이 수업 흐름이 아닌 {found.get("proc_def_id")} 로 열렸습니다 — 시작 파일을 다시 실행하면 수업 흐름을 배포합니다.')
-        record('처리 건 열림', PASS, f'{pid} (수업 흐름 냉각 긴급 대응)')
+        record('처리 건 열림', PASS, f'{pid} (기본 제공 흐름 냉각 긴급 대응)')
         outcome = wait_for(420, lambda: agent_outcome(view(pid), ai_mode),
                            '처리 건이 7분 안에 AI 판단 결과(승인 대기)에 닿지 않았습니다 — 포털 「처리 건」에서 판단 · 제안 단계를 확인하세요.', every=5)
         task = outcome[1]
@@ -327,8 +327,9 @@ def cooler_round(root: Path, record) -> None:
         decision = http('GET', f'{process}/api/decisions/{decision_id}')
         option, role, person = pick_approval(decision, http('GET', f'{process}/api/inbox/users'))
         approval = (task['id'], decision_id, role, person)
-        record('AI 판단 · 제안', PASS, f'추천 카드 {option} — 승인 대기')
-        approve(process, task['id'], {'decision': decision_id, 'option': option, 'by': person, 'role': role, 'reason': f'{BY} — 추천 카드 승인'})
+        chosen = next((o.get('name') for o in decision.get('options') or [] if o.get('id') == option), None)
+        record('AI 판단 · 제안', PASS, f'권장 조치 후보 「{chosen or option}」 — 승인 대기')
+        approve(process, task['id'], {'decision': decision_id, 'option': option, 'by': person, 'role': role, 'reason': f'{BY} — 권장 조치 후보 승인'})
         approval = None
         try:
             end = wait_for(300, lambda: (lambda v: v if v['instance']['status'] != 'RUNNING' else None)(view(pid)), '승인 뒤 5분 안에 끝나지 않음', every=3)
@@ -404,7 +405,7 @@ def main(argv: list[str], root: Path = ROOT) -> int:
         if args == ['all']:
             results: list[tuple[str, str, str]] = []
             record = lambda name, outcome, note: results.append((name, outcome, note))
-            print('\n== 실습 스택 점검 (키 없는 PC 실측 약 2분 · 키 있는 PC는 AI 판단이 실제로 돌아 더 걸린다)\n[1/3] 서비스 응답')
+            print('\n== 시스템 점검 (키 없는 PC 실측 약 2분 · 키 있는 PC는 AI 판단이 실제로 돌아 더 걸린다)\n[1/3] 서비스 응답')
             outcome, note = check_services(root, 60)
             record('서비스 · 포털', outcome, note)
             if outcome == PASS:

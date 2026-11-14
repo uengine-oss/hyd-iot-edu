@@ -111,7 +111,7 @@ def test_옛_판본만_돌던_DB에서_새_파일로_켜면_새_판본이_운영
     rows = {w['activity_id']: w for w in rt.repo.list_workitems(proc_inst_id=still['proc_inst_id'], limit=None)}
     assert (rows['task:diagnose']['status'], rows['task:candidates']['status'], rows['task:candidates']['version']) == ('DONE', 'IN_PROGRESS', old)
     assert 'task:report-rejected' not in rows, '옛 판본의 처리 건에 새 판본의 단계가 끼지 않는다'
-    with pytest.raises(ValueError, match=f'거절 길이 없던 흐름 판본\\(anomaly_response {old}\\)'):
+    with pytest.raises(ValueError, match=f'반려 길이 없던 흐름 판본\\(anomaly_response {old}\\)'):
         rt.reject_card(_at_select(rt, still['proc_inst_id']), 'DEC-x', OPERATOR['by'], OPERATOR['role'], '사유')
 
 

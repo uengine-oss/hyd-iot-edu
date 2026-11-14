@@ -30,6 +30,7 @@ data._at · hours_from_now) 이후 모든 판단이 틀어진다: 납기까지 �
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import re
 import uuid
 from datetime import datetime, timezone
@@ -79,11 +80,30 @@ def fault_scope() -> dict:
 
 def unknown_act(act: str) -> str:
     buttons = " · ".join(f"[{spec['button']}]({a})" for a, spec in A_BUTTONS.items())
-    return f"결함 시뮬레이션의 설비 결함 주입은 {A_ASSET}의 {buttons}만 지원합니다 — 요청한 동작 {act!r} 은(는) 없습니다"
+    return f"결함 시뮬레이션의 설비 결함 주입은 {A_ASSET}의 {buttons}만 지원합니다 — 요청한 동작 {act!r}{particle(act, '은')} 없습니다"
 
 
 class Refused(Exception):
-    """사람이 읽는 거절 사유(HTTP 409)."""
+    """사람이 읽는 거절 사유(HTTP 409). 진행 중인 처리 건 때문에 거절했으면 그 건(instance · started_at)을 함께 든다 — 응답이 그 칸으로 싣고
+    화면이 그 건으로 바로 간다(문장에서 번호를 뽑지 않는다)."""
+    def __init__(self, reason: str, running: dict | None = None):
+        super().__init__(reason)
+        self.instance = (running or {}).get("proc_inst_id")
+        self.started_at = (running or {}).get("start_date")
+
+
+def started_words(row: dict | None) -> str:
+    """진행 중인 처리 건을 가리키는 말: 시작한 때(한국 시각 「11월 14일 21:03 시작」). 읽을 수 없으면 빈 글."""
+    from datetime import datetime, timedelta, timezone
+    at = (row or {}).get("start_date")
+    try:
+        at = at if isinstance(at, datetime) else datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    at = at.astimezone(timezone(timedelta(hours=9)))
+    return f"{at.month}월 {at.day}일 {at:%H:%M} 시작"
 
 
 def _rule(pattern: str) -> business_monitor.MonitorRule:
@@ -224,7 +244,7 @@ def delay_target(rt, read: Callable[[str, dict], dict], key: str) -> dict:
         raise Refused(f"{spec['title']} 처리 건이 아직 발주 전입니다 — 처리 건에서 발주안을 승인하면 발주가 열립니다. 그 뒤 입고를 기다리는 동안 누르세요")
     facts = (read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
     if facts.get("status") != "승인됨 → 발주":
-        raise Refused(f"발주 {po['ref']}은(는) 이미 {facts.get('status') or '닫힌'} 상태라 납기를 늦출 수 없습니다")
+        raise Refused(f"발주 {po['ref']}{particle(po['ref'], '은')} 이미 {facts.get('status') or '닫힌'} 상태라 납기를 늦출 수 없습니다")
     if float(facts.get("delay_d") or 0) > 0:
         raise Refused(f"발주 {po['ref']}에는 공급사가 이미 납기 지연 {float(facts['delay_d']):g}일을 알렸습니다 — 처리 건에서 납기 초과 결과를 기다리세요")
     return {"instance": running["proc_inst_id"], "ref": po["ref"], "supplier": facts.get("supplier_name") or facts.get("supplier"),
@@ -313,8 +333,11 @@ def refusal(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
     row = _row(read, spec)
     if not row.get(spec["flag"]):
         raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [초기화]로 처음 상태로 되돌린 뒤 누르세요")
-    if _run(rt, spec, "RUNNING"):
-        raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다 — 카드의 '처리 중' 표시를 눌러 그 처리 건을 보세요")
+    running = _run(rt, spec, "RUNNING")
+    if running:
+        when = started_words(running)
+        raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다" + (f"({when})" if when else "")
+                      + " — [처리 건에서 보기]로 그 처리 건을 열어 끝낸 뒤 다시 누르세요", running)
     if not route(spec["pattern"]):
         raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」에서 배포하세요(흐름 가져오기는 등록까지만 합니다)")
     return row
@@ -336,7 +359,7 @@ def reset_refusal(rt, key: str) -> None:
         how = (f"멈춘 단계({', '.join(dict.fromkeys(w.get('activity_name') or w['activity_id'] for w in stuck))})가 있습니다 — 처리 건 화면에서 [닫기]로 "
                "끝내거나 다시 수행한 뒤" if stuck else "처리 건 화면에서 조치 후보를 승인하거나 반려해 끝낸 뒤")
         raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 아직 진행 중이라 초기화하지 않았습니다 — 초기화하면 그 처리 건이 낸 발주 · 정비 요청 기록이 "
-                      f"바뀌어 처리 건이 어긋납니다. {how} [초기화]를 누르세요")
+                      f"바뀌어 처리 건이 어긋납니다. {how} [초기화]를 누르세요", running)
 
 
 class NotStarted(Exception):
@@ -349,7 +372,7 @@ def _went_to(rt, alert_id: str) -> str:
     for did, label in ((rt.defn.id, "기준 흐름"), ("alert_triage", "사람 검토(경보 분류)")):
         inst = rt.repo.find_event_instance(rt.tenant_id, did, alert_id)
         if inst is not None:
-            return f" — 경보는 {label}의 처리 건 {inst['proc_inst_id']}(으)로 열렸습니다"
+            return f" — 경보는 {label}의 처리 건 {inst['proc_inst_id']}{particle(inst['proc_inst_id'], '으로')} 열렸습니다"
     return " — 경보가 연 처리 건을 찾지 못했습니다"
 
 

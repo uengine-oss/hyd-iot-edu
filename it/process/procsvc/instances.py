@@ -15,6 +15,7 @@ All IO goes through small callables (hooks) and the PostgreSQL repo (procdb.PgRe
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import json
 import logging
 import re
@@ -49,7 +50,7 @@ NOT_READY = "처리 흐름 서비스가 아직 켜지는 중입니다 — 1분 �
 MAX_RETRIES = 3                            # stop retrying after three failures; block for recovery, never imply success
 ENGINE_CONSUMER = "process-engine"
 # 커밋 뒤 효과의 학생용 이름(B-4 실패 기록) — 함수 이름 → 무엇을 남기려던 것인가
-_EFFECT_NAMES = {'_audit': '감사 기록', 'audit': '감사 기록', 'reject': '판단 원문의 거절 기록', 'record': '판단 기록',
+_EFFECT_NAMES = {'_audit': '감사 기록', 'audit': '감사 기록', 'reject': '판단 원문의 반려 기록', 'record': '판단 기록',
                  'notify_participants': '참여자 알림', '_notify_task': '담당자 알림', '_notify_end': '끝 알림', '_project': '지식 그래프 반영',
                  'deliver_approval': '승인 전달', '_run_service': '시스템 단계 실행', '_reopen_for_recheck': '재분석 뒤 사건 다시 열기',
                  '_close_service_progress': '도구 호출 기록 마무리', '_advance_delivered': '승인 뒤 다음 단계 진행'}
@@ -476,7 +477,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         class_flow=True: 수업 흐름 설치(course_bootstrap — 시작.bat)의 '수업 흐름' 배포(P9) — 포털의 [기준 흐름으로 되돌리기]가 남긴다(flow_deploy.deploy_reset)."""
         if class_flow and (action != 'deploy' or def_id in self.reference_ids):
             raise ValueError('수업 흐름 표시는 기준 흐름이 아닌 흐름의 배포에만 붙입니다'
-                             + (f' — {def_id}은(는) 기준 흐름입니다' if def_id in self.reference_ids else ''))
+                             + (f' — {def_id}{particle(def_id, "은")} 기준 흐름입니다' if def_id in self.reference_ids else ''))
         if not isinstance(by, str) or not by.strip():
             raise ValueError('배포한 사람을 적으세요')
         if not isinstance(reason, str) or not reason.strip():
@@ -485,17 +486,17 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError('배포할 판본을 지정하세요')
         row = self.repo.get_proc_def(def_id, self.tenant_id, version=version)
         if not row or not row.get('definition'):
-            raise LookupError(f'{self._flow_name(def_id)}에 판본 {version}이(가) 등록돼 있지 않습니다')
+            raise LookupError(f'{self._flow_name(def_id)}에 판본 {version}{particle(version, "이")} 등록돼 있지 않습니다')
         try:
             validate_definition(deepcopy(row['definition']))
         except ValueError as e:
             raise ValueError(f'검사를 통과하지 못한 판본은 배포할 수 없습니다: {e}') from e
         current = self.repo.deployed_version(def_id, self.tenant_id)
         if current == version:
-            raise ValueError(f"{self._flow_name(def_id)}의 판본 {version}은(는) 이미 운영 판본입니다")
+            raise ValueError(f"{self._flow_name(def_id)}의 판본 {version}{particle(version, '은')} 이미 운영 판본입니다")
         if not class_flow and any(h['id'] == def_id and h.get('class_flow') for h in self.repo.deployed_heads(self.tenant_id)):
             # 표시 없이 바꾸면 수업 흐름이 학생 흐름이 되어 [기준 흐름으로 되돌리기]가 내린다(2026-10-25 학생 행위 점검)
-            raise ValueError(f'{self._flow_name(def_id)}은(는) 기본 제공 흐름이라 판본을 바꿀 수 없습니다. 고친 흐름은 다른 흐름 id 로 가져와 배포하세요')
+            raise ValueError(f'{self._flow_name(def_id)}{particle(self._flow_name(def_id), "은")} 기본 제공 흐름이라 판본을 바꿀 수 없습니다. 고친 흐름은 다른 흐름 id 로 가져와 배포하세요')
         record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip(),
                                              class_flow=bool(class_flow))
         self.hooks.audit('-', by.strip(), {'deploy': 'DEFINITION_DEPLOYED', 'rollback': 'DEFINITION_ROLLED_BACK',
@@ -533,7 +534,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         rows = [self.repo.get_proc_def(def_id, self.tenant_id, version=v) for v in (from_version, to_version)]
         missing = [v for v, r in zip((from_version, to_version), rows) if not r or not r.get('definition')]
         if missing:
-            raise LookupError(f'{self._flow_name(def_id)}에 판본 {", ".join(missing)}이(가) 등록돼 있지 않습니다')
+            raise LookupError(f'{self._flow_name(def_id)}에 판본 {", ".join(missing)}{particle(", ".join(missing), "이")} 등록돼 있지 않습니다')
         return compare(rows[0]['definition'], rows[1]['definition'])
 
     def alert_policy(self, pattern):
@@ -663,7 +664,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                    else '취소된 단계(시한 등)가 합류 지점으로 들어가')
             self.repo.record_events([{'job_id':'CLOSED_BRANCH_END','todo_id':wi['id'],'proc_inst_id':wi['proc_inst_id'],'crew_type':'result',
                 'event_type':'task_completed','data':{'name':'합류할 수 없어 처리 건을 닫음','join':adv.waiting_joins,
-                'friendly':f'{why} 흐름이 더 나아갈 수 없습니다 — 처리 건을 「{engine.TECHNICAL_ENDS[adv.ended]}」(으)로 끝냈습니다. '
+                'friendly':f'{why} 흐름이 더 나아갈 수 없습니다 — 처리 건을 「{engine.TECHNICAL_ENDS[adv.ended]}」{particle(engine.TECHNICAL_ENDS[adv.ended], "으로")} 끝냈습니다. '
                            '같은 일을 다시 하려면 새 처리 건으로 시작하세요'}}])
         if citation_changes:
             self.repo.record_events([{'job_id':'citation-reconcile:'+uuid4().hex,'todo_id':wi['id'],
@@ -682,7 +683,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             self._after_commit(self._settle_incident, inst["proc_inst_id"])
         if recheck is not None:
             self._after_commit(self._reopen_for_recheck, inst["proc_inst_id"], recheck["id"], wi.get("user_id") or "process",
-                               f"'{wi.get('activity_name') or wi['activity_id']}' 뒤 '{recheck.get('activity_name') or recheck['activity_id']}'(으)로 "
+                               f"'{wi.get('activity_name') or wi['activity_id']}' 뒤 '{recheck.get('activity_name') or recheck['activity_id']}'{particle(recheck.get('activity_name') or recheck['activity_id'], '으로')} "
                                "다시 — 새 판단과 사람 승인을 받습니다")
         for row in adv.reached:
             if row["status"] == "SUBMITTED" and row.get("agent_orch") == engine.PROCESS_ORCH:
@@ -862,7 +863,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         producer = self.repo.get_workitem(source.get('id')) if source.get('id') else None
         if (not decision_id or values.get('decision_id') != decision_id or not producer
                 or producer['status'] != 'DONE' or producer.get('generation') != inst['rework_generation']):
-            raise ValueError('새 세대의 판단 작업이 완료된 뒤 새 카드를 검토·승인하세요')
+            raise ValueError('새 세대의 판단 작업이 완료된 뒤 새 조치 후보를 검토·승인하세요')
         from .decision_scope import validate_output as validate_decision_output
         decision = self.hooks.get_decision(decision_id) if self.hooks.get_decision else None
         validate_decision_output(inst, producer, decision)
@@ -874,7 +875,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if not wi or wi.get('tenant_id') != self.tenant_id:
             raise KeyError(workitem_id)
         if self._tool_of(wi) != self.APPROVAL_TOOL or wi['status'] != 'IN_PROGRESS':
-            raise ValueError('진행 중인 카드 선택 작업에서만 새 예측을 검토할 수 있습니다')
+            raise ValueError('진행 중인 조치 선택 작업에서만 새 예측을 검토할 수 있습니다')
         inst = self.repo.get_instance(wi['proc_inst_id'])
         defn = self.definition_for(inst)
         self._check_deadline(wi,inst,defn,now)
@@ -912,7 +913,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 return f"'{name}' 단계는 시한이 지나 흐름이 시한 뒤 길로 갔습니다 — 승인할 수 없습니다"
         if inst.get("status") and inst.get("status") != "RUNNING":
             return f"'{name}' 단계는 처리 건이 끝나 닫혔습니다(끝: {self._end_label(inst)}) — 승인할 일이 없습니다"
-        return f"'{name}'은(는) 이미 처리된 승인입니다 — 다시 승인하지 않습니다. 화면을 새로 고쳐 처리 결과를 보세요"
+        return f"'{name}'{particle(name, '은')} 이미 처리된 승인입니다 — 다시 승인하지 않습니다. 화면을 새로 고쳐 처리 결과를 보세요"
 
     def select(self, workitem_id: str, decision_id: str, option_id: str, by: str, role: str, reason: str = "",
                fan_pct: float | None = None, load_pct: float | None = None, now: datetime | None = None,
@@ -938,7 +939,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError(NOT_THIS_DECISION)
         opt = deepcopy(self.hooks.decision_option(decision_id, option_id))
         if opt is None:
-            raise ValueError(f"판단 {decision_id}에 고른 카드 {option_id}이(가) 없습니다 — 화면을 새로 고쳐 카드를 다시 고르세요")
+            raise ValueError(f"판단 {decision_id}에 고른 조치 후보 {option_id}{particle(option_id, '이')} 없습니다 — 화면을 새로 고쳐 조치 후보를 다시 고르세요")
         person = self._card_actor(by, role)                              # A-04: 사람 사용자 + 그 역할의 구성원(일반 승인과 같은 규칙)
         by_name = inbox.person_name(self.repo, self.tenant_id, by)       # 메일 · 보고 틀이 쓰는 승인자 이름(없으면 승인 전에 실패)
         # Validation must be pure: this hook returns an approved COPY, never mutates the external book.
@@ -974,7 +975,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         wi = self._open_card(workitem_id)                 # 그 사이 다른 사람이 승인 · 거절했으면 「이미 처리된 승인」
         inst = self.repo.get_instance(wi["proc_inst_id"])
         if int(inst.get('rework_generation') or 0) != p['generation'] or engine.variables(inst).get('decision_id') not in (None, p['decision']):
-            raise ValueError('승인을 확인하는 사이 이 처리 건이 다시 수행돼 판단이 바뀌었습니다 — 화면을 새로 고친 뒤 새 카드를 검토하세요')
+            raise ValueError('승인을 확인하는 사이 이 처리 건이 다시 수행돼 판단이 바뀌었습니다 — 화면을 새로 고친 뒤 새 조치 후보를 검토하세요')
         defn = self.definition_for(inst)
         self._check_deadline(wi,inst,defn,now)
         opt, plan, commands, payload, purchase = p['opt'], p['plan'], p['commands'], p['payload'], p['purchase']
@@ -1040,11 +1041,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         defn = self.definition_for(inst)
         self._check_deadline(wi, inst, defn, now)
         if not self._card_step_rejects(defn, wi):
-            raise ValueError(f"이 처리 건은 승인 단계에 거절 길이 없던 흐름 판본({inst.get('proc_def_id')} {inst.get('proc_def_version')})으로 열려 "
-                             "거절을 받을 수 없습니다 — 지금 배포된 판본으로 새로 열리는 처리 건부터 거절할 수 있습니다")
+            raise ValueError(f"이 처리 건은 승인 단계에 반려 길이 없던 흐름 판본({inst.get('proc_def_id')} {inst.get('proc_def_version')})으로 열려 "
+                             "반려를 받을 수 없습니다 — 지금 배포된 판본으로 새로 열리는 처리 건부터 반려할 수 있습니다")
         reason = (reason or '').strip()
         if not reason:
-            raise ValueError('거절 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다')
+            raise ValueError('반려 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다')
         values = engine.variables(inst)
         self._require_new_generation_decision(inst, decision_id)
         if values.get('decision_id') != decision_id:
@@ -1061,7 +1062,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self.repo.update_instance(inst)
         self.repo.record_events([{'job_id': 'APPROVAL_REJECTED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
                                   'event_type': 'task_working',
-                                  'data': {'name': '거절 접수', 'decision': decision_id, 'by': by_name, 'user_id': person, 'role': role,
+                                  'data': {'name': '반려 접수', 'decision': decision_id, 'by': by_name, 'user_id': person, 'role': role,
                                            'reason': reason, 'effects': '설비 명령 · 업무 거래 없음'}}])
         self._after_commit(self.hooks.audit, values.get('asset', '-'), by, 'APPROVAL_REJECTED',
                            {'instance': inst['proc_inst_id'], 'task': wi['activity_id'], 'decision': decision_id, 'role': role, 'reason': reason},
@@ -1139,7 +1140,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if endpoint.startswith(inbox.ROLE):
             if role != endpoint:
                 names = {r["id"]: r.get("username") or r["id"] for r in inbox.role_users(self.repo, self.tenant_id)}
-                raise PermissionError(f"이 승인은 {names.get(endpoint, endpoint)} 역할의 일입니다 — {names.get(role, role) or '역할 없음'}(으)로는 승인할 수 없습니다")
+                raise PermissionError(f"이 승인은 {names.get(endpoint, endpoint)} 역할의 일입니다 — {names.get(role, role) or '역할 없음'}{particle(names.get(role, role) or '역할 없음', '으로')}는 승인할 수 없습니다")
         elif endpoint.startswith(inbox.PERSON):
             if by != endpoint:
                 raise PermissionError(f"이 승인은 {endpoint} 에게 배정된 일입니다")
@@ -1510,7 +1511,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self.definition_for_workitem(wi)
         inst=self.repo.get_instance(wi['proc_inst_id'])
         if self._tool_of(wi)!='enterprise:WO_CREATE' or wi['status']!='PENDING' or inst['status']!='RUNNING':
-            raise ValueError('재시도할 실패 작업지시가 아닙니다 — 작업지시 단계가 재시도 한도를 넘어 멈춘 때만 다시 보냅니다')
+            raise ValueError('재시도할 실패 정비 요청이 아닙니다 — 정비 요청 단계가 재시도 한도를 넘어 멈춘 때만 다시 보냅니다')
         self._card_actor(by, role)          # P1-15: 사람 사용자 + 그 역할의 구성원(승인과 같은 규칙) — 역할 등급은 아래 decisions.approve 가 본다
         approval=next((a for a in self.repo.list_approvals(inst['proc_inst_id'],self.tenant_id)
                        if a['status']=='DELIVERED' and a['decision_id']==engine.variables(inst).get('decision_id')),None)
@@ -1523,7 +1524,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         wi['log']=(wi.get('log') or '')+f'CMMS retry requested by {by} ({role}); '
         self.repo.update_workitem(wi)
         self.repo.record_events([{'job_id':'WORK_ORDER_RETRY','todo_id':wi['id'],'proc_inst_id':inst['proc_inst_id'],
-            'crew_type':'human','event_type':'task_working','data':{'name':'동일 작업지시 재전달','by':by,'role':role,
+            'crew_type':'human','event_type':'task_working','data':{'name':'동일 정비 요청 재전달','by':by,'role':role,
             'rework_count':wi['rework_count']}}])
         self._after_commit(self._run_service,inst,wi,now)
         return wi

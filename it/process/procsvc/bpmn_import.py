@@ -19,6 +19,7 @@ XML 원본). 차이는 git 이력 39f447ce:문서/시스템/검증_기록/2026-1
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import ast
 import hashlib
 import json
@@ -68,11 +69,11 @@ ESCALATE_TOOL = "formHandler:escalate"                    # 기준 흐름의 책
 # 제출된다(둘 다 역할 검사). 기준 흐름 2.3 까지는 승인 단계가 거절 값을 내지 않았다 — 그 판본과 그것으로 등록한 흐름의 처리 건은 자기 판본대로
 # 끝나고 거절 요청을 받지 않는다(instances.reject_card 가 까닭을 말한다). 2.4 부터 거절 값 없는 조치 카드 승인 부품은 없다.
 SELECT_PART, REJECTABLE_SELECT_PART = "task:select", "task:select-or-reject"
-REJECTABLE_SELECT_NAME = "조치 카드 승인 · 거절"
-REJECTABLE_SELECT_HELP = ("담당자가 조치 카드 하나를 승인하거나 거절합니다. 승인하면 approval 값이 '승인', 거절하면 '반려'(사유는 approval_reason)가 되고 "
-                          "거절에는 고른 조치가 없습니다. 효과 부품(설비 명령 · 작업지시 · 발주 …)으로 가는 분기 선에 approval == '승인' 조건을 두고, "
+REJECTABLE_SELECT_NAME = "조치 후보 승인 · 반려"
+REJECTABLE_SELECT_HELP = ("담당자가 조치 후보 하나를 승인하거나 반려합니다. 승인하면 approval 값이 '승인', 반려하면 '반려'(사유는 approval_reason)가 되고 "
+                          "반려에는 고른 조치가 없습니다. 효과 부품(설비 명령 · 정비 요청 · 발주 …)으로 가는 분기 선에 approval == '승인' 조건을 두고, "
                           "그 밖의 선은 결과 보고(결과: 반려)로 보내세요.")
-EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시",   # 바깥 시스템에 효과를 내는 서비스
+EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "정비 요청",   # 바깥 시스템에 효과를 내는 서비스
                 **effect_parts.EFFECTS}                                                 # C2: MCP 쓰기 · ERP 발주 · 정비 수행 모사 · 입고 확인
 # C2: 승인 경로가 확정하는 발주 값의 자료형 (분기 조건 approved_amount > 300 의 값)
 SERVER_VALUE_TYPES = {"approved_amount": "Number", "approved_qty": "Number", "approved_unit_price": "Number",
@@ -473,11 +474,11 @@ def _fields(spec, where: dict, field: str, problems: list) -> list[dict] | None:
             problems.append(problem(where, field, f"{i}번째 칸 형식이 올바르지 않습니다")); return None
         key, kind = str(f.get("key") or "").strip(), f.get("type") or "text"
         if not _identifier(key):
-            problems.append(problem(where, field, f"{i}번째 칸 값 이름 '{key}'은(는) 쓸 수 없습니다 (글자로 시작, 띄어쓰기 · 기호 없이)")); return None
+            problems.append(problem(where, field, f"{i}번째 칸 값 이름 '{key}'{particle(key, '은')} 쓸 수 없습니다 (글자로 시작, 띄어쓰기 · 기호 없이)")); return None
         if key in keys:
-            problems.append(problem(where, field, f"값 이름 '{key}'이(가) 두 번 있습니다")); return None
+            problems.append(problem(where, field, f"값 이름 '{key}'{particle(key, '이')} 두 번 있습니다")); return None
         if key in PROTECTED_OUTPUTS or key == "decision_id":
-            problems.append(problem(where, field, f"값 이름 '{key}'은(는) 서버 승인 경로만 만들 수 있습니다")); return None
+            problems.append(problem(where, field, f"값 이름 '{key}'{particle(key, '은')} 서버 승인 경로만 만들 수 있습니다")); return None
         if kind not in FIELD_TYPES:
             problems.append(problem(where, field, f"'{key}' 칸 종류 {kind} 는 쓸 수 없습니다 ({', '.join(FIELD_TYPES)})")); return None
         item = {"key": key, "text": str(f.get("text") or key), "type": kind}
@@ -625,7 +626,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     lane_role = {k: v for k, v in (mapping.get("lanes") or {}).items() if k in lanes}
     for lid, rname in lane_role.items():
         if rname and rname not in roles:
-            problems.append(problem(lanes[lid], "role", f"역할 '{rname}'이(가) 역할 목록에 없습니다"))
+            problems.append(problem(lanes[lid], "role", f"역할 '{rname}'{particle(rname, '이')} 역할 목록에 없습니다"))
     task_map = mapping.get("tasks") if isinstance(mapping.get("tasks"), dict) else {}
     activities, forms, used_roles, produced_by = [], {}, [], {}
     start_spec = mapping.get("start") if isinstance(mapping.get("start"), dict) else {}
@@ -653,7 +654,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             # 사람 입력 · 업무 경보 정의에만 있다 — 지식에 새로 그린 경보 패턴은 회복 기준이 없어 여기서 고를 수 없다(무엇이 왜 안 되는지와
             # 그 경보가 실제로 어디로 가는지, 고를 수 있는 것을 말한다)
             problems.append(problem(start_node, "start.patterns",
-                                    f"경보 패턴 {', '.join(unknown)} (으)로는 이 흐름을 시작할 수 없습니다 — 흐름 가져오기는 회복 기준(경보가 풀렸다고 "
+                                    f"경보 패턴 {', '.join(unknown)}{particle(', '.join(unknown), '으로')}는 이 흐름을 시작할 수 없습니다 — 흐름 가져오기는 회복 기준(경보가 풀렸다고 "
                                     f"볼 태그 · 임계값)이 정해진 경보만 받습니다: {', '.join(cat['patterns'])}. 지식 지도에 새로 만든 경보 패턴은 회복 "
                                     "기준이 없어 감지되면 「미지원 경보 → 현장 검토」 흐름으로 갑니다"))
         elif not chosen:
@@ -684,14 +685,14 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         inputs = [v for v in (m.get("inputs") or []) if isinstance(v, str) and v.strip()]
         bad = [v for v in inputs if not _identifier(v)]
         if bad:
-            problems.append(problem(t, "inputs", f"받을 값 이름 {', '.join(bad)} 을(를) 쓸 수 없습니다")); continue
+            problems.append(problem(t, "inputs", f"받을 값 이름 {', '.join(bad)}{particle(', '.join(bad), '을')} 쓸 수 없습니다")); continue
         if p["group"] == "scenario" or p.get("contract"):     # 기준 정의 부품과 그 계약을 쓰는 일반 부품(task:decide)
             a = deepcopy(p["contract"])
             a["id"], a["name"] = t["id"], t["name"] or p["name"]
             if p["kind"] == "human" and m.get("role"):
                 r = roles.get(m["role"])
                 if r is None or not r["human"]:
-                    problems.append(problem(t, "role", f"'{m['role']}'은(는) 사람 역할이 아닙니다")); continue
+                    problems.append(problem(t, "role", f"'{m['role']}'{particle(m['role'], '은')} 사람 역할이 아닙니다")); continue
                 a["role"] = r["name"]
             if p["key"] == "task:decide" and str(m.get("instruction") or "").strip():
                 a["instruction"] = str(m["instruction"]).strip()          # C2: 시나리오마다 판단 지시문(시나리오 에이전트)을 바꾼다
@@ -784,7 +785,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     if len({_rejects(a) for a in card_steps}) > 1:           # 같은 폼(select_card)을 두 계약이 나눠 쓸 수 없다
         for a in card_steps:
             if not _rejects(a):
-                problems.append(problem(g.nodes[a["id"]], "part", f"한 흐름에 '{a['_part']['name']}'와(과) '{REJECTABLE_SELECT_NAME}'을(를) 함께 쓸 수 "
+                problems.append(problem(g.nodes[a["id"]], "part", f"한 흐름에 '{a['_part']['name']}'{particle(a['_part']['name'], '과')} '{REJECTABLE_SELECT_NAME}'{particle(REJECTABLE_SELECT_NAME, '을')} 함께 쓸 수 "
                                                                   "없습니다 — 승인 단계의 부품을 한 가지로 맞추세요"))
 
     # -- 이벤트
@@ -813,7 +814,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             except Exception:  # noqa: BLE001
                 ok = False
             if not ok:
-                problems.append(problem(b, "timer", f"기간 '{timer}'을(를) 읽을 수 없습니다 (예: PT10M)"))
+                problems.append(problem(b, "timer", f"기간 '{timer}'{particle(timer, '을')} 읽을 수 없습니다 (예: PT10M)"))
         ev = {"id": b["id"], "name": b["name"] or "시간 초과", "type": "boundaryEvent", "eventDefinition": "timer",
               "timer": timer, "attachedTo": b["attached_to"]}
         if b.get("interrupting") is False:
@@ -839,7 +840,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                     try:
                         engine.compile_condition(f["condition_xml"])
                     except (ValueError, SyntaxError) as e:      # 틀린 식을 「조건 없음」으로 바꾸지 않는다(P5-19)
-                        problems.append(problem(where, "condition", f"그림에 적은 조건식 '{f['condition_xml'][:120]}'을(를) 읽을 수 없습니다 — "
+                        problems.append(problem(where, "condition", f"그림에 적은 조건식 '{f['condition_xml'][:120]}'{particle(f['condition_xml'][:120], '을')} 읽을 수 없습니다 — "
                                                 f"값 이름 · 비교(==, !=, >, >=, <, <=) · 기준 값으로 쓰거나(예: approval == '승인') 매핑에서 조건을 고르세요 ({e})"))
                         continue
                     spec = {"text": f["condition_xml"]}
@@ -904,7 +905,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         optional = optional_inputs(forms.get(str(a.get('tool') or '').removeprefix('formHandler:')))
         missing = [v for v in a.get("inputData") or [] if v not in have and v not in optional]
         if missing and start_node:
-            problems.append(problem(t, "inputs", f"받을 값 {', '.join(missing)} 을(를) 앞 단계(또는 시작)가 내지 않습니다"))
+            problems.append(problem(t, "inputs", f"받을 값 {', '.join(missing)}{particle(', '.join(missing), '을')} 앞 단계(또는 시작)가 내지 않습니다"))
         if a.get("tool") == effect_parts.MCP_TOOL and start_node:
             # 「승인 뒤 MCP 호출」의 인자 틀이 쓰는 {값}: 앞 단계(또는 시작 · 승인 경로)가 내는 값이어야 한다. 틀린 이름(오타)은 실행 때에야
             # 「처리 건에 없습니다」로 멈췄다 — 등록 전에 그 칸에서 알린다. 처리 건 이름 등은 실행이 늘 넣는 값이다(service_parts._call_mcp)
@@ -922,7 +923,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         have = {x["value"] for x in available.get(f["source"], [])}
         miss = sorted(need - have)
         if miss:
-            problems.append(problem(f, "condition", f"조건 값 {', '.join(miss)} 을(를) 분기 앞 단계가 내지 않습니다"))
+            problems.append(problem(f, "condition", f"조건 값 {', '.join(miss)}{particle(', '.join(miss), '을')} 분기 앞 단계가 내지 않습니다"))
         for reason in effect_parts.condition_type_problems(c["condition"], extracted_types):    # G3: MCP 결과에서 꺼낸 값의 자료형
             problems.append(problem(f, "condition", reason))
 
@@ -941,7 +942,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                                                    "승인 없이 설비 · 업무에 효과를 내는 흐름은 등록하지 않습니다"))
             elif a["id"] in g.reach(g.succ(a["id"]), stop=lambda n: n in approvals):
                 problems.append(problem(t, "part", f"되돌아가는 선이 {effect} 부품을 사람 승인 없이 다시 실행합니다 — "
-                                                   f"되돌아가는 선이 '{approval_name}'을(를) 다시 거치게 그리세요"))
+                                                   f"되돌아가는 선이 '{approval_name}'{particle(approval_name, '을')} 다시 거치게 그리세요"))
         # 사람 승인(안 고르기 · 조치 카드)은 반려도 낸다 — 그 뒤 효과 부품까지의 모든 경로가 '승인' 조건 선을 지나야 한다
         effects = {a["id"]: a["_part"]["effect"] for a in activities if a["_part"].get("effect")}
         closes_rejection = {a["id"] for a in activities if a.get("tool") == effect_parts.REPORT_TOOL
@@ -1118,7 +1119,7 @@ def _human_role(rname: str | None, roles: dict, t: dict, problems: list) -> dict
         problems.append(problem(t, "role", "담당 역할을 고르세요 (칸 이름이 역할 이름과 다르면 직접 고릅니다)"))
         return None
     if not r["human"]:
-        problems.append(problem(t, "role", f"'{rname}'은(는) 사람 역할이 아닙니다 — 시스템 · 에이전트 일은 해당 부품을 고르세요"))
+        problems.append(problem(t, "role", f"'{rname}'{particle(rname, '은')} 사람 역할이 아닙니다 — 시스템 · 에이전트 일은 해당 부품을 고르세요"))
         return None
     return r
 

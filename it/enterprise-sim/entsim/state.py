@@ -5,7 +5,7 @@ from __future__ import annotations
 #: 업무 거래의 한국어 이름 — 포털 이름 사전(names.json)의 재료(workspace/개발/scripts/portal_names.py). v2 그래프에는 업무 거래 스킬이 없어
 #: 이 표가 유일한 이름 출처다. 업무 DB 함수가 받는 거래와 같은 목록이어야 한다(test_entsim_state 가 실제 DB 로 대조한다).
 SKILL_NAMES = {
-    "skill:schedule-maintenance": "정비 작업지시 발행",
+    "skill:schedule-maintenance": "정비 요청 발행",
     "skill:schedule-maintenance-scoped": "원문 패키지와 설비 범위 정비 오더 등록",
     "skill:reschedule-maintenance": "기존 PM 오더 일정 변경",
     "skill:complete-maintenance": "정비 완료 · 부품 소모",
@@ -13,7 +13,7 @@ SKILL_NAMES = {
     "skill:procure-part": "부품 구매요청",
     "skill:receive-goods": "입고 · 검수",
     "skill:delay-delivery": "공급사 납기 지연 통보",
-    "skill:cancel-work-order": "정비 작업지시 취소",
+    "skill:cancel-work-order": "정비 요청 취소",
     "skill:cancel-purchase-request": "구매요청 취소",
     "skill:cancel-maintenance-scoped": "등록한 원문 정비 범위 전체 취소",
 }

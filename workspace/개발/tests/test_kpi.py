@@ -174,7 +174,7 @@ def test_표준_작업표에_없는_SOP는_비용을_지어내지_않고_그_SOP
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
     assert calc.status == 'partial'
     assert calc.value == _clean_cost(db, 'HYD-01')
-    assert calc.reason == '작업지시 2건 중 1건은 업무 DB 정비 표준 작업에 그 작업의 작업비가 없어 셀 수 없습니다: SOP-COOL-11'
+    assert calc.reason == '정비 요청 2건 중 1건은 업무 DB 정비 표준 작업에 그 작업의 작업비가 없어 셀 수 없습니다: SOP-COOL-11'
 
 
 def test_정기_정비_범위_오더는_실제_정비_패키지의_SOP로_찾는다(db, pg_dsn):
@@ -193,7 +193,7 @@ def test_작업지시가_없으면_보전비는_0이다(db, pg_dsn):
     with _window(db) as box:
         pass
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
-    assert (calc.status, calc.value, calc.note) == (None, 0, '기간 합계 · 작업지시 0건')
+    assert (calc.status, calc.value, calc.note) == (None, 0, '기간 합계 · 정비 요청 0건')
 
 
 # ------------------------------------------------------------------ 판정 · 합성 · 사유 문장

@@ -35,7 +35,7 @@ BLOCKER_TEXT = {
     'dependency_cycle_requires_review': '서로의 새 결과를 기다리는 단계들이 있어 다시 수행할 순서를 정할 수 없습니다 — 시스템 관리자에게 흐름 그림을 보여 주세요.',
     'incident_not_active_for_rework': '사건이 이미 해제됐거나 끝나 다시 판단할 것이 없습니다 — 새 경보가 나면 새 처리 건으로 진행됩니다.',
     'incident_command_in_flight': '설비 명령의 응답(ACK)을 기다리는 중입니다 — 응답이 온 뒤 영향 확인을 다시 누르세요.',
-    'effects_require_compensation_or_review': '이 사건이 이미 낸 실행 효과(설비 명령 · 작업지시 · 발주)가 아직 정리되지 않았습니다 — 「실행 효과」 칸에서 '
+    'effects_require_compensation_or_review': '이 사건이 이미 낸 실행 효과(설비 명령 · 정비 요청 · 발주)가 아직 정리되지 않았습니다 — 「실행 효과」 칸에서 '
                                               '되돌릴 수 있는 거래는 보상 요청하고, 나머지는 확인한 뒤 영향 확인을 다시 누르세요.',
     'untracked_decision_consent': '승인 기록과 맞지 않는 판단(고른 안)이 있어 출처를 확인해야 합니다 — 시스템 관리자에게 이 처리 건 기록을 보여 주세요.',
     'current_decision_original_missing': '지금 판단의 원문(판단 기록)을 찾을 수 없어 다시 수행할 수 없습니다 — 시스템 관리자에게 알리세요.',

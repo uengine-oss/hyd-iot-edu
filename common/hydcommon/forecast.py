@@ -4,6 +4,7 @@ The model is hydcommon.plant_model — the same constants and equations plant-si
 in closed form for constant inputs. No pattern or SOP identity selects an answer. Each prediction applies the supplied
 actions to the supplied current state. The real plant's interlocks remain authoritative; these are open-loop values.
 """
+from .words import particle
 from copy import deepcopy
 from datetime import datetime
 import math
@@ -28,7 +29,7 @@ def number(value, name, low, high):
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f'예측할 수 없습니다: {label} 값이 숫자가 아닙니다 — 설비 보고에서 이 값이 빠졌거나 글자로 왔습니다')
     if not math.isfinite(value) or not low <= value <= high:
-        raise ValueError(f'예측할 수 없습니다: {label} 값 {value} 이(가) 예측 모델이 다루는 범위 {low:g}~{high:g} 밖입니다')
+        raise ValueError(f'예측할 수 없습니다: {label} 값 {value}{particle(value, "이")} 예측 모델이 다루는 범위 {low:g}~{high:g} 밖입니다')
     return float(value)
 
 
@@ -63,7 +64,7 @@ def predict(snapshot, actions, horizon_s):
         code = action.get('code')
         if action.get('kind') != 'command':
             if code not in ('WO_CREATE', 'PR_CREATE', 'WO_RESCHEDULE'):
-                raise ValueError(f'예측할 수 없습니다: 업무 조치 {code} 는 예측 모델이 아는 조치(작업지시 · 구매 요청 · 정비 일정 변경)가 아닙니다')
+                raise ValueError(f'예측할 수 없습니다: 업무 조치 {code} 는 예측 모델이 아는 조치(정비 요청 · 구매 요청 · 정비 일정 변경)가 아닙니다')
             if code == 'WO_RESCHEDULE' and action.get('kind') != 'transaction':
                 raise ValueError('예측할 수 없습니다: 정비 일정 변경(WO_RESCHEDULE)이 등록된 업무 거래 종류가 아닙니다')
             # Creating a request or moving an existing maintenance order's

@@ -9,6 +9,7 @@ main.py calls into this module at two points: startup and every Incident transit
 """
 from __future__ import annotations
 
+from hydcommon.words import josa, particle
 import asyncio
 import inspect
 import json
@@ -221,7 +222,7 @@ def _register_reference(repo, seed: engine.Definition, booted: engine.Definition
     try:
         repo.upsert_proc_def(deepcopy(seed.raw), tenant_id)
     except ValueError as e:
-        problem = (f'기준 파일 {DEFINITION_FILE}의 판본 {seed.id}@{seed.raw.get("version")}을(를) 등록하지 못해 기준으로 되돌리거나 비교할 수 '
+        problem = (f'기준 파일 {DEFINITION_FILE}의 판본 {seed.id}@{seed.raw.get("version")}{particle(seed.raw.get("version"), "을")} 등록하지 못해 기준으로 되돌리거나 비교할 수 '
                    f'없습니다 — 같은 판본 번호로 다른 원문이 이미 등록돼 있습니다({e}). 기준 파일의 판본 번호를 올리세요')
         log.error("instance mode: %s", problem)
         return problem
@@ -404,7 +405,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             if existing.state in definition.TERMINAL and existing.reason != 'UNSUPPORTED_ALERT_PATTERN':
                 # 끝난 사건(처리 건 없이 남아 닫힌 사건 — P1-30 정리 포함)의 경보 id 로 새 처리 건을 열지 않는다. 회복 기준 없는 경보의 사건은
                 # 처음부터 끝난 상태(현장 검토)라 그 처리 건을 다시 열 때 같은 사건을 쓴다
-                raise ValueError(f'경보 {alert.get("alertId")}의 사건 {existing.id}은(는) 이미 끝났습니다({existing.state}) — 같은 경보로 다시 열지 않습니다')
+                raise ValueError(f'경보 {alert.get("alertId")}의 사건 {existing.id}{particle(existing.id, "은")} 이미 끝났습니다({existing.state}) — 같은 경보로 다시 열지 않습니다')
             return {"id": existing.id}
         triage = recovery_policy is not None and recovery_policy.get('route') == 'triage'
         card = {"alert": alert, "causes": [], "citations": [],
@@ -438,14 +439,14 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
     def approve_commands(inc_id: str, commands: list[dict], by: str, at=None) -> dict:
         inc = ctx.incidents.get(inc_id)
         if inc is None:
-            raise ValueError(f"사건 {inc_id}이(가) 사건 기록에 없습니다")
+            raise ValueError(f"사건 {inc_id}{particle(inc_id, '이')} 사건 기록에 없습니다")
         return ctx.approve_incident(inc, by, commands, at)
 
     def _incident_change(inc_id: str, change) -> bool:
         """사건 전이 하나(machine.on_*) → 저장 · 감사 · 처리 건 갱신. change(inc, fx) 가 False 면 아무것도 하지 않는다."""
         inc = ctx.incidents.get(inc_id)
         if inc is None:
-            raise ValueError(f"사건 {inc_id}이(가) 사건 기록에 없습니다")
+            raise ValueError(f"사건 {inc_id}{particle(inc_id, '이')} 사건 기록에 없습니다")
         fx = work_orders._Audit()
         changed = change(inc, fx)
         if changed:
@@ -495,7 +496,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
     def exec_enterprise(decision_id: str, item: dict) -> dict:
         d = ctx.book.get(decision_id)
         if d is None or not d.get("chosen"):
-            return {"ok": False, "error": f"판단 {decision_id}이(가) 승인되지 않아 업무 거래를 내지 않았습니다", "code": item.get("code"),
+            return {"ok": False, "error": f"판단 {decision_id}{particle(decision_id, '이')} 승인되지 않아 업무 거래를 내지 않았습니다", "code": item.get("code"),
                     "system": item.get("system")}
         inc = work_orders.prepare(ctx, d, item) if item.get('code') == 'WO_CREATE' else None
         result = ctx.exec_skill(d, item)
@@ -537,7 +538,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                 series = ctx.window_series(inc, after, since)
             except Exception as e:  # noqa: BLE001 — the trend is supporting evidence; the verdict never waits for it, but the gap is recorded
                 log.warning("re-observation series for %s could not be read", inc_id, exc_info=True)
-                series = reobs_series.unavailable(f"재관측 창의 값을 읽지 못했습니다: {type(e).__name__}: {str(e)[:200]}", tag=tag, op=op,
+                series = reobs_series.unavailable(f"효과 확인 구간의 값을 읽지 못했습니다: {type(e).__name__}: {str(e)[:200]}", tag=tag, op=op,
                                                   limit=limit, since=since, until=None, after=after, extensions=inc.reobs_extensions)
             if series:
                 reading["series"] = series
@@ -1008,7 +1009,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
                 policy = await _in_executor(rt.alert_policy, req.alert.get('pattern'))
                 target = policy['target']
                 if req.definition_id and (req.definition_id, req.version or target['version']) != (target['definition'], target['version']):
-                    raise HTTPException(409, f"이 경보({req.alert.get('pattern')})는 배포된 흐름 {target['definition']} {target['version']}이(가) 엽니다 — "
+                    raise HTTPException(409, f"이 경보({req.alert.get('pattern')})는 배포된 흐름 {target['definition']} {target['version']}{particle(target['version'], '이')} 엽니다 — "
                                              "흐름을 바꾸려면 그 흐름을 배포하세요")
                 admitted = await admit_alert(req.alert)
                 if admitted.get('duplicate'):
@@ -1063,7 +1064,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             rt = _rt()
             item = await _in_executor(rt.workitem_view,wid)
             if item['tool'] == approval_part.CARD_TOOL:
-                raise HTTPException(403,'조치 카드 승인은 /select의 역할 검사를 거쳐야 합니다')
+                raise HTTPException(403,'조치 후보 승인은 /select의 역할 검사를 거쳐야 합니다')
             if item['tool'] == approval_part.TOOL:
                 raise HTTPException(403,'사람 승인(안 고르기)은 /approve의 역할 검사를 거쳐야 합니다')
             if item.get('agent_mode') or item.get('agent_orch'):
@@ -1105,7 +1106,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().preview_choice,wid,req.decision,req.option,req.parameters)
         except KeyError:
-            raise HTTPException(404, '그 승인(카드 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
+            raise HTTPException(404, '그 승인(조치 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except ValueError as exc:
             raise HTTPException(409,str(exc))
 
@@ -1121,7 +1122,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             out['enterprise_results'] = approval['results']
             return out
         except KeyError:
-            raise HTTPException(404, '그 승인(카드 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
+            raise HTTPException(404, '그 승인(조치 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": req.option, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
@@ -1139,7 +1140,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().reject_card, wid, req.decision, req.by, req.role, req.reason)
         except KeyError:
-            raise HTTPException(404, '그 승인(카드 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
+            raise HTTPException(404, '그 승인(조치 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": None, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))

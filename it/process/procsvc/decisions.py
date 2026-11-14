@@ -8,6 +8,7 @@ through the HITL incident and the command gateway.
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 from datetime import datetime, timezone
 
 from .machine import _transition   # A143: decision mutations share the Incident state lock (see machine.STATE_LOCK)
@@ -63,12 +64,12 @@ def approver_roles(d: dict, opt: dict) -> list[str]:
     return [r for r in sorted(roles, key=lambda r: (_level(d, r), r)) if holds_approver_role(d, opt, r)]
 
 
-STATE_WORDS = {"APPROVED": "이미 승인됐습니다", "REJECTED": "이미 거절됐습니다", "CLOSED_UNAPPROVED": "승인 없이 처리 건이 끝났습니다", "EXECUTED": "이미 실행됐습니다", "PARTIAL": "이미 일부 실행됐습니다"}
+STATE_WORDS = {"APPROVED": "이미 승인됐습니다", "REJECTED": "이미 반려됐습니다", "CLOSED_UNAPPROVED": "승인 없이 처리 건이 끝났습니다", "EXECUTED": "이미 실행됐습니다", "PARTIAL": "이미 일부 실행됐습니다"}
 
 
 def _pending(d: dict) -> None:
     if d["state"] != "PENDING_APPROVAL":
-        raise ValueError(f"판단 {d.get('id')}은(는) {STATE_WORDS.get(d['state'], d['state'])} — 다시 승인 · 거절하지 않습니다")
+        raise ValueError(f"판단 {d.get('id')}{particle(d.get('id'), '은')} {STATE_WORDS.get(d['state'], d['state'])} — 다시 승인 · 반려하지 않습니다")
 
 
 @_transition
@@ -76,15 +77,15 @@ def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> di
     _pending(d)
     opt = next((o for o in d.get("options", []) if o["id"] == option_id), None)
     if opt is None:
-        raise ValueError(f"판단 {d.get('id')}에 카드 {option_id}이(가) 없습니다")
+        raise ValueError(f"판단 {d.get('id')}에 조치 후보 {option_id}{particle(option_id, '이')} 없습니다")
     from hydcommon.execution_scope import require_decision_option
     require_decision_option(d, opt)
     if not opt.get("feasible", False):
         why = "; ".join(v.get("annotation") or v.get("name") or v.get("rule", "") for v in opt.get("violations") or []) or "infeasible"
-        raise ValueError(f"'{opt['name']}'은(는) 규정상 고를 수 없다: {why}")
+        raise ValueError(f"'{opt['name']}'{particle(opt['name'], '은')} 규정상 고를 수 없다: {why}")
     if not may_approve(d, opt, role):
         need = (opt.get("approver") or {}).get("id")
-        raise PermissionError(f"승인 권한 없음: '{opt['name']}'은(는) {(opt.get('approver') or {}).get('name', need)} 이상이 승인해야 한다")
+        raise PermissionError(f"승인 권한 없음: '{opt['name']}'{particle(opt['name'], '은')} {(opt.get('approver') or {}).get('name', need)} 이상이 승인해야 한다")
     d.update(state="APPROVED", chosen=option_id, approvedBy=by, approvedRole=role, override=option_id != d.get("recommended"), reason=reason)
     d["history"].append({"state": "APPROVED", "t": _now(), "by": by, "role": role, "option": option_id, "reason": reason})
     item = lambda a: {"skill": opt["id"], "sop": opt.get("sopId"), "code": a.get("code"), "name": a.get("name"),

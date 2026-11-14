@@ -21,7 +21,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 from . import cards, guardrail
-from hydcommon.words import josa
+from hydcommon.words import josa, particle
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN
 from .tools import mcp_ent
@@ -323,7 +323,7 @@ def check_overrides(inputs: list[dict], overrides: dict | None) -> dict:
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise ValueError(f'「{name}」에는 숫자를 넣습니다(받은 값: {value!r})')
             if value < 0 and (key.endswith(('_h', '_hours', '_qty', '_days')) or key.startswith(('hours_', 'hot_lot_'))):
-                raise ValueError(f'「{name}」은(는) 시간 · 수량이라 음수일 수 없습니다(받은 값: {value:g})')
+                raise ValueError(f'「{name}」{particle(name, "은")} 시간 · 수량이라 음수일 수 없습니다(받은 값: {value:g})')
         elif kind == 'boolean':
             if type(value) is not bool:
                 raise ValueError(f'「{name}」에는 참 · 거짓을 넣습니다(받은 값: {value!r})')
@@ -437,7 +437,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             step('forecast', {"error": str(exc)}, "예측에 쓸 설비 상태를 받지 못해 판단을 멈췄다", status="FAILED")
             raise
         step('forecast', forecast_contexts, '구매는 물리 예측을 사용하지 않고 검토된 원문 총비용과 실제 부품 견적을 비교한다' if purchase_part is not None
-             else '설비별 명시 모델과 동일 시점 원천으로 조치별 예측(지금 작업지시를 시행하는 카드는 정지한 설비로); 고정 설계점으로 대체하지 않음')
+             else '설비별 명시 모델과 동일 시점 원천으로 조치별 예측(지금 정비 요청을 시행하는 카드는 정지한 설비로); 고정 설계점으로 대체하지 않음')
         precedents = kg.precedents(cause.get("failureModeId") or "")
         suppliers = kg.suppliers()
         if purchase_part is not None:

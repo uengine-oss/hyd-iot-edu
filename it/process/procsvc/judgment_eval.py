@@ -17,6 +17,7 @@
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import hashlib
 import json
 import re
@@ -100,7 +101,7 @@ def validate_item(item: dict) -> dict:
         if not isinstance(f, dict) or not str(f.get('skill') or '').startswith('skill:') or f.get('expect') not in FORBIDDEN_EXPECTS:
             raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄은 조치(skill:…)와 기대(제외돼야 함 · 1위면 안 됨)가 있어야 합니다")
         if f['skill'] in out['allowed_top']:
-            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄의 '{f['skill']}' 이(가) 1위로 허용되는 조치에도 있습니다")
+            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄의 '{f['skill']}'{particle(f['skill'], '이')} 1위로 허용되는 조치에도 있습니다")
         if f.get('rule') is not None and not str(f['rule']).startswith('rule:'):
             raise ValueError(f'빠져야 할 조치 {j + 1}번째 줄의 근거 규칙은 rule:… 이어야 합니다')
         out['forbidden'].append({k: f[k] for k in ('skill', 'expect', 'rule', 'why') if f.get(k)})

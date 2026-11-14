@@ -19,6 +19,7 @@
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import ast
 import json
 import re
@@ -89,13 +90,13 @@ PARTS = {
     },
     "svc:maintenance": {
         "tool": RESTORE_TOOL, "name": "정비 수행 (모사)", "outputs": ["maintenance"], "inputs": ["asset"],
-        "help": "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 작업지시가 있으면 CMMS 에서 완료 처리(표준 부품 소모), "
+        "help": "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 정비 요청이 있으면 CMMS 에서 완료 처리(표준 부품 소모), "
                 "가상 설비에서 승인한 조치 방법(SOP)이 지식 지도에서 다루는 원인의 상태만 정상으로 되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. "
-                "승인한 조치가 설비의 실제 결함을 다루지 않으면 결함은 그대로 남습니다 — 뒤에 효과 확인(재관측 · 시운전)을 두면 미달로 드러납니다. "
+                "승인한 조치가 설비의 실제 결함을 다루지 않으면 결함은 그대로 남습니다 — 뒤에 효과 확인(효과 확인 · 시운전)을 두면 미달로 드러납니다. "
                 "설비 명령 경로(PLC)가 아닌 가상 설비 조작입니다.",
         "config": {"component": "되돌릴 부품을 흐름이 직접 정할 때만: cooler · pump · fan (비우면 승인한 조치 방법이 지식 지도에서 다루는 것)",
-                   "sop": "작업지시 완료 때 부품 소모 기준이자 고칠 대상을 찾는 SOP (예: SOP-COOL-14 — 비우면 승인한 카드의 SOP)",
-                   "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)",
+                   "sop": "정비 요청 완료 때 부품 소모 기준이자 고칠 대상을 찾는 SOP (예: SOP-COOL-14 — 비우면 승인한 카드의 SOP)",
+                   "work_order_var": "정비 요청 영수증 값 이름 (기본 work_order)",
                    "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 대기 압축 적용)"},
     },
     "svc:goods-receipt": {
@@ -111,7 +112,7 @@ PARTS = {
         "help": "정비 뒤 설비를 안정시킨 다음(배속만 적용) 압력 · 유량 · 진동의 최신값을 기준과 비교합니다. 모두 통과하면 CMMS 운전시간 계수기를 "
                 "리셋하고 다음 기한을 기록합니다. 결과 passed 로 정상/미달 분기를 그립니다.",
         "config": {"criteria": "기준 {태그: [연산, 값]} (기본 PS1 >= 165 · FS1 >= 8 · VS1 < 1.2)", "settle": "안정 시간 ISO-8601 (기본 PT10M, 배속만 적용)",
-                   "reset_counter": "통과하면 계수기 리셋 · 다음 기한 기록 (기본 true)", "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)"},
+                   "reset_counter": "통과하면 계수기 리셋 · 다음 기한 기록 (기본 true)", "work_order_var": "정비 요청 영수증 값 이름 (기본 work_order)"},
     },
     "svc:report": {
         "tool": REPORT_TOOL, "name": "결과 보고", "outputs": ["result_report"],
@@ -148,7 +149,7 @@ def notice_spec(mail) -> dict | None:
         raise ValueError("메일 공지에는 받는 사람(to)과 제목(subject)이 있어야 합니다")
     for name in placeholders(spec["arguments"]):
         if not PATH_RE.match(name):
-            raise ValueError(f"메일 공지 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
+            raise ValueError(f"메일 공지 틀의 {{{name}}}{particle(name, '을')} 읽을 수 없습니다")
     return spec
 
 
@@ -159,7 +160,7 @@ def validate(activity: dict) -> None:
     if tool == "enterprise:WO_CREATE":               # 기준 부품(CMMS 작업지시)의 선택 설정: 정비 시점 값 이름 · 생산팀 공지 메일
         cfg = activity.get("service") or {}
         if not isinstance(cfg, dict) or set(cfg) - {"window_var", "mail"}:
-            raise ValueError(f"활동 {aid}: 작업지시 설정은 window_var · mail 만 받습니다")
+            raise ValueError(f"활동 {aid}: 정비 요청 설정은 window_var · mail 만 받습니다")
         if cfg.get("window_var") is not None and (not isinstance(cfg["window_var"], str) or not PATH_RE.match(cfg["window_var"])):
             raise ValueError(f"활동 {aid}: window_var 는 처리 건 값 이름(점으로 안쪽 칸, 예: alert.evidence.night_window_id)이어야 합니다")
         try:
@@ -175,7 +176,7 @@ def validate(activity: dict) -> None:
     known = PARTS[BY_TOOL[tool]]["config"]
     unknown = sorted(str(k) for k in cfg if k not in known)
     if unknown:                     # 오타(extarct 등)가 조용히 무시되어 설정한 줄 알게 하지 않는다
-        raise ValueError(f"활동 {aid}: 모르는 설정 칸 {', '.join(unknown)} — {PARTS[BY_TOOL[tool]]['name']} 이(가) 받는 칸: {', '.join(known)}")
+        raise ValueError(f"활동 {aid}: 모르는 설정 칸 {', '.join(unknown)} — {PARTS[BY_TOOL[tool]]['name']}{particle(PARTS[BY_TOOL[tool]]['name'], '이')} 받는 칸: {', '.join(known)}")
     if tool == PR_TOOL:
         try:
             notice_spec(cfg.get("mail"))
@@ -192,7 +193,7 @@ def validate(activity: dict) -> None:
             raise ValueError(f"활동 {aid}: MCP 인자 틀은 이름 → 값 객체여야 합니다")
         for name in placeholders(args):
             if not PATH_RE.match(name):
-                raise ValueError(f"활동 {aid}: 인자 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
+                raise ValueError(f"활동 {aid}: 인자 틀의 {{{name}}}{particle(name, '을')} 읽을 수 없습니다")
         output = cfg.get("output", "mcp_receipt")
         if not isinstance(output, str) or not IDENT_RE.match(output):
             raise ValueError(f"활동 {aid}: 결과 값 이름이 올바르지 않습니다")
@@ -214,7 +215,7 @@ def validate(activity: dict) -> None:
             except (ValueError, TypeError):
                 ok = False
             if not ok:
-                raise ValueError(f"활동 {aid}: 대기 기간 '{cfg['duration']}'을(를) 읽을 수 없습니다 (예: PT9H, P5D)")
+                raise ValueError(f"활동 {aid}: 대기 기간 '{cfg['duration']}'{particle(cfg['duration'], '을')} 읽을 수 없습니다 (예: PT9H, P5D)")
         elif not isinstance(cfg["until"], str) or not PATH_RE.match(cfg["until"]):
             raise ValueError(f"활동 {aid}: until 은 처리 건 값 이름(점으로 안쪽 칸, 예: work_order.window_starts_at)이어야 합니다")
     if tool == RESTORE_TOOL and cfg.get("component") not in (None, "", *COMPONENTS):
@@ -233,7 +234,7 @@ def validate(activity: dict) -> None:
             except (ValueError, TypeError):
                 ok = False
             if not ok:
-                raise ValueError(f"활동 {aid}: 안정 시간 '{cfg['settle']}'을(를) 읽을 수 없습니다 (예: PT10M)")
+                raise ValueError(f"활동 {aid}: 안정 시간 '{cfg['settle']}'{particle(cfg['settle'], '을')} 읽을 수 없습니다 (예: PT10M)")
         if "reset_counter" in cfg and not isinstance(cfg["reset_counter"], bool):
             raise ValueError(f"활동 {aid}: reset_counter 는 true/false 입니다")
     if tool == REPORT_TOOL:
@@ -256,7 +257,7 @@ def validate(activity: dict) -> None:
                 raise ValueError(f"활동 {aid}: {key} 는 글이어야 합니다")
             for name in placeholders(cfg.get(key) or ""):
                 if not PATH_RE.match(name):
-                    raise ValueError(f"활동 {aid}: {key} 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
+                    raise ValueError(f"활동 {aid}: {key} 틀의 {{{name}}}{particle(name, '을')} 읽을 수 없습니다")
     for key in ("work_order_var", "purchase_order_var"):
         if cfg.get(key) is not None and (not isinstance(cfg[key], str) or not IDENT_RE.match(cfg[key])):
             raise ValueError(f"활동 {aid}: {key} 는 값 이름이어야 합니다")
@@ -304,13 +305,13 @@ def _extract_types(aid, extract, output: str) -> dict:
     out = {}
     for name, spec in extract.items():
         if not isinstance(name, str) or not IDENT_RE.match(name) or name == output:
-            raise ValueError(f"활동 {aid}: extract 의 값 이름 '{name}'을(를) 쓸 수 없습니다 (글자로 시작, 결과 값 이름과 달라야 함)")
+            raise ValueError(f"활동 {aid}: extract 의 값 이름 '{name}'{particle(name, '을')} 쓸 수 없습니다 (글자로 시작, 결과 값 이름과 달라야 함)")
         if name in PROTECTED_OUTPUTS or name == "decision_id":
-            raise ValueError(f"활동 {aid}: 값 이름 '{name}'은(는) 서버 승인 경로만 만들 수 있습니다")
+            raise ValueError(f"활동 {aid}: 값 이름 '{name}'{particle(name, '은')} 서버 승인 경로만 만들 수 있습니다")
         if not isinstance(spec, dict) or set(spec) - {"path", "type"}:
             raise ValueError(f"활동 {aid}: extract.{name} 은 {{path, type}} 이어야 합니다")
         if not isinstance(spec.get("path"), str) or not JSON_PATH_RE.match(spec["path"]):
-            raise ValueError(f"활동 {aid}: extract.{name} 의 JSON 경로 '{spec.get('path')}'을(를) 읽을 수 없습니다 (예: attendees.0.status)")
+            raise ValueError(f"활동 {aid}: extract.{name} 의 JSON 경로 '{spec.get('path')}'{particle(spec.get('path'), '을')} 읽을 수 없습니다 (예: attendees.0.status)")
         if spec.get("type") not in EXTRACT_TYPES:
             raise ValueError(f"활동 {aid}: extract.{name} 의 자료형은 {', '.join(EXTRACT_TYPES)} 중 하나입니다")
         out[name] = spec["type"]
@@ -346,9 +347,9 @@ def extract_values(extract: dict, result: dict | None) -> dict:
         try:
             value = _walk(doc, spec["path"].split("."), spec["path"])
         except KeyError:
-            raise ValueError(f"결과에 경로 '{spec['path']}'(값 {name})이(가) 없습니다. 결과 앞부분: {head}") from None
+            raise ValueError(f"결과에 경로 '{spec['path']}'(값 {name}){particle(name, '이')} 없습니다. 결과 앞부분: {head}") from None
         if not EXTRACT_TYPES[spec["type"]](value):
-            raise ValueError(f"결과의 '{spec['path']}' 값 {json.dumps(value, ensure_ascii=False)[:60]} 은(는) {spec['type']} 가 아닙니다 (값 {name}). 결과 앞부분: {head}")
+            raise ValueError(f"결과의 '{spec['path']}' 값 {json.dumps(value, ensure_ascii=False)[:60]}{particle(json.dumps(value, ensure_ascii=False)[:60], '은')} {spec['type']} 가 아닙니다 (값 {name}). 결과 앞부분: {head}")
         out[name] = value
     return out
 
@@ -377,12 +378,12 @@ def condition_type_problems(text: str, types: dict) -> list[str]:
                 if not isinstance(op, _COMPARE_OK[kind]):
                     problems.append(f"{named.id}({kind})에는 '{_OP_TEXT_AST[type(op)]}' 비교를 쓸 수 없습니다")
                 elif isinstance(other, ast.Constant) and not (other.value is None or EXTRACT_TYPES[kind](other.value)):
-                    problems.append(f"{named.id}({kind})을(를) {other.value!r} 와 비교합니다 — 자료형이 다릅니다")
+                    problems.append(f"{named.id}({kind}){particle(kind, '을')} {other.value!r} 와 비교합니다 — 자료형이 다릅니다")
                 elif isinstance(other, ast.Name) and other.id in types and types[other.id] != kind:
-                    problems.append(f"{named.id}({kind})을(를) {other.id}({types[other.id]})와 비교합니다 — 자료형이 다릅니다")
+                    problems.append(f"{named.id}({kind}){particle(kind, '을')} {other.id}({types[other.id]})와 비교합니다 — 자료형이 다릅니다")
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and id(node) not in compared and types.get(node.id) not in (None, "Boolean"):
-            problems.append(f"{node.id}({types[node.id]})은(는) 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다")
+            problems.append(f"{node.id}({types[node.id]}){particle(types[node.id], '은')} 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다")
     return problems
 
 
@@ -599,17 +600,17 @@ def purchase_quote(option: dict, values: dict, quotes: list[dict]) -> dict | Non
     supplier = action.get("value")
     part, qty = purchase_inputs(values)
     if not supplier or not part or qty is None:
-        raise ValueError("발주 카드의 공급사 · 부품 · 수량을 확정할 수 없습니다 — 처리 건에 part_no · need_qty(또는 ERP 재고 경보 근거)가 있어야 "
+        raise ValueError("발주 후보의 공급사 · 부품 · 수량을 확정할 수 없습니다 — 처리 건에 part_no · need_qty(또는 ERP 재고 경보 근거)가 있어야 "
                          "금액을 계산하고 금액 기준 승인 분기를 탈 수 있습니다")
     if option.get('supplier_policy'):
         evidence = option.get('resolvedSupplier')
         if not isinstance(evidence, dict) or evidence.get('policy') != option['supplier_policy'] or \
                 evidence.get('id') != supplier or evidence.get('partNo') != part:
-            raise ValueError('동적 구매 카드의 정책·부품·확정 공급사 증거가 일치하지 않습니다')
+            raise ValueError('동적 구매 후보의 정책·부품·확정 공급사 증거가 일치하지 않습니다')
         current = {q.get('supplier'): {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl', 'name')}
                    for q in quotes or []}
         if len(current) != len(quotes or []) or current != evidence.get('quoteSet'):
-            raise ValueError('공급사 선택 이후 실제 부품별 견적이 변경되었습니다. 다시 평가한 카드로 승인하세요')
+            raise ValueError('공급사 선택 이후 실제 부품별 견적이 변경되었습니다. 다시 평가한 조치 후보로 승인하세요')
         if current.get(supplier) != evidence.get('quote'):
             raise ValueError('확정 공급사 견적과 승인 대상 증거가 일치하지 않습니다')
     quote = next((q for q in quotes or [] if q.get("supplier") == supplier), None)

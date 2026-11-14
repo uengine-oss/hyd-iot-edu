@@ -3,6 +3,7 @@
 도구 호출은 process 의 MCP 도구 실행 API(/api/mcp/servers/<서버>/tools/<도구>/call)로 간다 — 서버 설정 · 비밀은 process 만 쥔다.
 CLI 에는 서버마다 stdio 창구(python -m worker.question_tools)를 붙이고, 창구는 목록 파일에 적힌 허용 도구만 연다.
 """
+from hydcommon.words import particle
 import asyncio
 import json
 import os
@@ -53,7 +54,7 @@ def attach(reads, workdir, url, *, transport=None):
         try:payload = _request('GET', base+'/api/mcp/servers/'+quote(server,safe='')+'/tools', transport=transport)
         except Refused as refused:raise RuntimeConnectionError(f'질문에 쓸 도구 서버 {server}의 도구 목록을 받지 못했습니다 — {refused}') from None
         if payload.get('status') != 'ok' or not isinstance(payload.get('tools'), list):
-            raise RuntimeConnectionError(f'질문에 쓸 도구 서버 {server}이(가) 연결되지 않았습니다 — 도구 연결 화면에서 연결 상태를 확인하세요')
+            raise RuntimeConnectionError(f'질문에 쓸 도구 서버 {server}{particle(server, "이")} 연결되지 않았습니다 — 도구 연결 화면에서 연결 상태를 확인하세요')
         for tool in payload['tools']:
             if not isinstance(tool, dict):raise RuntimeConnectionError('질문 조회 도구 목록이 올바르지 않습니다')
             name = tool.get('name')

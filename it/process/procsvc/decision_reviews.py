@@ -47,7 +47,7 @@ class DecisionReviews:
         if (fresh.get('id'),fresh.get('asset'),fresh.get('origin')) != (source['id'],source['asset'],source.get('origin')):
             raise ValueError('예측 응답이 검토 대상과 일치하지 않습니다')
         if len(fresh.get('options', [])) != 1 or fresh['options'][0].get('id') != option_id:
-            raise ValueError('예측 응답에 선택한 카드가 없습니다')
+            raise ValueError('예측 응답에 선택한 조치 후보가 없습니다')
         if (fresh['options'][0].get('reviewed_choice') or {}).get('parameters') != parameters:
             raise ValueError('예측 응답의 조치값이 요청과 다릅니다')
         review_id = 'REV-' + str(uuid4())
@@ -63,7 +63,7 @@ class DecisionReviews:
         source = self._pending(decision_id,option_id)
         review = self.store.get_review(review_id)
         if review['scope'] != self._scope(source,option_id,scope):
-            raise ValueError('이 작업·사건·카드의 검토본이 아닙니다')
+            raise ValueError('이 작업·사건·조치 후보의 검토본이 아닙니다')
         if review['source_sha256'] != digest(source):
             raise ValueError('원래 결정이 변경됐습니다. 새 검토본이 필요합니다')
         return deepcopy(review['snapshot'])

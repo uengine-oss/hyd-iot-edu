@@ -43,6 +43,7 @@ MCP 비밀값은 MCPEnvSecret.vue 의 별도 저장소). HYD 는 수업 출발�
 """
 from __future__ import annotations
 
+from hydcommon.words import josa, particle
 import hashlib
 import json
 import logging
@@ -544,7 +545,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         raise BundleError(422, f"이 출발본은 옛 형식입니다(판수 {version}) — 만든 PC 의 포털에서 다시 내보내세요. 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
                           problems=[_problem("판수", f"옛 형식({version})입니다 — 다시 내보낸 파일(판수 {FORMAT_VERSION})을 쓰세요")])
     if version != FORMAT_VERSION:
-        raise BundleError(422, f"출발본 판수 {_text(version)[:20]} 은(는) 읽을 수 없습니다 — 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
+        raise BundleError(422, f"출발본 판수 {_text(version)[:20]}{particle(_text(version)[:20], '은')} 읽을 수 없습니다 — 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
                           problems=[_problem("판수", f"{FORMAT_VERSION} 이어야 합니다")])
     content = bundle.get("content")
     if not isinstance(content, dict):
@@ -785,7 +786,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         where = f"단계 배정 {did} · {act}"
         steps = {s["activity_id"]: s for s in flow_steps.get(did, [])}
         if did not in flow_steps:
-            problems.append(_problem(where, f"흐름 '{did}' 이(가) 파일에도 기준에도 없습니다")); continue
+            problems.append(_problem(where, f"흐름 '{did}'{particle(did, '이')} 파일에도 기준에도 없습니다")); continue
         if act not in steps:
             problems.append(_problem(where, "에이전트가 맡는 단계가 아닙니다(사람 · 시스템 단계이거나 없는 단계)")); continue
         if aid not in agent_ids:
@@ -890,7 +891,7 @@ def _apply(rt, base_loader, plan: dict, by: str, *, mcp_rows: dict | None = None
         for f in plan["flows"]:
             did = f["definition_id"]
             if fstore.is_protected(did):
-                raise ValueError(f"'{did}' 은(는) 기준 흐름 id 입니다")
+                raise ValueError(f"'{did}'{particle(did, '은')} 기준 흐름 id 입니다")
             for v in f["versions"]:
                 fstore.save_draft(did, v["bpmn"], v["file_name"], v["mapping"])
                 existing = [x["version"] for x in fstore.versions(did)]

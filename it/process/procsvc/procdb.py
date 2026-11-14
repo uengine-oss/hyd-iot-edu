@@ -14,6 +14,7 @@ UPDATE on the expected consumer, leases by renew_task_lease / clear_task_lease, 
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import os
 import socket
 import threading
@@ -261,7 +262,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             known = c.execute("""select 1 from proc_def_version where tenant_id=%s and proc_def_id=%s and version=%s
                                  and version_tag='hyd-immutable'""", (tenant_id, def_id, version)).fetchone()
             if head is None or known is None:
-                raise LookupError(f'판본 {version}이(가) 등록돼 있지 않습니다(흐름 id {def_id} — 배포하는 사이에 지워졌을 수 있습니다)')
+                raise LookupError(f'판본 {version}{particle(version, "이")} 등록돼 있지 않습니다(흐름 id {def_id} — 배포하는 사이에 지워졌을 수 있습니다)')
             c.execute("update proc_def set prod_version=%s, owner=%s, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
                       (version, CLASS_OWNER if class_flow else None, def_id, tenant_id))
             row = c.execute("""insert into proc_def_deployment (tenant_id, proc_def_id, version, previous_version, action, actor, reason)

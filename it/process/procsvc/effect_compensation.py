@@ -82,7 +82,7 @@ def inventory(evidence: dict) -> list[dict]:
     wo_ref = wo.get("ref") or wo.get("id")
     if wo_ref and wo_ref not in ledger_refs:
         effects.append({"id": f"cmms:{wo_ref}", "kind": "cmms", "incident": incident.get("id"), "ref": wo_ref, "reversible": False,
-                        "irreversible_reason": "사건이 기록한 작업지시가 기업 원장에 없다 — 사람이 확인해야 한다", "compensated_by": None,
+                        "irreversible_reason": "사건이 기록한 정비 요청이 기업 원장에 없다 — 사람이 확인해야 한다", "compensated_by": None,
                         "fingerprint": _fp(["cmms", incident.get("id"), wo_ref])})
     request = incident.get("workOrderRequest")
     if request and not wo_ref:

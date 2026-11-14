@@ -24,7 +24,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-from hydcommon.words import josa
+from hydcommon.words import josa, particle
 from .inbox import NOT_A_PERSON
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -62,7 +62,7 @@ def default_base_loader(rt) -> dict:
     from . import instance_mode
     path = Path(instance_mode.DEFINITIONS_DIR) / instance_mode.DEFINITION_FILE
     if not path.is_file():
-        raise RuntimeError(f"기준 정의 파일 {path} 이(가) 없어 흐름 부품 목록을 만들 수 없습니다 — 이미지의 정의 폴더를 확인하세요")
+        raise RuntimeError(f"기준 정의 파일 {path}{particle(path, '이')} 없어 흐름 부품 목록을 만들 수 없습니다 — 이미지의 정의 폴더를 확인하세요")
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -116,7 +116,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         if bootstrap:
             return {"allowed": True, "reason": None}
         if store.is_protected(def_id):
-            return {"allowed": False, "reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"}
+            return {"allowed": False, "reason": f"'{def_id}'{particle(def_id, '은')} 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"}
         if def_id in class_flow_ids:
             return {"allowed": False, "reason": f"{josa(f'「{class_flow_ids[def_id]}」', '은')} 기본 제공 흐름이라 읽기만 할 수 있습니다 — 내 판본은 "
                                                 "흐름 화면의 [가져오기]에서 다른 흐름 id(예: my_cooling)로 가져와 등록하세요"}
@@ -158,7 +158,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
     def editable(rt, store, def_id) -> None:
         """매핑을 고칠 수 있는 흐름인가 — 기준 흐름 · 강사 수업 흐름은 읽기만(그 초안을 바꾸면 강사 흐름의 다음 설치가 학생 매핑을 이어받는다)."""
         if store.is_protected(def_id):
-            raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
+            raise HTTPException(409, {"reason": f"'{def_id}'{particle(def_id, '은')} 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
         classes = class_flows(rt)
         if def_id in classes:
             raise HTTPException(409, {"reason": f"{josa(f'「{classes[def_id]}」', '은')} 기본 제공 흐름이라 읽기만 할 수 있습니다 — 매핑을 고쳐 보려면 "
@@ -187,16 +187,16 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 raise HTTPException(400, {"reason": str(e), "problems": e.problems}) from None
             def_id = (req.definition_id or "").strip() or bpmn_import.suggest_definition_id(parsed)
             if not bpmn_import.valid_definition_id(def_id):
-                raise HTTPException(400, {"reason": f"흐름 id '{def_id}'은(는) 쓸 수 없습니다 — 영문자로 시작하고 영문 · 숫자 · _ . - 만 (64자까지)"})
+                raise HTTPException(400, {"reason": f"흐름 id '{def_id}'{particle(def_id, '은')} 쓸 수 없습니다 — 영문자로 시작하고 영문 · 숫자 · _ . - 만 (64자까지)"})
             if not req.class_flow:
                 course(lambda policy: policy.import_flow(req.xml, def_id))
             store = FlowStore(rt.repo, rt.tenant_id)
             if store.is_protected(def_id):
-                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다. 다른 흐름 id 를 쓰세요"})
+                raise HTTPException(409, {"reason": f"'{def_id}'{particle(def_id, '은')} 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다. 다른 흐름 id 를 쓰세요"})
             # 2026-10-25 학생 행위 점검: 수업 흐름 id 로 가져오면 강사 초안을 덮고, 등록 · 배포하면 수업 흐름 표시가 없는 판본이
             # 경보를 가져가 [기준 흐름으로 되돌리기]가 그 흐름을 내렸다(B · C 버튼 멈춤). 판정은 지금 배포의 수업 흐름 표시로 한다.
             if not req.class_flow and def_id in class_flows(rt):
-                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기본 제공 흐름의 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
+                raise HTTPException(409, {"reason": f"'{def_id}'{particle(def_id, '은')} 기본 제공 흐름의 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
             cat = catalog_of(rt)
             old = store.get_draft(def_id)
             mapping, report = bpmn_import.merge_mapping(parsed, (old or {}).get("mapping"), cat)
@@ -262,7 +262,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             deployed = next((f for f in routes(rt)["flows"] if f["definition"] == def_id), None)
             if deployed is not None:
                 patterns = ", ".join(deployed.get("patterns") or []) or "경보 패턴 없음"
-                raise HTTPException(409, {"reason": f"「{deployed.get('name') or def_id}」은(는) 지금 경보 경로에 배포된 흐름입니다(판본 {deployed.get('version')}, "
+                raise HTTPException(409, {"reason": f"「{deployed.get('name') or def_id}」{particle(deployed.get('name') or def_id, '은')} 지금 경보 경로에 배포된 흐름입니다(판본 {deployed.get('version')}, "
                                                     f"경보 {patterns}) — 지우지 않았습니다. 먼저 [관리] 탭 「흐름 판본 배포 · 비교 · 되돌리기」의 "
                                                     "[기준 흐름으로 되돌리기]로 배포를 내린 뒤 지우세요",
                                           "deployed": deployed})
@@ -319,7 +319,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             draft = draft_of(store, def_id)
             mapping = mapping_of(req, draft)
             if store.is_protected(def_id):
-                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
+                raise HTTPException(409, {"reason": f"'{def_id}'{particle(def_id, '은')} 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
             # 2026-10-25 수업 한 바퀴: 수업 흐름(강사 배포)의 [매핑 열기] → [판본 등록]이 통과해 강사 흐름에 학생 판본이 쌓였다(배포만 막혔다)
             classes = class_flows(rt)
             if not req.class_flow and def_id in classes:
@@ -354,7 +354,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         def work():
             xml = FlowStore(rt.repo, rt.tenant_id).bpmn_of(def_id, version)
             if not xml and rt.repo.get_proc_def(def_id, rt.tenant_id, version=version) is None:
-                raise HTTPException(404, {"reason": f"{def_id} 판본 {version} 이(가) 없습니다 — 판본 목록을 새로 고치세요"})
+                raise HTTPException(404, {"reason": f"{def_id} 판본 {version}{particle(version, '이')} 없습니다 — 판본 목록을 새로 고치세요"})
             return xml
         xml = await run(work)
         if not xml:      # 판본은 있는데 그림이 없다(그림 파일 없이 정의로만 등록된 흐름) — 오류가 아니라 「내용 없음」이다. 화면은 정의에서 그림을 만든다

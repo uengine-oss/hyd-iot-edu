@@ -123,13 +123,17 @@ def test_켜질_때_업무_DB가_끝내_답하지_않으면_정한_시간만_기
     assert '업무 DB에 연결하지 못했습니다' in str(err.value) and err.value.__cause__ is None and len(str(err.value).splitlines()) == 1
 
 
-def test_승인한_원문_정비_범위_오더는_묶음_전체를_취소하고_예약한_부품을_돌려준다(stack, tool_servers, course_graph):
+def test_승인한_원문_정비_범위_오더는_묶음_전체를_취소하고_예약한_부품을_돌려준다(world, stack, tool_servers):
     """G2-01: 원문 정비 범위 오더의 되돌리기가 업무 시뮬레이터에서 늘 「없는 거래」로 거절됐다. 실제 판단 엔진(dmn-mcp)이 학생 PC 의 시작 뒤
     그래프로 낸 정기 정비 카드의 정비 계획을 그대로 등록하고(process 가 보내는 모양), 원거래 id 로 묶음 전체를 취소한다."""
+    # 판단 엔진은 설비 상태를 받아야 카드를 낸다(받지 못하면 「값을 아직 받지 못함」으로 멈춘다) — 이 시험이 그 상태를 만든다(world: 켜진 처리 엔진 ·
+    # 값을 보고하는 HYD-02). 전에는 앞 시험이 남긴 설비 상태에 기대어, 차례에 따라 실패했다.
+    world.reported_for('HYD-02')
     _, causes = call(tool_servers['hyd-dmn'], 'business_causes', {'asset': 'HYD-02', 'pattern': 'PM_DUE'})
     cause = json.loads(causes)['document']
-    _, evaluated = call(tool_servers['hyd-dmn'], 'evaluate_cards', {'asset': 'HYD-02', 'pattern': 'PM_DUE', 'cause': cause['top_cause'],
-                                                                   'failure_mode': cause['failure_mode']})
+    with world.reporting('HYD-02'):
+        _, evaluated = call(tool_servers['hyd-dmn'], 'evaluate_cards', {'asset': 'HYD-02', 'pattern': 'PM_DUE', 'cause': cause['top_cause'],
+                                                                       'failure_mode': cause['failure_mode']})
     body = json.loads(evaluated)
     assert body['result'] == 'ok', body
     plans = [o for o in body['document']['options'] if (o.get('maintenancePlan') or {}).get('stock_effect') == 'reserve'

@@ -14,11 +14,11 @@ unset COMPOSE_PROFILES
 # .env(그 값이 없음)에서도 끌 수 있게 이 명령에만 자리 값을 준다(켜는 명령에는 주지 않는다)
 compose() { AI_MODE=stop PROCESS_CALLER_TOKEN=stop CMD_FINGERPRINT_KEY=stop docker compose "$@"; }
 compose --profile '*' stop || die '시스템 컨테이너를 멈추지 못했습니다. 위 오류를 보고 Docker Desktop이 켜져 있는지 확인한 뒤 다시 실행하세요.'
-( cd it/supabase && npx -y "supabase@$SUPABASE_CLI" stop ) || die '업무 DB(Supabase)를 끄지 못했습니다. 위 오류를 강사에게 알려 주세요(실습 데이터는 그대로 있습니다). Docker Desktop의 Containers 화면에서 supabase_ 로 시작하는 컨테이너를 멈춰도 됩니다.'
+( cd it/supabase && npx -y "supabase@$SUPABASE_CLI" stop ) || die '업무 DB(Supabase)를 끄지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요(쌓인 데이터는 그대로 있습니다). Docker Desktop의 Containers 화면에서 supabase_ 로 시작하는 컨테이너를 멈춰도 됩니다.'
 running=$(compose ps --status running -q | grep -c . || true)
 supa=$(sed -n 's/^SUPABASE_PROJECT_ID=//p' it/supabase/.env 2>/dev/null | tail -1)
 supa_running=0
 [ -z "$supa" ] || supa_running=$(docker ps -q --filter "label=com.supabase.cli.project=$supa" | grep -c . || true)
 [ "$running" -eq 0 ] || die "이 폴더의 시스템 컨테이너 ${running}개가 아직 켜져 있습니다. 'docker compose ps'로 확인하세요."
-[ "$supa_running" -eq 0 ] || die "업무 DB(Supabase, ${supa}) 컨테이너 ${supa_running}개가 아직 켜져 있습니다. 끄기를 한 번 더 실행하고, 그래도 남으면 강사에게 알려 주세요."
-echo "꺼짐: 이 폴더의 시스템과 업무 DB(실습 데이터는 그대로 남습니다)."
+[ "$supa_running" -eq 0 ] || die "업무 DB(Supabase, ${supa}) 컨테이너 ${supa_running}개가 아직 켜져 있습니다. 끄기를 한 번 더 실행하고, 그래도 남으면 이 메시지를 그대로 전해 도움을 요청하세요."
+echo "꺼짐: 이 폴더의 시스템과 업무 DB(쌓인 데이터는 그대로 남습니다)."

@@ -150,7 +150,7 @@ def test_긴_직선_흐름도_재귀_한도_없이_검사한다():
     """P1-16: 전에는 1,600단계에서 RecursionError(사유 없는 500)였다. 한도 안(500단계)은 등록되고, 넘으면 쉬운 말로 거절한다."""
     longest = definition_registry.MAX_NODES - 1                 # 연결은 단계보다 하나 많다
     assert len(validate_definition(_line(longest)).activities) == longest
-    with pytest.raises(ValueError, match=r'단계이\(가\) 501개로 한도 500개'):
+    with pytest.raises(ValueError, match=r'단계가 501개로 한도 500개'):
         validate_definition(_line(definition_registry.MAX_NODES + 1))
 
 

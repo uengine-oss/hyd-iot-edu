@@ -15,7 +15,7 @@ import json
 from hydcommon import ranking, bsc
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN, purchase_rule_problem
-from hydcommon.words import josa
+from hydcommon.words import josa, particle
 
 STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:tp"}
 LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
@@ -115,7 +115,7 @@ MAINTENANCE_ORDER = "WO_CREATE"      # 정비 작업지시 — 이 동작이 있
 #: 다음 예정된 정비 시간(CMMS 정비 계획 · 운전시간 계수기 한 행의 이번 야간 창) — 완화 조치 카드의 작업지시가 가는 창
 NEXT_WINDOW = "hours_at_next_window"
 IMMEDIATE = {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
-NO_MAINTENANCE_WINDOW = ("이 조치의 정비 작업지시를 시행할 다음 예정된 정비 시간을 정비 시스템(CMMS)에서 찾지 못했습니다 — 정비 시점을 정할 수 없어 "
+NO_MAINTENANCE_WINDOW = ("이 조치의 정비 요청를 시행할 다음 예정된 정비 시간을 정비 시스템(CMMS)에서 찾지 못했습니다 — 정비 시점을 정할 수 없어 "
                          "실행 후보에서 뺍니다")
 
 
@@ -201,7 +201,7 @@ def rank_policy(rules, facts):
     matches = []
     for rule in rules:
         if rule['effect'] != 'RANK':
-            raise ValueError(f'순위 결정표에 순위(RANK)가 아닌 규칙 {rule.get("rule")}이(가) 있습니다 — 지식의 결정표를 확인하세요')
+            raise ValueError(f'순위 결정표에 순위(RANK)가 아닌 규칙 {rule.get("rule")}{particle(rule.get("rule"), "이")} 있습니다 — 지식의 결정표를 확인하세요')
         fired, unknown = rule_fires(rule, facts) if rule.get('tests') else (True, [])
         if unknown and not any(test_ok(t, facts) is False for t in rule['tests']):
             raise ValueError('순위 규칙을 고를 입력값이 미확인입니다: ' + ', '.join(unknown))

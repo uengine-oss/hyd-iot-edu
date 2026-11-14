@@ -7,6 +7,7 @@ v3 section 9 sequence: approve → action.cmd (expiresAt = +120 s) → ACK withi
 판정한다(on_ack_timeout). 재관측 창 · 연장 · 판정 규칙은 재관측 단계 하나(service_parts._reobserve)가 갖고, 이 기계는 그 판정을
 사건에 적기만 한다(on_reobservation). 그래서 process 가 다시 켜져도 재관측은 저장한 마감으로 이어진다.
 """
+from hydcommon.words import particle
 from dataclasses import dataclass, field
 from copy import deepcopy
 from datetime import datetime
@@ -147,17 +148,17 @@ def _validate_actions(option: dict, actions: list[dict]) -> list[dict]:
     for a in actions:
         rec = by_code.get(a.get("code"))
         if not rec:
-            raise ValueError(f"승인한 조치 「{name}」에 없는 설비 명령({a.get('code')})은 보낼 수 없습니다 — 처리 건 화면을 새로 고쳐 카드를 다시 고르세요")
+            raise ValueError(f"승인한 조치 「{name}」에 없는 설비 명령({a.get('code')})은 보낼 수 없습니다 — 처리 건 화면을 새로 고쳐 조치 후보를 다시 고르세요")
         param = rec.get("param")
         if not param:                       # e.g. RESET: a command without a parameter
             out.append({"code": a["code"]})
             continue
         val = a.get(param)
         if val is None:
-            raise ValueError(f"설비 명령 「{rec.get('name') or a['code']}」에 값이 없습니다 — 카드의 조치값을 확인하세요")
+            raise ValueError(f"설비 명령 「{rec.get('name') or a['code']}」에 값이 없습니다 — 조치 후보의 조치값을 확인하세요")
         lo, hi = rec.get("min"), rec.get("max")
         if lo is not None and hi is not None and not (lo <= float(val) <= hi):
-            raise ValueError(f"설비 명령 「{rec.get('name') or a['code']}」의 값 {val}이(가) 허용 범위 {lo}~{hi} 밖입니다")
+            raise ValueError(f"설비 명령 「{rec.get('name') or a['code']}」의 값 {val}{particle(val, '이')} 허용 범위 {lo}~{hi} 밖입니다")
         out.append({"code": a["code"], param: val})
     if not out:
         raise ValueError(f"승인한 조치 「{name}」에는 보낼 설비 명령이 없습니다")
@@ -190,7 +191,7 @@ def on_approve(inc: Incident, approved_by: str, option: dict, actions: list[dict
 def on_command_sent(inc: Incident, cmd_id: str, now: datetime, fx: Effects) -> None:
     """원장과 명령이 Kafka 에 실린 것을 확인한 뒤: ACK 를 기다린다. 마감은 사건에 적고(벽시계 ACK_TIMEOUT_S) 명령 단계 행이 저장한다."""
     if inc.state != "CMD_ISSUED" or inc.cmd_id != cmd_id:
-        raise ValueError(f"명령 {cmd_id}을(를) 보낸 사건 상태가 아닙니다 (지금 {inc.state}, 명령 {inc.cmd_id})")
+        raise ValueError(f"명령 {cmd_id}{particle(cmd_id, '을')} 보낸 사건 상태가 아닙니다 (지금 {inc.state}, 명령 {inc.cmd_id})")
     inc.ack_due_at = to_iso(plus_seconds(now, d.ACK_TIMEOUT_S))
     _audit(inc, fx, "process", "CMD_PUBLISHED", {"cmdId": inc.cmd_id, "expiresAt": inc.expires_at, "ackDueAt": inc.ack_due_at})
     _go(inc, "AWAITING_ACK")
@@ -477,5 +478,5 @@ def on_process_ended(inc: Incident, end_label: str, fx: Effects) -> bool:
         return False
     inc.reason = f"{d.PROCESS_ENDED}: {end_label}"
     _audit(inc, fx, 'process', 'INCIDENT_ESCALATED', {'processEnded': end_label, 'stateBefore': inc.state})
-    _go(inc, 'ESCALATED', f"처리 건이 「{end_label}」(으)로 끝나 책임자 확인으로 닫음")
+    _go(inc, 'ESCALATED', f"처리 건이 「{end_label}」{particle(end_label, '으로')} 끝나 책임자 확인으로 닫음")
     return True

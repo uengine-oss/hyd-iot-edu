@@ -254,6 +254,11 @@ def test_지금_설비를_세우고_세척하는_카드는_정지한_설비로_�
     ts1 = {sop: next((x['value'] for x in o['forecast'] if x['variable'] == 'sv:ts1'), None) for sop, o in options.items()}
     assert ts1.get('SOP-COOL-14') is not None, ts1
     assert ts1['SOP-COOL-14'] < 55, f'정지한 설비의 예측이 아니다(운전 계속이면 경보선 위): {ts1}'
+    # 그 값은 서 있는 설비의 평형(주변 온도 쪽)이지 정비 뒤 다시 돌린 유온이 아니다 — 이름이 그 조건을 말한다(화면은 이 이름을 그대로 보인다).
+    # 운전을 이어 가는 안의 이름에는 그 말이 없다
+    names = {sop: next(x['name'] for x in o['forecast'] if x['variable'] == 'sv:ts1') for sop, o in options.items() if o.get('forecast')}
+    assert names['SOP-COOL-14'] == '평형 유온(정비하는 동안 설비 정지)', names
+    assert names['SOP-COOL-11'] == '평형 유온', names
 
 
 def test_판단_기록의_장면_이름은_학생이_읽는_고장_이름으로_쓴다(cooling):

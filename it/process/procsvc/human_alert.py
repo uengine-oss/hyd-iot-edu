@@ -25,7 +25,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from hydcommon import topics
-from hydcommon.words import josa
+from hydcommon.words import josa, particle
 
 HUMAN_SOURCE = "human_input"
 
@@ -66,13 +66,13 @@ def _text(body: dict, key: str, label: str, limit: int, required: bool = True) -
     v = body.get(key)
     if v is None or (isinstance(v, str) and not v.strip()):
         if required:
-            raise ValueError(f"{label}을(를) 입력하세요 ({key})")
+            raise ValueError(f"{label}{particle(label, '을')} 입력하세요 ({key})")
         return ""
     if not isinstance(v, str):
-        raise ValueError(f"{label}은(는) 글이어야 합니다 ({key})")
+        raise ValueError(f"{label}{particle(label, '은')} 글이어야 합니다 ({key})")
     v = " ".join(v.split()) if key != "memo" else v.strip()
     if len(v) > limit:
-        raise ValueError(f"{label}은(는) {limit}자 이내로 입력하세요 ({key})")
+        raise ValueError(f"{label}{particle(label, '은')} {limit}자 이내로 입력하세요 ({key})")
     return v
 
 
@@ -98,7 +98,7 @@ def build_alert(body: dict, entered: dict, now: datetime | None = None) -> tuple
     item_key = _text(body, "item", "분석 항목", 32)
     item = next((i for i in spec["items"] if i["key"] == item_key), None)
     if item is None:
-        raise ValueError(f"분석 항목 {item_key} 은(는) 목록에 없습니다 (item — {', '.join(i['key'] for i in spec['items'])})")
+        raise ValueError(f"분석 항목 {item_key}{particle(item_key, '은')} 목록에 없습니다 (item — {', '.join(i['key'] for i in spec['items'])})")
     out_of_spec = body.get("out_of_spec")
     if type(out_of_spec) is not bool:
         raise ValueError("기준 이탈 여부를 예/아니요로 고르세요 (out_of_spec)")
@@ -171,8 +171,15 @@ def register(app, *, runtime_factory, admit, open_alerts=lambda: [], audit=lambd
             busy = next((i for i in running if is_human_alert(engine.variables(i).get("alert"))
                          and engine.variables(i)["alert"].get("pattern") == alert["pattern"]), None)
             if busy is not None:
-                raise HTTPException(409, f"{alert['asset']}의 {PATTERNS[alert['pattern']]['name']} 처리 건이 아직 진행 중입니다 — 같은 이상을 다시 "
-                                         "입력하지 않습니다. 처리 건 화면에서 그 처리 건을 끝낸 뒤 새 결과를 입력하세요")
+                from fastapi.responses import JSONResponse
+                from .scenario_buttons import started_words
+                when = started_words(busy)
+                # 어느 건인지(시작한 때)를 말하고, 그 건을 칸으로 싣는다(instance · started_at) — 화면이 그 처리 건으로 바로 간다
+                return JSONResponse(status_code=409, content={
+                    "detail": f"{alert['asset']}의 {PATTERNS[alert['pattern']]['name']} 처리 건이 아직 진행 중입니다" + (f"({when})" if when else "")
+                              + " — 같은 이상을 다시 입력하지 않습니다. 처리 건 화면에서 그 처리 건을 끝낸 뒤 새 결과를 입력하세요",
+                    "instance": busy["proc_inst_id"],
+                    "started_at": busy["start_date"].isoformat() if hasattr(busy.get("start_date"), "isoformat") else busy.get("start_date")})
         if alert is None:
             await loop.run_in_executor(None, lambda: audit(body.get("asset") or "-", entered["id"], "HUMAN_INPUT_IN_SPEC",
                                                            {"pattern": body.get("pattern"), "item": body.get("item"), "reason": reason}))

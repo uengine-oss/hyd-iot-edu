@@ -20,6 +20,7 @@ main thread every LEASE_RENEW_EVERY_S (30 s), alongside the cancel check (_strea
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import hashlib
 import json
 import logging
@@ -720,7 +721,7 @@ def _provided_skills(ws, skills: list[dict], *, activity_skills) -> list[dict]:
         except OSError as e:
             log.warning("skill %s was not written into the workspace (%s): %s", skill["skill_name"], rel, e)
             entry = ui_events.skill_entry(skill, text=skill_markdown(skill), path=rel, source=source)
-            out.append(dict(entry, written=False, error=f"작업 폴더에 {rel} 이(가) 없어 에이전트가 읽을 수 없었습니다 ({type(e).__name__})"))
+            out.append(dict(entry, written=False, error=f"작업 폴더에 {rel}{particle(rel, '이')} 없어 에이전트가 읽을 수 없었습니다 ({type(e).__name__})"))
             continue
         out.append(ui_events.skill_entry(skill, text=text, path=rel, source=source))
     return out

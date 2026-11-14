@@ -22,6 +22,7 @@
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 from copy import deepcopy
 
 from . import engine
@@ -88,7 +89,7 @@ def validate(activity: dict) -> None:
         raise ValueError(f"활동 {aid}: key 는 안 안의 칸 이름(예: slot)이어야 합니다")
     missing = [r for r in roots(cfg) if r not in (activity.get("inputData") or [])]
     if missing:
-        raise ValueError(f"활동 {aid}: 설정이 읽는 값 {', '.join(missing)} 을(를) 받을 값(inputData)에 넣으세요")
+        raise ValueError(f"활동 {aid}: 설정이 읽는 값 {', '.join(missing)}{particle(', '.join(missing), '을')} 받을 값(inputData)에 넣으세요")
     if list(activity.get("outputData") or []) != list(OUTPUTS):
         raise ValueError(f"활동 {aid}: 사람 승인의 outputData 는 {list(OUTPUTS)} 이어야 합니다")
 
@@ -114,16 +115,16 @@ def options_of(values: dict, cfg: dict) -> list[dict]:
     try:
         options = lookup(values, path)
     except KeyError:
-        raise ValueError(f"고를 안 '{path}' 이(가) 처리 건에 없습니다 — 앞 단계(에이전트)가 이 값을 내지 않아 승인할 수 없습니다") from None
+        raise ValueError(f"고를 안 '{path}'{particle(path, '이')} 처리 건에 없습니다 — 앞 단계(에이전트)가 이 값을 내지 않아 승인할 수 없습니다") from None
     if not isinstance(options, list) or not options:
-        raise ValueError(f"고를 안 '{path}' 이(가) 비어 있거나 목록이 아닙니다 — 고를 안이 없어 승인할 수 없습니다")
+        raise ValueError(f"고를 안 '{path}'{particle(path, '이')} 비어 있거나 목록이 아닙니다 — 고를 안이 없어 승인할 수 없습니다")
     seen: set[str] = set()
     for i, opt in enumerate(options, 1):
         if not isinstance(opt, dict) or opt.get(key) in (None, ""):
-            raise ValueError(f"고를 안 '{path}' 의 {i}번째 안에 구분 칸 '{key}' 이(가) 없습니다")
+            raise ValueError(f"고를 안 '{path}' 의 {i}번째 안에 구분 칸 '{key}'{particle(key, '이')} 없습니다")
         mark = str(opt[key])
         if mark in seen:
-            raise ValueError(f"고를 안 '{path}' 에 '{key}' 값 {mark} 이(가) 두 번 있습니다 — 어느 안인지 정할 수 없습니다")
+            raise ValueError(f"고를 안 '{path}' 에 '{key}' 값 {mark}{particle(mark, '이')} 두 번 있습니다 — 어느 안인지 정할 수 없습니다")
         seen.add(mark)
     return options
 
@@ -135,5 +136,5 @@ def choose(values: dict, cfg: dict, option) -> dict:
         raise ValueError("승인할 안을 고르세요")
     found = next((o for o in options if str(o[key]) == str(option)), None)
     if found is None:
-        raise ValueError(f"고른 안 '{option}' 이(가) '{cfg['options']}' 에 없습니다 (있는 안: {', '.join(str(o[key]) for o in options)})")
+        raise ValueError(f"고른 안 '{option}'{particle(option, '이')} '{cfg['options']}' 에 없습니다 (있는 안: {', '.join(str(o[key]) for o in options)})")
     return deepcopy(found)

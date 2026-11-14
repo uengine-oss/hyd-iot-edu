@@ -6,6 +6,7 @@ Only GET is possible through this tool; writes to ERP/MES/CMMS/QMS/EMS belong to
 읽기가 실패하면 그 자리의 까닭 그대로 SourceUnavailable 로 실패한다(값 없음으로 바꾸지 않는다 — 검진 H-8). 다시 시도는 부르는 쪽
 (AI 단계의 도구 호출 · 사람)이 정한다: 업무 DB 가 몇 초 끊긴 동안 여기서 몰래 되풀이하면 판단 하나가 그만큼 늘어지고, 끊김은 감춰진다.
 """
+from hydcommon.words import particle
 import json
 import os
 import socket
@@ -52,10 +53,10 @@ def fetch(endpoint: str, asset: str, timeout: float = TIMEOUT_S) -> dict:
     except urllib.error.HTTPError as e:
         detail = _detail(e)
         hint = " 잠시 뒤 다시 시도하세요." if e.code >= 500 and "다시 시도" not in detail else ""      # 서버 까닭에 이미 있으면 한 번만
-        raise SourceUnavailable(f"{where}을(를) 읽지 못했습니다(HTTP {e.code}){' — ' + detail if detail else ''}.{hint}", e.code,
+        raise SourceUnavailable(f"{where}{particle(where, '을')} 읽지 못했습니다(HTTP {e.code}){' — ' + detail if detail else ''}.{hint}", e.code,
                                 transient=e.code >= 500) from None
     except (TimeoutError, socket.timeout):
-        raise SourceUnavailable(f"{where}이(가) {timeout:g}초 안에 답하지 않았습니다 — 업무 시스템 · 업무 DB 연결을 확인하고 잠시 뒤 다시 시도하세요.", transient=True) from None
+        raise SourceUnavailable(f"{where}{particle(where, '이')} {timeout:g}초 안에 답하지 않았습니다 — 업무 시스템 · 업무 DB 연결을 확인하고 잠시 뒤 다시 시도하세요.", transient=True) from None
     except (urllib.error.URLError, OSError) as e:
         reason = getattr(e, "reason", e)
         raise SourceUnavailable(f"{where}에 닿지 못했습니다({reason}) — 시작.bat 으로 서비스를 다시 켠 뒤 다시 시도하세요.", transient=True) from None

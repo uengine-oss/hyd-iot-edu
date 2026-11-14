@@ -15,7 +15,7 @@ def test_실제_process에_설치를_부르면_흐름마다_지금_판이_있다
 @pytest.mark.parametrize('row, line', [
     ({'definition': 'c3_pm', 'reused': True, 'version': '1'}, 'c3_pm: 지금 판(판본 1)이 배포돼 있음 — 그대로 둠'),
     ({'definition': 'c3_pm', 'reused': False, 'version': '2', 'replaced': '1'}, 'c3_pm: 흐름이 바뀌어 새 판본 2을 배포함(이전 판본 1은 기록으로 남음)'),
-    ({'definition': 'c3_pm', 'reused': False, 'version': '1', 'replaced': None}, 'c3_pm: 수업 흐름 판본 1 배포 완료'),
+    ({'definition': 'c3_pm', 'reused': False, 'version': '1', 'replaced': None}, 'c3_pm: 기본 제공 흐름 판본 1 배포 완료'),
 ], ids=['그대로', '새 판으로 바꿈', '처음 설치'])
 def test_설치_결과는_흐름마다_학생이_읽을_한_줄이다(row, line):
     assert c3_flows.report({'flows': [row]}) == [line]

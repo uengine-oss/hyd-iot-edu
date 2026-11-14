@@ -19,6 +19,7 @@ G2 (학생이 등록한 서버):
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import json
 import logging
 from dataclasses import dataclass, field
@@ -98,7 +99,7 @@ def _secret_values(tenant_mcp: dict | None) -> dict[str, str]:
 def _missing_reason(tenant_mcp: dict | None, missing: list[str]) -> str:
     """Why a server was left out: the secrets without a value, and the lookup failure when that is the cause."""
     error = tenant_mcp.get(SECRETS_ERROR_KEY) if isinstance(tenant_mcp, dict) else None
-    why = "비밀 값 " + " · ".join(missing) + " 이(가) 없는 서버(포털 도구 연결 화면 '비밀 값'에 넣기)"
+    why = "비밀 값 " + " · ".join(missing) + particle(missing[-1], "이") + " 없는 서버(포털 도구 연결 화면 '비밀 값'에 넣기)"
     return f"{why} — 비밀 값 표를 읽지 못함: {error}" if error else why
 
 
@@ -157,7 +158,7 @@ def _resolved(tenant_mcp: dict | None) -> dict | None:
     for name, spec in config.items():
         filled, missing = mcp_secrets.resolve(spec, values)
         if missing:
-            raise RuntimeError(f"도구 서버 {name}의 비밀 값 {' · '.join(missing)}이(가) 연결 직전에 없습니다 — 다시 실행하세요")
+            raise RuntimeError(f"도구 서버 {name}의 비밀 값 {' · '.join(missing)}{particle(' · '.join(missing), '이')} 연결 직전에 없습니다 — 다시 실행하세요")
         kept[name] = filled
     return dict(without_secrets(tenant_mcp), mcpServers=kept)
 

@@ -11,7 +11,7 @@ LATIN = re.compile(r'[A-Za-z]{4,} [a-z]{2,} [A-Za-z]{3,}')
 
 @pytest.mark.parametrize('state, reason, words', [
     ('RESOLVED_WITHOUT_ACTION', None, ['조치 전에 이미 풀려', '조치 전 해소']),
-    ('REJECTED_BY_OPERATOR', '현장 확인', ['이미 끝나', '담당자 거절', '사유 현장 확인', '새 판단']),
+    ('REJECTED_BY_OPERATOR', '현장 확인', ['이미 끝나', '담당자 반려', '사유 현장 확인', '새 판단']),
     ('ESCALATED', 'ACK_TIMEOUT', ['이미 끝나', '책임자 확인', '응답(ACK)이', '새 판단']),
     ('AWAITING_ACK', None, ['승인 대기 상태가 아니라', '진행 중인 조치가 끝난 뒤']),
 ], ids=['조치 전 해소', '거절로 끝남', '에스컬레이션', '명령 진행 중'])
@@ -30,7 +30,7 @@ def test_승인은_검토한_카드가_보인_조치값만_실행한다(commands
     if ok:
         ah.require_reviewed_commands(option, commands)
     else:
-        with pytest.raises(ValueError, match='검토한 카드와 실행 조치값이 다릅니다'):
+        with pytest.raises(ValueError, match='검토한 조치 후보와 실행 조치값이 다릅니다'):
             ah.require_reviewed_commands(option, commands)
 
 
@@ -66,9 +66,9 @@ def test_실패한_조치가_있으면_판단은_일부_실행이다():
 
 @pytest.mark.parametrize('book, error', [
     ({}, '판단 기록\\(dec-1\\)을 찾을 수 없습니다'),
-    ({'dec-1': {'state': 'APPROVED', 'options': []}}, '이미 승인됐습니다 — 거절할 수 없습니다'),
+    ({'dec-1': {'state': 'APPROVED', 'options': []}}, '이미 승인됐습니다 — 반려할 수 없습니다'),
     ({'dec-1': {'state': 'PENDING_APPROVAL', 'options': [{'id': 'o', 'approver': {'id': 'role:plant-mgr', 'level': 9}}],
-                'roles': {'role:operator': {'level': 1}, 'role:plant-mgr': {'level': 9}}}}, '거절 권한 없음'),
+                'roles': {'role:operator': {'level': 1}, 'role:plant-mgr': {'level': 9}}}}, '반려 권한 없음'),
 ], ids=['판단 없음', '이미 승인됨', '승인 역할 아님'])
 def test_조치_카드_거절은_판단이_승인_대기이고_그_역할일_때만_받는다(book, error):
     delivery = ah.DecisionDelivery(SimpleNamespace(book=book))

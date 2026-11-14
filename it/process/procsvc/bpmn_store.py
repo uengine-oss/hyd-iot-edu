@@ -15,6 +15,7 @@
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import re
 import xml.etree.ElementTree as ET
 
@@ -90,12 +91,12 @@ def provided_diagram(definition: dict, xml: str) -> str:
     for def_id, (kind, name, link) in wanted.items():
         file_id = by_key.get(_file_key(def_id))
         if file_id is None or file_id in to_def:
-            problems.append(f"정의의 {def_id}(「{name}」)이(가) 그림에 없습니다")
+            problems.append(f"정의의 {def_id}(「{name}」){particle(name, '이')} 그림에 없습니다")
             continue
         to_def[file_id] = def_id
     for file_id in drawn:
         if file_id not in to_def:
-            problems.append(f"그림의 {file_id}(「{drawn[file_id][1]}」)이(가) 정의에 없습니다")
+            problems.append(f"그림의 {file_id}(「{drawn[file_id][1]}」){particle(drawn[file_id][1], '이')} 정의에 없습니다")
     def as_file(def_id):
         return by_key.get(_file_key(def_id)) if def_id else None
     for file_id, def_id in to_def.items():

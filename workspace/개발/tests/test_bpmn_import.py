@@ -92,7 +92,7 @@ def _broken_condition(xml):
     (_cut_receiver, '시작에서 닿지 않습니다'),             # 인수자 확인으로 가는 선을 끊음
     (_chained_gateway, '그 밖의 경우'),                    # #16: 분기 뒤 분기에 기본 선 없음
     (_parallel_sender, '병렬 분기'),                        # P5-11: 병렬 분기에 조건 — 조건이 조용히 버려지지 않는다
-    (_broken_condition, "조건식 'sender_decision ==== 'reject''을(를) 읽을 수 없습니다"),   # P5-19: 「조건이 없습니다」가 아니라
+    (_broken_condition, "조건식 'sender_decision ==== 'reject''를 읽을 수 없습니다"),   # P5-19: 「조건이 없습니다」가 아니라
 ])
 def test_구조를_바꾼_그림은_학생이_읽을_사유와_함께_검사에서_멈춘다(world, change, words):
     xml, mapping = change(HANDOVER['xml'])
@@ -217,7 +217,7 @@ def test_회복_기준이_없는_경보_패턴으로_시작하려_하면_까닭�
     mapping = copy.deepcopy(HANDOVER['mapping'])
     mapping['start'] = {'kind': 'alert', 'patterns': ['PRESSURE_DROP']}
     said = next(p['reason'] for p in _check(world, HANDOVER['xml'], mapping)['problems'] if p.get('field') == 'start.patterns')
-    assert '경보 패턴 PRESSURE_DROP (으)로는 이 흐름을 시작할 수 없습니다' in said and '회복 기준' in said
+    assert '경보 패턴 PRESSURE_DROP로는 이 흐름을 시작할 수 없습니다' in said and '회복 기준' in said
     for offered in ('COOLER_DEGRADATION', 'PUMP_LEAKAGE', 'FAN_VIBRATION', 'OIL_ANALYSIS', 'SPARE_BELOW_MIN', 'PM_DUE'):
         assert offered in said, (offered, said)
     assert '「미지원 경보 → 현장 검토」' in said and '경보 정책에 없습니다' not in said

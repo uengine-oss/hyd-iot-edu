@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import json
 import logging
 import uuid
@@ -150,7 +151,7 @@ class ServicePartsRuntime:
     def _require_approval(self, inst: dict, wi: dict) -> dict:
         v = engine.variables(inst)
         if not v.get("approved_by"):
-            raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 사람 승인 뒤에만 실행합니다 — 이 처리 건에 승인 기록이 없습니다")
+            raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'{particle(wi.get('activity_name') or wi['activity_id'], '은')} 사람 승인 뒤에만 실행합니다 — 이 처리 건에 승인 기록이 없습니다")
         from hydcommon.execution_scope import require_executable
         require_executable(v.get('chosen_option') or {})
         return v
@@ -210,7 +211,7 @@ class ServicePartsRuntime:
         try:
             arguments = effect_parts.render(cfg.get("arguments") or {}, context)
         except KeyError as e:
-            raise ValueError(f"MCP 인자 틀의 값 {e.args[0]} 이(가) 처리 건에 없습니다 — 빈 값으로 보내지 않습니다") from e
+            raise ValueError(f"MCP 인자 틀의 값 {e.args[0]}{particle(e.args[0], '이')} 처리 건에 없습니다 — 빈 값으로 보내지 않습니다") from e
         server, tool = cfg["server"], cfg["tool"]
         use_id = f"{key}:{int(wi.get('retry') or 0)}"
         context = getattr(self._local, "service_progress_context", None)
@@ -251,7 +252,7 @@ class ServicePartsRuntime:
         v = self._require_approval(inst, wi)
         missing = [k for k in ("approved_supplier", "approved_part_no", "approved_qty", "approved_amount") if v.get(k) is None]
         if missing:
-            raise ValueError("승인 경로가 확정한 발주 값이 없습니다(" + ", ".join(missing) + ") — 발주 카드를 사람이 승인한 처리 건에서만 발주합니다")
+            raise ValueError("승인 경로가 확정한 발주 값이 없습니다(" + ", ".join(missing) + ") — 발주 후보를 사람이 승인한 처리 건에서만 발주합니다")
         opt = v.get("chosen_option") or {}
         item = {"skill": opt.get("id"), "sop": opt.get("sopId"), "code": "PR_CREATE", "name": "ERP 발주", "system": "sys:erp",
                 "value": v["approved_supplier"], "part_no": v["approved_part_no"], "qty": v["approved_qty"],
@@ -269,7 +270,7 @@ class ServicePartsRuntime:
             try:
                 plan = effect_parts.wait_for(cfg, engine.variables(inst), clock, self.time_scale)
             except KeyError as e:
-                raise ValueError(f"기다릴 시각 값 {e.args[0]} 이(가) 처리 건에 없습니다") from e
+                raise ValueError(f"기다릴 시각 값 {e.args[0]}{particle(e.args[0], '이')} 처리 건에 없습니다") from e
             wi["due_date"] = plan["due_at"]
             wi["log"] = (wi.get("log") or "") + (f"waiting {plan['virtual_s']:.0f} virtual s = {plan['real_s']:.0f} s "
                                                  f"(x{plan['time_scale']:g} x{plan['compression']:g}); ")
@@ -300,9 +301,9 @@ class ServicePartsRuntime:
                 try:
                     plan = effect_parts.wait_for({"until": cfg["until"], "label": "예정된 정비 시간까지"}, v, clock, self.time_scale)
                 except KeyError as e:
-                    raise ValueError(f"예정된 정비 시간 값 {e.args[0]} 이(가) 처리 건에 없습니다. " + no_maintenance_time(v.get("chosen_option"))) from e
+                    raise ValueError(f"예정된 정비 시간 값 {e.args[0]}{particle(e.args[0], '이')} 처리 건에 없습니다. " + no_maintenance_time(v.get("chosen_option"))) from e
                 except ValueError as e:
-                    raise ValueError(f"예정된 정비 시간 값 {cfg['until']} 을(를) 시각으로 읽지 못했습니다({e}). "
+                    raise ValueError(f"예정된 정비 시간 값 {cfg['until']}{particle(cfg['until'], '을')} 시각으로 읽지 못했습니다({e}). "
                                      + no_maintenance_time(v.get("chosen_option"))) from e
                 wi["due_date"] = plan["due_at"]
                 state = self._save_state(wi, wait=plan)
@@ -318,7 +319,7 @@ class ServicePartsRuntime:
                 # 절차)는 소모 없이 완료된다 — 완료하기 전에 읽어 두고, 없으면 그 사실을 정비 완료 공지 · 처리 기록 · 결과 값에 남긴다(말없이 넘기지 않는다)
                 rows = (self.hooks.enterprise_read("task_standards", {"asset": v.get("asset")}) or {}).get("records") or []
                 state = self._save_state(wi, standard={"sop": sop, "found": any(isinstance(r, dict) and r.get("sop") == sop for r in rows)})
-            item = {"skill": opt.get("id"), "code": "WO_COMPLETE", "name": "작업지시 완료", "system": "sys:cmms", "ref": wo["ref"],
+            item = {"skill": opt.get("id"), "code": "WO_COMPLETE", "name": "정비 요청 완료", "system": "sys:cmms", "ref": wo["ref"],
                     "sop": sop, "source": "approved-maintenance"}
             state = self._save_state(wi, completed=self._exec(inst, v, item, "정비 수행 모사"))
         if "restored" not in state:
@@ -338,7 +339,7 @@ class ServicePartsRuntime:
                       "이 정비에 쓴 부품이 있으면 재고가 실제와 다릅니다") if state.get("completed") and standard.get("found") is False else None
         scope = state.get("scope")
         fixed = maintenance_sentence(scope, state["restored"], cfg.get("component"))
-        notice = (f"{v.get('asset')} 정비 완료 — " + ((state.get("completed") or {}).get("detail") or "작업지시 없이 수행")
+        notice = (f"{v.get('asset')} 정비 완료 — " + ((state.get("completed") or {}).get("detail") or "정비 요청 없이 수행")
                   + f". {fixed}" + (f". {parts_note}" if parts_note else ""))
         # component = 흐름이 직접 적은 부품(없으면 None — 고친 대상은 scope.targets 와 notice 가 말한다)
         out = {"asset": v.get("asset"), "component": cfg.get("component") or None,
@@ -609,16 +610,16 @@ def maintenance_scope(query, sop: str | None) -> dict:
         return dict(out, why="승인한 카드에 조치 방법(SOP) 번호가 없어 이 정비가 무엇을 고치는지 지식에서 찾지 못했습니다")
     rows = query(SCOPE_SKILL_Q, sop=sop)
     if not rows:
-        return dict(out, why=f"지식 지도에 조치 방법 {sop}이(가) 없어 이 정비가 무엇을 고치는지 찾지 못했습니다")
+        return dict(out, why=f"지식 지도에 조치 방법 {sop}{particle(sop, '이')} 없어 이 정비가 무엇을 고치는지 찾지 못했습니다")
     skill = rows[0]
     out["name"] = skill.get("name")
     addressed, fms = list(skill.get("addressed") or []), list(skill.get("failure_modes") or [])
     if not fms:
-        return dict(out, why=f"지식 지도에서 {sop}은(는) 어느 고장 유형의 근본 조치 · 예방 조치로도 이어져 있지 않습니다(즉시 완화 조치는 원인을 없애지 않습니다)")
+        return dict(out, why=f"지식 지도에서 {sop}{particle(sop, '은')} 어느 고장 유형의 근본 조치 · 예방 조치로도 이어져 있지 않습니다(즉시 완화 조치는 원인을 없애지 않습니다)")
     causes = query(SCOPE_CAUSES_Q, addressed=addressed, fms=fms)
     handled = [c for c in causes if (c["cause"] in addressed if addressed else c["fm"] in fms)]
     if not handled:
-        return dict(out, why=f"지식 지도에 {sop}이(가) 막거나 고치는 고장 유형의 원인이 없어 이 정비가 무엇을 고치는지 찾지 못했습니다")
+        return dict(out, why=f"지식 지도에 {sop}{particle(sop, '이')} 막거나 고치는 고장 유형의 원인이 없어 이 정비가 무엇을 고치는지 찾지 못했습니다")
 
     def disturbances(c):
         return [d for sv in c.get("disturbs") or [] for d in ([sv] if sv.get("kind") == "disturbance" else sv.get("upstream") or [])]
@@ -637,7 +638,7 @@ def maintenance_scope(query, sop: str | None) -> dict:
     out["targets"] = list(targets.values())
     if not out["targets"]:
         names = " · ".join(c["name"] or c["id"] for c in out["causes"])
-        out["why"] = f"{sop}이(가) 다루는 원인({names})이 설비의 어느 상태를 바꾸는지 지식 지도에 없습니다"
+        out["why"] = f"{sop}{particle(sop, '이')} 다루는 원인({names})이 설비의 어느 상태를 바꾸는지 지식 지도에 없습니다"
     return out
 
 
@@ -646,18 +647,18 @@ def maintenance_sentence(scope: dict | None, restored: dict, component: str | No
     changed = bool((restored or {}).get("targets"))
     if scope is None:                       # 흐름이 대상 부품을 직접 적었다(component). 적지 않은 채 범위도 없는 것은 이 규칙 전에 복구를 끝낸 행뿐이다
         what = f"흐름 설정이 정한 대상({component})" if component else "설비 전체"
-        return (f"가상 설비에서 {what}을(를) 정상으로 되돌렸습니다" if changed
-                else f"{what}은(는) 가상 설비에서 이미 정상이라 바꾼 것이 없습니다")
+        return (f"가상 설비에서 {what}{particle(what, '을')} 정상으로 되돌렸습니다" if changed
+                else f"{what}{particle(what, '은')} 가상 설비에서 이미 정상이라 바꾼 것이 없습니다")
     if not scope.get("targets"):
         return f"{scope['why']} — 가상 설비의 상태는 바꾸지 않았습니다"
     causes = " · ".join(c.get("name") or c["id"] for c in scope["causes"])
     names = " · ".join(t.get("name") or t["id"] for t in scope["targets"])
     missing = [t for t in scope["targets"] if t["id"] in ((restored or {}).get("not_modeled") or [])]
     if changed:
-        return f"승인한 조치 방법 {scope['sop']}이(가) 다루는 원인({causes})에 따라 가상 설비의 {names}을(를) 정상으로 되돌렸습니다"
+        return f"승인한 조치 방법 {scope['sop']}{particle(scope['sop'], '이')} 다루는 원인({causes})에 따라 가상 설비의 {names}{particle(names, '을')} 정상으로 되돌렸습니다"
     if missing and len(missing) == len(scope["targets"]):
-        return f"승인한 조치 방법 {scope['sop']}이(가) 다루는 {names}은(는) 가상 설비가 모형으로 갖지 않아 설비 상태를 바꾸지 않았습니다"
-    return (f"승인한 조치 방법 {scope['sop']}이(가) 다루는 원인({causes})의 {names}은(는) 가상 설비에서 이미 정상이라 바꾼 것이 없습니다 — "
+        return f"승인한 조치 방법 {scope['sop']}{particle(scope['sop'], '이')} 다루는 {names}{particle(names, '은')} 가상 설비가 모형으로 갖지 않아 설비 상태를 바꾸지 않았습니다"
+    return (f"승인한 조치 방법 {scope['sop']}{particle(scope['sop'], '이')} 다루는 원인({causes})의 {names}{particle(names, '은')} 가상 설비에서 이미 정상이라 바꾼 것이 없습니다 — "
             "설비에 다른 결함이 있으면 그대로 남아 있습니다")
 
 

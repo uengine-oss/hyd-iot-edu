@@ -7,6 +7,7 @@ process service (a person approves them there).
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import psycopg
 
 from agentsvc import card as cardlib, decide as decidelib
@@ -76,7 +77,7 @@ def failure(rec: dict, what: str) -> NotRegistered:
         return NotRegistered('UNKNOWN', f'판단을 등록하지 못했습니다 — process 에 연결하거나 응답을 읽지 못했습니다: {reason}')
     if code == 'SOURCE_UNAVAILABLE' and rec.get('retryable'):
         return NotRegistered(UNAVAILABLE, reason)       # 까닭 문장은 판단 엔진이 학생 말로 썼다(decide.FactUnavailable) — 머리말을 덧대지 않는다
-    return NotRegistered('INVALID' if code in BUSINESS_ERRORS else 'UNKNOWN', f'{what}을(를) 완료하지 못했습니다 — {reason}')
+    return NotRegistered('INVALID' if code in BUSINESS_ERRORS else 'UNKNOWN', f'{what}{particle(what, "을")} 완료하지 못했습니다 — {reason}')
 
 
 def registered(rec: dict, what: str) -> dict:
@@ -468,7 +469,7 @@ class DmnTools:
         if pattern == PURCHASE_PATTERN:
             raise ValueError(PURCHASE_ROUTE)
         if pattern not in BUSINESS_CAUSES:
-            raise ValueError(f"{pattern} 은(는) 업무 경보가 아닙니다 — 센서 경보는 diagnose 를 쓰세요")
+            raise ValueError(f"{pattern}{particle(pattern, '은')} 업무 경보가 아닙니다 — 센서 경보는 diagnose 를 쓰세요")
         causes = self._graph(BUSINESS_CAUSES[pattern])
         return {"pattern": pattern, "basis": BUSINESS_CAUSE_BASIS[pattern], "causes": causes,
                 "top_cause": causes[0]["causeId"] if causes else None, "failure_mode": causes[0]["failureModeId"] if causes else None}

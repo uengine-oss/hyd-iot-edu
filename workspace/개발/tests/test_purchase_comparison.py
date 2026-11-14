@@ -176,7 +176,7 @@ def test_인용에_없는_수치는_어느_칸의_무엇이_없고_인용에는_
     quote = OTHER_WORDING[0][0]
     with pytest.raises(ValueError) as caught:
         policy(_with(loss_per_failure=250, inspection_threshold=0.15, inspection_cost=12, anchor=dict(POLICY['anchor'], quote=quote)))
-    assert str(caught.value) == ('구매 비교 수치가 원문 인용과 다릅니다: loss_per_failure — 불량 1건 손실 250만 원이(가) 인용에 없습니다'
+    assert str(caught.value) == ('구매 비교 수치가 원문 인용과 다릅니다: loss_per_failure — 불량 1건 손실 250만 원이 인용에 없습니다'
                                  '(인용에서 읽은 금액: 12만 원 · 60만 원)')
-    with pytest.raises(ValueError, match='inspection_threshold — 전수 검사 불량률 기준 10 %이\\(가\\) 인용에 없습니다\\(인용에서 읽은 비율: 15 %\\)'):
+    with pytest.raises(ValueError, match='inspection_threshold — 전수 검사 불량률 기준 10 %가 인용에 없습니다\\(인용에서 읽은 비율: 15 %\\)'):
         policy(_with(loss_per_failure=60, inspection_threshold=0.1, inspection_cost=12, anchor=dict(POLICY['anchor'], quote=quote)))

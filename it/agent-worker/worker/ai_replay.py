@@ -47,7 +47,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind
-from hydcommon.fabric import SOURCES as DATA_SOURCES
+from hydcommon.data_sources import SOURCES as DATA_SOURCES
 from hydcommon.tool_result import UNAVAILABLE
 from hydcommon.words import josa
 from procsvc import mcp_check
@@ -331,10 +331,34 @@ FIELD_NAMES = {"asset": "설비", "part_no": "부품 번호", "kit_part_no": "�
                "pattern": "경보 종류"}
 
 
+def _flat(text) -> str:
+    """사람이 넣은 글을 견줄 때의 꼴 — 띄어쓰기와 끝의 물음표 · 마침표 차이는 같은 글이다(question_case 와 같은 기준)."""
+    flat = " ".join(str(text or "").split())
+    return flat.rstrip(" ?？.!。") or flat
+
+
+def typed_gap(old, new) -> list[tuple[str, str]]:
+    """저장된 실행의 입력(old)과 이 처리 건의 입력(new)에서 사람이 넣은 글이 다른 것 → [(저장된 글, 지금 글)]. 준비된 설명 · 결과 글은 저장된
+    글을 두고 쓰였다(교대 인계안의 「정비 완료 메모와 달리 …」) — 지금 넣은 글이 다르면 그 글은 내 입력에 대한 답이 아니다. 사람이 넣은 글 =
+    입력 맨 위의 글 값 가운데 데이터를 고르는 값(FIELD_NAMES — 다르면 멈춘다)도, 처리 건마다 새로 생기는 값(id 모양 — 경보 · 사건 id · 시각,
+    바꿔 끼운다)도 아닌 것. 경보 안에 든 값(alert.…)은 시스템이 만든 것이라 보지 않는다."""
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        return []
+    out = []
+    for key in sorted(old.keys() | new.keys()):
+        a, b = old.get(key), new.get(key)
+        if key in FIELD_NAMES or not all(v is None or isinstance(v, str) for v in (a, b)) or _id_like(a or "") or _id_like(b or ""):
+            continue
+        if _flat(a) != _flat(b):
+            out.append((" ".join((a or "").split()), " ".join((b or "").split())))
+    return out
+
+
 class _Swaps:
     def __init__(self):
         self.exact: dict[str, str] = {}
         self.objects: list[tuple[dict, dict]] = []
+        self.typed: list[tuple[str, str]] = []      # 사람이 넣은 글이 저장된 실행과 다른 것(typed_gap) — 알림 재료
 
     def _leaves(self, old, new) -> None:
         if isinstance(old, dict) and isinstance(new, dict):
@@ -353,6 +377,7 @@ class _Swaps:
             self.objects.append((copy.deepcopy(scope_old), copy.deepcopy(scope_new)))
             self._leaves(scope_old, scope_new)
         self._inputs(old.get("inputs"), new.get("inputs"), step)
+        self.typed = typed_gap(old.get("inputs"), new.get("inputs"))
 
     def _inputs(self, old, new, step, key=None) -> None:
         if isinstance(old, dict) and isinstance(new, dict):
@@ -516,7 +541,7 @@ def sql_sources(sql: str) -> list[str]:
 
 def source_label(name: str) -> str | None:
     """자료 이름 <스키마>.<표> 가 기본 제공 데이터 원천의 것이면 그 원천의 이름(「업무 DB」 · 「시계열 DB」 · 「옛 설비 DB」 — 정본
-    hydcommon.fabric.SOURCES, 데이터 원천 화면이 보이는 이름). 표마다의 한국어 이름은 정본이 없다(표 설명이 달린 업무 표는 셋뿐이다)."""
+    hydcommon.data_sources.SOURCES, 데이터 원천 화면이 보이는 이름). 표마다의 한국어 이름은 정본이 없다(표 설명이 달린 업무 표는 셋뿐이다)."""
     schema, _, table = name.rpartition(".")
     for source in DATA_SOURCES.values():
         if schema == source["schema"] and table in (source.get("tables") or (table,)):
@@ -680,7 +705,7 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     swaps.pair_case(saved.get("context") or {}, _task_context(request.workdir), step)
     tools = _Tools(request.workdir, step, check_stop)
     session = library.session(key, i)
-    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], reads=[], attempt=_attempt_label(_attempt(saved)),
+    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], reads=[], typed=swaps.typed, attempt=_attempt_label(_attempt(saved)),
                 library=library.prefix, skills=sorted({name for d in saved["events"] if d["kind"] == ExecEventKind.TOOL_START.value
                                                        for name, _ in skill_files(d.get("tool"), d.get("tool_input"))}))
     events = [d for d in saved["events"] if not partial_chunk(d)]
@@ -780,9 +805,22 @@ def reads_said(last: dict, when: str) -> str:
     return said + " 결과 글의 값을 쓰기 전에 지금 값을 확인해 주세요."
 
 
+TYPED_SHOWN = 80      # 알림에 옮겨 적는 입력 글의 길이 — 넘으면 줄인다(전문은 처리 건의 입력에 있다)
+
+
+def typed_said(last: dict) -> str:
+    """사람이 넣은 글이 저장된 실행과 다를 때의 말. 같으면 빈 글."""
+    cut = lambda text: f"「{text if len(text) <= TYPED_SHOWN else text[:TYPED_SHOWN] + '…'}」" if text else "(빈 값)"   # noqa: E731
+    pairs = last.get("typed") or []
+    if not pairs:
+        return ""
+    return ("결과 글은 준비 당시의 입력을 두고 쓴 것이고, 지금 넣은 입력과 다릅니다: "
+            + "; ".join(f"준비 당시 {cut(old)} · 지금 {cut(new)}" for old, new in pairs) + ".")
+
+
 def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
     """처리 과정에 남길 한 줄. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 안내는 재생 모드가 지원하지 않는
-    행동에서만 한다(준비된 글이 이 PC의 지금 값과 다른 것을 적는 것도 그 하나다 — differs · reads_said). skills: 이번 실행에 붙인 스킬 — 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고
+    행동에서만 한다(준비된 글이 이 PC의 지금 값 · 지금 넣은 입력과 다른 것을 두고 쓰인 것도 그 하나다 — differs · reads_said · typed_said). skills: 이번 실행에 붙인 스킬 — 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고
     뗀 차이를 보려는 실습이 같은 답을 보고 「스킬이 아무 일도 하지 않는다」로 배우지 않게, 실라버스 포털 실습 3번). 수업 기본 스킬
     그대로면 저장된 실행과 같은 구성이라 말하지 않는다."""
     if not last:
@@ -793,9 +831,11 @@ def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
         reads = reads_said(last, "앞선 실행 때")
         return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept} "
                 + (reads + " " if reads else "") + "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
-    said, reads = [], reads_said(last, "준비 당시")
-    if last.get("differs") or reads:
+    said, reads, typed = [], reads_said(last, "준비 당시"), typed_said(last)
+    if last.get("differs") or reads or typed:
         line = f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다."
+        if typed:
+            line += " " + typed
         if last.get("differs"):
             line += f" 그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 계산입니다: {'; '.join(last['differs'])}."
         said.append(line + (" " + reads if reads else ""))

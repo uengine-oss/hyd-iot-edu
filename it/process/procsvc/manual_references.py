@@ -6,6 +6,7 @@ when its active journal, owned source nodes and source anchors still agree.
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import hashlib
 import json
 import re
@@ -83,7 +84,7 @@ def binding_shape(procedure, link):
 def check_binding(procedure, target, *, require_pin=True):
     sop, sid = procedure['id'], procedure['existing_skill_id']
     if not target or target['id'] != sid:
-        raise ValueError(f'{sop}: 다시 가리킬 조치 방법 {sid}이(가) 지식에 없습니다')
+        raise ValueError(f'{sop}: 다시 가리킬 조치 방법 {sid}{particle(sid, "이")} 지식에 없습니다')
     if target['sopId'] != sop:
         raise ValueError(f'{sop}: 이미 있는 조치 방법의 SOP 번호와 다릅니다 — 원문 번호 그대로인 조치 방법만 다시 가리킵니다')
     source = [dict(order=step['order'], text=step['text']) for step in procedure['steps']]

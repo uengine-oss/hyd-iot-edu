@@ -6,6 +6,7 @@ A segment is a list of page ranges (`ranges`): a PDF manual of 80 short pages pa
 (A094, real Daikin manuals: 50~80 pages of 1~6 K chars), a Markdown manual with one huge page is cut at headings."""
 from __future__ import annotations
 
+from hydcommon.words import particle
 import re
 
 HEADING = re.compile(r'^(#{1,3}) ', re.M)
@@ -128,10 +129,10 @@ def _drop_dangling_sop_refs(merged: dict) -> None:
         if dangling:
             rest = [o for o in refs if o not in dangling]
             if not rest:
-                merged['warnings'].append(f"규칙 {rule.get('id')}: {key}의 {', '.join(dangling)}이(가) 어느 구간에서도 SOP로 추출되지 않아 "
+                merged['warnings'].append(f"규칙 {rule.get('id')}: {key}의 {', '.join(dangling)}{particle(', '.join(dangling), '이')} 어느 구간에서도 SOP로 추출되지 않아 "
                                           "규칙을 뺐습니다 — 원문을 확인하고 검토 화면에서 다시 넣으세요")
                 continue
-            merged['warnings'].append(f"규칙 {rule.get('id')}: {key}에서 {', '.join(dangling)}을(를) 뺐습니다(어느 구간에서도 SOP로 "
+            merged['warnings'].append(f"규칙 {rule.get('id')}: {key}에서 {', '.join(dangling)}{particle(', '.join(dangling), '을')} 뺐습니다(어느 구간에서도 SOP로 "
                                       "추출되지 않음) — 검토 필요")
             rule = dict(rule, **{key: rest})
         kept.append(rule)
@@ -152,7 +153,7 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
             if not within(s.get('anchor') or {}, seg):
                 raise ValueError(f"{tag} 절 {s.get('ref')}의 인용이 담당 구간 밖입니다")
             if s['ref'] in seen_ref:
-                merged['warnings'].append(f"{tag} 절 {s['ref']}이(가) 구간 {seen_ref[s['ref']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
+                merged['warnings'].append(f"{tag} 절 {s['ref']}{particle(s['ref'], '이')} 구간 {seen_ref[s['ref']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
                 continue
             seen_ref[s['ref']] = seg['index']; merged['sections'].append(s)
         for p in prop.get('procedures') or []:
@@ -163,7 +164,7 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
                 if joined:
                     merged['warnings'].append(f"{tag} SOP {p['id']}: 구간 경계에서 잘린 절차를 이어붙임 (단계 {joined[0]}~{joined[1]}을 구간 {seen_sop[p['id']]}의 뒤에 결합) — 검토 필요")
                     continue
-                merged['warnings'].append(f"{tag} SOP {p['id']}이(가) 구간 {seen_sop[p['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
+                merged['warnings'].append(f"{tag} SOP {p['id']}{particle(p['id'], '이')} 구간 {seen_sop[p['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
                 continue
             seen_sop[p['id']] = seg['index']; merged['procedures'].append(p)
         for kind, items in (prop.get('knowledge') or {}).items():      # C1: knowledge items, first proposal of an id wins
@@ -172,7 +173,7 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
                     raise ValueError(f"{tag} {item.get('id')}의 인용이 담당 구간 밖입니다")
                 bucket = merged.setdefault('knowledge', {}).setdefault(kind, [])
                 if item['id'] in seen_knowledge:
-                    merged['warnings'].append(f"{tag} {item['id']}이(가) 구간 {seen_knowledge[item['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
+                    merged['warnings'].append(f"{tag} {item['id']}{particle(item['id'], '이')} 구간 {seen_knowledge[item['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
                     continue
                 seen_knowledge[item['id']] = seg['index']; bucket.append(item)
         for r in prop.get('page_reviews') or []:

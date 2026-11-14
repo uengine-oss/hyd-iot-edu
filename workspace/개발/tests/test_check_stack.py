@@ -131,7 +131,7 @@ def test_process_안에서_중계_확인을_돌리지_못하면_실패로_까닭
 
 
 @pytest.mark.parametrize('results, code', [
-    ([('서비스', PASS, ''), ('강의 중계', NA, '키 없는 수업')], 0),
+    ([('서비스', PASS, ''), ('강의 중계', NA, 'AI 키 없음')], 0),
     ([('서비스', PASS, ''), ('승인 뒤 실행', FAIL, '미달')], 1),
 ])
 def test_해당_없음은_실패로_세지_않고_실패가_있으면_1로_끝난다(capsys, results, code):
@@ -178,9 +178,9 @@ def test_추천_카드나_승인할_사람이_없으면_까닭을_보이고_멈�
 
 
 @pytest.mark.parametrize('rows, ok, words', [
-    ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('T_wo', 'DONE'), ('R_ok', 'DONE')], True, '작업지시'),
+    ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('T_wo', 'DONE'), ('R_ok', 'DONE')], True, '정비 요청'),
     ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('R_fail', 'DONE')], False, '미달'),
-    ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_wo_only', 'DONE')], True, '정비 수행 → 재관측(정상)'),
+    ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_wo_only', 'DONE')], True, '정비 수행 → 효과 확인(정상)'),
     ([('T_wo_only', 'DONE'), ('R_wo_only', 'DONE')], False, '닿지 않았습니다'),          # 정비 · 재관측 없이 정상 보고 — 회복 확인 없는 종결은 통과가 아니다
     ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_fail', 'DONE')], False, '정비 뒤'),
     ([('R_kind', 'DONE')], False, '실행하지 않았습니다'),

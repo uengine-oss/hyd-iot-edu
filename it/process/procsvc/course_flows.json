@@ -54,7 +54,7 @@
         "R_fail": {
           "config": {
             "outcome": "미달",
-            "summary": "효과 확인(15분) 기준 미달 — 승인자 {approved_by_name}",
+            "summary": "효과 확인(15분) 기준 미달 — {approved_by_name} 승인",
             "title": "{asset} 긴급 대응 결과"
           },
           "part": "svc:report"
@@ -86,7 +86,7 @@
         "R_wo_only": {
           "config": {
             "outcome": "정상",
-            "summary": "정비 요청 {work_order.ref} 정비 뒤 효과 확인(15분) — 유온 정상 · 경보 해제, 승인자 {approved_by_name}",
+            "summary": "정비 요청 {work_order.ref} 정비 뒤 효과 확인(15분) — 유온 정상 · 경보 해제, {approved_by_name} 승인",
             "title": "{asset} 긴급 대응 결과"
           },
           "part": "svc:report"

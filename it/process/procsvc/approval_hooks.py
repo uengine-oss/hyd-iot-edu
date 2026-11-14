@@ -30,7 +30,7 @@ def require_reviewed_commands(option, commands):
                 item[action['param']] = action.get('value')
             expected.append(item)
     if expected != commands:
-        raise ValueError('검토한 카드와 실행 조치값이 다릅니다. 변경한 조치의 새 예측 카드를 검토하세요')
+        raise ValueError('검토한 조치 후보와 실행 조치값이 다릅니다. 변경한 조치의 새 예측 조치 후보를 검토하세요')
 
 
 _NO_DECISION = '판단 기록({})을 찾을 수 없습니다 — 처리 건 화면을 새로 고친 뒤 지금 판단으로 다시 하세요'
@@ -102,9 +102,9 @@ class DecisionDelivery:
         if d is None:
             raise ValueError(_NO_DECISION.format(decision_id))
         if d['state'] != 'PENDING_APPROVAL':
-            raise ValueError(f"이 판단은 {decisions.STATE_WORDS.get(d['state'], d['state'])} — 거절할 수 없습니다. 화면을 새로 고쳐 지금 상태를 보세요")
+            raise ValueError(f"이 판단은 {decisions.STATE_WORDS.get(d['state'], d['state'])} — 반려할 수 없습니다. 화면을 새로 고쳐 지금 상태를 보세요")
         if not any(decisions.holds_approver_role(d, option, role) for option in d.get('options') or []):
-            raise PermissionError('거절 권한 없음: 이 판단의 조치를 승인할 수 있는 역할만 거절할 수 있습니다')
+            raise PermissionError('반려 권한 없음: 이 판단의 조치를 승인할 수 있는 역할만 반려할 수 있습니다')
 
     def reject(self, decision_id, by, reason):
         """커밋된 거절을 판단 원문에 남긴다(REJECTED · 누가 · 사유). 이미 거절로 남은 판단이면 그대로 둔다(재실행에 안전)."""

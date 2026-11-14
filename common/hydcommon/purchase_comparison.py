@@ -1,4 +1,5 @@
 """Source-defined purchasing cost, independent of physical plant forecasts."""
+from .words import particle
 import json
 import math
 import re
@@ -43,7 +44,7 @@ def policy(value):
         if not any(math.isclose(value[field],x,rel_tol=1e-9,abs_tol=1e-9) for x in found[kind]):
             shown=FIELD_TEXT[field]+' '+(f"{value[field]*100:g} %" if kind=='ratio' else f"{value[field]:g}만 원")
             seen=' · '.join(f"{x*100:g} %" if kind=='ratio' else f"{x:g}만 원" for x in sorted(found[kind])) or '없음'
-            raise ValueError(f"구매 비교 수치가 원문 인용과 다릅니다: {field} — {shown}이(가) 인용에 없습니다(인용에서 읽은 "
+            raise ValueError(f"구매 비교 수치가 원문 인용과 다릅니다: {field} — {shown}{particle(shown, '이')} 인용에 없습니다(인용에서 읽은 "
                              f"{'비율' if kind=='ratio' else '금액'}: {seen})")
     return result
 

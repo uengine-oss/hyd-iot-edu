@@ -5,6 +5,7 @@ import uuid
 import psycopg
 import pytest
 
+from hydcommon.words import particle
 from procsvc import instance_mode, instances
 
 from conftest import COOLING, OPERATOR
@@ -145,9 +146,9 @@ def test_판본_배포와_되돌리기는_등록된_사람만_하고_거절은_�
     world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': version, 'by': OPERATOR['by'], 'reason': '시험'})   # 아직이면 운영 판본으로
     try:
         status, body = world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': version, 'by': OPERATOR['by'], 'reason': '시험'})
-        assert status == 409 and body['detail'] == f'「{name}」의 판본 {version}은(는) 이미 운영 판본입니다', body
+        assert status == 409 and body['detail'] == f'「{name}」의 판본 {version}{particle(version, "은")} 이미 운영 판본입니다', body
         status, body = world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': '999', 'by': OPERATOR['by'], 'reason': '시험'})
-        assert status == 404 and body['detail'] == f'「{name}」에 판본 999이(가) 등록돼 있지 않습니다', body
+        assert status == 404 and body['detail'] == f'「{name}」에 판본 999가 등록돼 있지 않습니다', body
     finally:
         # 이 시험이 배포한 것은 이 시험이 내린다 — 남기면 뒤 시험(test_flows_api)의 흐름 지우기가 「경보 경로에 배포된 흐름」 409 로 멈췄다
         world.rt.repo.clear_deployment(did, 'hyd', actor=OPERATOR['by'], reason='시험 정리')

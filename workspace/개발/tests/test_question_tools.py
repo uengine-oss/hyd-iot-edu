@@ -105,7 +105,7 @@ def test_도구_서버가_답하지_않으면_연결_화면을_보라는_까닭�
     with world.stack.services['enterprise-mcp'].paused():
         with pytest.raises(RuntimeConnectionError) as e:
             question_tools.attach({'enterprise': ['query']}, tmp_path, world.url)
-    assert str(e.value) == '질문에 쓸 도구 서버 enterprise이(가) 연결되지 않았습니다 — 도구 연결 화면에서 연결 상태를 확인하세요'
+    assert str(e.value) == '질문에 쓸 도구 서버 enterprise가 연결되지 않았습니다 — 도구 연결 화면에서 연결 상태를 확인하세요'
 
 
 @pytest.mark.parametrize('url', ['http://process.example.org:8080', 'http://user:pw@127.0.0.1:1', ''], ids=['바깥 HTTP', '사용자 정보', '빈 주소'])

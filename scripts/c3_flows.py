@@ -33,7 +33,7 @@ def report(result: dict) -> list[str]:
         elif row.get('replaced'):
             lines.append(f"{row['definition']}: 흐름이 바뀌어 새 판본 {row['version']}을 배포함(이전 판본 {row['replaced']}은 기록으로 남음)")
         else:
-            lines.append(f"{row['definition']}: 수업 흐름 판본 {row['version']} 배포 완료")
+            lines.append(f"{row['definition']}: 기본 제공 흐름 판본 {row['version']} 배포 완료")
     return lines
 
 
@@ -48,7 +48,7 @@ def ensure(api: str) -> int:
             detail = json.loads(detail).get('detail', detail)
         except (ValueError, AttributeError):
             pass
-        print(f'수업 흐름 준비가 거절됐습니다({exc.code}): {str(detail)[:600]}', file=sys.stderr)
+        print(f'기본 제공 흐름 준비를 서버가 받지 않았습니다({exc.code}): {str(detail)[:600]}', file=sys.stderr)
         return 1
     except (urllib.error.URLError, OSError) as exc:
         print(f'처리 엔진({api})에 닿지 않습니다: {exc}', file=sys.stderr)

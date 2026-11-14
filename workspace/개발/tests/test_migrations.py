@@ -383,7 +383,12 @@ def test_이미_쓰던_DB의_진단_폼과_승인_폼은_지금_기준_흐름의
                 conn.execute("INSERT INTO form_def(id, tenant_id, proc_def_id, activity_id, fields_json) VALUES (%s, %s, 'anomaly_response', %s, %s)",
                              (fid, tenant, 'task:' + fid, Jsonb(fields)))
         conn.execute(next(MIGRATIONS.glob(BASE_FLOW_FORMS + '_*.sql')).read_text(encoding='utf8'))
+        after_073 = dict(conn.execute("SELECT id, fields_json FROM form_def WHERE tenant_id='hyd'").fetchall())
+        for sql in sorted(MIGRATIONS.glob('*.sql')):          # 그 뒤 판이 폼을 다시 맞춘다(079 — 승인 폼의 칸 설명을 화면 용어로)
+            if sql.name > next(MIGRATIONS.glob(BASE_FLOW_FORMS + '_*.sql')).name:
+                conn.execute(sql.read_text(encoding='utf8'))
         now = {(t, i): f for t, i, f in conn.execute('SELECT tenant_id, id, fields_json FROM form_def').fetchall()}
+    assert '거절하면 비운다' in str(after_073['select_card']) and '반려하면 비운다' in str(now[('hyd', 'select_card')])   # 079 가 바꾼 것
     want = base_flow_forms()
     assert now[('hyd', 'diagnose')] == want['diagnose'] and now[('hyd', 'select_card')] == want['select_card']
     assert 'cooler-fin-fouling' not in str(now[('hyd', 'diagnose')]) and 'fm:cooler' not in str(now[('hyd', 'diagnose')])

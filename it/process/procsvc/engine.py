@@ -29,6 +29,7 @@ deliberately not supported here — decisions stay deterministic).
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 import ast
 import json
 import re
@@ -143,20 +144,20 @@ class Definition:
         for s in self.sequences:
             for end in ("source", "target"):
                 if s[end] not in nodes:
-                    raise ValueError(f"연결 {s.get('id')}이(가) 정의에 없는 요소 {s[end]}을(를) 가리킵니다")
+                    raise ValueError(f"연결 {s.get('id')}{particle(s.get('id'), '이')} 정의에 없는 요소 {s[end]}{particle(s[end], '을')} 가리킵니다")
         if len(self.start_events()) != 1:
             raise ValueError(f"시작 이벤트는 하나여야 합니다(지금 {len(self.start_events())}개)")
         for a in self.activities.values():
             if a.get("role") and a["role"] not in self.roles:
-                raise ValueError(f"단계 {a['id']}의 담당 역할 {a['role']!r}이(가) 정의의 역할(roles)에 없습니다")
+                raise ValueError(f"단계 {a['id']}의 담당 역할 {a['role']!r}{particle(a['role'], '이')} 정의의 역할(roles)에 없습니다")
             # A143 (remaining-sweep 17, R13 C03): subProcess/callActivity 등 실행 갈래가 없는 종류는 파일을 바로 읽을 때(Definition.load)도
             # 등록 경로와 같이 거절한다.
             if a.get("type") not in USER_TYPES | SERVICE_TYPES:
-                raise ValueError(f"단계 {a['id']}의 종류 {a.get('type')!r}은(는) 실행하지 않습니다 — 사람 · 에이전트 단계는 userTask "
+                raise ValueError(f"단계 {a['id']}의 종류 {a.get('type')!r}{particle(a.get('type'), '은')} 실행하지 않습니다 — 사람 · 에이전트 단계는 userTask "
                                  "(에이전트는 agentMode DRAFT/COMPLETE), 시스템 단계는 serviceTask 로 쓰세요")
             for ev_id in a.get("attachedEvents") or []:
                 if ev_id not in self.events:
-                    raise ValueError(f"단계 {a['id']}에 붙인 이벤트 {ev_id}이(가) 정의에 없습니다")
+                    raise ValueError(f"단계 {a['id']}에 붙인 이벤트 {ev_id}{particle(ev_id, '이')} 정의에 없습니다")
         for s in self.sequences:
             if s.get("condition"):
                 compile_condition(s["condition"])           # fail at load time, not at runtime
@@ -228,7 +229,7 @@ def compile_condition(expr: str) -> ast.Expression:
     try:
         tree = ast.parse(expr, mode="eval")
     except SyntaxError as e:
-        raise ValueError(f"분기 조건 {expr!r}을(를) 읽을 수 없습니다({e.msg}, {e.offset}번째 글자) — 「값 비교 연산 값」 꼴로 쓰세요") from e
+        raise ValueError(f"분기 조건 {expr!r}{particle(expr, '을')} 읽을 수 없습니다({e.msg}, {e.offset}번째 글자) — 「값 비교 연산 값」 꼴로 쓰세요") from e
     for node in ast.walk(tree):
         if not isinstance(node, _ALLOWED):
             raise ValueError(f"분기 조건 {expr!r}에는 값 · 비교(== != < <= > >= in) · and · or · not 만 쓸 수 있습니다 "
@@ -297,7 +298,7 @@ _ISO_DURATION = re.compile(r"^P(?:(?P<d>\d+)D)?(?:T(?:(?P<h>\d+)H)?(?:(?P<m>\d+)
 def iso_duration_seconds(text: str) -> float:
     m = _ISO_DURATION.match(text or "")
     if not m:
-        raise ValueError(f"시간 길이 {text!r}을(를) 읽을 수 없습니다 — ISO-8601 꼴(예: PT10M = 10분, P1DT2H = 1일 2시간)로 쓰세요")
+        raise ValueError(f"시간 길이 {text!r}{particle(text, '을')} 읽을 수 없습니다 — ISO-8601 꼴(예: PT10M = 10분, P1DT2H = 1일 2시간)로 쓰세요")
     g = {k: int(v or 0) for k, v in m.groupdict().items()}
     return g["d"] * 86400 + g["h"] * 3600 + g["m"] * 60 + g["s"]
 
@@ -717,7 +718,7 @@ def end_label(defn: Definition, inst: dict) -> str | None:
                    if a.get('event') in defn.events]
         reached = list(dict.fromkeys(reached))
         return TECHNICAL_ENDS[end] + (f" (흐름이 닿은 끝: {', '.join(reached)})" if reached else '')
-    raise ValueError(f"처리 건 {inst.get('proc_inst_id')}의 끝 {end!r}이(가) 정의 {defn.id}@{defn.raw.get('version')}에도 기술 끝 표에도 없습니다")
+    raise ValueError(f"처리 건 {inst.get('proc_inst_id')}의 끝 {end!r}{particle(end, '이')} 정의 {defn.id}@{defn.raw.get('version')}에도 기술 끝 표에도 없습니다")
 
 
 def _closed_by_person(row: dict | None) -> bool:
@@ -735,7 +736,7 @@ def finish(defn: Definition, inst: dict, workitems: list[dict], end_event: str, 
     """처리 건을 끝낸다(업무 끝 · 기술 끝 한 벌 — P1-19 (2)): 닿지 않은 예정 행(TODO)과 아직 열린 이벤트 행(타이머)을 사유와 함께 취소하고
     처리 건을 COMPLETED 로. 돌려줌 = 바꾼 행들(호출자가 저장한다)."""
     if end_event not in defn.events and end_event not in TECHNICAL_ENDS:
-        raise ValueError(f"처리 건을 끝낼 곳 {end_event!r}이(가) 정의의 끝 이벤트도 기술 끝(TECHNICAL_ENDS)도 아닙니다")
+        raise ValueError(f"처리 건을 끝낼 곳 {end_event!r}{particle(end_event, '이')} 정의의 끝 이벤트도 기술 끝(TECHNICAL_ENDS)도 아닙니다")
     stamp = now_iso(now)
     inst.update(status="COMPLETED", end_event=end_event, end_date=stamp, current_activity_ids=[])
     changed = []
@@ -880,9 +881,9 @@ def fire_event(defn: Definition, inst: dict, event_row: dict, workitems: list[di
                time_scale: float = 1.0) -> Advance:
     """A live event work item fired (timer due): it completes, its attached activity is cancelled, its flow is followed."""
     if event_row["activity_id"] not in defn.events:
-        raise ValueError(f"{event_row['activity_id']}은(는) 이벤트가 아닙니다")
+        raise ValueError(f"{event_row['activity_id']}{particle(event_row['activity_id'], '은')} 이벤트가 아닙니다")
     if event_row["status"] in TERMINAL_STATUSES:
-        raise ValueError(f"이벤트 '{event_row.get('activity_name') or event_row['activity_id']}'은(는) 이미 {STATUS_WORDS[event_row['status']]}")
+        raise ValueError(f"이벤트 '{event_row.get('activity_name') or event_row['activity_id']}'{particle(event_row.get('activity_name') or event_row['activity_id'], '은')} 이미 {STATUS_WORDS[event_row['status']]}")
     event_row.update(status="SUBMITTED", output={}, log=(event_row.get("log") or "") + f"fired at {now_iso(now)}; ")
     return process_submitted(defn, inst, event_row, workitems, now, time_scale)
 
@@ -895,7 +896,7 @@ def abort_to(defn: Definition, inst: dict, workitems: list[dict], target_activit
     named human activity so a person records the outcome and the instance ends through the definition's own end event.
     Nothing is invented: no output is written for the cancelled work, agent claims are released by the CANCELLED status."""
     if target_activity_id not in defn.activities:
-        raise ValueError(f"{target_activity_id}은(는) 이 흐름의 단계가 아닙니다")
+        raise ValueError(f"{target_activity_id}{particle(target_activity_id, '은')} 이 흐름의 단계가 아닙니다")
     adv = Advance()
     # the engine pre-creates a TODO row per activity: the target's own waiting row is reached, never cancelled and re-created
     waiting = [w for w in workitems if w["activity_id"] == target_activity_id and w["status"] == "TODO"]

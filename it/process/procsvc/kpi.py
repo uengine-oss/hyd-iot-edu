@@ -281,7 +281,7 @@ def calc_maint_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
     per, unknown, detail = {}, [], []
     for r in rows_:
         cost = None if r['labor_cost'] is None else float(r['labor_cost'])
-        detail.append({'작업지시': r['id'], '설비': r['asset'], '작업 SOP': r['sop'] or '–', '표준 작업': r['std_name'] or '–', '작업비 만원': cost})
+        detail.append({'정비 요청': r['id'], '설비': r['asset'], '작업 SOP': r['sop'] or '–', '표준 작업': r['std_name'] or '–', '작업비 만원': cost})
         if cost is None:
             unknown.append(r)
         else:
@@ -289,9 +289,9 @@ def calc_maint_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
     value = round(sum(per.values()), 2)
     if unknown:
         return Calc(value, per, rows, status='partial', detail=detail,
-                    reason=f'작업지시 {len(rows_)}건 중 {len(unknown)}건은 업무 DB 정비 표준 작업에 그 작업의 작업비가 없어 셀 수 없습니다: '
+                    reason=f'정비 요청 {len(rows_)}건 중 {len(unknown)}건은 업무 DB 정비 표준 작업에 그 작업의 작업비가 없어 셀 수 없습니다: '
                            + ', '.join(sorted({u['sop'] or '작업 SOP 기록 없음' for u in unknown}))[:200])
-    return Calc(value, per, rows, detail=detail, note=f'기간 합계 · 작업지시 {len(rows_)}건')
+    return Calc(value, per, rows, detail=detail, note=f'기간 합계 · 정비 요청 {len(rows_)}건')
 
 
 def _num(x):
@@ -407,7 +407,7 @@ DEFINITIONS: dict[str, dict] = {
                             formula='전력 사용량(kWh/일) × 30 × energy_rate'),
     'msr:maint-cost': dict(fn=calc_maint_cost, unit='만원 (기간 합계)', sources=[('biz', 'ent.work_orders', 'created_at · 작업 SOP(task 머리 · package_sop) · asset (취소 제외)'),
                                                         ('biz', 'ent.cmms_tasks(설비)', 'SOP별 작업비 labor_cost (세척은 정비 기준표 clean_cost) — 조건별 손익과 같은 원천')],
-                           formula='Σ 기간 작업지시의 표준 작업비 (표준 작업표에 없는 SOP 는 비용 원천 없음 → 부분 실적)'),
+                           formula='Σ 기간 정비 요청의 표준 작업비 (표준 작업표에 없는 SOP 는 비용 원천 없음 → 부분 실적)'),
     'msr:part-cost': dict(fn=calc_part_cost, unit='만원 (기간 합계)', sources=[('biz', 'ent.purchase_requests', 'created_at · amount (= 수량 × 단가, 취소 제외)')],
                           formula='Σ 기간 발주 금액 (금액 없이 남은 옛 구매요청은 부분 실적)'),
     'msr:part-price': dict(fn=calc_part_price, sources=[('biz', 'ent.purchase_requests', 'unit_price (발주 단가)')],

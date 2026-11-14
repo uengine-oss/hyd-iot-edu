@@ -127,7 +127,7 @@ def test_다른_분야_문서가_지금_지식에_없는_구성_요소와_증상
     mode['component'], mode['symptoms'] = 'comp:valve-block', ['sym:valve-response-lag']
     p['procedures'][0]['link']['failureMode'] = 'fm:no-such-mode'
     said = {i['field']: i['message'] for i in manual_preflight.validate(p, catalog)['issues'] if i['code'] == 'REFERENCE_NOT_FOUND'}
-    assert '구성 요소 칸에 적은 comp:valve-block이(가) 지금 지식에 없습니다 — 문서 적재는 구성 요소을(를) 새로 만들지 않습니다' in said['component']
+    assert '구성 요소 칸에 적은 comp:valve-block가 지금 지식에 없습니다 — 문서 적재는 구성 요소를 새로 만들지 않습니다' in said['component']
     assert '지금 지식에 있는 구성 요소 가운데' in said['component'] and '적재할 수 없습니다' in said['component']
-    assert '문서 적재는 증상을(를) 새로 만들지 않습니다' in said['symptoms']
+    assert '문서 적재는 증상을 새로 만들지 않습니다' in said['symptoms']
     assert '이 문서의 고장 유형 목록에 넣거나' in said['link.failureMode'] and '새로 만들지 않습니다' not in said['link.failureMode']

@@ -48,7 +48,7 @@ def test_이미_처리한_판단은_다시_승인_거절하지_않고_쉬운_말
     """P1-10: 전에는 「decision is APPROVED」 같은 영문이 학생에게 갔다."""
     d = _decision()
     decisions.reject(d, 'user:x', '현장 확인')
-    with pytest.raises(ValueError, match='이미 거절됐습니다'):
+    with pytest.raises(ValueError, match='이미 반려됐습니다'):
         act(d)
 
 

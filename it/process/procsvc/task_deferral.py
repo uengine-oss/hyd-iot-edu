@@ -4,6 +4,7 @@ Missing/unsupported observations are not completed business forms. Receipts and
 work item state commit together under the existing instance transaction. This
 module does not evaluate evidence, submit a decision or issue a command.
 """
+from hydcommon.words import particle
 from copy import deepcopy
 from contextlib import nullcontext
 import hashlib
@@ -18,7 +19,7 @@ _FIELDS = {'request_id': '요청 id', 'expected_consumer': '실행 표식', 'ses
 
 def _text(value, name, maximum=200):
     if not isinstance(value,str) or not value.strip() or len(value)>maximum:
-        raise ValueError(f'{_FIELDS.get(name, name)}은(는) 비어 있지 않은 글이어야 하고 {maximum}자를 넘지 않아야 합니다')
+        raise ValueError(f'{_FIELDS.get(name, name)}{particle(_FIELDS.get(name, name), "은")} 비어 있지 않은 글이어야 하고 {maximum}자를 넘지 않아야 합니다')
     return value.strip()
 
 

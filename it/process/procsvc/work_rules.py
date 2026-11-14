@@ -16,6 +16,7 @@ seed.sql)는 'hyd-plant', 교대 인수인계 에이전트는 'hyd-handover'.
 """
 from __future__ import annotations
 
+from hydcommon.words import particle
 from dataclasses import dataclass, replace
 
 COMMON_TITLE = "ProcessGPT 업무 에이전트 작업 규칙"
@@ -108,5 +109,5 @@ def rules_for(key) -> BusinessRules | None:
         return None
     found = RULES.get(str(key).strip())
     if found is None:
-        raise UnknownWorkRules(f"업무 규칙 '{key}'이(가) 없습니다 (있는 것: {', '.join(sorted(RULES))}) — 에이전트의 work_rules 칸을 고치세요")
+        raise UnknownWorkRules(f"업무 규칙 '{key}'{particle(key, '이')} 없습니다 (있는 것: {', '.join(sorted(RULES))}) — 에이전트의 work_rules 칸을 고치세요")
     return found

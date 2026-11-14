@@ -1,7 +1,7 @@
 {
   "processDefinitionId": "anomaly_response",
   "processDefinitionName": "설비 이상 조치",
-  "version": "2.5",
+  "version": "2.6",
   "description": "경보가 처리 건을 열고, AI 에이전트가 네 단계(원인 진단 · 조치 후보 조회 · 규정 검토 · 조치 후보 정리)로 조치 후보를 올리면, 담당자가 후보 하나를 승인하거나 반려한다(폼 select_card 제출). 승인하면 고른 후보의 조치 종류대로 설비에 명령 · 효과 확인 · 정비 요청 등록을 실행해 처리 완료로 끝내고, 설비 명령도 정비 요청도 없는 후보(발주만 · 실행할 조치 없음)는 설비에 아무것도 하지 않은 사실을 결과 보고로 남기고 끝낸다. 효과 확인에서 회복되지 않았거나 담당자가 제때 고르지 않으면 책임자 확인으로 넘긴다. 반려하면 설비 · 업무에 아무것도 하지 않고 결과 보고(반려)로 끝낸다. AI 에이전트 단계는 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 가 이 흐름의 객체(역할 · 시스템 · 판단)를 갖고, 단계 순서의 정본은 이 정의다.",
   "ontologyRef": "proc:anomaly-response",
   "megaProcessId": "설비 운영",
@@ -663,20 +663,20 @@
       "fields_json": [
         {
           "key": "chosen_skill",
-          "text": "승인한 스킬(SOP) id — 거절하면 비운다",
+          "text": "승인한 조치 방법(SOP) id — 반려하면 비운다",
           "type": "text",
           "required": false
         },
         {
           "key": "chosen_skill_kind",
-          "text": "승인한 카드의 조치 종류 — 거절하면 비운다",
+          "text": "승인한 조치 후보의 조치 종류 — 반려하면 비운다",
           "type": "select",
           "items": [
             {
               "control": "즉시 제어"
             },
             {
-              "work_order": "작업지시만"
+              "work_order": "정비 요청만"
             },
             {
               "purchase": "발주만"

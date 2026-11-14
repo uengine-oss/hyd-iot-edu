@@ -29,21 +29,8 @@ import psycopg
 from .enterprise import ReaderRoleRefused, reader_connection
 from .sql_read import MAX_ROWS, TIMESERIES_FUNCTIONS, SqlRejected, guard
 
-ENT, TS, LEGACY = 'hyd-enterprise', 'hyd-timeseries', 'hyd-legacy'
-TS_TABLES = ('tag_1s', 'feat_1s', 'tag_1m')
-SOURCES = {
-    ENT: dict(id=ENT, label='업무 DB', engine='Supabase PostgreSQL', schema='ent', role='hyd_enterprise_reader',
-              env=('ENTERPRISE_READ_DSN',), systems=('sys:mes', 'sys:erp', 'sys:cmms', 'sys:qms', 'sys:scm'),
-              about='ERP · MES · CMMS · QMS · SCM · EMS 업무 기록 (주문 · 계약 · 정비 · 품질 · 구매)'),
-    # 실라버스 통합 40행: 옛 설비 관리 시스템에서 옮긴 덤프(제공 파일 it/portal/www/samples/legacy-plant-db.sql = 마이그레이션
-    # 20261031000071_legacy_plant_db). 업무 DB 안의 스키마 하나라 같은 전용 읽기 계정 · 연결 주소로 읽는다.
-    LEGACY: dict(id=LEGACY, label='옛 설비 DB', engine='Supabase PostgreSQL', schema='legacy', role='hyd_enterprise_reader',
-                 env=('ENTERPRISE_READ_DSN',), systems=(),
-                 about='옛 설비 관리 시스템에서 옮긴 덤프 (설비 · 측정 · 작업지시 — 표 · 열 이름이 코드, 주석 없음)'),
-    TS: dict(id=TS, label='시계열 DB', engine='TimescaleDB', schema='public', role='hyd_timeseries_reader',
-             env=('TSDB_READ_DSN',), systems=('sys:historian',), tables=TS_TABLES,
-             about='센서 · 설정값 1초 기록(tag_1s), 파형 특징(feat_1s), 1분 집계(tag_1m)'),
-}
+from .data_sources import ENT, LEGACY, SOURCES, TS, TS_TABLES      # 원천 표의 정본(가져올 것이 없는 모듈 — 워커도 읽는다)
+
 #: DDL 적재(업무 데이터 연결)가 입력을 이을 수 있는 원천 = 업무 DB(Supabase) 안의 스키마. 미리보기의 원천 고르기 · DDL 동기화가 이것을 본다.
 DDL_SOURCES = (ENT, LEGACY)
 SAMPLE_MAX = 20
@@ -114,13 +101,13 @@ CROSS_QUERIES = {
     'maintenance-vs-vibration': dict(
         title='정비 이력과 최근 진동 추세',
         question='이 설비의 최근 정비 작업은 언제 무엇이었고, 최근 30분 팬 진동은 오르고 있는가?',
-        parts=[dict(id='history', source=ENT, purpose='CMMS 과거 작업지시 — 작업 번호 · 내용 · 수행 일시(최근 5건)',
+        parts=[dict(id='history', source=ENT, purpose='CMMS 과거 정비 요청 — 작업 번호 · 내용 · 수행 일시(최근 5건)',
                     sql="select wo, task, performed_at from ent.maintenance_history where asset = %(asset)s order by performed_at desc limit 5"),
                dict(id='vs1', source=TS, purpose='팬 진동(VS1) 5분 평균 · 최고, 최근 30분',
                     sql="select time_bucket('5 minutes', time) as bucket, round(avg(value)::numeric, 3) as vs1_avg, "
                         "round(max(value)::numeric, 3) as vs1_max from tag_1s where asset = %(asset)s and name = 'VS1' "
                         "and time > now() - interval '30 minutes' group by 1 order by 1")],
-        answer=[('최근 작업지시', 'history', ('first', 'wo'), None),
+        answer=[('최근 정비 요청', 'history', ('first', 'wo'), None),
                 ('작업 내용', 'history', ('first', 'task'), None),
                 ('수행 일시', 'history', ('first', 'performed_at'), None),
                 ('진동 5분 평균 (처음 구간)', 'vs1', ('first', 'vs1_avg'), 'mm/s'),

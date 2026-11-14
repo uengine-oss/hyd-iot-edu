@@ -141,7 +141,10 @@ def source(asset):
 
 #: 작업지시를 지금 시행하는 카드(cards.option_window 즉시)의 예측: 정비하는 동안 설비가 서 있다. 시스템이 PLC 에 정지 명령을 보내는
 #: 것이 아니라(정지 · LOTO 는 정비 작업의 첫 단계) 예측 입력에만 쓰는 동작이다 — 카드의 actions(실행 · 승인 대상)에는 넣지 않는다.
-WORK_ORDER_STOP = {'code': 'STOP', 'kind': 'command', 'name': '설비 정지(작업지시 즉시 시행)', 'basis': 'immediate_work_order'}
+WORK_ORDER_STOP = {'code': 'STOP', 'kind': 'command', 'name': '설비 정지(정비 요청 즉시 시행)', 'basis': 'immediate_work_order'}
+
+
+STOPPED_STEADY_NAME = '평형 유온(정비하는 동안 설비 정지)'
 
 
 def plant_actions(skill, snapshot, stops_now=False):
@@ -184,7 +187,9 @@ def candidates(kg, asset, skills, stopping=frozenset()):
             contexts[sid] = result
             # Stable equilibrium is used for existing DMN thresholds/ranking. The
             # finite-horizon trajectory and its interlocks remain mandatory below.
-            specs = [('sv:ts1', 'ts1_steady', '평형 유온', '℃'),
+            # 지금 설비를 세우고 정비하는 안의 평형 유온은 서 있는 설비의 값(주변 온도)이다 — 정비를 마치고 다시 돌린 뒤의 유온이 아니다. 이름이
+            # 그 조건을 말한다: 화면이 「조치 뒤 예측 평형 유온 25 ℃」로만 보여 운전 중 유온(48 ℃ 안팎)과 견주게 됐다(2026-11-14 한 바퀴).
+            specs = [('sv:ts1', 'ts1_steady', STOPPED_STEADY_NAME if sid in stopping else '평형 유온', '℃'),
                      ('sv:ps1', 'ps1', '토출 압력', 'bar'),
                      ('sv:fs1', 'fs1', '유량', 'l/min')]
             forecasts[sid] = {variable: {'variableName': name, 'value': round(result['values'][key], 3),
@@ -218,22 +223,22 @@ def consent_changes(old, current, time_scale=None, consented_at=None):
             age = min(wall, at_consent)
     max_age = REVIEW_POLICY['max_review_age_wall_s']
     if age is not None and age > max_age:
-        reasons.append(f'검토한 카드가 {age / 60:.0f}분 전 예측입니다(검토 뒤 {max_age // 60}분이 지났습니다): 새 카드 검토가 필요합니다')
+        reasons.append(f'검토한 조치 후보가 {age / 60:.0f}분 전 예측입니다(검토 뒤 {max_age // 60}분이 지났습니다): 새 조치 후보 검토가 필요합니다')
     minutes = min((wall or 0.0) * scale, REVIEW_POLICY['max_budget_sim_s']) / 60
     for key in ('model_id', 'model_revision', 'scope', 'binding', 'horizon_s', 'parameters',
                 'actions', 'assumptions', 'review_policy'):
         if old.get(key) != current.get(key):
-            reasons.append(f'{CONTEXT_LABELS.get(key, "예측 조건")} 변경: 새 카드 검토가 필요합니다')
+            reasons.append(f'{CONTEXT_LABELS.get(key, "예측 조건")} 변경: 새 조치 후보 검토가 필요합니다')
     # TS1 evolves with time. Disturbances, ambient conditions and operating
     # settings may not change behind the reviewed counterfactual.
     for key in set(old.get('inputs', {})) | set(current.get('inputs', {})):
         if key != 'ts1' and old['inputs'].get(key) != current['inputs'].get(key):
-            reasons.append(f'예측 입력 {INPUT_LABELS.get(key, "조건")} 변경: 새 카드 검토가 필요합니다')
+            reasons.append(f'예측 입력 {INPUT_LABELS.get(key, "조건")} 변경: 새 조치 후보 검토가 필요합니다')
     if current.get('predicted_interlocks'):
         reasons.append('예측 구간에서 PLC 인터록이 예상됩니다')
     rates = REVIEW_POLICY['max_adverse_rate_per_sim_min']
     for key, tolerance in REVIEW_POLICY['max_adverse_change'].items():
         a, b = old.get('values', {}).get(key), current.get('values', {}).get(key)
         if a is None or b is None or b > a + tolerance + rates.get(key, 0.0) * minutes:
-            reasons.append(f'{VALUE_LABELS.get(key, "예측값")} 악화 또는 미확인: 새 카드 검토가 필요합니다')
+            reasons.append(f'{VALUE_LABELS.get(key, "예측값")} 악화 또는 미확인: 새 조치 후보 검토가 필요합니다')
     return reasons

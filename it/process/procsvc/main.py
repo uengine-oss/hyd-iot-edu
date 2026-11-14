@@ -4,6 +4,7 @@ Only this service may write action.cmd (the agent has no command authority). 사
 시한은 메모리 타이머가 아니라 작업 행의 마감(due_date)이다 — ACK 마감 · 재관측 창 · 경계 타이머 모두 폴링이 판정한다(instances).
 재관측 판정은 사건의 회복 기준 태그 최신값을 TimescaleDB(tag_1s)에서 읽는다.
 """
+from hydcommon.words import particle
 import asyncio
 import copy
 import json
@@ -152,7 +153,7 @@ def window_series(inc: machine.Incident, after: str, since: str | None = None) -
     since = since or reobs_series.window_start(inc.history)
     where = dict(tag=tag, op=op, limit=limit, since=since, until=until, after=after, extensions=inc.reobs_extensions)
     if not since:
-        return reobs_series.unavailable("재관측 시작 시각(RE_OBSERVING 기록)을 찾지 못해 창의 값을 읽지 않았습니다", **where)
+        return reobs_series.unavailable("효과 확인 시작 시각(RE_OBSERVING 기록)을 찾지 못해 창의 값을 읽지 않았습니다", **where)
     try:
         rows = tag_series(inc.asset, tag, since, until)
     except Exception as e:  # noqa: BLE001 — TimescaleDB down: said on the record, the verdict goes on
@@ -553,7 +554,7 @@ def _service_json(base: str, label: str, path: str, body: dict | None = None, *,
             detail = raw
         if not isinstance(detail, str):
             detail = json.dumps(detail, ensure_ascii=False)
-        raise ServiceRefused(f"{label}이(가) 요청을 거절했습니다(HTTP {e.code}, {path.split('?')[0]}): {detail[:300]}", e.code) from None
+        raise ServiceRefused(f"{label}{particle(label, '이')} 요청을 거절했습니다(HTTP {e.code}, {path.split('?')[0]}): {detail[:300]}", e.code) from None
     except OSError as e:
         raise ServiceRefused(f"{label}에 닿지 못했습니다({path.split('?')[0]}): {type(e).__name__}: {str(e)[:200]}") from None
 
@@ -757,7 +758,7 @@ def list_incidents():
 def get_incident(inc_id: str):
     inc = incidents.get(inc_id)
     if not inc:
-        raise HTTPException(404, f"사건 {inc_id} 이(가) 없습니다")
+        raise HTTPException(404, f"사건 {inc_id}{particle(inc_id, '이')} 없습니다")
     rt=instance_mode.current()
     return inc.to_dict() | {'processOwned':bool(rt and rt.repo.incident_is_process_owned(inc_id))}
 
@@ -840,7 +841,7 @@ def exec_skill(d: dict, item: dict) -> dict:
     if not job:
         return out | {"ok": False, "error": f"실행할 수 없는 트랜잭션 {item.get('code')}"}
     if item["code"] == "WO_CREATE":
-        params = {"task": f"{item.get('sop') or opt.get('sopId')} {opt.get('name')} → 작업지시 {item.get('value')}",
+        params = {"task": f"{item.get('sop') or opt.get('sopId')} {opt.get('name')} → 정비 요청 {item.get('value')}",
                   **_window_params(item.get("window"), opt)}
         if opt.get('maintenancePlan'):
             if item.get('schedule_plan') != opt['maintenancePlan']:
@@ -900,20 +901,20 @@ def _decision_problems(payload) -> list[dict]:
         out.append({"field": "asset", "reason": "설비 id 가 없습니다"})
     options = payload.get("options")
     if not isinstance(options, list) or not options:
-        out.append({"field": "options", "reason": "조치 카드 목록이 비었거나 목록이 아닙니다"})
+        out.append({"field": "options", "reason": "조치 후보 목록이 비었거나 목록이 아닙니다"})
     else:
         ids = []
         for n, o in enumerate(options):
             if not isinstance(o, dict) or not text(o.get("id")):
-                out.append({"field": f"options[{n}]", "reason": "조치 카드는 id(글)가 있는 객체여야 합니다"})
+                out.append({"field": f"options[{n}]", "reason": "조치 후보는 id(글)가 있는 객체여야 합니다"})
             else:
                 ids.append(o["id"])
         twice = sorted({i for i in ids if ids.count(i) > 1})
         if twice:
-            out.append({"field": "options", "reason": f"조치 카드 id {', '.join(twice)} 가 두 번 이상 있습니다"})
+            out.append({"field": "options", "reason": f"조치 후보 id {', '.join(twice)} 가 두 번 이상 있습니다"})
         rec = payload.get("recommended")
         if rec is not None and rec not in ids:
-            out.append({"field": "recommended", "reason": "추천 카드 id 가 조치 카드 목록에 없습니다"})
+            out.append({"field": "recommended", "reason": "권장 조치 후보 id 가 조치 후보 목록에 없습니다"})
     origin = payload.get("origin")
     if not isinstance(origin, dict):
         out.append({"field": "origin", "reason": "판단의 출처(사건 · 처리 건 작업)가 객체로 없습니다"})
@@ -936,7 +937,7 @@ def _create_decision(payload: dict):
     rt = _runtime_or_503()
     inst = rt.instance_of_incident(origin['incident'])
     if inst is None:
-        raise HTTPException(409, f"사건 {origin['incident']} 을(를) 맡은 처리 건이 없습니다 — 판단을 접수하지 않았습니다")
+        raise HTTPException(409, f"사건 {origin['incident']}{particle(origin['incident'], '을')} 맡은 처리 건이 없습니다 — 판단을 접수하지 않았습니다")
     with rt._transition(inst['proc_inst_id']):
         inst = rt.repo.get_instance(inst['proc_inst_id'])
         scope = origin['process_scope']
@@ -974,7 +975,7 @@ def _store_decision(payload):
         if not inc or inc.asset!=payload.get('asset') or (origin.get('pattern') is not None and origin['pattern']!=inc.pattern):
             raise HTTPException(409,'결정의 원천 사건/설비/패턴이 일치하지 않습니다')
         if inc.state!='AWAITING_APPROVAL' or inc.recovery is None:
-            raise HTTPException(409,'이 사건은 조치 카드 접수 대상이 아닙니다. 현장 검토 상태를 확인하세요')
+            raise HTTPException(409,'이 사건은 조치 후보 접수 대상이 아닙니다. 현장 검토 상태를 확인하세요')
     d = declib.new(payload)
     book[d["id"]] = d
     _audit(d.get("asset") or "-", "agent", "DECISION_SUBMITTED",
@@ -993,7 +994,7 @@ def list_decisions():
 def get_decision(did: str):
     d = book.get(did)
     if not d:
-        raise HTTPException(404, f"판단 {did} 이(가) 없습니다")
+        raise HTTPException(404, f"판단 {did}{particle(did, '이')} 없습니다")
     out = copy.deepcopy(d)              # 응답 사본에만 싣는다 — 장부 원본은 바꾸지 않는다
     for opt in out.get("options") or []:
         opt["approvable_roles"] = declib.approver_roles(d, opt)   # 그 안을 승인할 수 있는 역할(판정 정본 decisions.holds_approver_role — 화면 사본 없이 단추를 켜고 끔)
@@ -1073,7 +1074,7 @@ async def kg_update_skill(sid: str, body: dict):
         values = kgadmin.validate_skill(body)
         out = await asyncio.get_running_loop().run_in_executor(None, lambda: _author_skill(sid, values, body))
     except KeyError:
-        raise HTTPException(404, f'조치 방법(스킬) {sid} 이(가) 지식 그래프에 없습니다') from None
+        raise HTTPException(404, f'조치 방법(스킬) {sid}{particle(sid, "이")} 지식 그래프에 없습니다') from None
     except skill_graph.Conflict as error:
         raise HTTPException(409, str(error))
     except ValueError as error:
@@ -1267,6 +1268,21 @@ async def scenario_status():
     return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, _scenario_rt(), _last_press)
 
 
+
+def _scenario_refused(e):
+    """시작 단추 · 초기화의 거절 응답(409). detail 은 사람이 읽는 까닭 그대로이고, 진행 중인 처리 건 때문이면 그 건을 칸으로 싣는다
+    (instance · started_at) — 화면이 문장에서 번호를 뽑지 않고 그 처리 건으로 바로 간다."""
+    from fastapi.responses import JSONResponse
+    body = {"detail": str(e)}
+    if getattr(e, "instance", None):
+        body.update(instance=e.instance, started_at=jsonable_time(getattr(e, "started_at", None)))
+    return JSONResponse(status_code=409, content=body)
+
+
+def jsonable_time(value):
+    return value.isoformat() if isinstance(value, datetime) else value
+
+
 @app.post("/api/scenario/{key}/start")
 async def scenario_start(key: str, body: dict | None = None):
     """[정기 점검](B) · [재고 보충](C): (설비 처리 건이 진행 중이 아니면) 시나리오 시각 기준점을 지금으로 맞추고, 지금 업무 값으로 경보를 만들어
@@ -1286,14 +1302,14 @@ async def scenario_start(key: str, body: dict | None = None):
         except scenario_buttons.Refused as e:
             _press_audit(spec["asset"], person, button, key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
                          instance=None, error=str(e), refused=True, reanchored=False)
-            raise HTTPException(409, str(e)) from None
+            return _scenario_refused(e)
         reanchor = await _reanchor_if_idle(rt, button)
         try:
             prep = await asyncio.to_thread(scenario_buttons.prepare, key, instance_mode.enterprise_read, rt, _scenario_route, person)
         except scenario_buttons.Refused as e:          # 기준점을 옮긴 뒤의 업무 값이 거절 조건에 들었다(드묾) — 옮긴 것까지 남긴다
             _press_audit(spec["asset"], person, button, key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
                          instance=None, error=str(e), refused=True, **_reanchor_audit(reanchor))
-            raise HTTPException(409, str(e)) from None
+            return _scenario_refused(e)
         alert = prep["alert"]
         try:
             await _admit_alert(alert)
@@ -1332,7 +1348,7 @@ async def scenario_reset(key: str, body: dict | None = None):
         except scenario_buttons.Refused as e:
             _press_audit(spec["asset"], person, "초기화", key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
                          instance=None, error=str(e), refused=True, reanchored=False)
-            raise HTTPException(409, str(e)) from None
+            return _scenario_refused(e)
         await asyncio.to_thread(_entsim_post, *spec["reset"])
         reanchor = await _reanchor_if_idle(rt, "초기화")
         at = datetime.now(timezone.utc).isoformat(timespec="seconds")
