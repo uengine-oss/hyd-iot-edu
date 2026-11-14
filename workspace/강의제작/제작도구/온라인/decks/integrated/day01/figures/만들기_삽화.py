@@ -1820,26 +1820,25 @@ def line_vs_named() -> str:
 
 
 def two_actions() -> str:
-    """57장: 완화 조치(왼쪽 팬)는 고장 유형으로, 근본 조치(오른쪽 세척)는 원인으로 — 이름이 다른 두 화살표. 가운데는 원인 → 고장 유형."""
-    M, F, C, R = (140, 270, 62), (440, 270, 70), (760, 270, 62), (1060, 270, 62)
+    """56장: 가운데 고장 유형 F에서 왼쪽 완화 조치 M으로 「완화된다」, 오른쪽 근본 조치 R로 「근본 해결된다」(둘 다 파랑).
+    R 바로 위의 원인 C를 R이 「없앤다」, C가 F를 「일으킨다」(대각선). 실습 08과 같은 방향."""
+    M, F, R, C = (170, 330, 60), (520, 330, 68), (900, 330, 60), (900, 95, 52)
     o: list[str] = []
-    o += _edge_arrow(M, F, BLUE, sw=5.5, size=17) + _edge_arrow(C, F) + _edge_arrow(R, C, BLUE, sw=5.5, size=17)
-    o += _node(M, "fanmax") + _node(F, "fm", hot=True) + _node(C, "pin") + _node(R, "wash")
+    o += _edge_arrow(F, M, BLUE, sw=5.5, size=17) + _edge_arrow(F, R, BLUE, sw=5.5, size=17) + _edge_arrow(R, C) + _edge_arrow(C, F)
+    o += _node(M, "fanmax") + _node(F, "fm", hot=True) + _node(R, "wash") + _node(C, "pin")
     return svg(o)
 
 
 def property_card() -> str:
-    """58장: 왼쪽 원(부품 하나)과 그 원에 달아 둔 항목 네 줄(오른쪽 카드). 줄마다 왼쪽이 항목 이름, 오른쪽이 값 자리."""
+    """57장: 같은 종류(센서) 노드 셋과, 노드마다 달린 같은 항목 하나(단위). 원 위 연하늘 칸은 종류, 원 아래는 이름 자리, 그 아래 두 칸 카드는 항목 이름 · 값 자리."""
     o: list[str] = []
-    P = (210, 270, 96)
-    o.append(rect(132, 110, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
-    o.append(line(312, 270, 452, 270, stroke=NAVY, sw=4))
-    o += _node(P, "cooler")
-    o.append(rect(460, 40, 700, 440, 16, fill=WHITE, stroke=NAVY, sw=3.5))
-    for i in range(4):
-        y = 60 + i * 102
-        o.append(rect(480, y, 240, 86, 10, fill=PALE, stroke="none", sw=0))
-        o.append(rect(736, y, 404, 86, 10, fill=LIGHT, stroke="none", sw=0))
+    for x in (200, 600, 1000):
+        P = (x, 200, 70)
+        o.append(rect(x - 78, P[1] - P[2] - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
+        o += _node(P, "sensor")
+        o.append(rect(x - 170, 360, 340, 92, 14, fill=WHITE, stroke=NAVY, sw=3))
+        o.append(rect(x - 158, 372, 120, 68, 10, fill=PALE, stroke="none", sw=0))
+        o.append(rect(x - 26, 372, 184, 68, 10, fill=LIGHT, stroke="none", sw=0))
     return svg(o)
 
 
@@ -1861,14 +1860,15 @@ def schema_and_graph() -> str:
     return svg(o)
 
 
-FMAP = {"E": (90, 135, 46), "P": (300, 135, 46), "S": (510, 135, 46), "Y": (510, 385, 46), "F": (720, 385, 54),
-        "C": (720, 135, 46), "R": (930, 135, 46), "D": (1120, 135, 42)}
-FMAP_EDGES = (("E", "P"), ("S", "P"), ("S", "Y"), ("Y", "F"), ("C", "F"), ("R", "C"), ("R", "D"))
+FMAP = {"S": (150, 140, 46), "P": (450, 140, 46), "E": (750, 140, 46), "D": (1050, 140, 44),
+        "Y": (150, 380, 46), "F": (450, 380, 54), "C": (750, 380, 46), "R": (1050, 380, 46)}
+FMAP_EDGES = (("E", "P"), ("P", "S"), ("Y", "S"), ("Y", "F"), ("F", "P"), ("C", "F"), ("R", "C"), ("R", "D"))
 FMAP_KIND = {"E": "equip", "P": "cooler", "S": "sensor", "Y": "rise", "F": "fm", "C": "pin", "R": "wash", "D": "doc"}
 
 
 def fault_map(on=None, hot=()) -> str:
-    """63장: 설비 고장을 다룰 때의 지도 — 설비 E · 부품 P · 센서 S · 증상 Y · 고장 유형 F · 원인 C · 조치 R · 근거 문서 D.
+    """63장: 설비 고장을 다룰 때 정한 종류와 관계 — 위 줄 센서 S · 부품 P · 설비 E · 근거 문서 D, 아래 줄 증상 Y · 고장 유형 F · 원인 C · 조치 R.
+    화살표 여덟은 실습 08과 같은 방향(가로 · 세로만, 교차 없음). 위 줄 이름은 원 위에, 아래 줄 이름은 원 아래에 얹는다.
     on이 있으면 그 원과 hot 화살표만 밝히고 나머지는 회색으로 둔다."""
     o: list[str] = []
     for a, b in FMAP_EDGES:
@@ -1880,23 +1880,26 @@ def fault_map(on=None, hot=()) -> str:
 
 
 def walk_to_causes() -> str:
-    """64장: 값을 낸 센서 S에서 부품 P로(아래), 증상 Y → 고장 유형 F로(오른쪽), F로 들어오는 화살표를 반대로 따라 원인 후보 셋으로."""
-    S, P, Y, F = (120, 200, 52), (120, 400, 52), (390, 200, 52), (670, 200, 62)
-    Cs = ((1000, 80, 50), (1000, 260, 50), (1000, 440, 50))
+    """64장: 값이 오른 센서 S(왼쪽 위)를 관측된다로 가리키는 증상 Y(왼쪽 아래)에서 출발해 → 가리킨다 → 고장 유형 F → 일어난다 → 부품 P(위),
+    F로 들어오는 「일으킨다」 셋을 반대로 따라 원인 후보 셋(오른쪽). 실습 08과 같은 방향."""
+    S, Y, F, P = (130, 125, 50), (130, 390, 50), (470, 390, 62), (470, 125, 50)
+    Cs = ((930, 85, 48), (930, 265, 48), (930, 445, 48))
     o: list[str] = []
-    o += _edge_arrow(S, P, BLUE, sw=5) + _edge_arrow(S, Y, BLUE, sw=5) + _edge_arrow(Y, F, BLUE, sw=5)
+    o += _edge_arrow(Y, S, BLUE, sw=5) + _edge_arrow(Y, F, BLUE, sw=5) + _edge_arrow(F, P, BLUE, sw=5)
     for c in Cs:
         o += _edge_arrow(c, F, NAVY, sw=4.5)
-    o += _node(S, "sensor") + _node(P, "cooler") + _node(Y, "rise") + _node(F, "fm", hot=True)
+    o += _node(S, "sensor") + _node(Y, "rise") + _node(F, "fm", hot=True) + _node(P, "cooler")
     o += _node(Cs[0], "pin") + _node(Cs[1], "fanbad") + _node(Cs[2], "amb")
     return svg(o)
 
 
 def cause_to_actions() -> str:
-    """66장: 남은 원인 C(왼쪽 위)를 없애는 근본 조치 R, 고장 유형 F(왼쪽 아래)를 완화하는 완화 조치 M, 두 조치가 근거로 하는 문서 D."""
-    C, F, R, M, D = (240, 140, 62), (240, 385, 64), (640, 140, 62), (640, 385, 62), (1040, 262, 66)
+    """66장: 남은 원인 C(왼쪽 위)가 고장 유형 F(왼쪽 아래)를 일으키고, F는 근본 조치 R(가운데 위)로 「근본 해결된다」 · 완화 조치 M(가운데 아래)으로 「완화된다」.
+    R은 C를 「없앤다」, 두 조치는 근거 문서 D(오른쪽)를 「참조한다」. 실습 08과 같은 방향."""
+    C, F, R, M, D = (220, 130, 58), (220, 390, 62), (640, 130, 58), (640, 390, 58), (1030, 260, 62)
     o: list[str] = []
-    o += _edge_arrow(C, F) + _edge_arrow(R, C, BLUE, sw=5.5, size=17) + _edge_arrow(M, F, BLUE, sw=5.5, size=17) + _edge_arrow(R, D) + _edge_arrow(M, D)
+    o += _edge_arrow(C, F) + _edge_arrow(F, R, BLUE, sw=5.5, size=17) + _edge_arrow(F, M, BLUE, sw=5.5, size=17) + _edge_arrow(R, C)
+    o += _edge_arrow(R, D) + _edge_arrow(M, D)
     o += _node(C, "pin") + _node(F, "fm", hot=True) + _node(R, "wash") + _node(M, "fanmax") + _node(D, "doc")
     return svg(o)
 
