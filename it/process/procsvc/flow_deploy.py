@@ -1,4 +1,4 @@
-"""B4 (확정 TODO B4, DECISIONS 110 ②) — 흐름 판본 배포: 경보 패턴 → 지금 배포된 흐름, 기준 흐름으로 되돌리기, 기준과 비교.
+"""B4 (확정 TODO B4) — 흐름 판본 배포: 경보 패턴 → 지금 배포된 흐름, 기준 흐름으로 되돌리기, 기준과 비교.
 
 경보 하나가 어느 흐름으로 열리는가 (기존 alert_policy 계약 그대로 — `alert_policy.for_definition(raw, pattern)`):
   1. 배포 API로 배포된(마지막 배포 기록이 deploy/rollback) 학생 흐름 중, 메시지 시작 + `alertPolicy.patterns`에 그 패턴이 있는

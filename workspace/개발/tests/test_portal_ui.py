@@ -85,7 +85,7 @@ class Tour:
         self.ctx = browser.new_context(viewport={'width': size[0], 'height': size[1]}, locale='ko-KR')
         self.page = self.ctx.new_page()
         self.events = []
-        # 결정 1: 포털 화면(주 프레임)의 데이터 요청(fetch · XHR · SSE)은 포털과 같은 출처로만 — 다른 출처는 바깥 도구(Grafana · Neo4j · FUXA …)의
+        # 포털 화면(주 프레임)의 데이터 요청(fetch · XHR · SSE)은 포털과 같은 출처로만 — 다른 출처는 바깥 도구(Grafana · Neo4j · FUXA …)의
         # 켜짐 확인(layers.js 의 그 주소)뿐. 화면에 끼운 바깥 도구(추세 메뉴의 Grafana iframe)가 자기 출처로 내는 요청은 그 도구의 것이라 세지 않는다
         # (2026-11-01 — 주 프레임을 가리지 않아 Grafana 의 자기 요청을 포털 위반으로 셌다).
         origin = re.match(r'^https?://[^/]+', url).group(0)

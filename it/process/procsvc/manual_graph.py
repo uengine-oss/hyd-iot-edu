@@ -4,7 +4,7 @@ Originals and extraction coordinates live in ManualSources. Graph batches retain
 the reviewed before/after snapshots. An externally edited graph is never silently
 replaced; its owner must reconcile that conflict first.
 
-Execution history (F-2, DECISIONS 35): the case projection records which SOP a person chose and which cause an incident
+Execution history (F-2): the case projection records which SOP a person chose and which cause an incident
 was diagnosed as by pointing at document-owned nodes (HISTORY_RELATIONS). That history is an audit record, not part of the
 document's graph: it is split off before the drift check, a revision updates surviving nodes in place so it stays attached,
 and a revision or rollback that would drop a node it points at is refused, naming the node and the history.

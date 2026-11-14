@@ -119,7 +119,7 @@ def _closed_port():
         return s.getsockname()[1]
 
 
-# ---------------------------------------------------------------- 연결 설정(hydcommon.graphdb — 결정 2)
+# ---------------------------------------------------------------- 연결 설정(hydcommon.graphdb)
 def test_그래프_인증이_없으면_코드_기본_비밀번호로_붙지_않고_만들_때_까닭과_함께_실패한다(seeded_graph, made):
     with pytest.raises(GraphSettingsError, match='Neo4j 인증이 없습니다'):
         made(NEO4J_AUTH=None, NEO4J_USERNAME=None, NEO4J_PASSWORD=None)

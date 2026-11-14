@@ -24,7 +24,7 @@ def templates() -> Path:
 
 class KnowledgeGraph:
     def __init__(self):
-        # 드라이버는 한 곳(hydcommon.graphdb.connect — 주소 · 인증 · 「없는 이름」 알림 끔 · 끊긴 풀 연결 거름, 결정 2). 이 서비스의 한도만 준다:
+        # 드라이버는 한 곳(hydcommon.graphdb.connect — 주소 · 인증 · 「없는 이름」 알림 끔 · 끊긴 풀 연결 거름). 이 서비스의 한도만 준다:
         # 연결 3초 · 풀에서 꺼내기 5초 · 재시도 없음(bounded — 실패는 부르는 쪽이 UNKNOWN 으로 다룬다).
         self.driver = graphdb.connect(connection_timeout=3, connection_acquisition_timeout=5, max_transaction_retry_time=0)
         self._cache: dict[str, str] = {}

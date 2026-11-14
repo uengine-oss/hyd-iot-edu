@@ -51,7 +51,7 @@ ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
 # 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 가상 설비 API 전용 망(compose sim-net)의 서비스 이름으로 간다 — 브로커가 있는 OT 망에는 붙지 않는다.
 # 호스트에서 직접 띄우면 PLANT_SIM_URL=http://127.0.0.1:8000 (compose.yaml 이 컨테이너에는 항상 값을 넣는다).
 PLANT_SIM_URL = os.getenv("PLANT_SIM_URL", "http://plant-sim:8000")
-# 수업용 대기 압축(결정 4): 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 값은 compose.yaml 한 곳이
+# 수업용 대기 압축: 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 값은 compose.yaml 한 곳이
 # 정한다(360 — 20배속에서 업무 시간 하루가 12초, 납기 5일이 1분). 여기 기본값은 compose 없이 띄울 때를 위한 같은 값이다.
 WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "360"))
 # 승인 뒤 MCP 호출 부품이 부르는 서버(이름 → tenants.mcp 와 같은 설정). 기본은 수업용 hyd-effects(메일 → Inbucket · CMMS 일정 · 처리 건 기록).

@@ -191,7 +191,7 @@ async def healthz(_request):
     return JSONResponse({"ok": h["neo4j"], **h}, status_code=200 if h["neo4j"] else 503)
 
 
-#: 수업 neo4j 조회 도구(tenants.mcp 의 neo4j = http://dmn-mcp:8198/neo4j/mcp). 드라이버는 hydcommon.graphdb 한 곳에서 연다(결정 2).
+#: 수업 neo4j 조회 도구(tenants.mcp 의 neo4j = http://dmn-mcp:8198/neo4j/mcp). 드라이버는 hydcommon.graphdb 한 곳에서 연다.
 NEO4J_PATH = "/neo4j"
 neo4j_tools = neo4j_mcp.create_server(graphdb.connect(asynchronous=True), database=os.getenv("NEO4J_DATABASE", "neo4j"))
 

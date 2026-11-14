@@ -1,6 +1,6 @@
 """A11 데이터 패브릭 미니 — 업무 DB(Supabase `ent`)와 시계열 DB(TimescaleDB)를 읽기 전용으로 한 질문에 묶는다.
 
-HANDOFF §2 "데이터 패브릭은 구현하지 않고 후반 설명만"(회의 L63~67·L447)을 사용자 확정 TODO A11(2026-10-08 밤, "todo 다
+"데이터 패브릭은 구현하지 않고 후반 설명만"(회의 L63~67·L447)을 사용자 확정 TODO A11(2026-10-08 밤, "todo 다
 구현")에 따라 **가볍게** 구현한 것이다. 새 서비스(MindsDB 등) 없이 이미 있는 두 전용 읽기 계정(hyd_enterprise_reader ·
 hyd_timeseries_reader)과 같은 SQL 가드(hydcommon.sql_read)를 쓴다. 참고: ontology-studio의 데이터소스 기반 가상 클래스
 (openspec/changes/add-datasource-backed-virtual-classes/design.md — 인스턴스 0건 저장, 질의 시점에 원천을 읽음, 행 제한은 호출자가

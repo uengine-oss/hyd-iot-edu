@@ -66,7 +66,7 @@ LIVE_STATUSES = {"IN_PROGRESS", "SUBMITTED", "PENDING"}
 STATUS_WORDS = {"DONE": "끝났습니다", "CANCELLED": "취소됐습니다"}       # 끝난 단계를 다시 제출 · 발화할 때 거절 문장
 PROCESS_ORCH = "hyd-process"          # service tasks the process service executes itself
 SYSTEM_USER = "sys:process"           # performer of event work items (the product writes nextUserEmail="system")
-# C2 (확정 TODO C, 결정 4): 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행)은 업무 시간(예정된 정비 시간까지 몇 시간, 납기 며칠)을 기다린다.
+# C2 (확정 TODO C): 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행)은 업무 시간(예정된 정비 시간까지 몇 시간, 납기 며칠)을 기다린다.
 # 배속(TIME_SCALE)만으로는 20배속에서도 납기 5일이 6시간이라 수업에서 볼 수 없으므로, 그 부품과 그 부품에 붙은 경계 타이머에만 수업용 압축
 # 배율을 한 번 더 곱한다. 값은 instance_mode.build 가 PROCESS_WAIT_COMPRESSION 으로 정한다. 부품 tool 이름의 주인은 effect_parts 다.
 #: 가상 설비 시간을 재는 시스템 단계 — 그 단계에 붙은 타이머는 배속(TIME_SCALE)으로 잰다(재관측 창 · 시운전 안정 시간과 같은 시계)

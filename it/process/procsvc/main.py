@@ -1003,7 +1003,7 @@ def get_decision(did: str):
 
 # ---------------------------------------------------------------- knowledge administration (humans edit the ontology through L9)
 def _kg():
-    """새 Neo4j 드라이버 하나 — 받은 쪽이 닫는다(`with _kg() as driver`). 설정 · 알림 · 풀 확인은 hydcommon.graphdb 한 곳(결정 2)."""
+    """새 Neo4j 드라이버 하나 — 받은 쪽이 닫는다(`with _kg() as driver`). 설정 · 알림 · 풀 확인은 hydcommon.graphdb 한 곳."""
     return graphdb.connect()
 
 

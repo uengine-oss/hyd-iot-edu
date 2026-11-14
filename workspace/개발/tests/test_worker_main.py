@@ -119,7 +119,7 @@ def test_키_있는_PC_의_상태에는_녹화_수가_없다(launch):
 
 @pytest.mark.parametrize('path, status', [('/health', 200), ('/healthz', 200), ('/agents', 200), ('/fgb-none', 404)])
 def test_상태_HTTP_는_다른_출처_허용_머리글을_내지_않는다(launch, path, status):
-    """결정 1: 포털은 같은 출처(/svc/agent-worker/)로 읽는다 — 아무 웹페이지나 워커 상태를 읽게 두지 않는다."""
+    """포털은 같은 출처(/svc/agent-worker/)로 읽는다 — 아무 웹페이지나 워커 상태를 읽게 두지 않는다."""
     service = launch().wait()
     code, headers, _ = get(service, path)
     assert code == status and not any(k.startswith('access-control-') for k in headers)

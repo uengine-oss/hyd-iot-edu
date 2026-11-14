@@ -60,7 +60,7 @@ class Http(BaseHTTPRequestHandler):
         data = json.dumps(body, ensure_ascii=False).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.end_headers()      # 포털은 같은 출처 경로(/svc/agent-worker/)로 읽는다 — 다른 출처 허용(CORS)을 두지 않는다(결정 1)
+        self.end_headers()      # 포털은 같은 출처 경로(/svc/agent-worker/)로 읽는다 — 다른 출처 허용(CORS)을 두지 않는다
         self.wfile.write(data)
 
     def log_message(self, *a):  # quiet

@@ -1,4 +1,4 @@
-"""Neo4j 드라이버를 여는 곳 하나(common/hydcommon/graphdb.py) — 결정 2 · H-2.
+"""Neo4j 드라이버를 여는 곳 하나(common/hydcommon/graphdb.py) — H-2.
 
 규칙: 주소 · 인증은 환경 변수에서만(인증 기본값 없음, 두 꼴이 다르면 거절), 「없는 이름」 알림은 끄고 질의 오류는 그대로 올린다.
 알림 · 오류 판정은 실제 Neo4j(compose neo4j 이미지의 버릴 컨테이너 — conftest neo4j_graph)로 잰다.

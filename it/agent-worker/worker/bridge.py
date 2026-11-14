@@ -2,7 +2,7 @@
 
 Tools reach a CLI agent as MCP servers registered per run. The servers come from `tenants.mcp` in the product's own
 shape — `{type: "url", url, transport, headers}` for streamable-HTTP servers (the shape process-gpt-sample-app-wms documents;
-결정 3: 수업 서버 다섯과 학생이 등록하는 서버는 모두 HTTP 다 — process 는 명령형 서버를 받지 않는다, procsvc/mcp_check.STDIO_REFUSED).
+수업 서버 다섯과 학생이 등록하는 서버는 모두 HTTP 다 — process 는 명령형 서버를 받지 않는다, procsvc/mcp_check.STDIO_REFUSED).
 Claude Code reads the run's `.mcp.json` (--mcp-config --strict-mcp-config), so one run's tools stay in one run's workspace; HTTP
 servers are written in Claude Code's native `{type: "http", url, headers}` form. The only command (stdio) entries a run gets are
 the worker's own windows — the question window (worker/question_tools) and the result-check window (worker/result_check).
@@ -112,7 +112,7 @@ class Gate:
 
 
 def gate_servers(tenant_mcp: dict | None, trusted: set[str] | list[str]) -> Gate:
-    """B2 (DECISIONS 110 ①: an agent gets only tools of a server that passed the connection check, and only read-only ones).
+    """B2 (an agent gets only tools of a server that passed the connection check, and only read-only ones).
     Servers the worker's allowed list names (`trusted` — the seed's servers, with their own narrower entries) pass as before.
     Any other server (a student's — portal or wrap-up SQL) is registered only when its `hyd.gate` stamp was made for the
     config it has now; the run then pre-approves the stamp's read_tools and denies its blocked_tools. Without a matching

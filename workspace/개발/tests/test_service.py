@@ -1,4 +1,4 @@
-"""서비스 뼈대(common/hydcommon/service.py) — /healthz 의 ok 가 거짓이면 503, 다른 출처에 CORS 를 답하지 않고 다른 사이트의 쓰기는 403(결정 1 · W2-10 · 넘김 FA2 → FO)."""
+"""서비스 뼈대(common/hydcommon/service.py) — /healthz 의 ok 가 거짓이면 503, 다른 출처에 CORS 를 답하지 않고 다른 사이트의 쓰기는 403(W2-10 · 넘김 FA2 → FO)."""
 import pytest
 from fastapi.testclient import TestClient
 
