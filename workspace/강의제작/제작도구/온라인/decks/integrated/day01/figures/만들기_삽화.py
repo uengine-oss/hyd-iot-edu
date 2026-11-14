@@ -1782,7 +1782,7 @@ def _memo_row(P, hot_edges=(), tags=True):
     o += _node(Y, "rise") + _node(F, "fm", hot=True) + _node(C, "pin") + _node(K, "wash")
     if tags:
         for (x, y, r) in (Y, F, C, K):
-            o.append(rect(x - 78, y - r - 58, 156, 40, 20, fill=PALE, stroke="none", sw=0))
+            o.append(rect(x - 78, y - r - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
     return o
 
 
@@ -1832,7 +1832,7 @@ def property_card() -> str:
     """58장: 왼쪽 원(부품 하나)과 그 원에 달아 둔 항목 네 줄(오른쪽 카드). 줄마다 왼쪽이 항목 이름, 오른쪽이 값 자리."""
     o: list[str] = []
     P = (210, 270, 96)
-    o.append(rect(132, 110, 156, 40, 20, fill=PALE, stroke="none", sw=0))
+    o.append(rect(132, 110, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
     o.append(line(312, 270, 452, 270, stroke=NAVY, sw=4))
     o += _node(P, "cooler")
     o.append(rect(460, 40, 700, 440, 16, fill=WHITE, stroke=NAVY, sw=3.5))
