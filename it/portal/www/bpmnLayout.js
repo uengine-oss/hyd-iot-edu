@@ -82,7 +82,7 @@
       const sy = s.y + s.h / 2, ty = t.y + t.h / 2, sx = s.x + s.w, tx = t.x;
       let pts;
       if (e && back.has(e) || tx < sx) { const y = bottom + (lane++ % 6) * 14; pts = [[s.x + s.w / 2, s.y + s.h], [s.x + s.w / 2, y], [t.x + t.w / 2, y], [t.x + t.w / 2, t.y + t.h]]; }      // 되돌아가는 선: 그림 아래로
-      else if (fromBoundary) pts = [[s.x + s.w / 2, s.y + s.h], [s.x + s.w / 2, Math.max(ty, s.y + s.h + 24)], ...(ty > s.y + s.h + 24 ? [] : [[tx - 20, s.y + s.h + 24], [tx - 20, ty]]), [tx, ty]];
+      else if (fromBoundary) { const y = s.y + s.h + 26; pts = [[s.x + s.w / 2, s.y + s.h], [s.x + s.w / 2, y], [tx - 20, y], [tx - 20, ty], [tx, ty]]; }      // 경계 이벤트에서 나가는 선: 붙은 단계 아래의 줄 사이 통로로
       else if (Math.abs(sy - ty) < 1) pts = [[sx, sy], [tx, ty]];
       else if (tx - sx < COL) pts = [[sx, sy], [sx + (tx - sx) / 2, sy], [sx + (tx - sx) / 2, ty], [tx, ty]];
       else { const y = Math.min(sy, ty) + ROW / 2 + (sy < ty ? 6 : -6); pts = [[sx, sy], [sx + 20, sy], [sx + 20, y], [tx - 20, y], [tx - 20, ty], [tx, ty]]; }      // 여러 층을 건너는 선: 줄 사이 통로로

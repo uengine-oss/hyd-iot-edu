@@ -76,7 +76,7 @@
             <label><input type="radio" class="input" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}>아니요 (기준 안)</label></div><p>「예」로 보내면 센서 경보와 같은 길로 경보가 만들어집니다.</p></div>
         ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="3" maxlength="2000">${esc(d.memo)}</textarea>` })}`)}
       ${why ? `<div class="alert" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>보내지 못했습니다</h2><section>${esc(why)}</section></div>` : ''}
-      <footer class="form-foot"><button type="button" class="btn" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${UI.icon('send')}${O.sending ? '보내는 중' : '입력 보내기'}</button><span class="muted">입력자는 ${esc(m ? m.name : '담당자')}(으)로 기록됩니다</span></footer></div>
+      <footer class="form-foot"><button type="button" class="btn" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${UI.icon('send')}${O.sending ? '보내는 중' : '입력 보내기'}</button><span class="muted">입력자: ${esc(m ? m.name : '담당자')}</span></footer></div>
       <div class="oil-result">${resultHtml()}</div></div>`;
     wire();
   }

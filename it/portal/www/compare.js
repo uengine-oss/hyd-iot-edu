@@ -199,7 +199,7 @@
     const open = new Set([...S.el.querySelectorAll('details[open] > summary')].map(x => x.textContent.trim()));      // 다시 그려도 펼친 접기는 그대로 둔다
     const shut = new Set([...S.el.querySelectorAll('details:not([open]) > summary')].map(x => x.textContent.trim()));
     S.el.innerHTML = `<div class="io"><form class="panel io-in" aria-label="시험 조건">${formPane()}</form><div class="io-out"><div data-r="result" aria-live="polite">${S.busy
-        ? '<div data-cmp-track></div>' : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
+        ? '<div data-cmp-track></div>' : S.runError ? UI.errorBlock('시험을 실행하지 못했습니다', S.runError) : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
     S.el.querySelectorAll('details > summary').forEach(x => { const k = x.textContent.trim(); if (open.has(k)) x.parentElement.open = true; else if (shut.has(k)) x.parentElement.open = false; });
     if (S.busy && S.track) S.track.mount(S.el.querySelector('[data-cmp-track]'));      // 다시 그려도 같은 진행 목록이 새 자리로 옮겨 간다
     if (S.busy) hydLive.busy(S.el.querySelector('[data-act="run"]'), '시험하는 중', S.since);
@@ -211,12 +211,12 @@
     // 서버가 「입력 고정 → 에이전트 A 시험 → 에이전트 B 시험 → 두 결과 비교」를 그 일이 시작 · 끝날 때 진행 기록에 적는다(hydLive.track 이 읽어 채운다)
     S.since = new Date().toISOString();
     S.track = hydLive.track({ since: S.since, text: '두 구성을 같은 입력으로 계산하는 중', hint: '지금 값을 읽어 입력을 고정하고, 에이전트 A와 B의 구성으로 판단 단계를 차례로 계산합니다. 비교 결과는 모두 끝난 뒤 보입니다.' });
-    S.busy = true; S.error = null; render();
+    S.busy = true; S.error = S.runError = null; render();
     try {
       S.result = await postJ(api('/api/agent-trials/run'), { request_id: S.track.id, scenario: S.form.scenario, reuse_latest: S.form.input === 'latest',
         a: { agent: S.form.a }, b: { agent: S.form.b, variant: { without_tools: S.dropTools, without_skills: S.dropSkills } } });
       S.history = null;
-    } catch (e) { S.error = '시험을 실행하지 못했습니다: ' + e.message; S.result = null; }
+    } catch (e) { S.runError = e.message; S.result = null; }
     S.track.stop(); S.track = null;
     S.busy = false; render();
   }

@@ -915,7 +915,9 @@ function renderDecision() {
     `${fact('발동한 규칙', `<span class="num">${trace.filter(t => t.fired).length}</span><small>/ ${trace.length}개</small>`)}</dl>`;
   // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
   const unused = unusedFacts(ent.facts, trace);
-  const notes = (rest ? `<p class="result-sub">${esc(rest)}</p>` : '') +
+  // 무엇을 가정하고 낸 결론인지 결론 바로 아래에 적는다 — 조건을 바꿔 가며 견줄 때 지금 보는 결과가 어느 조건의 것인지 헷갈리지 않게
+  const assumed = Object.entries(ent.facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${factValue(k, v)}`);
+  const notes = `<p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p>` + (rest ? `<p class="result-sub">${esc(rest)}</p>` : '') +
     (unused.length ? `<p class="muted" role="status">${esc(unused.map(k => UI.t(FACT_LABEL[k])).join(', '))}: 지금 지식의 규칙 가운데 이 조건을 읽는 규칙이 없어 결과에 영향이 없습니다.</p>` : '') +
     (d.moneyError ? `<p class="muted" data-tone="danger" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>` : '');
   if (notes) html += `<div class="panel-sec">${notes}</div>`;
@@ -1057,10 +1059,25 @@ function renderDecisionApproval() {
 function systemBoards(s) {
   return [
     ['생산 관리', s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더', '설비', '납기까지 (시간)']],
-    ['정비 관리', s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['번호', '설비', '작업', '정비 시점']],
-    ['구매 · 재고 관리', [...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })),
-      ...s.erp.goods_receipts.map(g => ({ a: g.id, b: `${g.part_no || ''} ${g.qty}개 입고`, c: `검수 ${g.inspection}` }))], ['a', 'b', 'c'], ['번호', '대상', '상태']],
+    // 정비 요청 한 줄: 어느 설비에 · 어느 조치 방법으로 · 언제 · 지금 상태. 서버의 이어 붙인 작업 문장(task)은 조치 방법 이름을 모를 때만 쓴다
+    ['정비 관리', s.cmms.work_orders.map(w => ({ id: w.id, asset: w.asset, how: (w.option_id && UI.names[w.option_id]) || w.task, when: w.window_label || w.window || '–', status: UI.status(w.status) })),
+      ['id', 'asset', 'how', 'when', 'status'], ['정비 요청 번호', '설비', '조치 방법', '정비 시점', '상태']],
+    ['구매 · 재고 관리', [...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: UI.status(p.status) })),
+      ...s.erp.goods_receipts.map(g => ({ a: g.id, b: `${g.part_no || ''} ${g.qty}개 입고`, c: `검수 ${UI.status(g.inspection)}` }))], ['a', 'b', 'c'], ['번호', '대상', '상태']],
   ];
+}
+// 거래 한 줄: 무엇을(정비 요청 · 발주 · 입고 …) 어느 업무 시스템에 · 어느 설비에 · 어느 조치 방법으로 · 언제 · 누가 — 칸으로 나눠 보인다. 서버가 이어 붙인 문장(detail)은 원문 접기 안에 있다.
+// 「정비 요청」은 용어 정본의 이름이다(지식 그래프의 조치 이름 「정비 오더 발행」 대신 — UIUX_PLAN 4절)
+function txRecordHtml(x) {
+  const system = window.hydWords.system(x.system), product = UI.who(x.system);
+  const what = x.skill === 'skill:schedule-maintenance' ? UI.t('workOrder') : UI.name(x.skill) || '거래';
+  const after = x.after || {}, when = after.window_label || '';
+  const rows = [['설비', esc(x.asset || '–')], ['조치 방법', esc((x.option && UI.names[x.option]) || '–')], when ? ['정비 시점', esc(when)] : null,
+    ['번호', `<span class="mono">${esc(x.ref || x.id)}</span>`], ['누가', esc(UI.who(x.by))]].filter(Boolean);
+  return `<article class="event-record"><div class="line">${UI.icon(x.compensates ? 'rotate-ccw' : 'receipt-text')}<span class="line-text"><b>${esc(what)}${x.compensates ? ' 되돌림' : ''}</b>` +
+    `<span class="line-sub">${esc(system)}${product !== system ? ` (${esc(product)})` : ''}에 남은 기록</span></span><time class="line-time num" title="${esc(UI.dateTime(x.t))}">${esc(UI.dateTime(x.t))}</time></div>` +
+    `<dl class="bz-kv">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>${txDiffFold(x)}` +
+    UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify(x, null, 2))}</pre>`) + '</article>';
 }
 function renderSystems() {
   const box = $('#sysBoards'); const s = ent.entState;
@@ -1075,15 +1092,16 @@ function renderSystems() {
     return;
   }
   const boards = systemBoards(s);
-  // 결론 먼저: 업무 시스템마다 남은 기록이 몇 건인가 → 그 아래에 시스템마다 표 한 장 → 거래 기록
-  sum.innerHTML = boards.map(([sys, rows]) => `<div class="stat"><span class="stat-label">${esc(sys)}</span><span class="stat-value num">${rows.length}<small>건</small></span></div>`).join('') +
-    `<div class="stat"><span class="stat-label">거래 기록</span><span class="stat-value num">${ent.tx.length}<small>건</small></span></div>`;
+  // 결론 먼저: 조치가 남긴 거래가 몇 건인가(이 화면의 몫) → 업무 시스템마다 지금 있는 기록 수(원래 있던 것 포함) → 거래 기록 → 시스템마다 표 한 장
+  const STAT = { '생산 관리': '지금 있는 생산 오더', '정비 관리': '지금 있는 정비 요청', '구매 · 재고 관리': '지금 있는 구매 요청 · 입고' };
+  sum.innerHTML = `<div class="stat"><span class="stat-label">조치가 남긴 거래</span><span class="stat-value num">${ent.tx.length}<small>건${ent.tx.length >= 12 ? ' (최근 12건)' : ''}</small></span></div>` +
+    boards.map(([sys, rows]) => `<div class="stat"><span class="stat-label">${esc(STAT[sys] || sys)}</span><span class="stat-value num">${rows.length}<small>건</small></span></div>`).join('');
   // 표 한 장 = 업무 시스템 하나. 숫자 칸은 오른쪽 맞춤, 여섯 줄까지 보이고 나머지는 몇 건인지 적는다
   const cell = v => `<td${typeof v === 'number' ? ' class="num"' : ''}>${esc(v ?? '–')}</td>`;
   const t = (rows, cols, labels) => rows.length ? '<div class="table-container" tabindex="0"><table class="table"><thead><tr>' + labels.map((x, i) => `<th${rows.every(r => typeof r[cols[i]] === 'number') ? ' class="num"' : ''}>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' +
     rows.slice(0, 6).map(r => '<tr>' + cols.map(c => cell(r[c])).join('') + '</tr>').join('') + '</tbody></table></div>' + (rows.length > 6 ? `<p class="bz-note">${rows.length}건 가운데 6건만 보입니다(외 ${rows.length - 6}건).</p>` : '') : `<p class="bz-none">${esc(UI.t('proc.noChange'))}</p>`;
   box.innerHTML = boards.map(([sys, rows, cols, labels]) => `<section class="panel bz-board"><div class="panel-head"><h2>${esc(sys)}</h2></div>${t(rows, cols, labels)}</section>`).join('');
-  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<p class="bz-none">${esc(UI.t('proc.noTx'))}</p>`;
+  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(txRecordHtml).join('') : `<p class="bz-none">아직 거래가 없습니다. 처리 건에서 조치를 승인하면 업무 시스템이 실행한 거래가 여기에 남습니다.</p>`;
 }
 // A147: 거래가 바꾼 행의 변경 전·후 — 바뀐 항목만, 기본 닫힘. 기록이 없는 거래(before/after 둘 다 없음)는 접기도 없다
 function txDiffFold(x) {

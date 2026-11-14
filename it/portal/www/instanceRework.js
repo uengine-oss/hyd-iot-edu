@@ -53,14 +53,14 @@
       const list = choices(view), p = s.preview;
       const locked = !editable() ? 'disabled' : '';
       /* 요청 역할: 서버는 이 흐름에서 사람이 맡는 역할 가운데 하나만 받고(rework_runtime.request_rework), 이전 승인을 폐기할 때는 그 역할이 그 승인을
-         할 수 있는 역할인지 본다(approval_delivery._discard_owner). 후보가 하나면 고를 것이 없으므로 그 값을 그대로 쓰고 한 줄로 보인다.
-         여럿이면 어느 역할로 요청하는지에 따라 서버 판정이 달라지므로 고르게 둔다 — 첫 항목을 저절로 보내지 않는다. */
+         할 수 있는 역할인지 본다(approval_delivery._discard_owner). 쓰는 사람은 늘 담당자 한 명이고 모든 역할의 구성원이라 고르는 칸을 두지 않는다:
+         이 처리 건에서 이전 승인을 한 역할이 후보에 있으면 그 역할(그 승인을 폐기할 수 있는 역할이다), 없으면 후보의 첫 역할로 요청하고 어느 역할로 기록되는지 한 줄로 보인다.
+         서버가 그 역할을 받지 않으면 까닭이 아래 오류 줄에 그대로 나온다. */
       const roles = p?.request_roles || (s.role ? [s.role] : []);
-      if (p && roles.length === 1) s.role = roles[0];
+      const prior = (view.approvals || []).map(a => a.payload && a.payload.role).filter(Boolean).pop() || UI.valuesOf(view.instance).approved_role || '';
+      if (p && roles.length && !roles.includes(s.role)) s.role = roles.includes(prior) ? prior : roles[0];
       const roleField = !roles.length ? UI.readonly('요청 역할', p ? '<span class="muted" data-tone="danger">이 흐름에는 사람이 맡는 역할이 없어 다시 수행을 요청할 수 없습니다.</span>' : `<span class="muted">[${esc(UI.t('btn.effects'))}]를 누르면 표시됩니다.</span>`)
-        : roles.length === 1 ? UI.readonly('요청 역할', esc(roleName(roles[0])), '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.')
-        : UI.field({ label: '요청 역할', required: true, hint: '어느 역할로 다시 수행을 요청하는지 고릅니다. 이전 승인을 폐기해야 하면 그 승인을 할 수 있는 역할이어야 합니다.',
-          input: `<select id="rwRole" ${locked}><option value="">${esc(UI.t('form.pickRole'))}</option>${roles.map(r => `<option value="${esc(r)}" ${r === s.role ? 'selected' : ''}>${esc(roleName(r))}</option>`).join('')}</select>` });
+        : UI.readonly('요청 역할', esc(roleName(s.role)), roles.length === 1 ? '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.' : s.role === prior ? '이전 승인을 한 역할로 요청하고 기록합니다.' : '이 흐름에서 사람이 맡는 역할로 요청하고 기록합니다.');
       let detail = '';
       if (p) {
         const effects = p.effects, inc = effects?.incident;
@@ -91,7 +91,7 @@
       host.querySelector('#rwStart')?.addEventListener('change', e => {
         s.workitem = e.target.value; s.preview = null; s.confirmed = false; s.error = ''; draw();
       });
-      for (const [field, selector] of [['by', '#rwBy'], ['role', '#rwRole'], ['reason', '#rwReason']]) {
+      for (const [field, selector] of [['by', '#rwBy'], ['reason', '#rwReason']]) {
         const update = e => {
           s[field] = e.target.value; s.confirmed = false;
           const confirm = host.querySelector('#rwConfirm'); if (confirm) confirm.checked = false;

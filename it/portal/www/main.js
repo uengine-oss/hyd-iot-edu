@@ -65,7 +65,7 @@
   <!-- 영역 이름 -->
   <text x="40" y="48" class="m-zone" fill="#f07167">OT · 현장 설비</text>
   <text x="580" y="92" text-anchor="middle" class="m-zone" fill="#7aa2ff">값이 지나는 길</text>
-  <text x="660" y="86" class="m-zone" fill="#b794f6">IT · 지식 지도 · AI 에이전트</text>
+  <text x="660" y="86" class="m-zone" fill="#7aa2ff">IT · 지식 지도 · AI 에이전트</text>
   <line x1="520" y1="60" x2="520" y2="556" class="m-sep"/><line x1="640" y1="60" x2="640" y2="556" class="m-sep"/>
 
   <!-- 유압 파워유닛 -->
@@ -172,8 +172,8 @@
     const rows = [
       [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), !!alarms, '', 'trends'],
       // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
-      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', '사건 목록을 읽지 못했습니다', true, state.incidentError, 'instances']
-        : [UI.t('main.openCases'), state.incidentsRead ? String(open) : '–', open ? '처리 건에서 경과를 봅니다' : UI.t('main.none'), false, '', 'instances'],
+      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', '처리 건 목록을 읽지 못했습니다', true, state.incidentError, 'instances']
+        : [UI.t('main.openCases'), state.incidentsRead ? String(open) : '–', open ? '경과와 결과를 봅니다' : UI.t('main.none'), false, '', 'instances'],
       state.todo == null ? ['내가 할 일', state.todoError ? '읽기 실패' : '–', state.todoError ? '할 일 수를 읽지 못했습니다' : UI.t('loading'), !!state.todoError, state.todoError || '', 'instances']
         : ['내가 할 일', String(state.todo), state.todo ? '승인하거나 답할 처리 건이 있습니다' : UI.t('main.none'), false, '', 'instances'],
       [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), !!graphError, graphError, 'ontology'],      // 서버 사유는 길어 줄 높이를 흔든다 — title 로
@@ -197,6 +197,8 @@
       dot.setAttribute('cx', cx - w / 2 + 12); t.setAttribute('x', cx - w / 2 + 23);
     });
     fitNodes(); document.fonts.ready.then(fitNodes);
+    // 다른 화면 주소로 들어왔으면 홈이 가려진 채라 글자 폭을 잴 수 없다 — 홈이 보일 때 다시 맞춘다
+    window.hydTabs.onShow(name => { if (name === 'main') fitNodes(); });
     const stages = document.getElementById('mainStages');
     stages.innerHTML = stagesHtml();
     stages.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { selectTab(b.dataset.go); $('#content').focus({ preventScroll: true }); }));

@@ -626,7 +626,7 @@
       S.view = Object.assign(S.view, { check: v.check, next_version: v.next_version, versions: v.versions, register: v.register, class_flow: v.class_flow });
       if (changed) renderEditor();
       else { drawRegister(); $('flowEditorSum').textContent = `단계 ${S.view.parsed.tasks.length} · 갈림 ${S.view.parsed.gateways.length}${v.check.ok ? ' · 검사 통과' : ` · 고칠 곳 ${(v.check.problems || []).length}`}`; drawSteps(); }
-      if (save) sayMsg(v.check.ok ? '' : infoBox('단계 설정을 저장했습니다', '위의 고칠 곳을 고치면 판본으로 등록할 수 있습니다.'));
+      if (save) sayMsg(v.check.ok ? okBox('단계 설정을 저장했습니다', `${h(UI.dateTime(new Date().toISOString()))}에 저장했고 구조 검사를 통과했습니다. [판본 등록]으로 판본을 만듭니다.`) : infoBox('단계 설정을 저장했습니다', '위의 고칠 곳을 고치면 판본으로 등록할 수 있습니다.'));
       else if (!$('flowMsg').querySelector('.lv-wait')) sayMsg('');
     } catch (e) { sayMsg(failBox(save ? '단계 설정을 저장하지 못했습니다' : '단계 설정을 검사하지 못했습니다', e.message)); }
   }

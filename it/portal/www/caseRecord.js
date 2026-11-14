@@ -33,7 +33,9 @@
   const vars = inst => UI.valuesOf(inst);
   const nm = id => W().idName(id);
   const named = (name, id) => `${e(name)}${W().id(id)}`;
-  const isAgent = w => UI.doerOf(w) === 'agent', isHuman = w => UI.doerOf(w) === 'human';
+  // 맡은 쪽이 AI 에이전트(agent:…)인 작업 행은 워커가 가져가기 전(agent_orch 가 비어 있는 순간)에도 AI 단계다 — 그 순간 사람 단계로 그리지 않는다
+  const byAgent = w => /^agent:/.test(String(w.user_id || ''));
+  const isAgent = w => UI.doerOf(w) === 'agent' || byAgent(w), isHuman = w => UI.doerOf(w) === 'human' && !byAgent(w);
   const CHECK = /^(incident:reobserve|plant:test-run|enterprise:GR_CONFIRM)$/;
   const PLANT = /^(plant:|incident:(command|reobserve)$)/;          // 설비에 닿는 단계(설비 명령 · 재관측 · 정비 모사 · 시운전)
   const CASE_LEVEL = new Set(['SCENARIO_BUTTON', 'CASE_LINK_FAILED']);   // 단계(todo)가 아니라 처리 건에 붙는 기록 — 시작 단계에 보인다
@@ -147,6 +149,8 @@
       else if (CHECK.test(w.tool || '')) s = checkStep(ctx, base);
       else s = systemStep(ctx, base);
       s.state = s.state || (w.status === 'DONE' || w.status === 'COMPLETED' ? 'ok' : w.status === 'CANCELLED' ? 'stop' : w.draft_status === 'FAILED' ? 'fail' : execution.awaiting || execution.terminal?.event_type === 'task_deferred' ? 'wait' : live ? (w.status === 'PENDING' ? 'wait' : 'run') : 'idle');
+      // 일은 끝냈는데 엔진이 아직 다음 단계로 넘기지 않은 순간(작업 행이 진행 중 · 제출됨): 「남음」(점선)이 아니라 「지금」으로 보인다
+      if (s.state === 'idle' && running && ['IN_PROGRESS', 'SUBMITTED'].includes(w.status)) s.state = 'run';
       if (w.status === 'CANCELLED' && !s.stopNote) s.stopNote = UI.logText(w.log) || '취소됨';
       steps.push(s);
     });
@@ -599,6 +603,14 @@
       const span = simSpan(simS, null);
       sentence = rec == null ? `설비가 기준 안으로 돌아오는지 지켜보는 중입니다${span ? ` (${span})` : ''}.`
         : `${span ? span + ' 동안 ' : ''}지켜본 뒤 ${reobsBasis(valTxt, crit, rec)}${rec ? '회복으로' : '미회복으로'} 판정했습니다.`;
+      // 지켜보는 동안(1분 남짓)은 실제로 보는 값이 흘러나온다: 지금 값(설비 상태 1초 값) · 기준 · 판정까지 남은 시간(서버가 기록 줄에 적은 마감 시각 — 연장되면 새 마감) · 서버가 적은 기록 줄
+      // (시스템 단계는 워커가 가져가는 일이 아니라 실행 판정(live)이 서지 않는다 — 작업 행이 아직 끝나지 않았는지로 본다)
+      if (ctx.running && rec == null && !w.end_date && ['IN_PROGRESS', 'SUBMITTED'].includes(w.status)) {
+        const ro = (obs && obs.reobservation) || {};
+        const plan = [...b.rows].reverse().map(r => r.data && r.data.plan).find(p => p && p.due_at) || null;
+        const watch = { asset: v.asset || (inc && inc.asset) || '', tag: String(ro.tag || (crit && crit[0]) || ''), op: ro.op || (crit && crit[1]) || '', limit: ro.limit != null ? ro.limit : crit ? crit[2] : null, plan, simS };
+        if (watch.asset && watch.tag) { b.liveBox = watchBox(b, watch); b.liveLine = watchLine(watch); }
+      }
       // A161-G3: 지켜본 동안의 값 흐름 (사건 reobsSeries, 작업지시 뒤 재관측은 REOBSERVATION 이벤트 reading.series)
       const evSeries = (b.rows.find(r => r.data && r.data.reading && r.data.reading.series) || {}).data;
       const series = (inc && inc.reobsSeries) || (evSeries && evSeries.reading.series) || (out.reading && out.reading.series) || null;
@@ -644,6 +656,51 @@
     return Object.assign(b, { type: 'check', lane: 'system', icon, title: b.name, actor: /^(incident:reobserve|plant:test-run)$/.test(w.tool) ? '설비 · 센서' : '구매 · 재고 관리', sentence, chips, sections, verdict,
       state: w.status === 'DONE' && verdict === false ? 'bad' : undefined, now: b.live ? '확인하는 중' : '', ids: [w.tool] });
   }
+
+  /* 효과 확인(재관측)을 지켜보는 동안의 실시간 표시. 값은 지어내지 않는다:
+     - 지금 값: 화면이 1초마다 받는 설비 상태(app.js state.plant — [data-cr-tag] 자리를 tickWatch 가 채운다). 못 받으면 「–」
+     - 기준: 사건 기록의 재관측 기준(태그 · 비교 · 한계)
+     - 판정까지: 서버가 기록 줄(REOBSERVE_STARTED · REOBSERVATION_EXTENDED)에 적은 마감 시각. 마감이 없으면 그 칸을 그리지 않는다(시간으로 차오르는 막대를 만들지 않는다) */
+  const watchUnit = w => W().unit(String(w.tag).toLowerCase());
+  const watchValue = w => `<span data-cr-tag="${e(w.asset + ':' + w.tag)}" data-cr-op="${e(w.op)}" data-cr-limit="${e(w.limit == null ? '' : w.limit)}">–</span>`;
+  function watchLine(w) {
+    const u = watchUnit(w);
+    return `지금 ${e(W().fieldName(String(w.tag).toLowerCase()))} <b class="num">${watchValue(w)}${u ? ' ' + e(u) : ''}</b>${w.limit != null ? ` · 기준 ${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? ' ' + e(u) : ''}` : ''}${w.plan ? ` · 판정까지 <b class="num" data-cr-until="${e(w.plan.due_at)}">–</b>` : ''}`;
+  }
+  function watchBox(b, w) {
+    const u = watchUnit(w), name = W().fieldName(String(w.tag).toLowerCase());
+    const lines = b.rows.filter(r => r.kind === 'sys' || r.kind === 'error').map(r => {
+      const d = r.data || {}, rd = d.reading, p = d.plan;
+      const sub = [rd && rd.value != null ? `${name} ${W().num(rd.value)}${u ? ' ' + u : ''} — 기준 ${rd.inside ? '안' : '밖'}` : '', p && p.window_s != null && !rd ? `${fmtMs(p.window_s * 1000)} 동안 지켜봅니다` : '', p && p.due_at ? `판정 예정 ${hhmmss(p.due_at)}` : ''].filter(Boolean).join(' · ');
+      return `<div class="line" data-kind="${r.kind === 'error' ? 'fail' : 'ok'}">${UI.icon(r.kind === 'error' ? 'x' : 'check')}<span class="line-text"><b>${e(noJargon(r.text).replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인'))}</b>${sub ? `<span class="line-sub">${e(sub)}</span>` : ''}</span><span class="line-time num">${e(hhmmss(r.t0))}</span></div>`;
+    }).join('');
+    return `<div class="stream" data-cr-watch><div class="stream-head"><i class="dot" data-tone="brand" data-live></i><span><b>효과 확인</b><span class="muted"> — 설비가 기준 안으로 돌아오는지 지켜보는 중</span></span>${b.t0 ? `<span class="elapsed num" data-since="${e(b.t0)}">${e(fmtMs(Date.now() - ts(b.t0)))}</span>` : ''}</div>
+      <dl class="turn-facts watch-facts"><div><dt>지금 ${e(name)}</dt><dd class="num">${watchValue(w)}${u ? `<small>${e(u)}</small>` : ''}<span class="tag" data-cr-inside hidden></span></dd></div>
+        ${w.limit != null ? `<div><dt>기준</dt><dd class="num">${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? `<small>${e(u)}</small>` : ''}</dd></div>` : ''}
+        ${w.plan ? `<div><dt>판정까지</dt><dd class="num" data-cr-until="${e(w.plan.due_at)}">–</dd></div>` : ''}
+        ${w.simS != null ? `<div><dt>지켜보는 시간</dt><dd class="num">${e(fmtMs(w.simS * 1000))}<small>설비 시간${w.plan && w.plan.window_s != null ? ` · 실제 ${e(fmtMs(w.plan.window_s * 1000))}` : ''}</small></dd></div>` : ''}</dl>
+      ${lines ? `<div class="stream-log" data-cr-livelog>${lines}</div>` : ''}</div>`;
+  }
+  // 1초마다: 지켜보는 값과 남은 시간을 그 자리에 적는다(다시 그리지 않는다). 기준 안 · 밖은 서버가 준 비교(op · 한계)로만 가른다
+  const INSIDE = { '<': (a, b) => a < b, '<=': (a, b) => a <= b, '>': (a, b) => a > b, '>=': (a, b) => a >= b };
+  function tickWatch() {
+    if (typeof document === 'undefined' || !document.querySelectorAll) return;
+    const units = typeof state === 'object' && state && state.plant && state.plant.units ? state.plant.units : null;
+    document.querySelectorAll('[data-cr-tag]').forEach(n => {
+      const [asset, tag] = n.dataset.crTag.split(':');
+      const raw = units && units[asset] && units[asset].tags ? units[asset].tags[tag] : null, val = raw == null ? null : Number(raw);
+      const text = val == null || !Number.isFinite(val) ? '–' : W().num(val);
+      if (n.textContent !== text) n.textContent = text;
+      const badge = n.parentElement.querySelector('[data-cr-inside]'), cmp = INSIDE[n.dataset.crOp], limit = n.dataset.crLimit === '' ? null : Number(n.dataset.crLimit);
+      if (badge && cmp && limit != null && val != null && Number.isFinite(val)) { const inside = cmp(val, limit); badge.hidden = false; badge.textContent = inside ? '기준 안' : '기준 밖'; badge.dataset.tone = inside ? 'ok' : 'warn'; }
+    });
+    document.querySelectorAll('[data-cr-until]').forEach(n => {
+      const left = Math.ceil((Date.parse(n.dataset.crUntil) - Date.now()) / 1000);
+      const text = Number.isFinite(left) ? (left > 0 ? fmtMs(left * 1000) : '판정하는 중') : '–';
+      if (n.textContent !== text) n.textContent = text;
+    });
+  }
+  setInterval(tickWatch, 1000);
 
   // "토출 압력 182 bar — 기준 ‘토출 압력 ≥ 165 bar’ 안이라 " · 잰 값 · 기준을 모르면 그 말을 빼고 판정만
   function reobsBasis(valTxt, crit, rec) {
@@ -835,7 +892,7 @@
   // AI 단계의 「실행 기록」 안: 구획마다 접기 하나(원문 포함) — 줄들 아래에 놓인다
   const foldsHtml = (s, secs) => secs.filter(Boolean).map((x, j) => `<details class="fold" data-k="${e(s.key + ':sec' + j)}"><summary>${e(x.title)}</summary><div class="fold-body ${x.cls || ''}">${x.body}</div></details>`).join('');
   // 단계마다 모아 두던 값(세는 숫자 · 값)은 접기 안의 한 줄로 — 뱃지에는 상태 낱말만 넣는다(디자인 기준 4절)
-  const factsLine = s => { const f = (s.chips || []).filter(c => c && c.label).map(c => e(c.label)); return f.length ? `<p class="cr-facts">${f.join(' <span class="sep">·</span> ')}</p>` : ''; };
+  const factsLine = s => { const f = (s.chips || []).filter(c => c && c.label && !/^[–\-\s·]+$/.test(c.label)).map(c => e(c.label)); return f.length ? `<p class="cr-facts">${f.join(' <span class="sep">·</span> ')}</p>` : ''; };
   function gapLines(gaps) {
     return gaps.length ? `<section class="cr-sec cr-gap"><h4 class="cr-h">기록에 없는 것</h4><ul class="cr-gaps">${gaps.map(g => `<li${g.strong ? ' data-strong' : ''}>${e(g.text)}</li>`).join('')}</ul></section>` : '';
   }
@@ -858,10 +915,10 @@
       const ask = r.inputEvent ? UI.toolAsk(r.inputEvent, true).summary : W().ask(r.tool, r.input);
       if (r.status === 'running') return live ? wrap('tool', toolIcon(r.tool), `${name} 중`, [sys, ask].filter(Boolean).join(' · '), true)
         : wrap('', toolIcon(r.tool), `${name} — 결과 기록 없음`, [sys, ask].filter(Boolean).join(' · '));
-      const result = r.ioEvent ? UI.toolResult(r.ioEvent, true) : null;
-      const got = result ? result.summary : W().got(r.tool, r.output);
-      const bad = r.status === 'fail';
-      return wrap(bad ? 'fail' : 'ok', bad ? 'x' : 'check', bad ? `${name}에 실패했습니다` : `${name}${W().josa(name, '을/를')} 마쳤습니다${r.badge ? ` — ${r.badge}` : ''}`, [sys, [ask, got].filter(Boolean).join(' → ')].filter(Boolean).join(' · '));
+      // 받은 것은 기록 줄의 미리보기로 요약한다. 화면이 보관된 원문을 다시 읽는 사정(「원문 읽는 중」)은 AI 가 한 일이 아니라 이 줄에 적지 않는다 — 잘림 · 막힘만 꼬리에 붙인다
+      const got = W().got(r.tool, r.output);
+      const bad = r.status === 'fail', flag = ['warn', 'blocked'].includes(r.status) && r.badge ? ` — ${r.badge}` : '';
+      return wrap(bad ? 'fail' : 'ok', bad ? 'x' : 'check', bad ? `${name}에 실패했습니다` : `${name}${W().josa(name, '을/를')} 마쳤습니다${flag}`, [sys, [ask, got].filter(Boolean).join(' → ')].filter(Boolean).join(' · '));
     }
     if (r.kind === 'skill') return wrap('ok', 'check', '스킬 문서를 읽었습니다', UI.skillLabel(r.data, true).label);
     if (r.kind === 'file') return wrap('ok', 'check', '결과를 적었습니다', r.text);
@@ -969,7 +1026,7 @@
     }
     const evid = f.evid.length ? `<details class="fold" open data-k="${e(s.key + ':evid')}"><summary>근거<span class="muted">${f.evid.length}가지</span></summary><div class="fold-body"><ul class="evid">${f.evid.map(([ic, html]) => `<li>${UI.icon(ic)}<span>${html}</span></li>`).join('')}</ul></div></details>` : '';
     const alts = f.opts.length ? `<details class="fold" data-k="${e(s.key + ':opts')}"><summary>후보 비교<span class="muted">${f.opts.length}개${f.rec ? ` 가운데 ${f.mock ? '모의 ' : ''}1위` : ''}</span></summary><div class="fold-body" data-flush>${optsTable(f)}</div></details>` : '';
-    const secs = [...(s.sections || [])].filter(Boolean);
+    const secs = [...(s.sections || [])].filter(Boolean).filter(x => !(f.opts.length && /^비교한 대안/.test(x.title)));      // 바로 위 「후보 비교」와 같은 것은 또 두지 않는다
     const exec = `<details class="fold" data-k="${e(s.key + ':more')}"><summary>실행 기록<span class="muted">도구 호출 ${tools}번${dur ? ` · ${e(dur)}` : ''}</span></summary><div class="fold-body cr-detail" data-flush>
       ${lines.length ? `<div class="stream-log cr-lines">${lines.map(r => lineOf(r, false, false)).join('')}</div>` : '<p class="muted">도구 호출 기록이 없습니다.</p>'}
       ${factsLine(s)}${foldsHtml(s, secs)}${stepLink(s)}${idsLine(s)}${gapLines(gaps)}</div></details>`;
@@ -990,10 +1047,26 @@
     const secs = (s.sections || []).filter(Boolean);
     const inside = factsLine(s) + sectionsHtml(s, secs) + stepLink(s) + idsLine(s) + gapLines(gaps);
     const waitsMe = s.live && s.now && s.lane === 'person';      // 사람을 기다리는 단계는 문장 하나(무엇을 하면 넘어가는지)
-    const body = `<p class="step-say">${e(waitsMe ? s.now : pre + (s.sentence || ''))}</p>${s.live && s.now && !waitsMe ? `<p class="step-now"><i class="dot" data-tone="brand" data-live></i><span>${e(s.now)}</span></p>` : ''}
+    const body = `<p class="step-say">${e(waitsMe ? s.now : pre + (s.sentence || ''))}</p>${s.liveBox || ''}${s.live && s.now && !waitsMe && !s.liveBox ? `<p class="step-now"><i class="dot" data-tone="brand" data-live></i><span>${e(s.now)}</span></p>` : ''}
       ${inside ? `<details class="fold" data-plain data-k="${e(s.key + ':more')}"><summary>자세히</summary><div class="fold-body cr-detail">${inside}</div></details>` : ''}`;
     return { mark: markIcon(s), head, body };
   }
+  /* 남은 단계: 정해진 데까지만 화살표로 잇고, 길이 갈리는 곳부터는 가지마다 한 줄씩 적는다 — 어느 가지로 갈지는 아직 나지 않은 결과가 정하므로
+     한 길(「… → 결과 보고: 정상」)을 미리 골라 적지 않는다. 가지 안에서 또 갈리면 거기까지만 적고 그 갈림의 이름을 댄다 */
+  const PLAIN_END = new Set(['끝', '종료', '완료', 'end', 'End', '']);
+  function restHtml(rest, fork) {
+    const arrow = UI.icon('arrow-right'), chain = names => names.map(n => `<span>${e(UI.flowName(n))}</span>`).join(arrow);
+    const line = rest.length ? `<div class="rest">${chain(rest.map(n => n.name))}</div>` : '';
+    if (!fork) return line;
+    const q = String(fork.name || '').replace(/\?$/, '').trim();
+    const branch = b => {
+      const tail = b.more ? `<span class="muted">「${e(UI.flowName(b.more))}」에서 다시 갈림</span>` : b.end != null ? `<span class="muted">${PLAIN_END.has(String(b.end).trim()) ? '처리 완료' : `처리 완료(${e(UI.flowName(b.end))})`}</span>` : '';
+      const parts = [b.steps.length ? chain(b.steps) : '', tail].filter(Boolean).join(arrow);
+      return `<li><b>${e(UI.flowSeq(b.label) || b.label || '조건에 맞으면')}</b>${parts ? arrow + parts : ''}</li>`;
+    };
+    return `${line}<p class="rest-fork">${rest.length ? '그 뒤 ' : '이 단계가 끝나면 '}${q ? `「${e(UI.flowName(q))}」에 따라` : '결과에 따라'} 길이 갈립니다.</p><ul class="rest-branches">${fork.branches.map(branch).join('')}</ul>`;
+  }
+
   // 「기록에 없는 것」을 그 단계의 접기 안으로 보낸다: 종류별로 그 말이 가리키는 단계(없으면 마지막 단계)
   function gapsByStep(m) {
     const uniq = [...new Map(m.gaps.map(g => [g.key, g])).values()].sort((a, b) => (b.strong ? 1 : 0) - (a.strong ? 1 : 0));
@@ -1110,8 +1183,9 @@
       const shown = m.steps.filter(s => !(s.type === 'timer' && s.w && s.w.status !== 'DONE'));
       const gaps = gapsByStep(m), mine = opts.mine ? opts.mine() : null;
       // 남은 단계는 이름만 한 줄(진행 길의 남은 상자와 같은 차례)
-      const rest = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst).nodes.filter(n => n.state === 'todo') : [];
-      const want = shown.map(s => s.key).concat(rest.length ? ['next'] : []);
+      const path = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst) : null;
+      const rest = path ? path.nodes.filter(n => n.state === 'todo') : [], fork = path ? path.fork : null;
+      const want = shown.map(s => s.key).concat(rest.length || fork ? ['next'] : []);
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
       const place = (key, i, state, parts) => {
         let li = [...box.children].find(x => x.dataset.key === key);
@@ -1152,8 +1226,8 @@
         if (s.w) li.dataset.step = s.w.id; else delete li.dataset.step;
       });
       // 남은 단계는 맨 아래 한 줄에 화살표로 이어 적는다(진행 길의 남은 상자와 같은 차례)
-      if (rest.length) place('next', shown.length, 'todo', { mark: 'circle-dashed', head: '<span class="step-title">남은 단계</span>',
-        body: `<div class="rest">${rest.map(n => `<span>${e(UI.flowName(n.name))}</span>`).join(UI.icon('arrow-right'))}</div>` });
+      if (rest.length || fork) place('next', shown.length, 'todo', { mark: 'circle-dashed', head: '<span class="step-title">남은 단계</span>', body: restHtml(rest, fork) });
+      tickWatch();
       if (opts.onDraw) opts.onDraw(m, host);
     }
     C.draw = draw;

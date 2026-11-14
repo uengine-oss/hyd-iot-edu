@@ -90,7 +90,7 @@
     if (!mod || typeof mod.mount !== 'function') {
       // 화면 모듈이 실리지 않았다(스크립트 오류) — 「준비 중」이 아니라 실패로 보인다(W2-20)
       console.error(`화면 모듈 ${key} 이(가) 없습니다 — index.html 의 스크립트 오류를 개발자 도구 콘솔에서 확인`);
-      if (!mounted[name]) box.innerHTML = UI.errorBlock('이 화면을 불러오지 못했습니다', '화면 프로그램이 실리지 않았습니다 — 새로 고쳐도 같으면 강사에게 알리세요.', { retry: true });
+      if (!mounted[name]) box.innerHTML = UI.errorBlock('이 화면을 불러오지 못했습니다', '화면 프로그램이 실리지 않았습니다 — 화면을 새로 고쳐도 같으면 시스템 관리자에게 알리세요.', { retry: true });
       box.querySelector('[data-retry]')?.addEventListener('click', () => location.reload());
       return;
     }

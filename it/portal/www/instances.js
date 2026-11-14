@@ -17,7 +17,9 @@
   const who = id => UI.roleName(id, I.view?.definition);
   // 복구 패널(다시 수행 · 실행 효과 · 보류 · 재전달 · 단계 닫기)의 담당자 기본값: 이 PC의 담당자 — 못 읽었으면 빈 칸(지어낸 기본 이름을 넣지 않는다)
   const actor = () => window.hydInbox?.me?.()?.id || '';
-  const isHuman = t => UI.doerOf(t) === 'human';
+  // 사람이 처리할 단계인가. 맡은 쪽이 AI 에이전트(agent:…)나 시스템(sys:…)인 작업 행은 워커가 아직 가져가기 전(agent_orch 가 비어 있는 순간)에도 사람 단계가 아니다 —
+  // 그 순간 목록 줄이 「승인 대기」 뱃지와 사람 아이콘을 달았다(독립 검토 가-4)
+  const isHuman = t => UI.doerOf(t) === 'human' && !/^(agent:|sys:)/.test(String(t.user_id || ''));
   const josa = (word, pair) => window.hydWords ? hydWords.josa(word, pair) : '';
   const WINDOW = 50;                                   // 목록 한 번에 읽는 건수
   // 사건이 아닌 시스템 작업(질문 · 문서 추출 흐름) — 목록에서 사건과 가르는 표시. 서버가 준 흐름 정의 id 로만 가른다
@@ -35,15 +37,19 @@
   const mineOf = pid => I.asked.find(t => t.proc_inst_id === pid) || I.todo.find(t => t.proc_inst_id === pid) || null;
   const isApprovalTool = tool => ['formHandler:select_card', 'formHandler:approve'].includes(tool);
   const turnWord = t => t.draft_status === 'HUMAN_ASKED' ? '질문' : isApprovalTool(t.tool) ? '승인 대기' : '내 차례';
-  // 상태 칩은 하나다: 멈춤 > 내 차례 > 진행 중 > 끝난 결과
-  function stateChip(x) {
-    if (x.attention) return UI.chipText(String(x.attention.label || '멈춤').split(' — ')[0], 'danger');
+  /* 처리 건 한 건의 상태 이름과 색 — 정본은 여기 하나다(window.hydInstances.stateOf). 다른 화면이 같은 사건의 상태를 보일 때 이 함수를 쓴다(다른 이름 · 다른 색의 사본을 만들지 않는다).
+     x: 처리 건 행(GET /api/instances 의 한 줄 또는 GET /api/instances/{id} 의 instance — status · attention · variables_data · current_activity_ids · proc_def_id · proc_def_version)
+     돌려주는 값: { label, tone } — tone 은 UI.chipText 의 것(danger 멈춤 · 미달 / warning 내 차례 / accent 진행 중 / success 정상 / neutral 반려 · 그 밖). 그리기: UI.chipText(s.label, s.tone)
+     차례: 멈춤 > 내 차례(질문 · 승인 대기 · 내 차례) > 진행 중(지금 단계가 AI 면 「AI 판단 중」) > 끝난 결과(결과 보고의 낱말 — 정상 · 미달 · 반려 …) */
+  function stateOf(x) {
+    if (x.attention) return { label: String(x.attention.label || '멈춤').split(' — ')[0], tone: 'danger' };
     const t = x.status === 'RUNNING' ? mineOf(x.proc_inst_id) : null;
-    if (t) return UI.chipText(turnWord(t), 'warning');
-    if (x.status === 'RUNNING') return UI.chipText(aiNow(x) ? 'AI 판단 중' : UI.status(x.status), 'accent');
+    if (t) return { label: turnWord(t), tone: 'warning' };
+    if (x.status === 'RUNNING') return { label: aiNow(x) ? 'AI 판단 중' : UI.status(x.status), tone: 'accent' };
     const o = outcomeOf(x);
-    return UI.chipText(o.label, o.tone);
+    return { label: o.label, tone: o.tone };
   }
+  const stateChip = x => { const s = stateOf(x); return UI.chipText(s.label, s.tone); };
   // 목록 줄의 아이콘: 멈춤 > 내 차례(질문 · 승인 · 입력) > 진행 중 > 끝난 결과. 사건이 아닌 시스템 작업은 문서 아이콘
   function rowIcon(x, task) {
     if (x.attention) return 'triangle-alert';
@@ -53,13 +59,13 @@
     const o = outcomeOf(x);
     return isSystemJob(x) ? 'file-text' : o.tone === 'danger' || o.verdict === 'rejected' || x.status === 'CANCELLED' ? 'circle-x' : 'circle-check';
   }
-  // 끝난 건의 보조 줄: 「정상으로 끝남」 · 「반려로 끝남」. 끝 이벤트의 이름이 「끝」 같은 뜻 없는 말이면 결과 낱말로 말한다
+  // 끝난 건의 보조 줄: 「처리 완료」(결과는 같은 줄의 뱃지가 말한다). 결과 보고가 없는 건만 끝 이벤트의 이름을 덧붙인다 — 「끝」 같은 뜻 없는 이름은 적지 않는다
   const PLAIN_END = new Set(['끝', '종료', '완료', 'end', 'End', '']);
   function endText(x) {
     const o = outcomeOf(x); if (!o) return '';
     const end = String(x.end_label || '').trim();
     const word = !o.verdict && !PLAIN_END.has(end) && end !== o.label ? end : o.label;      // 결과 보고가 없는 건만 끝 이벤트의 이름으로 말한다
-    return `${word}${josa(word, '으로/로')} 끝남`;
+    return word === o.label ? '처리 완료' : `처리 완료 · ${word}`;
   }
   // 지금 단계가 AI 에이전트의 단계인가(그 흐름 정의에서 읽은 것 — 이름으로 짐작하지 않는다)
   const aiNow = x => { const ag = I.defAgents[`${x.proc_def_id}@${x.proc_def_version}`]; return !!ag && (x.current_activity_ids || []).some(id => ag.has(String(id).replace(/^task:/, ''))); };
@@ -234,7 +240,7 @@
       done: I.filter === 'done' && I.filtered ? `${I.filtered.length}${I.filtered.length >= WINDOW ? '+' : ''}` : plus(I.all.filter(x => x.status !== 'RUNNING').length),
     };
     const tab = (k, label) => `<button type="button" data-inst-filter="${k}" aria-pressed="${I.filter === k}">${esc(label)}${n[k] !== '' && I.loaded && !I.listError ? `<span class="num">${esc(n[k])}</span>` : ''}</button>`;
-    const html = tab('all', '전체') + tab('mine', '내 할 일') + tab('running', '진행 중') + tab('done', '끝남');
+    const html = tab('all', '전체') + tab('mine', '내 할 일') + tab('running', '진행 중') + tab('done', '처리 완료');
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
   }
   // 그 단계에 붙은 기한 타이머 가운데 가장 이른 기한(없으면 null) — 타이머도 진행 중 작업 행으로 같은 목록에 온다
@@ -314,13 +320,14 @@
     const rows = I.instances;
     if (!rows.length) {
       box.innerHTML = I.filter === 'all' ? UI.emptyGo(UI.t('inst.empty'), UI.t('inst.emptySub'), 'scenario', UI.t('nav.scenario') + ' 열기', 'compact')
-        : UI.empty(I.filter === 'running' ? '진행 중인 처리 건이 없습니다' : '끝난 처리 건이 없습니다', '「전체」 탭에서 모든 처리 건을 볼 수 있습니다', 'compact');
+        : UI.empty(I.filter === 'running' ? '진행 중인 처리 건이 없습니다' : '처리 완료된 건이 없습니다', '「전체」 탭에서 모든 처리 건을 볼 수 있습니다', 'compact');
       return;
     }
     // 내가 할 일이 있는 건을 위로(그 안에서는 서버가 준 차례 — 최근 것부터)
     const mine = mineIds();
     const ordered = rows.filter(x => mine.has(x.proc_inst_id) && x.status === 'RUNNING').concat(rows.filter(x => !(mine.has(x.proc_inst_id) && x.status === 'RUNNING')));
     const paged = UI.page(ordered, I.listShown, x => x.proc_inst_id === I.sel);
+    setTimeout(() => { const cur = box.querySelector('.row[aria-current="true"]'); if (cur && box.scrollHeight > box.clientHeight && (cur.offsetTop < box.scrollTop || cur.offsetTop + cur.offsetHeight > box.scrollTop + box.clientHeight)) box.scrollTop = Math.max(0, cur.offsetTop - 8); }, 0);      // 목록이 잘리는 폭에서도 고른 줄이 보이게
     paged.rows.forEach(x => add(x.proc_inst_id === I.sel, isSystemJob(x), rowHtml(x, null),
       () => pick(x.proc_inst_id, x.proc_inst_id === I.sel ? I.taskSel : null), { inst: x.proc_inst_id }));   // 같은 이름의 처리 건(같은 설비 · 같은 흐름)을 처리 건 id로 구별한다
     more(paged.rest);
@@ -548,18 +555,22 @@
       UI.actions(`<button type="button" class="btn" data-variant="outline" data-size="sm" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>`), { open: !!changed || !!reviewed || !!I.form.needPreview }) : '';
     // 실행할 수 있는 안이 하나도 없으면 [승인]이 꺼진 이유와 다음 행동을 까닭 줄에 말한다
     const noneFeasible = !reviewed?.feasible && !opts.some(o => o.feasible);
-    const hint = noneFeasible ? `실행할 수 있는 안이 없어 승인할 수 없습니다. 조건이 바뀌면 에이전트가 다시 판단합니다 — ${canReject ? '지금은 [반려]를 눌러 사유를 적으세요.' : '「자세한 기록」의 「다시 수행 · 복구」에서 새 판단을 요청하세요.'}`
+    const hint = noneFeasible ? ''
       : !canApprove && changed ? '값을 바꿨으면 미리 보기로 다시 확인한 뒤 승인합니다' : !canApprove && P.blocked ? '이 안은 지금 실행할 수 없는 상태라 승인할 수 없습니다 — [다른 안 고르기]에서 까닭을 확인하세요.' : '';
     const caseInfo = UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case');
     if (I.form.needPreview || noneFeasible) I.form.mode = I.form.mode === 'reject' ? 'reject' : 'more';   // 미리 보기를 해야 하거나 고를 안이 없으면 펼쳐서 까닭을 보인다
     const mode = I.form.mode, name = UI.idText(chosen.name || '');
-    const title = P.none ? '실행할 수 있는 안이 없습니다' : `${name}${josa(name, '을/를')} 승인할까요?`;
+    const none = P.none ? window.hydApprove.noneSummary(d) : null;
+    const title = P.none ? '지금은 승인할 수 있는 안이 없습니다' : `${name}${josa(name, '을/를')} 승인할까요?`;
     // 승인하면 무슨 일이 일어나는가: 서버가 준 그 안의 조치 목록 그대로(없으면 그 줄을 그리지 않는다)
-    const will = P.none ? `<p>AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 제외 사유는 아래에 있습니다.</p>`
+    // 모든 안이 같은 까닭으로 제외됐으면 그 까닭을 여기서 한 번만 말한다(안마다 되풀이하지 않는다 — 원문은 아래 접기에)
+    const will = P.none ? `<p>${none.same ? `${esc(none.reasons.join(' · '))}. 그래서 AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다.` : `AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 까닭은 아래에 있습니다.`}</p>`
       : P.actions.length ? `<p>${P.state === 'execution' ? `승인하면 시스템이 ${esc(P.actions.join(' · '))}${josa(P.actions[P.actions.length - 1], '을/를')} 실행합니다.` : `모의 판단에 포함된 조치입니다(승인 · 실행되지 않습니다): ${esc(P.actions.join(' · '))}`}${P.changed ? ' <span class="muted">추천안 대신 직접 고른 안입니다.</span>' : ''}</p>` : P.changed ? '<p class="muted">추천안 대신 직접 고른 안입니다.</p>' : '';
     const previewNow = I.form.needPreview && I.form.option ? `<button type="button" class="btn" data-variant="outline" id="tdPreviewNow" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>` : '';
     const acts = mode === 'reject'
       ? `<button type="button" class="btn" data-variant="destructive" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>반려 확정</button><button type="button" class="btn" data-variant="ghost" id="tdModeOff">취소</button>`
+      // 승인할 안이 없는 상태의 주 행동: 반려해 이 건을 닫는 것(이 흐름이 반려를 받을 때). 새 판단은 「다시 수행」으로 요청한다 — 꺼진 [승인]을 주 단추 자리에 두지 않는다
+      : P.none ? `${canReject ? `<button type="button" class="btn" id="tdRejectOpen" ${meRejects && !I.busy ? '' : 'disabled'}>반려하고 이 건 닫기</button>` : ''}<button type="button" class="btn" ${canReject ? 'data-variant="outline" ' : ''}data-case-act="recover">${UI.icon('rotate-ccw')}새 판단 요청하기</button>`
       : `<button type="button" class="btn" id="tdGo" ${canApprove && meSigns && !I.busy ? '' : 'disabled'}>${UI.icon('check')}${esc(UI.t('btn.approve'))}</button>${previewNow}${canReject ? `<button type="button" class="btn" data-variant="outline" id="tdRejectOpen" ${meRejects && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button>` : ''}${opts.length > 1 || adjust ? `<button type="button" class="btn" data-variant="ghost" id="tdMore" aria-expanded="${mode === 'more'}">${mode === 'more' ? '다른 안 접기' : '다른 안 고르기'}</button>` : ''}`;
     const more = mode === 'reject' ? reasonField('반려 사유 (필수)', '1~2000자로 적으세요. 반려 결과와 단계 기록에 남습니다.')
       : mode === 'more' || P.none ? (P.none ? window.hydApprove.html(d, I.form.option, { pending: true, adjust, extra: caseInfo }) : window.hydApprove.choicesHtml(d, I.form.option, { pending: true, adjust, extra: caseInfo }))
@@ -567,7 +578,8 @@
     box.innerHTML = todoCard({ label: '내가 할 일 · 승인', title, desc: will, attrs: `aria-busy="${I.busy}"`,
       late: clockLine(task), who: meNow ? roleLine(roleName) : '', facts: P.none ? [] : turnFacts(reviewed ? review.snapshot : d, reviewed || chosen),
       acts, more: (meNow && byMe ? '' : pickMe()) + more,
-      note: delayed ? '기한이 지나 승인 지연 알림을 보냈습니다. 승인하거나 반려하면 다음 단계로 넘어갑니다.' : '', msg: roleHint || I.msg || hint });
+      note: P.none && mode !== 'reject' ? `${canReject ? '반려하면 설비 명령 없이 이 건이 닫힙니다. ' : ''}설비 값이 다시 들어온 뒤 [새 판단 요청하기]에서 「다시 수행」을 요청하면 AI 에이전트가 지금 값으로 다시 판단합니다.`
+        : delayed ? '기한이 지나 승인 지연 알림을 보냈습니다. 승인하거나 반려하면 다음 단계로 넘어갑니다.' : '', msg: roleHint || I.msg || hint });
     const choose = id => { I.form.option = id; I.form.review = null; I.form.needPreview = false; I.msg = ''; const o = opts.find(x => x.id === id); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); };
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => choose(ev.currentTarget.dataset.apBack));
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => choose(r.value)));
@@ -663,6 +675,7 @@
     try { await load(true); } finally { I.busy = false; renderTodoPanel(); }
     // 결과만 한 줄로 알린다(오른쪽 아래). 실패의 까닭은 판 안에 남는다
     if (!failed && UI.toast) UI.toast(I.doneText || '처리했습니다. 다음 단계로 넘어갑니다.', { tone: 'ok' });
+    if (!failed) window.scrollTo({ top: 0, behavior: 'smooth' });      // 누른 뒤의 상태(머리 · 기다림 안내 · 결과)가 첫 화면에 보이게 — 판이 사라지며 화면이 아래로 밀려 있었다
     I.doneText = '';
     return failed;
   }
@@ -718,7 +731,7 @@
     if (!window.hydRecord) return null;
     if (!I.record) {
       I.recordHost = document.createElement('div'); I.recordHost.id = 'instRecord';
-      I.record = hydRecord.mount(I.recordHost, { mine: () => new Set(I.asked.concat(I.todo).filter(t => t.proc_inst_id === I.sel).map(t => t.id)), onDraw: () => { fillSlots(); if (renderRecovery()) I.sig = null; window.hydTaskDetail?.place?.(); } });   // 단계 줄이 그려진 뒤: 그 아래 칸(단추 · 복구 묶음 · 단계 상세)을 제자리에
+      I.record = hydRecord.mount(I.recordHost, { mine: () => new Set(I.asked.concat(I.todo).filter(t => t.proc_inst_id === I.sel).map(t => t.id)), onDraw: () => { fillSlots(); if (renderRecovery()) I.sig = null; window.hydTaskDetail?.place?.(); refreshTop(); } });   // 단계 줄이 그려진 뒤: 그 아래 칸(단추 · 복구 묶음 · 단계 상세)을 제자리에
       I.record.keep = true;
     }
     I.recordFor = view.instance.proc_inst_id;
@@ -736,12 +749,13 @@
     if (v.pattern) bit('triangle-alert', UI.patternName(v.pattern));
     if (inst.start_date) bit('clock', `${UI.dateTime(inst.start_date)} 시작`);
     if (inst.status === 'RUNNING') {
-      const nodes = window.hydFlow ? hydFlow.pathModel(view.definition || {}, view.workitems, inst).nodes : [];
+      const path = window.hydFlow ? hydFlow.pathModel(view.definition || {}, view.workitems, inst) : { nodes: [] }, nodes = path.nodes;
       const at = nodes.findIndex(n => n.state === 'now' || n.state === 'hold' || n.state === 'fail');
-      if (at >= 0) { const n = nodes[at]; bit('route', `${nodes.length}단계 가운데 ${at + 1}번째 「${UI.flowName(n.name)}」${n.state === 'fail' ? '에서 멈춤' : n.state === 'hold' ? '에서 보류' : n.who === 'human' ? '에서 기다리는 중' : ' 진행 중'}`); }
+      // 뒤에 길이 갈리면 모두 몇 단계가 될지 아직 모른다 — 그때는 「몇 번째 단계」만 말한다
+      if (at >= 0) { const n = nodes[at]; bit('route', `${path.fork ? `${at + 1}번째 단계` : `${nodes.length}단계 가운데 ${at + 1}번째`} 「${UI.flowName(n.name)}」${n.state === 'fail' ? '에서 멈춤' : n.state === 'hold' ? '에서 보류' : n.who === 'human' ? '에서 기다리는 중' : ' 진행 중'}`); }
     } else {
       const span = inst.start_date && inst.end_date ? Date.parse(inst.end_date) - Date.parse(inst.start_date) : NaN;
-      if (inst.end_date) bit('circle-check', `${UI.time(inst.end_date)} 끝남${span >= 0 && window.hydTrace ? ` · ${hydTrace.fmtMs(span)} 걸림` : ''}`);
+      if (inst.end_date) bit('circle-check', `${UI.time(inst.end_date)} 처리 완료${span >= 0 && window.hydTrace ? ` · ${hydTrace.fmtMs(span)} 걸림` : ''}`);
     }
     const alertId = v.alert_id || (v.alert || {}).alertId;
     if (alertId) bit('', alertId, 'mono');
@@ -807,12 +821,13 @@
     // 내가 할 일(질문 · 승인 · 입력) — 쓰는 중이면 건드리지 않는다. 내 차례가 아닌데 AI 가 일하는 중이면 그 자리에 점선 안내를 둔다
     const panel = box.querySelector('#todoPanel');
     if (typingIn(panel)) held = true; else renderTodoPanel();
-    setHtml(box.querySelector('#caseTop'), panel.firstElementChild && !panel.querySelector('[data-gone]') ? '' : topCardHtml(view) || waitNoteHtml(view));
+    refreshTop();
     const side = box.querySelector('[data-record-side]');
     if (side) {
       const live = inst.status === 'RUNNING';
-      const on = !!window.hydStream && hydStream.connected();
-      setHtml(side, live ? `<i class="dot"${on ? ' data-tone="ok" data-live' : ''}></i>${on ? '새 단계가 아래에 붙습니다' : `실시간 연결이 끊겼습니다 — ${esc(hydStream.conn().text)}. 2초마다 다시 읽습니다`}` : '');
+      // 「끊겼습니다」는 정말 끊긴 때(다시 연결 중 · 끊김)에만 말한다 — 연결을 새로 맺는 1~2초(연결 중)에는 말하지 않는다(승인을 누른 직후 실패처럼 보였다)
+      const conn = window.hydStream ? hydStream.conn() : { state: 'off', text: '' }, lost = conn.state === 'retry' || conn.state === 'off';
+      setHtml(side, live ? `<i class="dot"${lost ? '' : ' data-tone="ok" data-live'}></i>${lost ? `실시간 연결이 끊겼습니다 — ${esc(conn.text)}. 2초마다 다시 읽습니다` : '새 단계가 아래에 붙습니다'}` : '');
     }
     mountPath(view);
     setHtml(box.querySelector('#caseNotes'), flowNotes(view));
@@ -829,16 +844,25 @@
     if (!n || n.who === 'human') return '';
     const name = UI.flowName(n.name);
     const step = n.who !== 'agent' && I.record && I.record.model ? I.record.model.steps.find(s => s.w && s.w.id === n.wid) : null;
-    if (step && step.live && step.sentence) return `<div class="wait-note">${UI.icon('cog', 'ic-lg')}<span><b>시스템이 「${esc(name)}」 단계를 처리하는 중입니다.</b> ${esc(step.sentence)}</span></div>`;
+    // 그 단계가 지켜보는 값이 있으면(효과 확인) 그 값과 남은 시간이 이 자리에도 흘러나온다(caseRecord.js watchLine — 1초마다 그 자리만 채운다)
+    if (step && (step.live || step.liveLine) && step.sentence) return `<div class="wait-note">${UI.icon('cog', 'ic-lg')}<span><b>시스템이 「${esc(name)}」 단계를 처리하는 중입니다.</b> ${esc(step.sentence)}${step.liveLine ? `<span class="wait-live">${step.liveLine}</span>` : ''}</span></div>`;
     return n.who === 'agent' ? `<div class="wait-note">${UI.icon('bot', 'ic-lg')}<span><b>AI 에이전트가 「${esc(name)}」 단계를 처리하는 중입니다.</b> 사람의 승인이 필요해지면 요청이 이 자리에 뜹니다.</span></div>`
       : `<div class="wait-note">${UI.icon('cog', 'ic-lg')}<span><b>시스템이 「${esc(name)}」 단계를 처리하는 중입니다.</b> 끝나면 결과가 아래 단계 기록에 붙습니다.</span></div>`;
+  }
+  // 내가 할 일 판이 없을 때 그 자리에 놓는 것: 끝난 건의 결과 · 멈춘 단계 알림 · 기다림 안내. 단계 기록이 그려진 뒤에도 한 번 더 부른다(기다림 안내가 그 단계의 문장과 지켜보는 값을 쓴다)
+  function refreshTop() {
+    const box = $('#instDetail'), panel = box && box.querySelector('#todoPanel'), top = box && box.querySelector('#caseTop'), view = I.view;
+    if (!panel || !top || !view) return;
+    setHtml(top, panel.firstElementChild && !panel.querySelector('[data-gone]') ? '' : topCardHtml(view) || waitNoteHtml(view));
   }
   const mineActs = view => I.asked.concat(I.todo).filter(t => t.proc_inst_id === view.instance.proc_inst_id).map(t => t.activity_id);
   // 진행 길의 상자를 누르면: 지나온 단계는 단계 기록의 그 단계로, 아직 시작하지 않은 단계는 정의에 적힌 입력 · 출력(단계 상세)을 연다
   function pickNode(activityId) {
     const view = I.view; if (!view) return;
     const rows = view.workitems.filter(w => w.activity_id === activityId && w.status !== 'TODO').sort((a, b) => (b.generation || 0) - (a.generation || 0) || String(b.start_date || '').localeCompare(String(a.start_date || '')));
-    if (!(rows[0] && gotoStep(rows[0].id))) window.hydTaskDetail?.openActivity(activityId);
+    if (rows[0] && gotoStep(rows[0].id)) return;
+    window.hydTaskDetail?.openActivity(activityId);
+    setTimeout(() => $('#taskDetailPanel')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60);      // 단계 상세는 단계 기록 아래에 열린다 — 누른 자리에서 보이게 그리로 간다
   }
   function mountPath(view) {
     const host = $('#casePath'); if (!host || !window.hydFlow) return;
@@ -1166,6 +1190,8 @@
     if (act.dataset.caseAct === 'reload') load(true);
     else if (act.dataset.caseAct === 'flow') openFullFlow();
     else if (act.dataset.caseAct === 'more') { const fold = $('#caseMore'); fold.open = true; fold.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    // 내가 할 일 판의 [새 판단 요청하기]: 자세한 기록의 「다시 수행 · 복구」 보기를 펼쳐 그 자리로 간다
+    else if (act.dataset.caseAct === 'recover') { const fold = $('#caseMore'); I.more = 'recover'; fold.open = true; renderMore(); renderRecovery(); const rw = fold.querySelector('#reworkPanel details'); if (rw) rw.open = true; fold.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
   });
   $('#instTabs').addEventListener('click', e => {
     const b = e.target.closest('[data-inst-filter]'); if (!b || b.dataset.instFilter === I.filter) return;
@@ -1183,5 +1209,5 @@
   setInterval(updateApprovalClock, 1000);
   // 셸이 주소에 적는 지금 화면: 처리 건 + 열어 둔 단계(단계 상세가 열려 있으면 그 단계, 아니면 「내 할 일」에서 고른 단계)
   const route = () => ({ inst: I.sel || null, task: (window.hydTaskDetail && hydTaskDetail.T.wid) || I.taskSel || null });
-  window.hydInstances = { I, load, openTask, route, counts };
+  window.hydInstances = { I, load, openTask, route, counts, stateOf };
 })();

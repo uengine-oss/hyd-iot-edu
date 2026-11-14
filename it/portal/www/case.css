@@ -88,7 +88,9 @@
 @media (max-width: 640px) { .ap-label { min-width: 0; width: 100%; } }
 
 /* ───────── 진행 길(bpmn-js 캔버스) · 전체 흐름 대화상자 ───────── */
-.flow-canvas { height: 360px; }
+.flow-canvas { height: 400px; }
+/* 남은 단계의 글자도 읽히게: 키트는 남음을 62 % 로 흐리게 하는데, 어두운 캔버스의 13px 글자에는 너무 옅다 */
+:is(.flow-canvas, dialog.flow-dialog) .bpmn .djs-shape.is-todo .djs-visual { opacity: .82; }
 /* 캔버스 안의 아이콘과 bpmn-js 의 그림판은 제 치수를 지킨다(옮기는 동안의 대응 규칙 `.canvas svg { width: 100%; height: auto }` 는 옛 자체 그림용이다) */
 .canvas :is(.canvas-bar, .bpmn-tip) svg.ic { display: inline-block; width: 16px; height: 16px; flex: none; }
 .canvas .bpmn .djs-container > svg { width: 100%; height: 100%; }
@@ -109,7 +111,8 @@
 dialog.flow-dialog > div { width: min(1400px, calc(100vw - 48px)); max-width: none; padding: 0; overflow: hidden; background: var(--cv-bg); border-color: var(--cv-border); }
 dialog.flow-dialog .canvas { height: min(760px, calc(100dvh - 96px)); border: 0; border-radius: 0; }
 @media (max-width: 640px) {
-  .flow-canvas { height: 300px; }
+  .flow-canvas { height: 320px; }
+  .flow-note { max-width: calc(100% - 24px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; bottom: 34px; }
   .flow-canvas .cv-legend { display: none; }
   dialog.flow-dialog > div { width: calc(100vw - 16px); }
   dialog.flow-dialog .cv-legend { display: none; }
@@ -125,6 +128,18 @@ dialog.flow-dialog .canvas { height: min(760px, calc(100dvh - 96px)); border: 0;
 .step-main > .fold > summary { padding: 6px 0; color: var(--muted-foreground); }
 .rest { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted-foreground); font-size: 13px; }
 .rest .ic { width: 12px; height: 12px; color: var(--ink-4); }
+.rest-fork { margin-top: 6px; font-size: 13px; color: var(--muted-foreground); }
+.rest-branches { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted-foreground); }
+.rest-branches li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rest-branches li > b { font-weight: 600; color: var(--ink-2); }
+.rest-branches .ic { width: 12px; height: 12px; color: var(--ink-4); flex: none; }
+/* 효과 확인을 지켜보는 동안: 실시간 상자 안의 값 넷(지금 값 · 기준 · 판정까지 · 지켜보는 시간) */
+.stream[data-cr-watch] { margin-top: 8px; }
+.watch-facts { border-top: 0; border-bottom: 1px solid var(--border); }
+.watch-facts dd .tag { margin-left: 8px; vertical-align: 2px; }
+.watch-facts dd .tag[hidden] { display: none; }
+.stream[data-cr-watch] > .watch-facts:last-child { border-bottom: 0; }
+.wait-live { display: block; margin-top: 2px; color: var(--ink-2); }
 .step-head .tag { margin-left: 2px; }
 /* 단계 아래 칸: 그 상황일 때만(멈춘 단계의 조치 · 복구 묶음) */
 .step-slot:empty, .step-slot > [data-slot-extra]:empty { display: none; }

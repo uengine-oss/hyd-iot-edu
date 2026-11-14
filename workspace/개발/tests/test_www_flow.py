@@ -65,7 +65,16 @@ def test_그림_원본이_없는_흐름은_정의의_단계_갈림_선으로_BPM
     assert '<bpmn:startEvent id="Start" name="경보"><bpmn:messageEventDefinition/></bpmn:startEvent>' in xml
 
 
-def test_남은_길은_지금_단계에서_조건이_붙은_가지를_따라_끝까지_간다():
+def test_남은_길은_정해진_데까지만_잇고_갈림_뒤는_가지마다_따로_낸다():
+    """독립 검토 가-1: 승인 전에도 「… → 결과 보고: 정상」처럼 한 길을 골라 끝까지 적어 결과가 정해진 것처럼 읽혔다. 갈림에서 멈추고 가지를 모두 낸다."""
     view = {'definition': DEF, 'instance': {'status': 'RUNNING'}, 'workitems': [wi('T_agent', 'DONE', '01'), wi('T_approve', 'IN_PROGRESS', '02')]}
-    got = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out([m.nodes.map(n => [n.id, n.state, n.who]), m.end && m.end.id])", view)
-    assert got == [[['T_agent', 'done', 'agent'], ['T_approve', 'now', 'human'], ['T_cmd', 'todo', 'system']], 'E_end']
+    got = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out([m.nodes.map(n => [n.id, n.state, n.who]), m.end, m.fork])", view)
+    assert got[0] == [['T_agent', 'done', 'agent'], ['T_approve', 'now', 'human']] and got[1] is None      # 승인 뒤의 단계는 「남은 단계」 한 줄에 넣지 않는다
+    assert got[2] == {'name': '승인?', 'branches': [{'label': '승인', 'steps': ['냉각 명령'], 'more': None, 'end': '끝'},
+                                                   {'label': '거절', 'steps': ['결과 보고: 거절'], 'more': None, 'end': '거절 종결'}]}
+
+
+def test_갈림이_없는_남은_길은_끝까지_잇는다():
+    view = {'definition': DEF, 'instance': {'status': 'RUNNING'}, 'workitems': [wi('T_agent', 'DONE', '01'), wi('T_approve', 'DONE', '02'), wi('T_cmd', 'IN_PROGRESS', '03')]}
+    got = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out([m.nodes.map(n => [n.id, n.state]), m.end && m.end.id, m.fork])", view)
+    assert got == [[['T_agent', 'done'], ['T_approve', 'done'], ['T_cmd', 'now']], 'E_end', None]

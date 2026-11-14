@@ -130,7 +130,7 @@ const UI = {
     'plant.noConn': '설비 값을 읽지 못했습니다', 'plant.noConnSub': '가상 설비(plant-sim)가 응답하면 저절로 다시 보입니다.',
     'plant.standby': '예비', 'plant.none': '아직 없음', 'plant.faultOn': '결함 진행 중', 'plant.current': '현재 상태',
     // 홈
-    'main.assets': '설비', 'main.openCases': '열린 사건', 'main.knowledge': '지식 항목',
+    'main.assets': '설비', 'main.openCases': '경보로 열린 처리 건', 'main.knowledge': '지식 항목',
     'main.hot': '고온 · 정지', 'main.cool': '모든 설비 유온 55 ℃ 미만', 'main.noConn': '설비 연결 끊김', 'main.none': '없음', 'main.links': '연결',
     'main.liveTs1': '실시간 유온',
     // 지식 지도 · 지식 관리 · 조치 방법

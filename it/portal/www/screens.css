@@ -298,10 +298,11 @@ button.use[aria-expanded="true"] { border-color: var(--brand-line); background: 
 .doc { padding: 16px 18px; border: 1px solid var(--border); border-radius: 10px; background: #fcfcfd; max-height: 460px; overflow: auto; }
 .doc-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--muted-foreground); }
 .doc-bar .mono { color: var(--ink-2); }
-.doc-bar .num { margin-left: auto; }
+.doc-bar .num { margin-left: auto; white-space: nowrap; }
+.doc-bar .mono { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 1000px) { .pane-side .rows { max-height: 300px; } }
 @media (max-width: 900px) { .pane-grid { grid-template-columns: 1fr; } .pane-grid > .panel-sec:nth-child(odd) { border-right: 0; } .pane-grid > .panel-sec + .panel-sec { border-top: 1px solid var(--border); } }
-@media (max-width: 640px) { .pane-head { flex-wrap: wrap; } .pane-acts { margin-left: 58px; flex-wrap: wrap; } .pane-reset { flex-direction: column; } .use { flex-wrap: wrap; } .use > .muted { margin-left: 26px; white-space: normal; } }
+@media (max-width: 640px) { .pane-head { flex-wrap: wrap; } .pane-title { flex-basis: calc(100% - 58px); } .pane-acts { margin-left: 58px; flex-wrap: wrap; } :is(#view-agents, #view-mcp, #view-flows, #view-ask) .panel-sec > h3 { flex-wrap: wrap; } :is(#view-agents, #view-mcp, #view-flows, #view-ask) .panel-sec > h3 .muted { margin-left: 0; flex-basis: 100%; } .pane-reset { flex-direction: column; } .use { flex-wrap: wrap; } .use > .muted { margin-left: 26px; white-space: normal; } }
 
 /* ================================================================= 실행 중인 AI 에이전트(agentsPanel.js — 처리 건 화면의 「자세한 기록」 안) */
 .agents-service { margin-bottom: 14px; }

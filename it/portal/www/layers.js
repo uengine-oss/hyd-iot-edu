@@ -36,7 +36,8 @@ const LAYERS = [
   ]},
   { name: '시계열 저장소', role: '관측값과 사건을 시간순으로 보관', zone: 'it', comps: [
     { name: 'connect-sink', role: '이벤트를 받아 시계열 DB에 기록', real: 'Kafka Connect 같은 싱크 커넥터', zone: 'it', url: P(8094) + '/docs', health: SVC('connect-sink') + '/healthz' },
-    { name: 'TimescaleDB (Grafana 탐색 화면에서 조회)', role: '센서값 · 경보 · 명령 · 감사 이력 저장', real: '히스토리언(시계열 DB) — 사이트 히스토리언은 OT 쪽에도 둡니다', zone: 'it', url: P(3000) + '/explore', health: null },
+    // url 없음: 사람이 여는 화면이 없는 부품이다 — 시스템 구성 화면은 [열기] 대신 how(무엇으로 들여다보는지)를 보인다
+    { name: 'TimescaleDB', role: '센서값 · 경보 · 명령 · 감사 이력 저장', real: '히스토리언(시계열 DB) — 사이트 히스토리언은 OT 쪽에도 둡니다', zone: 'it', url: null, how: '여는 화면이 없습니다. 저장된 값은 추이 화면(Grafana)이 읽어 그래프로 보입니다.', health: null },
   ]},
   { name: '스트림 처리 · CEP', role: '연속된 데이터에서 이상을 탐지', zone: 'it', comps: [
     { name: 'detector', role: '1초 단위 특징 계산 · 경보 발생과 해제 판정', real: '스트림 처리 · CEP 엔진', zone: 'it', url: P(8092) + '/docs', health: API.detector + '/healthz' },

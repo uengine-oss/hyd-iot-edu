@@ -70,13 +70,19 @@
       return;
     }
     const until = a.expires ? UI.dateTime(a.expires) : '';
-    // 단계 이름을 「무엇을 쓸 수 있는가」로 말한다: 제공된 문서 · 흐름 · 모델만 쓰는 단계(course)는 「제공 자료만 사용」, 제한이 풀린 단계(pbl)는 「자유 구성 (PBL)」. 막힌 행동과 까닭은 title 에
-    const label = a.phase === 'pbl' ? `지금 단계: 자유 구성 (PBL)${until ? ` · ${until}까지` : ''}`
-      : a.expired ? '지금 단계: 제공 자료만 사용 (PBL 기한 지남)' : '지금 단계: 제공 자료만 사용';
+    // 단계를 「무엇이 정해져 있는가」로 말한다: 제공된 문서 · 흐름 · 모델만 쓰는 단계(course) / 제한 없이 쓰는 단계(pbl). 화면의 다른 자리도 이 두 이름만 쓴다.
+    // 누르면(키보드 · 터치 포함) 지금 막힌 행동과 까닭이 펼쳐진다 — 까닭은 서버 표가 준 문장 그대로다(화면에 규칙 사본 없음)
+    const label = a.phase === 'pbl' ? `제한 없이 쓰는 단계 (PBL)${until ? ` · ${until}까지` : ''}`
+      : a.expired ? '제공된 문서 · 흐름 · 모델만 쓰는 단계 (PBL 기한 지남)' : '제공된 문서 · 흐름 · 모델만 쓰는 단계';
     const tone = a.phase === 'pbl' ? 'brand' : a.expired ? 'warn' : '';
     const closed = Object.values(a.actions || {}).filter(x => x && x.allowed === false).map(x => x.reason);
-    box.innerHTML = `<span${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
-    box.title = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 제공 자료만 쓰는 단계로 돌아왔습니다.` : '', ...closed].filter(Boolean).join('\n');
+    const notes = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 제공된 문서 · 흐름 · 모델만 쓰는 단계로 돌아왔습니다.` : ''].filter(Boolean);
+    const was = !!box.querySelector('details[open]');
+    box.removeAttribute('title');
+    box.innerHTML = closed.length || notes.length
+      ? `<details${was ? ' open' : ''}><summary${tone ? ` data-tone="${tone}"` : ''}>${UI.icon('chevron-right')}<span>${esc(label)}</span></summary><div class="course-why">` +
+        notes.map(n => `<p>${esc(n)}</p>`).join('') + (closed.length ? `<p>이 단계에서 막힌 행동 ${closed.length}가지</p><ul>${closed.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '') + '</div></details>'
+      : `<span${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   }
 
   // 서버 표가 이 화면이 읽는 모양인가 — 막힌 행동 · 목록 판정에는 서버 까닭 문장이 있어야 한다(없으면 화면이 문장을 지어내지 않고 실패로 본다)

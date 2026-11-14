@@ -29,25 +29,41 @@
     const finished = !!instance && ['COMPLETED', 'CANCELLED'].includes(instance.status);
     const who = a => { const ep = a.agent || roles.get(a.role) || ''; return ep === 'sys:agent' || /^agent:/.test(ep) || a.orchestration === 'cliagents' ? 'agent' : /^role:|^user:/.test(ep) ? 'human' : 'system'; };
     const nodes = passed.map(w => ({ id: w.activity_id, wid: w.id, name: acts.get(w.activity_id).name, state: rowState(w), who: who(acts.get(w.activity_id)), role: acts.get(w.activity_id).role || '' }));
-    // 남은 길: 지금 단계(없으면 마지막으로 지나온 단계)에서 끝 이벤트까지. 갈림에서는 조건이 붙은 가지 가운데 정의에 먼저 적힌 것(일이 진행되는 가지 — 「승인」 「예」)을 따라간다.
-    // 조건 없는 가지는 그 밖의 경우(반려 · 미달 · 그 밖)의 길이라 남은 길로 보이지 않는다. 실제로 그 가지를 타면 지나온 길에 그대로 나온다
-    let end = null;
+    // 남은 길: 지금 단계(없으면 마지막으로 지나온 단계)에서 **정해진 데까지만** 잇는다. 길이 갈리는 곳(나가는 선이 둘 이상인 갈림)을 만나면 거기서 멈추고,
+    // 그 뒤는 가지마다 따로 적는다(fork) — 어느 가지로 갈지는 아직 나지 않은 결과(승인 · 반려, 효과 확인의 판정)가 정한다. 한 길을 골라 끝까지 지어 적지 않는다
+    let end = null, fork = null;
+    const gwName = new Map((def.gateways || []).map(g => [g.id, g.name || '']));
+    const outsOf = id => (next.get(id) || []).filter(q => !(events.get(q.target) || {}).attachedTo);
+    // 한 점에서 앞으로: 단계 이름을 모으다가 갈림(more) · 끝 이벤트(end) · 이미 지나온 곳에서 멈춘다
+    const walk = (from, seen) => {
+      const steps = []; let cur = from, more = null, stop = null;
+      for (let guard = 0; cur && guard < 200; guard++) {
+        if (seen.has(cur)) break;
+        seen.add(cur);
+        if (acts.has(cur)) { const a = acts.get(cur); steps.push({ id: cur, name: a.name, state: 'todo', who: who(a), role: a.role || '' }); }
+        else if ((events.get(cur) || {}).type === 'endEvent') { stop = events.get(cur); break; }
+        const outs = outsOf(cur);
+        if (outs.length > 1) { more = { id: cur, name: gwName.get(cur) || '', outs }; break; }
+        cur = outs[0] && outs[0].target;
+      }
+      return { steps, more, end: stop };
+    };
     if (finished) end = events.get(instance.end_event) || null;
     else {
       const live = nodes.filter(n => n.state === 'now' || n.state === 'hold');
-      let cur = (live[live.length - 1] || nodes[nodes.length - 1] || {}).id || ((def.events || []).find(x => x.type === 'startEvent') || {}).id;
+      const at = (live[live.length - 1] || nodes[nodes.length - 1] || {}).id || ((def.events || []).find(x => x.type === 'startEvent') || {}).id;
       const seen = new Set(nodes.map(n => n.id));
-      for (let guard = 0; cur && guard < 200; guard++) {
-        const outs = (next.get(cur) || []).filter(q => !(events.get(q.target) || {}).attachedTo);
-        const q = outs.find(x => x.condition && !seen.has(x.target)) || outs.find(x => !seen.has(x.target));
-        if (!q) break;
-        cur = q.target; seen.add(cur);
-        if (acts.has(cur)) { const a = acts.get(cur); nodes.push({ id: cur, name: a.name, state: 'todo', who: who(a), role: a.role || '' }); }
-        else if (!gateways.has(cur) && (events.get(cur) || {}).type === 'endEvent') { end = events.get(cur); break; }
-      }
+      seen.delete(at);
+      const ahead = at ? walk(at, seen) : { steps: [], more: null, end: null };
+      ahead.steps.filter(x => x.id !== at).forEach(x => nodes.push(x));
+      end = ahead.end;
+      if (ahead.more) fork = { name: ahead.more.name, branches: ahead.more.outs.map(q => {
+        const b = walk(q.target, new Set(seen));
+        return { label: q.name || (q.condition ? '' : '그 밖'), steps: b.steps.map(x => x.name), more: b.more ? b.more.name : null, end: b.end ? b.end.name || '' : null };
+      }) };
     }
     const start = (def.events || []).find(x => x.type === 'startEvent') || null;
-    return { nodes, start, end, finished, started: latest.size > 0 };
+    return { nodes, start, end, fork, finished, started: latest.size > 0 };
   }
   function latestRows(workitems, known) {
     const latest = new Map();
@@ -174,14 +190,15 @@
     return m;
   }
   // 고른 요소(지금 단계, 끝난 건은 닿은 끝)가 캔버스의 왼쪽 40 % 자리에 오게. 그림이 캔버스보다 작으면 가운데에 둔다
-  function focus(D) {
+  // zmin: 이 배율 아래로는 줄이지 않는다 — 상자 글자(13px)가 읽히는 크기(약 12px)를 지킨다. 넘치는 쪽은 끌어서 본다
+  function focus(D, zmin = 0.92) {
     const canvas = D.viewer.get('canvas'), reg = D.viewer.get('elementRegistry');
     const vb = canvas.viewbox(), o = vb.outer, inner = vb.inner;
     if (!o.width || !o.height || !inner.width) return;
     const m = D.marks || { now: [] };
     const target = reg.get(m.now[m.now.length - 1]) || (m.finished && (reg.get(m.lastDone) || reg.get(m.end))) || null;
     const bar = 44;                                                   // 캔버스 위 도구 줄 자리
-    const z = Math.min(1, Math.max(0.72, (o.height - bar - 16) / inner.height));
+    const z = Math.min(1, Math.max(zmin, (o.height - bar - 16) / inner.height));
     const w = o.width / z, h = o.height / z, pad = 24;
     const cx = target ? target.x + target.width / 2 : inner.x, cy = target ? target.y + target.height / 2 : inner.y + inner.height / 2;
     let x = inner.width + 2 * pad <= w ? inner.x - (w - inner.width) / 2 : Math.min(Math.max(inner.x - pad, cx - w * (m.finished ? 0.6 : 0.4)), inner.x + inner.width + pad - w);
@@ -206,7 +223,7 @@
     try { await viewer.importXML(src.xml); } catch (err) { viewer.destroy(); throw new Error('BPMN 그림을 열지 못했습니다 — ' + (err.message || err)); }
     const D = { viewer, src, marks: null };
     if (!opts.plain) paint(D, view, opts.mine);      // plain: 상태 표시 없이 그림만(흐름 화면)
-    if (opts.fit) fit(D); else if (opts.plain) fitReadable(D); else focus(D);
+    if (opts.fit) openAt(D, opts.plain); else if (opts.plain) fitReadable(D); else focus(D);
     if (opts.onPick) viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(el.id); });
     return D;
   }
@@ -290,7 +307,14 @@
     wireHost(host);
   }
 
-  /* 전체 흐름: 큰 대화상자에 전체를 맞춰 연다(같은 상태 표시). 닫으면 그림을 치운다 */
+  /* 전체 흐름: 큰 대화상자. 전체가 글자를 읽을 만한 크기로 들어가면 전체를 맞추고, 작아지면 읽을 만한 크기로 지금 단계 둘레(상태 표시가 없는 그림은 시작 쪽)를 연다 —
+     넘치는 쪽은 끌어서 보고, [화면에 맞춤]을 누르면 전체가 한 번에 보인다. 닫으면 그림을 치운다 */
+  const READABLE = 0.85;
+  function openAt(D, plain) {
+    fit(D);
+    if (D.viewer.get('canvas').zoom() >= READABLE) return;
+    if (plain) fitReadable(D); else focus(D, READABLE);
+  }
   function openFull(view, opts = {}) {
     document.querySelector('dialog.flow-dialog')?.remove();
     const dlg = document.createElement('dialog');

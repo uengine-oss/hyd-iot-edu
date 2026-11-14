@@ -471,7 +471,14 @@
 /* ---------------- 업무 시스템 기록: 숫자 타일 → 업무 시스템마다 표 한 장 → 거래 기록 ---------------- */
 .bz-stats { margin-bottom: 20px; }
 .bz-stats:empty { display: none; }
-.bz-boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.bz-boards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }      /* 표 한 장이 본문 폭을 다 쓴다 — 칸이 옆으로 밀려 가려지지 않게 */
+.bz-board td { white-space: normal; overflow-wrap: anywhere; }
+.bz-board td:first-child { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+.bz-kv { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 2px 8px 8px 38px; font-size: 13px; }
+.bz-kv > div { min-width: 0; }
+.bz-kv dt { font-size: 12px; color: var(--muted-foreground); }
+.bz-kv dd { color: var(--foreground); overflow-wrap: anywhere; }
+.bz-tx .line-time { white-space: nowrap; }
 .bz-boards > .alert, .bz-boards > .empty { grid-column: 1 / -1; }
 .bz-board .panel-head { padding-bottom: 10px; }
 .bz-board .panel-head h2 { font-size: 15px; }
@@ -516,7 +523,15 @@
 .sys-lg-dot.ok { background: var(--cv-green); }
 .sys-lg-dot.down { background: var(--cv-red); }
 .sys-lg-dot.opt { background: none; box-shadow: inset 0 0 0 1.5px var(--cv-ink-3); }
-.sys-scroll { overflow-x: auto; }
+.sys-scroll { overflow-x: auto; cursor: default; }
+.sys-scroll[data-pan] { cursor: grab; }
+.sys-scroll[data-pan].dragging { cursor: grabbing; user-select: none; }
+/* 좁은 폭: 그림이 캔버스보다 넓으면 끌어서 옮긴다 — 그 사실과 지금 어느 영역을 보는지를 범례 줄 아래 한 줄로 알린다(app.js sysPan) */
+.sys-pan { display: none; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 14px 0; font-size: 12.5px; color: var(--cv-ink-2); }
+.sys-pan[data-on] { display: flex; }
+.sys-pan button { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--cv-border); background: var(--cv-tool); color: var(--cv-ink); font-size: 12px; cursor: pointer; }
+.sys-pan button[aria-pressed="true"] { border-color: var(--cv-now); color: #fff; }
+.sys-info p + p { margin-top: 2px; }
 .sys-scroll > svg { display: block; width: 100%; height: auto; min-width: 980px; font-family: var(--font-sans); }
 .sys-scroll > .alert { margin: 16px; }
 .sys-band { stroke: var(--cv-border); stroke-dasharray: 3 6; }
@@ -578,8 +593,25 @@
 .kpi-result .kv { margin-top: 10px; }
 .kpi-persp { margin-top: 20px; }
 .kpi-persp .panel-sec > h3 .muted { margin-left: 0; }
-.kpi-table { width: 100%; }
-.kpi-table td:first-child { white-space: normal; min-width: 220px; }
+.kpi-head { flex-wrap: wrap; }
+.kpi-head > div:first-child { flex: 1 1 320px; }
+/* 표마다 칸 폭이 같다 — 실적 · 목표 · 달성률 · 판정 열이 표마다 흔들리지 않게 */
+.kpi-table { width: 100%; min-width: 760px; table-layout: fixed; }
+.kpi-table th:nth-child(2), .kpi-table th:nth-child(3) { width: 150px; }
+.kpi-table th:nth-child(4) { width: 90px; }
+.kpi-table th:nth-child(5) { width: 120px; }
+.kpi-table th:nth-child(6) { width: 190px; }
+.kpi-table td { white-space: normal; }
+/* 메뉴 줄 아래 단계 한 줄: 누르면 지금 막힌 행동과 까닭이 펼쳐진다(courseAccess.js banner) */
+.course-status details > summary { display: flex; align-items: center; gap: 4px; cursor: pointer; list-style: none; border-radius: 6px; }
+.course-status details > summary::-webkit-details-marker { display: none; }
+.course-status details > summary .ic { width: 12px; height: 12px; flex: none; transition: transform .15s; }
+.course-status details[open] > summary .ic { transform: rotate(90deg); }
+.course-status details > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.course-status .course-why { margin: 6px 0 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--ink-2); max-height: 40vh; overflow: auto; }
+.course-status .course-why p { font-weight: 600; color: var(--foreground); margin-bottom: 4px; }
+.course-status .course-why li + li { margin-top: 6px; }
+.kpi-table td:first-child { white-space: normal; }
 .kpi-table td small { display: block; font-size: 12.5px; line-height: 18px; color: var(--muted-foreground); }
 .kpi-table td:last-child { white-space: nowrap; text-align: right; }
 .kpi-table td:last-child .btn + .btn { margin-left: 4px; }

@@ -69,12 +69,12 @@
       /* 확인 역할: 서버는 이 흐름에서 사람이 맡는 역할 가운데 하나만 받고, 그 역할이 이전 승인을 한 역할과 같거나 높은지 본다
          (effect_compensation._authorize_review · _review_level). 후보가 하나면 고를 것이 없으므로 그 값을 쓰고 한 줄로 보인다.
          여럿이면 고른 역할에 따라 서버 판정이 달라지므로 고르게 둔다 — 첫 항목을 저절로 보내지 않는다. */
+      // 확인 역할: 고르는 칸을 두지 않는다(쓰는 사람은 늘 담당자 한 명이고 모든 역할의 구성원이다). 이전 승인을 한 역할이 후보에 있으면 그 역할, 없으면 후보의 첫 역할
       const roles = d.review_roles || [];
-      if (roles.length === 1 && !s.pending) s.role = roles[0];
+      const prior = (view.approvals || []).map(a => a.payload && a.payload.role).filter(Boolean).pop() || UI.valuesOf(view.instance).approved_role || '';
+      if (roles.length && !s.pending && !roles.includes(s.role)) s.role = roles.includes(prior) ? prior : roles[0];
       const roleField = !roles.length ? UI.readonly('확인 역할', '<span class="muted" data-tone="danger">이 흐름에는 사람이 맡는 역할이 없어 되돌리기와 확인을 요청할 수 없습니다.</span>')
-        : roles.length === 1 ? UI.readonly('확인 역할', esc(roleName(roles[0])), '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.')
-        : UI.field({ label: '확인 역할', required: true, hint: '어느 역할로 되돌리기와 확인을 요청하는지 고릅니다. 이전 승인을 한 역할과 같거나 더 높은 역할이어야 합니다.',
-          input: `<select id="efRole" ${s.busy ? 'disabled' : ''}><option value="">${esc(UI.t('form.pickRole'))}</option>${roles.map(r => `<option value="${esc(r)}" ${r === s.role ? 'selected' : ''}>${esc(roleName(r))}</option>`).join('')}</select>` });
+        : UI.readonly('확인 역할', esc(roleName(s.role)), roles.length === 1 ? '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.' : s.role === prior ? '이전 승인을 한 역할로 요청하고 기록합니다.' : '이 흐름에서 사람이 맡는 역할로 요청하고 기록합니다.');
       const body = `<p>연결된 사건: ${UI.chip(d.incident.state)} · 설비 명령 ${d.incident.cmdId ? '보냄' : '보내지 않음'}</p>
         ${rows ? `<div class="table-container"><table class="table case-table"><thead><tr><th>확인</th><th>종류</th><th>내용</th><th>처리 방법</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">기록된 외부 효과가 없습니다.</p>'}
         <div><fieldset class="fieldset"><legend>${esc(UI.t('form.section.who'))}</legend><div role="group">
@@ -90,7 +90,6 @@
       host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`확인할 조치 ${pending.size}`, 'neutral') : ''}`, body, { open: !!s.pending });   // A161-U1 결함 8: 끝난 처리 건에서 폼이 펼쳐져 나오지 않게(필요할 때 연다)
       host.querySelectorAll('input[data-effect]').forEach(cb => cb.addEventListener('change', e => { e.target.checked ? s.picked.add(e.target.dataset.effect) : s.picked.delete(e.target.dataset.effect); draw(); }));
       host.querySelector('#efBy')?.addEventListener('input', e => s.by = e.target.value);
-      host.querySelector('#efRole')?.addEventListener('change', e => s.role = e.target.value);
       host.querySelector('#efReason')?.addEventListener('input', e => s.reason = e.target.value);
       // 업무 시스템의 거래를 실제로 취소하는 요청이다 — 빠진 칸을 먼저 알리고, 확인을 받은 뒤 보낸다
       host.querySelector('#efCompensate')?.addEventListener('click', async () => {

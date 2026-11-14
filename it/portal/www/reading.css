@@ -20,7 +20,11 @@
 .io-out .panel > .turn-facts { border-color: var(--border); }
 .io-out .turn-facts dd { overflow-wrap: anywhere; }
 .io-out .table :is(td, th) { white-space: normal; vertical-align: top; }      /* 키트의 표는 줄을 바꾸지 않는다 — 계산식 · 출처처럼 긴 글이 든 칸은 줄을 바꿔 판 폭 안에 둔다 */
-.io-out .table td { overflow-wrap: anywhere; }
+.io-out .table td { overflow-wrap: break-word; }
+.io-out .table code { word-break: break-all; }
+.io-out .table th { white-space: nowrap; }
+.io-out .panel-sec > .seg { margin-bottom: 12px; }
+.io-out .panel-sec > :is(.muted, .evid, .result) + :is(.table-container, .evid, .fold, .muted, .result) { margin-top: 10px; }
 .io-out .table.io-even { table-layout: fixed; }      /* A · B 두 칸을 같은 폭으로 */
 .io-out .table.io-even td + td { padding-left: 16px; }
 .io-out .table :is(td, th):first-child { padding-left: 0; }
@@ -37,7 +41,10 @@
   .io { grid-template-columns: minmax(0, 1fr); }
   .io > .io-in { position: static; }
 }
-@media (max-width: 700px) { .io-two { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .io-two { grid-template-columns: minmax(0, 1fr); }
+  .io-out .table-container > :is(.table, .opts) { min-width: 600px; }      /* 좁은 폭에서는 표를 찌그러뜨리지 않고 표 칸 안에서 옆으로 민다 */
+}
 
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
 .rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }

@@ -85,3 +85,12 @@ def test_결과_카드는_끝_이벤트_이름이_끝이면_끝난_곳을_따로
     rejected = card({'outcome': '반려', 'verdict': 'rejected', 'title': 'HYD-01 냉각 조치 결과', 'summary': '담당자가 거절했습니다'}, '거절 종결')
     assert '처리 건은 「거절 종결」에서 끝났습니다.' in rejected
     assert 'data-tone="danger"' not in rejected and '<span class="tag">반려</span>' in rejected
+
+
+def test_워커가_아직_가져가지_않은_AI_단계는_사람_단계로_그리지_않는다():
+    """독립 검토 가-4: AI 에이전트가 맡은 작업 행은 워커가 가져가기 전 잠깐 agent_orch 가 비어 있다 — 그 순간 사람 단계(승인 대기)로 보였다."""
+    wis = [{'id': 'w1', 'activity_id': 'T_agent', 'activity_name': '원인 진단', 'start_date': T, 'status': 'IN_PROGRESS', 'agent_orch': None, 'agent_mode': None, 'user_id': 'agent:cooling'}]
+    v = view(wis, ['T_agent'])
+    v['instance']['status'] = 'RUNNING'
+    got = run(FILES, "out(hydRecord.build(DATA.v, DATA.ext, []).steps.map(s => [s.type, s.lane]))", {'v': v, 'ext': {'agents': [], 'people': []}})
+    assert got[1] == ['agent', 'agent']

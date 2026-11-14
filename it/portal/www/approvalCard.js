@@ -116,19 +116,37 @@
     const why = out && (o.violations || [])[0] ? `제외 — ${e(UI.idText(o.violations[0].annotation || o.violations[0].message || o.violations[0].rule || ''))}`
       : e(partDiff(o, rec, d.options) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score)} 낮습니다` : ''));
     const pick = pending && o.feasible && !UI.executionBlocked(o,d) ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 변경</label>` : '';
-    return `<li class="ap-lost ${out ? 'out' : ''}"><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${UI.evaluationHtml(o,d)}${window.hydWords?.purchaseContextHtml(o,d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
+    return `<li class="ap-lost"${out ? ' data-out' : ''}><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${UI.evaluationHtml(o,d)}${window.hydWords?.purchaseContextHtml(o,d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
   }
 
   /* d: 판단 결과 { options, recommended, explanation }, chosenId: 지금 승인할 안, opt: { pending, adjust(html), extra(html) } */
   // 추천이 없고 모든 안이 제외됐을 때: 제외된 안을 「1순위」로 띄우지 않고, 추천할 안이 없다는 것과 안마다 제외 사유를 보인다
   const excludedWhy = o => (o.violations || []).map(v => UI.idText(v.annotation || v.message || v.rule || '')).filter(Boolean);
-  function noneHtml(d, opt) {
+  /* 모든 안이 제외됐을 때의 까닭을 화면 말로: 안마다의 첫 사유(다른 값을 몰라서 따라 걸린 규칙 — unknown 이 붙은 것 — 은 뺀다)에서
+     운영자에게 하는 말(「— … 확인하고 다시 판단하세요」)과 내부 이름 괄호(「(forecast_ts1)」)를 떼어 낸 문장. 모든 안의 까닭이 같으면 same = true 로 한 번만 말한다.
+     받은 원문은 noneHtml 의 접기 안에 그대로 있다 */
+  function noneSummary(d) {
     const opts = d.options || [];
+    const plain = t => UI.idText(String(t || '')).split(' — ')[0].replace(/\s*\([a-z][a-z0-9_]*(?:,\s*[a-z][a-z0-9_]*)*\)/g, '').replace(/\s+/g, ' ').trim().replace(/[.:]+$/, '');
+    const main = o => { const vs = o.violations || []; const own = vs.filter(v => !(v.unknown || []).length); return [...new Set((own.length ? own : vs).map(v => plain(v.annotation || v.message || '')).filter(Boolean))]; };
+    const per = opts.map(o => ({ name: UI.idText(o.name || o.id), reasons: main(o) }));
+    const key = r => r.reasons.join('|');
+    const same = per.length > 0 && !!per[0].reasons.length && per.every(r => key(r) === key(per[0]));
+    return { same, reasons: same ? per[0].reasons : [], per };
+  }
+  function noneHtml(d, opt) {
+    const opts = d.options || [], sum = noneSummary(d);
+    // 까닭이 모두 같으면 판의 머리가 이미 한 번 말했다 — 여기서는 제외된 안의 이름만 늘어놓고, 안마다의 사유 원문(규칙 이름 · 내부 값 이름 포함)은 접어 둔다
+    if (sum.same) return `<div class="ap-card" data-ap-none>
+      <div class="ap-row"><span class="ap-label">제외된 안 ${opts.length}개</span><span class="chips">${sum.per.map(r => `<span class="badge" data-variant="secondary">${e(r.name)}</span>`).join('')}</span></div>
+      ${UI.fold('안마다의 제외 사유 원문', `<ul class="ap-lost-list">${opts.map(o => `<li class="ap-lost"><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b></div>${excludedWhy(o).map(w => `<p>${e(w)}</p>`).join('') || '<p>실행 검사를 통과하지 못했습니다</p>'}</li>`).join('')}</ul>`)}
+      ${opt.adjust || ''}
+      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
+      ${opt.extra || ''}
+    </div>`;
     return `<div class="ap-card" data-ap-none>
-      <div class="ap-head"><span class="ap-kicker">추천할 수 있는 안이 없습니다</span></div>
-      <h4 class="ap-title">실행할 수 있는 안 없음</h4>
-      <p class="ap-desc">에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 제외 사유:</p>
-      <ul class="ap-lost-list">${opts.map(o => { const why = excludedWhy(o); return `<li class="ap-lost out"><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>제외 — ${e(why.length ? why.join(' · ') : '실행 검사를 통과하지 못했습니다')}</p></li>`; }).join('')}</ul>
+      <p class="ap-desc">안마다 제외된 까닭이 다릅니다.</p>
+      <ul class="ap-lost-list">${opts.map(o => { const why = excludedWhy(o); return `<li class="ap-lost" data-out><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>제외 — ${e(why.length ? why.join(' · ') : '실행 검사를 통과하지 못했습니다')}</p></li>`; }).join('')}</ul>
       ${opt.adjust || ''}
       ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
       ${opt.extra || ''}
@@ -265,7 +283,7 @@
     const others = m.options.filter(o => o !== cur);
     const pick = o => opt.pending && m.usable ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o[key])}"> 이 안으로 변경</label>` : '';
     const otherRows = others.map(o => `<li class="ap-lost"><div class="ap-lost-head"><b>${e(o[key])}</b><span class="muted num">${e(scoreText(o))}</span>${pick(o)}</div>${o.reason ? `<p>${e(o.reason)}</p>` : ''}${optionFacts(o, key) ? `<p class="chips">${optionFacts(o, key)}</p>` : ''}</li>`);
-    const loserRows = m.losers.map(x => `<li class="ap-lost out"><div class="ap-lost-head"><b>${e(x[key])}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>${e(x.why)}</p></li>`);
+    const loserRows = m.losers.map(x => `<li class="ap-lost" data-out><div class="ap-lost-head"><b>${e(x[key])}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>${e(x.why)}</p></li>`);
     const docs = m.docs.map(d => `<a class="chip" href="${e(d.link)}" target="_blank" rel="noopener noreferrer">${e(d.title)}</a>`).join(' ');
     const off = m.problems.length ? `<div class="alert ap-off" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>에이전트 제안이 칸 약속과 다릅니다</h2><section>아래에 받은 값을 그대로 보입니다.<ul>${m.problems.map(p => `<li>${e(p)}</li>`).join('')}</ul></section></div>`
       + UI.fold('받은 값 그대로 (JSON)', `<pre class="code">${e(JSON.stringify(m.raw, null, 2))}</pre>`, { open: true }) : '';
@@ -279,5 +297,5 @@
       ${off}${opt.extra || ''}</div>`;
   }
 
-  window.hydApprove = { html, reasons, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml };
+  window.hydApprove = { html, reasons, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml, noneSummary };
 })();

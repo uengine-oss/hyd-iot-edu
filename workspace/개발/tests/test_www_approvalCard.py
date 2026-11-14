@@ -42,3 +42,27 @@ def test_판단_엔진이_고른_1순위는_AI_추천이_아니라_판단_엔진
     assert '판단 엔진 1순위' in got and '판단 엔진 설명 전문 (규칙 문장)' in got, got
     assert 'AI 에이전트 추천' not in got and '에이전트 설명 전문' not in got.replace('판단 엔진 설명 전문', ''), got
     assert '과거 같은 선택 2건(미리 넣은 사례 기준)' in got, got
+
+
+STALE = {'rule': 'forecast:model-unavailable', 'effect': 'EXCLUDE',
+         'annotation': '현재 조치 예측을 확인할 수 없습니다: 설비 상태가 15초 전 값이라 지금 예측에 쓸 수 없습니다(15초 이내만) — 설비 시뮬레이터와 수집이 도는지 확인하고 다시 판단하세요'}
+FOLLOW = {'rule': 'rule:ts1-hard', 'effect': 'EXCLUDE', 'annotation': '확인되지 않은 조건 (forecast_ts1): 예측 유온이 인터록 한계 이상이면 제외', 'unknown': ['forecast_ts1']}
+
+
+def test_모든_안이_같은_까닭으로_제외되면_그_까닭을_한_번만_화면_말로_낸다():
+    """독립 검토 가-3: 네 안이 같은 사유로 제외됐는데 같은 긴 문장이 네 번 되풀이되고 내부 이름(forecast_ts1)과 학생이 할 수 없는 지시가 나왔다."""
+    d = {'recommended': None, 'options': [{'id': f's{i}', 'name': n, 'feasible': False, 'violations': [STALE, FOLLOW]} for i, n in enumerate(['팬 최대 운전', '쿨러 핀 세척'])]}
+    got = run(FILES, "const s = hydApprove.noneSummary(DATA); out([s.same, s.reasons, hydApprove.html(DATA, null, { pending: true })])", d)
+    assert got[0] is True
+    assert got[1] == ['현재 조치 예측을 확인할 수 없습니다: 설비 상태가 15초 전 값이라 지금 예측에 쓸 수 없습니다(15초 이내만)']      # 운영자에게 하는 말 · 다른 값을 몰라 따라 걸린 규칙은 뺀다
+    visible = got[2].split('<details')[0]      # 접기 밖(첫 화면)
+    assert '팬 최대 운전' in visible and '쿨러 핀 세척' in visible
+    assert 'forecast_ts1' not in visible and '시뮬레이터' not in visible and visible.count('설비 상태가 15초 전 값') == 0      # 까닭은 판의 머리가 한 번 말한다 — 안마다 되풀이하지 않는다
+    assert got[2].count('forecast_ts1') == 2      # 원문은 접기 안에 그대로(안마다 한 번)
+
+
+def test_안마다_제외된_까닭이_다르면_한_문장으로_뭉뚱그리지_않는다():
+    other = {'rule': 'rule:role', 'effect': 'EXCLUDE', 'annotation': '정비 인력이 없습니다'}
+    d = {'recommended': None, 'options': [{'id': 'a', 'name': '팬 최대 운전', 'feasible': False, 'violations': [STALE]}, {'id': 'b', 'name': '쿨러 핀 세척', 'feasible': False, 'violations': [other]}]}
+    got = run(FILES, "const s = hydApprove.noneSummary(DATA); out([s.same, s.reasons, s.per.map(r => r.reasons)])", d)
+    assert got[0] is False and got[1] == [] and got[2][1] == ['정비 인력이 없습니다']
