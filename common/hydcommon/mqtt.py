@@ -1,6 +1,6 @@
 """paho-mqtt v2 — how every OT client (plant-sim · cmd-gateway · connect-ingest) joins the broker, in one place.
 
-Identity: the client connects to the inner listener (ot-net 1883, not published to the host) with its service name as
+Identity: the client connects to the inner listener (1883 on the OT net and the OT–DMZ boundary net, not published to the host) with its service name as
 the username. The broker's topic rules (ot/emqx/acl.conf) are written against that name — only cmd-gateway may publish
 plant/+/cmd/auto, only plant-sim publishes measurements and status. A publish the rules refuse ends the connection.
 

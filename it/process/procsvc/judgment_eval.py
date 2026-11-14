@@ -467,6 +467,11 @@ def worker_judgement(candidate: dict, decision: dict | None, guide_card: dict | 
 
 
 # ---------------------------------------------------------------- 저장소 (정답표 항목 + 채점 실행)
+class NotFound(KeyError):
+    """찾는 정답표 항목 · 채점 실행 · 처리 건이 없다 — API 가 404 「없는 항목」으로 답하는 것은 이 예외뿐이다. 코드가 사전에서 없는 열쇠를 읽어
+    난 KeyError 는 「없는 항목」이 아니라 서버 오류다(전에는 둘 다 404 「없는 항목 · 실행 · 처리 건: '<열쇠>'」로 보였다)."""
+
+
 class PgEvalStore:
     """Supabase(마이그레이션 20261008000030): judgment_golden_items(정답표 항목, 고치면 덮어씀 · 지문 item_hash)와
     judgment_eval_runs(실행 하나 = 행 하나, 불변). 항목 결과 · 지식 상태는 jsonb."""
@@ -507,13 +512,13 @@ class PgEvalStore:
                 row = c.execute('''update judgment_golden_items set item=%s, item_hash=%s, updated_by=%s, updated_at=now()
                                    where tenant_id=%s and id=%s returning *''', (self._Jsonb(item), h, by, self.tenant, item['id'])).fetchone()
                 if row is None:
-                    raise KeyError(item['id'])
+                    raise NotFound(item['id'])
             return self._golden_row(row)
 
     def golden_delete(self, iid: str) -> None:
         with self._conn() as c:
             if c.execute('delete from judgment_golden_items where tenant_id=%s and id=%s', (self.tenant, iid)).rowcount == 0:
-                raise KeyError(iid)
+                raise NotFound(iid)
 
     def put(self, run: dict) -> None:
         with self._conn() as c:

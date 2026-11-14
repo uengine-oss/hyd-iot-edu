@@ -33,6 +33,26 @@ def test_제공_그림_그대로는_검사를_통과하고_정의가_된다(worl
     assert {a['id'] for a in result['definition']['activities']} >= {'task_draft', 'task_sender', 'task_receiver'}
 
 
+@pytest.mark.parametrize('agent, says', [
+    (None, '맡길 에이전트를 고르세요 — 비어 있습니다'), ('', '맡길 에이전트를 고르세요 — 비어 있습니다'),
+    ('agent:no-such', '이 PC에 없는 에이전트입니다'), ('agent:handover', None),
+], ids=['칸 없음', '빈 칸', '없는 에이전트', '고른 에이전트'])
+def test_에이전트를_비운_단계는_첫_에이전트로_채우지_않고_비었다고_말한다(world, agent, says):
+    """전수 대조(2026-11-14): 에이전트 칸을 비운 「에이전트 task」를 서버가 목록의 첫 에이전트로 채워 「검사 통과」가 됐다 — 사람이 고르지 않은
+    수행자가 정의에 들어갔다(설정 불러오기 · API 길에서는 아무 말 없이). 비었으면 검사가 그 단계를 짚어 말한다."""
+    mapping = copy.deepcopy(HANDOVER['mapping'])
+    task = {'part': 'agent', 'instruction': '교대 인계안을 쓴다', 'outputs': [{'key': 'note', 'text': '인계안'}]}
+    if agent is not None:
+        task['agent'] = agent
+    mapping['tasks']['task_draft'] = task
+    result = _check(world, HANDOVER['xml'], mapping)
+    found = [p for p in result['problems'] if p['field'] == 'agent' and p['where']['id'] == 'task_draft']
+    if says is None:
+        assert found == [], found
+    else:
+        assert not result['ok'] and len(found) == 1 and says in found[0]['reason'], result['problems']
+
+
 def _renamed(xml):
     return xml.replace('name="인계자 검토"', 'name="보내는 사람 검토"').replace('name="인수자 확인"', 'name="받는 사람 확인"')
 

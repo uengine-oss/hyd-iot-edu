@@ -717,6 +717,14 @@ def test_승인_전에_경보가_풀리면_기준_흐름도_상급자_호출_없
     assert (inst['status'], inst['end_event']) == ('COMPLETED', 'incident-ended-before-action')
     assert world.rt.instance_view(pid)['instance']['end_label'] == '조치 전 해소'
     assert all(w['status'] != 'IN_PROGRESS' for w in world.rows(pid) if w['activity_id'] == 'task:escalate')
+    # 취소된 줄을 화면이 「가지 않은 길」과 「하다가 취소됨」으로 가를 사실: 흐름이 닿은 단계만 reached_at 이 있다. 승인 단계는 닿아서 열려 있다가
+    # 경보가 풀려 취소됐고, 그 뒤 단계들(상급자 호출 등)은 닿기 전에 예정인 채 취소됐다 — 두 줄 모두 상태는 CANCELLED 이고 start_date 가 있다
+    rows = world.rt.instance_view(pid)['workitems']
+    cancelled = [w for w in rows if w['status'] == 'CANCELLED' and not w['activity_id'].startswith('ev:')]
+    opened, never = [w for w in cancelled if w['reached_at']], [w for w in cancelled if not w['reached_at']]
+    assert opened and never and all(w['start_date'] for w in cancelled), [(w['activity_id'], w['reached_at']) for w in cancelled]
+    assert 'task:escalate' in {w['activity_id'] for w in never}
+    assert all(w['reached_at'] for w in rows if w['status'] == 'DONE')            # 끝난 단계는 모두 닿았던 단계다
 
 
 def test_처리_건이_열리지_못한_사건은_정한_시간이_지나면_책임자_확인으로_닫는다(world):

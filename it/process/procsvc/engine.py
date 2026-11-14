@@ -889,6 +889,18 @@ def fire_event(defn: Definition, inst: dict, event_row: dict, workitems: list[di
 
 
 
+def reached_at(defn: Definition, row: dict, arrivals: dict) -> str | None:
+    """흐름이 이 행의 단계에 닿은 시각, 닿은 적이 없으면 None. 단계 행은 reach 가 남긴 도착 기록(flow_state.activity_arrivals)이 정본이다.
+    붙은 이벤트 행(타이머 등)은 그 단계에 닿을 때 만들어지므로 만든 시각이 닿은 시각이다. 도착 기록이 없는 단계 행은 예정(TODO)인 채
+    있거나 그대로 취소된 행이다 — 다만 도착 기록을 남기기 전 판이 만든 처리 건의 끝난 · 진행 중 행은 시작 시각으로 읽는다."""
+    arrival = arrivals.get(row.get('id'))
+    if arrival:
+        return arrival.get('at')
+    if row.get('activity_id') in defn.events or row.get('status') not in ('TODO', 'CANCELLED'):
+        return row.get('start_date')
+    return None
+
+
 def abort_to(defn: Definition, inst: dict, workitems: list[dict], target_activity_id: str, reason: str,
              now: datetime | None = None, time_scale: float = 1.0) -> Advance:
     """The case ended outside the flow (A074: the Incident reached a terminal state before any action was issued — alert

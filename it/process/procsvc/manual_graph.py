@@ -550,3 +550,19 @@ def head(session, tenant, document_id):
     row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) RETURN d.head AS head',
                       id=document_key(tenant, document_id), tenant=tenant).single()
     return row['head'] if row else None
+
+
+def loaded(session, tenant, document_id):
+    """이 문서의 지금 적재된 판(없으면 None): 적재 기록(receipt)에서 화면이 「이미 적재됨」을 말하는 데 쓰는 칸만.
+    문서를 다시 열었을 때 「아직 AI가 문서를 읽기 전」으로 보이지 않게 하는 사실이다 — source_id 는 그 판을 만든 원문(다시 연 원문과 같은지
+    화면이 견준다), extraction 은 그 판이 AI 추출 결과에서 왔으면 그 처리 건, provided 는 시작할 때 넣은 기본 제공 판인가."""
+    row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) WHERE d.head IS NOT NULL '
+                      'MATCH (b:ManualIngestionBatch {id:d.head, tenant:$tenant}) RETURN b.receipt AS receipt',
+                      id=document_key(tenant, document_id), tenant=tenant).single()
+    if not row:
+        return None
+    receipt = _plain_by(json.loads(row['receipt']))
+    return {'batch': receipt['batch'], 'at': receipt.get('t'), 'by': receipt.get('by'), 'source_id': receipt.get('source_id'),
+            'filename': receipt.get('filename'), 'sections': receipt.get('sections'), 'procedures': receipt.get('procedures'),
+            'steps': receipt.get('steps'), 'provided': bool(receipt.get('provided_revision')),
+            'extraction': (receipt.get('extraction') or {}).get('instance') if isinstance(receipt.get('extraction'), dict) else None}

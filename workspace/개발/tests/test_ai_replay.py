@@ -104,10 +104,17 @@ def test_녹화와_수량만_다른_지금_계산은_멈추지_않고_어느_값
     card = next(o for o in world.main.book[did]['options'] if o['id'] == world.main.book[did]['recommended'])
     now = card['economicComparison']
     assert (now['quantity'], now['total_cost']) == (6, 360)                                 # 이 PC의 지금 계산(시작 상태)
-    said = [e['data']['content'] for e in world.events(pid) if (e.get('data') or {}).get('type') == 'notice']
-    line = next((text for text in said if '준비 당시 값' in text), None)
+    notices = [e['data'] for e in world.events(pid) if (e.get('data') or {}).get('type') == 'notice']
+    said = [d['content'] for d in notices]
+    found = next((d for d in notices if '준비 당시 값' in d['content']), None)
+    line = found and found['content']
     assert line and line.startswith(ai_replay.REPLAY) and '수량 7 → 6개' in line and '비교 총비용 420 → 360만 원' in line, said
     assert '「순정(OEM) 공급사 표준 발주」' in line and not FORBIDDEN.search(line) and '강사' not in line and '녹화' not in line
+    # 화면이 문장을 읽어 가르지 않게 종류를 싣는다: 묶음 종류와 문장마다의 종류, 문장을 이으면 content 다. 기본 제공 구성 그대로인 실행이라 스킬 안내는 없다
+    kinds = [part['kind'] for part in found['parts']]
+    assert found['kind'] == 'replay' and kinds[:2] == ['prepared', 'values_differ'] and set(kinds) <= set(ai_replay.NOTICE_KINDS) - {'skills'}, found
+    assert ' '.join(part['text'] for part in found['parts']) == line
+    assert '수량 7 → 6개' in next(part['text'] for part in found['parts'] if part['kind'] == 'values_differ')
 
 
 @pytest.mark.parametrize('slot, start', [
@@ -118,6 +125,27 @@ def test_지금_계산이_녹화와_같은_판단이면_재생_안내를_남기�
     """평소 실행의 화면은 실제 AI 실행과 같다(CLAUDE.md 5절) — 점수 · 예측처럼 측정값을 따라 조금씩 달라지는 값으로는 안내하지 않는다."""
     pid, _ = start(world)
     assert [e['data']['content'] for e in world.events(pid) if (e.get('data') or {}).get('type') == 'notice' and '재생 모드' in e['data']['content']] == []
+
+
+def test_재생이_보이는_스킬_파일_읽기_결과는_이_실행의_작업_폴더에_있는_지금_본문이다(world, tmp_path):
+    """한 바퀴 실측(2026-11-14): 냉각 판단의 처리 과정에서 「읽은 스킬 파일」을 펼치면 녹화 당시의 옛 본문(「… 카드 (시나리오 A)」)이 보였다 —
+    스킬의 이름 · 설명은 그 뒤 고쳤다(마이그레이션 078). 워커는 실행 전에 에이전트의 스킬을 작업 폴더에 쓰므로, 그 파일을 통째로 읽은 호출의
+    결과는 그 파일의 지금 본문으로 보인다. 작업 폴더에 없는 스킬(학생이 뗀 스킬)이나 일부만 읽은 호출은 저장된 결과 그대로다."""
+    pid, _ = world.start_cooling()[1:]
+    skill = world.rt.repo.get_skill(world.rt.tenant_id, 'cooling-emergency-response')
+    shown = json.dumps([e['data'] for e in world.events(pid)], ensure_ascii=False)
+    assert 'cooling-emergency-response/SKILL.md' in shown                       # 그 스킬 파일을 읽는 호출이 처리 과정에 있다
+    assert f"description: {skill['description']}" in shown and '시나리오 A' not in shown
+    # 같은 호출을 손으로: 파일이 있으면 지금 본문(녹화와 같은 줄 번호 꼴), 없거나 일부만 읽었으면 None(저장된 결과 그대로)
+    recorded = '0\t---\n1\tname: x\n2\tdescription: 옛 설명\n3\t---\n4\t\n5\t# 옛 제목'
+    read = {'file_path': '/workspace/hyd/abc/.claude/skills/my-skill/SKILL.md', 'offset': 0, 'limit': 2000}
+    assert ai_replay.skill_file_now(tmp_path, 'Read', read, recorded) is None
+    (tmp_path / '.claude/skills/my-skill').mkdir(parents=True)
+    (tmp_path / '.claude/skills/my-skill/SKILL.md').write_text('---\nname: x\ndescription: 지금 설명\n---\n\n# 지금 제목\n', encoding='utf8')
+    assert ai_replay.skill_file_now(tmp_path, 'Read', read, recorded) == '0\t---\n1\tname: x\n2\tdescription: 지금 설명\n3\t---\n4\t\n5\t# 지금 제목'
+    assert ai_replay.skill_file_now(tmp_path, 'Read', read, '     1\t---\n     2\tname: x\n     3\t옛').startswith('     1\t---\n     2\tname: x\n     3\tdescription: 지금 설명')
+    assert ai_replay.skill_file_now(tmp_path, 'Read', read, '2\tdescription: 옛 설명') is None
+    assert ai_replay.skill_file_now(tmp_path, 'Bash', read, recorded) is None
 
 
 def _replay_recorded_under_another_state(tmp_path, slot, change):
@@ -157,23 +185,29 @@ def test_지금_계산의_권장_조치가_녹화와_다르면_그_설명을_이
     assert not FORBIDDEN.search(text) and '강사' not in text and '녹화' not in text
 
 
-@pytest.mark.parametrize('slot, skills, said', [
-    ('question', ['cooler-check'], True), ('question', [], False),
-    ('handover/draft-1', ['my-shift-handover-review'], False), ('handover/draft-1', [], True),
-], ids=['스킬 붙임', '스킬 없음 그대로', '저장된 실행과 같은 스킬', '저장된 실행의 스킬을 뗌'])
-def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_말한다(tmp_path, tool_servers, slot, skills, said):
+@pytest.mark.parametrize('slot, skills, changed, said', [
+    ('question', ['cooler-check'], True, True), ('question', [], True, False),
+    ('handover/draft-1', ['my-shift-handover-review'], True, False), ('handover/draft-1', [], True, True),
+    ('question', ['cooler-check'], False, False), ('handover/draft-1', [], False, False),
+], ids=['스킬 붙임', '스킬 없음 그대로', '저장된 실행과 같은 스킬', '저장된 실행의 스킬을 뗌',
+        '기본 제공 구성 — 저장된 실행이 열지 않은 스킬이 붙어 있어도 말하지 않음', '기본 제공 구성 — 스킬 없는 단계'])
+def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_말한다(tmp_path, tool_servers, slot, skills, changed, said):
     """실라버스 포털 실습 3번(스킬을 붙이고 같은 질문 → 떼고 같은 질문): 재생은 같은 답을 내므로 「스킬이 아무 일도 안 한다」로 배우지
     않게, 스킬 구성이 저장된 실행(그 실행이 연 스킬)과 다를 때만 처리 과정 한 줄로 말한다. 수업 기본 구성 그대로인 평소 실행에는
     재생 안내를 남기지 않는다(화면은 실제 AI 실행과 같다, CLAUDE.md 5절). 교대 초안은 조회 결과가 이 PC와 달라 다른 안내(읽기 조회 견주기)가
-    붙을 수 있다 — 여기서는 스킬 말만 본다."""
+    붙을 수 있다 — 여기서는 스킬 말만 본다. changed: 학생이 스킬 구성을 바꿀 수 있었던 실행인가(포털에서 만든 에이전트 · 스킬 —
+    runner._skills_changed). 기본 제공 구성의 실행은 붙은 스킬이 저장된 실행이 연 스킬과 달라도 말하지 않는다 — 한 바퀴 실측(2026-11-14)에서
+    AI 단계마다 같은 스킬 안내가 붙었다."""
     doc = next(d for key, d in docs().items() if key.startswith(slot + '|'))
     wd, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
     c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot=slot, case=doc['case'], attempt=(0, 0), request_key=None,
-                                                    step=doc['step'], provider='claude-code', source={}, accepted=lambda s: True, skills=skills)
+                                                    step=doc['step'], provider='claude-code', source={}, accepted=lambda s: True, skills=skills,
+                                                    skills_changed=changed)
     play(c, wd)
     text = c.notice()
     if said:
         assert '같은 답을 냅니다' in text and (', '.join(skills) or '없음') in text and '강사' not in text
+        assert ('skills', next(t for k, t in c.notices()[1] if k == 'skills')) in c.notices()[1] and c.notices()[0] == 'replay'
     else:
         assert '같은 답을 냅니다' not in (text or '')
     if slot == 'question':                      # 표를 돌려준 조회가 없는 저장분 — 견줄 것이 없어 조회 말이 없다

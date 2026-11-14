@@ -36,7 +36,7 @@ docker compose ps -a
 cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다른 프로그램과 겹쳐 옮긴 포트 포함)
 ```
 
-화면 주소(기본 포트, 옮겼으면 `ports.json`의 값): 포털 8088 · Neo4j Browser 7474 · Grafana 3000 · FUXA 1881 · EMQX 18083. MQTT 바깥 입구는 호스트 1883(MQTT) · 8083(WebSocket), 계정 `student`/`student` — 구독만 된다(발행하면 연결이 끊긴다). 설비 명령 토픽은 관문(cmd-gateway)만 보낸다.
+화면 주소(기본 포트, 옮겼으면 `ports.json`의 값): 포털 8088 · Neo4j Browser 7474 · Grafana 3000 · FUXA 1881. 메시지 중계기(EMQX)의 관리 화면 · 관리 API(18083)는 꺼 두었다 — 관리 API 의 발행이 토픽 규칙을 거치지 않아 승인 없이 설비 명령을 낼 수 있었기 때문이다(`ot/emqx/emqx.conf`). 브로커 상태는 `docker compose exec emqx emqx ctl status` · `emqx ctl clients list`로 본다. MQTT 바깥 입구는 호스트 1883(MQTT) · 8083(WebSocket), 계정 `student`/`student` — 구독만 된다(발행하면 연결이 끊긴다). 설비 명령 토픽은 관문(cmd-gateway)만 보낸다.
 
 ## 3. 끄기 — `scripts/stop_all.sh`
 

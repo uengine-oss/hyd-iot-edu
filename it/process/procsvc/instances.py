@@ -1824,6 +1824,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         more = len(events) > EVENTS_WINDOW
         events = events[-EVENTS_WINDOW:]
         approvals = self.repo.list_approvals(proc_inst_id, self.tenant_id)
+        # reached_at: 흐름이 그 단계에 닿은 시각(engine.reach 가 flow_state.activity_arrivals 에 남긴다), 닿은 적이 없으면 None. 취소된 행의 상태만으로는
+        # 「가지 않은 길」(예정 행이 닿기 전에 취소)과 「하다가 취소됨」(닿은 뒤 취소)을 가를 수 없다 — 예정 행도 start_date 가 있다
+        arrivals = (inst.get('flow_state') or {}).get('activity_arrivals') or {}
+        items = [dict(w, reached_at=engine.reached_at(defn, w, arrivals)) for w in items]
         return {"instance": dict(inst, end_label=self._end_label(inst) if inst.get('end_event') or inst.get('status') == 'CANCELLED' else None),
                 "definition": defn.raw, "workitems": items, "events": events,
                 # 같은 시각에 끝난 단계(한 전이 사슬)의 앞뒤 — 화면은 (시각, flow_order[단계]) 로 줄을 세운다(W1-01)

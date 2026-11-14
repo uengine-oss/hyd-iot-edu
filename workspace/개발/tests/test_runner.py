@@ -205,16 +205,17 @@ def test_실행_도중_멈추면_누가_왜_멈췄는지를_작업_행대로_적
 
 # ---------------------------------------------------------------- 키 없는 PC(재생)
 def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_이_PC와_다른_것만_한_줄로_알린다(course, worker, relay):
-    """재생 화면은 실제 AI 실행과 같다 — 처리 과정의 재생 안내는 재생이 지원하지 않는 행동에서만(CLAUDE.md 5절). 여기서는 한 줄에 둘이 남는다:
-    저장된 인계안의 조회 결과가 이 PC의 지금 값과 다르다는 것(읽기 조회 견주기 — 무엇이 다른지는 test_ai_replay.py 가 잰다)과, 기본 교대
-    에이전트의 스킬(shift-handover-review)이 저장된 실행이 연 스킬(my-shift-handover-review)과 다르다는 것."""
+    """재생 화면은 실제 AI 실행과 같다 — 처리 과정의 재생 안내는 재생이 지원하지 않는 행동에서만(CLAUDE.md 5절). 여기서는 한 줄이 남는다:
+    저장된 인계안의 조회 결과가 이 PC의 지금 값과 다르다는 것(읽기 조회 견주기 — 무엇이 다른지는 test_ai_replay.py 가 잰다). 기본 교대
+    에이전트의 스킬(shift-handover-review)은 저장된 실행이 연 스킬(my-shift-handover-review)과 다르지만, 학생이 바꾼 구성이 아니므로
+    스킬 안내는 붙지 않는다(스킬을 바꾼 실행의 안내는 test_재생의_스킬_안내는_학생이_스킬을_바꾼_실행에서만_나온다)."""
     inst = start_handover(course.rt)
     worker('replay').poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert task['status'] == 'SUBMITTED', friendly(course.rt, task['id'])
     notes = [str(e['data'].get('content')) for e in events_of(course.rt, task['id'], 'task_working')]
     said = [n for n in notes if '재생' in n or '강사' in n]
-    assert len(said) == 1 and '같은 답을 냅니다' in said[0] and 'shift-handover-review' in said[0] and '강사' not in said[0], said
+    assert len(said) == 1 and '같은 답을 냅니다' not in said[0] and '강사' not in said[0], said
     assert '조회 결과는 준비 당시 값' in said[0], said
     assert relay.requests == [] and ledger_runs(course.dsn) == []        # 재생은 관문 · 중계를 부르지 않는다
 
@@ -275,6 +276,32 @@ def test_키_없는_PC의_질문은_강의에서_다룬_질문에만_답한다(c
     else:
         assert after['state'] == 'failed'
         assert '준비된 질문에만 답합니다' in after['message'] and 'RuntimeError' not in after['message']
+
+
+@pytest.mark.parametrize('own', [False, True], ids=['기본 제공 에이전트', '스킬을 붙인 내 에이전트'])
+def test_재생의_스킬_안내는_학생이_스킬을_바꾼_실행에서만_나온다(course, worker, own):
+    """한 바퀴 실측(2026-11-14): 기본 제공 에이전트의 AI 단계마다 「스킬을 붙이거나 떼어도 같은 답을 냅니다」가 붙었다 — 붙어 있는 기본 스킬을
+    준비된 실행이 열지 않았다는 것만으로 낸 안내였다. 기본 제공 에이전트는 스킬을 붙이고 뗄 수 없으므로(agent_authoring) 그 실행에는 내지
+    않고, 포털에서 만든 에이전트에 스킬을 붙여 물었을 때만 낸다. 알림은 종류(parts[].kind)를 싣는다."""
+    from procsvc import agent_authoring, ask
+    _, question = recorded_question()
+    agent = None
+    if own:
+        agent = agent_authoring.clone_agent(course.rt.repo, course.rt.tenant_id, ask.DEFAULT_AGENT, by='수강생')['id']
+        agent_authoring.create_skill(course.rt.repo, course.rt.tenant_id, {
+            'skill_name': 'my-fan-check', 'description': '팬 점검 순서', 'content': '# 팬 점검\n1. 팬 회전수를 본다.'}, by='수강생')
+        agent_authoring.attach_skill(course.rt.repo, course.rt.tenant_id, agent, 'my-fan-check')
+    view = ask.start(course.rt, question, agent, '수강생', definitions_dir=__import__('conftest').DEFINITIONS,
+                     worker_probe=lambda: {'reachable': True})
+    worker('replay').poll_once()
+    assert ask.view(course.rt, view['id'])['state'] in ('submitted', 'done')
+    notices = [e['data'] for e in events_of(course.rt, task_of(course.rt, view['id'])['id'], 'task_working') if e['data'].get('type') == 'notice']
+    assert all(d.get('kind') for d in notices), notices                       # 알림마다 종류가 있다
+    skill_parts = [part for d in notices for part in d.get('parts') or [] if part['kind'] == 'skills']
+    if own:
+        assert len(skill_parts) == 1 and 'my-fan-check' in skill_parts[0]['text'] and '같은 답을 냅니다' in skill_parts[0]['text']
+    else:
+        assert skill_parts == [] and not any('같은 답을 냅니다' in d['content'] for d in notices), notices
 
 
 def test_워커가_다시_켜지면_끊긴_재생_실행을_처음부터_다시_낸다(course, worker):

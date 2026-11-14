@@ -47,6 +47,8 @@ fi
 command -v docker >/dev/null 2>&1 || die "docker 명령이 없습니다. $INSTALL_ENTRY 으로 Docker Desktop 설치를 확인하세요."
 docker info >/dev/null 2>&1 || die "Docker가 응답하지 않습니다. Docker Desktop을 열어 약관 동의 창이 있으면 동의하고, 'Engine running'이 된 뒤 다시 실행하세요."
 docker compose version >/dev/null 2>&1 || die "docker compose가 없습니다. Docker Desktop을 최신으로 설치하세요."
+# 이 시스템의 이미지는 모두 Linux 컨테이너다. Windows 컨테이너 모드에서는 이미지 받기가 뜻 모를 오류(no matching manifest)로 멈춘다
+[ "$(docker info --format '{{.OSType}}' 2>/dev/null)" = linux ] || die "Docker Desktop이 Windows 컨테이너 모드입니다. 작업 표시줄의 Docker 아이콘을 오른쪽 클릭해 'Switch to Linux containers...'를 누르고, 바뀐 뒤 다시 실행하세요."
 echo "ok"
 
 say "2/8 .env · 이 PC 값 준비"
@@ -68,14 +70,25 @@ PORTAL="http://127.0.0.1:$("${PYTHON[@]}" scripts/prepare_ports.py port 8088)"
 say "3/8 업무 DB(Supabase) 켜기 · 업데이트"
 command -v npx >/dev/null 2>&1 || die "npx(Node.js)가 없습니다. $INSTALL_ENTRY 을 실행하세요."
 SUPA=(npx -y "supabase@$SUPABASE_CLI")   # it/supabase/.env(2단계가 씀)의 이 PC 업무 DB 이름 · 포트를 CLI 가 스스로 읽는다
-( cd it/supabase && "${SUPA[@]}" start >/dev/null ) || die "업무 DB(Supabase)가 켜지지 않았습니다. 위 오류에 포트가 겹친다는 내용이 있으면 $STOP_ENTRY 로 끈 뒤 다시 실행하고, 그래도 같으면 위 오류를 강사에게 알려 주세요."
+( cd it/supabase && "${SUPA[@]}" start >/dev/null ) || die "업무 DB(Supabase)가 켜지지 않았습니다. 위 오류에 포트가 겹친다는 내용(port is already allocated)이 있으면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 이미지를 받다가 멈췄으면(timeout · connection · TLS) 인터넷 연결을 확인하고 다시 실행하세요 — 받은 데까지는 이어서 받습니다. 그래도 같으면 위 오류를 강사에게 알려 주세요."
 # supabase start는 이미 만든 DB에 새 판의 마이그레이션을 적용하지 않는다. 새 판의 업무 시스템이 그 표를 기다리다 멈추지 않게 여기서 적용한다
 ( cd it/supabase && "${SUPA[@]}" migration up --local ) || die "업무 DB 업데이트(마이그레이션)가 실패했습니다. 도움을 요청할 때 위 오류의 파일 이름을 그대로 전해 주세요."
 
 say "4/8 시스템 · AI 워커 빌드 · 기동 (처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있습니다)"
 # .env 의 AI_MODE · 포트를 쓴다. 이 창에 다른 값이 남아 있으면 그것이 이기므로 비운다
 unset COMPOSE_PROFILES AI_MODE
-docker compose up -d --build || die "시스템을 켜지 못했습니다. 위 오류의 서비스 이름을 보고 'docker compose logs <서비스>'로 원인을 확인하세요."
+if ! docker compose up -d --build; then
+  # 지식 지도 준비(kg-seed)가 내용 검사에서 멈췄으면 그 까닭과 되돌리는 길을 말한다 — AI 판단 서비스(agent · dmn-mcp)는 이 준비가 끝나야 켜진다.
+  # 검사는 기본 제공 지식과 적재한 문서 지식이 서로 이어져 있는지를 본다: 지식 지도를 Neo4j Browser 등으로 직접 고치면(관계 · 항목 지우기) 걸린다
+  seed_log=$(docker compose logs --no-log-prefix --tail 60 kg-seed 2>/dev/null || true)
+  if printf '%s\n' "$seed_log" | grep -q 'kg-seed FAILED read-back'; then
+    printf '\n지식 지도 내용 검사가 짚은 곳:\n' >&2
+    printf '%s\n' "$seed_log" | grep -E '^CHECK (FAILED|ERROR)' | sed 's/^/  /' >&2 || true
+    kg_volume=$(docker volume ls -q --filter label=com.docker.compose.volume=neo4j-data --filter "label=com.docker.compose.project=$(docker compose config --format json 2>/dev/null | "${PYTHON[@]}" -c 'import json,sys; print(json.load(sys.stdin)["name"])' 2>/dev/null)" | head -1 || true)
+    die "지식 지도의 내용 검사가 실패해 AI 판단 서비스(agent · dmn-mcp)를 켜지 않았습니다. 위 줄이 짚은 항목은 서로 이어져 있어야 하는 지식(고장 유형 · 원인 · 조치 방법 등)인데 이어진 선이나 항목이 빠져 있습니다 — 지식 지도를 Neo4j Browser 등에서 직접 고쳤다면 그 변경이 까닭입니다. 되돌리는 길 (1) 지운 것을 Neo4j Browser에서 다시 만든 뒤 $START_ENTRY 을 다시 실행합니다. (2) 다시 만들 수 없으면 지식 지도를 비우고 처음부터 채웁니다: $STOP_ENTRY 실행 → 터미널에서 'docker compose down' 과 'docker volume rm ${kg_volume:-<프로젝트 이름>_neo4j-data}' → $START_ENTRY 실행. 기본 제공 지식은 다시 들어가고, 직접 적재한 문서 · 표 정의 · 화면에서 만든 조치 방법은 다시 넣어야 합니다(업무 DB의 처리 건 기록은 그대로입니다)."
+  fi
+  die "시스템을 켜지 못했습니다. 위 오류가 무엇인지에 따라: 이미지 받기 · 빌드 중 네트워크 오류(pull · pip · timeout · TLS)면 인터넷 연결을 확인하고 다시 실행하세요(받은 데까지는 이어집니다). 'port is already allocated'면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 어떤 서비스가 unhealthy · exited 로 나오면 'docker compose logs <그 서비스 이름>'의 마지막 줄이 까닭입니다."
+fi
 # 새 판이 compose 에서 뺀 볼륨은 down -v 도 지우지 않는다 — 옛 컨테이너가 새 판으로 바뀐 지금 지운다(지울 이름은 prepare_ports.py 의 표 하나)
 "${PYTHON[@]}" scripts/prepare_ports.py retire || die "지금 판이 쓰지 않는 옛 볼륨을 정리하지 못했습니다. 도움을 요청할 때 바로 위의 까닭을 그대로 전해 주세요."
 
@@ -93,7 +106,7 @@ say "7/8 기본 지식(쿨러 · 정기 정비 · 구매 매뉴얼) 넣기"
 say "8/8 AI 단계 확인"
 # 워커가 2단계에서 정한 방식으로 켜졌는지, 키 없음이면 저장된 응답이 있는지, 키 있음이면 process 가 받은 중계 주소 · 키로 강의 중계에 닿는지
 if "${PYTHON[@]}" scripts/check_stack.py ai; then
-  printf '\n완료. 포털: %s  (홈의 상태 점이 모두 초록이면 됩니다)\n' "$PORTAL"
+  printf '\n완료. 포털: %s  (왼쪽 메뉴 맨 아래 「서비스 상태」 점이 초록이면 됩니다)\n' "$PORTAL"
 else
   printf '\n포털은 열 수 있습니다: %s\nAI 단계(판단 · 제안, 에이전트에게 질문)만 위 「실패」의 까닭을 고친 뒤 %s 을 다시 실행하면 됩니다.\n' "$PORTAL" "$START_ENTRY"
   exit 1

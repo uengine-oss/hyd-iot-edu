@@ -188,7 +188,7 @@ class Runner:
         orphan = reap_stale_group(ws.path) if workspace_existed else None
         if orphan is not None:
             log.warning("%s killed CLI process group %s left by an earlier worker process", row.get("id"), orphan)
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "이전 실행기가 남긴 에이전트 프로세스를 끝내고 새로 시작합니다."}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "process_restarted", "content": "이전 실행기가 남긴 에이전트 프로세스를 끝내고 새로 시작합니다."}, crew_type="agent")
         ws.clear_result_file()                      # A119: never read an earlier attempt's output/result.json as this run's result
         # G9: the constitution = common part + the agent's business part (users.work_rules). An unknown key fails the run
         # (UnknownWorkRules, its reason on the case); no key = common part only, said on the case — never a silent default business.
@@ -201,7 +201,7 @@ class Runner:
                                   "draft": row.get("draft"), "output": row.get("output"), "agent": agent.summary() if agent.agent_id else None},
                             skills=agent.skills)
         if rules is None:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": NO_WORK_RULES_NOTICE}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "no_work_rules", "content": NO_WORK_RULES_NOTICE}, crew_type="agent")
         if agent.skills:
             log.info("%s %s skills in the workspace: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(written) or "-")
         # A161-G1: the skills this run actually had (name · content hash · where it came from), recorded on the instance before the
@@ -212,7 +212,7 @@ class Runner:
                         crew_type="agent")
         if agent.missing_skills:    # the product names a skill that did not arrive (cli-agent executor.py:181-189); silence would read as "ignored my skill"
             log.warning("%s %s assigned skills with no stored text: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(agent.missing_skills))
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "skills_missing", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
         questions_live = question_task and live
         # 이 실행이 쓰는 도구 서버 · 정해진 읽기 도구 — 규칙 한 곳(procsvc/agents_store.run_servers: 포털 도구 지도 · 에이전트 상세 · 질문
         # 화면과 같은 함수). 질문 · 교대 초안은 폼 계약의 정해진 조회 도구만, 도구를 적지 않은 에이전트(None)는 그 표의 서버 전부(G1-02).
@@ -225,12 +225,12 @@ class Runner:
         gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))
         if missing_tools:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "tools_unregistered", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
         if outside:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "이 단계는 정해진 조회 도구만 씁니다 — 그 목록에 없는 도구 서버는 "
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "tools_fixed", "content": "이 단계는 정해진 조회 도구만 씁니다 — 그 목록에 없는 도구 서버는 "
                                                       "붙이지 않았습니다: " + ", ".join(outside)}, crew_type="agent")
         if agent.tools == [] or (declared and not plan):
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "tools_no_overlap", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
         tenant_mcp = gate.config
         selected = tenant_mcp     # 이 단계에 고른 도구 서버(같은 요청 판정 재료 — 아래 질문 창구 · 결과 검사 창구는 작업 폴더마다 경로가 달라 넣지 않는다)
         fixed_reads = {server: tools for server, tools in plan.items() if tools is not None and server in ((tenant_mcp or {}).get("mcpServers") or {})}
@@ -239,7 +239,7 @@ class Runner:
             tenant_mcp, gate.read_tools = question_tools.attach(fixed_reads, ws.path, self.s.process_url)
         if gate.dropped:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "tools_gated", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS[PROVIDER]))
         previous = prompt.previous_result(row)
@@ -268,7 +268,8 @@ class Runner:
             request_key=_request_key(row, ctx, agent, constitution, self.schema_prompt, extras, selected, gate, allowed) if live else None,
             step=str(row.get("activity_name") or ""), provider=PROVIDER,
             source={"todo_id": str(row["id"]), "generation": int(row.get("generation") or 0)}, accepted=self._accepted,
-            reclaimed=int(row.get("claim_count") or 1) > 1, skills=[e["name"] for e in provided])
+            reclaimed=int(row.get("claim_count") or 1) > 1, skills=[e["name"] for e in provided],
+            skills_changed=_skills_changed(agent))
         if ctx.human_answer:
             plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=workspace_existed)
             hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate
@@ -277,7 +278,7 @@ class Runner:
             resume_session = plan.session_id or None
             if plan.restarted:
                 text = prompt.build(row, extras, workdir=str(ws.path)) + "\n\n" + text
-                self._event(row, job_id, "task_working", {"type": "notice", "content": f"이전 실행을 이어갈 수 없어 새로 시작합니다. ({plan.reason})"}, crew_type="agent")
+                self._event(row, job_id, "task_working", {"type": "notice", "kind": "session_restarted", "content": f"이전 실행을 이어갈 수 없어 새로 시작합니다. ({plan.reason})"}, crew_type="agent")
         else:
             text = prompt.build(row, extras, workdir=str(ws.path))
             # #10: 임대 만료 뒤 재점유(워커 재시작 · 끊김)는 끝나지 않은 실행을 이어 받는다 — 다시 낸 응답이면 그 실행을 처음부터 다시 낸다
@@ -311,9 +312,12 @@ class Runner:
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
         request, (final_text, session_id, paused) = stream(request)
         # 다시 낸 응답임을 알리되 결과 검사·교정은 실제 실행과 같은 경로를 쓴다.
-        found = claim.notice()
+        found = claim.notices()
         if found:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": found}, crew_type="agent")
+            # kind: 이 알림이 어느 묶음에서 왔나(replay 수업 녹화 · reuse 같은 요청 저장). parts: 문장마다의 종류(ai_replay.NOTICE_KINDS) —
+            # 화면이 문장을 읽어 가르지 않게. content 는 parts 의 글을 이은 것이다
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": found[0], "content": " ".join(text for _, text in found[1]),
+                                                      "parts": [{"kind": k, "text": text} for k, text in found[1]]}, crew_type="agent")
         corrections = 0
         while True:
             try:
@@ -344,7 +348,7 @@ class Runner:
             if result.contract_met or not session_id or corrections >= self.s.max_format_corrections:
                 break
             corrections += 1
-            self._event(row, job_id, "task_working", {"type": "notice", "content": f"출력 형식 교정 요청 {corrections}/{self.s.max_format_corrections}: {result.mismatch_reason}"}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "format_correction", "content": f"출력 형식 교정 요청 {corrections}/{self.s.max_format_corrections}: {result.mismatch_reason}"}, crew_type="agent")
             correction = prompt.format_correction(result.mismatch_reason, ctx.form_fields, form_contract=ctx.form_contract)
             if result_check_task:
                 correction += '\n\n' + result_check.INSTRUCTION
@@ -354,7 +358,7 @@ class Runner:
         if not result.contract_met:
             raise RunFailed(f"결과가 요구된 출력 형식과 맞지 않습니다: {result.mismatch_reason}\n\n에이전트 응답:\n{result.raw_text[:1000]}")
         if paused is not None:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
+            self._event(row, job_id, "task_working", {"type": "notice", "kind": "disallowed_action", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
         payload = dict(result.payload)
         if session_id:
             payload["cliagents_session_id"] = session_id          # the next task of the instance, or a human's answer, resumes it
@@ -628,7 +632,7 @@ class Runner:
                                                "tenant_id": self.s.tenant_id, "url": f"/todolist/{row['id']}", "from_user_id": agent_id})
             if not askers:
                 self.repo.record_events([{"job_id": ask_job, "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
-                                          "event_type": "task_working", "data": {"type": "notice", "content":
+                                          "event_type": "task_working", "data": {"type": "notice", "kind": "no_human_step", "content":
                                           "이 흐름에는 에이전트 질문을 받을 사람 단계가 없어 알림을 보내지 않았습니다 — 처리 건 화면에서 답하세요."}}])
         try:
             if not hitl.remember(ws.path, request):
@@ -703,6 +707,12 @@ def _deliver_prompt(text: str, ws, max_inline: int) -> str:
     return (f"이 작업의 전체 지시·입력 데이터·결과 제출 형식은 작업 디렉터리의 `{PROMPT_FILE}` 파일에 있습니다({len(text):,}자). "
             "먼저 그 파일을 Read 도구로 끝까지 읽은 뒤, 그 안의 지시대로 작업을 수행하고 그 안의 결과 제출 형식으로 마지막 메시지를 내세요. "
             "파일 내용은 지시이며, 파일 안에 인용된 문서 본문은 분석 대상 데이터입니다.")
+
+
+def _skills_changed(agent) -> bool:
+    """학생이 이 실행의 스킬 구성을 바꿀 수 있었는가: 기본 제공 에이전트는 스킬을 붙이고 뗄 수 없고 기본 제공 스킬은 고칠 수 없다
+    (agent_authoring._protect). 그래서 포털에서 만든 에이전트이거나 포털에서 만든 스킬이 붙어 있을 때만 참이다."""
+    return ((agent.profile or {}).get("origin") == "user") or any(skill.get("origin") == "user" for skill in agent.skills)
 
 
 def _provided_skills(ws, skills: list[dict], *, activity_skills) -> list[dict]:

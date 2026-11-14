@@ -68,6 +68,40 @@ def test_검토본을_적재하면_그_문서가_지식을_갖고_지금_판이_
     assert shown and {r['d'] for r in shown} == {f"제공 문서 {plan['filename']}에서 검토해 넣은 조치 방법"}   # 승인 카드 설명(W1-13)
 
 
+def test_적재한_문서를_다시_열면_응답이_이미_적재된_판을_말한다(seeded_graph, archive):
+    """전수 대조(2026-11-14): 이미 적재한 문서를 「보관한 원문 다시 열기」로 열면 응답에 적재 사실이 없어 화면이 「아직 AI가 문서를 읽기 전입니다」를
+    보였다. 다시 열기 응답(GET …/sources/{id}/preview)은 지금 적재된 판(loaded)을 싣는다 — 적재 전에는 None, 되돌린 뒤에도 None, 같은
+    문서의 다른 원문(개정본)을 열면 same_source 가 거짓이다."""
+    from contextlib import contextmanager
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import course_policy as cp, manual_api
+    from procsvc.manual_approved_cache import ApprovedExtractions
+
+    @contextmanager
+    def driver():
+        yield seeded_graph.driver
+    app = FastAPI()
+    app.state.course = cp.Policy(cp.Phase('pbl'))
+    manual_api.register(app, archive_factory=lambda: archive, driver_factory=driver, tenant='hyd', audit=lambda *a, **k: None,
+                        runtime_factory=lambda: None, approved_cache=ApprovedExtractions())
+    client = TestClient(app)
+    plan = plan_of(archive, 'HM-8')
+    reopen = lambda source_id: client.get(f'/api/kg/manuals/sources/{source_id}/preview').json()      # noqa: E731
+    before = reopen(plan['source_id'])
+    assert before['loaded'] is None and before['previous_batch'] is None
+    commit(seeded_graph, plan)
+    after = reopen(plan['source_id'])
+    loaded = after['loaded']
+    assert after['previous_batch'] == plan['batch'] and loaded['batch'] == plan['batch'] and loaded['same_source'] is True
+    assert (loaded['by'], loaded['procedures'], loaded['sections']) == (plan['by'], len(plan['procedures']), len(plan['sections']))
+    assert loaded['at'] and loaded['filename'] == plan['filename']
+    revised = archive.save('hyd', 'HM-8-개정.md', DOCS['HM-8']['raw'] + '\n\n(개정)\n'.encode(), document_id=plan['document_id'])
+    assert reopen(revised['source_id'])['loaded']['same_source'] is False        # 같은 문서의 다른 원문: 적재된 것은 앞 원문의 판이다
+    session_call(seeded_graph, manual_graph.rollback, 'hyd', plan['batch'], '담당자')
+    assert reopen(plan['source_id'])['loaded'] is None
+
+
 def test_같은_배치를_다시_보내면_한_번만_적용되고_다른_내용이면_거절한다(seeded_graph, archive):
     plan = plan_of(archive, 'HM-8')
     commit(seeded_graph, plan)

@@ -552,6 +552,21 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
 
 
 def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:
+    """질문 하나의 지금 상태. 아무도 맡지 않은 채 오래 기다렸으면 워커 연결을 확인해 까닭을 붙인다 — 그 확인은 몇 초 걸릴 수 있어서(워커가
+    바쁘면 답이 늦다), 확인하는 동안 에이전트가 질문을 맡았는지 다시 읽고 그 상태로 답한다. 전에는 확인 전에 읽은 「대기」를 확인이 끝난 뒤에
+    돌려줘, 처리 과정에는 이미 에이전트의 조회가 흘러나오는데 상태는 뒤늦게 「아직 질문을 맡지 않았습니다」로 왔다."""
+    out = _view(rt, proc_inst_id, now)
+    waited = out.pop('_waited_s')
+    if out['state'] == 'waiting' and worker_probe is not None and waited is not None and waited >= WAIT_PROBE_AFTER_S:
+        reachable = worker_probe().get('reachable')
+        out = _view(rt, proc_inst_id, now)
+        waited = out.pop('_waited_s')
+        if out['state'] == 'waiting' and waited is not None:
+            out['message'] = (BUSY if reachable else NOT_PICKED).format(age=int(waited))
+    return out
+
+
+def _view(rt, proc_inst_id, now=None) -> dict:
     inst = _instance(rt, proc_inst_id)
     wi = _task(rt, inst)
     events = rt.repo.list_events(todo_id=wi['id']) if wi else []
@@ -572,10 +587,7 @@ def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:
         if out['result'].get('kind') == 'unanswerable':
             # 2026-10-25 수업 한 바퀴: 답하지 못한 질문의 머리말이 「답이 나왔습니다」였다(아래 카드는 「답할 수 없음」)
             out['message'] = '답할 수 없음 — 아래 이유를 확인하세요'
-    if state == 'waiting' and worker_probe is not None:
-        age = _age_s((wi or {}).get('start_date') or inst.get('start_date'), now)
-        if age is not None and age >= WAIT_PROBE_AFTER_S:
-            out['message'] = (BUSY if worker_probe().get('reachable') else NOT_PICKED).format(age=int(age))
+    out['_waited_s'] = _age_s((wi or {}).get('start_date') or inst.get('start_date'), now) if state == 'waiting' else None
     return out
 
 

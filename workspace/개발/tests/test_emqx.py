@@ -1,8 +1,11 @@
 """MQTT 브로커 규칙(ot/emqx/emqx.conf · acl.conf · users.csv) — 설비 명령 토픽은 명령 관문만 보낼 수 있다(G3b-5).
 
 실제 EMQX(compose emqx 서비스 그대로 — 이미지 · 설정 파일 마운트, conftest ComposeContainer)에 실제 MQTT 클라이언트로 붙는다.
-안쪽 입구 1883(ot-net 서비스, 이름만) · 바깥 입구 1884(호스트 1883) · 웹소켓 8083(계정 student 만, 구독만).
+안쪽 입구 1883(OT 망 · 경계 망 ot-dmz-net 의 서비스, 이름만) · 바깥 입구 1884(호스트 1883) · 웹소켓 8083(계정 student 만, 구독만).
+관리 화면 · 관리 API(18083)는 꺼져 있다 — 관리 API 의 발행은 토픽 규칙을 거치지 않는다(2026-11-14 실측: 공개된 초기 비밀번호로 들어가
+plant/hyd03/cmd/auto 에 낸 명령을 가상 설비가 실행했다).
 """
+import http.client
 import uuid
 
 import paho.mqtt.client as mqtt
@@ -10,12 +13,12 @@ import pytest
 
 from conftest import ComposeContainer, until
 
-INNER, OUTER, WS = 1883, 1884, 8083
+INNER, OUTER, WS, ADMIN = 1883, 1884, 8083, 18083
 
 
 @pytest.fixture(scope='module')
 def broker():
-    box = ComposeContainer('emqx', INNER, extra_ports=(OUTER, WS))
+    box = ComposeContainer('emqx', INNER, extra_ports=(OUTER, WS, ADMIN))
 
     def ready():
         for port, user in ((INNER, 'plant-sim'), (OUTER, 'student')):      # 두 입구 모두 CONNACK 까지
@@ -93,6 +96,20 @@ def _publish_reaches(broker, plant, port, user, password=None, ws=False, topic='
 ])
 def test_설비_명령_토픽은_명령_관문만_보낼_수_있다(broker, plant, port, user, password, ws, outcome):
     assert _publish_reaches(broker, plant, port, user, password, ws) == outcome
+
+
+def test_관리_API는_꺼져_있어_토픽_규칙_밖으로_명령을_낼_길이_없다(broker):
+    """관리 API 자리(18083)에 로그인을 보내면 HTTP 로 답하는 것이 없어야 한다 — 답이 오면(200 이든 401 이든) 관리 API 가 켜져 있는 것이고,
+    그 API 의 발행은 acl.conf 를 거치지 않는다."""
+    conn = http.client.HTTPConnection('127.0.0.1', broker.ports[ADMIN], timeout=5)
+    try:
+        conn.request('POST', '/api/v5/login', body='{"username":"admin","password":"public"}', headers={'Content-Type': 'application/json'})
+        answered = conn.getresponse().status
+    except (OSError, http.client.HTTPException):
+        answered = None
+    finally:
+        conn.close()
+    assert answered is None
 
 
 def test_학생은_바깥_입구에서_설비_토픽을_구독해_받는다(broker):

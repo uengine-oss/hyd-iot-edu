@@ -48,7 +48,7 @@ LEASE_SWEEP_EVERY = 30                                                 # × POLL
 STARTUP_DB_WAIT_S = 60.0
 # C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (git 이력 39f447ce:문서/시스템/검증_기록/2026-10-09/c2-execution.md)
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
-# 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 compose 서비스 이름(ot-net)으로 간다.
+# 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 가상 설비 API 전용 망(compose sim-net)의 서비스 이름으로 간다 — 브로커가 있는 OT 망에는 붙지 않는다.
 # 호스트에서 직접 띄우면 PLANT_SIM_URL=http://127.0.0.1:8000 (compose.yaml 이 컨테이너에는 항상 값을 넣는다).
 PLANT_SIM_URL = os.getenv("PLANT_SIM_URL", "http://plant-sim:8000")
 # 수업용 대기 압축(결정 4): 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 값은 compose.yaml 한 곳이

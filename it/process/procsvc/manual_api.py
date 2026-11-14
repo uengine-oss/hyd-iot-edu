@@ -111,7 +111,11 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     def preview(source):
         app.state.course.document(source['sha256'])
         result = manual_review.registered(source)
-        result['previous_batch'] = graph(lambda session: manual_graph.head(session, tenant, source['document_id']))
+        # loaded: 이 문서(document_id)의 지금 적재된 판, 없으면 None. same_source = 그 판이 지금 연 이 원문에서 만들어졌는가(아니면 다른 판의
+        # 원문이 적재돼 있다). 화면은 이 칸으로 「이미 적재된 문서」를 말한다 — 없으면 다시 연 적재 문서가 「아직 AI가 읽기 전」으로 보였다
+        loaded = graph(lambda session: manual_graph.loaded(session, tenant, source['document_id']))
+        result['previous_batch'] = loaded['batch'] if loaded else None
+        result['loaded'] = dict(loaded, same_source=loaded['source_id'] == source['source_id']) if loaded else None
         return result
 
     @app.post('/api/kg/manuals/preview')

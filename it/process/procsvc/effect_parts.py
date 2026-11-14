@@ -487,7 +487,7 @@ def report_values(v: dict) -> list[dict]:
     if isinstance(ro, dict) and ro.get("tag"):
         rows.append(_value_row(ro["tag"], ro.get("value"), ro.get("op"), ro.get("limit"), ro.get("inside")))
         if ro.get("cleared") is not None:
-            rows.append({"name": "경보 해제", "value": "예" if ro.get("cleared") else "아니오", "ok": bool(ro.get("cleared"))})
+            rows.append({"name": "경보 해제", "value": "예" if ro.get("cleared") else "아니요", "ok": bool(ro.get("cleared"))})
     tr = v.get("test_run")
     if isinstance(tr, dict):
         for r in tr.get("readings") or []:

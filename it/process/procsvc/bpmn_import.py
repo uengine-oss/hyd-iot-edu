@@ -748,9 +748,13 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                  "agent": None, "instruction": str(m.get("instruction") or ""), "inputData": inputs,
                  "outputData": [f["key"] for f in fields], "checkpoints": [], "duration": 1, "description": t["name"] or "사람 task"}
         else:                                                   # agent
-            agent = m.get("agent") or (cat["agents"][0]["id"] if cat["agents"] else None)
+            # 비워 둔 칸을 첫 에이전트로 채우지 않는다 — 사람이 고르지 않은 수행자가 들어가 검사가 통과하고, 설정 불러오기 · API 길에서는
+            # 아무 말 없이 그 에이전트가 맡았다. 비었으면 비었다고, 없는 에이전트면 없다고 말한다
+            agent = m.get("agent")
+            if not agent:
+                problems.append(problem(t, "agent", "맡길 에이전트를 고르세요 — 비어 있습니다")); continue
             if agent not in agents:
-                problems.append(problem(t, "agent", "맡길 에이전트를 고르세요")); continue
+                problems.append(problem(t, "agent", f"맡길 에이전트를 다시 고르세요 — {agent}{particle(str(agent), '은')} 이 PC에 없는 에이전트입니다")); continue
             instruction = str(m.get("instruction") or "").strip()
             if not instruction:
                 problems.append(problem(t, "instruction", "에이전트 지시문을 쓰세요")); continue

@@ -105,6 +105,23 @@ def test_아무도_맡지_않은_질문은_그_시간과_AI_일꾼_상태로_까
     assert not INTERNAL.search(after['message'])
 
 
+def test_일꾼_상태를_확인하는_동안_에이전트가_질문을_맡으면_확인_뒤의_상태로_답한다(course):
+    """화면 쪽 실측(2026-11-14): 처리 과정에는 이미 에이전트의 조회가 흘러나오는데 질문 상태는 뒤늦게 「대기 — 아직 질문을 맡지 않았습니다」로
+    왔다. 상태를 읽은 뒤에 일꾼 연결을 확인하는데(바쁜 일꾼은 몇 초 뒤에 답한다), 그 확인 전에 읽은 상태를 그대로 돌려줬기 때문이다.
+    확인하는 동안 일꾼이 질문을 집으면(실제 점유 — claim_process_workitems) 확인 뒤에 다시 읽은 상태로 답한다."""
+    view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
+    started = parse_iso(task_of(course.rt, view['id'])['start_date'])
+    later = started + timedelta(seconds=ask.WAIT_PROBE_AFTER_S + 5)
+
+    def slow_probe():
+        [claimed] = course.rt.repo.fetch_pending_task('cliagents', 'agent-worker:test', tenant_id=course.rt.tenant_id, proc_inst_id=view['id'])
+        assert claimed['draft_status'] == 'STARTED'
+        return {'reachable': True}
+    after = ask.view(course.rt, view['id'], worker_probe=slow_probe, now=later)
+    assert (after['state'], after['message']) == ('running', '에이전트가 조회하는 중')
+    assert '_waited_s' not in after and '_waited_s' not in ask.view(course.rt, view['id'])
+
+
 def test_맡기_전_질문의_상태_문장에는_내부어가_없다(course):
     view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
     assert (view['state'], view['message']) == ('waiting', '답할 AI 에이전트가 아직 질문을 맡지 않았습니다')

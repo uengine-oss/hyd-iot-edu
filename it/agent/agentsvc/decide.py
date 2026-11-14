@@ -253,7 +253,10 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, variables
             elif src in ("sys:agent", "sys:scm", "sys:process", "sys:cep"):
                 row.update(value=facts.get(var), how="후보마다 계산하거나 경보 · 결정 시점에 정해진다")
             else:
-                raise ValueError(f'출처 {src} 에서 이 변수를 읽는 방법이 엔진에 없습니다 — 지식의 출처(SOURCED_FROM)를 확인하세요')
+                # 여기까지 온 입력: 물리 출처(업무 DB 의 표 · 열)가 없고, 위의 기본 제공 갈래(센서 · PLC · 기본 업무 시스템 값)에도 없다
+                raise ValueError(f"판단 입력 「{i.get('name') or var}」({var}, 출처 {i.get('sourceName') or src or '없음'})을 읽을 길이 없습니다 — "
+                                 '판단 엔진은 업무 DB의 어느 표 · 열에서 읽는지가 정해진 입력만 읽습니다. 지식 › 데이터 원천에서 그 값이 든 표 정의(DDL)를 '
+                                 '적재하면 표 · 열이 이어진 입력이 만들어집니다. 그렇게 만든 입력이 아니면 이 판단에서 이 입력을 빼야 합니다')
         except FactUnavailable:
             raise
         except mcp_ent.SourceUnavailable as e:

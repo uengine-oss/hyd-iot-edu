@@ -522,7 +522,10 @@ def graph_semantics(plan, catalog):
         for t in r['tests']:
             if t['input'] not in inputs:
                 issue('RULE_INPUT_NOT_DECLARED', r['id'], 'knowledge.rules.tests',
-                      f"{r['id']}: {table['decision']}이 입력 {t['input']}을 선언하지 않았습니다(REQUIRES_INPUT). 선언된 입력: {sorted(inputs)}")
+                      f"{r['id']}: 규칙이 견주는 입력 {t['input']}은 판단 「{table.get('name') or table['decision']}」이 읽는 입력이 아니라서 "
+                      "이 규칙을 적재할 수 없습니다. 판단이 읽는 입력은 기본 제공 지식이 정해 둔 것뿐입니다 — 지식 › 데이터 원천에서 표 정의로 만든 "
+                      "입력은 판단 규칙에 쓸 수 없습니다. 이 판단이 읽는 입력 가운데 하나로 바꾸세요: "
+                      + ', '.join(f"{i}({inputs[i].get('name') or inputs[i].get('variable')})" for i in sorted(inputs)))
             else:
                 t['variable'] = inputs[t['input']]['variable']
         if r.get('effect') == 'SELECT' and r.get('table') == 'dt:action-candidates':

@@ -31,6 +31,10 @@ STATUS = {'met': '달성', 'missed': '미달', 'no_target': '목표 없음', 'in
 COMPUTED = ('met', 'missed', 'no_target')
 
 
+class MeasureNotFound(KeyError):
+    """찾는 성과 지표가 지식 그래프에 없다 — API 가 404 로 답하는 것은 이 예외뿐이다(코드의 KeyError 는 서버 오류로 둔다)."""
+
+
 class SourceError(Exception):
     """원천 조회 실패. str(exc)는 사람이 읽는 한국어 사유다."""
 
@@ -709,7 +713,7 @@ def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=N
     measures = _with_targets(original, trial)
     m = measures.get(measure_id)
     if m is None:
-        raise KeyError(measure_id)
+        raise MeasureNotFound(measure_id)
     ctx = {'time_scale': float(time_scale), 'tenant': tenant, 'measures': measures, 'window': w}
     result = evaluate(m, f, w, ctx, {})
     good = 1 if (m.get('direction') or 'UP') == 'UP' else -1
@@ -889,7 +893,7 @@ def register(app, *, ts_dsn, biz_dsn, driver_factory, time_scale, tenant):
             return await asyncio.get_running_loop().run_in_executor(None, work)
         except SourceError as exc:
             raise HTTPException(503, str(exc)) from exc
-        except KeyError as exc:
+        except MeasureNotFound as exc:             # 찾는 지표가 없을 때만 404 — 코드의 KeyError 는 서버 오류(500)로 둔다
             raise HTTPException(404, f'성과 지표 {exc.args[0]} 를 지식 그래프에서 찾을 수 없습니다') from exc
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc

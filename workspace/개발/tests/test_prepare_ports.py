@@ -41,6 +41,13 @@ def dirty_config(project_id='hyd-system-audit-20261026', shift=10000, portal=808
 
 
 
+def _edited(text: str, old: str, new: str) -> str:
+    """받은 설정의 한 칸을 고친 글 — 그 칸이 받은 설정에 없으면(설정이 바뀌어 시험이 아무것도 고치지 않게 되면) 멈춘다.
+    전에는 `enable_signup = true` 를 고쳤는데 받은 설정이 모두 false 로 바뀐 뒤로 이 경우가 「앞 판이 고친 칸만」과 같은 글이 됐다."""
+    assert old in text, f'받은 설정에 {old!r} 칸이 없다 — 시험이 고칠 칸을 다시 정한다'
+    return text.replace(old, new, 1)
+
+
 def make_checkout(root: Path, *, config=None, env='LLM_API_KEY=\n', commit=True) -> Path:
     """학생이 받은 폴더 한 벌(시작이 읽는 파일만): compose.yaml · .gitignore · config.toml · .env."""
     (root / 'it' / 'supabase').mkdir(parents=True)
@@ -128,7 +135,7 @@ def test_기록도_env_이름_줄도_없으면_이_폴더가_띄운_컨테이너
 @pytest.mark.parametrize('edit, restored', [
     (lambda t: t, False),                                                        # 받은 그대로 — 할 일 없음
     (lambda t: dirty_config(), True),                                            # 앞 판이 고친 칸만 다름 → 되돌림
-    (lambda t: dirty_config().replace('enable_signup = true', 'enable_signup = false', 1), False),   # 다른 칸도 고침 → 그대로
+    (lambda t: _edited(dirty_config(), 'enable_signup = false', 'enable_signup = true'), False),   # 다른 칸도 고침 → 그대로
     (lambda t: t.replace('[inbucket]', '[local_smtp]'), False),                  # 이 PC에서 섹션 이름을 고침 → 그대로
 ], ids=['받은_그대로', '앞_판이_고친_칸만', '다른_칸도_고침', '섹션_이름을_고침'])
 def test_config는_앞_판이_고친_칸만_다를_때만_받은_그대로_되돌린다(tmp_path, edit, restored):

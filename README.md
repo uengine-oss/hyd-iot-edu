@@ -68,14 +68,16 @@ wsl --version
 버전이 출력되면 WSL이 설치된 상태다. 일부 Windows 환경에서는 WSL 미설치 시 이 명령을 호출했을 때 설치 안내가 나타나고, 안내에 따라 Ubuntu 없이 WSL을 설치할 수 있다. `--version` 자체의 명령 기능은 버전 조회이므로 모든 Windows에서 자동 설치된다고 가정하지 않는다. 설치 안내 없이 미설치 오류가 나오면 관리자 PowerShell에서 다음 명령으로 WSL만 설치한다.
 
 ```powershell
-wsl --install --no-distribution
+wsl --install --no-distribution --web-download
 ```
 
 기존 WSL의 업데이트가 필요한 경우에는 다음을 실행한다.
 
 ```powershell
-wsl --update
+wsl --update --web-download
 ```
+
+`--web-download`는 WSL을 Microsoft Store가 아니라 GitHub(Microsoft의 WSL 배포 저장소)에서 받게 한다. Store가 막혀 있거나 로그인이 안 된 PC에서 이 옵션 없이 실행하면 받기가 멈춘다(`설치.bat`도 같은 옵션으로 받는다).
 
 요청된 재부팅을 마친 뒤 버전을 다시 확인한다. **`wsl --install`만 실행하면 기본 Ubuntu까지 설치되므로 이 프로젝트의 준비 명령으로 사용하지 않는다.** Ubuntu 계정·암호 설정도 필요하지 않다. [Microsoft 명령 안내](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands)
 
@@ -160,7 +162,7 @@ Docker Desktop에서 **Engine running**을 확인하고 `setup` 폴더의 **Wind
 |---|---|---|---|
 | 처음 한 번, 프로그램 기준이 바뀌었을 때 | `설치.bat`(관리자 승인) | `설치.command` | 위 「실행 환경」 표의 프로그램이 없거나 기준보다 낮으면 설치 · 업데이트하고 결과 표를 보여 준다. 재부팅 · 다시 로그인 안내가 나오면 그대로 한 뒤 다시 실행해 결과를 확인한다 |
 | 수업을 시작할 때 | `시작.bat` | `시작.command` | 스택을 켜고 이 PC의 포털 주소를 보여 준다(위 「시스템 시작과 종료」) |
-| 시작이 「완료」된 뒤 | `점검.bat` | `점검.command` | 서비스 응답 · 쿨러 사건 한 바퀴(경보 → AI 판단 → 승인 → 냉각 명령 → 재관측 → 작업지시) · 강의 중계 연결을 확인한다. 「실패」가 없으면 된다. 키 없는 PC의 강의 중계 줄은 **「해당 없음」**이 정상이다 |
+| 시작이 「완료」된 뒤 | `점검.bat` | `점검.command` | 서비스 응답 · 쿨러 사건 한 바퀴(경보 → AI 판단 → 승인 → 냉각 명령 → 재관측 → 작업지시) · 강의 중계 연결을 확인한다. 「실패」가 없으면 된다. 키 없는 PC의 강의 중계 줄은 **「해당 없음」**이 정상이다. 점검은 쿨러 사건의 처리 건 1건을 실제로 열어 끝까지 처리하므로, 그 처리 건과 정비 요청 기록이 포털의 처리 건 목록 · 업무 시스템 기록에 남는다(지우지 않는다) |
 | 수업을 마칠 때 | `끄기.bat` | `끄기.command` | 스택을 끈다. 데이터는 지우지 않는다 |
 
 **터미널에서 직접 실행하기:** 더블클릭 파일은 아래 sh 스크립트를 부르는 껍데기다. 터미널(Windows는 Git Bash, macOS는 기본 터미널, VS Code 터미널도 됨)을 **프로젝트 루트**에서 열고 같은 명령을 직접 실행해도 결과가 같다.
@@ -186,7 +188,7 @@ Windows 설치는 관리자 승인이 필요한 PowerShell 스크립트(`scripts
 | `common/` | 여러 서비스가 함께 쓰는 코드(공용 토픽 · 스키마 등). 서비스 이미지를 만들 때 함께 들어간다 |
 | `setup/` | 더블클릭하는 설치 · 시작 · 끄기 · 점검 파일(Windows `.bat` · macOS `.command`) |
 | `scripts/` | `setup/` 파일이 부르는 실행 스크립트 — 터미널에서 직접 실행해도 된다(위 「터미널에서 직접 실행하기」) |
-| `it/portal/www/samples/` | 수업 문서 원문(매뉴얼 · 점검표 · 구매 기준) — 포털 실습에서 올리는 파일. 시작할 때는 강사가 이 원문으로 검토 · 서명해 둔 지식(`it/process/procsvc/course_extractions.json`, 4회차 다시 넣기와 같은 묶음)을 넣는다 |
+| `it/portal/www/samples/` | 수업 문서 원문 — 포털 실습에서 올리는 파일. 매뉴얼 · 점검표 · 구매 기준(`HM-8` · `PM-02` · `PR-07`)은 시작할 때 강사가 이 원문으로 검토 · 서명해 둔 지식(`it/process/procsvc/course_extractions.json`, 4회차 다시 넣기와 같은 묶음)이 들어간다. 교대 점검 보충 매뉴얼(`HI-01`)과 옛 설비 관리 DB 덤프(`legacy-plant-db.sql` — 지식 › 데이터 원천 실습에서 올리는 표 정의)는 시작할 때 넣지 않고 실습에서 직접 올린다 |
 
 ## 지키는 것
 

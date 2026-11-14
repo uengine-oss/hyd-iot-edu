@@ -202,7 +202,8 @@ def test_감지_기준이_수업_문서_절을_출처로_대면_그_절에_그_�
                               "RETURN p.code AS code, k.ref AS ref, k.name AS name")
 
     def section(name, ref):
-        (doc,) = samples.glob(re.search(r'수업 문서 ([A-Z]+-\d+)', name).group(1) + '_*.md')
+        # 출처 이름은 문서 번호와 절 이름을 「<문서 번호> 「<절 번호> <절 이름>」」 꼴로 적는다(it/neo4j/v2/instances.cypher — 전에는 「수업 문서 <번호>」)
+        (doc,) = samples.glob(re.search(r'([A-Z]+-\d+) 「' + re.escape(ref) + ' ', name).group(1) + '_*.md')
         text = doc.read_text(encoding='utf-8')
         start = text.index(f'## {ref} ')
         end = text.find('\n## ', start + 1)

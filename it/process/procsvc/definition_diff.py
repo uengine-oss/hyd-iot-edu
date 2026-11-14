@@ -46,7 +46,7 @@ def _text(value) -> str:
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
-        return '예' if value else '아니오'
+        return '예' if value else '아니요'
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
 
 
@@ -250,5 +250,5 @@ def _form_text(form: dict) -> str:
 
 
 #: 폼 항목 자료형 → 사람 이름(P1-24: 「(candidates: array)」처럼 영문 키 · 형이 보였다)
-_FIELD_TYPES = {'text': '글', 'textarea': '긴 글', 'number': '수', 'boolean': '예/아니오', 'select': '고르기', 'array': '목록', 'object': '묶음',
+_FIELD_TYPES = {'text': '글', 'textarea': '긴 글', 'number': '수', 'boolean': '예/아니요', 'select': '고르기', 'array': '목록', 'object': '묶음',
                 'date': '날짜', 'datetime': '날짜 시각'}

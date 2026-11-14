@@ -153,7 +153,12 @@ def validate(proposal, catalog):
         if referenced and not any(i.get('sop') == referenced['id'] for i in issues):
             continue
         issue('SOP_OWNERSHIP_CONFLICT', conflict.get('sop'), 'conflicts',
-              f"{conflict.get('sop')}: 기존 원천이 소유한 SOP입니다. 덮어쓰지 않고 개정 여부를 검토하세요")
+              f"{conflict.get('sop')}: " + ('이미 적재된 다른 문서가 가진 SOP 번호라 새 문서로는 적재하지 않습니다(덮어쓰지 않습니다). '
+                                            '그 문서를 다시 올린 것이면 문서 올리기의 「등록할 문서」 칸에서 「새 문서 등록」 대신 그 문서(… · 문서 개정)를 고르고 '
+                                            '다시 올리세요 — 개정으로 올라갑니다. 다른 문서라면 원문의 SOP 번호가 겹치지 않아야 합니다'
+                                            if conflict.get('kind') == 'other_document' else
+                                            '기본 제공 지식 · 조치 방법 화면에서 만든 조치 방법이 가진 SOP 번호라 문서로는 적재하지 않습니다(덮어쓰지 '
+                                            '않습니다). 원문의 SOP 번호가 겹치지 않아야 합니다'))
     for conflict in original.get('knowledge_conflicts') or []:
         # Extraction metadata describes the original definitions. An explicit
         # reviewed knowledge body may remove a definition and retain its ID as

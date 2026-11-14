@@ -112,7 +112,7 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
             return await asyncio.get_running_loop().run_in_executor(None, fn)
         except FileExistsError as exc:
             raise HTTPException(409, f'같은 id 의 정답표 항목이 이미 있습니다: {exc.args[0] if exc.args else exc} — 고치려면 수정하세요') from exc
-        except KeyError as exc:
+        except je.NotFound as exc:      # 찾는 것이 없을 때만 404 — 코드의 KeyError 는 서버 오류(500)로 둔다
             raise HTTPException(404, f'없는 항목 · 실행 · 처리 건: {exc.args[0] if exc.args else exc}') from exc
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
@@ -241,7 +241,7 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         items = []
         for i in wanted:
             if i not in by_id:
-                raise KeyError(i)
+                raise je.NotFound(i)
             items.append(by_id[i])
         judge = judges[req.path]
         p.plan([(f'item:{n}', it['title']) for n, it in enumerate(items)] + [SAVE_STEP])
@@ -274,13 +274,13 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
                 raise ValueError(f'instances[{n}].instance 가 필요합니다')
             inst = rt.repo.get_instance(pid)
             if not inst:
-                raise KeyError(pid)
+                raise je.NotFound(pid)
             cand = je.instance_candidate(inst, book.get)
             if not cand:
                 raise ValueError(f'처리 건 {pid} 에는 채점할 에이전트 판단(원인 · 판단 id)이 없습니다')
             if spec.get('item'):
                 if spec['item'] not in by_id:
-                    raise KeyError(spec['item'])
+                    raise je.NotFound(spec['item'])
                 item = by_id[spec['item']]
             else:
                 item = je.match_item(golden, cand)
@@ -339,6 +339,6 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         def work():
             a, b = store().get(before), store().get(after)
             if not a or not b:
-                raise KeyError(before if not a else after)
+                raise je.NotFound(before if not a else after)
             return je.compare(a, b)
         return await run(work)

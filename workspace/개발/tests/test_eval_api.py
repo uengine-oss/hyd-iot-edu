@@ -90,6 +90,22 @@ def test_없는_항목을_채점하라는_요청은_진행_기록에도_실패�
     assert [(s['key'], s['state']) for s in seen['steps']] == [('golden', 'ok'), ('knowledge', 'ok')]      # 항목 단계는 시작하지 않았다
 
 
+def test_코드가_낸_KeyError는_없는_항목_404로_보이지_않는다(world, golden, monkeypatch):
+    """전수 대조(2026-11-14): 채점 API 가 KeyError 를 모두 404 「없는 항목 · 실행 · 처리 건: '<열쇠>'」로 바꿔, 코드가 사전에서 없는 열쇠를 읽은
+    오류도 학생에게 「없는 항목」으로 보였다. 404 는 찾는 것이 없을 때(NotFound)만이다."""
+    from procsvc import judgment_eval
+    # 찾는 항목이 없을 때의 404 는 위 test_없는_항목을_채점하라는_요청은… 이 본다
+
+    def broken(self):
+        return {}['rows']                                                               # 코드 결함 대역: 없는 열쇠 읽기
+    monkeypatch.setattr(judgment_eval.PgEvalStore, 'golden_list', broken)
+    try:
+        status, body = world.api('GET', '/api/eval/golden')
+    except KeyError:
+        status, body = 500, None                                                         # 서버 안에서 부른 길: 처리되지 않은 예외 = 500
+    assert status == 500, body
+
+
 # ---------------------------------------------------------------- 지식 수의 정의(지식 지도와 같은 것을 센다)
 def _map(world, asset):
     import json

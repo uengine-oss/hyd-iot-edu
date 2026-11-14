@@ -55,7 +55,7 @@ from procsvc import mcp_check
 from .bridge import MCP_CONFIG_FILENAME
 from .course_access import Stop
 from .diagnostics import REDACTED, hide
-from .events import skill_files
+from .events import SKILL_PATH, skill_files
 from .workspace import RESULT_FILE
 
 log = logging.getLogger("worker.ai_replay")
@@ -320,6 +320,36 @@ def capture(request, events: list[ExecEvent]) -> dict:
 
 
 # ---------------------------------------------------------------- 이 처리 건의 값으로 바꿔 끼우기
+_NUMBERED = re.compile(r"\A(\s*)(\d+)\t")
+
+
+def skill_file_now(workdir, tool: str | None, tool_input, recorded) -> str | None:
+    """녹화된 실행이 스킬 파일 하나를 통째로 읽은 호출(Read)이고 이 실행의 작업 폴더에 그 스킬 파일이 있으면, 그 파일의 지금 본문을 녹화된
+    결과와 같은 꼴(줄 번호 · 탭)로 돌려준다 — 아니면 None(저장된 결과를 그대로 보인다). Runner 는 실행 전에 이 에이전트의 스킬을 작업 폴더에
+    쓰므로, 화면에 보이는 「읽은 파일」이 이 PC의 그 파일과 같아진다(스킬 본문의 이름 · 설명을 고친 뒤 녹화 속 옛 본문이 보였다)."""
+    if tool != "Read" or not isinstance(tool_input, dict) or not isinstance(recorded, str):
+        return None
+    m = SKILL_PATH.search(str(tool_input.get("file_path") or ""))
+    numbered = _NUMBERED.match(recorded)
+    if not m or not numbered:
+        return None
+    path = Path(workdir) / re.sub(r"[\\/]+", "/", m.group(0))
+    try:
+        lines = path.read_text(encoding="utf-8").split("\n")
+    except (OSError, UnicodeDecodeError):
+        return None
+    if lines and lines[-1] == "":
+        lines.pop()
+    first = int(numbered.group(2))
+    limit = tool_input.get("limit")
+    if isinstance(limit, int) and limit > 0:
+        lines = lines[:limit]
+    if len(recorded.split("\n")) < min(len(lines), 3):       # 녹화가 파일의 일부만 읽었다 — 어느 줄인지 맞출 수 없어 그대로 둔다
+        return None
+    width = len(numbered.group(1)) + len(numbered.group(2)) if numbered.group(1) else 0
+    return "\n".join(f"{str(first + n).rjust(width)}\t{line}" for n, line in enumerate(lines))
+
+
 def _id_like(s: str) -> bool:
     """글 속에서도 바꿔 끼울 값: 공백 없이 5자 이상, 숫자와 숫자 아닌 글자가 함께 있는 것(처리 건 id · 경보 id · 시각)."""
     return len(s) >= 5 and not re.search(r"\s", s) and bool(re.search(r"\d", s)) and bool(re.search(r"\D", s))
@@ -712,6 +742,8 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     if not any(d["kind"] == ExecEventKind.RUN_START.value for d in events):    # 녹화에 실행 시작 줄이 있으면 그것 하나만(G1-08)
         yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
     live: dict[str, dict] = {}
+    skill_reads = {d.get("tool_use_id"): (d.get("tool"), d.get("tool_input")) for d in events
+                   if d["kind"] == ExecEventKind.TOOL_START.value and d.get("tool") == "Read"}
     for n, d in enumerate(events):
         if check_stop:
             check_stop()
@@ -763,6 +795,9 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 last["reads"].append((read_subject(target[0], arguments), read_gap(was, now) if now is not None else False))
         if d["kind"] == ExecEventKind.TOOL_END.value and d.get("tool_use_id") in live:
             d.update(text=live[d["tool_use_id"]]["text"], tool_output=live[d["tool_use_id"]]["text"], is_error=False)
+        elif (d["kind"] == ExecEventKind.TOOL_END.value and d.get("tool_use_id") in skill_reads and not d.get("is_error")
+              and (now_text := skill_file_now(request.workdir, *skill_reads[d["tool_use_id"]], d.get("tool_output"))) is not None):
+            d.update(text=now_text, tool_output=now_text)      # 스킬 파일 읽기: 이 실행의 작업 폴더에 있는 지금 본문
         else:
             d.update(tool_output=swaps.apply(d.get("tool_output")))
         yield _event_from(d)
@@ -818,31 +853,57 @@ def typed_said(last: dict) -> str:
             + "; ".join(f"준비 당시 {cut(old)} · 지금 {cut(new)}" for old, new in pairs) + ".")
 
 
-def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
-    """처리 과정에 남길 한 줄. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 안내는 재생 모드가 지원하지 않는
-    행동에서만 한다(준비된 글이 이 PC의 지금 값 · 지금 넣은 입력과 다른 것을 두고 쓰인 것도 그 하나다 — differs · reads_said · typed_said). skills: 이번 실행에 붙인 스킬 — 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고
-    뗀 차이를 보려는 실습이 같은 답을 보고 「스킬이 아무 일도 하지 않는다」로 배우지 않게, 실라버스 포털 실습 3번). 수업 기본 스킬
-    그대로면 저장된 실행과 같은 구성이라 말하지 않는다."""
+# 알림 문장의 종류 — 화면이 문장을 읽어 가르지 않게 처리 과정 이벤트(task_working · notice)의 parts[].kind 로 싣는다
+NOTICE_KINDS = {
+    "prepared": "준비된 AI 설명 · 결과 글을 그대로 보인다는 머리말",
+    "typed_differs": "사람이 넣은 입력 글이 준비 당시와 다름",
+    "values_differ": "글 안의 판단 값이 준비 당시 값이고 승인 카드가 지금 계산임",
+    "reads_differ": "다시 해 본 읽기 조회가 지금 값과 다름",
+    "reads_unchecked": "읽기 조회를 다시 하지 못해 견주지 못함",
+    "skills": "스킬을 바꿔도 같은 답을 낸다는 안내(학생이 스킬을 바꾼 실행에서만)",
+    "reused": "같은 설정 · 같은 입력의 앞선 실행 결과를 다시 씀",
+    "reuse_dropped": "돌려보내진 같은 요청 저장을 버리고 새로 실행함",
+}
+
+
+def _reads_kind(last: dict) -> str:
+    return "reads_differ" if any(gap for _, gap in last.get("reads") or []) else "reads_unchecked"
+
+
+def notice_parts(last: dict | None, skills: list[str] | None = None) -> list[tuple[str, str]]:
+    """처리 과정에 남길 한 줄을 (종류, 문장) 묶음으로. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 안내는 재생
+    모드가 지원하지 않는 행동에서만 한다(준비된 글이 이 PC의 지금 값 · 지금 넣은 입력과 다른 것을 두고 쓰인 것도 그 하나다 — differs ·
+    reads_said · typed_said). skills: 학생이 스킬 구성을 바꿀 수 있었던 실행(포털에서 만든 에이전트 · 스킬 — Runner 가 가린다)에 붙인 스킬,
+    그 밖의 실행은 None. 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고 뗀 차이를 보려는 실습이 같은
+    답을 보고 「스킬이 아무 일도 하지 않는다」로 배우지 않게). 기본 제공 구성 그대로인 실행에는 말하지 않는다 — AI 단계마다 같은 안내가
+    붙으면 정작 스킬을 바꿨을 때의 안내가 묻힌다."""
     if not last:
-        return None
+        return []
     if last.get("library") == REUSE:
         rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
         kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
         reads = reads_said(last, "앞선 실행 때")
-        return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept} "
-                + (reads + " " if reads else "") + "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
+        return ([("reused", f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept}")]
+                + ([(_reads_kind(last), reads)] if reads else [])
+                + [("reused", "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")])
     said, reads, typed = [], reads_said(last, "준비 당시"), typed_said(last)
     if last.get("differs") or reads or typed:
-        line = f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다."
+        said.append(("prepared", f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다."))
         if typed:
-            line += " " + typed
+            said.append(("typed_differs", typed))
         if last.get("differs"):
-            line += f" 그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 계산입니다: {'; '.join(last['differs'])}."
-        said.append(line + (" " + reads if reads else ""))
+            said.append(("values_differ", f"그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 계산입니다: {'; '.join(last['differs'])}."))
+        if reads:
+            said.append((_reads_kind(last), reads))
     if skills is not None and set(skills) != set(last.get("skills") or ()):
-        said.append(f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
-                    "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다.")
-    return " ".join(said) or None
+        said.append(("skills", f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
+                               "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다."))
+    return said
+
+
+def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
+    """notice_parts 의 문장을 이은 한 줄(없으면 None)."""
+    return " ".join(text for _, text in notice_parts(last, skills)) or None
 
 
 # ---------------------------------------------------------------- 점유 하나의 AI 응답
@@ -857,16 +918,17 @@ class Responses:
 
     def claim(self, *, cli, slot: str | None, case: str, attempt: tuple[int, int], request_key: str | None, step: str,
               provider: str, source: dict, accepted: Callable[[dict], bool], reclaimed: bool = False,
-              skills: list[str] | None = None) -> Claim:
+              skills: list[str] | None = None, skills_changed: bool = False) -> Claim:
+        """skills: 이 실행에 붙인 스킬 이름. skills_changed: 학생이 그 구성을 바꿀 수 있었던 실행인가(Runner._skills_changed) — 그때만 스킬 안내를 낸다."""
         return Claim(self, cli=cli, slot=slot, case=case, attempt=attempt, request_key=request_key, step=step,
-                     provider=provider, source=source, accepted=accepted, reclaimed=reclaimed, skills=skills)
+                     provider=provider, source=source, accepted=accepted, reclaimed=reclaimed, skills=skills, skills_changed=skills_changed)
 
 
 class Claim:
     def __init__(self, responses: Responses, *, cli, slot, case, attempt, request_key, step, provider, source, accepted,
-                 reclaimed=False, skills=None):
+                 reclaimed=False, skills=None, skills_changed=False):
         self.r, self.cli = responses, cli
-        self.reclaimed, self.skills = reclaimed, list(skills or [])
+        self.reclaimed, self.skills, self.skills_changed = reclaimed, list(skills or []), bool(skills_changed)
         if slot in UNCACHED_SLOTS:
             request_key = None              # 지금 상태로 답하는 자리 — 같은 요청 저장을 읽지도 쓰지도 않는다(G1-09)
         self.slot, self.case, self.attempt, self.request_key = slot, case, tuple(attempt), request_key
@@ -989,10 +1051,17 @@ class Claim:
         return (f"{REPLAY} 이 경보로 시작한 처리 건에서는 {josa(f'「{step}」', '을')} 지원하지 않습니다. 재생 모드에서 진행되는 AI 단계는 "
                 f"{steps or '(없음)'}입니다.")
 
-    def notice(self) -> str | None:
+    def notices(self) -> tuple[str, list[tuple[str, str]]] | None:
+        """이 점유가 처리 과정에 남길 알림: (묶음 종류 replay · reuse, [(문장 종류, 문장)]) — 남길 것이 없으면 None."""
         if self.dropped and not self.last:
-            return "앞서 다시 쓴 같은 요청의 결과를 처리 흐름이 돌려보내, 그 저장을 버리고 실제 AI로 새로 실행했습니다."
-        return notice(self.last, self.skills if self.last.get("library") == COURSE else None)
+            return "reuse", [("reuse_dropped", "앞서 다시 쓴 같은 요청의 결과를 처리 흐름이 돌려보내, 그 저장을 버리고 실제 AI로 새로 실행했습니다.")]
+        course = self.last.get("library") == COURSE
+        parts = notice_parts(self.last, self.skills if course and self.skills_changed else None)
+        return ("replay" if course else "reuse", parts) if parts else None
+
+    def notice(self) -> str | None:
+        found = self.notices()
+        return " ".join(text for _, text in found[1]) if found else None
 
     def keep(self, outcome: str, secrets) -> None:
         """점유가 끝났을 때 받아 둔 실행을 남긴다. 실패 · 취소로 끝난 점유는 부르지 않는다(좋은 녹화를 덮지 않는다)."""
