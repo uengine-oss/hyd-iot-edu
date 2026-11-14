@@ -84,6 +84,18 @@ def test_경보로_연_대응_처리_건이_진행_중이면_기준점을_붙잡
     assert sb.may_reanchor(world.rt) is False
 
 
+def test_공급사_납기_지연은_열린_발주가_없으면_까닭과_함께_거절하고_상태가_그_까닭을_싣는다(world):
+    """[공급사 납기 지연]은 진행 중인 예비품 구매 처리 건이 낸 열린 발주에만 걸린다. 발주 전(승인 대기)이면 누를 수 없고 화면이 읽는 상태가 까닭을 말한다.
+    발주 뒤의 길(지연 통보 → 납기 초과 → 지연 결과 보고)은 test_instances 가 흐름 끝까지 잰다."""
+    _press(world, 'C')
+    with pytest.raises(sb.Refused, match='아직 발주 전입니다 — 처리 건에서 발주안을 승인하면 발주가 열립니다'):
+        sb.delay_target(world.rt, world.instance_mode.enterprise_read, 'C')
+    [event] = sb.status(world.instance_mode.enterprise_read, world.rt)['scenarios']['C']['events']
+    assert (event['act'], event['button'], event['path'], event['enabled']) == ('delay', '공급사 납기 지연', '/api/scenario/C/delay', False)
+    assert '아직 발주 전입니다' in event['why']
+    assert sb.status(world.instance_mode.enterprise_read, world.rt)['scenarios']['B']['events'] == [], '정기 정비에는 바깥 사건 단추가 없다'
+
+
 def test_시나리오_상태는_진행_중_처리_건과_마지막_처리_건을_보인다(world):
     pid = _press(world, 'C')
     status = sb.status(world.instance_mode.enterprise_read, world.rt)

@@ -380,6 +380,95 @@ def test_명령_관문이_감사_토픽에_낸_거절을_process_가_Kafka_에�
     assert received() == [('REJECT',)]
 
 
+def test_경보_접수가_업무_DB_에서_수_초_밀리는_동안에도_설비_최신_상태는_1초마다_오는_새_보고를_따라간다(world, brokers, monkeypatch):
+    """2026-11-14 01:01 처리 건: 원천 접수 반복이 경보 정책 조회 · 접수 커밋을 기다리는 동안 다음 레코드를 가져오지 않아, Kafka 에 1초마다 들어온
+    설비 상태를 process 가 15초 넘게 반영하지 못했다(그 값으로 낸 판단의 안이 모두 제외됐다). 실제 Redpanda · 실제 consume() · watch_status()
+    로 본다 — 지연은 바깥(업무 DB)에서 만든다: 경보 정책 조회가 읽는 proc_def 표를 HELD_S 초 동안 잠근다."""
+    import threading
+    from datetime import datetime, timezone
+    from aiokafka import AIOKafkaProducer
+    from hydcommon import topics
+    from hydcommon.timeutil import now_iso
+    main, asset, HELD_S = world.main, 'HYD-01', 6.0
+    alert = {'alertId': f'ALT-{asset}-{uuid.uuid4().hex[:10]}', 'asset': asset, 'pattern': COOLING[0], 'state': 'RAISE', 'severity': 'WARN'}
+    monkeypatch.setenv('KAFKA_BOOTSTRAP', brokers.kafka)
+
+    def age(stamp):
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(stamp.replace('Z', '+00:00'))).total_seconds()
+
+    def held_age():                      # process 가 판단 · 승인 검사에 내주는 설비 상태(GET /api/plant/{asset}/status 의 함수)의 나이
+        return age(main.get_plant_status(asset)['t']) if asset in main.plant_status else None
+
+    def stored_age():                    # 원천 접수 반복이 업무 DB 에 커밋한 최신 상태의 나이 — 접수 반복이 밀린 것을 다 따라잡았는지 본다
+        with psycopg.connect(world.dsn) as db:
+            row = db.execute('SELECT source_time FROM process_source_state WHERE asset=%s', (asset,)).fetchone()
+        return None if row is None else (datetime.now(timezone.utc) - row[0]).total_seconds()
+
+    def raise_receipt():
+        with psycopg.connect(world.dsn) as db:
+            return db.execute("SELECT received_at FROM process_source_inbox WHERE topic=%s AND event_key=%s",
+                              (topics.K_ALERTS, json.dumps(['alert', alert['alertId'], 'RAISE'], separators=(',', ':')))).fetchone()
+
+    locked, lock_times = threading.Event(), {}
+
+    def hold_policy_table():
+        with psycopg.connect(world.dsn) as db:
+            db.execute('LOCK TABLE proc_def IN ACCESS EXCLUSIVE MODE')
+            lock_times['from'] = datetime.now(timezone.utc)
+            locked.set()
+            time.sleep(HELD_S)
+
+    async def until_true(condition, what, timeout):
+        deadline = time.monotonic() + timeout
+        while not await asyncio.to_thread(condition):
+            assert time.monotonic() < deadline, what
+            await asyncio.sleep(0.2)
+
+    async def run():
+        tasks = [asyncio.create_task(main.consume()), asyncio.create_task(main.watch_status())]
+        sender = AIOKafkaProducer(bootstrap_servers=brokers.kafka, value_serializer=lambda v: json.dumps(v).encode())
+        await sender.start()
+
+        async def plant():               # 설비의 1초 보고(plant-sim edge.tick 과 같은 주기 · 벽시계 시각)
+            while True:
+                await sender.send_and_wait(topics.K_STATUS, {'asset': asset, 't': now_iso(), 'mode': 'REMOTE_AUTO', 'state': 'RUN'},
+                                           key=topics.asset_key(asset).encode())
+                await asyncio.sleep(1)
+        reporting = asyncio.create_task(plant())
+        holder = threading.Thread(target=hold_policy_table)
+        try:
+            await until_true(lambda: (stored_age() or 99) < 2.5 and (held_age() or 99) < 2.5,
+                             'process 가 Kafka 의 설비 상태를 60초 안에 따라잡지 못했다', 60)
+            holder.start()
+            await asyncio.to_thread(locked.wait, 30)
+            await sender.send_and_wait(topics.K_ALERTS, dict(alert, t=now_iso()), key=topics.asset_key(asset).encode())
+            await asyncio.sleep(1.5)     # 접수 반복이 그 경보를 받아 정책 조회에서 기다리기 시작한다
+            ages = []
+            while holder.is_alive():
+                ages.append(held_age())
+                await asyncio.sleep(0.2)
+            await until_true(lambda: raise_receipt() is not None, '잠금이 풀린 뒤 30초 안에 경보가 접수되지 않았다', 30)
+            return ages
+        finally:
+            reporting.cancel()
+            await sender.stop()
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            for client in (main.consumer_client, main.producer):
+                if client is not None and client is not world.kafka:
+                    await client.stop()
+            holder.join(HELD_S + 5) if holder.is_alive() else None
+    try:
+        ages = _run_async(run())
+    finally:
+        main.producer = world.kafka
+    (received_at,) = raise_receipt()
+    blocked_s = (received_at - lock_times['from']).total_seconds()      # 경보 접수는 잠금이 풀릴 즈음에야 됐다(시험 조건이 섰는가)
+    assert blocked_s >= HELD_S - 0.5, f'시험 조건이 서지 않았다: 경보 접수가 잠금에 {blocked_s:.1f}초만 막혔다'
+    assert len(ages) >= 10 and max(ages) < 2.5, f'경보 접수가 {HELD_S:g}초 막힌 동안 설비 최신 상태가 낡았다: 가장 낡았을 때 {max(ages):.1f}초'
+
+
 def test_다른_사이트의_양식이_본문_없는_수업_버튼_경로를_부르면_403이고_실행하지_않는다():
     """넘김 FA2 → FO(보안): /api/scenario/A/{act} 는 본문이 없어도 된다 — 다른 사이트 페이지의 양식 POST(단순 요청)로 설비 주입이 일어났다."""
     from fastapi.testclient import TestClient

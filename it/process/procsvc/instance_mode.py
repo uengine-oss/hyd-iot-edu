@@ -50,8 +50,9 @@ ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
 # 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 compose 서비스 이름(ot-net)으로 간다.
 # 호스트에서 직접 띄우면 PLANT_SIM_URL=http://127.0.0.1:8000 (compose.yaml 이 컨테이너에는 항상 값을 넣는다).
 PLANT_SIM_URL = os.getenv("PLANT_SIM_URL", "http://plant-sim:8000")
-# 수업용 대기 압축(결정 4): 기다리는 부품(시간 대기 · 입고 확인)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 60 이면 20배속에서 납기 5일 → 6분.
-WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "60"))
+# 수업용 대기 압축(결정 4): 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 값은 compose.yaml 한 곳이
+# 정한다(360 — 20배속에서 업무 시간 하루가 12초, 납기 5일이 1분). 여기 기본값은 compose 없이 띄울 때를 위한 같은 값이다.
+WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "360"))
 # 승인 뒤 MCP 호출 부품이 부르는 서버(이름 → tenants.mcp 와 같은 설정). 기본은 수업용 hyd-effects(메일 → Inbucket · CMMS 일정 · 처리 건 기록).
 # 여기에 없는 이름은 tenants.mcp 에서 연결 검사를 통과한(설정 해시가 같은) 서버만 쓴다.
 EFFECT_MCP_SERVERS = json.loads(os.getenv("EFFECT_MCP_SERVERS") or json.dumps(
@@ -600,10 +601,13 @@ def enterprise_read(name: str, params: dict) -> dict:
         return json.loads(r.read())
 
 
-def plant_restore(asset: str, component: str | None) -> dict:
-    """C2 정비 수행 모사: plant-sim POST /api/fault {asset, type: restore[, component]}. 응답을 그대로 돌려준다(ok 표시 추가)."""
+def plant_restore(asset: str, component: str | None, targets: list[str] | None = None) -> dict:
+    """C2 정비 수행 모사: plant-sim POST /api/fault {asset, type: restore, component | targets}. 응답을 그대로 돌려준다(ok 표시 추가).
+    targets = 승인한 조치 방법이 지식에서 다루는 외란 변수 · 구성 요소 id(service_parts.maintenance_scope) — 가상 설비는 그것만 되돌린다."""
     body = {"asset": asset, "type": "restore"}
-    if component:
+    if targets is not None:
+        body["targets"] = list(targets)
+    elif component:
         body["component"] = component
     req = urllib.request.Request(PLANT_SIM_URL + "/api/fault", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"},
                                  method="POST")

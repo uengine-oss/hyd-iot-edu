@@ -6,8 +6,8 @@
   svc:mcp-call             mcp:call                  등록된 MCP 서버의 도구 하나를 부른다(메일 · 일정 · 기록) — 인자 틀에 처리 건 값 치환   예 (effect: false 면 읽기 확인)
   svc:erp-po               enterprise:PR_CREATE      ERP 발주 — 승인 경로가 확정한 공급사 · 수량 · 금액(approved_*)으로             예
   svc:wait                 process:wait              시간 대기 — 기간(ISO) 또는 처리 건 값의 시각까지. 배속 × 수업 압축 배율        아니오
-  svc:maintenance          plant:restore             정비 수행 모사 — 작업지시 완료(부품 소모) + 시뮬레이터 복구 + 완료 공지         예
-  svc:goods-receipt        enterprise:GR_CONFIRM     입고 확인 — 발주의 입고 예정까지 기다렸다가 입고 · 검수 기록, 사건 종결       예
+  svc:maintenance          plant:restore             정비 수행 모사 — 작업지시 완료(부품 소모) + 승인한 조치가 다루는 것만 시뮬레이터 복구 + 완료 공지   예
+  svc:goods-receipt        enterprise:GR_CONFIRM     입고 확인 — 발주의 입고 예정까지 기다렸다가 입고 · 검수 기록, 전량 합격이면 사건 종결   예
   svc:test-run             plant:test-run            시운전 확인 — 안정 시간 뒤 압력 · 유량 · 진동을 기준과 비교, 통과면 계수기 리셋   예
   svc:report               process:report            결과 보고 — 결과(정상 · 미달 · 지연 · 알림)를 담당자에게 알리고 사건을 닫는다    아니오
 
@@ -80,24 +80,28 @@ PARTS = {
     "svc:wait": {
         "tool": WAIT_TOOL, "name": "시간 대기", "outputs": ["waited"],
         "help": "정해진 업무 시간(예: PT9H)이나 처리 건 값의 시각(예: work_order.window_starts_at)까지 기다립니다. "
-                "수업에서는 배속 × 수업 압축 배율로 줄어 몇 분이면 끝납니다. 경계 타이머를 붙이면 같은 배율이 적용됩니다.",
+                "배속 × 대기 압축 배율로 줄여 기다립니다(기본 설정에서 업무 시간 하루가 12초). 경계 타이머를 붙이면 같은 배율이 적용됩니다.",
         "config": {"duration": "기다릴 업무 시간 ISO-8601 (예: PT9H, P5D)", "until": "기다릴 시각이 든 처리 건 값 (예: work_order.window_starts_at)",
                    "label": "화면에 보일 이름 (예: 예정된 정비 시간까지 대기)"},
     },
     "svc:maintenance": {
         "tool": RESTORE_TOOL, "name": "정비 수행 (모사)", "outputs": ["maintenance"], "inputs": ["asset"],
         "help": "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 작업지시가 있으면 CMMS 에서 완료 처리(표준 부품 소모), "
-                "설비 시뮬레이터의 대상 부품을 정상으로 되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. 설비 명령 경로(PLC)가 아닌 실습 시뮬레이터 조작입니다.",
-        "config": {"component": "되돌릴 부품: cooler · pump · fan (비우면 설비 전체)", "sop": "작업지시 완료 때 부품 소모 기준 SOP (예: SOP-COOL-14 — 업무 DB 표준 작업 ent.task_standards 의 번호, 비우면 카드의 SOP)",
+                "가상 설비에서 승인한 조치 방법(SOP)이 지식 지도에서 다루는 원인의 상태만 정상으로 되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. "
+                "승인한 조치가 설비의 실제 결함을 다루지 않으면 결함은 그대로 남습니다 — 뒤에 효과 확인(재관측 · 시운전)을 두면 미달로 드러납니다. "
+                "설비 명령 경로(PLC)가 아닌 가상 설비 조작입니다.",
+        "config": {"component": "되돌릴 부품을 흐름이 직접 정할 때만: cooler · pump · fan (비우면 승인한 조치 방법이 지식 지도에서 다루는 것)",
+                   "sop": "작업지시 완료 때 부품 소모 기준이자 고칠 대상을 찾는 SOP (예: SOP-COOL-14 — 비우면 승인한 카드의 SOP)",
                    "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)",
                    "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 수업 압축 적용)"},
     },
     "svc:goods-receipt": {
         "tool": GR_TOOL, "name": "입고 확인", "outputs": ["goods_receipt", "received"], "inputs": ["purchase_order"],
-        "help": "발주의 입고 예정(리드타임)까지 기다린 뒤 입고 · 검수를 ERP 에 기록하고 재고를 올립니다. 확인되면 사건을 닫습니다. "
-                "납기 초과를 보이려면 경계 타이머(예: P7D)를 붙입니다(같은 수업 압축 배율).",
-        "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)",
-                   "immediate": "true 면 리드타임을 기다리지 않고 바로 입고 · 재고 반영 (C3 수업 흐름 — 설비까지 가지 않고 처리되면 끝)"},
+        "help": "발주의 입고 예정(공급사 리드타임, 공급사가 납기 지연을 알렸으면 그만큼 더)까지 기다린 뒤 입고 · 검수를 ERP 에 기록하고 합격분을 "
+                "재고에 올립니다. 검수 결과는 업무 시스템이 그 공급사 견적의 불량률로 정합니다 — 발주 수량이 모두 합격이면 received = true(사건 종결), "
+                "불합격 · 반품이 있으면 false 입니다(분기로 미달 결과 보고를 그립니다). 납기 초과를 보이려면 경계 타이머(예: P6D)를 붙입니다"
+                "(같은 배속 × 대기 압축).",
+        "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)"},
     },
     "svc:test-run": {
         "tool": TEST_RUN_TOOL, "name": "시운전 확인", "outputs": ["test_run", "passed"], "inputs": ["asset"],
@@ -116,6 +120,9 @@ PARTS = {
     },
 }
 BY_TOOL = {p["tool"]: k for k, p in PARTS.items()}
+#: 부품이 내는 참/거짓 값의 자료형 — 가져오기(bpmn_import)가 정의의 data 에 이 자료형으로 선언한다. 선언이 없으면 글(Text)로 선언돼
+#: 「received == True」 · 「passed == True」 분기가 등록 검사에서 자료형 불일치로 거절됐다(부품 설명은 그 값으로 분기를 그리라고 한다).
+OUTPUT_TYPES = {"received": "Boolean", "passed": "Boolean"}
 
 
 # ---------------------------------------------------------------- 등록 검사
@@ -247,8 +254,6 @@ def validate(activity: dict) -> None:
             for name in placeholders(cfg.get(key) or ""):
                 if not PATH_RE.match(name):
                     raise ValueError(f"활동 {aid}: {key} 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
-    if tool == GR_TOOL and "immediate" in cfg and not isinstance(cfg["immediate"], bool):
-        raise ValueError(f"활동 {aid}: immediate 는 true/false 입니다")
     for key in ("work_order_var", "purchase_order_var"):
         if cfg.get(key) is not None and (not isinstance(cfg[key], str) or not IDENT_RE.match(cfg[key])):
             raise ValueError(f"활동 {aid}: {key} 는 값 이름이어야 합니다")
@@ -488,10 +493,17 @@ def report_values(v: dict) -> list[dict]:
     if isinstance(gr, dict):
         after = gr.get("after") if isinstance(gr.get("after"), dict) else {}
         stock = gr.get("stock_after") if isinstance(gr.get("stock_after"), dict) else {}
-        for key, name in (("qty", "입고 수량"), ("on_hand", "현재고"), ("available", "가용 재고")):
+        ordered = after.get("ordered_qty")
+        for key, name in (("qty", "입고 수량"), ("rejected_qty", "검수 불합격 · 반품"), ("on_hand", "현재고"), ("available", "가용 재고")):
             val = gr.get(key, after.get(key, stock.get(key)))
-            if isinstance(val, (int, float)):
+            if key == "rejected_qty" and not val:
+                continue                                   # 반품이 없으면 줄을 두지 않는다
+            if isinstance(val, (int, float)) and not isinstance(val, bool):
                 row = {"name": name, "value": val, "unit": " 개"}
+                if key == "qty" and isinstance(ordered, (int, float)):
+                    row.update(limit=f"발주 {_text(ordered)} 개", ok=val == ordered)       # 입고 완료 기준: 입고 수량 = 발주 수량
+                if key == "rejected_qty":
+                    row.update(ok=False)
                 if key == "available" and isinstance(stock.get("reorder_point"), (int, float)):
                     row.update(limit=f"≥ {_text(stock['reorder_point'])} 개 (재주문점)", ok=val >= stock["reorder_point"])
                 rows.append(row)

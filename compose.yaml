@@ -357,9 +357,10 @@ services:
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
       TIME_SCALE: *time-scale
-      #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율(20배속 × 60 = 1200배 — 납기 5일이 6분). 설비 · 감지기 · 재관측은 배속만,
-      #   사람이 읽고 고르는 시간(승인 시한 · 카드 신선도 · 승인 지연 알림)은 벽시계다
-      PROCESS_WAIT_COMPRESSION: "60"
+      #   대기 압축: 시간 대기 · 입고 확인 · 정비 수행과 그 경계 타이머만 배속 × 이 배율(20배속 × 360 = 7200배 — 업무 시간 하루가 12초,
+      #   납기 5일이 1분). 학생이 「발주 중」을 보고 [공급사 납기 지연]을 눌러 볼 만큼만 기다리게 한 값이다(전에는 60 — 납기 5일이 6분).
+      #   설비 · 감지기 · 재관측은 배속만, 사람이 읽고 고르는 시간(승인 시한 · 카드 신선도 · 승인 지연 알림)은 벽시계다
+      PROCESS_WAIT_COMPRESSION: "360"
       ENTERPRISE_URL: http://enterprise-sim:8095
       # 경보가 프로세스 인스턴스(처리 건)를 열고 에이전트 · 사람은 그 안의 작업 — 업무 DB(Supabase)가 원천이다.
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}

@@ -12,14 +12,16 @@ BUYER = dict(by=OPERATOR['by'], role='role:purchasing')    # 사람은 담당자
 PO = {'ref': 'PR-1', 'after': {'lead_d': 5, 'expected_at': '2026-11-04T06:09:57+00:00'}}
 
 
-@pytest.mark.parametrize('plan, words', [
-    ({'immediate': True, 'due_at': 'x', 'real_s': 0}, ['수업 즉시 입고', '리드타임 5일', '2026-11-04T06:09:57+00:00', '기다리지 않고']),
-    ({'real_s': 360.0, 'time_scale': 20.0, 'compression': 60.0}, ['수업 시간 압축', '리드타임 5일', '실제 360.0초', '배속 20.0 × 수업 압축 60.0']),
-], ids=['즉시 입고(흐름 C)', '배속 × 압축'])
-def test_입고_거래는_업무_시각의_입고_예정과_실제_입고의_차이를_글로_싣는다(plan, words):
-    """H-11: ERP 발주 행의 입고 예정은 업무 시각(발주 + 리드타임 5일)이라, 수업의 즉시 · 압축 입고가 「예정보다 일찍 입고」로 읽혔다."""
-    text = service_parts.receipt_basis(PO, plan)
-    assert all(w in text for w in words), text
+@pytest.mark.parametrize('plan, text', [
+    ({'real_s': 60.0, 'time_scale': 20.0, 'compression': 360.0, 'lead_d': 5, 'delay_d': 0.0},
+     '업무 시간 리드타임 5일을 실제 60초로 줄여 기다린 뒤 입고했습니다(배속 20 × 대기 압축 360)'),
+    ({'real_s': 120.0, 'time_scale': 20.0, 'compression': 360.0, 'lead_d': 5, 'delay_d': 5.0},
+     '업무 시간 리드타임 5일 + 공급사 지연 5일을 실제 120초로 줄여 기다린 뒤 입고했습니다(배속 20 × 대기 압축 360)'),
+], ids=['배속 × 압축', '공급사 지연 포함'])
+def test_입고_거래는_업무_시각의_입고_예정과_실제_입고의_차이를_글로_싣는다(plan, text):
+    """H-11: ERP 발주 행의 입고 예정은 업무 시각(발주 + 리드타임 5일)이라, 줄여 기다린 입고가 「예정보다 일찍 입고」로 읽혔다. 이 글은 업무 DB
+    입고 기록과 결과 보고에 그대로 나가므로 작업자끼리 쓰는 말(「수업 즉시 입고」)을 담지 않는다."""
+    assert service_parts.receipt_basis(PO, plan) == text
 
 
 def _press_c(world):
@@ -31,15 +33,22 @@ def _press_c(world):
     return receipt['result']['instance']
 
 
-def test_흐름_C의_즉시_입고는_업무_DB_입고_기록에_수업_지름길임을_남긴다(world):
+def test_흐름_C의_입고는_리드타임을_줄여_기다린_근거를_업무_DB_입고_기록에_남긴다(world):
+    """전에는 흐름 C 가 리드타임을 건너뛰고(흐름 설정 immediate) 입고 기록에 「수업 즉시 입고 — …」를 남겼다. 그 지름길을 지웠다 — 승인 직후에는
+    입고 기록이 없고, 입고 예정(리드타임을 배속 × 대기 압축으로 줄인 시각) 뒤에 입고하며 그 근거를 기록에 남긴다."""
     pid = _press_c(world)
     decision = world.agent(pid, 'T_agent')
     world.approve(pid, decision, world.main.book[decision]['recommended'], BUYER)
+    world.poll(2)
+    assert world.values(pid).get('goods_receipt') is None, '승인 직후에 입고됐다'
+    wait = next(e['data']['plan'] for e in world.events(todo=world.row(pid, 'T_gr')['id']) if e['job_id'] == 'RECEIPT_WAIT')
+    world.clock.advance(wait['real_s'] + 1)
+    world.poll(3)
     values = world.values(pid)
     po, gr = values['purchase_order']['ref'], values['goods_receipt']['ref']
     with psycopg.connect(world.dsn) as db:
         detail = db.execute('SELECT detail FROM ent.transactions WHERE ref = %s', (gr,)).fetchone()[0]
-    assert '수업 즉시 입고' in detail and po in detail, detail
+    assert service_parts.receipt_basis(values['purchase_order'], wait) in detail and po in detail and '수업' not in detail, detail
     assert values['result_report']['notification_count'] >= 1
 
 
@@ -76,7 +85,7 @@ GR_ONLY = '''<?xml version="1.0" encoding="UTF-8"?>
 
 def test_리드타임을_어디서도_못_얻은_입고는_0일로_바로_입고하지_않고_그_까닭으로_멈춘다(world):
     """FD 검증 ②: 발주 영수증에도 구매 · 재고 관리에도 리드타임이 없으면 0일(바로 입고) · 「리드타임 None일」 출처를 지어냈다.
-    즉시 입고는 흐름 설정(immediate) 하나뿐이다 — 그 설정이 없는 입고 단계 하나짜리 흐름으로 리드타임 없는 발주를 시작한다. 수업 단계는
+    입고 단계 하나짜리 흐름으로 리드타임 없는 발주를 시작한다. 수업 단계는
     교대 인수인계 외의 흐름 가져오기를 막으므로(course_policy — PBL 에서 열림), 가져오기와 같은 변환(bpmn_import.parse_bpmn → check,
     기준 정의 부품 목록 flows_api.default_base_loader)으로 정의를 만들어 엔진에 등록한다(HTTP 수업 문지기만 지나지 않음)."""
     import uuid

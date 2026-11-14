@@ -22,9 +22,12 @@ HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
 # (0 = no forced cooling), leakage fraction 0..0.5 (beyond half the flow the pump model has no meaning), bearing wear 0..1.
 DOMAIN = {"cooler_health": (0.0, 1.0), "leak": (0.0, 0.5), "bearing_wear": (0.0, 1.0)}
 MAX_RAMP_S = 86400.0
-# C2: 정비 수행 모사의 복구 대상 부품 → 외란 변수 (온톨로지 Component id 도 받는다). 없으면 설비 전체를 되돌린다(이전과 같음).
-COMPONENTS = {"cooler": "cooler_health", "comp:cooler": "cooler_health", "pump": "leak", "pump-a": "leak", "comp:pump-a": "leak",
-              "fan": "bearing_wear", "comp:fan": "bearing_wear"}
+# C2: 정비 수행 모사의 복구 대상 → 외란 변수. 지식 지도(온톨로지)의 이름과 가상 설비의 외란 변수를 잇는 정본은 이 표 한 곳이다:
+# 구성 요소(Component id comp:*)와 외란 상태 변수(StateVariable id sv:* — 위 FAULT_KINDS 주석의 대응과 같다). 처리 엔진의 정비 수행은 승인한
+# 조치 방법이 지식에서 다루는 원인의 외란 변수 · 구성 요소 id 를 targets 로 보낸다. 이 표에 없는 id 는 가상 설비가 모형으로 갖지 않은 것이다.
+COMPONENTS = {"cooler": "cooler_health", "comp:cooler": "cooler_health", "sv:fouling": "cooler_health",
+              "pump": "leak", "pump-a": "leak", "comp:pump-a": "leak", "sv:leak": "leak",
+              "fan": "bearing_wear", "comp:fan": "bearing_wear", "sv:bearing-wear": "bearing_wear"}
 # Named fault strengths. "high" is every kind's default (the lecture scenes that end in a PLC trip keep using it);
 # "moderate" is defined for the cooler only: TS1 settles at ~62.5 C, so the alarm stays up without the 65 C trip
 # (the window a coding-agent worker needs at TIME_SCALE 20, A146). The trip itself is untouched (plc.check_interlock).
@@ -95,7 +98,7 @@ class Plant:
     # ---- fault injection API ----
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
                severity: str | None = None, component: str | None = None, origin: dict | None = None,
-               operating_point: bool = False) -> dict:
+               operating_point: bool = False, targets: list[str] | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
         strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S.
@@ -104,7 +107,11 @@ class Plant:
         (set-points are stepped, not ramped). A disturbance restore alone leaves the set-points an approved mitigation wrote
         (fan 100 %, load 80 %): with those, moderate cooler fouling settles under the 55 C alarm line, so the next cooler
         degradation would never raise an alert. The process's maintenance restore does not ask for it — only the lecture
-        button that ends a scene does."""
+        button that ends a scene does.
+
+        `targets` (restore only) names what an approved maintenance action deals with, as knowledge-graph ids (COMPONENTS:
+        comp:* · sv:*). Only those disturbances are restored: an empty list restores nothing, and ids this plant does not
+        model come back in `not_modeled` (not an error — the knowledge may know causes the simulator has no variable for)."""
         if ramp_sim_s is None:
             if kind not in DEFAULT_RAMP_S:
                 raise ValueError(f"unknown fault kind {kind}")
@@ -113,14 +120,19 @@ class Plant:
             raise ValueError(f"ramp_sim_s must be a number in (0, {MAX_RAMP_S:g}] simulated seconds, got {ramp_sim_s!r}")
         if operating_point and kind != "restore":
             raise ValueError(f"operating_point goes with restore only (got {kind})")
+        if targets is not None and (kind != "restore" or component is not None):
+            raise ValueError("targets goes with restore only, and not together with component")
+        if targets is not None and (not isinstance(targets, list) or any(not isinstance(t, str) or not t for t in targets)):
+            raise ValueError("targets must be a list of knowledge-graph ids (comp:* · sv:*)")
         with self.lock:
             u = self.units[asset]
             if kind == "restore":
                 if component is not None and component not in COMPONENTS:
                     raise ValueError(f"unknown component {component} (known: {sorted(COMPONENTS)})")
-                only = COMPONENTS.get(component) if component else None
+                only = ({COMPONENTS[t] for t in targets if t in COMPONENTS} if targets is not None
+                        else {COMPONENTS[component]} if component else set(HEALTHY))
                 plan = {attr: healthy for attr, healthy in HEALTHY.items()
-                        if (only is None or attr == only) and (getattr(u.state, attr) != healthy or attr in u.faults)}
+                        if attr in only and (getattr(u.state, attr) != healthy or attr in u.faults)}
             elif kind in FAULT_KINDS:
                 attr, default = FAULT_KINDS[kind]
                 if target is None and severity is not None:
@@ -143,7 +155,8 @@ class Plant:
             setpoints = self._to_operating_point(u) if operating_point else None
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
                     "injection": u.injection,
-                    "setpoints": setpoints}
+                    "setpoints": setpoints,
+                    **({"not_modeled": [t for t in targets if t not in COMPONENTS]} if targets is not None else {})}
 
     @staticmethod
     def _to_operating_point(u: Unit) -> dict:

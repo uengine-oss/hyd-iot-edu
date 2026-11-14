@@ -3,6 +3,7 @@
 경보 접수 → 처리 건 → 에이전트 단계(실제 워커 · 재생) → 사람 승인(API 와 같은 함수 — 실제 agent 의 승인 현재 조건 검사) → 설비 명령 · ACK →
 재관측 → 작업지시 · 발주 · 입고(실제 enterprise-sim) → 결과 보고까지 그대로다.
 """
+import contextlib
 import json
 import re
 import threading
@@ -337,29 +338,132 @@ def test_정기_정비_흐름B에서_거절하면_정비_오더_없이_반려로
     assert report['outcome'] == '반려' and 'work_order' not in report['refs']
 
 
-def test_예비품_구매_흐름C는_승인하면_발주_입고까지_하고_구매팀장에게도_알린다(world):
-    """담당자 한 명이 구매 담당 · 구매팀장을 함께 맡으면 두 역할의 알림이 한 줄로 합쳐져 구매팀장 몫을 가를 수 없다 — 이 시험 동안만
-    담당자를 구매팀장 역할에서 빼 그 몫이 역할 id 로 남게 한다(구성원 없는 역할의 알림은 역할 id 그대로 — inbox.notification_targets)."""
+DAY_S = 86400
+
+
+@contextlib.contextmanager
+def _purchasing_manager_notes(world):
+    """담당자 한 명이 구매 담당 · 구매팀장을 함께 맡으면 두 역할의 알림이 한 줄로 합쳐져 구매팀장 몫을 가를 수 없다 — 이 블록 동안만
+    담당자를 구매팀장 역할에서 빼 그 몫이 역할 id 로 남게 한다(구성원 없는 역할의 알림은 역할 id 그대로 — inbox.notification_targets).
+    돌려줌 = 이 블록에서 새로 생긴 구매팀장 알림을 읽는 함수."""
     repo = world.rt.repo
-    member = ('hyd', 'role:purchasing-mgr', ME)       # 화면 · API 에는 구성원을 빼는 길이 없다(사람은 담당자 한 명) — 이 시험만 업무 DB 행을 직접 뺐다 넣는다
+    member = ('hyd', 'role:purchasing-mgr', ME)       # 화면 · API 에는 구성원을 빼는 길이 없다(사람은 담당자 한 명) — 시험만 업무 DB 행을 직접 뺐다 넣는다
     with psycopg.connect(world.dsn, autocommit=True) as db:
         [origin] = db.execute('DELETE FROM role_members WHERE tenant_id=%s AND role_id=%s AND user_id=%s RETURNING origin', member).fetchone()
+    before = {n['id'] for n in repo.list_notifications('hyd', ['role:purchasing-mgr'])}
     try:
-        before = {n['id'] for n in repo.list_notifications('hyd', ['role:purchasing-mgr'])}
-        alert, pid = _button(world, 'C', dict(by='담당자', user_id=ME, roles=['role:purchasing']))
-        assert world.inst(pid)['proc_def_id'] == 'c3_spare'
-        decision = world.agent(pid, 'T_agent')
-        world.approve(pid, decision, world.main.book[decision]['recommended'], BUYER)
+        yield lambda: [n for n in repo.list_notifications('hyd', ['role:purchasing-mgr']) if n['id'] not in before]
+    finally:
+        with psycopg.connect(world.dsn, autocommit=True) as db:
+            db.execute('INSERT INTO role_members (tenant_id, role_id, user_id, origin) VALUES (%s, %s, %s, %s)', (*member, origin))
+
+
+def _order(world, card=None):
+    """흐름 C 를 발주까지: [재고 보충] → 발주안 제안(AI 자리) → 구매 담당이 카드 하나를 승인(card 가 없으면 추천 카드) → ERP 발주 · 입고 대기 시작.
+    돌려줌 = (처리 건 id, 입고 단계의 대기 계획). 입고 단계는 공급사 리드타임을 기다리는 중이어야 한다 — 승인 직후에 입고가 끝나 있으면 실패."""
+    alert, pid = _button(world, 'C', dict(by='담당자', user_id=ME, roles=['role:purchasing']))
+    assert world.inst(pid)['proc_def_id'] == 'c3_spare'
+    decision = world.agent(pid, 'T_agent')
+    world.approve(pid, decision, card or world.main.book[decision]['recommended'], BUYER)
+    world.poll(2)
+    receipt = world.row(pid, 'T_gr')
+    assert receipt['status'] == 'SUBMITTED' and world.values(pid).get('goods_receipt') is None and world.inst(pid)['status'] == 'RUNNING', \
+        '발주 직후에는 입고 전이다 — 공급사 리드타임을 기다리는 「발주 중」 상태가 있어야 한다'
+    return pid, next(e['data']['plan'] for e in world.events(todo=receipt['id']) if e['job_id'] == 'RECEIPT_WAIT')
+
+
+def _stock(world, part='P-PMP-SEAL'):
+    with psycopg.connect(world.dsn) as db:
+        return db.execute('SELECT on_hand, reserved, on_order FROM ent.spare_stock WHERE part_no = %s', (part,)).fetchone()
+
+
+def test_예비품_구매_흐름C는_승인하면_발주하고_리드타임을_기다린_뒤_입고하고_구매팀장에게도_알린다(world):
+    """전에는 승인 직후 바로 입고됐다(흐름 설정 immediate) — 학생이 「발주 중」도 납기 지연도 볼 수 없었다. 기다림은 업무 시간(리드타임 5일)을
+    배속 × 대기 압축으로 줄인 것이고, 수업에서 학생이 그 상태를 보고 [공급사 납기 지연]을 눌러 볼 만한 길이여야 한다(목표 1분 안팎)."""
+    from procsvc import engine
+    with _purchasing_manager_notes(world) as notes:
+        pid, plan = _order(world)
+        lead = world.values(pid)['purchase_order']['after']['lead_d']
+        assert plan['real_s'] == pytest.approx(lead * DAY_S / (20 * engine.wait_compression()), abs=0.2) and lead == 5, plan
+        assert 30 <= plan['real_s'] <= 90, f"추천 공급사(리드타임 {lead}일)의 입고 대기가 벽시계 {plan['real_s']}초다 — 수업에서 보고 누를 수 있는 1분 안팎이어야 한다"
+        world.clock.advance(plan['real_s'] - 2)
+        world.poll(2)
+        assert world.row(pid, 'T_gr')['status'] == 'SUBMITTED', '입고 예정 전에 입고됐다'
+        world.clock.advance(3)
+        world.poll(3)
         report = _report(world, pid)
         values = world.values(pid)
         assert report['outcome'] == '입고 완료' and report['refs']['purchase_order'].startswith('PR-') and values['received'] is True
         assert values['approved_amount'] > 300
-        notes = [n for n in repo.list_notifications('hyd', ['role:purchasing-mgr']) if n['id'] not in before]
-        assert any('재고 보충 결과' in n['title'] for n in notes), '금액이 전결 기준(300만원)을 넘으면 구매팀장에게도 알린다'
-        assert any('재고 보충 결과' in n['title'] for n in repo.list_notifications('hyd', [ME])), '구매 담당(처리 건 참여자)에게도 간다'
-    finally:
-        with psycopg.connect(world.dsn, autocommit=True) as db:
-            db.execute('INSERT INTO role_members (tenant_id, role_id, user_id, origin) VALUES (%s, %s, %s, %s)', (*member, origin))
+        assert any('재고 보충 결과' in n['title'] for n in notes()), '금액이 전결 기준(300만원)을 넘으면 구매팀장에게도 알린다'
+        assert any('재고 보충 결과' in n['title'] for n in world.rt.repo.list_notifications('hyd', [ME])), '구매 담당(처리 건 참여자)에게도 간다'
+
+
+@pytest.mark.parametrize('card, outcome, received, accepted, rejected, order_state, incident', [
+    ('skill:sop-pur-11', '입고 완료', True, 6, 0, '입고 완료', 'CLOSED'),      # 추천: 순정(OEM) — 불량률 2 % × 6개 = 기대 불량 0.12개 → 0개
+    ('skill:sop-pur-12', '미달', False, 5, 1, '부분 입고', 'ESCALATED'),       # 지는 안: 대체 승인 공급사 — 12 % × 6개 = 0.72개 → 1개 반품
+], ids=['추천 공급사', '불량률이 높은 공급사'])
+def test_예비품_구매_흐름C는_고른_공급사의_불량률이_입고_검수_결과로_돌아온다(world, card, outcome, received, accepted, rejected, order_state, incident):
+    """전에는 어느 공급사를 골라도 입고 검수가 늘 「합격」이고 로트 번호는 난수였다 — AI 가 불량률로 비교하고 사람이 고른 것이 결과와 이어지지 않았다.
+    업무 시스템(모의 공급사)은 발주 수량 × 견적 불량률을 반올림한 개수를 검수에서 걸러 반품하고 합격분만 재고에 올린다(migration 074)."""
+    world.main._entsim_post('/erp/spare/reset', {'part_no': 'P-PMP-SEAL'})       # 수업 시작값(실물 3 · 예약 2 · 입고 예정 0)에서
+    on_hand, reserved, _ = _stock(world)
+    pid, plan = _order(world, card)
+    world.clock.advance(plan['real_s'] + 1)
+    world.poll(3)
+    report = _report(world, pid)
+    values = world.values(pid)
+    receipt = values['goods_receipt']
+    assert (report['outcome'], values['received']) == (outcome, received), report
+    assert (receipt['after']['qty'], receipt['after']['rejected_qty'], receipt['after']['ordered_qty']) == (accepted, rejected, 6)
+    assert receipt['after']['lot'] == 'LOT-' + values['purchase_order']['ref'], '로트 번호는 발주 번호에서 만든다(난수로 짓지 않는다)'
+    assert _stock(world) == (on_hand + accepted, reserved, 0), '합격분만 실물 재고에 오르고 입고 예정은 닫힌다'
+    with psycopg.connect(world.dsn) as db:
+        assert db.execute('SELECT status FROM ent.purchase_requests WHERE id = %s', (values['purchase_order']['ref'],)).fetchone()[0] == order_state
+    assert world.incident(pid).state == incident
+    shown = {r['name']: r['value'] for r in report['values']}
+    assert shown['입고 수량'] == accepted and shown['가용 재고'] == on_hand + accepted - reserved
+    assert shown.get('검수 불합격 · 반품') == (rejected or None), '반품이 있을 때만 그 수량을 측정값에 싣는다'
+    assert next(r for r in report['values'] if r['name'] == '입고 수량')['ok'] is received, '입고 수량이 발주 수량과 같은지'
+    if rejected:
+        assert f'6개 중 {accepted}개 입고 · {rejected}개 검수 불합격 반품' in report['summary'] and '입고 완료가 아닙니다' in report['summary'], report['summary']
+        assert '불량률 12 % × 6개 = 기대 불량 0.72개' in report['summary'], '결과 보고가 검수 규칙을 말해야 한다'
+
+
+def test_예비품_구매_흐름C는_입고를_기다리는_동안_공급사가_납기를_늦추면_지연으로_끝나고_구매팀장에게_보고한다(world):
+    """바깥 사건 [공급사 납기 지연](POST /api/scenario/C/delay — 업무 거래 skill:delay-delivery). 열린 발주가 없으면 까닭과 함께 거절하고,
+    발주가 열려 있으면 입고 단계가 입고 예정 때 그 통보를 읽어 더 기다리며, 그 사이 납기 초과 타이머(발주 뒤 6일)가 울려 「지연」으로 끝난다."""
+    from procsvc import engine
+    person = {'by': '담당자', 'user_id': ME, 'roles': ['role:purchasing']}
+    world.main._entsim_post('/erp/spare/reset', {'part_no': 'P-PMP-SEAL'})
+    status, body = world.api('POST', '/api/scenario/C/delay', person)
+    assert status == 409 and '진행 중인 예비품 구매 처리 건이 없어 늦출 발주가 없습니다' in body['detail'], (status, body)
+    with _purchasing_manager_notes(world) as notes:
+        pid, plan = _order(world)
+        ref = world.values(pid)['purchase_order']['ref']
+        state = world.api('GET', '/api/scenario/status')[1]['scenarios']['C']['events']
+        assert [(e['act'], e['button'], e['enabled'], e['purchase_order']) for e in state] == [('delay', '공급사 납기 지연', True, ref)], state
+        status, body = world.api('POST', '/api/scenario/C/delay', person)
+        assert status == 200 and body['purchase_order'] == ref and body['instance'] == pid and body['days'] == 5, (status, body)
+        again = world.api('POST', '/api/scenario/C/delay', person)
+        assert again[0] == 409 and '이미 납기 지연 5일을 알렸습니다' in again[1]['detail'], again
+        assert any(e['data'].get('button') == '공급사 납기 지연' and e['data'].get('purchase_order') == ref
+                   for e in world.events(pid, job='SCENARIO_BUTTON')), '누름이 그 처리 건 기록에 남아야 한다'
+        day = DAY_S / (20 * engine.wait_compression())
+        world.clock.advance(plan['real_s'] + 1)                        # 원래 입고 예정(리드타임 5일): 입고하지 않고 늦어진 예정까지 더 기다린다
+        world.poll(2)
+        receipt = world.row(pid, 'T_gr')
+        assert receipt['status'] == 'SUBMITTED' and any(e['job_id'] == 'RECEIPT_DELAYED' for e in world.events(todo=receipt['id'])), receipt['status']
+        world.clock.advance(day)                                       # 발주 뒤 6일: 납기 초과
+        world.poll(3)
+        report = _report(world, pid)
+        assert report['outcome'] == '지연' and ref in report['summary'] and '구매팀장에게 보고' in report['summary'], report
+        assert world.values(pid).get('goods_receipt') is None and world.row(pid, 'T_gr')['status'] == 'CANCELLED'
+        assert any('[지연]' in n['title'] for n in notes()), '납기 초과는 금액과 상관없이 구매팀장에게 보고한다'
+    with psycopg.connect(world.dsn) as db:
+        assert db.execute('SELECT status, delay_d FROM ent.purchase_requests WHERE id = %s', (ref,)).fetchone() == ('승인됨 → 발주', 5), '입고 전이라 발주는 열려 있다'
+    assert world.incident(pid).state == 'ESCALATED'
+    assert world.api('GET', '/api/scenario/status')[1]['scenarios']['C']['events'][0]['enabled'] is False
 
 
 def test_예비품_구매_흐름C에서_거절하면_발주하지_않는다(world):
@@ -762,7 +866,8 @@ def test_흐름A의_정비는_승인한_카드의_예정된_정비_시간까지_
     assert order['after']['window_id'] == window['id'] and parse_iso(order['after']['window_starts_at']) == parse_iso(window['starts_at'])
     fix = world.row(pid, 'T_fix')
     plan = next(e['data']['plan'] for e in world.events(todo=fix['id']) if e['job_id'] == 'WAIT_STARTED')
-    wait_s = (parse_iso(window['starts_at']) - parse_iso(plan['started_at'])).total_seconds() / (20 * 60)     # 배속 20 × 수업 압축 60
+    from procsvc import engine
+    wait_s = (parse_iso(window['starts_at']) - parse_iso(plan['started_at'])).total_seconds() / (20 * engine.wait_compression())   # 배속 20 × 대기 압축(compose 값)
     assert plan['real_s'] == pytest.approx(wait_s, abs=0.2) and plan['real_s'] > 2, plan
     assert fix['status'] != 'DONE' and world.values(pid).get('maintenance') is None, '예정된 정비 시간 전에 정비를 끝냈다'
     assert all(w['status'] == 'TODO' for w in world.rows(pid) if w['activity_id'] == 'T_reobs_wo'), '정비 전에 재관측이 돌았다'
@@ -947,3 +1052,111 @@ def test_처리_건_보기는_읽는_도중_다른_커밋이_끼어도_처리_�
     row = next(w for w in view['workitems'] if w['id'] == approve['id'])
     assert fired and view['instance']['proc_inst_name'].endswith('(바뀜)') == ('바뀜;' in (row.get('log') or '')), \
         (view['instance']['proc_inst_name'], row.get('log'))
+
+
+# ---------------------------------------------------------------- 흐름 A: 정비 수행이 고치는 것 = 승인한 조치 방법이 지식에서 다루는 것
+@pytest.fixture
+def served_plant(world):
+    """정비 수행 모사가 복구를 요청하는 바로 그 가상 설비(이 묶음이 띄운 plant-sim HTTP 의 Plant)를 이 world 의 설비로 쓴다 — 정비가 실제로 무엇을
+    되돌렸는지가 설비 모형의 유온으로 나온다(시험이 유온 값을 지어 넣지 않는다). 끝나면 설비를 처음 상태로."""
+    import plantsim.main as plant_main
+    plant_main.plant.reset()
+    world.plant = plant_main.plant
+    yield plant_main.plant
+    plant_main.plant.reset()
+
+
+@pytest.fixture
+def ambient_cause_replay(tmp_path):
+    """시험이 만든 강사 녹화 묶음: 저장소 녹화 그대로이되, 냉각 판단(c3_cooling/T_agent)의 AI 가 원인을 「주변 온도 상승」으로 짚은 실행.
+    판단 등록 호출의 원인 인자와, 그때 등록됐던 판단 문서의 근본 조치 카드(쿨러 핀 세척 → 그 원인의 근본 조치인 캐비닛 환기 보강)를 바꾼다.
+    판단 엔진은 그 경보의 진단 지식에 있는 원인이면 1순위가 아니어도 받는다 — 재생은 이 PC 의 판단 엔진을 그 원인으로 다시 불러 판단을 실제로
+    등록하고, 녹화의 후보와 지금 계산의 후보가 같은지 대조한다(다르면 멈춘다). 실제 AI 가 원인을 달리 짚었을 때 사람이 받는 카드와 같다.
+    저장소 녹화는 바꾸지 않는다."""
+    import gzip
+    import shutil
+    from conftest import REPLAY_DIR
+    from worker import ai_replay
+    out = tmp_path / 'replay-ambient-cause'
+    shutil.copytree(REPLAY_DIR, out)
+    for path in out.glob('*.json.gz'):
+        with gzip.open(path, 'rt', encoding='utf-8') as f:
+            doc = json.load(f)
+        if doc['slot'] != 'c3_cooling/T_agent':
+            continue
+        for run in doc['runs']:
+            for event in run['events']:
+                if not (event.get('tool') or '').endswith('submit_decision'):
+                    continue
+                if event['kind'] == 'tool_start':
+                    event['tool_input']['cause'] = 'cause:ambient-temperature-rise'
+                elif event['kind'] == 'tool_end' and not event.get('is_error'):
+                    full = run.setdefault('tool_outputs_full', {})
+                    body = ai_replay._as_json(full.get(event['tool_use_id']) or event.get('tool_output'))
+                    card = next(c for c in body['document']['cards'] if c['id'] == 'skill:sop-cool-14')
+                    card.update(id='skill:sop-cool-15', sopId='SOP-COOL-15', name='캐비닛 환기 보강')
+                    full[event['tool_use_id']] = json.dumps(body, ensure_ascii=False)
+        with gzip.open(path, 'wt', encoding='utf-8') as f:
+            json.dump(doc, f, ensure_ascii=False)
+        return out
+    raise AssertionError('저장소에 냉각 판단(c3_cooling/T_agent) 녹화가 없다')
+
+
+@pytest.mark.parametrize('sop, outcome, state', [
+    ('skill:sop-cool-14', '정상', 'CLOSED'),        # 쿨러 핀 세척 — 실제 결함(핀 오염)을 다루는 조치
+    ('skill:sop-cool-15', '미달', 'ESCALATED'),     # 캐비닛 환기 보강 — 주변 온도 상승을 다루는 조치. 핀 오염은 그대로 남는다
+], ids=['결함을 다루는 조치', '결함을 다루지 않는 조치'])
+def test_흐름A의_정비는_승인한_조치가_다루는_원인만_고쳐_틀린_조치면_효과_확인에서_미달로_끝난다(world, served_plant, ambient_cause_replay, sop, outcome, state):
+    """전에는 「정비 수행」이 승인한 카드가 무엇이든 쿨러 결함을 지웠다(흐름 정의의 component: cooler) — 틀린 조치를 승인해도 재관측이 「회복」.
+    지금은 승인한 조치 방법이 지식에서 다루는 원인의 외란 변수만 가상 설비에서 되돌린다(service_parts.maintenance_scope). 설비의 실제 결함은
+    쿨러 핀 오염(수업 강도)이고, 유온은 설비 모형이 낸 값 그대로다 — 감지기 자리(경보 해제)만 시험이 유온이 경보선 아래일 때 넣는다."""
+    pattern, asset = COOLING
+    served_plant.inject(asset, 'cooler_degradation', severity='moderate')
+    world.settle(1800)
+    tags = served_plant.tags(asset)
+    alert, pid = world.raise_alert(pattern, asset, ts1=tags['TS1'], ce=tags['CE'])
+    world.report()
+    from conftest import REPLAY_DIR
+    replay = ambient_cause_replay if sop == 'skill:sop-cool-15' else REPLAY_DIR      # AI 가 짚은 원인: 주변 온도 상승 / 쿨러 핀 오염(저장소 녹화)
+    assert world.runner('replay', replay_dir=replay).poll_once() == 1
+    assert world.row(pid, 'T_agent')['status'] in ('SUBMITTED', 'DONE'), world._failure(world.row(pid, 'T_agent'))
+    world.poll()
+    decision = next(d['id'] for d in world.main.book.values() if ((d.get('origin') or {}).get('process_scope') or {}).get('instance') == pid)
+    assert sop in {o['id'] for o in world.main.book[decision]['options']}, '판단 엔진이 그 원인의 근본 조치를 후보로 내야 한다'
+    world.approve(pid, decision, sop, MAINT)
+    world.poll(3)
+    done = world.values(pid)['maintenance']
+    assert world.row(pid, 'T_fix')['status'] == 'DONE' and world.row(pid, 'T_reobs_wo')['status'] != 'DONE'
+    world.settle(15 * 60)                                             # 효과 확인 창(설비 시간 15분) 동안 설비가 실제로 식는지
+    after = served_plant.tags(asset)
+    world.report(asset)
+    if after['TS1'] < 55:                                             # 감지기 자리: 유온이 경보선 아래로 내려오면 경보를 해제한다
+        world.clear_alert(alert)
+    world.clock.advance(WINDOW_S + 1)
+    world.poll(3)
+    report = _report(world, pid)
+    assert (report['outcome'], world.incident(pid).state) == (outcome, state), (report, after['TS1'], done['notice'])
+    if outcome == '정상':
+        assert [t['id'] for t in done['scope']['targets']] == ['sv:fouling'] and done['restored']['targets'] == {'cooler_health': 1.0}
+        assert '승인한 조치 방법 SOP-COOL-14이(가) 다루는 원인(쿨러 핀 오염)에 따라 가상 설비의 쿨러 핀 오염도을(를) 정상으로 되돌렸습니다' in done['notice']
+        assert served_plant.units[asset].state.cooler_health == 1.0 and after['TS1'] < 55
+    else:
+        assert done['scope']['targets'] == [] and done['restored']['targets'] == {}, done
+        assert 'SOP-COOL-15이(가) 다루는 원인(주변 온도 상승)이 설비의 어느 상태를 바꾸는지 지식 지도에 없습니다 — 가상 설비의 상태는 바꾸지 않았습니다' in done['notice']
+        assert served_plant.units[asset].state.cooler_health < 1.0 and after['TS1'] > 55, '틀린 조치인데 설비 결함이 사라졌다'
+
+
+@pytest.mark.parametrize('sop, causes, targets', [
+    ('SOP-COOL-14', ['cause:cooler-fin-fouling'], [('sv:fouling', 'cause')]),
+    ('SOP-COOL-15', ['cause:ambient-temperature-rise'], []),                 # 다루는 원인이 가상 설비의 어느 상태도 바꾸지 않는다
+    ('SOP-FAN-11', ['cause:fan-drive-fault'], [('sv:bearing-wear', 'cause')]),   # 원인이 흔드는 팬 진동 ← 팬 베어링 마모도(외란 변수)
+    ('SOP-PM-21', ['cause:hydraulic-oil-contamination', 'cause:pump-shaft-seal-wear'], [('comp:pump-a', 'component')]),   # 원인별 외란이 지식에 없다 → 구성 요소
+    ('SOP-COOL-11', [], []),                                                 # 즉시 완화는 원인을 없애는 조치가 아니다
+    ('SOP-없는-절차', [], []),
+], ids=['원인 한정 근본 조치', '설비 밖 원인', '한 단계 위 외란 변수', '구성 요소 단위', '즉시 완화', '지식에 없는 절차'])
+def test_정비_수행이_고칠_대상은_승인한_조치_방법이_지식_지도에서_다루는_원인으로_정한다(world, sop, causes, targets):
+    """수업 지식(HM-8 · PM-02 적재분)에서 조치 방법 → 다루는 원인 → 외란 변수(없으면 고장 유형의 구성 요소). 고칠 대상이 없으면 그 까닭을 말한다."""
+    from procsvc.service_parts import maintenance_scope
+    scope = maintenance_scope(world.rt.hooks.query_cypher, sop)
+    assert [c['id'] for c in scope['causes']] == causes and [(t['id'], t['via']) for t in scope['targets']] == targets, scope
+    assert bool(scope['why']) is (not targets), scope

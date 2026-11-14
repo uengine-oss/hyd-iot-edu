@@ -11,9 +11,10 @@ from datetime import datetime, timezone
 import logging
 import os
 import threading
+import time
 import urllib.error
 import urllib.request
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 
 import psycopg
 from fastapi import HTTPException
@@ -30,7 +31,7 @@ from . import skill_graph
 from .inbox import actor_or_400
 from .knowledge_projection import KnowledgeReconciler
 from .case_projection import CaseProjector
-from .source_inbox import PgSourceInbox, kafka_record, source_record
+from .source_inbox import PgSourceInbox, kafka_record, source_record, source_time
 from .source_delivery import SourceDelivery, SourcePending
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -48,7 +49,7 @@ incidents: dict[str, machine.Incident] = {}
 book: dict[str, dict] = {}          # action-card decisions (L9, ontology v2)
 audit_log: list[dict] = []
 SOURCE_BATCH_MAX = int(os.getenv('SOURCE_BATCH_MAX', '50'))   # A080: deliveries received per DB connection and per offset commit (~6 s at 20x)
-plant_status: dict[str, dict] = {}   # latest plant.status per asset (PLC mode / state for the agent's DMN facts)
+plant_status: dict[str, dict] = {}   # 설비별 최신 상태(plant.status — 판단 · 승인 검사가 읽는다). 고치는 곳은 _keep_status 하나, 받는 반복은 watch_status
 producer = None
 consumer_client = None
 loop: asyncio.AbstractEventLoop | None = None
@@ -270,24 +271,77 @@ async def _receive_retrying(pairs):
             delay = min(delay * 2, 30.0)
 
 
+def _keep_status(payload) -> None:
+    """설비 상태 하나를 설비별 최신 상태(plant_status)에 둔다 — 지금 든 것보다 관측 시각(t)이 더 새 것만. 같은 레코드를 두 번 받거나(offset
+    재전달) 옛 상태가 뒤늦게 와도(밀린 접수 · 재시작 뒤 다시 읽기) 결과가 같다. 업무 DB 의 최신 상태 줄(source_inbox._keep_latest_state)과
+    같은 규칙이고, 설비 이름이나 시간대 있는 시각이 없는 것은 두지 않는다(그런 수신은 접수가 INVALID 로 남긴다)."""
+    asset = payload.get('asset') if isinstance(payload, dict) else None
+    if not isinstance(asset, str) or not asset.strip() or '_raw' in payload:
+        return
+    at, held = source_time(payload), source_time(plant_status.get(asset) or {})
+    if at is not None and (held is None or at > held):
+        plant_status[asset] = payload
+
+
+async def watch_status():
+    """설비 최신 상태(plant_status)를 Kafka plant.status 에서 받는 대로 고친다. 원천 접수(consume)와 다른 소비자다 — 접수 반복은 레코드를
+    받은 뒤 경보 정책 조회 · 레코드마다의 DB 커밋 · offset 커밋을 차례로 기다리고 그동안 다음 레코드를 가져오지 않는다. 최신 상태를 그 반복에서만
+    고치면 접수가 밀린 만큼 낡는다(2026-11-14 01:01: DB 가 느린 15초 동안 Kafka 에는 1초마다 새 상태가 있었는데 process 는 옛 상태를 들고
+    있었고, 그 값으로 낸 판단의 조치 안이 모두 「15초 전 값」으로 제외됐다). 이 반복은 DB 를 쓰지 않고 기다리는 것이 Kafka 뿐이다.
+    소비 그룹 없이 지금부터 읽는다(offset 을 남기지 않는다) — 켜진 뒤 첫 상태가 오기까지(1초)는 시작 때 업무 DB 에서 되살린 값이다."""
+    cons = await make_consumer([topics.K_STATUS], group=None, from_latest=True, auto_commit=False)
+    try:
+        async for rec in cons:
+            _keep_status(rec.value)
+    finally:
+        await cons.stop()
+
+
+SOURCE_STEP_SLOW_S = 2.0     # 원천 접수 반복의 한 단계(정책 조회 · 접수 · offset 커밋)가 이보다 오래 걸리면 로그에 남긴다(평소 0.3초 안)
+
+
+@contextmanager
+def _source_step(name: str, records: int):
+    """원천 접수 반복이 지금 기다리는 단계를 /healthz(kafka.receiving)에 보이고, 오래 걸린 단계를 로그에 남긴다 — 접수가 밀렸을 때 어느
+    기다림(정책 조회 · 접수 · offset 커밋)에서 밀렸는지 가를 관측 지점(2026-11-14 조사에서는 이 기록이 없어 가르지 못했다)."""
+    started = time.monotonic()
+    state['source_step'] = {'step': name, 'since': now_iso(), 'records': records}
+    try:
+        yield
+    finally:
+        state.pop('source_step', None)
+        took = time.monotonic() - started
+        if took >= SOURCE_STEP_SLOW_S:
+            log.warning('source receipt step %s took %.1fs (%d records)', name, took, records)
+
+
 async def receive_records(recs, commit=None) -> None:
-    """Kafka 에서 받은 원천 레코드 한 묶음(한 파티션, 받은 차례)을 원천 접수에 넣는다 — 경보(RAISE)의 흐름 정책 고르기 → 한 DB 연결의 접수
-    (source_inbox.receive_many) → 설비 최신 상태(plant_status) 갱신. consume() 과 테스트가 이 함수 하나를 부른다(G5b-03 · 06).
+    """Kafka 에서 받은 원천 레코드 한 묶음(한 파티션, 받은 차례)을 원천 접수에 넣는다 — 설비 상태는 먼저 최신 상태(plant_status)에 두고
+    (_keep_status — 기다리는 일이 없다), 경보(RAISE)의 흐름 정책 고르기 → 한 DB 연결의 접수(source_inbox.receive_many).
+    consume() 과 테스트가 이 함수 하나를 부른다(G5b-03 · 06).
     A080: 접수는 레코드마다 커밋되고, 접수된 앞부분마다 commit(마지막으로 접수한 레코드)를 부른다(offset 은 부르는 쪽 — Kafka).
-    접수에 실패한 레코드부터는 1초 뒤 다시(빠진 사건 뒤로는 commit 하지 않는다). 돌아오면 묶음 전체가 접수된 것이다."""
+    접수에 실패한 레코드부터는 1초 뒤 다시(빠진 사건 뒤로는 commit 하지 않는다). 돌아오면 묶음 전체가 접수된 것이다.
+    최신 상태는 접수 성공과 무관하다(가장 새 관측을 들고 있는 칸이지 사건 기록이 아니다) — 접수가 실패해 같은 레코드를 다시 받아도 더 새
+    시각이 아니라 그대로다. 명령 응답(ACK)이 사건을 진행시키는 길은 접수 행(source_delivery)뿐이라 접수 전에 응답이 처리되지 않는다."""
+    records = [kafka_record(rec) for rec in recs]
+    for record in records:
+        if record['topic'] == topics.K_STATUS:
+            _keep_status(record['payload'])
     items = []
-    for rec in recs:
-        record = kafka_record(rec)
-        policy = await _alert_policy_retrying(record['payload'].get('pattern')) if record['kind'] == 'RAISE' else None
+    for rec, record in zip(recs, records):
+        policy = None
+        if record['kind'] == 'RAISE':
+            with _source_step('alert policy', len(records)):
+                policy = await _alert_policy_retrying(record['payload'].get('pattern'))
         items.append((rec, record, policy))
     start = 0
     while start < len(items):
-        rows, error, states = await _receive_retrying([(r, p) for _, r, p in items[start:]])
+        with _source_step('receipt', len(items) - start):
+            rows, error, _ = await _receive_retrying([(r, p) for _, r, p in items[start:]])
         done = start + len(rows)
-        if states:
-            plant_status.update(states)
         if done > start and commit is not None:
-            await commit(items[done - 1][0])
+            with _source_step('offset commit', done - start):
+                await commit(items[done - 1][0])
         if error is None:
             state.pop('source_receive_error', None)
             return
@@ -372,18 +426,31 @@ async def source_loop():
 HEALTH_ERRORS = ('source_receive_error', 'source_handler_error', 'source_policy_error', 'startup_db_error')
 
 
+def _status_ages() -> dict:
+    at = now()
+    out = {}
+    for asset, held in list(plant_status.items()):
+        seen = source_time(held)
+        out[asset] = {"t": held.get("t"), "age_s": None if seen is None else round((at - seen).total_seconds(), 1)}
+    return out
+
+
 def _health_state():
     """지금 처리할 수 있는가 — DB 를 새로 열지 않고 메모리에서 잰 것만(P5-16: 시작 때 한 번 정한 값은 싣지 않는다).
     ok = Kafka 소비를 시작했고 · 멈춘 반복이 없고 · 원천 접수/처리 오류가 없고 · 처리 엔진 폴링이 돈다(runtime — DB 상태는 여기서 드러난다).
-    kafka.last_record_at = 마지막으로 받은 원천 레코드 시각(설비 상태가 1초마다 오므로 오래 멈춰 있으면 브로커 · 설비 쪽을 본다).
+    kafka.last_record_at = 원천 접수 반복이 마지막으로 레코드를 받은 시각(설비 상태가 1초마다 오므로 오래 멈춰 있으면 브로커 · 설비 쪽을 본다).
+    kafka.receiving = 원천 접수 반복이 지금 기다리는 단계와 그 시작 시각(없으면 다음 레코드를 기다리는 중). 오래 걸린 단계는 로그에도 남는다.
+    plant_status = 설비별로 들고 있는 최신 상태의 관측 시각과 나이(초, 벽시계) — 나이가 1~2초를 넘으면 설비 · 수집 · Kafka 쪽이 멈춘 것이다
+    (판단 · 승인 검사는 15초를 넘은 값을 쓰지 않는다 — agentsvc/decide.MAX_APPROVAL_FACT_AGE_S).
     그래프 반영 대기는 GET /api/graph-projections(DB 를 읽는다)."""
     runtime = instance_mode.runtime_readiness()
     errors = {k: state[k] for k in HEALTH_ERRORS if state.get(k)}
     stopped = dict(state.get("stopped_loops") or {})
     ready = state.get("consumer_started") and not errors and not stopped and runtime['ready']
     return {"ok": bool(ready), "runtime": runtime, "errors": errors, "stopped_loops": stopped,
-            "kafka": {"consumer_started": bool(state.get("consumer_started")), "last_record_at": state.get("last_record_at")},
-            "incidents": len(incidents)}
+            "kafka": {"consumer_started": bool(state.get("consumer_started")), "last_record_at": state.get("last_record_at"),
+                      "receiving": state.get("source_step")},
+            "plant_status": _status_ages(), "incidents": len(incidents)}
 
 
 app = make_app("process — 처리 건 엔진(원천 접수 · 사람 승인 · 설비 명령 · ACK · 재관측 · 작업지시)", reg, _health_state)
@@ -609,6 +676,7 @@ async def _startup():
     case_projection_task = background(_case_projection_loop(), 'graph projection')
     background(_ddl_sync_loop(), 'source catalog sync')
     background(consume(), 'kafka consumer')
+    background(watch_status(), 'plant status watch')
 
 
 @app.get('/api/graph-projections')
@@ -785,7 +853,7 @@ def exec_skill(d: dict, item: dict) -> dict:
         params = {"ref": item.get("ref")}
         if item.get("sop"):
             params["sop"] = item["sop"]
-        if item.get("basis"):            # H-11: 입고 확인의 시간 근거(수업 즉시 입고 · 시간 압축 — service_parts.receipt_basis)를 거래 기록에
+        if item.get("basis"):            # H-11: 입고 확인의 시간 근거(리드타임 대기를 줄인 까닭 — service_parts.receipt_basis)를 거래 기록에
             params["basis"] = item["basis"]
     body = {"decision": d["id"], "option": opt["id"], "skill": job, "system": item.get("system"), "asset": d.get("asset"),
             "by": d.get("approvedBy"), "params": params}
@@ -1270,6 +1338,35 @@ async def scenario_a_button(act: str, body: dict | None = None):
                  setpoints=res.get("setpoints"))
     return {"ok": True, "button": spec["button"], "asset": asset, "at": origin["at"], "injection_id": origin["id"], "instance": linked,
             "plant": res, "reanchored": reanchor["moved"], "reanchor": reanchor}
+
+
+@app.post("/api/scenario/{key}/delay")
+async def scenario_delay(key: str, body: dict | None = None):
+    """[공급사 납기 지연](C): 바깥 사건 — 진행 중인 예비품 구매 처리 건이 낸 열린 발주의 납기를 공급사가 늦춘다(업무 거래 skill:delay-delivery).
+    입고 단계가 입고 예정 때 그 통보를 읽어 더 기다리고, 그 사이 흐름의 납기 초과 타이머가 울리면 「지연」 결과 보고로 끝난다.
+    열린 발주가 없으면(처리 건 없음 · 발주 전 · 이미 입고 · 이미 지연 통보) 409 와 까닭. 누름은 감사 기록과 그 처리 건 기록에 남는다."""
+    rt = _scenario_rt()
+    key = key.upper()
+    event = scenario_buttons.EVENTS.get(key, {}).get("delay")
+    if event is None:
+        raise HTTPException(404, f"시나리오 {key}에는 [공급사 납기 지연]이 없습니다")
+    spec = scenario_buttons.SCENARIOS[key]
+    person = scenario_buttons.who(body)
+    async with _scenario_lock(key):
+        at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        try:
+            target = await asyncio.to_thread(scenario_buttons.delay_target, rt, instance_mode.enterprise_read, key)
+        except scenario_buttons.Refused as e:
+            _press_audit(spec["asset"], person, event["button"], key, at, instance=None, error=str(e), refused=True)
+            raise HTTPException(409, str(e)) from None
+        tx = await asyncio.to_thread(_entsim_post, "/api/exec", {"skill": event["skill"], "asset": spec["asset"], "by": person["by"],
+                                                                 "params": {"ref": target["ref"], "days": event["days"]}})
+        await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
+            target["instance"], event["button"], spec["asset"], person, at,
+            {"purchase_order": target["ref"], "days": event["days"], "effect": tx.get("detail")})])
+    _press_audit(spec["asset"], person, event["button"], key, at, instance=target["instance"], purchase_order=target["ref"], days=event["days"])
+    return {"ok": True, "scenario": key, "button": event["button"], "instance": target["instance"], "purchase_order": target["ref"],
+            "days": event["days"], "detail": tx.get("detail"), "at": at}
 
 
 def _route_error(e: ServiceRefused) -> HTTPException:

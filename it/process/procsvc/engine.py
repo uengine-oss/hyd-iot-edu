@@ -24,6 +24,8 @@ deliberately not supported here — decisions stay deterministic).
   사람 단계 · 에이전트 단계 · IT 시스템 단계(명령 ACK · 작업지시 · 발주 · 메일 · 결과 보고) — 벽시계(사람이 읽고 고르는 시간, AI · 업무 시스템이
   실제로 걸리는 시간). 재관측 · 시운전 — 배속(TIME_SCALE, 가상 설비 시간). 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행) — 배속 × 수업
   압축(PROCESS_WAIT_COMPRESSION, configure_wait_compression).
+  값은 compose.yaml 한 곳: 배속 20 × 압축 360 = 7200배 — 업무 시간 하루가 벽시계 12초다(납기 5일 = 1분, 납기 초과 타이머 6일 = 72초,
+  예정된 정비 시간까지 9시간 = 4.5초). 학생이 「발주 중」을 보고 바깥 사건([공급사 납기 지연])을 넣어 볼 만큼만 기다리게 한 값이다.
 """
 from __future__ import annotations
 

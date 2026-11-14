@@ -3012,8 +3012,8 @@ def lab_92_biz_reset(r: Round):
         r.check(f"{key} [초기화](대기 중) → 수업 시작값", "초기화" in msg and not msg.startswith("실패:"), msg, axis=AXES[3])
         chip = biz_chip(r, asset)
         r.check(f"{key} [초기화] 뒤 표시 「{label}」", label in chip, chip, axis=AXES[3])
-        press = r.page.locator(f"#units .unit[data-asset='{asset}'] .biz-press").inner_text()
-        r.check(f"{key} 카드에 최근에 누른 단추(무엇 · 언제)가 남는다", "최근에 누른 단추" in press and "[초기화]" in press, press)      # app.js pressText
+        press = r.page.locator(f"#gwLog .biz-press[data-asset='{asset}']").text_content() or ""      # 화면 아래 「조작 기록」 접기 안(접혀 있어도 글은 있다)
+        r.check(f"{key} 설비에서 마지막으로 누른 단추(무엇 · 언제)가 조작 기록에 남는다", "[초기화]" in press, press)      # app.js renderGwLog
         # 진행 중 [초기화]는 거절한다(초기화가 그 처리 건의 발주 · 오더 기록을 바꾸므로 — scenario_buttons) · 처리 건은 그대로 진행
         before = instance_ids(r)
         unit_button(r, asset, "biz-start")

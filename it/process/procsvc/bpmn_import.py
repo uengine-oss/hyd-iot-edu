@@ -1003,7 +1003,8 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     if start_form:
         field_type.update({f["key"]: f["type"] for f in start_form["fields_json"]})
     data = [deepcopy(cat["data"][v]) if v in cat["data"] else
-            {"name": v, "type": SERVER_VALUE_TYPES.get(v) or extracted_types.get(v) or DATA_TYPE.get(field_type.get(v), "Text")}
+            {"name": v, "type": SERVER_VALUE_TYPES.get(v) or effect_parts.OUTPUT_TYPES.get(v) or extracted_types.get(v)
+                                or DATA_TYPE.get(field_type.get(v), "Text")}
             for v in used]
     role_rows = []
     for rname in used_roles:

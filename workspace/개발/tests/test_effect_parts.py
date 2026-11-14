@@ -109,8 +109,8 @@ def test_발주_금액은_견적_단가_곱하기_수량이고_모르면_승인�
     ({'id': 'T', 'tool': ep.TEST_RUN_TOOL, 'service': {'criteria': {'PS1': ['=>', 165]}}, 'outputData': ['test_run', 'passed']}, '시운전 기준'),
     ({'id': 'T', 'tool': ep.REPORT_TOOL, 'service': {'outcome': '좋음'}, 'outputData': ['result_report']}, '결과\\(outcome\\)'),
     ({'id': 'T', 'tool': ep.MCP_TOOL, 'service': {'server': 'hyd-effects', 'tool': 'send_mail'}, 'outputData': ['x']}, 'outputData 는'),
-    ({'id': 'T', 'tool': ep.GR_TOOL, 'service': {'immediate': 'yes'}, 'outputData': ['goods_receipt', 'received']}, 'immediate 는 true/false'),
-], ids=['시간 대기 정상', '기간과 시각 둘 다', '설정 칸 오타', '시운전 연산 오타', '모르는 결과', 'MCP 출력 이름', '즉시 입고 값'])
+    ({'id': 'T', 'tool': ep.GR_TOOL, 'service': {'immediate': True}, 'outputData': ['goods_receipt', 'received']}, '모르는 설정 칸 immediate'),
+], ids=['시간 대기 정상', '기간과 시각 둘 다', '설정 칸 오타', '시운전 연산 오타', '모르는 결과', 'MCP 출력 이름', '지운 즉시 입고 설정'])
 def test_부품_설정은_오타나_빠진_칸을_조용히_넘기지_않는다(activity, error):
     if error is None:
         ep.validate(activity)

@@ -22,6 +22,9 @@ data._at · hours_from_now) 이후 모든 판단이 틀어진다: 납기까지 �
 (agent approval-check 의 근거 기준점 비교) 옛 정비 시간 id 가 거절된다 — 그래서 옮길 때 그 처리 건 기록에 남긴다(main._reanchor_if_idle).
 막은 처리 건과 붙잡지 않은 처리 건은 reanchor_blockers 가 이름과 함께 돌려준다(응답 · 감사 기록 · 화면).
 
+  [공급사 납기 지연] (C)   — 바깥 사건(EVENTS): 진행 중인 예비품 구매 처리 건이 낸 열린 발주의 납기를 공급사가 늦춘다(업무 거래
+                             skill:delay-delivery). 열린 발주가 없으면 까닭과 함께 거절한다(delay_target). 화면은 status 의 events 로 단추를 그린다.
+
   [쿨러 열화 주입] · [쿨러 복구] (A, HYD-01) — plant-sim 주입에 누름 id(origin)를 싣는다. 설비 상태(plant.status injection)에 남은 그 id 로,
   주입이 일으킨 경보가 연 처리 건에 기록을 붙인다(main._link_injection). 시간 창으로 짐작하지 않는다.
 """
@@ -47,6 +50,12 @@ SCENARIOS: dict[str, dict] = {
           "show": ("part_no", "name", "on_hand", "reserved", "on_order", "available", "reorder_point", "target_stock", "need_qty"),
           "reset": ("/erp/spare/reset", {"part_no": "P-PMP-SEAL"})},
 }
+
+#: 업무 사건 카드의 바깥 사건 단추(시나리오 → 동작 → 설정). 설비 결함 주입과 같은 성격이다 — 실습에서는 누군가 바깥세상의 일을 일으켜야 한다.
+#:   C delay: 공급사가 열린 발주의 납기를 days 일 늦춘다고 알린다(업무 거래 skill:delay-delivery — SCM). 처리 엔진의 입고 단계는 입고 예정 때
+#:   그 통보를 읽어 더 기다리고, 그 사이 흐름의 납기 초과 타이머(발주 뒤 6일)가 울리면 「지연」 결과 보고로 끝난다. days 는 어느 승인 공급사
+#:   (리드타임 2일 · 5일)를 골랐어도 6일을 넘기는 값이다 — 늦춘 발주가 타이머보다 먼저 들어오면 지연 통보만 남고 보고가 빠지기 때문이다.
+EVENTS: dict[str, dict] = {"C": {"delay": {"button": "공급사 납기 지연", "days": 5, "skill": "skill:delay-delivery"}}}
 
 A_ASSET = "HYD-01"
 #: A 의 쿨러 열화 세기. 시나리오 A 는 "경보가 났고 보호 정지(65 ℃) 전에 식힌다"이다 — moderate(쿨러 0.55)는 평형 62.5 ℃로 경보만 내고,
@@ -195,9 +204,46 @@ def status(read: Callable[[str, dict], dict], rt=None, last_press: Callable[[str
         if rt is not None:
             item["running"] = _brief(rt, _run(rt, spec, "RUNNING"))
             item["last"] = _brief(rt, _run(rt, spec))
+            item["events"] = [event_state(rt, read, key, act) for act in EVENTS.get(key, {})]
         out[key] = item
     presses = {a: last_press(a) for a in (A_ASSET, *(sp["asset"] for sp in SCENARIOS.values()))} if last_press else {}
     return {"scenarios": out, "fault": fault_scope(), "presses": presses, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
+def delay_target(rt, read: Callable[[str, dict], dict], key: str) -> dict:
+    """[공급사 납기 지연]이 늦출 발주: 그 시나리오의 진행 중 처리 건이 낸, 아직 입고되지 않은 발주 하나. 없으면 Refused(까닭 — 화면이 그대로 보인다).
+    돌려줌 {instance, ref, supplier, lead_d}. 업무 시스템의 그 발주가 열려 있는지(상태 · 이미 알린 지연)를 지금 값으로 다시 읽는다."""
+    spec = SCENARIOS[key]
+    running = _run(rt, spec, "RUNNING")
+    if not running:
+        raise Refused(f"진행 중인 {spec['title']} 처리 건이 없어 늦출 발주가 없습니다 — [{spec['title']} 시작]으로 처리 건을 열고 발주안을 승인한 뒤, "
+                      "입고를 기다리는 동안 누르세요")
+    v = engine.variables(rt.repo.get_instance(running["proc_inst_id"]))
+    po = v.get("purchase_order")
+    if not isinstance(po, dict) or not po.get("ref"):
+        raise Refused(f"{spec['title']} 처리 건이 아직 발주 전입니다 — 처리 건에서 발주안을 승인하면 발주가 열립니다. 그 뒤 입고를 기다리는 동안 누르세요")
+    facts = (read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
+    if facts.get("status") != "승인됨 → 발주":
+        raise Refused(f"발주 {po['ref']}은(는) 이미 {facts.get('status') or '닫힌'} 상태라 납기를 늦출 수 없습니다")
+    if float(facts.get("delay_d") or 0) > 0:
+        raise Refused(f"발주 {po['ref']}에는 공급사가 이미 납기 지연 {float(facts['delay_d']):g}일을 알렸습니다 — 처리 건에서 납기 초과 결과를 기다리세요")
+    return {"instance": running["proc_inst_id"], "ref": po["ref"], "supplier": facts.get("supplier_name") or facts.get("supplier"),
+            "lead_d": facts.get("lead_d")}
+
+
+def event_state(rt, read: Callable[[str, dict], dict], key: str, act: str) -> dict:
+    """업무 사건 카드의 바깥 사건 단추 하나의 지금 상태 — 화면은 이 값으로 단추를 그린다(이름 · 누를 수 있는지 · 못 누르는 까닭 · 부를 길)."""
+    spec = EVENTS[key][act]
+    item = {"act": act, "button": spec["button"], "days": spec.get("days"), "path": f"/api/scenario/{key}/{act}",
+            "help": f"공급사가 열린 발주의 납기를 {spec['days']}일 늦춘다고 알립니다. 입고를 기다리는 동안 누르면 납기 초과로 「지연」 결과 보고가 납니다."}
+    try:
+        target = delay_target(rt, read, key)
+        item.update(enabled=True, why=None, instance=target["instance"], purchase_order=target["ref"])
+    except Refused as e:
+        item.update(enabled=False, why=str(e))
+    except Exception as e:  # noqa: BLE001 — 업무 시스템을 못 읽으면 누를 수 없다고 하고 까닭을 보인다(다른 카드는 그대로 보인다)
+        item.update(enabled=False, why=f"발주 상태를 읽지 못했습니다: {str(e)[:200]}")
+    return item
 
 
 def who(body: dict | None) -> dict:

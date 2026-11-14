@@ -305,18 +305,29 @@ class ServicePartsRuntime:
                     "sop": sop, "source": "approved-maintenance"}
             state = self._save_state(wi, completed=self._exec(inst, v, item, "정비 수행 모사"))
         if "restored" not in state:
-            res = self.hooks.plant_restore(v.get("asset"), cfg.get("component") or None)
+            # 무엇을 고쳤는가: 흐름이 대상 부품을 적었으면 그것, 아니면 승인한 조치 방법(SOP)이 지식에서 다루는 원인의 외란 변수 · 구성 요소만
+            # (maintenance_scope). 전에는 흐름 A 가 component: cooler 를 적어 두어 어떤 조치를 승인해도 쿨러 결함이 지워졌다 — 틀린 조치도 「회복」.
+            scope = None
+            if not cfg.get("component"):
+                scope = maintenance_scope(self.hooks.query_cypher, cfg.get("sop") or opt.get("sopId"))
+            res = (self.hooks.plant_restore(v.get("asset"), cfg["component"]) if scope is None
+                   else self.hooks.plant_restore(v.get("asset"), None, targets=[t["id"] for t in scope["targets"]]))
             if not isinstance(res, dict) or res.get("ok") is False:
                 from .instances import ServiceExecutionError
                 raise ServiceExecutionError(res if isinstance(res, dict) else {"error": "설비 시뮬레이터 응답이 없습니다"})
-            state = self._save_state(wi, restored=res)
+            state = self._save_state(wi, restored=res, scope=scope)
         standard = state.get("standard") or {}
         parts_note = (f"정비 시스템(CMMS)에 {standard.get('sop') or '이 절차'}의 표준 작업(부품 · 수량)이 없어 부품 소모를 기록하지 않았습니다 — "
                       "이 정비에 쓴 부품이 있으면 재고가 실제와 다릅니다") if state.get("completed") and standard.get("found") is False else None
-        notice = (f"{v.get('asset')} 정비 완료 — " + ((state.get("completed") or {}).get("detail") or "설비 시뮬레이터 복구")
-                  + (f", 대상 {cfg['component']}" if cfg.get("component") else "") + (f". {parts_note}" if parts_note else ""))
-        out = {"asset": v.get("asset"), "component": cfg.get("component") or "all", "work_order": (wo or {}).get("ref") if isinstance(wo, dict) else None,
+        scope = state.get("scope")
+        fixed = maintenance_sentence(scope, state["restored"], cfg.get("component"))
+        notice = (f"{v.get('asset')} 정비 완료 — " + ((state.get("completed") or {}).get("detail") or "작업지시 없이 수행")
+                  + f". {fixed}" + (f". {parts_note}" if parts_note else ""))
+        # component = 흐름이 직접 적은 부품(없으면 None — 고친 대상은 scope.targets 와 notice 가 말한다)
+        out = {"asset": v.get("asset"), "component": cfg.get("component") or None,
+               "work_order": (wo or {}).get("ref") if isinstance(wo, dict) else None,
                "completed": state.get("completed"), "restored": state.get("restored"), "notice": notice,
+               **({"scope": scope} if scope is not None else {}),
                **({"parts_note": parts_note} if parts_note else {}),
                "done_at": engine.now_iso(self._now(now))}
         self._event(wi, "MAINTENANCE_DONE", "정비 완료 공지", {"notice": notice})
@@ -332,10 +343,6 @@ class ServicePartsRuntime:
             raise ValueError("입고를 확인할 발주 영수증(purchase_order.ref)이 처리 건에 없습니다")
         clock = self._now(now)
         state = self._state(wi)
-        if cfg.get("immediate") and "wait" not in state:
-            # C3 B · C 단순화: 발주 뒤 바로 입고 · 재고 반영(리드타임을 기다리지 않는다 — '처리되면 끝')
-            state = self._save_state(wi, wait={"due_at": engine.now_iso(clock), "real_s": 0, "label": "즉시 입고", "immediate": True})
-            self._event(wi, "RECEIPT_IMMEDIATE", "입고 대기 없음 — 발주 수량을 바로 입고 · 재고 반영", {"purchase_order": po["ref"]})
         if "wait" not in state:
             after = po.get("after") or {}
             lead_d, delay_d = after.get("lead_d"), after.get("delay_d") or 0
@@ -343,7 +350,7 @@ class ServicePartsRuntime:
                 facts = (self.hooks.enterprise_read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
                 lead_d, delay_d = facts.get("lead_d"), facts.get("delay_d") or 0
             if lead_d is None:
-                # 입고 예정 시각의 출처는 공급사 리드타임 하나다 — 없으면 0일(바로 입고)로 지어내지 않는다(즉시 입고는 흐름 설정 immediate 가 정한다)
+                # 입고 예정 시각의 출처는 공급사 리드타임 하나다 — 없으면 0일(바로 입고)로 지어내지 않는다
                 raise ValueError(f"발주 {po['ref']} 의 공급사 리드타임(입고까지 걸리는 날 수)을 발주 영수증에도 구매 · 재고 관리 시스템에도 찾지 못해 "
                                  "입고 예정 시각을 정할 수 없습니다 — 구매 · 재고 관리에서 그 발주의 리드타임을 확인한 뒤 이 단계를 다시 실행합니다")
             plan = effect_parts.wait_plan((float(lead_d) + float(delay_d)) * 86400, clock, self.time_scale, label="입고 예정까지",
@@ -354,17 +361,21 @@ class ServicePartsRuntime:
             self._event(wi, "RECEIPT_WAIT", "입고 대기 시작", {"purchase_order": po["ref"], "plan": plan})
         if not effect_parts.due(state["wait"], clock):
             return
-        if "receipt" not in state and self.hooks.enterprise_read is not None and not state["wait"].get("immediate"):
-            # 공급사가 납기 지연을 알렸으면(ERP skill:delay-delivery) 늦어진 입고 예정까지 더 기다린다 — 그 사이 납기 초과 타이머가 울릴 수 있다
+        if "receipt" not in state and self.hooks.enterprise_read is not None:
+            # 공급사가 납기 지연을 알렸으면(ERP skill:delay-delivery — 결함 시뮬레이션의 [공급사 납기 지연]) 늦어진 입고 예정까지 더 기다린다.
+            # 그 사이 이 단계에 붙은 납기 초과 타이머가 울리면 흐름은 지연 결과 보고로 간다(수업 흐름 C 의 B_late)
             facts = (self.hooks.enterprise_read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
             delay_d = float(facts.get("delay_d") or 0)
             plan = state["wait"]
             if delay_d > float(plan.get("delay_d") or 0):
                 extra = effect_parts.wait_plan((delay_d - float(plan.get("delay_d") or 0)) * 86400, clock, self.time_scale)
-                plan = dict(plan, due_at=extra["due_at"], delay_d=delay_d, source=f"{po['ref']} 리드타임 {plan.get('lead_d')}일 + 지연 {delay_d:g}일")
+                plan = dict(plan, due_at=extra["due_at"], delay_d=delay_d, real_s=round(float(plan.get("real_s") or 0) + extra["real_s"], 1),
+                            source=f"{po['ref']} 리드타임 {plan.get('lead_d')}일 + 지연 {delay_d:g}일")
                 wi["due_date"] = plan["due_at"]
                 state = self._save_state(wi, wait=plan)
                 self._event(wi, "RECEIPT_DELAYED", "공급사 납기 지연 — 입고 예정이 늦어짐", {"purchase_order": po["ref"], "plan": plan})
+                self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), "공급사 납기 지연",
+                                   f"발주 {po['ref']}의 입고 예정이 {delay_d:g}일 늦어졌습니다(공급사 통보) — 리드타임 {plan.get('lead_d')}일 + 지연 {delay_d:g}일")
                 return
         if "receipt" not in state:
             item = {"skill": (v.get("chosen_option") or {}).get("id"), "code": "GR_CONFIRM", "name": "입고 · 검수", "system": "sys:erp",
@@ -382,12 +393,18 @@ class ServicePartsRuntime:
             state = self._save_state(wi, stock_after={k: facts.get(k) for k in ("part_no", "on_hand", "reserved", "on_order", "available",
                                                                                  "reorder_point", "below_reorder_point") if k in facts})
         receipt = dict(state["receipt"], stock_after=state.get("stock_after") or None)
-        if v.get("incident") and self.hooks.close_incident_effect is not None:
+        # 입고 완료인가는 업무 시스템의 입고 기록이 말한다(검수에서 걸러 반품한 수량이 없어야 한다 — 발주 수량 전부 · 로트 기록 · 검사 합격).
+        # 고른 공급사의 불량률이 여기서 결과로 돌아온다: 반품이 있으면 받은 것만 재고에 들어가고 흐름은 미달 결과 보고로 간다.
+        rejected = (receipt.get("after") or {}).get("rejected_qty")
+        if isinstance(rejected, bool) or not isinstance(rejected, (int, float)):
+            raise ValueError(f"입고 기록 {receipt.get('ref')} 에 검수 불합격 수량(rejected_qty)이 없어 입고 완료인지 판정할 수 없습니다")
+        complete = rejected == 0
+        if complete and v.get("incident") and self.hooks.close_incident_effect is not None:
             self.hooks.close_incident_effect(v["incident"], {"ok": True, "ref": receipt.get("ref"), "detail": receipt.get("detail"), "kind": "goods_receipt"})
-        notice = f"입고 확인 — {receipt.get('detail') or receipt.get('ref')}"
-        self._event(wi, "GOODS_RECEIVED", "입고 확인", {"receipt": receipt})
-        self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), "입고 확인", notice)
-        self.submit(wi["id"], {"goods_receipt": receipt, "received": True}, by="process", now=now)
+        notice = f"{'입고 확인' if complete else '부분 입고'} — {receipt.get('detail') or receipt.get('ref')}"
+        self._event(wi, "GOODS_RECEIVED", "입고 확인" if complete else "부분 입고 — 검수 불합격분 반품", {"receipt": receipt})
+        self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), "입고 확인" if complete else "부분 입고", notice)
+        self.submit(wi["id"], {"goods_receipt": receipt, "received": complete}, by="process", now=now)
 
     # ---------------------------------------------------------------- 시운전 확인 (정비 뒤)
     def _run_test_run(self, inst: dict, wi: dict, now) -> None:
@@ -546,16 +563,95 @@ class ServicePartsRuntime:
         self.submit(wi["id"], {"recovered": recovered}, by="process", now=now)
 
 
+# ---------------------------------------------------------------- 정비 수행이 고치는 것 (지식 지도에서 읽는다)
+#: 승인한 조치 방법(Skill = SOP)과 그것이 근본 조치 · 예방 조치로 이어진 고장 유형. 즉시 완화(MITIGATED_BY)는 원인을 없애는 조치가 아니라 세지 않는다
+#: (수업 문서 HM-8.7 「완화에 성공해도 원인은 남아 있다」).
+SCOPE_SKILL_Q = ("MATCH (k:Skill {sopId: $sop}) RETURN k.name AS name, [(k)-[:ADDRESSES]->(c:Cause) | c.id] AS addressed, "
+                 "[(fm:FailureMode)-[:REMEDIED_BY|PREVENTED_BY]->(k) | fm.id] AS failure_modes")
+#: 그 고장 유형들의 모든 원인과, 원인이 흔드는 상태 변수. 흔드는 변수가 외란(kind = disturbance)이 아니면 그 변수에 영향을 주는 외란 변수까지 본다
+#: (예: 팬 구동 불량 → 팬 진동 ← 팬 베어링 마모도).
+SCOPE_CAUSES_Q = ("MATCH (c0:Cause)-[:CAUSES]->(fm0:FailureMode) WHERE c0.id IN $addressed OR fm0.id IN $fms WITH DISTINCT fm0 AS fm "
+                  "MATCH (c:Cause)-[:CAUSES]->(fm) RETURN c.id AS cause, c.name AS cause_name, fm.id AS fm, fm.name AS fm_name, "
+                  "[(fm)-[:OCCURS_IN]->(comp:Component) | {id: comp.id, name: comp.name}] AS components, "
+                  "[(c)-[:DISTURBS]->(sv:StateVariable) | {id: sv.id, name: sv.name, kind: sv.kind, "
+                  "upstream: [(d:StateVariable {kind: 'disturbance'})-[:INFLUENCES]->(sv) | {id: d.id, name: d.name}]}] AS disturbs "
+                  "ORDER BY cause")
+
+
+def maintenance_scope(query, sop: str | None) -> dict:
+    """승인한 조치 방법(SOP)이 지식에서 실제로 다루는 것 → 정비 수행이 가상 설비에서 되돌릴 대상. 흐름 정의에 부품을 손으로 적지 않는다.
+
+    다루는 원인 = 그 조치 방법이 원인 한정(ADDRESSES)으로 이어진 원인. 한정이 없으면 그 조치가 근본 조치 · 예방 조치인 고장 유형의 모든 원인
+    (스키마 v2: 한정 없는 조치는 그 고장 유형 어느 원인에도 쓰는 조치다 — templates/t2_skills.cypher 와 같은 뜻).
+    되돌릴 대상 = 다루는 원인이 흔드는 외란 변수(Cause -DISTURBS-> StateVariable). 그 고장 유형의 지식이 원인별 외란 변수를 하나도 말하지 않으면
+    고장 유형이 생기는 구성 요소(FailureMode -OCCURS_IN-> Component)로 넓힌다 — 지식이 말하는 가장 좁은 단위를 쓴다.
+    지식의 이름(sv:* · comp:*)을 가상 설비의 외란 변수로 잇는 표는 ot/plant-sim plantsim.plant.COMPONENTS 한 곳이다.
+    돌려줌 {sop, name, causes[{id, name}], targets[{id, name, via}], why} — targets 가 비면 why 가 그 까닭이다(정비는 가상 설비를 바꾸지 않는다)."""
+    out = {"sop": sop, "name": None, "causes": [], "targets": [], "why": None}
+    if not sop:
+        return dict(out, why="승인한 카드에 조치 방법(SOP) 번호가 없어 이 정비가 무엇을 고치는지 지식에서 찾지 못했습니다")
+    rows = query(SCOPE_SKILL_Q, sop=sop)
+    if not rows:
+        return dict(out, why=f"지식 지도에 조치 방법 {sop}이(가) 없어 이 정비가 무엇을 고치는지 찾지 못했습니다")
+    skill = rows[0]
+    out["name"] = skill.get("name")
+    addressed, fms = list(skill.get("addressed") or []), list(skill.get("failure_modes") or [])
+    if not fms:
+        return dict(out, why=f"지식 지도에서 {sop}은(는) 어느 고장 유형의 근본 조치 · 예방 조치로도 이어져 있지 않습니다(즉시 완화 조치는 원인을 없애지 않습니다)")
+    causes = query(SCOPE_CAUSES_Q, addressed=addressed, fms=fms)
+    handled = [c for c in causes if (c["cause"] in addressed if addressed else c["fm"] in fms)]
+    if not handled:
+        return dict(out, why=f"지식 지도에 {sop}이(가) 막거나 고치는 고장 유형의 원인이 없어 이 정비가 무엇을 고치는지 찾지 못했습니다")
+
+    def disturbances(c):
+        return [d for sv in c.get("disturbs") or [] for d in ([sv] if sv.get("kind") == "disturbance" else sv.get("upstream") or [])]
+    by_cause = {c["fm"] for c in causes if disturbances(c)}        # 원인별 외란 변수를 말하는 고장 유형
+    targets, unknown = {}, []
+    for c in handled:
+        found = disturbances(c)
+        for d in found:
+            targets.setdefault(d["id"], {"id": d["id"], "name": d.get("name"), "via": "cause"})
+        if not found and c["fm"] not in by_cause:
+            for comp in c.get("components") or []:
+                targets.setdefault(comp["id"], {"id": comp["id"], "name": comp.get("name"), "via": "component"})
+        elif not found:
+            unknown.append(c.get("cause_name") or c["cause"])
+    out["causes"] = [{"id": c["cause"], "name": c.get("cause_name")} for c in handled]
+    out["targets"] = list(targets.values())
+    if not out["targets"]:
+        names = " · ".join(c["name"] or c["id"] for c in out["causes"])
+        out["why"] = f"{sop}이(가) 다루는 원인({names})이 설비의 어느 상태를 바꾸는지 지식 지도에 없습니다"
+    return out
+
+
+def maintenance_sentence(scope: dict | None, restored: dict, component: str | None) -> str:
+    """정비 완료 공지의 「무엇을 고쳤는가」 한 문장. 정비는 사람이 한 일을 가상 설비에서 흉내 낸 것이라는 것과, 고친 대상이 어디서 왔는지를 말한다."""
+    changed = bool((restored or {}).get("targets"))
+    if scope is None:                       # 흐름이 대상 부품을 직접 적었다(component). 적지 않은 채 범위도 없는 것은 이 규칙 전에 복구를 끝낸 행뿐이다
+        what = f"흐름 설정이 정한 대상({component})" if component else "설비 전체"
+        return (f"가상 설비에서 {what}을(를) 정상으로 되돌렸습니다" if changed
+                else f"{what}은(는) 가상 설비에서 이미 정상이라 바꾼 것이 없습니다")
+    if not scope.get("targets"):
+        return f"{scope['why']} — 가상 설비의 상태는 바꾸지 않았습니다"
+    causes = " · ".join(c.get("name") or c["id"] for c in scope["causes"])
+    names = " · ".join(t.get("name") or t["id"] for t in scope["targets"])
+    missing = [t for t in scope["targets"] if t["id"] in ((restored or {}).get("not_modeled") or [])]
+    if changed:
+        return f"승인한 조치 방법 {scope['sop']}이(가) 다루는 원인({causes})에 따라 가상 설비의 {names}을(를) 정상으로 되돌렸습니다"
+    if missing and len(missing) == len(scope["targets"]):
+        return f"승인한 조치 방법 {scope['sop']}이(가) 다루는 {names}은(는) 가상 설비가 모형으로 갖지 않아 설비 상태를 바꾸지 않았습니다"
+    return (f"승인한 조치 방법 {scope['sop']}이(가) 다루는 원인({causes})의 {names}은(는) 가상 설비에서 이미 정상이라 바꾼 것이 없습니다 — "
+            "설비에 다른 결함이 있으면 그대로 남아 있습니다")
+
+
 def receipt_basis(po: dict, plan: dict) -> str:
     """입고 거래에 싣는 시간 근거(업무 DB 입고 기록에 남는다 — ERP 의 입고 예정 시각과 실제 입고 시각이 왜 다른지).
-    업무 시스템의 입고 예정(expected_at)은 업무 시각(발주 + 리드타임 일)이고, 수업은 그 대기를 줄이거나(배속 × 수업 압축) 건너뛴다(immediate)."""
+    업무 시스템의 입고 예정(expected_at)은 업무 시각(발주 + 리드타임 일)이고, 처리 엔진은 그 대기를 배속 × 대기 압축으로 줄여 기다린다."""
     after = po.get("after") if isinstance(po.get("after"), dict) else {}
-    lead, expected = after.get("lead_d"), after.get("expected_at")
-    planned = f"리드타임 {lead}일" + (f", 업무 시각 입고 예정 {expected}" if expected else "")
-    if plan.get("immediate"):
-        return f"수업 즉시 입고 — {planned}을(를) 기다리지 않고 발주 직후 입고했습니다(흐름 설정 immediate)"
-    return (f"수업 시간 압축 — {planned}을(를) 실제 {plan.get('real_s')}초로 줄여 입고했습니다"
-            f"(배속 {plan.get('time_scale')} × 수업 압축 {plan.get('compression')})")
+    lead, delay = plan.get("lead_d", after.get("lead_d")), float(plan.get("delay_d") or 0)
+    planned = f"리드타임 {lead}일" + (f" + 공급사 지연 {delay:g}일" if delay else "")
+    return (f"업무 시간 {planned}을 실제 {float(plan.get('real_s') or 0):g}초로 줄여 기다린 뒤 입고했습니다"
+            f"(배속 {float(plan.get('time_scale') or 1):g} × 대기 압축 {float(plan.get('compression') or 1):g})")
 
 
 def _td(seconds: float):

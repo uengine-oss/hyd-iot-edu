@@ -48,6 +48,7 @@ class FaultReq(BaseModel):
     severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
     ramp_sim_s: float | None = None     # None = the kind's default ramp (plant.DEFAULT_RAMP_S)
     component: str | None = None        # C2 restore only: cooler | pump | fan (or comp:* id) — None restores every disturbance
+    targets: list[str] | None = None    # restore only: knowledge-graph ids (comp:* · sv:*) an approved maintenance action deals with — only those
     origin: dict | None = None          # C3: the button press behind this request {id, by, user_id, roles} — kept as the unit's injection
     operating_point: bool = False       # restore only: also put FanSpeedSP · LoadSP back to the normal operating point (ends a mitigation)
 
@@ -85,7 +86,7 @@ def fault(req: FaultReq):
         if req.origin is not None and not str(req.origin.get("id") or "").strip():
             raise ValueError("origin needs an id (the press that asked for this injection)")
         return plant.inject(req.asset, req.type, req.target, req.ramp_sim_s, severity=req.severity, component=req.component,
-                            origin=req.origin, operating_point=req.operating_point)
+                            origin=req.origin, operating_point=req.operating_point, targets=req.targets)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
