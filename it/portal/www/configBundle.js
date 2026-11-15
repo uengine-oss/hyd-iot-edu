@@ -4,7 +4,7 @@
    불러오기는 "되돌리기 → 순서대로 적용 → 다시 읽어 대조"이고, 실패하면 어디서 왜 멈췄는지와 적용 전 상태로 되돌렸는지 보여 준다.
    설정에 그대로 적힌 비밀값(MCP 접속 헤더의 토큰 등)은 파일에 없다 — 필요하면 여기서 입력하거나 그 서버만 건너뛴다.
    불러오기가 막힌 단계면 서버가 준 까닭이 단추 바로 뒤 한 줄로 보인다(마우스를 올리지 않아도 — courseAccess.js apply).
-   모양은 키트의 것이다: 일마다 판의 한 절(.panel-sec), 진행은 실시간 상자(hydLive.track), 결과는 .result + .evid, 되돌리기는 확인 대화상자(alert-dialog). */
+   모양은 설정 줄(.set-row — 왼쪽에 이름과 한 문장, 오른쪽에 단추)이다.  진행은 실시간 상자(hydLive.track), 결과는 .result + .evid, 되돌리기는 확인 대화상자(alert-dialog). */
 (function () {
   const H = esc;                                        // 포털 공용 이스케이프(ui.js)
   const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 수업 단계에서는 서버가 막고 까닭을 준다(courseAccess.js)
@@ -61,23 +61,21 @@
       r => r.message],
   ];
 
+  let whatOpen = false;      // 「지우는 것 · 남는 것」 접기를 사람이 펴 두었는가(화면을 다시 그려도 유지)
   function render(el) {
-    // 세 가지 일을 위에서 아래로: 받기 → 불러오기 → 되돌리기. 일마다 판의 한 절(키트 .panel-sec) — 제목 · 한 문장 · 단추 하나, 그 아래에 진행(실시간 상자)과 결과
-    const part = (icon, title, note, body) => `<div class="panel-sec"><h3>${UI.icon(icon)}${title}</h3><p class="muted">${note}</p>${body}</div>`;
-    const foot = (button, msgId) => `<footer class="form-foot"><span class="muted" id="${msgId}" role="status"></span>${button}</footer>`;
-    el.innerHTML = '<div class="panel-sec"><div id="studentCasesView"></div></div>' +
-      part('download', '출발본 내보내기', '내가 만든 구성을 파일 하나로 받습니다. 기본 제공 에이전트 · 스킬 · 도구 서버와 비밀값은 담기지 않습니다.',
-        foot(`<button type="button" class="btn" data-variant="outline" id="cfgExport">${UI.icon('download')}파일 받기</button>`, 'cfgExportMsg')) +
-      part('upload', '출발본 불러오기', '출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일대로 다시 세웁니다.',
-        `<div role="group" class="field"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div>
-          <div id="cfgSecrets"></div>` +
-          foot(`<button type="button" class="btn" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}불러오기</button>`, 'cfgImportMsg') +
-          `<div id="cfgImportResult" aria-live="polite"></div>`) +
-      `<div class="panel-sec" id="cfgResetSec"><h3>${UI.icon(UI.acts.reset[1])}${H(UI.acts.reset[0])}</h3>` +
-        `<div role="group" class="field"><label for="cfgResetScope">되돌릴 범위</label><select class="select" id="cfgResetScope">${SCOPES.map(([k, name]) => `<option value="${k}">${H(name)}</option>`).join('')}</select></div>` +
-        `<div id="cfgResetWhat"></div>` +
-        foot(UI.btn('reset', { variant: 'destructive', attrs: 'id="cfgReset"' }), 'cfgResetMsg') +
-          `<div id="cfgResetResult" aria-live="polite"></div></div>`;
+    // 설정 화면의 본(Linear 설정): 일마다 한 줄(.set-row) — 왼쪽에 이름과 한 문장, 오른쪽에 단추 하나. 그 아래(.set-more)에 고를 것 · 진행(실시간 상자) · 결과.
+    // 위에서 아래로: 내 사례 → 받기 → 불러오기 → 되돌리기
+    const row = (title, note, act, more = '', attrs = '') => `<section class="set-row"${attrs}><div class="set-what"><h3>${title}</h3><p>${note}</p></div><div class="set-do">${act}</div>${more ? `<div class="set-more">${more}</div>` : ''}</section>`;
+    const say = id => `<p class="muted set-msg" id="${id}" role="status"></p>`;
+    el.innerHTML = '<div id="studentCasesView"></div>' +
+      row('출발본 내보내기', '내가 만든 구성을 파일 하나로 받습니다. 기본 제공 구성과 비밀값은 담기지 않습니다.',
+        `<button type="button" class="btn" data-variant="outline" id="cfgExport">${UI.icon('download')}파일 받기</button>`, say('cfgExportMsg')) +
+      row('출발본 불러오기', '출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일대로 다시 세웁니다.',
+        `<input type="file" id="cfgFile" accept=".json,application/json" aria-label="출발본 파일(.json)"><button type="button" class="btn" data-variant="outline" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}불러오기</button>`,
+        `<div id="cfgSecrets"></div>${say('cfgImportMsg')}<div id="cfgImportResult" aria-live="polite"></div>`) +
+      row(H(UI.acts.reset[0]), '내가 만든 것을 지우고 기본 제공 상태로 돌아갑니다.',
+        `<select class="select" id="cfgResetScope" aria-label="되돌릴 범위">${SCOPES.map(([k, name]) => `<option value="${k}">${H(name)}</option>`).join('')}</select>` + UI.btn('reset', { variant: 'destructive', attrs: 'id="cfgReset"' }),
+        `<div id="cfgResetWhat"></div>${say('cfgResetMsg')}<div id="cfgResetResult" aria-live="polite"></div>`, ' id="cfgResetSec"');
     const $ = id => el.querySelector('#' + id);
     hydCourseAccess.apply(el);                            // 막힌 단계면 [불러오기] 바로 뒤에 서버가 준 까닭 한 줄이 붙는다(courseAccess.js)
     window.hydStudentCases?.mount($('studentCasesView'));
@@ -176,8 +174,10 @@
     const paintScope = ev => {
       const [key, , what, , , action] = scopeOf(), why = action ? hydCourseAccess.blocked(action) : '';
       const locked = key === 'all' ? hydCourseAccess.blocked(SERVERS) : '';      // 전체 되돌리기는 막히지 않는다 — 그 단계에서는 도구 서버와 비밀 값만 남긴다
+      const was = $('cfgResetWhat').querySelector('details'); if (was) whatOpen = was.open;      // 사람이 편 접기는 다시 그려도 그대로
+      // 전체: 지우는 것 · 남는 것의 긴 목록은 접기 하나에 둔다(되돌리기를 누르면 확인 창이 같은 목록을 다시 보인다). 종류 하나: 그 종류의 한 문장
       $('cfgResetWhat').innerHTML = key === 'all'
-        ? `<p class="muted"><b>지우는 것</b> ${H(what)}.</p><p class="muted" data-reset-keeps><b>남는 것</b> ${H(RESET_KEEPS.map(([w]) => w).join(', '))}.</p>`
+        ? `<details class="fold" data-plain${whatOpen ? ' open' : ''}><summary>지우는 것 · 남는 것</summary><div class="fold-body"><p class="muted"><b>지우는 것</b> ${H(what)}.</p><p class="muted" data-reset-keeps><b>남는 것</b> ${H(RESET_KEEPS.map(([w]) => w).join(', '))}.</p></div></details>`
           + (locked ? `<p class="muted" data-reset-locked role="status" title="${H(locked)}">지금은 도구 서버를 등록할 수 없는 단계라 내 도구 서버와 비밀 값도 남깁니다.</p>` : '')
         : `<p class="muted">${H(what)}</p>` + (why ? `<p class="muted" data-tone="danger" role="status">${H(why)}</p>` : '');
       $('cfgReset').disabled = !!why;

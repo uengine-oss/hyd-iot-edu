@@ -8,11 +8,11 @@
     const drafts = new Map(), key = row => JSON.stringify([row.kind, row.asset_id]);
     const base = () => typeof API !== 'undefined' ? API.process : '';
     const request = (path, init) => requestJ(base() + path, init);
-    host.innerHTML = `<section class="cases" data-kit><div class="sec-head"><h2>내 사례</h2></div>
-      <p class="muted">구성에 사례 이름을 적어 묶고, 사례를 골라 파일로 받습니다. 이름을 비우면 묶음에서 빠집니다.</p>
-      <div class="admin-tools"><div role="group" class="field"><label for="caseFilter">사례</label><select class="select" id="caseFilter"><option value="">전체 구성</option></select></div>
-        <button type="button" class="btn" data-variant="outline" data-size="sm" id="caseExport" disabled>${UI.actHtml('export', '이 사례 파일 받기')}</button><span class="muted" id="caseExportWhy"></span><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="caseReload" aria-label="${h(UI.acts.reload[0])}" data-tooltip="${h(UI.acts.reload[0])}" data-side="top">${UI.icon(UI.acts.reload[1])}</button></div>
-      <p id="caseMessage" class="muted" role="status"></p><div id="caseAssets"></div></section>`;
+    // 설정 줄(.set-row): 왼쪽에 이름과 한 문장, 오른쪽에 사례 고르기 · [이 사례 파일 받기] · 다시 읽기, 그 아래에 구성 표
+    host.innerHTML = `<section class="set-row cases" data-kit><div class="set-what"><h3>내 사례</h3><p>구성에 사례 이름을 적어 묶고, 사례를 골라 파일로 받습니다. 이름을 비우면 묶음에서 빠집니다.</p></div>
+      <div class="set-do"><select class="select" id="caseFilter" aria-label="사례"><option value="">전체 구성</option></select>
+        <button type="button" class="btn" data-variant="outline" id="caseExport" disabled>${UI.actHtml('export', '이 사례 파일 받기')}</button><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="caseReload" aria-label="${h(UI.acts.reload[0])}" data-tooltip="${h(UI.acts.reload[0])}" data-side="top">${UI.icon(UI.acts.reload[1])}</button></div>
+      <div class="set-more"><p class="muted set-msg" id="caseExportWhy"></p><p id="caseMessage" class="muted set-msg" role="status"></p><div id="caseAssets"></div></div></section>`;
     const $ = id => host.querySelector('#' + id);
     const message = (text, bad = false) => { const m = $('caseMessage'); m.textContent = text; if (bad) m.dataset.tone = 'danger'; else delete m.dataset.tone; };
     // [이 사례 파일 받기]는 사례를 골랐을 때만 켜진다 — 꺼져 있으면 까닭을 옆에 쓴다

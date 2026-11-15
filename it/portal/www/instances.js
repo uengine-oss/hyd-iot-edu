@@ -834,12 +834,13 @@
     const view = I.view, inst = view.instance, pid = inst.proc_inst_id;
     const record = ensureRecord(view);
     if (I.skelFor !== pid || !box.querySelector('#casePath')) {
-      box.innerHTML = `<header class="case-head"><div><h2 class="case-title"></h2><div class="case-meta"></div></div>
-          <div class="dropdown-menu" id="caseMenu"><button type="button" class="btn" data-variant="outline" data-size="icon-sm" id="caseMenu-trigger" aria-haspopup="menu" aria-controls="caseMenu-menu" aria-expanded="false" aria-label="더 보기" data-tooltip="더 보기" data-side="left">${UI.icon('ellipsis')}</button>
+      // 상세 머리는 목록 + 상세 화면이 모두 쓰는 한 모양이다(.pane-head): 아이콘 칸 · 이름과 상태 · 보조 줄, 오른쪽 끝에 더 보기. 그 아래 구역은 선으로 가른 절(.panel-sec)
+      box.innerHTML = `<header class="panel-head pane-head case-head"><span class="pane-ic">${UI.icon('inbox')}</span><div class="pane-title"><h2 class="case-title"></h2><div class="case-meta"></div></div>
+          <div class="dropdown-menu pane-acts" id="caseMenu"><button type="button" class="btn" data-variant="outline" data-size="icon-sm" id="caseMenu-trigger" aria-haspopup="menu" aria-controls="caseMenu-menu" aria-expanded="false" aria-label="더 보기" data-tooltip="더 보기" data-side="left">${UI.icon('ellipsis')}</button>
             <div id="caseMenu-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="caseMenu-menu" aria-labelledby="caseMenu-trigger"><div role="menuitem" id="instReload" data-case-act="reload">${UI.actHtml('reload')}</div>${alertIdOf(inst) ? `<div role="menuitem" data-id-copy="${esc(alertIdOf(inst))}">${UI.actHtml('copy', '경보 번호 복사')}</div>` : ''}<div role="menuitem" data-case-act="flow">${UI.icon('maximize-2')}전체 흐름 보기</div><div role="menuitem" data-case-act="more">${UI.icon('file-json')}자세한 기록</div></div></div></div></header>
         <div id="todoPanel"></div><div id="caseTop"></div>
-        <section aria-label="진행 길"><div class="sec-head"><h2>진행 길</h2><span class="muted" data-path-side></span></div><div id="casePath"></div><div id="caseNotes"></div></section>
-        <section aria-label="단계 기록"><div class="sec-head"><h2>단계 기록</h2><span class="muted case-live" data-record-side></span></div><div id="instRecord"></div><div id="taskDetailPanel"></div></section>`;
+        <section class="panel-sec" aria-label="진행 길"><h3>진행 길<span class="muted" data-path-side></span></h3><div id="casePath"></div><div id="caseNotes"></div></section>
+        <section class="panel-sec" aria-label="단계 기록"><h3>단계 기록<span class="muted case-live" data-record-side></span></h3><div id="instRecord"></div><div id="taskDetailPanel"></div></section>`;
       const slot = box.querySelector('#instRecord'); if (slot && I.recordHost) slot.replaceWith(I.recordHost);
       I.skelFor = pid; I.recoverIn = null;
       window.hydTaskDetail?.mount(box.querySelector('#taskDetailPanel'));
@@ -847,7 +848,7 @@
     let held = false;
     setHtml(box.querySelector('.case-title'), `${esc(inst.proc_inst_name || '이름 없는 처리 건')}${stateChip({ ...inst, attention: view.attention })}`);
     setHtml(box.querySelector('.case-meta'), metaLine(view));
-    setHtml(box.querySelector('[data-path-side]'), `흐름 「${esc(UI.flowName(view.definition?.processDefinitionName || UI.defName(inst.proc_def_id)))}」 판 ${esc(inst.proc_def_version ?? '')} · 끌어서 옮기고 휠로 확대합니다`);
+    setHtml(box.querySelector('[data-path-side]'), `흐름 「${esc(UI.flowName(view.definition?.processDefinitionName || UI.defName(inst.proc_def_id)))}」 판 ${esc(inst.proc_def_version ?? '')}`);
     // 내가 할 일(질문 · 승인 · 입력) — 쓰는 중이면 건드리지 않는다. 내 차례가 아닌데 AI 가 일하는 중이면 그 자리에 점선 안내를 둔다
     const panel = box.querySelector('#todoPanel');
     if (typingIn(panel)) held = true; else renderTodoPanel();

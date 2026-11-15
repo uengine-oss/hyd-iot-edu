@@ -148,6 +148,20 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
     assert not [(a['key'], b['key']) for i, a in enumerate(boxes) for b in boxes[i + 1:] if hit(a['box'], b['box'], 8)]
     assert not [(lab['text'], b['key']) for lab in geo['labels'] for b in boxes if hit(lab['box'], b['box'])]
     assert not [b['key'] for b in boxes for t in b['texts'] if t[0] < b['box'][0] or t[2] > b['box'][2] - 4]
+    # 그림 전체가 창(1440 × 900) 안에 스크롤 없이 들어오고, 그렇게 맞춰도 부품 이름이 화면에서 14px 아래로 내려가지 않는다(사용자: 「시스템구성은 아직 여유가 너무 없어보이고」)
+    fit = page.evaluate('''() => { const s = document.querySelector('#stack svg').getBoundingClientRect(), st = document.getElementById('stack'), t = document.querySelector('#stack .sys-nd .t'), bx = document.querySelector('#stack .sys-nd .box');
+      return { svg: [s.left, s.top, s.right, s.bottom], win: [innerWidth, innerHeight], pan: st.scrollWidth - st.clientWidth, name: parseFloat(getComputedStyle(t).fontSize) * bx.getBoundingClientRect().width / bx.width.baseVal.value }; }''')
+    assert fit['svg'][0] >= 232 and fit['svg'][1] >= 48 and fit['svg'][2] <= fit['win'][0] and fit['svg'][3] <= fit['win'][1] and fit['pan'] <= 1, fit
+    assert fit['name'] >= 14, fit
+    # 밝은 캔버스에서 읽히는가: 부품 이름 · 서비스 이름은 상자 면과, 길의 이름표 · 영역 이름 · 계층 이름은 캔버스 바탕과 대비 4.5 이상
+    low = page.evaluate(r'''() => { const lum = c => { let m = /^rgba?\(([^)]+)\)/.exec(c), v; if (m) v = m[1].split(/[, /]+/).slice(0, 3).map(x => Number(x) / 255); else { m = /^color\(srgb ([^)]+)\)/.exec(c); if (!m) throw new Error('모르는 색: ' + c); v = m[1].split(/[ /]+/).slice(0, 3).map(Number); }
+        const [r, g, b] = v.map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const ratio = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
+      const fill = e => getComputedStyle(e).fill, bg = getComputedStyle(document.querySelector('.sys-arch')).backgroundColor, out = [];
+      document.querySelectorAll('#stack .sys-nd').forEach(n => n.querySelectorAll('text').forEach(t => out.push([n.dataset.key + ' ' + t.getAttribute('class'), ratio(fill(t), fill(n.querySelector('.box')))])));
+      document.querySelectorAll('#stack .sys-p-t, #stack .sys-row-t, #stack .sys-band-s').forEach(t => out.push([t.textContent, ratio(fill(t), bg)]));
+      return out.filter(x => x[1] < 4.5); }''')
+    assert not low, low
     assert all(drawn[c['key']] == 'none' for c in table if not c['health'])   # 상태를 재지 않는 부품은 점이 없다
     assert all(drawn[c['key']] == 'ok' for c in table if c['health'] and not c['optional'] and c['key'] != 'detector')
     # 올리면 정보 띠에 그 부품의 하는 일 · 현업 대응 · 계층(모두 부품 표의 글)과 상태가 보인다
@@ -157,6 +171,10 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
         info = page.inner_text('#sysInfo')
         assert c['role'] in info and f"현업에서는 {c['real']}" in info and c['layer'] in info, info
         assert ('응답 없음' if key == 'detector' else '정상') in info
+        # 정보 카드는 그림의 빈 칸에 뜬다 — 어느 부품 상자도 가리지 않는다
+        card = page.evaluate("(() => { const b = document.getElementById('sysInfo').getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; })()")
+        now = page.evaluate("[...document.querySelectorAll('#stack .sys-nd')].map(n => { const b = n.querySelector('.box').getBoundingClientRect(); return { key: n.dataset.key, box: [b.left, b.top, b.right, b.bottom] }; })")
+        assert not [b['key'] for b in now if hit(card, b['box'])], (key, card)
     # 다시 응답하면 요약이 정상으로 돌아온다
     w.down = set()
     # 머리의 요약은 응답 없는 서비스가 있을 때만 보인다 — 정상일 때의 「서비스 n/n」은 메뉴 줄 아래 한 곳에 있다
@@ -232,6 +250,15 @@ def test_설비_회로는_처리_건으로_보내는_줄만_갖고_상태_이름
     text = page.inner_text('#view-incidents')
     assert not any(word in text for word in ('반려', '종결', '효과 확인', '재관측', '사건'))
     assert '열린 처리 건이 있습니다' in page.inner_text('#scadaInfo') and page.get_attribute('#scadaInfo .open', 'data-open-incident') == 'INC-b'
+    # 회로 카드 셋 · 고른 설비의 정보 카드 · 처리 건으로 가는 줄이 창(1440 × 900) 안에 스크롤 없이 함께 보이고, 회로의 값 글자는 흰 카드 위에서 읽힌다(대비 4.5 이상)
+    seen = page.evaluate(r'''() => { const lum = c => { let m = /^rgba?\(([^)]+)\)/.exec(c), v; if (m) v = m[1].split(/[, /]+/).slice(0, 3).map(x => Number(x) / 255); else { m = /^color\(srgb ([^)]+)\)/.exec(c); if (!m) throw new Error('모르는 색: ' + c); v = m[1].split(/[ /]+/).slice(0, 3).map(Number); }
+        const [r, g, b] = v.map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const ratio = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
+      const inside = e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth; };
+      const cards = [...document.querySelectorAll('#scada .ucard')];
+      return { cards: cards.map(inside), info: inside(document.getElementById('scadaInfo')), link: inside(document.querySelector('#incList .case-link')), scroll: document.documentElement.scrollHeight - innerHeight,
+        low: cards.flatMap(c => [...c.querySelectorAll('svg text, svg tspan')].filter(t => t.textContent.trim() && !t.closest('.hc-sensor')).map(t => [t.textContent, ratio(getComputedStyle(t).fill, getComputedStyle(c).backgroundColor)])).filter(x => x[1] < 4.5) }; }''')
+    assert seen['cards'] == [True, True, True] and seen['info'] and seen['link'] and seen['scroll'] <= 0 and not seen['low'], seen
     page.click("#scada [data-asset='HYD-03']")
     assert page.inner_text('#scadaInfo .open').strip() == '결함 시뮬레이션 열기'
     assert page.eval_on_selector_all('#incList .case-link b', 'ns => ns.map(n => n.textContent)') == [] or page.inner_text('#incList .case-link b') == '0'      # HYD-03 은 열린 적이 없다
@@ -325,3 +352,30 @@ def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_�
     start.click(force=True)
     page.wait_for_function("document.querySelector('#scenarioMsg').textContent.includes('진행 중인 처리 건이 있어')", timeout=8000)
     assert not any('/api/scenario/B/start' in u for u in posts), posts                   # 서버에 409 를 받으러 가지 않는다
+
+
+def test_목록과_상세_조건과_결과는_같은_두_칸_뼈대다(world):
+    """화면 정돈 6단계: 목록 + 상세(.split)와 조건 → 결과(.io)는 한 뼈대다 — 왼쪽 칸 │ 세로 선 하나 │ 오른쪽 칸. 화면마다 칸 폭 · 선의 자리가 같고, 칸을 상자(테두리)에 넣지 않는다.
+    전에는 조건 칸만 테두리 상자(320px)였고 목록 화면은 선으로 가른 칸(340px)이라 같은 틀의 화면이 서로 다른 제품처럼 보였다."""
+    w, page = world, world.page
+
+    def frame(tab, sel):
+        page.goto(w.base + f'/index.html#/{tab}')
+        page.wait_for_selector(f'#view-{tab}.active {sel}')
+        return page.evaluate("""sel => { const f = document.querySelector(sel), [a, b] = f.children, ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), ca = getComputedStyle(a), cb = getComputedStyle(b);
+          const first = [...a.querySelectorAll('.seg, .rows, .panel-head, .field')].find(n => n.getBoundingClientRect().height > 0);
+          return { left: Math.round(ra.left), split: Math.round(rb.left), line: cb.borderLeftWidth,
+                   boxed: [ca.borderTopWidth, ca.borderRightWidth, ca.borderBottomWidth, ca.borderLeftWidth, cb.borderTopWidth, cb.borderRightWidth, cb.borderBottomWidth].some(x => x !== '0px'),
+                   firstTop: Math.round(first.getBoundingClientRect().top - ra.top) }; }""", f'#view-{tab} {sel}')
+    frames = [frame('skills', '.split'), frame('instances', '.split'), frame('decision', '.io')]
+    assert len({(f['left'], f['split']) for f in frames}) == 1, frames      # 왼쪽 선과 세로 선의 자리가 세 화면에서 같다
+    assert all(f['line'] == '1px' and not f['boxed'] for f in frames), frames
+    assert all(f['firstTop'] == 0 for f in frames), str([f['firstTop'] for f in frames]) + ' '                # 왼쪽 칸의 첫 줄(거르기 · 칸 이름)이 칸 맨 위에서 시작한다
+    # 좁은 폭에서는 두 칸이 위아래로 쌓이고 세로 선 대신 가로 선 하나
+    page.set_viewport_size({'width': 900, 'height': 900})
+    try:
+        f = frame('decision', '.io')
+        stacked = page.evaluate("() => { const [a, b] = document.querySelector('#view-decision .io').children; return b.getBoundingClientRect().top >= a.getBoundingClientRect().bottom && getComputedStyle(b).borderTopWidth === '1px'; }")
+        assert stacked and f['line'] == '0px', f
+    finally:
+        page.set_viewport_size({'width': 1440, 'height': 900})

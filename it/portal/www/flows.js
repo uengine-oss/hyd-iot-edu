@@ -192,9 +192,9 @@
       box.innerHTML = `<div class="panel-head pane-head" id="flowHead"></div>
         <div class="stream-phases flow-phases" id="flowSteps" role="list" aria-label="이 흐름이 어디까지 왔는지"></div>
         <div id="flowNote"></div>
-        <div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}흐름 그림</h3><div id="flowPicture"></div></div>
+        <div class="panel-sec"><h3>흐름 그림</h3><div id="flowPicture"></div></div>
         <div class="panel-sec pane-fold" id="flowEditorSec" hidden><details class="fold" id="flowEditorFold"><summary>단계 설정<span class="muted" id="flowEditorSum"></span></summary><div class="fold-body"><div id="flowEditor"></div></div></details></div>
-        <div class="panel-sec" id="flowRegisterSec" hidden><h3>${icon('clipboard-check', 'ic-sm')}검사 · 판본 등록<span class="muted" id="flowNextVersion"></span></h3><div id="flowProblems"></div><div id="flowMsg" aria-live="polite"></div><footer class="form-foot" id="flowActions"></footer></div>`;
+        <div class="panel-sec" id="flowRegisterSec" hidden><h3>검사 · 판본 등록<span class="muted" id="flowNextVersion"></span></h3><div id="flowProblems"></div><div id="flowMsg" aria-live="polite"></div><footer class="form-foot" id="flowActions"></footer></div>`;
       wire();
     }
     drawHead(); drawSteps(); drawPicture(); drawEditorFrame(); drawStart();
@@ -769,7 +769,7 @@
     if (S.startKey === key) return;
     S.startKey = key;
     const pick = item.versions.length > 1 ? UI.field({ label: '시작할 판본', input: `<select data-start-version>${item.versions.map(v => `<option value="${h(v)}" ${v === version ? 'selected' : ''}>${h(v)}${v === item.deployed ? ' (운영)' : ''}</option>`).join('')}</select>` }) : '';
-    box.innerHTML = `<h3>${icon('play', 'ic-sm')}시작<span class="muted">판본 ${h(version)}</span></h3>${pick}<div data-start-body>${UI.loading('')}</div>`;
+    box.innerHTML = `<h3>시작<span class="muted">판본 ${h(version)}</span></h3>${pick}<div data-start-body>${UI.loading('')}</div>`;
     box.querySelector('[data-start-version]')?.addEventListener('change', () => drawStart());
     startBody(item, version, box.querySelector('[data-start-body]'));
   }

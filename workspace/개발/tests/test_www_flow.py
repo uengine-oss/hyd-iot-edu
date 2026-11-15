@@ -187,3 +187,51 @@ def test_가려진_화면에서_그린_흐름_그림은_오류_없이_실리고_
             b.close()
     finally:
         served.close()
+
+
+def test_진행_길의_끝남_지금_남음은_밝은_캔버스에서_서로_다른_색으로_또렷이_보인다():
+    """흐름 그림은 밝은 캔버스(옅은 회색 바탕 · 흰 상자)에 그린다. 상태색이 바탕에 묻히면 「어디까지 왔는가」를 읽을 수 없다:
+    끝남 · 지금 · 남음의 테두리가 서로 다른 색이고 저마다 캔버스 바탕과 대비 3 이상(글자가 아닌 그림의 기준), 상자 안의 글자는 그 상자의 면과 대비 4.5 이상,
+    지금 단계의 꼬리표 글자도 꼬리표 바탕과 4.5 이상이어야 한다. 차선 틀은 상자보다 옅다(상자와 선이 주인공).
+    실제 index.html · flow.js · bpmn-js 를 실제 브라우저로 연다(그림 원본이 없는 흐름 — 정의에서 만들어 자동으로 놓는 길)."""
+    import json
+
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from playwright.sync_api import sync_playwright
+    from conftest import WWW, Served
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    view = {'definition': DEF, 'instance': {'proc_inst_id': 'p1', 'status': 'RUNNING', 'end_event': None},
+            'workitems': [wi('T_agent', 'DONE', '01'), wi('T_approve', 'IN_PROGRESS', '02'), wi('T_cmd', 'TODO', None)]}
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', lambda route: route.fulfill(status=404, body='') if '/bpmn' in route.request.url else route.fulfill(json={}))
+            page.goto(served.url + '/index.html')
+            page.wait_for_function("() => typeof hydFlow !== 'undefined' && typeof UI !== 'undefined'")
+            page.evaluate("""view => { const host = document.createElement('div'); host.id = 'stateFlowHost'; host.style.cssText = 'position:fixed;left:0;top:0;width:1100px;z-index:999';
+                document.body.appendChild(host); hydFlow.mount(host, view, { mine: ['T_approve'] }); }""", view)
+            page.wait_for_function("() => { const h = document.querySelector('#stateFlowHost'); return h._flow && h._flow.D; }", timeout=20000)
+            page.wait_for_timeout(300)
+            got = page.evaluate(r"""() => {
+              const lum = c => { let m = /^rgba?\(([^)]+)\)/.exec(c), v; if (m) v = m[1].split(/[, /]+/).slice(0, 3).map(x => Number(x) / 255); else { m = /^color\(srgb ([^)]+)\)/.exec(c); if (!m) throw new Error('모르는 색: ' + c); v = m[1].split(/[ /]+/).slice(0, 3).map(Number); }
+                const [r, g, b] = v.map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+              const ratio = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
+              const host = document.querySelector('#stateFlowHost'), bg = getComputedStyle(host.querySelector('.canvas')).backgroundColor;
+              const of = id => { const g = host.querySelector(`.djs-shape[data-element-id="${hydFlow.xid(id)}"]`), box = g.querySelector('.djs-visual > rect'), s = getComputedStyle(box), text = g.querySelector('.djs-visual text');
+                const fade = parseFloat(getComputedStyle(g.querySelector('.djs-visual')).opacity);
+                return { cls: g.getAttribute('class'), stroke: s.stroke, edge: ratio(s.stroke, bg), text: ratio(getComputedStyle(text).fill, s.fill), fade }; };
+              const tip = host.querySelector('.bpmn-tip'), ts = getComputedStyle(tip);
+              return { done: of('T_agent'), now: of('T_approve'), todo: of('T_cmd'), tip: { text: tip.textContent, ratio: ratio(ts.color, ts.backgroundColor) }, check: host.querySelectorAll('.bpmn-check').length }; }""")
+            assert 'is-done' in got['done']['cls'] and 'is-now' in got['now']['cls'] and 'is-todo' in got['todo']['cls'], got
+            assert len({got[k]['stroke'] for k in ('done', 'now', 'todo')}) == 3, got                     # 세 상태의 테두리색이 서로 다르다
+            assert all(got[k]['edge'] >= 3 for k in ('done', 'now')), got                                 # 끝남 · 지금의 테두리는 캔버스 바탕 위에서 또렷하다
+            assert all(got[k]['text'] >= 4.5 for k in ('done', 'now', 'todo')), got                       # 상자 안 글자는 그 상자의 면 위에서 읽힌다
+            assert got['todo']['fade'] < 1 and got['done']['fade'] == 1 and got['now']['fade'] == 1, got  # 남은 단계만 흐리다
+            assert got['tip']['text'] == '지금 · 내 차례' and got['tip']['ratio'] >= 4.5 and got['check'] == 1, got
+            b.close()
+    finally:
+        served.close()

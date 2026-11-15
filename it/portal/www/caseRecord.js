@@ -1138,7 +1138,9 @@
     if (s.type === 'agent') return { mark: markIcon(s), head, body: agentCard(s, m, gaps, seen) };
     const pre = PREFIX[s.state] || (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '');
     const waitsMe = s.live && s.now && s.lane === 'person';      // 사람을 기다리는 단계는 문장 하나(무엇을 하면 넘어가는지)
-    const body = `<p class="step-say">${e(waitsMe ? s.now : pre + (s.sentence || ''))}</p>${s.liveBox || ''}${s.live && s.now && !waitsMe && !s.liveBox ? `<p class="step-now"><i class="dot" data-tone="brand" data-live></i><span>${e(s.now)}</span></p>` : ''}
+    // 긴 문장(계산 · 번호 · 기다린 시간이 붙은 것)은 결론 한 마디만 줄에 두고 나머지는 그 아래 접기에 둔다 — 같은 근거가 결과 카드와 단계마다 되풀이돼 화면을 덮었다
+    const [lead, more] = UI.leadRest(waitsMe ? s.now : pre + (s.sentence || ''), 110);
+    const body = `<p class="step-say">${e(lead)}</p>${more ? `<details class="fold step-rest" data-plain data-k="${e(s.key + ':rest')}"><summary>이어지는 설명</summary><div class="fold-body">${e(more)}</div></details>` : ''}${s.liveBox || ''}${s.live && s.now && !waitsMe && !s.liveBox ? `<p class="step-now"><i class="dot" data-tone="brand" data-live></i><span>${e(s.now)}</span></p>` : ''}
       ${detailGroups(s, gaps, m).length ? sheetButton(s, '자세히') : ''}`;
     return { mark: markIcon(s), head, body };
   }

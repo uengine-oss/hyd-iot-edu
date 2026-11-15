@@ -496,6 +496,20 @@ const UI = {
   section(title, body, cls = '') { return `<fieldset class="fieldset${cls ? ' ' + cls : ''}">${title ? `<legend>${esc(title)}</legend>` : ''}<div role="group">${body}</div></fieldset>`; },
   // 폼 아래의 단추 줄: (왼쪽) 못 한 까닭 한 줄 · (오른쪽) 단추
   actions(body, msg = '') { return `<footer class="form-foot">${msg ? `<span class="muted" data-tone="danger" role="status">${esc(msg)}</span>` : ''}${body}</footer>`; },
+  /* 긴 문장을 결론 한 마디(lead)와 이어지는 근거(rest)로 가른다 — 글은 빼지 않는다. 가르는 자리는 괄호 밖의 첫 「 (」 · 「 — 」 · 「. 」이고(앞머리 12자는 건너뛴다),
+     문장이 min 자보다 짧거나 가를 자리가 없으면 통째로 lead 다. 처리 건의 결과 카드와 단계 기록이 같은 규칙으로 쓴다 */
+  leadRest(text, min = 90) {
+    const whole = String(text || '');
+    if (whole.length <= min) return [whole, ''];
+    let depth = 0, cut = -1;
+    for (let i = 0; i < whole.length && cut < 0; i++) {
+      const c = whole[i];
+      if (i >= 12 && depth === 0 && (whole.startsWith(' (', i) || whole.startsWith(' — ', i) || whole.startsWith('. ', i))) cut = i;
+      else if (c === '(') depth++;
+      else if (c === ')') depth = Math.max(0, depth - 1);
+    }
+    return cut > 0 ? [whole.slice(0, cut), whole.slice(cut).replace(/^(\s—\s|\.\s|\s)/, '')] : [whole, ''];
+  },
   // fold: 요약 한 줄 + 꺾쇠. 옛 크기 이름(small)은 받지 않는다 — 접기의 모양은 하나다
   fold(summary, body, { open = false, cls = '' } = {}) {
     const extra = cls.split(/\s+/).filter(c => c && c !== 'small').join(' ');

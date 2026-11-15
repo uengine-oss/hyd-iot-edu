@@ -114,9 +114,7 @@
     const TONE = { ok: 'success', fail: 'danger', wait: 'accent', other: 'neutral' };
     const endLine = end && !UI.plainEnd(end) ? `처리 건은 「${end}」에서 끝났습니다.` : '';
     // 긴 결과 문장은 첫 마디(결론)만 굵게 두고 나머지 근거(번호 · 계산 · 기다린 시간)는 그 아래 보통 글씨로 잇는다 — 글은 빼지 않는다
-    const whole = summary || label;
-    const cut = whole.length > 90 ? [' (', ' — ', '. '].map(m => whole.indexOf(m, 12)).filter(i => i > 0).sort((x, y) => x - y)[0] ?? -1 : -1;
-    const lead = cut > 0 ? whole.slice(0, cut) : whole, rest = cut > 0 ? whole.slice(cut).replace(/^(\s—\s|\.\s|\s)/, '') : '';
+    const [lead, rest] = UI.leadRest(summary || label);
     return `<section class="step-card case-result" data-tone="${tone}" aria-label="결과"><div class="result">
       <div class="result-label">${UI.chipText(label, TONE[tone])}${e((rep && rep.title) || '결과')}</div>
       <div class="result-main">${e(lead)}</div>

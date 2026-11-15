@@ -222,7 +222,7 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
         page.select_option("#compareView [data-pick='a']", 'TRY-1')
         page.select_option("#compareView [data-pick='b']", 'TRY-2')
         assert page.locator("#compareView [data-act='diff']").is_disabled()
-        assert '시나리오가 다릅니다' in page.inner_text('#compareView .io-out > .panel')
+        assert '시나리오가 다릅니다' in page.inner_text('#compareView .io-past')
     finally:
         close()
 

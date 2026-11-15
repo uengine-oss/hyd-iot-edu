@@ -225,6 +225,13 @@ def test_제공_문서를_목록에서_고르면_내려받지_않고_그_원문_
             assert '적재됨' in row(loaded).inner_text() and '적재됨' not in row(new).inner_text()
             # [원문 보기]는 내려받기가 아니라 새 탭에서 글로 열린다
             link = page.locator(f"#providedDocs [data-provided-view='{new}']")
+            # [원문 보기]는 그 줄의 상자 안, 오른쪽 끝 · 세로 가운데에 놓인다(줄 밖 가운데에 떠 있었다)
+            box = page.evaluate("""f => { const r = e => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+              const row = document.querySelector(`#providedDocs [data-provided='${f}']`), a = document.querySelector(`#providedDocs [data-provided-view='${f}']`), t = row.querySelector('.row-title');
+              return { row: r(row), a: r(a), title: r(t) }; }""", new)
+            assert box['row']['l'] < box['a']['l'] and 0 <= box['row']['r'] - box['a']['r'] <= 16, box
+            assert abs((box['a']['t'] + box['a']['b']) / 2 - (box['row']['t'] + box['row']['b']) / 2) <= 3, box
+            assert box['title']['r'] <= box['a']['l'], '제목이 링크 밑으로 들어가지 않는다'
             assert link.get_attribute('target') == '_blank' and link.get_attribute('download') is None
             kind = page.evaluate("async href => (await fetch(href)).headers.get('content-type')", link.get_attribute('href'))
             assert kind.startswith('text/plain')

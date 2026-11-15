@@ -163,8 +163,8 @@
   }
   function threadHtml() {
     const v = A.cur;
-    if (!v) return `${UI.empty({ icon: 'message-circle-question', title: `아직 보낸 질문이 없습니다`, sub: `${replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다.'
-      : '위 칸에 질문을 적고 [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?'}` })}`;
+    if (!v) return `${UI.empty({ icon: 'message-circle-question', title: `아직 보낸 질문이 없습니다`, sub: `${replay() ? '왼쪽의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다.'
+      : '왼쪽 칸에 질문을 적고 [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?'}` })}`;
     const [label, tone] = STATE[v.state] || [v.state, ''];
     const live = LIVE.has(v.state), calls = (v.tool_calls || []).length;
     // 차례: 질문 → 누가 · 상태 → (도는 동안) 실시간 상자 / (끝난 뒤) 답 → 근거 → 처리 과정(접기)
@@ -180,27 +180,29 @@
           ${!live && v.state !== 'failed' && !v.result && v.message ? `<p class="muted">${esc(UI.clean(v.message))}</p>` : ''}
           ${resultHtml(v)}
           ${!live && v.workitem ? `<details class="fold ask-process" ${A.processOpen ? 'open' : ''}><summary>처리 과정<span class="muted">도구 호출 ${calls}건</span></summary><div class="fold-body"><div data-ask-work></div></div></details>` : ''}
-          ${v.state === 'failed' && replay() ? alertBox('info', '같은 질문을 다시 진행할 수 없습니다', 'AI 키가 없을 때 쓰는 재생 모드에서는 저장된 답이 있는 질문에만 답합니다. 위의 질문 단추에 있는 질문을 보내 보세요.') : ''}
+          ${v.state === 'failed' && replay() ? alertBox('info', '같은 질문을 다시 진행할 수 없습니다', 'AI 키가 없을 때 쓰는 재생 모드에서는 저장된 답이 있는 질문에만 답합니다. 왼쪽의 질문 단추에 있는 질문을 보내 보세요.') : ''}
           ${v.state === 'failed' && !replay() ? UI.field({ label: '다시 진행할 때 반영할 내용(선택)', input: `<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>` }) +
             `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" id="askRetry" ${A.sending ? 'disabled' : ''}>${icon('rotate-ccw')}같은 질문 다시 진행</button></footer>` : ''}
         </div></section>`;
   }
   function historyHtml() {
     if (A.histErr) return `<div class="pane-list-note">${UI.errorBlock('지난 질문을 읽지 못했습니다', A.histErr, { retry: true })}</div>`;
-    if (!A.history.length) return `<div class="pane-list-note">${UI.empty('아직 질문이 없습니다', '질문을 보내면 여기에 쌓이고, 누르면 그 답을 다시 볼 수 있습니다.')}</div>`;
+    if (!A.history.length) return `<p class="muted">질문을 보내면 여기에 쌓이고, 누르면 그 답을 다시 볼 수 있습니다.</p>`;
     const kind = h => h.verdict === 'answered' ? tag('답함', 'ok') : h.verdict === 'unanswerable' ? tag('답할 수 없음', 'warn') : tag((STATE[h.state] || [h.state])[0], (STATE[h.state] || [0, ''])[1]);
     return A.history.map(h => `<button type="button" class="row" data-ask-open="${esc(h.id)}"${A.cur && A.cur.id === h.id ? ' aria-current="true"' : ''}><span class="row-ic">${icon('message-square')}</span><span class="row-title">${esc(h.question)}</span>${kind(h)}
       <span class="row-meta">${esc(h.agent ? h.agent.name : '')} · ${esc(UI.dateTime(h.started))}</span></button>`).join('');
   }
   function formHtml() {
     const off = A.sending || !A.draft.trim();
-    return `<div class="panel-sec ask-compose">${readyHtml()}
+    return `<div class="panel-head"><div><h2>질문 보내기</h2></div></div><div class="panel-sec ask-compose">${readyHtml()}
         ${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}${agentLine()}
         ${UI.field({ label: '질문', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}" placeholder="에이전트가 자기 도구로 조회해 답할 수 있는 것을 묻습니다 (Enter 보내기 · Shift+Enter 줄바꿈)"></textarea>` })}${replay() ? picks() : ''}
         <footer class="form-foot"><span class="muted" role="status" data-ask-why></span><button type="button" class="btn" id="askSend" ${off ? 'disabled' : ''}>${icon('send')}보내기</button></footer></div>`;
   }
-  const layout = () => `<div class="ask-layout"><div class="ask-main"><section class="panel" data-ask-form aria-label="질문 보내기"></section><div data-ask-err class="pane-msg"></div><div class="ask-thread" data-ask-thread></div></div>
-        <aside class="ask-side pane-side"><div class="sec-head"><h2>지난 질문</h2><button type="button" class="btn" data-variant="ghost" data-size="sm" id="askReset" hidden>${icon('trash-2')}끝난 기록 지우기</button></div><div class="rows" data-ask-history></div><div data-ask-kept class="pane-msg"></div></aside></div>`;
+  // 틀은 「조건 → 결과」 두 칸(.io)이다: 왼쪽 = 질문 칸(에이전트 · 질문 · 보내기)과 그 아래 지난 질문 목록, 오른쪽 = 고른 질문과 답
+  const layout = () => `<div class="io ask-io"><div class="io-in"><section class="panel" data-ask-form aria-label="질문 보내기"></section><div data-ask-err class="pane-msg"></div>
+        <aside class="io-past ask-side"><h3>지난 질문<button type="button" class="btn" data-variant="ghost" data-size="sm" id="askReset" hidden>${icon('trash-2')}끝난 기록 지우기</button></h3><div class="rows" data-ask-history></div><div data-ask-kept class="pane-msg"></div></aside></div>
+      <div class="io-out ask-thread" data-ask-thread aria-live="polite"></div></div>`;
   async function renderMarkdown(root) {
     const nodes = [...root.querySelectorAll('[data-md]')]; if (!nodes.length) return;
     try { await UI.need('markdown'); nodes.forEach(n => { n.innerHTML = DOMPurify.sanitize(marked.parse(n.dataset.md)); n.removeAttribute('data-md'); }); }
@@ -211,7 +213,7 @@
     if (b) b.disabled = A.sending || !A.draft.trim();
     const q = A.draft.trim();
     if (why) why.textContent = !q ? ''
-      : replay() && recorded().length && !recorded().includes(q) ? 'AI 키가 없을 때 쓰는 재생 모드에서는 위의 질문에만 답합니다. 이 질문은 보내도 답을 받지 못합니다.' : '';
+      : replay() && recorded().length && !recorded().includes(q) ? 'AI 키가 없을 때 쓰는 재생 모드에서는 아래 질문 단추의 질문에만 답합니다. 이 질문은 보내도 답을 받지 못합니다.' : '';
   };
   function render() {
     if (!A.el) return;

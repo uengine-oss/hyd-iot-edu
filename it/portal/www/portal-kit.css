@@ -86,13 +86,15 @@
   --soft: #f8f8fa;      /* 칸을 가르는 옅은 바탕(테두리 대신) */
   --ease: cubic-bezier(.2, .8, .2, 1);
 
-  /* 어두운 캔버스: 홈 그림(main.css · main.js)의 실제 값 */
-  --cv-bg: #16202d;        --cv-bg-2: #1b2638;      --cv-grid: #223046;      --cv-border: #29394c;
-  --cv-node: #1b2430;      --cv-node-now: #232f5c;  --cv-edge: #53637a;      --cv-hi: #ffffff;
-  --cv-ink: #e8edf3;       --cv-ink-2: #9aa7b5;     --cv-ink-3: #6b7a8c;     --cv-steel: #cfd8e3;
-  --cv-value: #f5c46b;     --cv-blue: #7aa2ff;      --cv-green: #4ade80;     --cv-amber: #f5a623;
-  --cv-red: #f07167;       --cv-violet: #b794f6;    --cv-teal: #2dd4bf;      --cv-now: #8b93ff;
-  --cv-tool: rgb(27 36 48 / .88);
+  /* 그림 캔버스(밝은 본 — Dify · n8n): 옅은 회색 바탕에 점 격자, 흰 노드 카드, 중간 회색 선, 뜻 있는 길과 상태만 색.
+     홈의 설비 그림만 어둡다 — 그 판(.hm-hero)이 같은 이름에 어두운 값을 다시 준다(canvas.css) */
+  --cv-bg: #f7f8fa;        --cv-bg-2: #ffffff;      --cv-grid: #d5d9e0;      --cv-border: #e3e5ea;
+  --cv-node: #ffffff;      --cv-node-now: #eef0ff;  --cv-edge: #8e96a4;      --cv-hover: rgb(15 23 42 / .05);
+  --cv-ink: #16181d;       --cv-ink-2: #5d6370;     --cv-ink-3: #717784;     --cv-steel: #566072;
+  --cv-value: #1f2430;     --cv-blue: #3b7cf6;      --cv-green: #1fa35a;     --cv-amber: #e58a0a;
+  --cv-red: #e5484d;       --cv-violet: #8b5cf6;    --cv-teal: #12a594;      --cv-now: #5e6ad2;
+  --cv-tool: rgb(255 255 255 / .94);
+  --cv-shadow: 0 1px 2px rgb(15 23 42 / .06), 0 2px 6px rgb(15 23 42 / .04);      /* 노드 카드 · 떠 있는 도구의 아주 옅은 그림자 */
 }
 @media (max-width: 1100px) { :root { --page-pad: 28px; --gap-sec: 32px; } }
 @media (max-width: 640px)  { :root { --page-pad: 16px; --pad-card: 16px; --pad-card-y: 16px; --gap-head: 20px; --gap-sec: 28px; --gap-block: 16px; } }
@@ -203,16 +205,27 @@ a { color: inherit; text-decoration: none; }
 .tag[data-tone="warn"] { color: var(--warn-ink); }
 .tag[data-tone="danger"]::before { background: var(--danger); }
 
-/* ───────── 목록 + 상세 ───────── */
-.split { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 0; align-items: start; }
-.split > :first-child { padding-right: 20px; }
-.split > :last-child { --pad-card: 0px; min-height: calc(100dvh - var(--top-h) - 190px); padding-left: 32px; border-left: 1px solid var(--border); }
-.split > .panel:last-child, .split > :last-child .panel:not(.turn) { border: 0; border-radius: 0; background: none; }
-.split > .panel:last-child { border-left: 1px solid var(--border); }
-.split > :last-child .panel-head:first-child, .split > :last-child .panel-sec:first-child { padding-top: 0; }
-.split :is(.turn, .card, .stream, .lv-work, .step-card, .unit) { --pad-card: 20px; }
+/* ───────── 틀 — 두 칸: 목록 + 상세(.split) · 조건 + 결과(.io) ─────────
+   두 틀은 같은 뼈대다: 왼쪽 칸(목록 또는 조건, 맨 위에 28px 한 줄 — 거르기 또는 칸 이름) │ 세로 선 하나 │ 오른쪽 칸(머리 → 선으로 가른 구역들).
+   칸을 상자에 넣지 않는다. 상자는 타일(.stat · .unit · .kpi-card)과 그 상황에만 뜨는 판(.turn · .alert · .stream · 결과 카드)에만 쓴다 */
+.split, .io { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 0; align-items: start; }
+.split > *, .io > * { min-width: 0; }
+.split > :first-child, .io > .io-in { padding-right: 24px; }
+.split > :last-child, .io > .io-out { --pad-card: 0px; min-height: calc(100dvh - var(--top-h) - 264px); padding-left: 32px; border-left: 1px solid var(--border); }
+.split > :last-child .panel-head:first-child, .split > :last-child .panel-sec:first-child, .io-out > .panel:first-child > :is(.panel-head, .panel-sec):first-child { padding-top: 0; }
 .split[data-wide-list] { grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); }
-@media (max-width: 1000px) { .split { grid-template-columns: 1fr; } .split > :first-child { padding-right: 0; } .split > :last-child { min-height: 0; margin-top: 24px; padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--border); } }
+/* 왼쪽 칸의 맨 윗줄: 목록은 거르기(.seg), 조건은 칸 이름 — 높이가 같아 그 아래 첫 줄(목록 줄 · 입력 칸)이 모든 화면에서 같은 자리에서 시작한다 */
+:is(.io-in, .io-in > .panel) > .panel-head { padding: 0 0 16px; min-height: 44px; align-items: center; }
+:is(.io-in, .io-in > .panel) > .panel-head h2 { font-size: var(--fs-sm); line-height: 28px; font-weight: 600; }
+:is(.io-in, .io-in > .panel) > .panel-sec { padding: 0; border-top: 0; }
+:is(.io-in, .io-in > .panel) > .panel-sec + .panel-sec { margin-top: var(--gap-block); padding-top: var(--gap-block); border-top: 1px solid var(--border); }
+:is(.io-in, .io-in > .panel) > .panel-sec + .panel-sec:has(> :is(.fold, .fieldset:empty):first-child) { margin-top: 16px; padding-top: 4px; }
+:is(.io-in, .io-in > .panel) > .panel-sec > .fold:first-child { border-top: 0; }
+@media (max-width: 1000px) {
+  .split, .io { grid-template-columns: minmax(0, 1fr); }
+  .split > :first-child, .io > .io-in { padding-right: 0; }
+  .split > :last-child, .io > .io-out { --pad-card: 0px; min-height: 0; margin-top: 24px; padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--border); }
+}
 .seg { display: inline-flex; gap: 2px; }      /* 거르기: 바탕 없는 작은 단추들, 고른 것만 옅은 면 */
 .seg button { height: 28px; padding: 0 9px; border-radius: 6px; font-size: var(--fs-sm); font-weight: 500; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; cursor: pointer; }
 .seg button:hover { background: var(--soft); color: var(--foreground); }
@@ -230,15 +243,23 @@ a { color: inherit; text-decoration: none; }
 .rows { display: grid; gap: 2px; align-content: start; }      /* 목록은 상자에 넣지 않는다 — 줄마다 둥근 면 하나, 줄 사이는 여백 */
 .rows-group { padding: 12px 12px 4px; font-size: var(--fs-xs); line-height: 18px; font-weight: 600; color: var(--muted-foreground); }
 .rows-group:first-child { padding-top: 2px; }      /* 목록의 날짜 묶음 머리 */
-.rows > .row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; width: 100%; padding: 10px 12px; text-align: left; cursor: pointer;
+:is(.rows, .row-act) > .row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; width: 100%; padding: 10px 12px; text-align: left; cursor: pointer;
   border-radius: var(--r-in); position: relative; transition: background .12s; }
-.rows > .row:hover { background: var(--soft); }
-.rows > .row[aria-current="true"] { background: var(--accent); }
+:is(.rows, .row-act) > .row:hover { background: var(--soft); }
+:is(.rows, .row-act) > .row[aria-current="true"] { background: var(--accent); }
+/* 줄 오른쪽 끝의 작은 동작(원문 보기 등): 줄(button)과 동작(a · button)을 한 칸에 겹쳐, 동작이 줄의 오른쪽 끝 · 세로 가운데에 놓인다 */
+.row-act { position: relative; display: grid; }
+.row-act > .row { padding-right: 104px; }
+.row-act > :not(.row) { position: absolute; right: 8px; top: 50%; translate: 0 -50%; color: var(--muted-foreground); font-weight: 500; }
+.row-act > :not(.row):hover { color: var(--foreground); }
 .row-ic { grid-row: span 2; align-self: start; width: 20px; height: 20px; margin-top: 1px; display: grid; place-items: center; color: var(--muted-foreground); }
 .rows > .row[aria-current="true"] .row-ic { color: var(--foreground); }
 .row-title { font-weight: 500; font-size: var(--fs-sm); line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-meta { grid-column: 2 / -1; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.panel { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--card); }
+/* 판(.panel)은 상자가 아니라 구역이다: 머리(.panel-head) → 선으로 가른 절(.panel-sec). 나란히 쌓인 판은 선 하나로 가른다 */
+.panel { --pad-card: 0px; min-width: 0; }
+:is(.panel, .split, .io) :is(.turn, .card, .stream, .lv-work, .step-card, .unit, .stat, .alert) { --pad-card: 20px; }
+.panel + .panel { margin-top: var(--gap-block); padding-top: var(--gap-block); border-top: 1px solid var(--border); }
 .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: var(--pad-card) var(--pad-card) 20px; }
 .panel-head h2 { font-size: var(--fs-lg); line-height: 24px; font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .panel-head p { margin-top: 2px; font-size: var(--fs-sm); color: var(--muted-foreground); }
@@ -432,53 +453,57 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); bo
 .typing::after { content: ""; display: inline-block; width: 2px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--brand); animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* ───────── 어두운 캔버스(그림 자리) ───────── */
+/* ───────── 그림 캔버스(밝은 본: 옅은 회색 바탕 · 점 격자 · 떠 있는 흰 도구) ───────── */
 .canvas { position: relative; border-radius: var(--r-card); border: 1px solid var(--cv-border); background: var(--cv-bg); color: var(--cv-ink); overflow: hidden;
-  background-image: radial-gradient(circle at 1px 1px, var(--cv-grid) 1px, transparent 1.5px); background-size: 22px 22px; }
+  background-image: radial-gradient(circle at 1px 1px, var(--cv-grid) 1px, transparent 1.5px); background-size: 20px 20px; }
 .canvas-bar { position: absolute; z-index: 5; left: 12px; right: 12px; top: 10px; display: flex; align-items: center; gap: 12px; pointer-events: none; font-size: var(--fs-xs); color: var(--cv-ink-2); }
 .canvas-bar > * { pointer-events: auto; }
 .canvas-bar .grow { flex: 1; }
-.cv-legend { display: inline-flex; align-items: center; gap: 12px; min-height: 30px; flex-wrap: wrap; padding: 0 12px; border-radius: 8px; background: var(--cv-tool); border: 1px solid var(--cv-border); backdrop-filter: blur(6px); }
+.cv-legend { display: inline-flex; align-items: center; gap: 14px; min-height: 32px; flex-wrap: wrap; padding: 0 12px; border-radius: 8px; background: var(--cv-tool); border: 1px solid var(--cv-border); box-shadow: var(--cv-shadow); backdrop-filter: blur(6px); }
 .cv-legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cv-legend i { width: 9px; height: 9px; border-radius: 3px; background: var(--cv-edge); }
-.cv-tools { display: inline-flex; border-radius: 8px; background: var(--cv-tool); border: 1px solid var(--cv-border); backdrop-filter: blur(6px); overflow: hidden; }
-.cv-tools button { width: 32px; height: 30px; display: grid; place-items: center; color: var(--cv-ink-2); cursor: pointer; }
+.cv-tools { display: inline-flex; border-radius: 8px; background: var(--cv-tool); border: 1px solid var(--cv-border); box-shadow: var(--cv-shadow); backdrop-filter: blur(6px); overflow: hidden; }
+.cv-tools button { width: 34px; height: 32px; display: grid; place-items: center; color: var(--cv-ink-2); cursor: pointer; }
 .cv-tools button + button { border-left: 1px solid var(--cv-border); }
-.cv-tools button:hover { color: #fff; background: rgb(255 255 255 / .06); }
+.cv-tools button:hover { color: var(--cv-ink); background: var(--cv-hover); }
 .cv-tools button.wide { width: auto; padding: 0 10px; gap: 6px; display: inline-flex; align-items: center; font-size: var(--fs-xs); }
-.cv-search { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-radius: 8px; background: var(--cv-tool); border: 1px solid var(--cv-border); color: var(--cv-ink-2); backdrop-filter: blur(6px); }
+.cv-search { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 8px; background: var(--cv-tool); border: 1px solid var(--cv-border); box-shadow: var(--cv-shadow); color: var(--cv-ink-2); backdrop-filter: blur(6px); }
 .cv-search input { width: 180px; background: none; border: 0; outline: 0; color: var(--cv-ink); font: inherit; font-size: var(--fs-sm); }
 .cv-search input::placeholder { color: var(--cv-ink-3); }
-.cv-search:focus-within { border-color: var(--cv-now); }
+.cv-search:focus-within { border-color: var(--cv-now); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cv-now) 16%, transparent); }
 .canvas-foot { position: absolute; z-index: 5; left: 12px; bottom: 10px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
 .canvas-foot > * { pointer-events: auto; }
-.cv-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: var(--fs-xs); color: var(--cv-ink); background: var(--cv-tool); border: 1px solid var(--cv-border); cursor: pointer; backdrop-filter: blur(6px); }
+.cv-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border-radius: 999px; font-size: var(--fs-xs); color: var(--cv-ink); background: var(--cv-tool); border: 1px solid var(--cv-border); box-shadow: var(--cv-shadow); cursor: pointer; backdrop-filter: blur(6px); }
 .cv-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--cv-edge)); }
 .cv-chip .num { color: var(--cv-ink-2); font-size: var(--fs-xs); }
-.cv-chip[aria-pressed="false"] { color: var(--cv-ink-3); }
+.cv-chip[aria-pressed="false"] { color: var(--cv-ink-3); box-shadow: none; background: transparent; }
 .cv-chip[aria-pressed="false"] i { background: transparent; box-shadow: inset 0 0 0 1.5px var(--cv-ink-3); }
 .cv-chip:hover { border-color: var(--cv-edge); }
 
-/* bpmn-js 를 어두운 캔버스에 맞춘다(그림의 모양 · 배치는 bpmn-js 가 그린 그대로, 색만 바꾼다) */
+/* bpmn-js 를 밝은 캔버스에 맞춘다(그림의 모양 · 배치는 bpmn-js 가 그린 그대로, 색만 바꾼다).
+   상태: 끝남 = 초록 테두리 + 아주 옅은 초록 면 + 체크, 지금 = 제품색 굵은 테두리 + 옅은 제품색 면 + 고리, 남음 = 흐리게. 차선(.is-lane — flow.js)은 옅은 선에 면 없이 */
 .bpmn { width: 100%; height: 100%; }
 .bpmn .djs-container { font-family: var(--font-sans) !important; }
 .bpmn .djs-container svg text { font-family: var(--font-sans) !important; }
 .bpmn .bjs-powered-by { right: 10px !important; bottom: 8px !important; opacity: .75; }
-.bpmn .bjs-powered-by svg path { fill: var(--cv-ink-2) !important; }
-.bpmn .djs-shape.is-done .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-green) !important; }
-.bpmn .djs-shape.is-now .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-now) !important; stroke-width: 2.5px !important; fill: var(--cv-node-now) !important; filter: drop-shadow(0 0 10px rgb(139 147 255 / .55)); }
-.bpmn .djs-shape.is-now .djs-visual text { fill: #fff !important; font-weight: 600; }
+.bpmn .bjs-powered-by svg path { fill: var(--cv-ink-3) !important; }
+.bpmn .djs-shape.is-lane .djs-visual > :is(rect, polygon):first-child { stroke: var(--cv-grid) !important; fill: transparent !important; }
+.bpmn .djs-shape.is-lane .djs-visual > path { stroke: var(--cv-grid) !important; }
+.bpmn .djs-shape.is-lane .djs-visual text { fill: var(--cv-ink-2) !important; font-weight: 600; }
+.bpmn .djs-shape.is-done .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-green) !important; stroke-width: 2px !important; fill: color-mix(in srgb, var(--cv-green) 7%, #fff) !important; }
+.bpmn .djs-shape.is-now .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-now) !important; stroke-width: 2.5px !important; fill: var(--cv-node-now) !important; filter: drop-shadow(0 2px 8px rgb(94 106 210 / .35)); }
+.bpmn .djs-shape.is-now .djs-visual text { fill: var(--cv-ink) !important; font-weight: 600; }
 .bpmn .djs-shape.is-todo .djs-visual { opacity: .62; }
-.bpmn .djs-connection.is-done .djs-visual > path { stroke: var(--cv-green) !important; }
+.bpmn .djs-connection.is-done .djs-visual > path { stroke: var(--cv-green) !important; stroke-width: 2px !important; }
 .bpmn .djs-connection.is-todo .djs-visual { opacity: .5; }
 .bpmn .djs-shape.is-now .djs-outline, .bpmn .djs-element.hover .djs-outline { stroke: transparent !important; }
-.bpmn-tip { transform: translate(-50%, -100%); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; background: var(--cv-now); color: #10142e; font-size: var(--fs-xs); font-weight: 600; box-shadow: 0 4px 14px rgb(0 0 0 / .4); font-family: var(--font-sans); }
+.bpmn-tip { transform: translate(-50%, -100%); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; background: var(--cv-now); color: #fff; font-size: var(--fs-xs); font-weight: 600; box-shadow: 0 4px 12px rgb(15 23 42 / .18); font-family: var(--font-sans); }
 .bpmn-tip::after { content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; background: var(--cv-now); transform: translateX(-50%) rotate(45deg); }
 .bpmn-tip[data-side="below"] { transform: translate(-50%, 0); }      /* 위에 선 이름이 있으면 상자 아래에 둔다 — 꼬리는 위쪽으로 */
 .bpmn-tip[data-side="below"]::after { bottom: auto; top: -4px; }
-.bpmn-tip i { width: 6px; height: 6px; border-radius: 50%; background: #10142e; animation: blink 1.2s steps(2) infinite; }
+.bpmn-tip i { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: blink 1.2s steps(2) infinite; }
 .bpmn-check { width: 18px; height: 18px; border-radius: 50%; background: var(--cv-green); display: grid; place-items: center; box-shadow: 0 0 0 2px var(--cv-bg); }
-.bpmn-check::after { content: ""; width: 10px; height: 10px; background: #0c2a17; -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
+.bpmn-check::after { content: ""; width: 10px; height: 10px; background: #fff; -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
 
 /* ───────── 숫자 타일 ───────── */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--gap-item); }
@@ -494,8 +519,6 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); bo
 .table tr { border-color: var(--border); }
 .table tbody tr:last-child { border-bottom: 0; }
 .table { font-size: var(--fs-sm); }
-/* 폼이 본문인 화면(관리)은 읽기 좋은 폭까지만 — 왼쪽 선은 다른 화면과 같다 */
-#view-admin > * { max-width: 960px; }
 
 /* 스켈레톤 줄(키트의 .skeleton 에 치수만 준다) */
 .sk-line { height: 12px; border-radius: 6px; }
@@ -774,7 +797,7 @@ a.btn:hover { text-decoration: none; }
 :root {
   --s3: 12px;
   --ot: #b14329; --ot-bg: #fff1ec; --dmz: #986000; --dmz-bg: #fff6df;
-  --cv-pink: #f472b6;
+  --cv-pink: #e0479a;
   --kg-violet: #7c3aed; --kg-blue: #2563eb; --kg-gray: #5f6676; --kg-red: #dc2626; --kg-teal: #0d9488; --kg-amber: #b45309; --kg-pink: #db2777;
 }
 

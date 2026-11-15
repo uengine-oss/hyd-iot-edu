@@ -1,25 +1,28 @@
 /* 화면의 내용 짜임 — 화면 배치(격자 · 폭)만 둔다. 부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다.
-   판단 실험(규칙 판단 · 조건별 손익 · 판단 채점 · 에이전트 시험 비교)의 「조건 → 결과」 격자(.io)가 이 파일의 본문이고,
-   그 아래는 아직 옛 읽는 판 이름(rd-*)을 쓰는 화면(질문하기 · 처리 건의 실행 중인 AI 에이전트 · 도구 연결)의 배치다 — 그 화면을 옮기는 갈래가 함께 지운다. */
+   「조건 → 결과」 두 칸 틀(.io)의 격자와 세로 선은 portal-kit.css 가 목록 + 상세(.split)와 한 규칙으로 갖는다. 여기는 그 칸 안의 치수만 둔다.
+   쓰는 화면: 규칙 판단 · 조건별 손익 · 판단 채점 · 에이전트 시험 비교 · 질문하기 · 오일 분석 입력 · 데이터 원천(두 DB 묶어 보기) */
 
-/* ---------------- 조건 → 결과(디자인 기준 5-6): 왼쪽 조건 판 320px · 오른쪽 결과. 판단 실험 네 화면이 쓴다 ----------------
-   부품은 키트의 것이다(panel · fieldset · field · result · turn-facts · opts · evid · stream). 여기는 격자와 폭만 정한다 */
-.io { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 32px; align-items: start; }
-.io > * { min-width: 0; }
-.io > .io-in { position: sticky; top: 68px; }      /* 위 막대(52px) 아래에 붙어 따라온다 */
+@media (min-width: 1001px) { .io > .io-in:not(:has(.io-past)) { position: sticky; top: 68px; } }      /* 위 막대 아래에 붙어 따라온다(아래에 지난 것 목록이 길게 붙는 칸은 빼고) */
 .io-in :is(.select, .input:not([type="checkbox"]):not([type="radio"]), .textarea) { width: 100%; }
 .io-in .fieldset + .fieldset { margin-top: 24px; }
 .io-fields { display: grid; gap: var(--gap-field); }      /* 조건 판의 입력 칸 묶음(머리 없이) */
 .io-more { margin-top: 16px; }
 .io-more > .fold-body { padding-left: 0; }
-.eval-runs tr[data-run] { cursor: pointer; }
-.eval-runs tr[data-run]:hover td { background: var(--soft); }
-.eval-runs tr[data-pick] td { background: var(--brand-soft); }
 .io-in .form-foot { justify-content: flex-start; }
 .io-in .form-foot > .btn:first-child { flex: 1; }
 .io-in .seg { display: flex; }
 .io-in .seg > button { flex: 1; justify-content: center; padding: 0 6px; }
-.io-out { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-block); }
+.io-out { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+/* 결과 칸에 쌓이는 덩어리(결과 · 지난 실행 …)는 선 하나로 가른다 — 숨은 것 · 빈 것은 세지 않는다 */
+.io-out > :not([hidden]):not(:empty) ~ :not([hidden]):not(:empty) { margin-top: var(--gap-block); padding-top: var(--gap-block); border-top: 1px solid var(--border); }
+/* 왼쪽 칸 아래의 「지난 것」 목록(지난 질문 · 지난 실행 · 지난 시험): 조건과 선 하나로 가르고, 줄은 목록 화면의 줄(.rows > .row)과 같다 */
+.io-past { margin-top: var(--gap-block); padding-top: var(--pad-card-y); border-top: 1px solid var(--border); }
+.io-past > h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: var(--fs-sm); line-height: 28px; font-weight: 600; }
+.io-past > h3 .muted { margin-left: auto; font-size: var(--fs-xs); font-weight: 450; }
+.io-past .rows { max-height: 320px; overflow: auto; }
+.io-past .muted { font-size: var(--fs-xs); line-height: 18px; }
+.io-past .fieldset { margin-top: 12px; }
+.io-past .rows > .row > .tag { justify-self: end; }
 .io-out .panel-head > div:first-child { min-width: 0; }
 .io-out .fieldset :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
 .io-out .fieldset .evid :is(.select, .input:not([type="checkbox"])) { width: auto; min-width: 200px; margin: 0 4px; }      /* 고른 것 목록의 줄 안 고르기 칸(정답표 폼)은 한 줄에 */
@@ -43,12 +46,10 @@
 .io-out .panel-sec > .fold:last-child > .fold-body { padding-bottom: 0; }
 .io-out .panel-sec > .fold:last-child:not([open]) > summary { padding-bottom: 0; }
 .io-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }      /* 둘을 나란히(에이전트 A · B) */
-.io-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: -4px 0 16px; }      /* 보기 바꾸기 줄 */
+.io-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 16px; margin: 0 0 var(--gap-block); border-bottom: 1px solid var(--border); }
+.io-bar > .view-tabs { margin: 0 0 -1px; border-bottom: 0; }
+.io-bar > .muted { font-size: var(--fs-xs); }      /* 보기 바꾸기 줄 */
 .io-progress { display: grid; gap: 6px; padding: 4px 14px 12px; font-size: var(--fs-xs); color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
-@media (max-width: 1000px) {
-  .io { grid-template-columns: minmax(0, 1fr); }
-  .io > .io-in { position: static; }
-}
 @media (max-width: 700px) {
   .io-two { grid-template-columns: minmax(0, 1fr); }
   .io-out .table-container > :is(.table, .opts):not(.io-even) { min-width: 600px; }      /* 좁은 폭에서는 표를 찌그러뜨리지 않고 표 칸 안에서 옆으로 민다 */
@@ -61,9 +62,6 @@
 }
 .io-side { display: none; margin-right: 6px; font-weight: 600; }
 .confirm-dialog header p { white-space: pre-line; }      /* 확인 창 글의 줄바꿈(지우는 것 / 남는 것 목록)을 그대로 보인다 */
-
-/* ---------------- 문서 등록 · 조치 방법 ---------------- */
-#manualSteps { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 
 .dec-more > .fold-body { padding-left: 0; }
 .dec-h { margin: 16px 0 6px; font-size: var(--fs-sm); font-weight: 600; }

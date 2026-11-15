@@ -5,7 +5,7 @@
    B5 목표값 바꿔 보기(시험 실행): POST /api/kpi/try · /api/kpi/try/trace 에 {지표: 시험 목표}를 보내 달성/미달 · 달성률 · 역추적을
    그 목표로 다시 판정한다. 지식 그래프의 목표값은 그대로이고 "원래대로"는 시험 목표를 비운다.
    상태 이름 · 기간 이름 · 사유 문장은 서버(kpi.py STATUS · PERIODS · DEFINITIONS)가 학생 말로 보낸 것을 그대로 쓴다(화면 사본 없음).
-   짜임(결론 먼저 · 근거 다음 · 원문 접기): 제목 · 한 문장 · 기간 고르기 → 결론(지표 몇 개 가운데 미달 · 달성 몇 개) → (연 것이 있으면) 미달 원인 찾기 →
+   짜임(현황 화면의 본 — 숫자 타일 줄 → 구역): 제목 · 한 문장 · 기간 고르기 → 숫자 타일 넷(미달 · 달성 · 판정하지 않음 · 계산할 수 없음) → (연 것이 있으면) 미달 원인 찾기 →
    관점마다 계산된 지표의 카드 격자(이름 · 실적 · 목표와 달성률 · 판정) → 접기 셋(계산할 수 없는 지표 · 목표값 바꿔 보기 · 계산 정의). 계산 근거는 그 카드의 [계산 근거]를 누르면 옆 판으로 열린다. */
 (function () {
   const TONE = { met: 'success', missed: 'danger', no_target: 'neutral', incomparable: 'neutral', partial: 'warning', no_data: 'neutral', unavailable: 'neutral', error: 'danger' };
@@ -136,8 +136,10 @@
   function render(st) {
     const el = st.el;
     const periods = Object.entries((st.data && st.data.periods) || st.periods || {});
-    // 기간은 화면 머리 아래 · 내용 바로 위의 묶음 단추(거르기)다 — 머리에는 두지 않는다. 다시 읽기는 머리의 더 보기 안
-    const tools = `<div class="kpi-bar">${periods.length ? `<div class="seg" role="group" aria-label="기간">${periods.map(([k, l]) => `<button type="button" data-kpi-period="${escH(k)}" aria-pressed="${k === st.period}">${escH(l)}</button>`).join('')}</div>` : ''}</div>`;
+    // 현황 화면의 본: 머리 → 거르기 한 줄(기간, 오른쪽에 그 기간의 범위) → 숫자 타일 줄(판정 요약) → 구역(관점마다 지표 카드). 다시 읽기는 머리의 더 보기 안
+    const win = st.data && st.data.window;
+    const tools = `<div class="kpi-bar">${periods.length ? `<div class="seg" role="group" aria-label="기간">${periods.map(([k, l]) => `<button type="button" data-kpi-period="${escH(k)}" aria-pressed="${k === st.period}">${escH(l)}</button>`).join('')}</div>` : ''}` +
+      (win && win.start && !st.loading ? `<span class="muted num">${when(win.start)} ~ ${when(win.end)}</span>` : '') + `</div>`;
     let body;
     if (st.loading && !st.data) body = hydLive.waitHtml('성과 지표 실적을 계산하는 중', { since: st.since, hint: '시계열 · 업무 DB · 처리 기록을 읽어 지표마다 실적을 계산합니다. 서버가 모두 끝낸 뒤 한 번에 줍니다.' });
     else if (st.error) body = UI.errorBlock('성과 지표를 불러오지 못했습니다', st.error, { retry: true });
@@ -146,11 +148,11 @@
       STATUS = s.labels;
       const all = d.perspectives.flatMap(p => p.objectives.flatMap(o => o.measures));
       const noVerdict = s.no_target + s.incomparable + s.partial, noCalc = s.unavailable + s.no_data + s.error;
-      // 결론 먼저: 지표 몇 개 가운데 미달 · 달성 몇 개. 그 아래에 기간과 판정하지 못한 수
-      const head = `<section class="panel kpi-result result"><p class="result-label">결론</p>` +
-        `<p class="result-main">지표 ${s.total}개 가운데 ${chip(`미달 ${s.missed}개`, s.missed > 0 ? 'danger' : 'neutral')} ${chip(`달성 ${s.met}개`, s.met > 0 ? 'success' : 'neutral')}</p>` +
-        `<p class="result-sub">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''}</p>` +
-        (noVerdict || noCalc ? `<p class="muted kpi-rest">${[noVerdict ? `목표로 판정하지 않은 지표 ${noVerdict}개` : '', noCalc ? `계산할 수 없는 지표 ${noCalc}개` : ''].filter(Boolean).join(' · ')}</p>` : '') + '</section>';
+      // 결론 먼저: 숫자 타일 넷(미달 · 달성 · 목표로 판정하지 않음 · 계산할 수 없음) — 다른 현황 화면(홈 · 업무 시스템 기록)과 같은 타일 줄이다
+      const tile = (label, n, note, tone) => `<div class="stat"${tone && n > 0 ? ` data-tone="${tone}"` : ''}><div class="stat-label">${label}</div><div class="stat-value num">${n}<small>개</small></div><div class="stat-note">${note}</div></div>`;
+      const head = `<section class="stats kpi-stats" role="status" aria-label="판정 요약">` +
+        tile('미달', s.missed, `지표 ${s.total}개 가운데`, 'danger') + tile('달성', s.met, '목표를 채운 지표', 'ok') +
+        tile('판정하지 않음', noVerdict, '목표가 없거나 견줄 수 없는 지표') + tile('계산할 수 없음', noCalc, '원천이 없거나 기록이 없는 지표') + '</section>';
       // 관점마다 계산된 지표의 카드 격자. 계산할 수 없는 지표(원천 없음 · 기록 없음 · 조회 실패)는 맨 아래 접기 한 곳의 표로 — 「값이 없습니다」가 화면을 채우지 않게
       const persp = d.perspectives.map(p => {
         const cards = p.objectives.flatMap(o => o.measures.filter(calcOk).map(m => measureCard(st, m, o.name)));

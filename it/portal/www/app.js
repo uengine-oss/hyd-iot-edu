@@ -163,10 +163,11 @@ const healthState = {};
 // 선택 도구: 서비스 자체가 선택(optional)이거나, 서비스는 기본인데 사람이 여는 화면만 선택 도구(entryHealth — Redpanda 는 기본, Console 은 tools 프로필)인 것
 const optionalOf = c => c.entryHealth || c.optional;
 const SYS = {
-  // 그림의 치수(viewBox 단위). 상자 148 × 56, 줄 사이 80(상자 사이 24), IT 세 열 사이 18 — 1440 폭에서 한 단위가 약 0.94px 로 그려진다
-  W: 1204, NW: 148, NH: 56, y0: 136, dy: 80,
-  band: { ot: [124, 188, 'OT', '현장 · 실시간 제어', 'cv-red'], dmz: [326, 348, 'DMZ', '값은 중계하고 명령은 검증한다', 'cv-amber'], it: [688, 504, 'IT', '업무 · 분석 · 지식 · AI', 'cv-blue'] },
-  col: { ot: 218, d1: 416, d2: 584, a: 776, b: 940, c: 1104 },
+  // 그림의 치수(viewBox 단위). 캔버스가 화면 머리 아래를 가로 · 세로로 가득 쓰고 그림은 그 안에 통째로 맞춰진다(1440 × 900 에서 한 단위가 약 0.95px).
+  // 상자 156 × 54, 줄 사이 72(상자 사이 18), 영역 띠 사이 12
+  W: 1240, NW: 156, NH: 54, y0: 112, dy: 72,
+  band: { ot: [116, 192, 'OT', '현장 · 실시간 제어', 'cv-red'], dmz: [320, 368, 'DMZ', '값은 중계하고 명령은 검증한다', 'cv-amber'], it: [700, 528, 'IT', '업무 · 분석 · 지식 · AI', 'cv-blue'] },
+  col: { ot: 212, d1: 414, d2: 594, a: 792, b: 964, c: 1136 },
   // 부품(layers.js 이름의 첫 낱말) → [화면 이름, 아이콘, 칸, 폭]
   node: {
     process: ['흐름 엔진', 'workflow', 'a'], portal: ['포털', 'layout-grid', 'b'], 'enterprise-sim': ['업무 시스템', 'receipt-text', 'c'],
@@ -174,7 +175,7 @@ const SYS = {
     FUXA: ['관제 화면', 'gauge', 'ot'], Grafana: ['추이 화면', 'chart-line', 'b'], Prometheus: ['서비스 감시', 'signal', 'c'],
     TimescaleDB: ['시계열 저장소', 'database', 'b'], 'connect-sink': ['시계열 기록', 'download', 'c'], detector: ['이상 탐지', 'activity', 'b'],
     'cmd-gateway': ['명령 관문', 'shield-check', 'd1'], 'connect-ingest': ['수집 중계', 'arrow-up-right', 'd2'], Redpanda: ['이벤트 저장', 'layers', 'a'],
-    EMQX: ['MQTT 브로커', 'radio', 'ot', 156], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 156],
+    EMQX: ['MQTT 브로커', 'radio', 'ot', 164], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 164],
   },
   ai: ['agent-worker', 'agent', 'Neo4j'],
 };
@@ -196,7 +197,7 @@ function renderStack() {
   const lost = comps.filter(c => !SYS.node[c.key]).map(c => c.name);
   if (lost.length) { stack.innerHTML = UI.errorBlock('구조 그림에 자리가 없는 부품이 있습니다', `부품 표(layers.js)에는 있는데 그림의 자리 표(app.js SYS.node)에 없습니다: ${lost.join(', ')}`); return; }
   // HB = 영역 띠가 끝나는 높이. 그 아래 한 줄(SIM)은 영역 밖의 길(가상 설비 API 망)이 지나는 자리다
-  const { W, NW, NH, y0, dy } = SYS, HB = y0 + dy * (LAYERS.length - 1) + NH / 2 + 36, SIM = HB + 10, H = HB + 52;
+  const { W, NW, NH, y0, dy } = SYS, HB = y0 + dy * (LAYERS.length - 1) + dy / 2, SIM = HB + 14, H = HB + 46;
   const at = Object.fromEntries(comps.map(c => { const [, , col, w] = SYS.node[c.key]; return [c.key, { x: SYS.col[col], y: y0 + c.row * dy, w: w || NW }]; }));
   const Lp = (k, d = 0) => [at[k].x - at[k].w / 2, at[k].y + d], Rp = (k, d = 0) => [at[k].x + at[k].w / 2, at[k].y + d];
   const Tp = (k, d = 0) => [at[k].x + d, at[k].y - NH / 2], Bp = (k, d = 0) => [at[k].x + d, at[k].y + NH / 2];
@@ -220,9 +221,9 @@ function renderStack() {
     ['data', [Rp('Redpanda', 12), [at['connect-sink'].x, at.Redpanda.y + 12], Bp('connect-sink')]],
     ['data', [Lp('connect-sink'), Rp('TimescaleDB')]],
     ['data', [Tp('TimescaleDB'), Bp('Grafana')]],
-    ['data', [Tp('Redpanda', -18), Bp('process', -18)], '경보 · 사건', [at.Redpanda.x - 30, at.Redpanda.y - dy * 2.5 + 4], 'end'],
+    ['data', [Tp('Redpanda', -18), Bp('process', -18)], '경보 · 사건', [at.Redpanda.x - 28, at.Redpanda.y - dy * 4 + 4], 'end'],
     // 승인된 명령이 내려가는 길
-    ['cmd', [Bp('process', 18), Tp('Redpanda', 18)], '승인된 명령', [at.Redpanda.x + 30, at.Redpanda.y - dy * 2.5 + 4], 'start'],
+    ['cmd', [Bp('process', 18), Tp('Redpanda', 18)], '승인된 명령', [at.Redpanda.x + 28, at.Redpanda.y - dy * 4 + 4], 'start'],
     ['cmd', [Tp('Redpanda', -52), [at.Redpanda.x - 52, gap('Redpanda')], [at['cmd-gateway'].x + 34, gap('Redpanda')], Tp('cmd-gateway', 34)], '검증할 명령', [at['connect-ingest'].x, gap('Redpanda') - 9], 'middle'],
     ['cmd', [Bp('cmd-gateway', -34), [at['cmd-gateway'].x - 34, at.EMQX.y - 12], Rp('EMQX', -12)], '검증을 통과한 명령', [at['cmd-gateway'].x - 22, at.EMQX.y - 22], 'start'],
     ['cmd', [Bp('EMQX', -34), Tp('plant-sim', -34)]],
@@ -231,11 +232,11 @@ function renderStack() {
     ['ai', [Rp('agent-worker'), Lp('agent')]],
     ['ai', [Bp('agent'), Tp('Neo4j')]],
     // 그 밖의 연결
-    ['plain', [Bp('FUXA'), Tp('EMQX')], '감시 · 수동 조작', [at.FUXA.x + 12, mid('FUXA', 'EMQX') + 4], 'start'],
+    ['plain', [Bp('FUXA'), Tp('EMQX')], '감시 · 수동 조작', [at.FUXA.x, mid('FUXA', 'EMQX') + 4], 'middle'],
     ['plain', [Lp('portal'), Rp('process')]],      // 사람은 포털에서 승인한다
     ['plain', [Tp('process', 34), [at.process.x + 34, at.process.y - NH / 2 - 16], [at['enterprise-sim'].x, at.process.y - NH / 2 - 16], Tp('enterprise-sim')], '정비 요청 · 구매', [at.portal.x, at.process.y - NH / 2 - 24], 'middle'],
     // 명령 길 밖: 흐름 엔진 · 포털 → 가상 설비 API(sim-net). 영역 띠 바깥(아래)으로 돌아 설비에 직접 닿는다 — 브로커와 명령 관문을 지나지 않는다
-    ['sim', [Lp('process'), [SYS.band.it[0] - 7, at.process.y], [SYS.band.it[0] - 7, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접(sim-net), 브로커와 명령 관문을 거치지 않음', [SYS.band.dmz[0] + SYS.band.dmz[1] / 2, SIM + 24], 'middle'],
+    ['sim', [Lp('process'), [SYS.band.it[0] - 6, at.process.y], [SYS.band.it[0] - 6, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접(sim-net), 브로커와 명령 관문을 거치지 않음', [SYS.band.it[0] - 16, SIM + 20], 'end'],
   ];
   const COLOR = { data: 'var(--cv-blue)', cmd: 'var(--cv-amber)', ai: 'var(--cv-violet)', plain: 'var(--cv-edge)', sim: 'var(--cv-red)' };
   const netsOf = zone => NETS.filter(n => n.zone === zone).map(n => n.id).join(' · ');
@@ -244,26 +245,35 @@ function renderStack() {
     return `<a class="sys-nd comp" data-key="${esc(c.key)}" data-zone="${esc(c.zone)}" data-st="${sysStatus(c)}"${SYS.ai.includes(c.key) ? ' data-ai' : ''} ${c.url ? `href="${esc(c.url)}" target="_blank" rel="noopener"` : 'tabindex="0"'} aria-label="${esc(title)} (${esc(c.key)}) — ${esc(c.layer)}">
       <title>${esc(title)} (${esc(c.key)}) — ${esc(c.role)}${c.real ? ` · 현업에서는 ${esc(c.real)}` : ''}</title>
       <rect class="box" x="${x0}" y="${y0n}" width="${w}" height="${NH}" rx="12"/>
-      <rect class="ib" x="${x0 + 12}" y="${y - 15}" width="30" height="30" rx="8"/>
-      <svg class="ico" x="${x0 + 19}" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="vendor/lucide/icons.svg#${icon}"/></svg>
-      <text class="t" x="${x0 + 52}" y="${y - 2}">${esc(title)}</text><text class="s" x="${x0 + 52}" y="${y + 15}">${esc(c.key)}</text>
+      <rect class="ib" x="${x0 + 11}" y="${y - 15}" width="30" height="30" rx="8"/>
+      <svg class="ico" x="${x0 + 18}" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="vendor/lucide/icons.svg#${icon}"/></svg>
+      <text class="t" x="${x0 + 51}" y="${y - 2}">${esc(title)}</text><text class="s" x="${x0 + 51}" y="${y + 14}">${esc(c.key)}</text>
       <circle class="st" cx="${x0 + w - 14}" cy="${y0n + 14}" r="4"/></a>`;
   };
   stack.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="OT · DMZ · IT 세 영역과 계층 아홉의 부품, 값이 올라가는 길과 승인된 명령이 내려가는 길">
     <defs>${Object.entries(COLOR).map(([k, c]) => `<marker id="sysAh-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1.5 L9,5 L1,8.5" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>`).join('')}</defs>
-    ${Object.entries(SYS.band).map(([zone, [x, w, name, what, color]]) => `<rect class="sys-band" x="${x}" y="16" width="${w}" height="${HB - 28}" rx="16" style="fill:color-mix(in srgb, var(--${color}) 4%, transparent)"/>` +
-      `<text class="sys-band-t" x="${x + 20}" y="48" style="fill:var(--${color})">${name}</text><text class="sys-band-s" x="${x + 20 + name.length * 12 + 10}" y="48">${esc(what)}</text>` +
-      `<text class="sys-band-n" x="${x + 20}" y="70">망 ${esc(netsOf(zone))}</text>`).join('')}
-    <text class="sys-row-t" x="20" y="48">계층</text><text class="sys-row-cap" x="20" y="66">위가 업무</text><text class="sys-row-cap" x="20" y="82">아래가 현장</text>
+    ${Object.entries(SYS.band).map(([zone, [x, w, name, what, color]]) => `<rect class="sys-band" x="${x}" y="12" width="${w}" height="${HB - 12}" rx="14" style="fill:color-mix(in srgb, var(--${color}) 4%, transparent);stroke:color-mix(in srgb, var(--${color}) 40%, transparent)"/>` +
+      `<text class="sys-band-t" x="${x + 16}" y="38" style="fill:var(--${color})">${name}</text><text class="sys-band-s" x="${x + 16 + name.length * 12 + 10}" y="38">${esc(what)}</text>` +
+      `<text class="sys-band-n" x="${x + 16}" y="58">망 ${esc(netsOf(zone))}</text>`).join('')}
+    <text class="sys-row-t" x="16" y="38">계층</text><text class="sys-row-cap" x="16" y="55">위가 업무</text><text class="sys-row-cap" x="16" y="69">아래가 현장</text>
     ${LAYERS.map((L, i) => { const [head, ...rest] = L.name.split(' · ');      // 계층 이름은 두 줄(첫 낱말 · 나머지)로 — 왼쪽 칸을 좁혀 그림에 폭을 준다
-      return `${i % 2 ? '' : `<rect class="sys-row-bg" x="12" y="${y0 + i * dy - dy / 2 + 4}" width="${W - 24}" height="${dy - 8}" rx="10"/>`}` +
-        `<text class="sys-row-t" x="20" y="${y0 + i * dy + (rest.length ? -3 : 5)}">${esc(head)}</text>${rest.length ? `<text class="sys-row-cap" x="20" y="${y0 + i * dy + 14}">${esc(rest.join(' · '))}</text>` : ''}`; }).join('')}
+      return `${i % 2 ? '' : `<rect class="sys-row-bg" x="8" y="${y0 + i * dy - dy / 2 + 3}" width="${W - 16}" height="${dy - 6}" rx="10"/>`}` +
+        `<text class="sys-row-t" x="16" y="${y0 + i * dy + (rest.length ? -3 : 5)}">${esc(head)}</text>${rest.length ? `<text class="sys-row-cap" x="16" y="${y0 + i * dy + 14}">${esc(rest.join(' · '))}</text>` : ''}`; }).join('')}
     ${P.map(([k, pts]) => `<path class="sys-p" data-k="${k}" d="${path(pts)}" marker-end="url(#sysAh-${k})"/>`).join('')}
-    ${P.filter(p => p[2]).map(([k, , t, [x, y], anchor]) => `<text class="sys-p-t" x="${x}" y="${y}" text-anchor="${anchor}" style="fill:${k === 'plain' ? 'var(--cv-ink-2)' : COLOR[k]}">${esc(t)}</text>`).join('')}
-    ${comps.map(node).join('')}</svg>`;
+    ${P.filter(p => p[2]).map(([k, , t, [x, y], anchor]) => `<text class="sys-p-t" data-k="${k}" x="${x}" y="${y}" text-anchor="${anchor}">${esc(t)}</text>`).join('')}
+    ${comps.map(node).join('')}
+    <rect id="sysSlot" x="${SYS.band.it[0] + 12}" y="${at.EMQX.y - dy / 2 + 8}" width="${SYS.band.it[1] - 24}" height="${H - 10 - (at.EMQX.y - dy / 2 + 8)}" fill="none" pointer-events="none"/></svg>`;
   // 그림 아래: 이 구성이 현업 공장과 다른 곳(layers.js SYS_DIFFS) — 이름 + 한 문장씩
   $('#sysDiffs').innerHTML = SYS_DIFFS.map(d => `<div class="sys-diff">${UI.icon(d.icon)}<dt>${esc(d.name)}</dt><dd>${esc(d.text)}</dd></div>`).join('');
-  sysShow(null);
+  sysShow(null); sysPlace();
+}
+// 정보 카드의 자리: 그림에서 늘 비어 있는 칸(IT 영역의 아래 두 계층 — #sysSlot)에 맞춰 캔버스 위에 띄운다. 그림이 창에 맞춰 커지고 줄어도 부품 상자를 가리지 않는다.
+// 좁은 폭(그림을 끌어서 보는 폭)에서는 CSS 가 이 값을 쓰지 않고 카드를 그림 아래에 둔다
+function sysPlace() {
+  const slot = $('#sysSlot'), info = $('#sysInfo'); if (!slot) return;
+  const s = slot.getBoundingClientRect(), c = info.parentElement.getBoundingClientRect(); if (!s.width || !c.width) return;
+  info.style.setProperty('--slot-l', `${Math.round(s.left - c.left)}px`); info.style.setProperty('--slot-t', `${Math.round(s.top - c.top)}px`);
+  info.style.setProperty('--slot-w', `${Math.round(s.width)}px`); info.style.setProperty('--slot-h', `${Math.round(s.height)}px`);
 }
 // 정보 띠: 고른 부품의 이름 · 하는 일 · 「현업에서는 …」 · 상태 · [열기]. 아무것도 고르지 않았으면 안내 한 줄
 let sysPicked = null, sysNote = '';
@@ -273,7 +283,7 @@ function sysShow(key) {
   sysPicked = c ? key : null;
   document.querySelectorAll('#stack .sys-nd').forEach(n => n.toggleAttribute('data-on', n.dataset.key === sysPicked));
   // 아무것도 고르지 않았을 때: 쓰는 법 한 줄(명령 길 밖의 조작은 그림의 빨간 길과 그림 아래 목록이 말한다)
-  if (!c) { info.innerHTML = '<p class="sys-hint">부품에 올리거나 Tab 으로 옮기면 하는 일이 여기에 보이고, 누르면 그 도구가 새 탭으로 열립니다.</p>'; return; }
+  if (!c) { info.innerHTML = `<p class="sys-hint">${UI.icon('info')}부품에 올리면 하는 일이 보이고, 누르면 그 도구가 새 탭으로 열립니다.</p>`; return; }
   const [title, icon] = SYS.node[c.key], st = sysStatus(c);
   info.innerHTML = `<h3>${UI.icon(icon)}${esc(title)} <code class="mono">${esc(c.key)}</code><small>${esc(c.layer)} · ${esc(c.zone.toUpperCase())}</small></h3>` +
     `<span class="state"><i class="dot"${st === 'ok' ? ' data-tone="ok"' : st === 'down' ? ' data-tone="danger"' : ''}></i>${esc(sysNote || sysStatusText(c))}</span>` +
@@ -356,7 +366,7 @@ async function openOptional(c) {
     stack.scrollTo({ left: Math.max(0, (x + w / 2) * scale() - stack.clientWidth / 2), behavior: 'smooth' });
   });
   stack.addEventListener('scroll', paintPan, { passive: true });
-  new ResizeObserver(paintPan).observe(stack);
+  new ResizeObserver(() => { paintPan(); sysPlace(); }).observe(stack);
   let from = null;
   stack.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button === 0 && stack.hasAttribute('data-pan')) from = { x: e.clientX, left: stack.scrollLeft }; });
   window.addEventListener('pointermove', e => { if (!from) return; const dx = e.clientX - from.x; if (Math.abs(dx) > 4) { dragged = true; stack.classList.add('dragging'); } stack.scrollLeft = from.left - dx; });

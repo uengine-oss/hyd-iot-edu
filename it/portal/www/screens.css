@@ -6,6 +6,7 @@
 
 /* ---------------- 조치 방법: 목록 + 상세(디자인 기준 5-4) ---------------- */
 .sk-side { display: grid; gap: 16px; align-content: start; }
+#skillKinds:empty { display: none; }
 .sk-side .rows { max-height: calc(100dvh - var(--top-h) - 220px); min-height: 240px; overflow: auto; }
 .sk-side .rows > .row .badge { justify-self: end; }
 .sk-row { padding: 14px; }
@@ -163,10 +164,31 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--soft); }
 .fab-body .panel-sec > .muted { margin: 0 0 10px; }
 .fab-body .sec-head { margin: 8px 0 0; }
 
-/* ---------------- 관리: 접수 기록(sourceEvents.js) — 고른 접수의 상세 ---------------- */
-#sourceEventDetail > h3 .tag { margin-left: 2px; }
-#sourceEventDetail .se-folds { margin-top: 12px; }
-#sourceEventDetail .sk-none > .empty { border: 0; }
+/* ---------------- 관리(configBundle.js · studentCases.js · sourceEvents.js) ----------------
+   내 설정 = 설정 줄(.set-row): 왼쪽에 이름과 한 문장, 오른쪽에 고를 것과 단추 하나, 그 아래(.set-more) 진행 · 결과. 줄과 줄은 선 하나로 가른다(상자 없음).
+   접수 기록 = 목록 + 상세(.split) */
+#configBundleView { max-width: 960px; }
+.set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--pad-card-y) 0; border-top: 1px solid var(--border); }
+#configBundleView > :first-child > .set-row:first-child, #configBundleView > .set-row:first-child { border-top: 0; padding-top: 0; }
+.set-what { flex: 1 1 320px; min-width: 0; margin-right: 24px; }
+.set-what h3 { font-size: var(--fs-base); line-height: 22px; font-weight: 600; }
+.set-what p { margin-top: 2px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 60ch; }
+.set-do { display: contents; }      /* 고를 것 · 단추는 줄의 오른쪽 끝에 나란히, 막힌 까닭 한 줄(courseAccess.apply 가 단추 뒤에 붙인다)은 그 아래 온 줄로 */
+.set-do > .select { width: auto; min-width: 140px; flex: none; }
+.set-do > [data-course-why] { order: 5; flex: 1 1 100%; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); }
+.set-more { order: 6; flex: 1 1 100%; min-width: 0; }
+.set-more > :not(:empty):not([hidden]) { margin-top: 4px; }
+.set-more > :empty { display: none; }
+.set-more .fold > summary { padding: 4px 0; color: var(--muted-foreground); }
+.set-more .fold-body { padding: 6px 0 0 22px; display: grid; gap: 4px; max-width: 80ch; }
+.set-msg { font-size: var(--fs-sm); }
+.cases #caseAssets { margin-top: 8px; }
+.cases .table td:last-child { width: 46%; }
+/* 왼쪽 칸 맨 윗줄에 고르기 칸 · 작은 단추를 둘 때(접수 기록의 상태 고르기) — 높이는 거르기(.seg)와 같다 */
+.pane-bar { display: flex; align-items: center; gap: 8px; }
+.pane-bar > .select { flex: 1; height: 28px; font-size: var(--fs-sm); }
+#sourceEventMessage:empty { display: none; }
+#sourceEventMessage { font-size: var(--fs-xs); line-height: 18px; }
 
 /* ================================================================= 단계 상세(taskDetail.js) */
 .task-detail { margin: 16px 0; }
@@ -196,12 +218,16 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--soft); }
 
 
 /* ================================================================= 도구 연결(mcp.js): 목록 + 상세(공통 배치는 아래 「흐름 · AI 에이전트 공통」) */
-/* 막힌 까닭은 화면 머리 아래의 한 판(.mcp-why)이 한 번 말한다 — 단추마다 붙는 까닭 줄(courseAccess.apply)은 머리 · 판의 도구 줄에서는 숨기고, 멀리 떨어진 「되돌리기」에만 둔다 */
+/* 막힌 까닭은 서버 목록 아래의 한 줄(.mcp-why — 접기)이 한 번 말한다 — 단추마다 붙는 까닭 줄(courseAccess.apply)은 머리 · 판의 도구 줄에서는 숨기고, 멀리 떨어진 「되돌리기」에만 둔다 */
 #view-mcp :is(.page-tools, .pane-acts, .mcp-acts, .form-foot) > [data-course-why] { display: none; }
 .mcp-reset > [data-course-why] { flex: 1 1 100%; }
 .mcp-reset { flex-wrap: wrap; }
 .mcp-why:empty { display: none; }
-.mcp-why { margin-bottom: var(--gap-block); }
+.mcp-why { padding: 8px 12px 0; border-top: 1px solid var(--border); }
+/* 잠긴 까닭 한 줄(접기): 자물쇠 + 결론 한 마디, 누르면 서버가 준 까닭 전문 */
+.lock-note > summary { padding: 6px 0; font-size: var(--fs-xs); font-weight: 450; color: var(--muted-foreground); }
+.lock-note > summary::before { order: 2; }
+.lock-note > .fold-body { padding: 0 0 8px 22px; font-size: var(--fs-xs); line-height: 18px; color: var(--ink-2); }
 #mcpServers > .row > .row-meta { white-space: normal; }
 .mcp-state { display: grid; gap: 10px; }
 .mcp-state > p { margin: 0; }
@@ -295,7 +321,7 @@ a.use:hover, button.use:hover { border-color: var(--brand-line); background: var
 button.use { cursor: pointer; }
 button.use[aria-expanded="true"] { border-color: var(--brand-line); background: var(--brand-soft); }
 .pane-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; border-top: 1px solid var(--border); }
-.pane-grid > .panel-sec { border-top: 0; }
+.pane-grid > .panel-sec, .split > :last-child .pane-grid > .panel-sec:first-child { border-top: 0; padding-top: var(--pad-card-y); }
 .doc { padding: 20px 22px; border: 0; border-radius: var(--r-in); background: var(--soft); max-height: 460px; overflow: auto; }
 .doc-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted-foreground); }
 .doc-bar .mono { color: var(--ink-2); }
@@ -524,16 +550,12 @@ button.use[aria-expanded="true"] { border-color: var(--brand-line); background: 
   .tr-row .tr-txt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; }   /* 도구 인자(질의문 등)는 두 줄까지만, 전체는 펼친 요청 상자에 */
 }
 
-/* ---------------- 질문하기(ask.js): 왼쪽에 질문 칸과 질문 · 답, 오른쪽에 지난 질문. 내 질문은 오른쪽 말풍선, 답은 판 하나(실시간 상자 → 답 → 근거 → 처리 과정) ---------------- */
-.ask-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; }
-.ask-main { display: flex; flex-direction: column; gap: var(--gap-block); min-width: 0; }
+/* ---------------- 질문하기(ask.js): 「조건 → 결과」 두 칸(.io). 왼쪽 = 질문 칸과 지난 질문 목록, 오른쪽 = 내 질문(오른쪽 말풍선)과 답(실시간 상자 → 답 → 근거 → 처리 과정) ---------------- */
 .ask-compose { display: grid; gap: 18px; border-top: 0; }
 .ask-compose > .form-foot { margin-top: 0; }
 .ask-agent { margin: -4px 0 0; font-size: var(--fs-sm); }
 .ask-picks > .muted { margin: 0 0 6px; }
 .ask-picks .chip { height: auto; min-height: 26px; padding-block: 4px; white-space: normal; text-align: left; line-height: 18px; cursor: pointer; }
-.ask-thread { display: flex; flex-direction: column; gap: 14px; }
-.ask-thread > .empty { margin-top: 4px; }
 .ask-q { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .ask-bubble { max-width: 80%; padding: 10px 16px; border-radius: 12px; background: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-base); }
 .ask-a > .pane-head { padding-bottom: 14px; }
@@ -546,13 +568,21 @@ button.use[aria-expanded="true"] { border-color: var(--brand-line); background: 
 .ask-evid li > div { display: grid; gap: 6px; min-width: 0; }
 .ask-evid li p { margin: 0; }
 .ask-evid .code { max-height: 160px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.ask-side > .sec-head { margin: 0; align-items: center; min-height: 28px; }
-@media (max-width: 1100px) { .ask-layout { grid-template-columns: minmax(0, 1fr); } }
+.ask-side > h3 > .btn { margin-left: auto; }
+.ask-compose .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.ask-compose .kv dd + dt { margin-top: 6px; }
 @media (max-width: 640px) { .ask-bubble { max-width: 100%; } }
 
-/* 성과 지표: 기간 묶음 단추는 머리 아래 · 내용 바로 위 */
-.kpi-bar { display: flex; justify-content: flex-start; margin: -4px 0 var(--gap-block); }
+/* 성과 지표: 거르기 한 줄(기간, 오른쪽에 그 기간의 범위) → 숫자 타일 줄 → 관점마다 지표 카드 */
+.kpi-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin: -4px 0 16px; }
 .kpi-bar:empty { display: none; }
+.kpi-bar > .muted { font-size: var(--fs-xs); }
+.stat[data-tone="danger"] .stat-value { color: var(--danger-ink); }
+.stat[data-tone="ok"] .stat-value { color: var(--ok-ink); }
+.stat-note { margin-top: 2px; }
+.kpi-grid .kpi-card > footer { justify-content: flex-start; }
+.kpi-trace { border: 1px solid var(--brand-line); border-radius: var(--r-card); --pad-card: 20px; background: var(--card); }
+@media (max-width: 900px) { .kpi-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* 조치 후보 하나의 근거(enterprise.js optionDetail) — 규칙 판단 「후보별 근거」 · 값 조정 미리 보기 · 처리 건 없이 남은 판단 */
 .opt-pick { max-width: 420px; margin: 12px 0 4px; }
@@ -569,12 +599,32 @@ button.use[aria-expanded="true"] { border-color: var(--brand-line); background: 
 #view-knowledge [data-doc-pane] .alert { margin-bottom: 12px; }
 
 /* ================================================================= 문서 등록 — 제공 문서 고르기(hitl.js renderProvided · index.html #providedDdl)
-   목록은 키트의 .rows > .row 그대로다(줄의 모양은 키트가 정한다). 줄(누르면 그 문서를 올린다) 옆 칸에 [원문 보기] 링크가 하나씩 놓이도록 두 칸으로만 나눈다 */
-.doc-prov { display: grid; grid-template-columns: minmax(0, 1fr) auto; max-width: 760px; }
-.doc-prov > .row:disabled { cursor: progress; }
-.doc-prov > .row:disabled:not([aria-current="true"]) { opacity: .55; }
-.doc-prov > .row > [data-prov-tag]:empty { display: none; }
-.doc-prov > a { align-self: center; padding: 0 12px; color: var(--muted-foreground); font-weight: 500; }
-.doc-prov > a:hover { color: var(--foreground); }
-@media (max-width: 640px) { .doc-prov .row-title, .doc-prov .row-meta { white-space: normal; overflow-wrap: anywhere; } .doc-prov > a { padding: 0 10px; } }
+   목록은 키트의 .rows 그대로다. 줄(누르면 그 문서를 올린다)마다 오른쪽 끝에 [원문 보기] 링크가 하나씩 놓인다(키트 .row-act) */
+.doc-prov .row > .tag, .doc-prov .row > [data-prov-tag] { justify-self: end; }
+.doc-prov .row:disabled { cursor: progress; }
+.doc-prov .row:disabled:not([aria-current="true"]) { opacity: .55; }
+.doc-prov .row > [data-prov-tag]:empty { display: none; }
+@media (max-width: 640px) { .doc-prov .row-title, .doc-prov .row-meta { white-space: normal; overflow-wrap: anywhere; } .doc-prov .row-act > .row { padding-right: 84px; } }
 #manualPick > .doc-review-bar, #ddlPick > .doc-review-bar { margin-bottom: 12px; }
+.ask-thread > :not([hidden]):not(:empty) ~ :not([hidden]):not(:empty) { margin-top: 16px; padding-top: 0; border-top: 0; }
+
+/* ================================================================= 판이 상자가 아닌 구역이 된 데 따른 맞춤(portal-kit.css .panel)
+   - 값 넷(.turn-facts)이 구역 안에 놓이면 세로 선 없이 칸만 나눈다(왼쪽 선이 구역의 왼쪽 선과 같다)
+   - 구역 안의 표는 첫 칸 · 끝 칸의 옆 여백을 뺀다(표의 글이 구역 제목과 같은 선에서 시작한다). 상자 안의 표(.step-card · .card · 펼친 줄)는 그대로다
+   - 그 상황일 때만 뜨는 판(결함 주입 뒤의 과정 · 미달 원인 찾기)은 상자를 갖는다 */
+.panel > .turn-facts { border-top: 0; }
+.panel > .turn-facts > div { padding: 0 24px 16px 0; border-right: 0; }
+.view .table :is(td, th):first-child { padding-left: 0; }
+.view .table :is(td, th):last-child { padding-right: 0; }
+:is(.step-card, .card, .turn, tr.doc-open, dialog) .table :is(td, th):first-child { padding-left: 12px; }
+:is(.step-card, .card, .turn, tr.doc-open, dialog) .table :is(td, th):last-child { padding-right: 12px; }
+.lab-follow { border: 1px solid var(--border); border-radius: var(--r-card); --pad-card: 20px; background: var(--card); }
+.bz-board .bz-note, .bz-board .bz-none { padding-inline: 0; }
+.bz-boards { gap: 0; }
+.trend { margin-top: var(--gap-sec); }
+
+/* 데이터 원천 › 원천과 표: 왼쪽 목록은 원천마다 묶은 표 이름 한 줄씩 */
+.fab-tables > .row { padding-block: 7px; }
+.fab-tables > .row > .row-ic { grid-row: auto; margin-top: 0; }
+.fab-tables > .rows-group { display: flex; justify-content: space-between; gap: 8px; }
+.fab-tables > .rows-group .muted { font-size: var(--fs-xs); font-weight: 450; }

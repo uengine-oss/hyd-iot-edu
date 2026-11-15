@@ -1,7 +1,8 @@
 /* 관리 › 접수 기록: 들어온 경보와 명령 응답의 접수(source receipt)를 보고, 처리에 실패한 접수를 사유와 함께 다시 처리한다.
    접수는 승인도 설비 복구도 아니다 — 받은 원문과 그때의 처리 정의를 그대로 보관한 기록이다.
-   틀(상태 고르기 · 단추 · 목록 자리 · 상세 자리 · 다시 처리 폼)은 index.html 의 관리 화면(#sourceEventsPanel)에 있고, 이 파일은 목록의 줄과 고른 접수의 상세를 그린다:
-   줄 = 종류 · 설비 + 상태 뱃지 / 접수 번호와 오류 한 줄, 상세 = 요약(이름–값) → 원문 · 처리 정의 · 이력 · 전송 원문(접기). */
+   틀은 목록 + 상세(.split)이고 index.html 의 관리 화면(#sourceEventsPanel)에 있다: 왼쪽 = 상태로 거르기 · 목록 · 더 보기, 오른쪽 = 고른 접수 · 다시 처리 폼.
+   이 파일은 목록의 줄과 고른 접수의 상세를 그린다: 줄 = 종류 · 설비 + 상태 뱃지 / 접수 번호와 오류 한 줄,
+   상세 = 머리(.pane-head — 이름 · 상태 · 접수 번호, 오른쪽에 다시 읽기) → 요약(이름–값) → 원문 · 처리 정의 · 이력 · 전송 원문(접기). */
 (function () {
   const q=id=>document.getElementById(id), panel=q('sourceEventsPanel');
   if (!panel) return;
@@ -14,11 +15,13 @@
   const TONE={FAILED:'danger',CONFLICT:'danger',INVALID:'danger',WAITING:'warning',PENDING:'neutral',CLAIMED:'accent',HANDLED:'success',DUPLICATE:'neutral'};
   const ICON={RAISE:'triangle-alert',CLEAR:'circle-check',ACK:'corner-down-right',REJECT:'shield-alert',STATUS:'activity',INVALID:'circle-x'};
   let cursor=0, selected=null, busy=false, more=false;
+  // 아직 고르지 않았을 때의 오른쪽 칸
+  const NONE=`<div class="pane-none">${UI.empty({icon:'inbox',title:'접수를 고르세요',sub:'왼쪽 목록에서 접수를 고르면 받은 원문과 처리 결과가 여기에 보입니다.'})}</div>`;
   // bad: 실패 문장 — 빨간 한 줄(role=alert). 아니면 회색 상태 줄
   function message(text,bad=false){const m=q('sourceEventMessage');m.textContent=text;if(bad)m.dataset.tone='danger';else delete m.dataset.tone;m.setAttribute('role',bad?'alert':'status');}
   function locked(value){busy=value;for(const id of ['sourceEventRefresh','sourceEventMore','sourceEventStatus']) q(id).disabled=value;
     q('sourceEventRetry').querySelector('button').disabled=value;
-    q('sourceEventDetailRefresh').disabled=value||!selected;}
+    const again=q('sourceEventDetailRefresh');if(again)again.disabled=value||!selected;}
   // 접수 한 줄: 무엇이(종류 · 설비) + 상태 뱃지 하나, 둘째 줄에 접수 번호와 오류 한 줄(A141: 영문 오류 문구는 번역 표로, 원문은 고른 접수의 '오류' 칸에 그대로)
   function rowHtml(row){return `<span class="row-ic">${UI.icon(ICON[row.kind]||'circle-dot')}</span><span class="row-title">${esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))}</span>${UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')}`+
     `<span class="row-meta">접수 ${esc(row.id)}${row.error?' · '+esc(UI.logText(row.error)):''}</span>`;}
@@ -32,14 +35,15 @@
       const listed=q('sourceEventList').querySelector('[data-receipt="'+row.id+'"]');
       if(listed){if(q('sourceEventStatus').value&&q('sourceEventStatus').value!==row.status)listed.remove();else listed.innerHTML=rowHtml(row);}
       mark();
-      q('sourceEventDetail').innerHTML=`<h3>${esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))}${UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')}<span class="muted num">접수 ${esc(row.id)}</span></h3>
-        ${kv([['접수 시각',row.received_at?UI.dateTime(row.received_at):''],['받은 방식',sources[row.source]||row.source],['처리 시도',row.attempts!=null?row.attempts+'회':''],['실패 횟수',row.failures!=null?row.failures+'회':''],['원본 접수 번호',row.parent_id],
-          ['오류',row.error],['처리 결과',row.result==null?'':typeof row.result==='string'?row.result:JSON.stringify(row.result)]])}
-        <div class="se-folds">${raw(row.payload,'접수 원문')}${raw(row.policy,'접수 당시 처리 정의')}${raw(row.history,'처리 이력')}
+      q('sourceEventDetail').innerHTML=`<header class="panel-head pane-head"><span class="pane-ic">${UI.icon(ICON[row.kind]||'circle-dot')}</span><div class="pane-title"><h2>${esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))}${UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')}</h2><p class="num">접수 ${esc(row.id)}${row.received_at?' · '+esc(UI.dateTime(row.received_at)):''}</p></div>
+          <div class="pane-acts"><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="sourceEventDetailRefresh" aria-label="이 접수 다시 읽기" data-tooltip="이 접수 다시 읽기" data-side="left">${UI.icon('refresh-cw')}</button></div></header>
+        <div class="panel-sec">${kv([['접수 시각',row.received_at?UI.dateTime(row.received_at):''],['받은 방식',sources[row.source]||row.source],['처리 시도',row.attempts!=null?row.attempts+'회':''],['실패 횟수',row.failures!=null?row.failures+'회':''],['원본 접수 번호',row.parent_id],
+          ['오류',row.error],['처리 결과',row.result==null?'':typeof row.result==='string'?row.result:JSON.stringify(row.result)]])}</div>
+        <div class="panel-sec pane-fold se-folds">${raw(row.payload,'접수 원문')}${raw(row.policy,'접수 당시 처리 정의')}${raw(row.history,'처리 이력')}
           ${UI.fold('전송 원문과 무결성 확인',kv([['형식',wires[row.wire_kind]||row.wire_kind],['지문(SHA-256)',row.wire_sha],['원문(base64)',row.wire_base64],['토픽',row.topic],['파티션',row.partition_no],['위치(offset)',row.offset_no]]))}</div>`;
       q('sourceEventRetry').hidden=row.status!=='FAILED';
       message(row.status==='FAILED'?'원인을 확인한 뒤 같은 접수를 다시 처리할 수 있습니다.':'접수 '+row.id+'번을 읽었습니다.');
-    }catch(e){selected=null;q('sourceEventDetail').innerHTML='';q('sourceEventRetry').hidden=true;mark();message('접수를 읽지 못했습니다: '+e.message,true);}
+    }catch(e){selected=null;q('sourceEventDetail').innerHTML=NONE;q('sourceEventRetry').hidden=true;mark();message('접수를 읽지 못했습니다: '+e.message,true);}
     finally{locked(false);}
   }
   async function retry(event){
@@ -55,19 +59,19 @@
   }
   async function load(reset){
     if(busy)return;locked(true);
-    try{if(reset){cursor=0;selected=null;q('sourceEventList').replaceChildren();q('sourceEventDetail').innerHTML='';q('sourceEventRetry').hidden=true;}
+    try{if(reset){cursor=0;selected=null;q('sourceEventList').replaceChildren();q('sourceEventDetail').innerHTML=NONE;q('sourceEventRetry').hidden=true;}
       const status=q('sourceEventStatus').value, rows=await getJ(API.process+'/api/source-events?limit=50&after_id='+cursor+(status?'&status='+encodeURIComponent(status):''));
       for(const row of rows){const button=document.createElement('button');button.className='row';button.type='button';
         button.dataset.receipt=row.id;button.innerHTML=rowHtml(row);
         button.addEventListener('click',()=>detail(row.id));q('sourceEventList').append(button);cursor=row.id;}
       more=rows.length>=50;
-      if(!q('sourceEventList').children.length) q('sourceEventDetail').innerHTML=`<div class="sk-none">${UI.empty(status?`「${labels[status]}」 상태인 접수가 없습니다`:'접수가 없습니다','경보가 나거나 명령 응답이 들어오면 여기에 남습니다. 위에서 상태를 「전체」로 바꾸면 모든 접수가 보입니다.')}</div>`;
+      if(!q('sourceEventList').children.length) q('sourceEventDetail').innerHTML=`<div class="pane-none">${UI.empty(status?`「${labels[status]}」 상태인 접수가 없습니다`:'접수가 없습니다','경보가 나거나 명령 응답이 들어오면 여기에 남습니다. 목록 위에서 상태를 「전체」로 바꾸면 모든 접수가 보입니다.')}</div>`;
       message(rows.length?'접수 '+rows.length+'건을 읽었습니다.'+(more?' 더 있으면 [더 보기]를 누르세요.':''):reset?'':'더 읽을 접수가 없습니다.');
     }catch(e){message('접수 목록을 읽지 못했습니다: '+e.message,true);}finally{locked(false);q('sourceEventMore').hidden=!more;}
   }
   q('sourceEventRefresh').addEventListener('click',()=>load(true));
   q('sourceEventMore').addEventListener('click',()=>load(false));
-  q('sourceEventDetailRefresh').addEventListener('click',()=>{if(selected)detail(selected.id);});
+  q('sourceEventDetail').addEventListener('click',ev=>{if(ev.target.closest('#sourceEventDetailRefresh')&&selected)detail(selected.id);});
   q('sourceEventRetry').addEventListener('submit',retry);
   q('sourceEventStatus').addEventListener('change',()=>load(true));
   // 접기를 펼 때 읽는다. 접기가 아닌 자리에 놓였으면 관리 화면을 열 때 읽는다

@@ -4,7 +4,7 @@
    API: process /api/fabric/* (procsvc/fabric_api.py) — 에이전트의 MCP 도구 hyd-dmn fabric_query 와 같은 함수다. 쓰기 버튼 없음. */
 (function () {
   const S = { el: null, tab: 'join', sources: null, links: null, queries: [], errors: {}, result: null, resultError: '', busy: false,
-              table: {}, sample: {}, asset: 'HYD-01', query: 'asset' };
+              picked: null, sample: {}, asset: 'HYD-01', query: 'asset' };
   const KLASS = { Asset: '설비', Sensor: '센서', Actuator: '구동기 설정값', InputData: '판단 입력', Part: '부품', Supplier: '공급사' };      // 지식 지도의 항목 종류 이름
   const STATE = { OK: ['연결됨', 'success'], MISSING: ['원천에 없음', 'danger'], SOURCE_DOWN: ['원천 연결 실패', 'danger'],
     UNBOUND: ['표 · 열 미연결', 'warning'], DERIVED: ['계산으로 정하는 값', 'neutral'], OUTSIDE: ['DB에 없는 값(입력 · 계산)', 'neutral'], UNREGISTERED: ['등록 안 된 원천', 'danger'],
@@ -116,23 +116,21 @@
     }).join('');
   }
 
-  /* ---------- 탭 2: 원천 · 표 · 샘플 ---------- */
-  // 원천마다 판 하나: 이름과 한 줄 → 표 고르기(조각) → 고른 표의 열(뜻)과 최신 행 → 접기(조회문 · 연결 정보)
+  /* ---------- 탭 2: 원천 · 표 · 샘플 — 목록 + 상세(.split) ---------- */
+  // 왼쪽 = 원천마다 묶은 표 목록(묶음 머리 = 원천 이름, 줄 = 표 이름), 오른쪽 = 고른 표(머리 → 열 → 최신 행 → 조회문 · 연결 정보 접기)
   function sourcesTab() {
     if (!S.sources) return S.errors.sources ? UI.errorBlock('원천 상태를 읽지 못했습니다', S.errors.sources) : UI.loading('');
-    return S.sources.map(s => {
-      const head = `<header class="panel-head"><div><h2>${esc(s.label)}${s.ok ? (s.read_only ? '' : UI.chipText('읽기 전용 아님', 'danger')) : UI.chipText('연결 실패', 'danger')}</h2>` +
-        `<p>${esc([s.about, s.engine, s.ok && s.read_only ? '읽기 전용' : ''].filter(Boolean).join(' · '))}</p></div></header>`;
-      if (!s.ok) return `<section class="panel">${head}<div class="panel-sec">${UI.errorBlock('이 원천에 연결하지 못했습니다', s.reason)}${UI.raw(s.detail, { title: '오류 원문' })}</div></section>`;
-      const picked = S.table[s.id];
-      const list = `<div class="chips fab-picks" role="group" aria-label="${esc(s.label)}의 표">${s.tables.map(t => `<button type="button" class="chip" aria-pressed="${t.name === picked}" data-fab-table="${esc(s.id)}|${esc(t.name)}">${esc(t.name)}</button>`).join('')}</div>`;
-      const sm = picked ? S.sample[s.id + '|' + picked] : null;
-      const more = (sm && sm.statement ? group('최신 행을 읽은 조회문', `<pre class="code">${esc(sm.statement)}</pre>`) : '') + group('연결 정보', `<p class="muted">DB 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}</p>`);
-      return `<section class="panel">${head}<div class="panel-sec"><h3>표<span class="muted num">${s.tables.length}</span></h3>${list}${picked ? tableDetail(s.id, picked) : '<p class="muted">표 이름을 누르면 열과 최신 행이 보입니다.</p>'}</div>` +
-        `<div class="panel-sec sk-fold">${UI.fold('조회문 · 연결 정보', more)}</div></section>`;
-    }).join('');
+    const cur = S.picked;
+    const list = S.sources.map(s => `<div class="rows-group">${esc(s.label)}<span class="muted num">${s.ok ? s.tables.length : ''}</span></div>` +
+      (s.ok ? s.tables.map(t => `<button type="button" class="row" data-fab-table="${esc(s.id)}|${esc(t.name)}"${cur && cur.sid === s.id && cur.name === t.name ? ' aria-current="true"' : ''}><span class="row-ic">${UI.icon('database')}</span><span class="row-title mono">${esc(t.name)}</span></button>`).join('')
+        : `<div class="pane-list-note">${UI.errorBlock('이 원천에 연결하지 못했습니다', s.reason)}</div>`)).join('');
+    const src = cur && S.sources.find(s => s.id === cur.sid);
+    const detail = src ? tableDetail(src, cur.name)
+      : `<div class="pane-none">${UI.empty({ icon: 'database', title: '표를 고르세요', sub: '왼쪽 목록에서 표를 고르면 그 표의 열(뜻)과 최신 행이 여기에 보입니다.' })}</div>`;
+    return `<div class="split"><div class="pane-side"><div class="rows fab-tables" aria-label="원천과 표">${list}</div></div><section class="panel" aria-label="고른 표">${detail}</section></div>`;
   }
-  function tableDetail(sid, name) {
+  function tableDetail(s, name) {
+    const sid = s.id;
     const meta = (S.tablesBySource && S.tablesBySource[sid] || []).find(t => t.name === name);
     const listError = S.tablesError && S.tablesError[sid];
     const cols = meta ? table('<th>열</th><th>형식</th><th>키</th><th>뜻(주석)</th>',
@@ -140,8 +138,12 @@
       : listError ? UI.errorBlock('표의 열 목록을 읽지 못했습니다', listError + ' — 표를 다시 누르면 다시 읽습니다') : UI.loading('열을 읽는 중');
     const sm = S.sample[sid + '|' + name];
     const sample = !sm ? UI.loading('최신 행을 읽는 중') : sm.error ? UI.errorBlock('최신 행을 읽지 못했습니다', sm.error) : rowsTable(sm.columns, sm.rows);
-    return `<div class="fab-out">` + group(`${code(name)}${meta && meta.comment ? ' · ' + esc(meta.comment) : ''} · 열${meta ? ' ' + meta.columns.length + '개' : ''}`, cols) +
-      group(sm && !sm.error ? `최신 ${sm.row_count}행` : '최신 행', sample) + `</div>`;
+    const more = (sm && sm.statement ? group('최신 행을 읽은 조회문', `<pre class="code">${esc(sm.statement)}</pre>`) : '') + group('연결 정보', `<p class="muted">DB 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}</p>`);
+    const sec = (title, side, body) => `<div class="panel-sec"><h3>${title}${side ? `<span class="muted num">${side}</span>` : ''}</h3>${body}</div>`;
+    return `<header class="panel-head pane-head"><span class="pane-ic">${UI.icon('database')}</span><div class="pane-title"><h2><span class="mono">${esc(name)}</span>${s.read_only ? '' : UI.chipText('읽기 전용 아님', 'danger')}</h2>` +
+      `<p>${esc([meta && meta.comment, s.label, s.engine, s.read_only ? '읽기 전용' : ''].filter(Boolean).join(' · '))}</p></div></header>` +
+      sec('열', meta ? meta.columns.length + '개' : '', cols) + sec(sm && !sm.error ? `최신 ${sm.row_count}행` : '최신 행', '', sample) +
+      `<div class="panel-sec pane-fold">${UI.fold('조회문 · 연결 정보', more)}</div>`;
   }
 
   /* ---------- 탭 3: 클래스 ↔ 표·열 ---------- */
@@ -179,8 +181,10 @@
   /* ---------- 그리기 · 이벤트 ---------- */
   function render() {
     if (!S.el) return;
+    const listTop = S.el.querySelector('.fab-tables')?.scrollTop || 0;      // 다시 그려도 표 목록의 스크롤 자리는 그대로(고른 줄이 화면 밖으로 달아나지 않게)
     S.el.innerHTML = summary() + UI.viewTabs([['join', '두 DB 묶어 보기'], ['sources', '원천과 표', S.sources ? S.sources.length : null], ['links', '지식 지도 ↔ 표 · 열']], S.tab, 'data-fab-tab') +
       `<div class="fab-body">${S.tab === 'join' ? joinTab() : S.tab === 'sources' ? sourcesTab() : linksTab()}</div>`;
+    const list = S.el.querySelector('.fab-tables'); if (list) list.scrollTop = listTop;
   }
   async function load() {
     const [src, links, queries] = await Promise.allSettled([getJ(API.process + '/api/fabric/sources'), getJ(API.process + '/api/fabric/links'), getJ(API.process + '/api/fabric/queries')]);
@@ -200,7 +204,7 @@
     finally { S.busy = false; render(); }
   }
   async function pickTable(sid, name) {
-    S.table[sid] = name;
+    S.picked = { sid, name };
     S.tablesBySource = S.tablesBySource || {}; S.tablesError = S.tablesError || {};
     delete S.tablesError[sid]; delete S.sample[sid + '|' + name];
     render();

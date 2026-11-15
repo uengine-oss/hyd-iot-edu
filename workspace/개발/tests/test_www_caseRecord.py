@@ -268,3 +268,16 @@ def test_정기_정비처럼_센서로_진단하지_않은_판단의_결론은_�
     sensed = _agent_front(_pm_decision('diagnosis'), made)
     assert sensed['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ') and '관측값과 맞습니다' in sensed['evid'][0]
     assert _agent_front(_pm_decision(None), made)['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ')      # 이 칸이 생기기 전의 판단 기록은 진단으로 읽는다
+
+
+def test_긴_단계_문장은_괄호_밖의_첫_마디에서_결론과_근거로_갈리고_글은_빠지지_않는다():
+    """화면 정돈 6단계: 같은 긴 근거(번호 · 계산 · 기다린 시간)가 결과 카드와 단계마다 되풀이돼 화면을 덮었다. 단계 줄에는 결론 한 마디만 두고 나머지는 접기에 둔다.
+    가르는 자리는 괄호 밖이어야 한다 — 「(설비 시간 48시간 (실제 24초))」 안에서 자르면 결론이 괄호 중간에서 끊긴다."""
+    long = '기준 밖 — 입고 예정까지 기다린 뒤(설비 시간 48시간 (실제 24초)) 검수했지만 일부만 입고됐습니다 — 불합격 1개 반품. 펌프 축 씰 키트 발주 7개 중 6개 입고 · 1개 검수 불합격 반품 (발주 PR-1, 로트 LOT-PR-1)'
+    short = '담당자가 ‘대체 승인 공급사 발주’ 안을 승인했습니다.'
+    nocut = '가' * 200
+    got = run(FILES, "out(DATA.map(t => UI.leadRest(t, 110)))", [long, short, nocut])
+    assert got[0][0] == '기준 밖 — 입고 예정까지 기다린 뒤(설비 시간 48시간 (실제 24초)) 검수했지만 일부만 입고됐습니다'
+    assert got[0][1].startswith('불합격 1개 반품. 펌프 축 씰 키트') and got[0][1].endswith('로트 LOT-PR-1)')
+    assert len(got[0][0]) + len(got[0][1]) == len(long) - len(' — '), '가르는 표시만 빠지고 글은 그대로다'
+    assert got[1] == [short, ''] and got[2] == [nocut, ''], '짧은 문장과 가를 자리가 없는 문장은 통째로 결론이다'

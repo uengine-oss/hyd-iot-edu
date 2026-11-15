@@ -275,8 +275,8 @@
         <div class="panel-sec" id="ddlPick">
           <div class="doc-review-bar"><div class="seg" role="group" aria-label="올릴 표 정의 고르는 방법"><button type="button" aria-pressed="true" data-pick-mode="provided">제공 예시에서 고르기</button><button type="button" aria-pressed="false" data-pick-mode="file">내 파일 올리기</button></div><span class="muted" data-pick="provided">예시를 고르면 바로 읽습니다.</span></div>
           <div data-pick="provided" id="providedDdl"><div class="rows doc-prov" aria-label="제공 예시">
-            <button type="button" class="row" data-provided="legacy-plant-db.sql"><span class="row-ic"><span data-icon="database"></span></span><span class="row-title">옛 설비 DB 예시</span><span data-prov-tag></span><span class="row-meta">legacy-plant-db.sql · 업무 DB의 표 정의(CREATE TABLE)</span></button>
-            <a class="btn" data-variant="link" data-size="sm" href="samples/legacy-plant-db.sql" target="_blank" rel="noopener" data-provided-view="legacy-plant-db.sql">원문 보기</a></div></div>
+            <div class="row-act"><button type="button" class="row" data-provided="legacy-plant-db.sql"><span class="row-ic"><span data-icon="database"></span></span><span class="row-title">옛 설비 DB 예시</span><span data-prov-tag></span><span class="row-meta">legacy-plant-db.sql · 업무 DB의 표 정의(CREATE TABLE)</span></button>
+            <a class="btn" data-variant="link" data-size="sm" href="samples/legacy-plant-db.sql" target="_blank" rel="noopener" data-provided-view="legacy-plant-db.sql">원문 보기</a></div></div></div>
           <div data-pick="file" hidden>
             <fieldset class="fieldset"><legend>올릴 표 정의</legend><div role="group">
               <div role="group" class="field"><label for="ddlFile">스키마 파일</label><label class="file-picker"><span class="btn" data-variant="outline" data-size="sm">파일 선택</span><input type="file" id="ddlFile" accept=".sql,.txt,.ddl" aria-label="스키마 파일 선택"><span class="file-name" id="ddlFilename">선택한 파일 없음</span></label>
@@ -309,25 +309,32 @@
     <div data-page-head="admin" data-sub="내 설정을 파일로 옮기거나 기준으로 되돌리고, 접수 기록을 봅니다."></div>
     <div class="tabs view-tabs" id="adminList"><nav role="tablist" aria-orientation="horizontal" aria-label="관리 보기"><button type="button" role="tab" data-admin="configBundlePanel" aria-selected="true" tabindex="0">내 설정</button><button type="button" role="tab" data-admin="sourceEventsPanel" aria-selected="false" tabindex="-1">접수 기록</button></nav></div>
     <div class="admin-detail">
-        <details class="panel admin-pane" id="configBundlePanel" open><summary>내 설정</summary>
-          <div id="configBundleView"></div></details>   <!-- configBundle.js 가 절(.panel-sec) 넷을 그린다: 내 사례 · 내보내기 · 불러오기 · 기준으로 되돌리기 -->
-        <details class="panel admin-pane" id="sourceEventsPanel"><summary>접수 기록</summary>
-          <div class="panel-sec">
-            <div class="admin-tools"><div role="group" class="field"><label for="sourceEventStatus">상태</label><select class="select" id="sourceEventStatus">
+        <details class="admin-pane" id="configBundlePanel" open><summary>내 설정</summary>
+          <div id="configBundleView"></div></details>   <!-- configBundle.js 가 설정 줄(.set-row) 넷을 그린다: 내 사례 · 내보내기 · 불러오기 · 기준으로 되돌리기 -->
+        <!-- 접수 기록: 목록 + 상세(.split). 왼쪽 = 상태로 거르기 · 목록 · 더 보기, 오른쪽 = 고른 접수(머리 · 요약 · 원문 접기 · 다시 처리). 그리는 코드는 sourceEvents.js -->
+        <details class="admin-pane" id="sourceEventsPanel"><summary>접수 기록</summary>
+          <div class="split">
+            <div class="pane-side">
+              <div class="pane-bar"><select class="select" id="sourceEventStatus" aria-label="상태로 거르기">
         <option value="FAILED">처리 실패</option><option value="CONFLICT">원문 충돌</option><option value="INVALID">잘못된 입력</option>
         <option value="WAITING">연결 대기</option><option value="PENDING">처리 대기</option><option value="CLAIMED">처리 중</option>
         <option value="HANDLED">처리 완료</option><option value="DUPLICATE">중복 접수</option><option value="">전체</option>
-      </select></div>
-              <button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventRefresh">다시 읽기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventMore">더 보기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventDetailRefresh" disabled>고른 접수 다시 읽기</button></div>
-            <p id="sourceEventMessage" role="status" class="muted"></p><div id="sourceEventList" class="rows"></div>
+      </select>
+                <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="sourceEventRefresh" aria-label="다시 읽기" data-tooltip="다시 읽기" data-side="top"><span data-icon="refresh-cw"></span></button></div>
+              <p id="sourceEventMessage" role="status" class="muted"></p>
+              <div id="sourceEventList" class="rows" aria-label="접수 목록"></div>
+              <button type="button" class="btn more" data-variant="ghost" data-size="sm" id="sourceEventMore" hidden>더 보기</button>
+            </div>
+            <div class="panel">
+              <div id="sourceEventDetail"></div>
+              <form id="sourceEventRetry" hidden class="panel-sec">
+                <fieldset class="fieldset"><legend>다시 처리</legend><div role="group">
+                  <div role="group" class="field"><label for="sourceEventReason">사유 <span aria-hidden="true">*</span></label><textarea class="textarea" id="sourceEventReason" rows="3" required></textarea><p>원문과 접수 당시 정의를 유지해 다시 처리합니다</p></div>
+                </div></fieldset>
+                <footer class="form-foot"><button class="btn" type="submit">다시 처리</button></footer>
+              </form>
+            </div>
           </div>
-          <div class="panel-sec" id="sourceEventDetail"></div>
-          <form id="sourceEventRetry" hidden class="panel-sec">
-            <fieldset class="fieldset"><legend>다시 처리</legend><div role="group">
-              <div role="group" class="field"><label for="sourceEventReason">사유 <span aria-hidden="true">*</span></label><textarea class="textarea" id="sourceEventReason" rows="3" required></textarea><p>원문과 접수 당시 정의를 유지해 다시 처리합니다</p></div>
-            </div></fieldset>
-            <footer class="form-foot"><button class="btn" type="submit">다시 처리</button></footer>
-          </form>
         </details>
     </div>
         <details class="fold admin-fold" id="definitionEditor"><summary>흐름 정의 JSON 직접 등록</summary><div class="fold-body">
@@ -394,7 +401,7 @@
       <section class="panel flow-panel" id="flowPanel" aria-label="고른 흐름">
         <div class="shell-mount" id="flowsView"></div>
         <div class="panel-sec" id="definitionDeployPanel" hidden>
-          <h3><span data-icon="upload"></span>판본 · 배포<span class="muted" id="deploySummary"></span></h3>
+          <h3>판본 · 배포<span class="muted" id="deploySummary"></span></h3>
           <input type="hidden" id="deployBy"><!-- 배포 이력에 남는 이름 = 이 PC의 담당자(definitionDeploy.js showMe) — 고칠 수 없는 칸을 화면에 두지 않는다 -->
           <div id="deployStatus"></div>
           <div id="deployVersions"></div>

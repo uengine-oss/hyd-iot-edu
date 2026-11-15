@@ -4,17 +4,17 @@
    A122: wording from UI.terms; action-candidate card = title · chips · score · one line · evidence folded. */
 
 // 지식 지도의 묶음 = 온톨로지 v2 의 층(it/neo4j/v2/schema.json). 이름에 프레임워크 이름을 쓰지 않는다(명칭표).
-// at: 지도에서 그 묶음이 모이는 자리(0 ~ 1, 왼쪽 위가 0,0). color: 어두운 캔버스의 색(portal-kit.css --cv-violet · --cv-blue · --cv-ink-2 · --cv-red · --cv-teal · --cv-amber 의 값 —
-// 캔버스에 그리는 Cytoscape 는 CSS 변수를 읽지 못해 값을 적는다. 디자인 기준 2-2 · 6-3). 오른쪽 밝은 칸에서는 같은 색을 점에만 쓴다.
+// at: 지도에서 그 묶음이 모이는 자리(0 ~ 1, 왼쪽 위가 0,0). color: 점의 색(밝은 캔버스 — portal-kit.css --cv-violet · --cv-blue · --cv-red · --cv-teal · --cv-amber · --cv-pink 의 값.
+// 캔버스에 그리는 Cytoscape 는 CSS 변수를 읽지 못해 값을 적는다). ink: 같은 색을 글자로 쓸 때의 짙은 값(묶음 이름 — 캔버스 바탕 #f7f8fa 와 대비 4.5 이상). 오른쪽 판에서는 color 를 점에만 쓴다.
 const ONTO_GROUPS = [
-  { key: 'value', title: '전략 목표', at: [0.13, 0.2], color: '#b794f6', labels: ['Perspective', 'Objective', 'Measure'] },
-  { key: 'process', title: '프로세스', at: [0.4, 0.08], color: '#7aa2ff', labels: ['Process', 'Event', 'Task', 'Gateway'] },
-  { key: 'resource', title: '자원', at: [0.14, 0.74], color: '#9aa7b5', labels: ['OrgUnit', 'Role', 'System', 'Asset', 'Component', 'Sensor', 'Actuator', 'StateVariable', 'Part', 'Supplier'] },
-  { key: 'diagnosis', title: '설비 진단', at: [0.4, 0.5], color: '#f07167', labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
-  { key: 'skill', title: '조치 방법과 규칙', at: [0.76, 0.46], color: '#2dd4bf', labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
-  { key: 'external', title: '외부 변수 · 예측 · 사례', at: [0.45, 0.93], color: '#f5a623', labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
+  { key: 'value', title: '전략 목표', at: [0.13, 0.2], color: '#8b5cf6', ink: '#6a3fd0', labels: ['Perspective', 'Objective', 'Measure'] },
+  { key: 'process', title: '프로세스', at: [0.4, 0.08], color: '#3b7cf6', ink: '#1f5bd4', labels: ['Process', 'Event', 'Task', 'Gateway'] },
+  { key: 'resource', title: '자원', at: [0.14, 0.74], color: '#8a93a3', ink: '#535b6a', labels: ['OrgUnit', 'Role', 'System', 'Asset', 'Component', 'Sensor', 'Actuator', 'StateVariable', 'Part', 'Supplier'] },
+  { key: 'diagnosis', title: '설비 진단', at: [0.4, 0.5], color: '#e5484d', ink: '#bf2a30', labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
+  { key: 'skill', title: '조치 방법과 규칙', at: [0.76, 0.46], color: '#12a594', ink: '#0a776b', labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
+  { key: 'external', title: '외부 변수 · 예측 · 사례', at: [0.45, 0.93], color: '#e58a0a', ink: '#9c5600', labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
   // G4: 학생 이름 공간의 업무 고유 클래스(students/<ID>/schema.json) — v2 에 없는 레이블은 모두 이 묶음에 그린다
-  { key: 'student', title: '내 업무 개념', at: [0.8, 0.92], color: '#f472b6', labels: [], other: true },
+  { key: 'student', title: '내 업무 개념', at: [0.8, 0.92], color: '#e0479a', ink: '#b5246e', labels: [], other: true },
 ];
 const LABEL_KO = { Perspective: '관점', Objective: '전략 목표', Measure: '성과 지표', Process: '프로세스', Event: '이벤트', Task: '단계', Gateway: '분기',
   OrgUnit: '부서', Role: '역할', System: '시스템', Asset: '설비', Component: '구성 요소', Sensor: '센서', Actuator: '구동기', StateVariable: '상태 변수',
@@ -218,7 +218,7 @@ function kgPathLay(center, path, box) {
   return { at, labelW, colW: Math.round(gap - 18), bounds: { x0: center.x - gap / 2 - 8, x1: center.x + 3 * gap + (last.length ? labelW + 24 : gap / 2), y0: center.y - halfH - 34, y1: center.y + halfH + 34 } };
 }
 
-/* ================================================= 지식 지도 그림 — 어두운 캔버스에 Cytoscape.js(vendor/cytoscape, 배치는 fcose)로 그린다 (디자인 기준 5-9 · 6-3)
+/* ================================================= 지식 지도 그림 — 밝은 캔버스에 Cytoscape.js(vendor/cytoscape, 배치는 fcose)로 그린다 (디자인 기준 5-9 · 6-3)
    배치: 묶음(전략 목표 · 자원 …)마다 fcose 로 안을 놓고, 묶음을 ONTO_GROUPS.at 의 자리에 둔 뒤 겹친 묶음을 밀어낸다. 난수를 고정하고 항목 · 연결을 id 순으로
      세운 뒤 배치하므로 같은 그래프는 서버가 준 차례가 달라도 늘 같은 자리다. 배치의 크기는 항목 수로 정한다(캔버스 크기와 무관).
    이상 패턴 경로: 그 패턴에서 증상 · 고장 유형 · 원인 · 조치 방법까지의 길(kgPath)만 밝게 하고 왼쪽에서 오른쪽으로 줄지어 놓는다(kgPathLay). 고른 것이 있으면 고름이 앞선다.
@@ -229,7 +229,7 @@ function kgPathLay(center, path, box) {
    글자: 캔버스 바탕 위에 바탕색 테두리와 함께 쓰고, 확대 배율과 상관없이 화면에서 같은 크기다. 고른 것 · 모은 이웃 · 경로의 이름은 늘 보이고, 그 밖의 이름은
      서로 겹치지 않고 점과 캔버스 안 도구를 가리지 않는 것만 보인다 — 검색에 걸린 것, 이어진 수가 많은 것부터 자리를 잡고(kgPlaceLabels) 확대할수록 더 많이 보인다.
      숨은 이름은 점에 마우스를 올리면 보인다. 전체에서 무엇이 들어 있는지는 오른쪽 칸의 목차(묶음 → 종류 → 항목 이름)로 읽고, 묶음을 펼치면 지도도 그 묶음을 크게 보인다(kgGroup). */
-const KG = { SEED: 20261114, HUB: 14, ZOOM_MAX: 3, ZOOM_PICK: 1.25, STEP: [17, 26], STEP_TIGHT: 15, LABEL: 180, BG: '#16202d', NOW: '#8b93ff', HIT: '#f5c46b', BLUE: '#7aa2ff',
+const KG = { SEED: 20261114, HUB: 14, ZOOM_MAX: 3, ZOOM_PICK: 1.25, STEP: [17, 26], STEP_TIGHT: 15, LABEL: 180, BG: '#f7f8fa', INK: '#16181d', INK_2: '#3d434f', EDGE: '#8e96a4', NOW: '#5e6ad2', NOW_INK: '#4853b8', HIT: '#e58a0a', HIT_INK: '#8a4a00', BLUE: '#2f6fe8',
   PATH_RELS: ['DETECTS', 'INDICATES', 'CAUSES', 'MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY'],
   FONT: 11.5, FONT_HUB: 12.5, NAME_W: 120, NAME_W_HUB: 180, NAME_W_HIT: 220,      // 이름의 글자 크기(px)와 한 줄 폭의 한도 — 넘으면 말줄임
   nearSize: ele => 11 + ele.data('size') * 0.14 };      // 모은 이웃의 점은 화면에서 13 ~ 17px(이어진 수의 차이는 남기되 세로 간격 안에 들어오게)
@@ -253,7 +253,8 @@ function kgPlaceLabels(items, fixed, discs, zones, size) {
     && !discs.some(d => d.id !== self && d.x + d.r > box[0] && d.x - d.r < box[2] && d.y + d.r > box[1] && d.y - d.r < box[3]);
   for (const it of items.slice().sort((a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1))) {
     const { x, y, r, w, h } = it, g = 4;
-    const at = { b: [x - w / 2 - PAD, y + r + g - 1, x + w / 2 + PAD, y + r + g + h + PAD], t: [x - w / 2 - PAD, y - r - g - h - PAD, x + w / 2 + PAD, y - r - g + 1],
+    // 점 위 · 아래의 상자는 점의 가장자리부터 잡는다: Cytoscape 가 그리는 글자는 바탕색 테두리(2.5px)만큼 점 쪽으로도 나온다 — 틈(g)을 빼고 잡으면 위아래로 이웃한 두 이름이 몇 px 포개진다
+    const at = { b: [x - w / 2 - PAD, y + r, x + w / 2 + PAD, y + r + g + h + PAD], t: [x - w / 2 - PAD, y - r - g - h - PAD, x + w / 2 + PAD, y - r],
       r: [x + r + g - 1, y - h / 2 - PAD, x + r + g + w + 2 * PAD, y + h / 2 + PAD], l: [x - r - g - w - 2 * PAD, y - h / 2 - PAD, x - r - g + 1, y + h / 2 + PAD] };
     const side = ['b', 't', 'r', 'l'].find(k => free(at[k], it.id));
     if (side) { placed.push(at[side]); out.set(it.id, side); }
@@ -342,46 +343,48 @@ function kgStyle() {
   const font = 'Pretendard Variable, Pretendard, sans-serif', BG = KG.BG;
   return [
     { selector: 'node', style: { width: 'data(size)', height: 'data(size)', 'background-color': 'data(color)', 'background-opacity': 0.92, 'border-width': 1.5, 'border-color': BG,
-        label: '', color: '#d5dde8', 'font-family': font, 'font-size': kgPx(KG.FONT), 'font-weight': 500, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': kgPx(4), 'text-margin-x': 0,
+        label: '', color: KG.INK_2, 'font-family': font, 'font-size': kgPx(KG.FONT), 'font-weight': 500, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': kgPx(4), 'text-margin-x': 0,
         'text-max-width': kgPx(KG.NAME_W), 'text-wrap': 'ellipsis', 'min-zoomed-font-size': 0, 'text-outline-color': BG, 'text-outline-width': kgPx(2.5), 'text-outline-opacity': 1, 'overlay-opacity': 0,
         'transition-property': 'opacity, border-width, border-color', 'transition-duration': 180 } },
     // 이름: 겹치지 않게 자리를 잡은 것만 보인다(kgLabels 가 lab 과 자리 lp 를 단다). 글자는 화면에서 늘 같은 크기이고 캔버스 바탕색 테두리를 둘러 점 · 선 위에서도 읽힌다
     { selector: 'node.lab', style: { label: 'data(name)' } },
-    { selector: 'node.lab[?hub]', style: { 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, color: '#ffffff', 'text-max-width': kgPx(KG.NAME_W_HUB) } },
+    { selector: 'node.lab[?hub]', style: { 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, color: KG.INK, 'text-max-width': kgPx(KG.NAME_W_HUB) } },
     { selector: 'node.lab[lp = "t"]', style: { 'text-valign': 'top', 'text-margin-y': kgPx(-4) } },
     { selector: 'node.lab[lp = "r"]', style: { 'text-valign': 'center', 'text-halign': 'right', 'text-margin-x': kgPx(4), 'text-margin-y': 0 } },
     { selector: 'node.lab[lp = "l"]', style: { 'text-valign': 'center', 'text-halign': 'left', 'text-margin-x': kgPx(-4), 'text-margin-y': 0 } },
-    { selector: 'edge', style: { width: 1, 'line-color': '#53637a', opacity: 0.38, 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#53637a', 'arrow-scale': 0.7,
-        'font-family': font, 'font-size': kgPx(10.5), 'font-weight': 500, color: '#c5cdf8', 'text-background-color': BG, 'text-background-opacity': 0.92, 'text-background-padding': 2, 'text-background-shape': 'roundrectangle',
+    { selector: 'edge', style: { width: 1, 'line-color': KG.EDGE, opacity: 0.42, 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': KG.EDGE, 'arrow-scale': 0.7,
+        'font-family': font, 'font-size': kgPx(10.5), 'font-weight': 500, color: KG.NOW_INK, 'text-background-color': BG, 'text-background-opacity': 0.92, 'text-background-padding': 2, 'text-background-shape': 'roundrectangle',
         'overlay-opacity': 0, 'transition-property': 'opacity, line-color', 'transition-duration': 180 } },
     { selector: 'node.gtitle', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: 'data(color)', 'font-size': kgPx(13), 'font-weight': 600, 'text-valign': 'top', 'text-margin-y': 0,
         'text-max-width': 600, 'text-wrap': 'none', 'text-outline-width': kgPx(4), 'text-opacity': 0.95 } },
     { selector: 'node.tuck', style: { 'text-opacity': 0 } },
-    { selector: '.dim', style: { opacity: 0.1, 'text-opacity': 0 } },
-    { selector: 'edge.dim', style: { opacity: 0.04 } },
-    { selector: 'node.hover', style: { label: 'data(name)', color: '#ffffff', 'font-size': kgPx(12), 'text-opacity': 1, 'text-max-width': kgPx(260), 'z-index': 70 } },
-    { selector: 'node.path', style: { 'border-color': '#ffffff', 'border-width': kgPx(1.5), color: '#ffffff', 'z-index': 40 } },
+    { selector: '.dim', style: { opacity: 0.16, 'text-opacity': 0 } },
+    { selector: 'edge.dim', style: { opacity: 0.07 } },
+    { selector: 'node.hover', style: { label: 'data(name)', color: KG.INK, 'font-size': kgPx(12), 'text-opacity': 1, 'text-max-width': kgPx(260), 'z-index': 70 } },
+    { selector: 'node.path', style: { 'border-color': KG.BLUE, 'border-width': kgPx(1.5), color: KG.INK, 'z-index': 40 } },
     { selector: 'node.path[side]', style: { label: 'data(name)', 'font-size': kgPx(12) } },
     // 경로를 줄로 놓았을 때(고른 것이 없을 때): 앞 세 줄은 이름을 점 아래에, 마지막 줄은 오른쪽에
     { selector: 'node.path[side = "B"]', style: { width: kgPx(18), height: kgPx(18), 'text-margin-y': kgPx(5), 'text-max-width': ele => kg.colW / ele.cy().zoom() } },
     { selector: 'node.path[side = "R"]', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'text-valign': 'center', 'text-halign': 'right', 'text-margin-x': kgPx(6), 'text-margin-y': 0,
         'text-max-width': ele => kg.labelW / ele.cy().zoom() } },
     { selector: 'edge.path', style: { opacity: 0.9, width: kgPx(1.4), 'line-color': KG.BLUE, 'target-arrow-color': KG.BLUE, 'arrow-scale': 0.9, 'z-index': 35 } },
-    { selector: 'node.near', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'border-color': '#ffffff', 'border-width': kgPx(1.5), label: 'data(name)', color: '#ffffff', 'font-size': kgPx(12), 'text-valign': 'center', 'text-margin-y': 0,
+    { selector: 'node.near', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'border-color': KG.NOW, 'border-width': kgPx(1.5), label: 'data(name)', color: KG.INK, 'font-size': kgPx(12), 'text-valign': 'center', 'text-margin-y': 0,
         'text-max-width': ele => kg.labelW / ele.cy().zoom(), 'z-index': 50 } },
     { selector: 'node.near[side = "R"]', style: { 'text-halign': 'right', 'text-margin-x': kgPx(6) } },
     { selector: 'node.near[side = "L"]', style: { 'text-halign': 'left', 'text-margin-x': kgPx(-6) } },
     { selector: 'edge.near', style: { opacity: 0.95, width: kgPx(1.5), 'line-color': KG.NOW, 'target-arrow-color': KG.NOW, 'arrow-scale': 0.9, 'z-index': 45 } },
     // 관계 이름: 모은 이웃의 줄에서 관계 묶음마다 그 위에 한 줄로 적는다(선을 따라 적으면 선이 모이는 곳에서 글이 겹치고 기운다). 점은 그리지 않는다
-    { selector: 'node.rhead', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: '#aab2ff', 'font-size': kgPx(10.5), 'font-weight': 600, 'text-valign': 'center',
+    { selector: 'node.rhead', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: KG.NOW_INK, 'font-size': kgPx(10.5), 'font-weight': 600, 'text-valign': 'center',
         'text-margin-y': 0, 'text-wrap': 'none', 'text-max-width': 600, events: 'no', 'z-index': 48 } },
     { selector: 'node.rhead[side = "R"]', style: { 'text-halign': 'right', 'text-margin-x': kgPx(-2) } },
     { selector: 'node.rhead[side = "L"]', style: { 'text-halign': 'left', 'text-margin-x': kgPx(2) } },
-    { selector: 'node.rhead[side = "B"]', style: { 'text-halign': 'center', color: '#9aa7b5' } },
-    { selector: 'node.hit', style: { 'border-color': KG.HIT, 'border-width': kgPx(2.5), color: KG.HIT, 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, 'text-max-width': kgPx(KG.NAME_W_HIT), 'z-index': 60 } },
-    { selector: 'node.pick', style: { width: kgPx(26), height: kgPx(26), 'border-color': '#ffffff', 'border-width': kgPx(3), 'underlay-color': KG.NOW, 'underlay-opacity': 0.35, 'underlay-padding': kgPx(8), 'underlay-shape': 'ellipse', color: '#ffffff',
+    { selector: 'node.rhead[side = "B"]', style: { 'text-halign': 'center', color: '#5d6370' } },
+    { selector: 'node.hit', style: { 'border-color': KG.HIT, 'border-width': kgPx(2.5), color: KG.HIT_INK, 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, 'text-max-width': kgPx(KG.NAME_W_HIT), 'z-index': 60 } },
+    // 모은 이웃이 검색에도 걸렸다: 글자색 · 테두리는 검색의 것, 크기와 폭은 모은 줄의 것(넓히면 왼쪽 줄의 이름이 캔버스 밖으로 잘린다)
+    { selector: 'node.near.hit', style: { 'font-size': kgPx(12), 'text-max-width': ele => kg.labelW / ele.cy().zoom() } },
+    { selector: 'node.pick', style: { width: kgPx(26), height: kgPx(26), 'border-color': '#ffffff', 'border-width': kgPx(3), 'underlay-color': KG.NOW, 'underlay-opacity': 0.32, 'underlay-padding': kgPx(8), 'underlay-shape': 'ellipse', color: KG.INK,
         label: 'data(name)', 'font-size': kgPx(14), 'font-weight': 700, 'z-index': 99, 'text-wrap': 'none', 'text-max-width': 2000, 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': kgPx(-8), 'text-margin-x': 0 } },
-    { selector: 'node.pick.hit', style: { 'border-color': KG.HIT, color: '#ffe6ad' } },      // 고른 것이 검색에도 걸렸다: 테두리는 검색의 노랑, 글자는 밝은 노랑
+    { selector: 'node.pick.hit', style: { 'border-color': KG.HIT, color: KG.HIT_INK } },      // 고른 것이 검색에도 걸렸다: 테두리는 검색의 주황, 글자는 짙은 주황
     { selector: '.off', style: { display: 'none' } },
   ];
 }
@@ -406,7 +409,7 @@ function kgLayout(cy) {
   }
   for (const b of boxes) {
     b.ns.shift({ x: b.cx - b.ox, y: b.cy - b.oy });
-    cy.add({ group: 'nodes', data: { id: 'title:' + b.gr.key, name: `${b.gr.title} ${b.ns.length}`, color: b.gr.color, g: b.gr.key }, classes: 'gtitle', position: { x: b.cx, y: b.cy - b.r + 22 }, selectable: false, grabbable: false });
+    cy.add({ group: 'nodes', data: { id: 'title:' + b.gr.key, name: `${b.gr.title} ${b.ns.length}`, color: b.gr.ink, g: b.gr.key }, classes: 'gtitle', position: { x: b.cx, y: b.cy - b.r + 22 }, selectable: false, grabbable: false });
   }
   return boxes.map(b => ({ key: b.gr.key, title: b.gr.title, color: b.gr.color, count: b.ns.length }));
 }

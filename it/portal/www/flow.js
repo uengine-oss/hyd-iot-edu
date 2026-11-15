@@ -1,5 +1,5 @@
 /* 흐름 그림 — bpmn-js NavigatedViewer(보기 전용)로 그린다(디자인 기준 6-2). 포털은 그리지 않는다: 그림의 모양과 배치는 bpmn.io 에서 그린 그대로이고,
-   여기서는 색(어두운 캔버스)과 처리 건의 상태 표시(끝남 · 지금 · 남음 · 멈춤)만 얹는다. loaded after instanceSteps.js(단계 상태 규칙 hydSteps).
+   여기서는 색(밝은 캔버스 — 흰 상자 · 회색 선)과 처리 건의 상태 표시(끝남 · 지금 · 남음 · 멈춤)만 얹는다. loaded after instanceSteps.js(단계 상태 규칙 hydSteps).
 
    그림의 원본(xmlOf):
      ① 포털로 가져와 등록한 흐름(정의에 bpmnImport 가 있다) — GET /api/flows/{id}/versions/{v}/bpmn 이 준 .bpmn 원본.
@@ -183,7 +183,7 @@
   }
 
   /* ---------------------------------------------------------------- 그리기 */
-  const viewerOptions = container => ({ container, bpmnRenderer: { defaultFillColor: cv('--cv-node'), defaultStrokeColor: '#8493a8', defaultLabelColor: cv('--cv-ink') },
+  const viewerOptions = container => ({ container, bpmnRenderer: { defaultFillColor: cv('--cv-node'), defaultStrokeColor: cv('--cv-edge'), defaultLabelColor: cv('--cv-ink') },
     textRenderer: { defaultStyle: { fontFamily: 'Pretendard Variable, sans-serif', fontSize: 13 }, externalStyle: { fontSize: 12 } } });
   const MARKERS = ['is-done', 'is-now', 'is-todo', 'is-fail', 'is-hold'];
   const skip = el => !el || el.type === 'label' || el.type === 'bpmn:Lane' || el.type === 'bpmn:Participant' || el.type === 'bpmn:Process' || el.type === 'bpmn:Collaboration' || !el.parent;
@@ -258,6 +258,8 @@
     const viewer = new BpmnJS(viewerOptions(container));
     try { await viewer.importXML(src.xml); } catch (err) { viewer.destroy(); throw new Error('BPMN 그림을 열지 못했습니다 — ' + (err.message || err)); }
     const D = { viewer, src, marks: null };
+    // 차선 · 참여자 틀은 옅은 선에 면 없이 그린다(상자와 선이 주인공이다) — 모양은 portal-kit.css .is-lane
+    viewer.get('elementRegistry').forEach(el => { if (el.type === 'bpmn:Lane' || el.type === 'bpmn:Participant') viewer.get('canvas').addMarker(el.id, 'is-lane'); });
     if (!opts.plain) paint(D, view, opts.mine);      // plain: 상태 표시 없이 그림만(흐름 화면)
     // 그림을 놓는 일(맞춤 · 지금 단계로)은 캔버스에 크기가 있어야 한다. 가려진 화면에서 그리면 — 다른 화면에 있는 동안 흐름 목록이 다시 읽힐 때(관리 화면의
     // 기준으로 되돌리기 등) — 크기가 0 이라 bpmn-js 의 배율이 0 이 되고 다음 배율 계산이 0 으로 나눠 「흐름 그림을 그리지 못했습니다」로 끝났다.

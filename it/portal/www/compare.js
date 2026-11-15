@@ -243,26 +243,24 @@
   // 지난 시험과 비교: 결과 아래의 판 하나
   function historyPane() {
     const h = S.history;
-    const rows = h == null ? '' : h.length < 2 ? UI.empty('저장된 시험이 둘 이상 있어야 비교할 수 있습니다', '위에서 시험을 한 번 더 실행하면 비교할 수 있습니다.', 'compact') : UI.section('', ['a', 'b'].map(side =>
+    const rows = h == null ? '' : h.length < 2 ? `<p class="muted">저장된 시험이 둘 이상 있어야 비교할 수 있습니다. 위에서 시험을 한 번 더 실행하세요.</p>` : UI.section('', ['a', 'b'].map(side =>
       UI.field({ label: side === 'a' ? '바꾸기 전 시험' : '바꾼 뒤 시험', input: `<select data-pick="${side}"><option value="">시험 선택</option>${h.map(t =>
         `<option value="${esc(t.id)}" ${S.pick[side] === t.id ? 'selected' : ''}>${esc(scenarioLabel(t))} · ${esc(t.agent_name || agentName(t.agent_id))} · ${esc(UI.dateTime(t.created_at))} · ${esc(t.recommended ? '1순위 ' + UI.name(t.recommended) : STATUS[t.status]?.[0] || t.status)}${(t.variant?.without_tools || []).length + (t.variant?.without_skills || []).length ? ' · 빼 본 구성' : ''}</option>`).join('')}</select>` })).join(''));
     const label = h == null ? '저장된 시험 불러오기' : '두 시험 비교';
     // 고른 둘이 서로 다른 시나리오면 누르기 전에 말한다(견줄 수 없는 까닭)
     const pa = h?.find(t => t.id === S.pick.a), pb = h?.find(t => t.id === S.pick.b), apart = pa && pb && (pa.asset !== pb.asset || pa.pattern !== pb.pattern);
-    // 아직 불러오지 않았으면 판은 머리 한 줄이다(제목 · 한 문장 · 오른쪽에 [저장된 시험 불러오기]) — 빈 본문에 단추 하나만 떠 있게 두지 않는다
-    if (h == null && !S.histError) return `<section class="panel"><div class="panel-head pane-head"><div class="pane-title"><h2>지난 시험과 비교</h2><p>규칙이나 지식을 바꾸기 전과 후에, 같은 시나리오의 계산 결과가 그대로인지 봅니다.</p></div>` +
-      `<div class="pane-acts"><button type="button" class="btn" data-variant="outline" data-act="history" ${S.histBusy ? 'disabled' : ''}>${UI.icon('history')}${esc(label)}</button></div></div></section>`;
-    return `<section class="panel"><div class="panel-head"><div><h2>지난 시험과 비교</h2><p>규칙이나 지식을 바꾸기 전과 후에, 같은 시나리오의 계산 결과가 그대로인지 봅니다.</p></div></div><div class="panel-sec">` +
+    // 왼쪽 칸(조건 아래)의 「지난 것」 자리다(.io-past): 이름 · 한 문장 → (불러온 뒤) 고를 두 시험 → 단추 하나
+    return `<aside class="io-past" aria-label="지난 시험과 비교"><h3>지난 시험과 비교</h3><p class="muted">규칙이나 지식을 바꾸기 전과 후에, 같은 시나리오의 계산 결과가 그대로인지 봅니다.</p>` +
       rows + (apart ? note(`고른 두 시험의 시나리오가 다릅니다(「${esc(scenarioLabel(pa))}」와 「${esc(scenarioLabel(pb))}」). 설비와 경보가 다른 시험은 견줄 수 없습니다 — 같은 시나리오의 시험 둘을 고르세요.`, ' data-tone="danger" role="status"') : '') + (S.histError ? UI.errorBlock(h == null ? '저장된 시험을 불러오지 못했습니다' : '두 시험을 비교하지 못했습니다', S.histError) : '') +
-      `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (h.length < 2 || !S.pick.a || !S.pick.b || apart)) ? 'disabled' : ''}>${UI.icon(h == null ? 'history' : 'git-compare')}${esc(label)}</button></footer></div></section>`;
+      `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (h.length < 2 || !S.pick.a || !S.pick.b || apart)) ? 'disabled' : ''}>${UI.icon(h == null ? 'history' : 'git-compare')}${esc(label)}</button></footer></aside>`;
   }
 
   function render() {
     if (!S.el) return;
     const open = new Set([...S.el.querySelectorAll('details[open] > summary')].map(x => x.textContent.trim()));      // 다시 그려도 펼친 접기는 그대로 둔다
     const shut = new Set([...S.el.querySelectorAll('details:not([open]) > summary')].map(x => x.textContent.trim()));
-    S.el.innerHTML = `<div class="io"><form class="panel io-in" aria-label="시험 조건">${formPane()}</form><div class="io-out"><div data-r="result" aria-live="polite">${S.busy
-        ? '<div data-cmp-track></div>' : S.runError ? UI.errorBlock('시험을 실행하지 못했습니다', S.runError) : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
+    S.el.innerHTML = `<div class="io"><div class="io-in"><form class="panel" aria-label="시험 조건">${formPane()}</form>${S.opts && S.opts.agents.length ? historyPane() : ''}</div><div class="io-out"><div data-r="result" aria-live="polite">${S.busy
+        ? '<div data-cmp-track></div>' : S.runError ? UI.errorBlock('시험을 실행하지 못했습니다', S.runError) : resultView(S.result)}</div></div></div>`;
     S.el.querySelectorAll('details > summary').forEach(x => { const k = x.textContent.trim(); if (open.has(k)) x.parentElement.open = true; else if (shut.has(k)) x.parentElement.open = false; });
     if (S.busy && S.track) S.track.mount(S.el.querySelector('[data-cmp-track]'));      // 다시 그려도 같은 진행 목록이 새 자리로 옮겨 간다
     if (S.busy) hydLive.busy(S.el.querySelector('[data-act="run"]'), '시험하는 중', S.since);

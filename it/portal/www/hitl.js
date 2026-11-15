@@ -1059,7 +1059,7 @@
     return H.samples.get(file);
   }
   const sampleView = async link => { try { link.href = (await sample(link.dataset.providedView)).view; } catch (_) { /* 못 읽으면 원래 주소(내려받기) 그대로 */ } };
-  // 제공 문서 목록(서버 GET /api/course-access 의 provided_documents): 줄 = 문서 제목 · 파일 이름 · 「적재됨」, 옆에 [원문 보기](새 탭). 줄을 누르면 그 문서를 바로 올린다
+  // 제공 문서 목록(서버 GET /api/course-access 의 provided_documents): 줄 = 문서 제목 · 파일 이름 · 「적재됨」, 줄 오른쪽 끝에 [원문 보기](새 탭). 줄을 누르면 그 문서를 바로 올린다
   function renderProvided() {
     const box = $('#providedDocs'); if (!box) return;
     const list = hydCourseAccess.access?.provided_documents;
@@ -1068,9 +1068,9 @@
     const busy = H.sending && H.sending.provided;
     box.innerHTML = `<div class="rows doc-prov" aria-label="제공 문서">${list.map(f => {
       const loaded = (H.loadedFiles.get(f) || []).length > 0, title = H.sampleTitles.get(f) || '';
-      return `<button type="button" class="row" data-provided="${esc(f)}"${busy === f ? ' aria-current="true"' : ''}${busy ? ' disabled' : ''}><span class="row-ic">${icon('file-text')}</span><span class="row-title">${esc(title || f)}</span>` +
+      return `<div class="row-act"><button type="button" class="row" data-provided="${esc(f)}"${busy === f ? ' aria-current="true"' : ''}${busy ? ' disabled' : ''}><span class="row-ic">${icon('file-text')}</span><span class="row-title">${esc(title || f)}</span>` +
         `<span data-prov-tag>${loaded ? UI.chipText('적재됨', 'success') : ''}</span><span class="row-meta">${esc([title ? f : '', loaded ? '다시 올리면 이 문서를 개정합니다' : ''].filter(Boolean).join(' · '))}</span></button>` +
-        `<a class="btn" data-variant="link" data-size="sm" href="samples/${encodeURIComponent(f)}" target="_blank" rel="noopener" data-provided-view="${esc(f)}">원문 보기</a>`;
+        `<a class="btn" data-variant="link" data-size="sm" href="samples/${encodeURIComponent(f)}" target="_blank" rel="noopener" data-provided-view="${esc(f)}">원문 보기</a></div>`;
     }).join('')}</div>`;
     box.querySelectorAll('[data-provided-view]').forEach(sampleView);
     // 제목은 파일을 읽은 뒤에 채운다(문서 등록 화면이 열려 있을 때만 읽는다)

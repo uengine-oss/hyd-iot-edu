@@ -26,15 +26,17 @@
 
 /* ───────── 한 건: 머리 ───────── */
 .case > :is(.empty, .alert, .loading) { margin-top: 0; }
-.case-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: var(--gap-block); }
-.case-head > div:first-child { min-width: 0; }
-.case-title { font-size: var(--fs-lg); line-height: 28px; font-weight: 600; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.case-meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--fs-sm); color: var(--muted-foreground); }
+/* 머리의 모양은 목록 + 상세 화면 공통(.pane-head — screens.css)이다. 여기는 보조 줄(경보 · 시작 · 지금 단계)의 배치만 */
+.case-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.case-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
 .case-meta span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .case-meta .ic { width: 13px; height: 13px; flex: none; }
 .case-meta .mono { font-size: var(--fs-xs); }
+/* 머리와 첫 구역 사이에 그 상황일 때만 놓이는 판(내가 할 일 · 결과 카드 · 멈춘 단계) */
+#todoPanel:not(:empty), #caseTop:not(:empty) { margin-bottom: var(--gap-block); }
+#todoPanel:not(:empty) + #caseTop:not(:empty) { margin-top: calc(12px - var(--gap-block)); }
 #todoPanel:empty, #caseTop:empty, #caseNotes:empty, #taskDetailPanel:empty { display: none; }
-#caseTop > * + *, #todoPanel + #caseTop:not(:empty) { margin-top: 12px; }
+#caseTop > * + * { margin-top: 12px; }
 #caseNotes { margin-top: 8px; }
 #taskDetailPanel { margin-top: 16px; scroll-margin-top: 68px; }
 .case-live { display: inline-flex; align-items: center; gap: 6px; }
@@ -91,7 +93,7 @@
 .flow-canvas { height: 440px; }
 /* 범례 · 도구 막대는 그림 위에 겹치지 않고 그림 위쪽의 제 줄에 놓인다 — 겹쳐 두면 맨 윗줄 상자(차선의 첫 단계)를 가린다 */
 :is(.flow-canvas, dialog.flow-dialog .canvas) { display: flex; flex-direction: column; }
-:is(.flow-canvas, dialog.flow-dialog .canvas) > .canvas-bar { position: static; flex: none; padding: 10px 12px 8px; border-bottom: 1px solid var(--cv-border); }
+:is(.flow-canvas, dialog.flow-dialog .canvas) > .canvas-bar { position: static; flex: none; padding: 12px 14px 4px; }
 :is(.flow-canvas, dialog.flow-dialog .canvas) > .bpmn { flex: 1; min-height: 0; height: auto; }
 /* 남은 단계의 글자도 읽히게: 키트는 남음을 62 % 로 흐리게 하는데, 어두운 캔버스의 13px 글자에는 너무 옅다 */
 :is(.flow-canvas, dialog.flow-dialog) .bpmn .djs-shape.is-todo .djs-visual { opacity: .82; }
@@ -101,15 +103,15 @@
 .canvas .bpmn .bjs-powered-by svg { width: auto; height: auto; display: inline; }
 .flow-canvas .bpmn .djs-shape:is(.is-done, .is-now, .is-hold, .is-fail) { cursor: pointer; }
 /* 멈춤 · 보류: 키트의 끝남 · 지금 · 남음 표시에 이 화면이 더한 둘(색은 캔버스의 상태색) */
-.bpmn .djs-shape.is-fail .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-red) !important; stroke-width: 2.5px !important; }
-.bpmn .djs-shape.is-hold .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-amber) !important; stroke-width: 2.5px !important; stroke-dasharray: 5 4; }
+.bpmn .djs-shape.is-fail .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-red) !important; stroke-width: 2.5px !important; fill: color-mix(in srgb, var(--cv-red) 7%, #fff) !important; }
+.bpmn .djs-shape.is-hold .djs-visual > :is(rect, circle, polygon):first-child { stroke: var(--cv-amber) !important; stroke-width: 2.5px !important; stroke-dasharray: 5 4; fill: color-mix(in srgb, var(--cv-amber) 9%, #fff) !important; }
 .bpmn-tip[data-state="fail"], .bpmn-tip[data-state="fail"]::after { background: var(--cv-red); }
-.bpmn-tip[data-state="hold"], .bpmn-tip[data-state="hold"]::after { background: var(--cv-amber); }
+.bpmn-tip[data-state="hold"], .bpmn-tip[data-state="hold"]::after { background: color-mix(in srgb, var(--cv-amber) 72%, #4a2500); }      /* 흰 글자가 읽히게 주황을 짙게 */
 .bpmn-tip:is([data-state="fail"], [data-state="hold"]) i { animation: none; }
 .flow-note { position: absolute; z-index: 4; left: 12px; bottom: 10px; max-width: calc(100% - 150px); margin: 0; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--cv-border); background: var(--cv-tool); color: var(--cv-ink-2); font-size: var(--fs-xs); line-height: 18px; backdrop-filter: blur(6px); }
 .flow-note[hidden] { display: none; }
 .flow-wait { position: absolute; inset: 52px 16px 16px; display: grid; align-content: center; }
-.flow-wait .skeleton { opacity: .18; }
+.flow-wait .skeleton { opacity: .6; }
 .flow-wait .alert { max-width: 560px; justify-self: center; }
 .cv-legend.flow-title { color: var(--cv-ink); font-weight: 600; }
 dialog.flow-dialog > div { width: min(1400px, calc(100vw - 48px)); max-width: none; padding: 0; overflow: hidden; background: var(--cv-bg); border-color: var(--cv-border); }
@@ -130,6 +132,7 @@ dialog.flow-dialog .canvas { height: min(760px, calc(100dvh - 96px)); border: 0;
 .step-now { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: var(--fs-sm); color: var(--muted-foreground); }
 .step-main > .fold { margin-top: 2px; }
 .step-main > .fold > summary { padding: 6px 0; color: var(--muted-foreground); }
+.step-rest > .fold-body { padding-bottom: 6px; max-width: 70ch; font-size: var(--fs-sm); line-height: 21px; color: var(--ink-2); }
 .rest { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted-foreground); font-size: var(--fs-sm); }
 .rest .ic { width: 12px; height: 12px; color: var(--ink-4); }
 .rest-fork { margin-top: 6px; font-size: var(--fs-sm); color: var(--muted-foreground); }
@@ -272,3 +275,4 @@ ol.cr-list { list-style: decimal; }
 .cr-notice .ic, .turn-notice .ic { width: 14px; height: 14px; flex: none; margin-top: 3px; color: var(--muted-foreground); }
 .turn-notice { margin-top: 8px; }
 .turn-notice-line { margin: 0 0 6px; font-size: var(--fs-sm); line-height: 20px; color: var(--ink-2); }
+@media (max-width: 640px) { .case-head { flex-wrap: nowrap; } .case-head > .pane-title { flex-basis: 0; } .case-head > .pane-acts { margin-left: 0; } }

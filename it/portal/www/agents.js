@@ -174,16 +174,16 @@
       const tools = d.tools.length ? d.tools.map(t => `<button type="button" class="use" data-goto-server="${esc(t.name)}">${icon('plug')}<span><b>${esc(serverName(t.name, t.description))}</b></span>` +
         `<span class="muted"><i class="dot" data-tone="${t.registered ? 'ok' : 'danger'}"></i>${t.registered ? '연결됨' : '등록 안 됨'}</span></button>`).join('')
         : '<p class="muted">도구 서버를 정하지 않아, 등록된 도구 서버를 모두 씁니다.</p>';
-      html += `<div class="pane-grid"><div class="panel-sec"><h3>${icon('file-text', 'ic-sm')}스킬<span class="muted num">${d.skills ? d.skills.length : ''}</span></h3>${skills}</div>` +
-        `<div class="panel-sec"><h3>${icon('plug', 'ic-sm')}도구 서버<span class="muted num">${d.tools.length || ''}</span></h3>${tools}</div></div>` +
+      html += `<div class="pane-grid"><div class="panel-sec"><h3>스킬<span class="muted num">${d.skills ? d.skills.length : ''}</span></h3>${skills}</div>` +
+        `<div class="panel-sec"><h3>도구 서버<span class="muted num">${d.tools.length || ''}</span></h3>${tools}</div></div>` +
         (docSkill(d) ? `<div class="panel-sec" data-skill-doc-box></div>` : '');
     }
-    html += `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}맡은 단계<span class="muted num">${d.steps.length || ''}</span></h3>` +
+    html += `<div class="panel-sec"><h3>맡은 단계<span class="muted num">${d.steps.length || ''}</span></h3>` +
       (d.steps.length ? d.steps.map(stepUse).join('') : UI.empty({ title: '맡은 단계가 없습니다', sub: isAgent ? '[담당 배정]에서 단계를 맡기거나, 흐름 화면의 단계 설정에서 이 에이전트를 고르면 여기에 보입니다.' : '이 수행자를 쓰는 흐름 단계가 없습니다.', cls: 'compact',
           action: isAgent ? { label: '담당 배정 열기', attrs: 'data-goto-assign', icon: 'arrow-right' } : null })) + '</div>';
     if (isAgent) {
       const rules = d.work_rules_detail?.error ? d.work_rules_detail.error : d.work_rules_detail ? d.work_rules_detail.label : d.work_rules ? '작업 규칙 내용을 읽지 못했습니다' : '공통 안전 규칙만 적용';
-      html += `<div class="panel-sec"><h3>${icon('sliders-horizontal', 'ic-sm')}설정${d.editable ? '<span class="muted">다음 실행부터 적용</span>' : ''}</h3>` +
+      html += `<div class="panel-sec"><h3>설정${d.editable ? '<span class="muted">다음 실행부터 적용</span>' : ''}</h3>` +
         kv([['역할', esc(d.role || '')], ['성격 · 말투', d.persona ? longText('persona:' + d.id, d.persona) : ''], ['모델', esc(modelText(d.model))], ['작업 규칙', esc(rules)]]) + '</div>';
       if (d.work_rules_detail && !d.work_rules_detail.error) html += `<div class="panel-sec pane-fold"><details class="fold"><summary>작업 규칙 전문<span class="muted">${esc(d.work_rules_detail.label)}</span></summary><div class="fold-body"><div class="doc prose" data-md="${esc(d.work_rules_detail.content)}"></div></div></details></div>`;
       const run = d.run || {};
@@ -220,7 +220,7 @@
   async function drawSkillDoc() {
     const box = st.host.querySelector('[data-skill-doc-box]'), d = st.detail; if (!box || !d) return;
     const name = docSkill(d);
-    box.innerHTML = `<h3>${icon('book-open', 'ic-sm')}스킬 문서</h3><div class="doc"><div class="skeleton sk-line" style="width:40%;height:16px"></div><div class="skeleton sk-line" style="margin-top:12px"></div><div class="skeleton sk-line" style="margin-top:8px;width:80%"></div></div>`;
+    box.innerHTML = `<h3>스킬 문서</h3><div class="doc"><div class="skeleton sk-line" style="width:40%;height:16px"></div><div class="skeleton sk-line" style="margin-top:12px"></div><div class="skeleton sk-line" style="margin-top:8px;width:80%"></div></div>`;
     try {
       const s = await getJ(api('/api/skills/' + encodeURIComponent(name)));
       if (!box.isConnected || st.detail !== d || docSkill(d) !== name) return;
@@ -247,10 +247,10 @@
       `<button type="button" class="btn" data-variant="ghost" data-size="icon" data-del-skill aria-label="지우기" data-tooltip="지우기" data-side="bottom">${icon('trash-2')}</button>` : '';
     return `<div class="panel-head pane-head"><span class="pane-ic">${icon('file-text')}</span><div class="pane-title"><h2>${esc(s.title)}</h2>` +
       `<p>${esc(s.description || (mine ? '설명이 적혀 있지 않습니다.' : ''))}</p></div><div class="pane-acts">${acts}</div></div>` +
-      `<div class="panel-sec"><h3>${icon('book-open', 'ic-sm')}스킬 문서<span class="muted">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 SKILL.md로 들어갑니다' : '기본 제공 스킬은 고칠 수 없습니다. 새 스킬을 만들어 씁니다'}</span></h3>` +
+      `<div class="panel-sec"><h3>스킬 문서<span class="muted">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 SKILL.md로 들어갑니다' : '기본 제공 스킬은 고칠 수 없습니다. 새 스킬을 만들어 씁니다'}</span></h3>` +
       `<div class="doc"><div class="doc-bar">${icon('file-text', 'ic-sm')}<span class="mono">${esc(s.skill_name)}/SKILL.md</span><span class="num">${(s.content || '').length.toLocaleString('ko-KR')}자</span></div><div class="prose" data-md="${esc(s.content || '')}"></div></div></div>` +
-      `<div class="panel-sec"><h3>${icon('bot', 'ic-sm')}붙은 에이전트</h3>${agents}${attach}</div>` +
-      (s.steps.length ? `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}선언한 단계<span class="muted num">${s.steps.length}</span></h3>${s.steps.map(stepUse).join('')}</div>` : '') +
+      `<div class="panel-sec"><h3>붙은 에이전트</h3>${agents}${attach}</div>` +
+      (s.steps.length ? `<div class="panel-sec"><h3>선언한 단계<span class="muted num">${s.steps.length}</span></h3>${s.steps.map(stepUse).join('')}</div>` : '') +
       `<div class="panel-sec pane-fold"><details class="fold"><summary>폴더 이름 · 고친 시각</summary><div class="fold-body">${kv([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`],
         ['고친 시각', s.updated_at ? esc(UI.dateTime(s.updated_at)) : '']])}</div></details></div>`;
   }
@@ -354,7 +354,7 @@
         `${st.savedMap === s.definition_id + '|' + s.activity_id ? tag(st.savedNote, st.savedTone) : ''}</span></td></tr>`;
     }).join('');
     const steps = `<div class="panel-head"><div><h2>단계별 담당 AI 에이전트</h2><p>흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다. <b>고르면 바로 저장됩니다.</b></p></div></div>` +
-      `<div class="panel-sec">${closedWhy.map(w => `<div class="alert" role="status">${icon('lock')}<h2>지금은 일부 단계의 담당을 바꿀 수 없습니다</h2><section>${esc(w)}</section></div>`).join('')}` +
+      `<div class="panel-sec">${closedWhy.map(w => `<details class="fold lock-note" data-plain role="status"><summary>${icon('lock', 'ic-sm')}지금은 일부 단계의 담당을 바꿀 수 없습니다</summary><div class="fold-body">${esc(w)}</div></details>`).join('')}` +
       (rows ? `<div class="table-container"><table class="table"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th></tr></thead><tbody>${rows}</tbody></table></div>`
         : UI.empty('에이전트가 맡는 단계가 없습니다', '흐름을 등록하면 그 흐름의 AI 단계가 여기에 나옵니다.')) + `</div>`;
     // 쓰는 사람은 늘 이 PC의 담당자 한 명이고 모든 역할을 맡는다(새 역할도 서버 agent_authoring.create_role 이 담당자를 넣는다) — 사람을 넣고 빼는 칸이 없다.
@@ -366,7 +366,7 @@
       return `<li><div class="flow-ver"><b>${esc(UI.performers[r.id] || r.name)}</b>${mine ? originTag('user') : ''}` +
         (mine ? `<span class="flow-ver-acts"><button type="button" class="btn" data-variant="ghost" data-size="sm" data-role-del="${esc(r.id)}">${icon('trash-2')}지우기</button></span>` : '') + `</div>${none}</li>`;
     }).join('');
-    const people = `<div class="panel-sec"><h3>${icon('user-check', 'ic-sm')}역할<span class="muted">모든 역할은 이 PC의 담당자가 맡습니다</span></h3>` +
+    const people = `<div class="panel-sec"><h3>역할<span class="muted">모든 역할은 이 PC의 담당자가 맡습니다</span></h3>` +
       `<p class="muted">사람 단계는 그 단계의 역할 이름으로 처리 건의 「내가 할 일」에 뜹니다.</p>` +
       (roles ? `<ul class="flow-vers">${roles}</ul>` : UI.empty('역할이 없습니다', '아래에서 역할을 만듭니다.')) +
       `<fieldset class="fieldset ag-role-new"><legend>역할 만들기</legend><div role="group">` +

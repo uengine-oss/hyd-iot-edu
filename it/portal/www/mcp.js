@@ -204,9 +204,9 @@
         `<button type="button" class="btn" data-variant="ghost" data-size="icon" id="mcpDelete" aria-label="지우기" data-tooltip="지우기" data-side="bottom"${reg()}>${icon('trash-2')}</button>` : '') +
       `</div></div>` +
       `<div class="panel-sec mcp-state">${gateLine(s, r)}${status}</div>` +
-      `<div class="panel-sec"><h3>${icon('bot', 'ic-sm')}쓰는 에이전트<span class="muted num">${s.agents.length || ''}</span></h3><div class="mcp-uses">${agents}</div></div>` +
-      (calls ? `<div class="panel-sec" data-mcp-calls><h3>${icon('zap', 'ic-sm')}이 서버를 부르는 흐름 단계<span class="muted num">${s.flow_steps.length}</span></h3><div class="mcp-steps">${calls}</div></div>` : '') +
-      `<div class="panel-sec" data-mcp-flows><h3>${icon('workflow', 'ic-sm')}이 서버로 도는 흐름<span class="muted num">${byFlow.size || ''}</span></h3><div class="mcp-steps">${steps || '<p class="muted">이 서버로 도는 에이전트 단계가 없습니다.</p>'}</div></div>` +
+      `<div class="panel-sec"><h3>쓰는 에이전트<span class="muted num">${s.agents.length || ''}</span></h3><div class="mcp-uses">${agents}</div></div>` +
+      (calls ? `<div class="panel-sec" data-mcp-calls><h3>이 서버를 부르는 흐름 단계<span class="muted num">${s.flow_steps.length}</span></h3><div class="mcp-steps">${calls}</div></div>` : '') +
+      `<div class="panel-sec" data-mcp-flows><h3>이 서버로 도는 흐름<span class="muted num">${byFlow.size || ''}</span></h3><div class="mcp-steps">${steps || '<p class="muted">이 서버로 도는 에이전트 단계가 없습니다.</p>'}</div></div>` +
       `<div class="panel-sec"><div class="tabs view-tabs" data-size="sm"><nav role="tablist" aria-orientation="horizontal" aria-label="보기">${seg}</nav></div><div id="mcpPane"></div></div>` +
       `<div class="panel-sec pane-fold"><details class="fold"><summary>연결 설정</summary><div class="fold-body">${kv(settings.map(([k, v]) => [k, v ? `<code class="inline">${esc(v)}</code>` : '']))}` +
         `<p class="muted">비밀 값은 ******** 로 가려 보입니다. ${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기본 제공 서버는 고치거나 지울 수 없습니다. 내 서버는 새 이름으로 등록해 씁니다.'}</p></div></details></div>`;
@@ -568,11 +568,11 @@
     }));
   }
 
-  // 수업 경계에 묶인 단추(서버 등록) — 서버가 tool_servers.register 를 막으면 머리의 주 단추를 그리지 않고(꺼진 주 단추를 가장 진한 자리에 두지 않는다) 그 까닭이 머리 아래에 한 판으로 보인다.
+  // 수업 경계에 묶인 단추(서버 등록) — 서버가 tool_servers.register 를 막으면 머리의 주 단추를 그리지 않고(꺼진 주 단추를 가장 진한 자리에 두지 않는다) 그 까닭이 서버 목록 아래의 한 줄(누르면 까닭 전문이 펼쳐진다)로 보인다.
   // 되돌리기는 관리 › 내 설정 한 곳에 있고 같은 키로 잠긴다(configBundle.js SCOPES)
   function renderOperator() {
     const why = window.hydCourseAccess.blocked(REGISTER);
-    S.el.querySelector('[data-mcp-why]').innerHTML = why ? `<div class="alert" role="status">${icon('lock')}<h2>지금은 도구 서버를 등록 · 고치기 · 지우기 할 수 없습니다</h2><section>${esc(why)}</section></div>` : '';
+    S.el.querySelector('[data-mcp-why]').innerHTML = why ? `<details class="fold lock-note" data-plain role="status"><summary>${icon('lock', 'ic-sm')}지금은 서버를 등록 · 고치기 · 지우기 할 수 없습니다</summary><div class="fold-body">${esc(why)}</div></details>` : '';
     S.el.querySelector('#mcpAdd').outerHTML = `<button type="button" class="btn" id="mcpAdd"${reg()}${S.form || why ? ' hidden' : ''}>${icon('plus')}서버 등록</button>`;
     S.el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
   }
@@ -582,8 +582,7 @@
     S.el = el;
     // 차례: 제목 · 한 문장 · 주 단추 하나 → 왼쪽 서버 목록 · 오른쪽 상세(등록 폼도 이 자리) → 맨 아래 「비밀 값」 접기와 「관리에서 되돌리기」 한 줄
     el.innerHTML = UI.pageHead('mcp', { sub: '에이전트가 읽고 부르는 도구 서버(MCP)와 그 도구를 보고, 직접 불러 결과를 확인합니다.', tools: '<button type="button" class="btn" id="mcpAdd" hidden>서버 등록</button>', more: [{ act: 'reload', attrs: 'id="mcpReload"' }] }) +
-      `<div class="mcp-why" data-mcp-why></div>` +
-      `<div class="split"><div class="pane-side"><div class="rows" id="mcpServers" aria-label="도구 서버 목록"></div></div><section class="panel" id="mcpPanel" aria-label="고른 도구 서버"><div id="mcpForm"></div><div id="mcpDetail"></div></section></div>` +
+      `<div class="split"><div class="pane-side"><div class="rows" id="mcpServers" aria-label="도구 서버 목록"></div><div class="mcp-why" data-mcp-why></div></div><section class="panel" id="mcpPanel" aria-label="고른 도구 서버"><div id="mcpForm"></div><div id="mcpDetail"></div></section></div>` +
       `<details class="fold pane-foot" id="mcpOperator"><summary>비밀 값<span class="muted" data-tone="danger" data-mcp-missing></span></summary><div class="fold-body"><div id="mcpSecrets"></div></div></details>` +
       UI.resetLink('mcp', '내가 등록한 도구 서버와 비밀 값을');
     el.querySelector('#mcpReload').addEventListener('click', () => load());

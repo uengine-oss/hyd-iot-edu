@@ -178,6 +178,10 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             _open(page, 'admin')
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
             # 절의 글: 지우는 것에 지식(적재한 문서 · 표 정의 · 화면에서 만든 조치 방법)이 들어 있고, 남는 것은 한 줄이다
+            # 긴 목록은 접기 하나에 있다(처음에는 접혀 있고, 펴면 전부 보인다)
+            assert page.locator('#cfgResetWhat details').evaluate('d => d.open') is False
+            page.locator('#cfgResetWhat summary').click()
+            page.wait_for_function("document.querySelector('#cfgResetWhat').innerText.includes('남는 것 ')", timeout=3000)      # 접기가 펴지는 움직임이 끝난 뒤에 읽는다
             what = page.inner_text('#cfgResetWhat')
             assert '내가 적재한 문서의 지식' in what and '업무 DB 표 정의' in what and '화면에서 만든 조치 방법' in what
             assert page.locator('#cfgResetWhat [data-reset-keeps]').count() == 1 and '처리 건과 처리 건 기록' in page.inner_text('#cfgResetWhat [data-reset-keeps]')

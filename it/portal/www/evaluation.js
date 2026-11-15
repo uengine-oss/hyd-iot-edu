@@ -42,9 +42,9 @@
       ${UI.pageHead('eval', { sub: '사람이 적은 정답표에 판단을 대어 점수를 내고, 지식을 고치기 전과 후를 비교합니다.', more: [{ act: 'reload', attrs: 'data-act="reload"' }] })}
       <div class="io-bar"><div class="tabs view-tabs"><nav role="tablist" aria-orientation="horizontal" aria-label="보기" data-r="seg"></nav></div><span class="muted" data-r="knowledge"></span></div>
       <div data-view="run">
-        <div class="io"><form class="panel io-in" data-r="runform" aria-label="채점 조건"></form>
-          <div class="io-out" aria-live="polite"><div data-r="live" hidden></div><div data-r="cands" hidden></div><div data-r="detail"></div>
-            <section class="panel"><div class="panel-head"><div><h2>지난 실행</h2></div></div><div class="panel-sec" data-r="runs"></div></section></div></div>
+        <div class="io"><div class="io-in"><form class="panel" data-r="runform" aria-label="채점 조건"></form>
+            <aside class="io-past" aria-label="지난 실행"><h3>지난 실행</h3><div data-r="runs"></div></aside></div>
+          <div class="io-out" aria-live="polite"><div data-r="live" hidden></div><div data-r="cands" hidden></div><div data-r="detail"></div></div></div>
       </div>
       <div data-view="golden" hidden>
         <div class="io-out">
@@ -283,13 +283,13 @@
   }
 
   /* ---------------------------------------------------------------- 3. 실행 기록 */
-  // 지난 실행: 표 한 장(시각 · 판단 경로 · 항목 · 평균 · 메모). 줄을 누르면(또는 Enter) 위 결과 자리에 그 실행이 열린다
+  // 지난 실행: 왼쪽 칸(조건 아래)의 목록 — 줄 = 시각 · 판단 경로 + 평균 점수 / 항목 수 · 메모. 줄을 누르면 오른쪽 결과 자리에 그 실행이 열린다
   function renderRuns() {
     const host = q('[data-r="runs"]');
-    if (!E.runs.length) { host.innerHTML = UI.empty('아직 채점 실행이 없습니다', '정답표를 적고 [채점 실행]을 누르면 여기에 남습니다.', 'compact'); return; }
-    host.innerHTML = `<div class="table-container"><table class="table eval-runs"><thead><tr><th>시각</th><th>판단 경로</th><th class="num">항목</th><th class="num">평균</th><th>메모</th></tr></thead><tbody>${E.runs.map(r =>
-      `<tr data-run="${esc(r.id)}" tabindex="0" role="button"${r.id === E.sel ? ' data-pick aria-current="true"' : ''}><td>${esc(UI.dateTime(r.created))}</td><td>${esc(PATH[r.path] || r.path)}</td><td class="num">${esc(r.summary.items)}</td><td class="num"><b>${esc(r.summary.score)}</b>점</td><td class="muted">${esc(r.note || '')}</td></tr>`).join('')}</tbody></table></div>`;
-    host.querySelectorAll('tr[data-run]').forEach(tr => tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tr.click(); } }));
+    if (!E.runs.length) { host.innerHTML = `<p class="muted">정답표를 적고 [채점 실행]을 누르면 여기에 남습니다.</p>`; return; }
+    host.innerHTML = `<div class="rows eval-runs">${E.runs.map(r =>
+      `<button type="button" class="row" data-run="${esc(r.id)}"${r.id === E.sel ? ' data-pick aria-current="true"' : ''}><span class="row-ic">${UI.icon('clipboard-check')}</span><span class="row-title">${esc(UI.dateTime(r.created))}</span><span class="tag" data-plain><b class="num">${esc(r.summary.score)}</b>점</span>` +
+      `<span class="row-meta">${esc(PATH[r.path] || r.path)} · 항목 ${esc(r.summary.items)}개${r.note ? ' · ' + esc(r.note) : ''}</span></button>`).join('')}</div>`;
   }
   // 검사 한 줄: 맞음 · 틀림은 상태 뱃지(점 + 글)로, 그 뒤에 판단과 정답
   function checkLine(key, c) {
@@ -331,7 +331,7 @@
   // 결과의 차례: 평균 점수(결론) → 검사 네 가지의 맞은 수 → 항목별
   function renderDetail() {
     const host = q('[data-r="detail"]'), r = E.run;
-    if (!r) { host.innerHTML = `${UI.empty({ icon: 'clipboard-check', title: `아직 고른 채점 실행이 없습니다`, sub: `왼쪽에서 [채점 실행]을 누르거나 아래 「지난 실행」에서 한 줄을 고르면 항목별 점수와 검사 네 가지가 보입니다.` })}`; return; }
+    if (!r) { host.innerHTML = `${UI.empty({ icon: 'clipboard-check', title: `아직 고른 채점 실행이 없습니다`, sub: `왼쪽에서 [채점 실행]을 누르거나 「지난 실행」에서 한 줄을 고르면 항목별 점수와 검사 네 가지가 보입니다.` })}`; return; }
     const s = r.summary, of = k => `<span class="num">${esc(s[k])}</span><small>/ ${esc(s.items)}</small>`;
     const extra = [s.withheld ? `판단 없음(보류 · 오류) ${esc(s.withheld)}개` : '', s.unstable ? `흔들림 ${esc(s.unstable)}개` : ''].filter(Boolean).join(' · ');
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>평균 ${esc(s.score)}점 — 항목 ${esc(s.items)}개 · ${esc(PATH[r.path] || r.path)}</h2>` +

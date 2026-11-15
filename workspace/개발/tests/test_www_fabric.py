@@ -4,7 +4,7 @@ import pytest
 from www_node import run
 
 FILES = ['ui.js', 'plainWords.js', 'fabric.js']
-EL = "const el = { innerHTML: '', addEventListener: () => {} };"
+EL = "const el = { innerHTML: '', addEventListener: () => {}, querySelector: () => null };"      # 화면이 다시 그릴 때 표 목록의 스크롤 자리를 찾는다 — 이 대역에는 목록이 없다
 
 
 # 서버 요청(app.js getJ — 브라우저 밖에서는 실리지 않는다)만 시스템 밖 대역으로 둔다. 화면 코드(fabric.js)는 실제 파일 그대로다.
