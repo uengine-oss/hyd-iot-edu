@@ -16,14 +16,14 @@
 <circle cx="0" cy="-22" r="18" fill="#FFFFFF" stroke="#13294B" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M -34,34 Q -34,2 0,2 Q 34,2 34,34 Z" stroke="#13294B" stroke-width="2.05" fill="#FFFFFF" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
-<g transform="translate(725 362) scale(1.15)">
-<line x1="0" y1="-44" x2="0" y2="-30" stroke="#13294B" stroke-width="2.59" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="0" cy="-48" r="5" fill="#5CB8F2" stroke="#13294B" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="-40" y="-30" width="80" height="62" rx="14" ry="14" fill="#FFFFFF" stroke="#13294B" stroke-width="2.59" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="-16" cy="-4" r="7" fill="#5CB8F2" stroke="#13294B" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="16" cy="-4" r="7" fill="#5CB8F2" stroke="#13294B" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-14" y1="16" x2="14" y2="16" stroke="#13294B" stroke-width="2.59" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-48" y1="-6" x2="-40" y2="-6" stroke="#13294B" stroke-width="3.70" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="40" y1="-6" x2="48" y2="-6" stroke="#13294B" stroke-width="3.70" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(725 360) scale(1.05)">
+<rect x="-58" y="-46" width="116" height="76" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="2.83" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="0" y1="30" x2="0" y2="44" stroke="#13294B" stroke-width="4.05" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-26" y1="45" x2="26" y2="45" stroke="#13294B" stroke-width="4.05" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="-30" x2="36" y2="-30" stroke="#13294B" stroke-width="2.83" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="-17" x2="14" y2="-17" stroke="#13294B" stroke-width="2.83" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="-4" x2="36" y2="-4" stroke="#13294B" stroke-width="2.83" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="9" x2="14" y2="9" stroke="#13294B" stroke-width="2.83" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="22" x2="36" y2="22" stroke="#13294B" stroke-width="2.83" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>
