@@ -6,8 +6,8 @@
 
 /* ───────── 목록(왼쪽) ───────── */
 #instBanner:empty, #todoRoles:empty { display: none; }
-#instBanner { margin-bottom: 16px; }
-.case-side { display: grid; gap: 12px; min-width: 0; align-content: start; }
+#instBanner { margin-bottom: var(--gap-block); }
+.case-side { display: grid; gap: 16px; min-width: 0; align-content: start; }
 .case-side .rows { max-height: calc(100dvh - 260px); overflow-y: auto; }
 .case-side .rows > .row[data-job] .row-title, .rows > a.row[data-read] .row-title { font-weight: 450; color: var(--ink-2); }      /* 시스템 작업(질문 · 문서 추출)과 읽은 알림은 사건보다 가볍게 */
 .case-side .rows > .empty, .case-side .rows > .alert { border: 0; border-radius: 0; }
@@ -26,10 +26,10 @@
 
 /* ───────── 한 건: 머리 ───────── */
 .case > :is(.empty, .alert, .loading) { margin-top: 0; }
-.case-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.case-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: var(--gap-block); }
 .case-head > div:first-child { min-width: 0; }
-.case-title { font-size: var(--fs-lg); line-height: 28px; font-weight: 650; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.case-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-sm); color: var(--muted-foreground); }
+.case-title { font-size: var(--fs-lg); line-height: 28px; font-weight: 600; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.case-meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--fs-sm); color: var(--muted-foreground); }
 .case-meta span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .case-meta .ic { width: 13px; height: 13px; flex: none; }
 .case-meta .mono { font-size: var(--fs-xs); }
@@ -44,21 +44,21 @@
 .turn-head > div { min-width: 0; }
 .turn-head p { margin-top: 4px; color: var(--ink-2); max-width: 64ch; }
 .turn-eyebrow .late:empty { display: none; }
-.turn-more { padding: 16px 20px; border-top: 1px solid #e6e8fb; background: #fff; display: grid; gap: 14px; min-width: 0; }
+.turn-more { padding: var(--pad-card-y) var(--pad-card); border-top: 1px solid #e6e8fb; background: #fff; display: grid; gap: 14px; min-width: 0; }
 .turn-facts + .turn-more { border-top: 0; }
 .turn-more .field.turn-reason { max-width: 720px; }
 .turn-more .field.turn-reason textarea { width: 100%; }
 .turn-more .fieldset > [role="group"]:empty { display: none; }
 .turn-more .turn-check { padding-top: 12px; border-top: 1px solid var(--border); }
-.turn-more .turn-check h4 { font-size: var(--fs-sm); font-weight: 650; }
+.turn-more .turn-check h4 { font-size: var(--fs-sm); font-weight: 600; }
 .turn-foot { border-top: 1px solid #eef0f6; }
-.turn-msg { margin: 0; padding: 0 20px 14px; background: #fff; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
+.turn-msg { margin: 0; padding: 0 var(--pad-card) 16px; background: #fff; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
 .turn-msg[data-tone="danger"] { color: var(--danger-ink); }
 .stuck-list { display: grid; gap: 10px; margin: 6px 0 0; padding: 0; list-style: none; }
 .stuck-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .case-result { margin-top: 0; }
 .case-result .result-label .tag { margin-right: 2px; }
-.case-result .kv { padding: 0 16px 14px; }
+.case-result .kv { padding: 0 20px 18px; }
 .case-result .kv dd[data-bad] { color: var(--danger-ink); font-weight: 600; }
 
 /* 승인 판의 「다른 안 고르기」: 고를 수 있는 안 전부를 후보 비교 표(.opts)로 */
@@ -123,7 +123,7 @@ dialog.flow-dialog .canvas { height: min(760px, calc(100dvh - 96px)); border: 0;
 }
 
 /* ───────── 단계 기록(.steps) ───────── */
-#instRecord { display: grid; gap: 12px; }
+#instRecord { display: grid; gap: 16px; }
 #instRecord .step { scroll-margin-top: 68px; }
 #instRecord .step-main { border-radius: 8px; transition: background-color .4s var(--ease), box-shadow .4s var(--ease); }
 #instRecord .step[data-flash] .step-main { background: var(--brand-soft); box-shadow: 0 0 0 6px var(--brand-soft); }
@@ -239,12 +239,12 @@ ol.cr-list { list-style: decimal; }
 @media (max-width: 640px) { .cr-r, .tg-line { grid-template-columns: 52px minmax(0, 1fr); } }
 
 /* ───────── 「자세한 기록」 접기(한 건의 맨 아래 하나) ───────── */
-.case-more { margin-top: 32px; }
+.case-more { margin-top: var(--gap-sec); }
 .case-more > .fold-body { padding-left: 0; }
 #caseMoreTabs { flex-wrap: wrap; max-width: 100%; }
 .case-more-pane { margin-top: 16px; min-width: 0; display: grid; gap: 10px; }
 .case-more-pane[hidden] { display: none; }
-.case-sub { font-size: var(--fs-sm); line-height: 20px; font-weight: 650; margin-top: 8px; }
+.case-sub { font-size: var(--fs-sm); line-height: 20px; font-weight: 600; margin-top: 8px; }
 .case-sub:first-child { margin-top: 0; }
 .case-table td { overflow-wrap: normal; word-break: keep-all; vertical-align: top; }
 .case-table tr:is([data-status="CANCELLED"], [data-status="TODO"]) td { color: var(--muted-foreground); }
@@ -267,7 +267,7 @@ ol.cr-list { list-style: decimal; }
 .flow-cap > [data-flow-note]:not([hidden])::before { content: "· "; }
 .rework-who { display: grid; gap: 12px; margin-top: 12px; }
 /* 실행의 알림 줄(재생한 결과 글의 조회 값 안내 등): AI 단계의 결론 아래와, 그 글을 읽고 결정하는 「내가 할 일」 카드 */
-.cr-notices { padding: 0 16px 12px; display: grid; gap: 6px; }
+.cr-notices { padding: 0 20px 16px; display: grid; gap: 6px; }
 .cr-notice, .turn-notice { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: var(--fs-sm); line-height: 20px; color: var(--ink-2); }
 .cr-notice .ic, .turn-notice .ic { width: 14px; height: 14px; flex: none; margin-top: 3px; color: var(--muted-foreground); }
 .turn-notice { margin-top: 8px; }

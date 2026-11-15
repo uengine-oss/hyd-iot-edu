@@ -252,13 +252,17 @@
     <div data-doc-pane="manual">
       <div class="panel doc-panel" id="manualUpload">
         <div class="stream-phases doc-phases" id="manualSteps" role="list" aria-label="문서 등록 단계"></div>
+        <!-- 올리기 단계의 두 길(hitl.js showPick): 제공 문서에서 고르기(목록의 줄을 누르면 그 문서를 바로 올린다) · 내 파일 올리기(파일 고르기 + 새 문서 / 개정) -->
         <div class="panel-sec" id="manualPick">
-          <fieldset class="fieldset"><legend>올릴 문서</legend><div role="group">
-            <div role="group" class="field"><label for="manualFile">매뉴얼 파일</label><label class="file-picker"><span class="btn" data-variant="outline" data-size="sm">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label>
-              <p>제공 문서를 눌러 내려받은 뒤 올릴 수 있습니다.</p><div class="chips" id="providedDocs"></div></div>
-            <div role="group" class="field"><label for="manualDocumentId">등록할 문서</label><select class="select" id="manualDocumentId" aria-describedby="manualDocumentHelp"><option value="">새 문서 등록</option></select><p id="manualDocumentHelp">이미 등록한 문서의 개정판이면 그 문서를 선택하세요. 처음 올리는 문서는 그대로 둡니다.</p></div>
-          </div></fieldset>
-          <footer class="form-foot"><span id="manualStatus" class="muted" role="status"></span><button type="button" class="btn" id="manualPreview" data-icon="upload">문서 올리기</button></footer>
+          <div class="doc-review-bar"><div class="seg" role="group" aria-label="올릴 문서 고르는 방법"><button type="button" aria-pressed="true" data-pick-mode="provided">제공 문서에서 고르기</button><button type="button" aria-pressed="false" data-pick-mode="file">내 파일 올리기</button></div><span class="muted" data-pick="provided">문서를 고르면 바로 올립니다.</span></div>
+          <div data-pick="provided" id="providedDocs"></div>
+          <div data-pick="file" hidden>
+            <fieldset class="fieldset"><legend>올릴 문서</legend><div role="group">
+              <div role="group" class="field"><label for="manualFile">매뉴얼 파일</label><label class="file-picker"><span class="btn" data-variant="outline" data-size="sm">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label></div>
+              <div role="group" class="field"><label for="manualDocumentId">등록할 문서</label><select class="select" id="manualDocumentId" aria-describedby="manualDocumentHelp"><option value="">새 문서 등록</option></select><p id="manualDocumentHelp">이미 등록한 문서의 개정판이면 그 문서를 선택하세요. 처음 올리는 문서는 그대로 둡니다.</p></div>
+            </div></fieldset>
+            <footer class="form-foot"><span id="manualStatus" class="muted" role="status"></span><button type="button" class="btn" id="manualPreview" data-icon="upload">문서 올리기</button></footer>
+          </div>
         </div>
         <div id="manualResult"></div>
       </div>
@@ -269,12 +273,18 @@
       <div class="panel doc-panel" id="ddlUpload">
         <div class="stream-phases doc-phases" id="ddlSteps" role="list" aria-label="업무 DB 표 정의 연결 단계"></div>
         <div class="panel-sec" id="ddlPick">
-          <fieldset class="fieldset"><legend>올릴 표 정의</legend><div role="group">
-            <div role="group" class="field"><label for="ddlFile">스키마 파일</label><label class="file-picker"><span class="btn" data-variant="outline" data-size="sm">파일 선택</span><input type="file" id="ddlFile" accept=".sql,.txt,.ddl" aria-label="스키마 파일 선택"><span class="file-name" id="ddlFilename">선택한 파일 없음</span></label>
-              <p>업무 DB의 표 정의(CREATE TABLE)입니다.</p><div class="chips"><a class="chip" href="samples/legacy-plant-db.sql" download><span data-icon="download"></span><span>옛 설비 DB 예시</span></a></div></div>
-            <div role="group" class="field"><label for="ddlCatalog">데이터베이스</label><input class="input" id="ddlCatalog" value="postgres"><p>그 연결 안의 데이터베이스 이름입니다. 예시 파일은 그대로 둡니다.</p></div>
-          </div></fieldset>
-          <footer class="form-foot"><span id="ddlStatus" class="muted" role="status"></span><button type="button" class="btn" id="ddlPreview" data-icon="upload">표 정의 올리기</button></footer>
+          <div class="doc-review-bar"><div class="seg" role="group" aria-label="올릴 표 정의 고르는 방법"><button type="button" aria-pressed="true" data-pick-mode="provided">제공 예시에서 고르기</button><button type="button" aria-pressed="false" data-pick-mode="file">내 파일 올리기</button></div><span class="muted" data-pick="provided">예시를 고르면 바로 읽습니다.</span></div>
+          <div data-pick="provided" id="providedDdl"><div class="rows doc-prov" aria-label="제공 예시">
+            <button type="button" class="row" data-provided="legacy-plant-db.sql"><span class="row-ic"><span data-icon="database"></span></span><span class="row-title">옛 설비 DB 예시</span><span data-prov-tag></span><span class="row-meta">legacy-plant-db.sql · 업무 DB의 표 정의(CREATE TABLE)</span></button>
+            <a class="btn" data-variant="link" data-size="sm" href="samples/legacy-plant-db.sql" target="_blank" rel="noopener" data-provided-view="legacy-plant-db.sql">원문 보기</a></div></div>
+          <div data-pick="file" hidden>
+            <fieldset class="fieldset"><legend>올릴 표 정의</legend><div role="group">
+              <div role="group" class="field"><label for="ddlFile">스키마 파일</label><label class="file-picker"><span class="btn" data-variant="outline" data-size="sm">파일 선택</span><input type="file" id="ddlFile" accept=".sql,.txt,.ddl" aria-label="스키마 파일 선택"><span class="file-name" id="ddlFilename">선택한 파일 없음</span></label>
+                <p>업무 DB의 표 정의(CREATE TABLE)입니다.</p></div>
+              <div role="group" class="field"><label for="ddlCatalog">데이터베이스</label><input class="input" id="ddlCatalog" value="postgres"><p>그 연결 안의 데이터베이스 이름입니다.</p></div>
+            </div></fieldset>
+            <footer class="form-foot"><span id="ddlStatus" class="muted" role="status"></span><button type="button" class="btn" id="ddlPreview" data-icon="upload">표 정의 올리기</button></footer>
+          </div>
         </div>
         <div id="ddlResult"></div>
       </div>

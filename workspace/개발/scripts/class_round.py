@@ -1109,22 +1109,21 @@ def current_batch(r: Round, key: str) -> dict | None:
 
 
 def preview_file(r: Round, key: str) -> str | None:
-    """지식 관리 → 파일 선택 → (이미 적재된 같은 문서면 「문서 개정」) → [문서 등록]. 원문 판본 id(화면의 보관 원본 링크)."""
+    """지식 › 문서 등록 → 올리기 단계의 「제공 문서에서 고르기」 → 그 문서의 줄. 내려받지 않는다 — 화면이 samples/<파일>을 읽어 바로 올리고, 이미 적재된
+    문서면 그 문서의 개정으로 올린다(hitl.js renderProvided). 돌려주는 것은 원문 판본 id(화면의 보관 원본 링크)."""
     page = r.page
     r.tab("knowledge")
     page.locator("#docKinds [data-doc-kind='manual']").click()             # 문서 등록 화면의 보기 「매뉴얼」(앞 실습이 「업무 DB 표 정의」 보기에 두고 갔을 수 있다)
-    opts = page.locator("#manualDocumentId option").evaluate_all("ns => ns.map(n => [n.value, n.textContent])")
-    rev = [v for v, t in opts if v and DOCS[key] in t and "문서 개정" in t]
-    if rev:
-        # 학생 길: 등록된 매뉴얼 카드의 [이 문서 개정]. 앞 미리보기가 화면에 남아 있으면 「등록할 문서」 칸은 잠겨 있고(hitl.js renderPreview),
-        # 같은 파일을 다시 골라도 브라우저는 change 를 내지 않아 풀리지 않는다 — 칸을 직접 고르지 않는다(한바퀴3: 잠긴 칸에 select_option 시간 초과)
-        page.locator(f"#manualHistory [data-manual-revise='{rev[0]}']").first.click()
-    # 앞 문서의 판(② AI 추출 · ③ 검토 · ④ 적재 끝)이 화면에 남아 있으면 파일 고르기 칸이 없다 — 학생처럼 [다른 문서 올리기]로 ① 단계로 돌아간다
+    # 앞 문서의 판(② AI 추출 · ③ 검토 · ④ 적재 끝)이 화면에 남아 있으면 올리기 칸이 없다 — 학생처럼 [다른 문서 올리기]로 ① 단계로 돌아간다
     if page.locator("#manualPick").is_hidden():
         page.locator("#manualNext:visible, #manualAnother:visible").first.click()
         page.locator("#manualPick").wait_for(state="visible", timeout=5000)
-    page.set_input_files("#manualFile", str(SAMPLES / DOCS[key]))
-    page.click("#manualPreview")
+    page.locator("#manualPick [data-pick-mode='provided']").click()        # 앞 실습이 「내 파일 올리기」에 두고 갔을 수 있다
+    row = page.locator(f"#providedDocs [data-provided='{DOCS[key]}']")
+    row.wait_for(state="visible", timeout=15_000)
+    if current_batch(r, key):                                              # 적재된 문서는 줄에 「적재됨」이 붙은 뒤에 누른다(등록 목록을 읽기 전에 누르면 새 문서로 올라간다)
+        r.wait(15, lambda: "적재됨" in row.inner_text(), every=1)
+    row.click()
     # 올리면 ② AI 추출 판(.mprev), 서버가 거절하면 그 자리에 오류 판(UI.errorBlock — .alert[data-variant=destructive])이 나온다(hitl.js #manualPreview)
     page.wait_for_selector("#manualResult .mprev, #manualResult .alert[data-variant='destructive']", timeout=60_000)
     if page.locator("#manualResult .alert[data-variant='destructive']").count():
@@ -1754,6 +1753,10 @@ def lab_05_manual_to_knowledge(r: Round):
     r.check("세 제공 문서가 현재 판본으로 적재돼 있다(시작 7단계)", all(loaded.values()), json.dumps({k: (v or {}).get("batch") for k, v in loaded.items()}, ensure_ascii=False))
     r.tab("knowledge")
     total0 = r.get(f"{r.process}/api/kg/manuals/sources?limit=1")["total"]
+    page.locator("#docKinds [data-doc-kind='manual']").click()
+    if page.locator("#manualPick").is_hidden():      # 앞 실습이 문서의 판(② · ③ · ④ 단계)을 두고 갔으면 ① 단계로 돌아간다
+        page.locator("#manualNext:visible, #manualAnother:visible").first.click()
+    page.locator("#manualPick [data-pick-mode='file']").click()            # 잘못된 파일은 「내 파일 올리기」에서 올린다(제공 문서 목록에는 틀린 파일이 없다)
     page.set_input_files("#manualFile", [])          # 앞 실습(02)이 고른 파일이 이 화면에 남아 있다 — 「파일 없이」는 파일 칸을 비운 뒤다(한바퀴3)
     page.click("#manualPreview")
     said = txt(r, "#manualStatus")                    # 올리기 단추 옆의 안내 줄(hitl.js #manualPreview)
@@ -1823,10 +1826,11 @@ def lab_06_legacy_db(r: Round):
     def load_once(n: int) -> str | None:
         r.tab("knowledge")
         page.locator("#docKinds [data-doc-kind='ddl']").click()            # 문서 등록 화면의 보기 「업무 DB 표 정의」
-        if page.locator("#ddlPick").is_hidden():                           # 앞 파일의 판(② · ③ 단계)이 남아 있으면 파일 고르기 칸이 없다 — [다른 파일 올리기]로 ① 단계로
+        if page.locator("#ddlPick").is_hidden():                           # 앞 파일의 판(② · ③ 단계)이 남아 있으면 올리기 칸이 없다 — [다른 파일 올리기]로 ① 단계로
             page.locator("#ddlAnother").click()
-        page.set_input_files("#ddlFile", str(SAMPLES / "legacy-plant-db.sql"))
-        page.click("#ddlPreview")
+        # 학생 길: 「제공 예시에서 고르기」의 「옛 설비 DB 예시」 줄 — 내려받지 않고 화면이 samples/legacy-plant-db.sql 을 읽어 바로 표와 열 고르기로 간다
+        page.locator("#ddlPick [data-pick-mode='provided']").click()
+        page.locator("#providedDdl [data-provided='legacy-plant-db.sql']").click()
         # 읽으면 ② 표와 열 고르기 판(.mprev), 못 읽으면 그 자리에 오류 판 하나(판 안의 「확인할 것」 알림과 다르다 — hitl.js #ddlPreview)
         page.wait_for_selector("#ddlResult .mprev, #ddlResult > .panel-sec > .alert[data-variant='destructive']", timeout=60_000)
         head = txt(r, "#ddlResult .mprev .result-sub") or txt(r, "#ddlResult")

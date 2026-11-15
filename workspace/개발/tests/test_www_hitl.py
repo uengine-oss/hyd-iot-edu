@@ -1,7 +1,10 @@
-"""문서 등록 화면(it/portal/www/hitl.js)의 업무 DB 표 정의 연결 이력 — 되돌리기 결과 문장이 학생에게 남는다.
+"""문서 등록 화면(it/portal/www/hitl.js): 업무 DB 표 정의 연결 이력의 되돌리기 결과 문장, 조치 방법 지우기, 이미 적재한 원문의 [이 문서 개정],
+올리기 단계의 두 길(제공 문서에서 고르기 · 내 파일 올리기).
 
 실제 index.html · hitl.js 를 실제 브라우저(Playwright Chromium)로 연다. 브라우저 밖의 process 응답(연결 이력 · 되돌리기)만 이 시험이 준다
 (꼴은 procsvc GET /api/kg/ingests · DELETE /api/kg/ingests/{batch})."""
+import base64
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -146,6 +149,7 @@ def test_적재한_파일을_새_문서로_다시_올리면_적재_사실과_이
             page.route('**/svc/**', answer)
             page.goto(served.url + '/index.html')
             open_screen(page, 'knowledge')
+            page.click("#manualPick [data-pick-mode='file']")      # 올리기 단계의 「내 파일 올리기」
             page.set_input_files('#manualFile', {'name': name, 'mimeType': 'text/markdown', 'buffer': '# 보충 매뉴얼\n'.encode()})
             page.click('#manualPreview')
             page.wait_for_selector('#manualResult .mprev', timeout=15000)
@@ -161,6 +165,142 @@ def test_적재한_파일을_새_문서로_다시_올리면_적재_사실과_이
             again = page.inner_text('#manualResult .result')
             assert '이 원문으로 만든 판이 지식 지도에 적재돼 있습니다' in again and page.locator('#manualReviseSame').count() == 0
             assert page.locator('#manualAgentExtract').get_attribute('data-variant') is None      # 이제 주 단추는 AI 추출 시작
+            b.close()
+    finally:
+        served.close()
+
+
+def _upload(doc, name, batch):
+    return {'batch': batch, 'document_id': doc, 'source_id': f'manual:{doc}:abc', 'filename': name, 'current': True, 'status': 'ACTIVE', 'by': '담당자',
+            't': '2026-11-14T02:00:00+00:00', 'sections': 8, 'procedures': 7, 'steps': 25}
+
+
+def test_제공_문서를_목록에서_고르면_내려받지_않고_그_원문_그대로_올리고_적재된_문서는_그_문서의_개정으로_올린다():
+    """2026-11-15 사용자: 「매뉴얼 자체를 다운받아서 한다는 것부터가 이상함」. 올리기 단계의 「제공 문서에서 고르기」는 서버가 준 제공 문서 목록
+    (GET /api/course-access provided_documents)을 문서 제목과 함께 보이고, 줄을 누르면 화면이 같은 출처의 samples/<파일>을 읽어 「내 파일 올리기」와 같은
+    요청(POST /api/kg/manuals/preview)을 보낸다. 서버는 문서를 내용(sha256)으로 알아보므로 보낸 바이트가 그 파일과 한 바이트도 다르면 안 된다.
+    이미 적재된 제공 문서는 목록에서 「적재됨」으로 보이고, 고르면 그 문서의 개정(document_id)으로 올라간다. 등록된 문서의 [이 문서 개정]은
+    새 판본 파일을 올리는 길이라 「내 파일 올리기」가 열린다."""
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    new, loaded = 'HI-01_shift-inspection-supplement.md', 'HM-8_cooler-fan-manual.md'
+    posted = []
+
+    def answer(route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        if path.endswith('/api/course-access'):
+            return route.fulfill(json={'phase': 'course', 'actions': {}, 'documents': 'provided', 'provided_documents': [loaded, new],
+                                       'reasons': {k: '지금 단계에서는 하지 않습니다.' for k in ('assign', 'start', 'import_flow', 'document')}})
+        if path.endswith('/api/kg/manuals/preview') and method == 'POST':
+            body = route.request.post_data_json
+            posted.append(body)
+            doc = body.get('document_id') or 'doc-new'
+            return route.fulfill(json={'filename': body['filename'], 'batch': 'b9', 'previous_batch': None, 'status': 'READY', 'chars': 1800, 'pages': 1, 'warnings': [],
+                                       'source_id': f'manual:{doc}:abc', 'document_id': doc, 'loaded': None, 'same_original': None})
+        if path.endswith('/api/kg/manuals/sources'):
+            return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'total': 0, 'next_offset': None})
+        if path.endswith('/api/kg/manuals'):
+            return route.fulfill(json=[_upload('doc-hm8', loaded, 'b1')])
+        if path.endswith('/api/kg/skills') or path.endswith('/api/kg/ingests'):
+            return route.fulfill(json=[])
+        if path.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'knowledge')
+            row = lambda f: page.locator(f"#providedDocs [data-provided='{f}']")
+            page.wait_for_function("document.querySelectorAll('#providedDocs .row-meta').length === 2 && [...document.querySelectorAll('#providedDocs .row-meta')].every(n => n.textContent)", timeout=15000)
+            # 처음 보이는 길은 「제공 문서에서 고르기」이고 파일 고르기 칸은 숨어 있다. 줄의 제목은 그 파일 머리의 제목 줄이다
+            assert row(new).is_visible() and not page.locator('#manualPreview').is_visible()
+            for f in (new, loaded):
+                head = (WWW / 'samples' / f).read_text(encoding='utf-8').splitlines()[0].lstrip('# ').strip()
+                assert row(f).locator('.row-title').inner_text() == head and f in row(f).locator('.row-meta').inner_text()
+            assert '적재됨' in row(loaded).inner_text() and '적재됨' not in row(new).inner_text()
+            # [원문 보기]는 내려받기가 아니라 새 탭에서 글로 열린다
+            link = page.locator(f"#providedDocs [data-provided-view='{new}']")
+            assert link.get_attribute('target') == '_blank' and link.get_attribute('download') is None
+            kind = page.evaluate("async href => (await fetch(href)).headers.get('content-type')", link.get_attribute('href'))
+            assert kind.startswith('text/plain')
+            for f, doc in ((new, None), (loaded, 'doc-hm8')):
+                row(f).click()
+                page.wait_for_selector('#manualResult .mprev', timeout=15000)
+                body = posted[-1]
+                assert body['filename'] == f and body['document_id'] == doc
+                assert base64.b64decode(body['data']) == (WWW / 'samples' / f).read_bytes()      # 서버가 내용으로 알아본다 — 원문 그대로
+                page.click('#manualAnother')
+                page.wait_for_selector('#manualPick', state='visible')
+            assert len(posted) == 2 and row(new).is_enabled()
+            # 등록된 문서의 [이 문서 개정] → 「내 파일 올리기」가 열리고 「등록할 문서」가 그 문서다. 고른 파일은 그 문서의 개정으로 올라간다
+            page.click("#manualHistory [data-manual-revise='doc-hm8']")
+            assert page.locator('#manualPreview').is_visible() and not row(new).is_visible()
+            assert page.locator('#manualDocumentId').input_value() == 'doc-hm8'
+            page.set_input_files('#manualFile', {'name': loaded, 'mimeType': 'text/markdown', 'buffer': '# 새 판본\n'.encode()})
+            page.click('#manualPreview')
+            page.wait_for_selector('#manualResult .mprev', timeout=15000)
+            assert posted[-1]['document_id'] == 'doc-hm8' and base64.b64decode(posted[-1]['data']) == '# 새 판본\n'.encode()
+            b.close()
+    finally:
+        served.close()
+
+
+def test_업무_DB_표_정의의_제공_예시를_고르면_그_파일_글_그대로_읽기_요청을_보내고_표와_열_고르기로_간다():
+    """「업무 DB 표 정의」 보기도 같은 원칙이다: 제공 예시 줄을 누르면 화면이 samples/legacy-plant-db.sql 을 읽어 「내 파일 올리기」와 같은 요청
+    (POST /api/kg/ddl/preview { filename, text, catalog })을 보내고 2단계(표와 열 고르기)로 간다. 연결 이력에 그 파일의 연결이 남아 있으면 줄에 「적재됨」이 붙는다."""
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    name = 'legacy-plant-db.sql'
+    posted, ingests = [], []
+
+    def answer(route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        if path.endswith('/api/kg/ddl/preview') and method == 'POST':
+            body = route.request.post_data_json
+            posted.append(body)
+            ingests.append({'batch': 'ddl-1', 'label': 'InputData', 'nodes': 3, 'source': name})      # 시험 편의: 읽은 뒤 이력에 그 파일의 연결이 있다고 답한다
+            return route.fulfill(json={'filename': body['filename'], 'chars': len(body['text']), 'catalog': body['catalog'], 'datasource': 'ds', 'warnings': [], 'systems': [],
+                                       'existingSystems': [], 'sourceOptions': [{'id': 'ds', 'label': '업무 DB', 'schema': 'public'}], 'inputs': [],
+                                       'tables': [{'table': 'T_EQP00', 'comment': '', 'system': '', 'columns': ['EQP_CD'], 'selected': []}]})
+        if path.endswith('/api/kg/ingests'):
+            return route.fulfill(json=list(ingests))
+        if path.endswith('/api/kg/manuals/sources'):
+            return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'total': 0, 'next_offset': None})
+        if path.endswith('/api/kg/manuals') or path.endswith('/api/kg/skills'):
+            return route.fulfill(json=[])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'knowledge')
+            page.click("#docKinds [data-doc-kind='ddl']")
+            row = page.locator(f"#providedDdl [data-provided='{name}']")
+            assert row.is_visible() and not page.locator('#ddlPreview').is_visible() and '적재됨' not in row.inner_text()
+            row.click()
+            page.wait_for_selector('#ddlResult .mprev', timeout=15000)
+            assert len(posted) == 1 and posted[0]['filename'] == name and posted[0]['catalog'] == 'postgres'
+            assert posted[0]['text'] == (WWW / 'samples' / name).read_text(encoding='utf-8')
+            assert '표 1개를 읽었습니다' in page.inner_text('#ddlResult .result') and page.locator('#ddlPick').is_hidden()
+            page.click('#ddlAnother')
+            page.wait_for_selector('#ddlPick', state='visible')
+            assert '적재됨' in row.inner_text() and row.is_enabled()
+            # 「내 파일 올리기」는 파일 고르기 그대로다
+            page.click("#ddlPick [data-pick-mode='file']")
+            assert page.locator('#ddlPreview').is_visible() and not row.is_visible()
+            page.set_input_files('#ddlFile', {'name': 'mine.sql', 'mimeType': 'text/plain', 'buffer': 'CREATE TABLE a (b int);'.encode()})
+            page.click('#ddlPreview')
+            page.wait_for_function("document.querySelector('#ddlResult .result-main')?.textContent.includes('mine.sql')", timeout=15000)
+            assert posted[-1]['filename'] == 'mine.sql' and posted[-1]['text'] == 'CREATE TABLE a (b int);'
             b.close()
     finally:
         served.close()

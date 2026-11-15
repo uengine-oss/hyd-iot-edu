@@ -79,6 +79,7 @@ def _start(page, served, world):
     page.route('**/svc/**', world.answer)
     page.goto(served.url + '/index.html')
     open_screen(page, 'knowledge')
+    page.click("#manualPick [data-pick-mode='file']")      # 올리기 단계의 「내 파일 올리기」(처음 보이는 것은 「제공 문서에서 고르기」다)
     page.set_input_files('#manualFile', dict(name='내문서.md', mimeType='text/markdown', buffer='# 절\n1. 단계'.encode()))
     page.locator('#manualPreview').click()
     page.locator('#manualAgentExtract').click()

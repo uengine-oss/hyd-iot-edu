@@ -2,7 +2,9 @@
    (app.js / enterprise.js / main.js 뒤에 실린다. 디자인 기준 5-3 · 5-4 · 7절. 화면의 배치는 screens.css 의 「조치 방법 · 문서 등록」 절)
    - 조치 방법: 왼쪽 목록(.rows) · 오른쪽 상세(.panel). 읽을 내용(절차 · 연결된 지식)이 먼저이고, 손으로 더한 것만 같은 판 안의 폼(fieldset)으로 고친다.
      문서에서 온 것은 그 문서를 개정해 고친다(문서 등록으로 보낸다).
-   - 문서 등록: 맨 위 단계 줄(올리기 → AI 추출 → 검토 → 적재)이 지금 단계를 보이고 그 아래에는 지금 단계의 내용만 있다. 사람이 할 차례인 단계의 표시는 돌지 않고,
+   - 문서 등록: 맨 위 단계 줄(올리기 → AI 추출 → 검토 → 적재)이 지금 단계를 보이고 그 아래에는 지금 단계의 내용만 있다. 올리기 단계에는 길이 둘이다 —
+     「제공 문서에서 고르기」(목록의 줄을 누르면 화면이 같은 출처의 samples/<파일>을 읽어 그 문서를 바로 올린다. 내려받지 않는다)와 「내 파일 올리기」(파일 고르기 + 새 문서 / 개정).
+     두 길은 같은 올리기 요청을 보낸다(uploadManual · readDdl) — 서버는 문서를 내용으로 알아본다. 사람이 할 차례인 단계의 표시는 돌지 않고,
      시스템이 일하는 동안만 돈다. 검토는 목록 + 상세다(왼쪽 제안 목록, 오른쪽 원문 인용과 고칠 칸 — 고칠 칸은 보이지 않는 동안에도 그대로 적재 요청에 실린다).
    - 실시간: AI 추출은 처리 건(매뉴얼 추출 흐름의 AI 에이전트 단계)으로 돈다. 2단계 자리에서 그 단계의 실행 기록(읽는 구간 · 도구 호출 · 에이전트의 말)이
      생기는 대로 흘러나온다(liveStream.js hydLive.agentWork). 끝나면 3단계로 넘어가고 기록은 「추출 과정 보기」에 남는다. 적재는 요청이 차례로 가는 대로
@@ -10,7 +12,7 @@
    - 사건 → 처리 건으로 가는 길(openIncident)은 설비 회로 화면(app.js)이 쓴다. 조치 후보와 승인은 처리 건 화면 한 곳에 있다. */
 (function () {
   const H = { skills: [], catalog: null, catalogError: '', manualCatalog: null, manualCatalogError: '', skillSel: null, skillNew: false, skillKind: '', skillDrafts: new Map(), preview: null, instByIncident: new Map(),
-    docKind: 'manual', commit: null, review: { kind: '', sel: '' } };
+    docKind: 'manual', commit: null, review: { kind: '', sel: '' }, samples: new Map(), sampleTitles: new Map(), loadedFiles: new Map(), sending: null, sent: null, ddlReading: null };
   const icon = name => UI.icon(name);
   // 폼 아래 · 목록 위의 한 줄: 결과는 회색, 실패는 빨간 글(role=alert)
   const note = (node, text, bad = false) => { if (!node) return; node.textContent = text; if (bad) node.dataset.tone = 'danger'; else delete node.dataset.tone; node.setAttribute('role', bad ? 'alert' : 'status'); };
@@ -48,6 +50,10 @@
       if (u.current && u.status !== 'ROLLED_BACK') docs.set(u.document_id, u);
     });
     H.manualDocuments = allDocs;
+    // 제공 문서 목록의 「적재됨」: 「등록할 문서」의 개정 선택지와 같은 것(지금 판본이 적재돼 있는 문서)을 파일 이름으로 묶는다
+    H.loadedFiles = new Map();
+    docs.forEach(u => H.loadedFiles.set(u.filename, (H.loadedFiles.get(u.filename) || []).concat(u.document_id)));
+    renderProvided();
     select.replaceChildren(new Option('새 문서 등록', ''));
     const filenameCounts = new Map();
     docs.forEach(u => filenameCounts.set(u.filename, (filenameCounts.get(u.filename) || 0) + 1));
@@ -430,7 +436,7 @@
       current.forEach(u => fetchGolden(u.batch).then(() => renderGolden(u.batch)));
       history.querySelectorAll('[data-manual-revise]').forEach(b => b.addEventListener('click', () => {
         selectManualDocument(b.dataset.manualRevise);
-        H.preview = null; H.commit = null; renderPreview();
+        H.preview = null; H.commit = null; renderPreview(); showPick($('#manualPick'), 'file');
         note($('#manualStatus'), '개정할 문서를 골랐습니다. 새 판본 파일을 고르고 [문서 올리기]를 누르세요.');
         $('#manualUpload').scrollIntoView({ block: 'start' });
       }));
@@ -678,12 +684,12 @@
         if (tag) tag.innerHTML = input.checked ? UI.chipText('제외', 'neutral') : '';
       }));
     }
-    // [이 문서 개정](같은 원문이 이미 적재된 문서로): 등록한 문서 목록의 [이 문서 개정]과 같은 길이다 — 「등록할 문서」를 그 문서로 고른다. 방금 고른 파일이
-    // 칸에 남아 있으면 그 문서의 개정으로 바로 다시 올리고, 없으면(보관한 원문을 다시 연 경우) 파일을 고르게 1단계로 돌아간다
+    // [이 문서 개정](같은 원문이 이미 적재된 문서로): 등록한 문서 목록의 [이 문서 개정]과 같은 길이다 — 「등록할 문서」를 그 문서로 고른다. 방금 올린 것이
+    // 이 원문이면(H.sent — 내 파일이든 제공 문서든) 그 문서의 개정으로 바로 다시 올리고, 아니면(보관한 원문을 다시 연 경우) 파일을 고르게 1단계로 돌아간다
     $('#manualReviseSame')?.addEventListener('click', () => {
       selectManualDocument(r.same_original.document_id, r.same_original.filename);
-      if ($('#manualFile').files[0]) { $('#manualPreview').click(); return; }
-      H.preview = null; H.commit = null; renderPreview();
+      if (H.sent && H.sent.source_id === r.source_id) { uploadManual(H.sent.name, H.sent.blob, r.same_original.document_id); return; }
+      H.preview = null; H.commit = null; renderPreview(); showPick($('#manualPick'), 'file');
       note($('#manualStatus'), '개정할 문서를 골랐습니다. 새 판본 파일을 고르고 [문서 올리기]를 누르세요.');
       $('#manualUpload').scrollIntoView({ block: 'start' });
     });
@@ -1035,38 +1041,86 @@
   }
   // 담당자 = 이 PC의 담당자(inbox.js me — 이름으로 적재 이력에 남는다). 화면에 담당자 칸은 없다
   const manualActor = () => window.hydInbox?.me?.()?.name || '';
-  $('#manualPreview').addEventListener('click', async () => {
-    const f = $('#manualFile').files[0]; if (!f) { note($('#manualStatus'), '올릴 파일을 먼저 선택하세요.', true); return; }
-    const b = $('#manualPreview'), end = hydLive.busy(b, '올리는 중'); H.preview = null; H.commit = null;
-    renderManualSteps(1, { busy: true });
+  // 올리기 단계의 두 길: 제공 문서에서 고르기(provided) · 내 파일 올리기(file). 고른 길의 칸([data-pick])만 보인다(index.html #manualPick · #ddlPick)
+  function showPick(pick, mode) {
+    pick.querySelectorAll('[data-pick-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pickMode === mode)));
+    pick.querySelectorAll('[data-pick]').forEach(p => { p.hidden = p.dataset.pick !== mode; });
+  }
+  document.querySelectorAll('#manualPick, #ddlPick').forEach(pick => pick.addEventListener('click', ev => { const b = ev.target.closest('[data-pick-mode]'); if (b) showPick(pick, b.dataset.pickMode); }));
+  // 제공 문서 한 개(같은 출처의 samples/<파일>)를 한 번 읽어 둔다: blob(올릴 때 보내는 바이트 그대로) · text · title(파일 머리의 첫 제목 줄) ·
+  // view(새 탭에서 글로 열리는 주소 — 서버는 이 파일을 내려받는 형식으로 주므로 화면이 글 형식으로 다시 싼다)
+  function sample(file) {
+    if (!H.samples.has(file)) H.samples.set(file, (async () => {
+      const res = await fetch('samples/' + encodeURIComponent(file), { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`제공 문서 「${file}」를 읽지 못했습니다(HTTP ${res.status}).`);
+      const blob = await res.blob(), text = await blob.text();
+      return { blob, text, title: (text.match(/^#\s+(.+)$/m) || [])[1] || '', view: URL.createObjectURL(new Blob([blob], { type: 'text/plain;charset=utf-8' })) };
+    })().catch(e => { H.samples.delete(file); throw e; }));
+    return H.samples.get(file);
+  }
+  const sampleView = async link => { try { link.href = (await sample(link.dataset.providedView)).view; } catch (_) { /* 못 읽으면 원래 주소(내려받기) 그대로 */ } };
+  // 제공 문서 목록(서버 GET /api/course-access 의 provided_documents): 줄 = 문서 제목 · 파일 이름 · 「적재됨」, 옆에 [원문 보기](새 탭). 줄을 누르면 그 문서를 바로 올린다
+  function renderProvided() {
+    const box = $('#providedDocs'); if (!box) return;
+    const list = hydCourseAccess.access?.provided_documents;
+    if (!Array.isArray(list)) { box.innerHTML = hydCourseAccess.error ? UI.errorBlock('제공 문서 목록을 읽지 못했습니다', hydCourseAccess.error) : UI.loading(''); return; }
+    if (!list.length) { box.innerHTML = UI.empty('제공 문서가 없습니다', '「내 파일 올리기」에서 문서 파일을 골라 올립니다.'); return; }
+    const busy = H.sending && H.sending.provided;
+    box.innerHTML = `<div class="rows doc-prov" aria-label="제공 문서">${list.map(f => {
+      const loaded = (H.loadedFiles.get(f) || []).length > 0, title = H.sampleTitles.get(f) || '';
+      return `<button type="button" class="row" data-provided="${esc(f)}"${busy === f ? ' aria-current="true"' : ''}${busy ? ' disabled' : ''}><span class="row-ic">${icon('file-text')}</span><span class="row-title">${esc(title || f)}</span>` +
+        `<span data-prov-tag>${loaded ? UI.chipText('적재됨', 'success') : ''}</span><span class="row-meta">${esc([title ? f : '', loaded ? '다시 올리면 이 문서를 개정합니다' : ''].filter(Boolean).join(' · '))}</span></button>` +
+        `<a class="btn" data-variant="link" data-size="sm" href="samples/${encodeURIComponent(f)}" target="_blank" rel="noopener" data-provided-view="${esc(f)}">원문 보기</a>`;
+    }).join('')}</div>`;
+    box.querySelectorAll('[data-provided-view]').forEach(sampleView);
+    // 제목은 파일을 읽은 뒤에 채운다(문서 등록 화면이 열려 있을 때만 읽는다)
+    if (state.tab === 'knowledge') list.filter(f => !H.sampleTitles.has(f)).forEach(f => {
+      H.sampleTitles.set(f, '');
+      sample(f).then(s => { if (s.title) { H.sampleTitles.set(f, s.title); renderProvided(); } }, () => H.sampleTitles.delete(f));
+    });
+  }
+  $('#providedDocs').addEventListener('click', async ev => {
+    const row = ev.target.closest('[data-provided]'); if (!row || H.sending) return;
+    const file = row.dataset.provided, mine = H.sending = { provided: file };
+    renderProvided();
+    let got;
+    try { got = await sample(file); }
+    catch (e) { if (H.sending === mine) { H.sending = null; renderProvided(); $('#manualResult').innerHTML = `<div class="panel-sec">${UI.errorBlock('문서를 올리지 못했습니다', e.message)}</div>`; } return; }
+    if (H.sending !== mine) return;
+    // 이미 적재된 제공 문서는 그 문서의 개정으로 올린다(등록된 문서의 [이 문서 개정]과 같다). 같은 이름으로 적재된 문서가 둘 이상이면 고르지 않고 새 문서로 올린다 —
+    // 서버가 같은 원문이 적재된 문서를 알려 주고 화면이 [이 문서 개정]을 낸다
+    const docs = H.loadedFiles.get(file) || [];
+    await uploadManual(file, got.blob, docs.length === 1 ? docs[0] : null, mine);
+  });
+  // 올리기 요청 하나 — 내 파일이든 제공 문서든 같다: POST /api/kg/manuals/preview { filename, data(base64), document_id }
+  async function uploadManual(name, blob, documentId, mine = {}) {
+    H.sending = mine;
+    const end = hydLive.busy($('#manualPreview'), '올리는 중'); H.preview = null; H.commit = null; H.sent = null;
+    renderManualSteps(1, { busy: true }); renderProvided();
     $('#manualResult').innerHTML = `<div class="panel-sec">${hydLive.waitHtml('문서를 올리는 중', { hint: '서버가 파일을 받아 글자를 읽고 원문을 보관하는 중입니다. PDF는 쪽 수만큼 더 걸립니다.' })}</div>`;
     note($('#manualStatus'), '');
     try {
-      const b64 = await new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1] || ''); rd.onerror = () => no(new Error('파일을 읽을 수 없습니다.')); rd.readAsDataURL(f); });
+      const b64 = await new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1] || ''); rd.onerror = () => no(new Error('파일을 읽을 수 없습니다.')); rd.readAsDataURL(blob); });
       if (!H.catalog) H.catalog = await getJ(API.process + '/api/kg/catalog');
       await loadManualCatalog();
-      const preview = await postJ(API.process + '/api/kg/manuals/preview', { filename: f.name, data: b64, document_id: $('#manualDocumentId').value.trim() || null });
-      if ($('#manualFile').files[0] !== f) return;
+      const preview = await postJ(API.process + '/api/kg/manuals/preview', { filename: name, data: b64, document_id: documentId || null });
+      if (H.sending !== mine) return;
+      H.sent = { name, blob, source_id: preview.source_id };
       H.preview = preview; selectManualDocument(preview.document_id, preview.filename); renderPreview();
       await loadManualSources();
-    } catch (e) { if ($('#manualFile').files[0] === f) { renderManualSteps(1); $('#manualResult').innerHTML = `<div class="panel-sec">${UI.errorBlock('문서를 올리지 못했습니다', e.message)}</div>`; } }
-    finally { end(false); }
+    } catch (e) { if (H.sending === mine) { renderManualSteps(1); $('#manualResult').innerHTML = `<div class="panel-sec">${UI.errorBlock('문서를 올리지 못했습니다', e.message)}</div>`; } }
+    finally { end(false); if (H.sending === mine) H.sending = null; renderProvided(); }
+  }
+  $('#manualPreview').addEventListener('click', () => {
+    const f = $('#manualFile').files[0]; if (!f) { note($('#manualStatus'), '올릴 파일을 먼저 선택하세요.', true); return; }
+    uploadManual(f.name, f, $('#manualDocumentId').value.trim());
   });
   // 사용 범위(서버 GET /api/course-access): 지금 단계에서는 제공 문서만 올릴 수 있다 — 미리 안내하지 않고 다른 문서를 올리면 서버가 거절한 까닭을
   // 그 자리에 보인다(안내는 벗어난 행동에서만). 질문 확인 단추는 서버가 준 까닭으로 끈다
-  function courseScope() {
-    // 제공 문서 받기 조각: 서버가 가진 제공 문서 목록(course-access provided_documents) 하나에서 그린다(W2-21)
-    const docs = $('#providedDocs');
-    if (docs) {
-      const list = hydCourseAccess.access?.provided_documents;
-      docs.innerHTML = Array.isArray(list) ? list.map(f => `<a class="chip" href="samples/${encodeURIComponent(f)}" download>${icon('download')}<span>${esc(f)}</span></a>`).join('') || '<span class="muted">제공 문서가 없습니다.</span>'
-        : hydCourseAccess.error ? `<span class="muted" data-tone="danger">제공 문서 목록을 읽지 못했습니다.</span>` : `<span class="muted">${esc(UI.t('loading'))}</span>`;
-    }
-    hydCourseAccess.apply($('#manualHistory'));
-  }
+  function courseScope() { renderProvided(); hydCourseAccess.apply($('#manualHistory')); }
   hydCourseAccess.onChange(courseScope); courseScope();   // 표가 먼저 와 있었으면 바로 그린다
   $('#manualFile').addEventListener('change', () => {
-    H.preview = null; H.commit = null;
+    H.preview = null; H.commit = null; H.sending = null;      // 올리는 중에 다른 파일을 고르면 앞 요청의 응답은 버린다
     const name = $('#manualFile').files[0]?.name;
     // 앞 문서의 「문서 개정」 선택이 다른 파일에 남으면 그 파일이 앞 문서의 개정으로 올라가 앞 문서 지식이 지워진다
     // (2026-10-29 실측: HM-8 다음 HI-01). 등록된 문서의 개정이 골라져 있을 때 이름이 다른 파일을 고르면 새 문서 등록으로
@@ -1090,6 +1144,8 @@
       const batches = {};
       rows.forEach(r => { (batches[r.batch] = batches[r.batch] || []).push(r); });
       const keys = Object.keys(batches);
+      // 제공 예시 줄의 「적재됨」: 이 연결 이력에 그 파일로 넣은 연결이 남아 있을 때
+      document.querySelectorAll('#providedDdl [data-provided]').forEach(row => { row.querySelector('[data-prov-tag]').innerHTML = rows.some(r => r.source === row.dataset.provided) ? UI.chipText('적재됨', 'success') : ''; });
       box.innerHTML = `<div class="sec-head"><h2>연결 이력</h2><span class="muted num">${keys.length ? keys.length + '건' : ''}</span></div>` + line + (keys.length
         ? table('<th>스키마 파일</th><th>넣은 항목</th><th>연결 번호</th><th></th>', keys.map(k => `<tr><td>${esc((batches[k][0] || {}).source || '')}</td><td>${batches[k].map(r => `${esc(LABEL_KO[r.label] || r.label)} ${r.nodes}`).join(' · ')}</td><td><code class="inline">${esc(k)}</code></td>` +
             `<td class="doc-acts"><button type="button" class="btn" data-variant="destructive" data-size="sm" data-clear="${esc(k)}">되돌리기</button></td></tr>`).join(''))
@@ -1155,27 +1211,37 @@
       } catch (e) { end(false); renderDdlSteps(2); ddlSay('적재하지 못했습니다: ' + e.message, true); }
     });
   }
-  $('#ddlPreview').addEventListener('click', async () => {
-    const f = $('#ddlFile').files[0]; if (!f) { note($('#ddlStatus'), '표 정의 파일을 먼저 선택하세요.', true); return; }
-    const b = $('#ddlPreview'), end = hydLive.busy(b, '읽는 중'); H.ddl = null; H.ddlDone = null;
+  // 표 정의 읽기 요청 하나 — 내 파일이든 제공 예시든 같다: POST /api/kg/ddl/preview { filename, text, catalog }
+  async function readDdl(name, text, catalog, row) {
+    const mine = H.ddlReading = {}, end = hydLive.busy($('#ddlPreview'), '읽는 중'); H.ddl = null; H.ddlDone = null;
+    if (row) { row.disabled = true; row.setAttribute('aria-current', 'true'); }
     renderDdlSteps(1, { busy: true });
     $('#ddlResult').innerHTML = `<div class="panel-sec">${hydLive.waitHtml('표 정의 파일을 읽는 중', { hint: '서버가 표 · 열을 읽고 고른 원천의 실제 표와 맞춰 보는 중입니다.' })}</div>`;
     note($('#ddlStatus'), '');
     try {
-      H.ddlText = await f.text();
-      const preview = await postJ(API.process + '/api/kg/ddl/preview', { filename: f.name, text: H.ddlText, catalog: $('#ddlCatalog').value.trim() });
-      if ($('#ddlFile').files[0] !== f) return;
-      H.ddl = preview; renderDdlPreview(); await loadIngests();
-    } catch (e) { if ($('#ddlFile').files[0] === f) { renderDdlSteps(1); $('#ddlResult').innerHTML = `<div class="panel-sec">${UI.errorBlock('표 정의 파일을 읽지 못했습니다', e.message)}</div>`; } }
-    finally { end(false); }
+      const body = await text();
+      const preview = await postJ(API.process + '/api/kg/ddl/preview', { filename: name, text: body, catalog });
+      if (H.ddlReading !== mine) return;
+      H.ddlText = body; H.ddl = preview; renderDdlPreview(); await loadIngests();
+    } catch (e) { if (H.ddlReading === mine) { renderDdlSteps(1); $('#ddlResult').innerHTML = `<div class="panel-sec">${UI.errorBlock('표 정의 파일을 읽지 못했습니다', e.message)}</div>`; } }
+    finally { end(false); if (row) { row.disabled = false; row.removeAttribute('aria-current'); } }
+  }
+  $('#ddlPreview').addEventListener('click', () => {
+    const f = $('#ddlFile').files[0]; if (!f) { note($('#ddlStatus'), '표 정의 파일을 먼저 선택하세요.', true); return; }
+    readDdl(f.name, () => f.text(), $('#ddlCatalog').value.trim());
   });
-  $('#ddlFile').addEventListener('change', () => { H.ddl = null; H.ddlDone = null; $('#ddlFilename').textContent = $('#ddlFile').files[0]?.name || UI.t('kn.noFile'); renderDdlPreview(); });
-  $('#ddlCatalog').addEventListener('input', () => { H.ddl = null; H.ddlDone = null; renderDdlPreview(); });
+  // 제공 예시: 줄을 누르면 화면이 samples/<파일>을 읽어 바로 표와 열 고르기로 간다. 데이터베이스 이름은 「내 파일 올리기」 칸의 처음 값(예시가 맞춰진 값)이다
+  $('#providedDdl').addEventListener('click', ev => {
+    const row = ev.target.closest('[data-provided]'); if (!row || row.disabled) return;
+    readDdl(row.dataset.provided, async () => (await sample(row.dataset.provided)).text, $('#ddlCatalog').defaultValue, row);
+  });
+  $('#ddlFile').addEventListener('change', () => { H.ddl = null; H.ddlDone = null; H.ddlReading = null; $('#ddlFilename').textContent = $('#ddlFile').files[0]?.name || UI.t('kn.noFile'); renderDdlPreview(); });
+  $('#ddlCatalog').addEventListener('input', () => { H.ddl = null; H.ddlDone = null; H.ddlReading = null; renderDdlPreview(); });
 
   renderManualSteps(1); renderDdlSteps(1); showDocKind('manual');
   /* ------------------------------------------------ tab hooks */
   hydTabs.onShow(name => {
     if (name === 'skills') loadSkills();
-    if (name === 'knowledge') { loadUploads(); loadIngests(); }
+    if (name === 'knowledge') { loadUploads(); loadIngests(); renderProvided(); document.querySelectorAll('#providedDdl [data-provided-view]').forEach(sampleView); }
   });
 })();

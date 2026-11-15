@@ -4,22 +4,22 @@
 
 /* ---------------- 조건 → 결과(디자인 기준 5-6): 왼쪽 조건 판 320px · 오른쪽 결과. 판단 실험 네 화면이 쓴다 ----------------
    부품은 키트의 것이다(panel · fieldset · field · result · turn-facts · opts · evid · stream). 여기는 격자와 폭만 정한다 */
-.io { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+.io { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 32px; align-items: start; }
 .io > * { min-width: 0; }
 .io > .io-in { position: sticky; top: 68px; }      /* 위 막대(52px) 아래에 붙어 따라온다 */
 .io-in :is(.select, .input:not([type="checkbox"]):not([type="radio"]), .textarea) { width: 100%; }
-.io-in .fieldset + .fieldset { margin-top: 20px; }
-.io-fields { display: grid; gap: 14px; }      /* 조건 판의 입력 칸 묶음(머리 없이) */
-.io-more { margin-top: 12px; }
+.io-in .fieldset + .fieldset { margin-top: 24px; }
+.io-fields { display: grid; gap: var(--gap-field); }      /* 조건 판의 입력 칸 묶음(머리 없이) */
+.io-more { margin-top: 16px; }
 .io-more > .fold-body { padding-left: 0; }
 .eval-runs tr[data-run] { cursor: pointer; }
-.eval-runs tr[data-run]:hover td { background: #f8f9fb; }
+.eval-runs tr[data-run]:hover td { background: var(--soft); }
 .eval-runs tr[data-pick] td { background: var(--brand-soft); }
 .io-in .form-foot { justify-content: flex-start; }
 .io-in .form-foot > .btn:first-child { flex: 1; }
 .io-in .seg { display: flex; }
 .io-in .seg > button { flex: 1; justify-content: center; padding: 0 6px; }
-.io-out { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.io-out { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-block); }
 .io-out .panel-head > div:first-child { min-width: 0; }
 .io-out .fieldset :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
 .io-out .fieldset .evid :is(.select, .input:not([type="checkbox"])) { width: auto; min-width: 200px; margin: 0 4px; }      /* 고른 것 목록의 줄 안 고르기 칸(정답표 폼)은 한 줄에 */

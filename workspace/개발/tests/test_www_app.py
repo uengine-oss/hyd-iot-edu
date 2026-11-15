@@ -138,6 +138,16 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
     assert sorted(drawn) == sorted(c['key'] for c in table)              # 표의 부품이 빠짐없이, 표에 없는 부품 없이
     assert drawn['detector'] == 'down' and page.inner_text('#sysSum') == '응답 없음 1 — detector'
     assert all(drawn[c['key']] == 'opt' for c in table if c['optional'])      # 선택 도구는 응답 없음으로 세지 않는다
+    # 그림이 읽히는가: 부품 상자끼리 8px 넘게 떨어져 있고, 길의 이름표가 어느 상자와도 겹치지 않으며, 상자 안의 이름이 상자 밖으로 나가지 않는다
+    geo = page.evaluate('''() => { const r = e => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
+      return { boxes: [...document.querySelectorAll('#stack .sys-nd')].map(n => ({ key: n.dataset.key, box: r(n.querySelector('.box')), texts: [...n.querySelectorAll('text')].map(r) })),
+               labels: [...document.querySelectorAll('#stack .sys-p-t')].map(t => ({ text: t.textContent, box: r(t) })) }; }''')
+    hit = lambda a, b, pad=0: a[0] < b[2] + pad and b[0] < a[2] + pad and a[1] < b[3] + pad and b[1] < a[3] + pad
+    boxes = geo['boxes']
+    assert len(boxes) >= 17 and geo['labels']
+    assert not [(a['key'], b['key']) for i, a in enumerate(boxes) for b in boxes[i + 1:] if hit(a['box'], b['box'], 8)]
+    assert not [(lab['text'], b['key']) for lab in geo['labels'] for b in boxes if hit(lab['box'], b['box'])]
+    assert not [b['key'] for b in boxes for t in b['texts'] if t[0] < b['box'][0] or t[2] > b['box'][2] - 4]
     assert all(drawn[c['key']] == 'none' for c in table if not c['health'])   # 상태를 재지 않는 부품은 점이 없다
     assert all(drawn[c['key']] == 'ok' for c in table if c['health'] and not c['optional'] and c['key'] != 'detector')
     # 올리면 정보 띠에 그 부품의 하는 일 · 현업 대응 · 계층(모두 부품 표의 글)과 상태가 보인다
@@ -269,6 +279,14 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추가_하�
     # 카드에 늘 보이는 설명 문장은 사실 한 줄까지 — 결함 절에 문단이 없다
     assert page.eval_on_selector_all("#units .lab-exp > p:not(.lab-note)", "ns => ns.every(n => n.getBoundingClientRect().height <= 24)")
     assert page.inner_text("#units .unit[data-asset='HYD-01'] .repeat-guide") == ''      # 그 상황이 아니면 안내 줄이 없다
+    # 카드마다 맨 아래 한 줄(처리 건으로 가는 길, 없으면 그 사실)이 하나만 보이고, 카드 셋에서 같은 높이 · 같은 자리(카드 바닥)에 놓인다
+    feet = page.eval_on_selector_all('#units .unit', '''cards => cards.map(c => { const seen = [...c.querySelectorAll('.unit-go, .unit-go-none')].filter(n => !n.hidden);
+      const b = c.getBoundingClientRect(), f = seen[0] && seen[0].getBoundingClientRect();
+      return { n: seen.length, cardTop: b.top, gap: f ? Math.round(b.bottom - f.bottom) : -1, top: f ? Math.round(f.top) : -1, h: f ? Math.round(f.height) : -1, last: seen[0] === c.lastElementChild || seen[0] === c.lastElementChild.previousElementSibling }; })''')
+    assert len(feet) == 3 and all(f['n'] == 1 and f['last'] and 0 <= f['gap'] <= 2 for f in feet), feet
+    assert len({f['h'] for f in feet}) == 1, feet
+    if len({round(f['cardTop']) for f in feet}) == 1:      # 한 줄에 나란히 놓인 폭일 때
+        assert len({f['top'] for f in feet}) == 1, feet
     # 도움말: 주입 단추에 초점을 주면 그 단추가 하는 일이 뜬다(키보드로도 닿는다)
     button = "#units .unit[data-asset='HYD-01'] button[data-act='degrade']"
     tip = page.get_attribute(button, 'data-tooltip')
@@ -303,6 +321,7 @@ def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_�
     start.wait_for(timeout=8000)
     assert start.get_attribute('aria-disabled') == 'true' and '진행 중인 처리 건이 있어' in start.get_attribute('data-tooltip')
     assert page.locator("#units .unit[data-asset='HYD-02'] .unit-go").is_visible()      # 그 건으로 가는 길
+    assert not page.locator("#units .unit[data-asset='HYD-02'] .unit-go-none").is_visible()      # 같은 자리에 둘이 함께 보이지 않는다
     start.click(force=True)
     page.wait_for_function("document.querySelector('#scenarioMsg').textContent.includes('진행 중인 처리 건이 있어')", timeout=8000)
     assert not any('/api/scenario/B/start' in u for u in posts), posts                   # 서버에 409 를 받으러 가지 않는다

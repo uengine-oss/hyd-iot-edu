@@ -211,7 +211,7 @@
     const last = item.files[item.files.length - 1];
     const more = [last ? `<a role="menuitem" href="${h(api(`/api/flows/${encodeURIComponent(item.id)}/versions/${encodeURIComponent(last.version)}/bpmn`))}" download>${icon('download')}그림 받기 (.bpmn · 판본 ${h(last.version)})</a>` : '',
       item.mine ? `<div role="menuitem" data-flow-delete="${h(item.id)}">${icon('trash-2')}이 흐름 지우기</div>` : ''].filter(Boolean).join('');
-    head.innerHTML = `<span class="pane-ic">${icon('workflow')}</span><div class="pane-title"><h2>${h(item.name)}${state}${tag(item.mine ? '내가 가져온 것' : '기본 제공', item.mine ? 'brand' : '', true)}</h2><p>${h([what, start].filter(Boolean).join(' '))}</p></div>` +
+    head.innerHTML = `<span class="pane-ic">${icon('workflow')}</span><div class="pane-title"><h2>${h(item.name)}${state}</h2><p>${h([what, start].filter(Boolean).join(' '))}</p></div>` +
       (more ? `<div class="pane-acts"><div class="dropdown-menu" id="flowMore"><button type="button" class="btn" data-variant="outline" data-size="icon" id="flowMore-trigger" aria-haspopup="menu" aria-controls="flowMore-menu" aria-expanded="false" aria-label="더 보기" data-tooltip="더 보기" data-side="left">${icon('ellipsis')}</button>` +
         `<div id="flowMore-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="flowMore-menu" aria-labelledby="flowMore-trigger">${more}</div></div></div></div>` : '');
   }

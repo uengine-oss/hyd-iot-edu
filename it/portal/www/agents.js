@@ -165,7 +165,7 @@
     const state = !isAgent ? tag('시스템 수행자') : d.steps.length ? tag('단계를 맡고 있음', 'ok') : tag('맡은 단계 없음');
     const note = !isAgent ? '정해진 업무를 하는 시스템입니다. 스킬 · 도구 서버 같은 에이전트 설정은 쓰지 않습니다.' : d.goal || '목표가 적혀 있지 않습니다.';
     let html = `<div class="panel-head pane-head"><span class="pane-ic"${isAgent ? ' data-kind="agent"' : ''}>${icon(isAgent ? 'bot' : 'cog')}</span>` +
-      `<div class="pane-title"><h2>${esc(d.name)}${state}${isAgent ? originTag(d.origin) : ''}</h2><p>${longText('goal:' + d.id, note)}</p></div><div class="pane-acts">${agentActs(d)}</div></div>`;
+      `<div class="pane-title"><h2>${esc(d.name)}${state}</h2><p>${longText('goal:' + d.id, note)}</p></div><div class="pane-acts">${agentActs(d)}</div></div>`;
     if (isAgent) {
       const skills = d.skills.length ? d.skills.map((s, i) => s.found
         ? `<button type="button" class="use" data-skill-doc="${esc(s.skill_name)}" aria-expanded="${s.skill_name === docSkill(d)}">${icon('file-text')}<span><b>${esc(s.title)}</b></span><span class="muted mono">${esc(s.skill_name)}</span></button>`
@@ -245,7 +245,7 @@
       : `<p class="muted">${mineAgents.length ? '내 에이전트에는 이미 모두 붙어 있습니다.' : '붙일 수 있는 내 에이전트가 없습니다. 기본 제공 에이전트에는 붙일 수 없으니, 에이전트를 복제하거나 새로 만들어 붙입니다.'}</p>`;
     const acts = mine ? `<button type="button" class="btn" data-variant="outline" data-edit-skill>${icon('pencil')}고치기</button>` +
       `<button type="button" class="btn" data-variant="ghost" data-size="icon" data-del-skill aria-label="지우기" data-tooltip="지우기" data-side="bottom">${icon('trash-2')}</button>` : '';
-    return `<div class="panel-head pane-head"><span class="pane-ic">${icon('file-text')}</span><div class="pane-title"><h2>${esc(s.title)}${originTag(s.origin)}</h2>` +
+    return `<div class="panel-head pane-head"><span class="pane-ic">${icon('file-text')}</span><div class="pane-title"><h2>${esc(s.title)}</h2>` +
       `<p>${esc(s.description || (mine ? '설명이 적혀 있지 않습니다.' : ''))}</p></div><div class="pane-acts">${acts}</div></div>` +
       `<div class="panel-sec"><h3>${icon('book-open', 'ic-sm')}스킬 문서<span class="muted">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 SKILL.md로 들어갑니다' : '기본 제공 스킬은 고칠 수 없습니다. 새 스킬을 만들어 씁니다'}</span></h3>` +
       `<div class="doc"><div class="doc-bar">${icon('file-text', 'ic-sm')}<span class="mono">${esc(s.skill_name)}/SKILL.md</span><span class="num">${(s.content || '').length.toLocaleString('ko-KR')}자</span></div><div class="prose" data-md="${esc(s.content || '')}"></div></div></div>` +
