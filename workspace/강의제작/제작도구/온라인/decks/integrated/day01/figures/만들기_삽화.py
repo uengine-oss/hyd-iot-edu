@@ -1829,84 +1829,58 @@ def two_actions() -> str:
     return svg(o)
 
 
-def property_card() -> str:
-    """57장: 같은 종류(센서) 노드 셋과, 노드마다 달린 같은 항목 하나(단위). 원 위 연하늘 칸은 종류, 원 아래는 이름 자리, 그 아래 두 칸 카드는 항목 이름 · 값 자리."""
-    o: list[str] = []
-    for x in (200, 600, 1000):
-        P = (x, 200, 70)
-        o.append(rect(x - 78, P[1] - P[2] - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
-        o += _node(P, "sensor")
-        o.append(rect(x - 170, 360, 340, 92, 14, fill=WHITE, stroke=NAVY, sw=3))
-        o.append(rect(x - 158, 372, 120, 68, 10, fill=PALE, stroke="none", sw=0))
-        o.append(rect(x - 26, 372, 184, 68, 10, fill=LIGHT, stroke="none", sw=0))
-    return svg(o)
-
-
-def schema_and_graph() -> str:
-    """61장: 위 띠 = 온톨로지(빈 원 셋: 조치 → 원인 → 고장 유형, 화살표 이름만). 아래 띠 = 지식 그래프(같은 자리의 실제 대상).
-    아래 띠에 원인 하나(떨리는 팬)를 더해 같은 고장 유형으로 잇는다(굵은 파란 화살표). 띠 왼쪽 끝은 띠 이름 자리."""
-    xs, yt, yb = (400, 690, 980), 118, 300
-    o: list[str] = [rect(15, 10, 1170, 196, 16, fill=PALE, stroke="none", sw=0), rect(15, 222, 1170, 292, 16, fill=WHITE, stroke=GREY, sw=3)]
+def ontology_two_bands() -> str:
+    """53장: 위 띠 = 온톨로지(정해 둔 종류 넷의 빈 원과 관계 셋), 아래 띠 = 지식 그래프(그 정한 대로 메모를 적은 실제 대상 넷).
+    화살표는 51장과 같은 이름 · 같은 방향(증상 → 고장 유형 ← 원인 ← 조치). 띠 왼쪽 끝은 띠 이름 자리. 1200×440."""
+    xs, yt, yb = (380, 620, 860, 1100), 112, 300
+    o: list[str] = [rect(15, 10, 1170, 180, 16, fill=PALE, stroke="none", sw=0), rect(15, 205, 1170, 225, 16, fill=WHITE, stroke=GREY, sw=3)]
     for x in xs:
-        o += dash_line(x, yt + 52, x, yb - 62, GREY, 3, 8, 7)
-    o += [arrow([(xs[0] + 52, yt), (xs[1] - 56, yt)], NAVY, sw=4.5, size=15), arrow([(xs[1] + 52, yt), (xs[2] - 56, yt)], NAVY, sw=4.5, size=15)]
+        o += dash_line(x, yt + 47, x, yb - 64, GREY, 3, 8, 7)
+    o += [arrow([(xs[0] + 47, yt), (xs[1] - 51, yt)], NAVY, sw=4.5, size=15),
+          arrow([(xs[2] - 47, yt), (xs[1] + 51, yt)], NAVY, sw=4.5, size=15),
+          arrow([(xs[3] - 47, yt), (xs[2] + 51, yt)], NAVY, sw=4.5, size=15)]
     for x in xs:
-        o.append(circle(x, yt, 46, fill=WHITE, stroke=NAVY, sw=3.5))
-    K, C, F, E = (xs[0], yb, 52), (xs[1], yb, 52), (xs[2], yb, 58), (690, 455, 42)
-    o += _edge_arrow(K, C) + _edge_arrow(C, F) + _edge_arrow(E, F, BLUE, sw=6, size=17)
-    o += _node(K, "wash") + _node(C, "pin") + _node(F, "fm", hot=True)
-    o.append(circle(E[0], E[1], E[2], fill=SKY, stroke=BLUE, sw=4))
-    o += _shaky_fan(E[0], E[1], 17, NORM)
-    return svg(o)
+        o.append(circle(x, yt, 42, fill=WHITE, stroke=NAVY, sw=3.5))
+    Y, Fm, C, K = (xs[0], yb, 52), (xs[1], yb, 56), (xs[2], yb, 52), (xs[3], yb, 52)
+    o += _edge_arrow(Y, Fm) + _edge_arrow(C, Fm) + _edge_arrow(K, C)
+    o += _node(Y, "rise") + _node(Fm, "fm") + _node(C, "pin") + _node(K, "wash")
+    return svg(o, h=440)
 
 
-FMAP = {"S": (150, 140, 46), "P": (450, 140, 46), "E": (750, 140, 46), "D": (1050, 140, 44),
-        "Y": (150, 380, 46), "F": (450, 380, 54), "C": (750, 380, 46), "R": (1050, 380, 46)}
-FMAP_EDGES = (("E", "P"), ("P", "S"), ("Y", "S"), ("Y", "F"), ("F", "P"), ("C", "F"), ("R", "C"), ("R", "D"))
-FMAP_KIND = {"E": "equip", "P": "cooler", "S": "sensor", "Y": "rise", "F": "fm", "C": "pin", "R": "wash", "D": "doc"}
-
-
-def fault_map(on=None, hot=()) -> str:
-    """63장: 설비 고장을 다룰 때 정한 종류와 관계 — 위 줄 센서 S · 부품 P · 설비 E · 근거 문서 D, 아래 줄 증상 Y · 고장 유형 F · 원인 C · 조치 R.
-    화살표 여덟은 실습 08과 같은 방향(가로 · 세로만, 교차 없음). 위 줄 이름은 원 위에, 아래 줄 이름은 원 아래에 얹는다.
-    on이 있으면 그 원과 hot 화살표만 밝히고 나머지는 회색으로 둔다."""
+def property_evidence() -> str:
+    """58장: 같은 종류(원인)의 노드 셋과, 노드마다 달린 같은 항목 하나(증거). 원 위 연하늘 칸은 종류, 원 아래는 이름 자리,
+    그 아래 두 칸 카드는 항목 이름(왼쪽) · 그 노드에 적은 값(오른쪽, 두 줄까지) 자리. 1200×450."""
     o: list[str] = []
-    for a, b in FMAP_EDGES:
-        lit = on is None or (a, b) in hot
-        o += _edge_arrow(FMAP[a], FMAP[b], (BLUE if (a, b) in hot else NAVY) if lit else GREY, sw=4.5 if lit else 3, size=14)
-    for k, P in FMAP.items():
-        o += _node(P, FMAP_KIND[k], hot=(k == "F"), grey=(on is not None and k not in on))
-    return svg(o)
+    for x, kind in ((205, "pin"), (600, "fanbad"), (995, "amb")):
+        P = (x, 170, 62)
+        o.append(rect(x - 78, 50, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
+        o += _node(P, kind)
+        o.append(rect(x - 188, 300, 376, 130, 14, fill=WHITE, stroke=NAVY, sw=3))
+        o.append(rect(x - 176, 312, 92, 106, 10, fill=PALE, stroke="none", sw=0))
+        o.append(rect(x - 72, 312, 248, 106, 10, fill=LIGHT, stroke="none", sw=0))
+    return svg(o, h=450)
 
 
-def walk_to_causes() -> str:
-    """64장: 값이 오른 센서 S(왼쪽 위)를 관측된다로 가리키는 증상 Y(왼쪽 아래)에서 출발해 → 가리킨다 → 고장 유형 F → 일어난다 → 부품 P(위),
-    F로 들어오는 「일으킨다」 셋을 반대로 따라 원인 후보 셋(오른쪽). 실습 08과 같은 방향."""
-    S, Y, F, P = (130, 125, 50), (130, 390, 50), (470, 390, 62), (470, 125, 50)
-    Cs = ((930, 85, 48), (930, 265, 48), (930, 445, 48))
+OMAP = {"S": (150, 150, 42), "P": (450, 150, 42), "E": (750, 150, 42), "D": (1050, 150, 42),
+        "Y": (150, 380, 42), "F": (450, 380, 42), "C": (750, 380, 42), "R": (1050, 380, 42)}
+OMAP_EDGES = (("E", "P"), ("P", "S"), ("Y", "S"), ("Y", "F"), ("F", "P"), ("C", "F"), ("R", "C"), ("R", "D"))
+
+
+def ontology_map() -> str:
+    """61장: 설비 고장을 다루는 온톨로지 — 실제 대상 없이 종류 여덟(빈 원, 53장 위 띠와 같은 그림체)과 관계 여덟.
+    위 줄 센서 S · 부품 P · 설비 E · 근거 문서 D, 아래 줄 증상 Y · 고장 유형 F · 원인 C · 조치 R.
+    화살표는 실습 08과 같은 방향(가로 · 세로만, 교차 없음). 종류 이름은 위 줄은 원 위에, 아래 줄은 원 아래에 얹는다."""
     o: list[str] = []
-    o += _edge_arrow(Y, S, BLUE, sw=5) + _edge_arrow(Y, F, BLUE, sw=5) + _edge_arrow(F, P, BLUE, sw=5)
-    for c in Cs:
-        o += _edge_arrow(c, F, NAVY, sw=4.5)
-    o += _node(S, "sensor") + _node(Y, "rise") + _node(F, "fm", hot=True) + _node(P, "cooler")
-    o += _node(Cs[0], "pin") + _node(Cs[1], "fanbad") + _node(Cs[2], "amb")
-    return svg(o)
-
-
-def cause_to_actions() -> str:
-    """66장: 남은 원인 C(왼쪽 위)가 고장 유형 F(왼쪽 아래)를 일으키고, F는 근본 조치 R(가운데 위)로 「근본 해결된다」 · 완화 조치 M(가운데 아래)으로 「완화된다」.
-    R은 C를 「없앤다」, 두 조치는 근거 문서 D(오른쪽)를 「참조한다」. 실습 08과 같은 방향."""
-    C, F, R, M, D = (220, 130, 58), (220, 390, 62), (640, 130, 58), (640, 390, 58), (1030, 260, 62)
-    o: list[str] = []
-    o += _edge_arrow(C, F) + _edge_arrow(F, R, BLUE, sw=5.5, size=17) + _edge_arrow(F, M, BLUE, sw=5.5, size=17) + _edge_arrow(R, C)
-    o += _edge_arrow(R, D) + _edge_arrow(M, D)
-    o += _node(C, "pin") + _node(F, "fm", hot=True) + _node(R, "wash") + _node(M, "fanmax") + _node(D, "doc")
+    for a, b in OMAP_EDGES:
+        o += _edge_arrow(OMAP[a], OMAP[b], NAVY, sw=4.5, size=14)
+    for x, y, r in OMAP.values():
+        o.append(circle(x, y, r, fill=WHITE, stroke=NAVY, sw=3.5))
     return svg(o)
 
 
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
-                 "값_같은숫자.svg", "메모_다시적기.svg", "물음_따라가기.svg", "관계_선과화살표.svg", "조치_두화살표.svg", "속성_항목.svg",
-                 "정한것_적은것.svg", "고장지도.svg", "따라가기_원인후보.svg", "따라가기_조치.svg"}
+                 "값_같은숫자.svg", "메모_다시적기.svg", "물음_따라가기.svg", "관계_선과화살표.svg", "조치_두화살표.svg",
+                 "온톨로지_두띠.svg", "속성_증거.svg", "온톨로지_지도.svg"}
 
 
 def main():
@@ -1930,9 +1904,8 @@ def main():
            "메모_두읽기.svg": memo_two_readings(), "온톨로지_틀.svg": ontology_frame(), "제약_걸러내기.svg": constraint_check(),
            "원인에서_조치로.svg": cause_to_action(),
            "값_같은숫자.svg": same_reading(), "메모_다시적기.svg": memo_rewritten(), "물음_따라가기.svg": ask_and_follow(),
-           "관계_선과화살표.svg": line_vs_named(), "조치_두화살표.svg": two_actions(), "속성_항목.svg": property_card(),
-           "정한것_적은것.svg": schema_and_graph(), "고장지도.svg": fault_map(), "따라가기_원인후보.svg": walk_to_causes(),
-           "따라가기_조치.svg": cause_to_actions()}
+           "관계_선과화살표.svg": line_vs_named(), "조치_두화살표.svg": two_actions(),
+           "온톨로지_두띠.svg": ontology_two_bands(), "속성_증거.svg": property_evidence(), "온톨로지_지도.svg": ontology_map()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
