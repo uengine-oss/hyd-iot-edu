@@ -1380,15 +1380,17 @@ def lineage_mqtt_ot() -> str:
 
 
 def flow_vs_store() -> str:
-    """위: 기록이 차례로 지나가는 컨베이어(이벤트 로그). 그 끝에서 아래 창고 선반(시계열 저장소)으로 옮겨 쌓이고, 선반은 시각 축을 따라 칸이 놓여 구간(하늘색 두 열)을 골라 꺼낸다."""
+    """위: 25장 이벤트 로그와 같은 꼴의 기록 띠(들어온 차례대로 덧붙고 오른쪽 끝 점선 칸이 새 기록, 위 화살표가 읽는 차례).
+    띠 끝에서 아래 창고 선반(시계열 저장소)으로 옮겨 쌓이고, 선반은 시각 축을 따라 칸이 놓여 구간(하늘색 두 열)을 골라 꺼낸다."""
     o: list[str] = []
-    o.append(rect(60, 125, 600, 50, 25, fill=LIGHT, stroke=NAVY))
-    for cx in (85, 635):
-        o.append(circle(cx, 150, 18, fill=WHITE, stroke=NAVY, sw=3))
-    for i, bx in enumerate((150, 250, 350, 450, 550)):
-        o.append(rect(bx - 26, 72, 52, 52, 5, fill=PALE if i == 4 else WHITE, stroke=NAVY, sw=3))
-    o.append(arrow([(130, 40), (600, 40)], NAVY, sw=4, size=14))
-    o.append(arrow([(680, 150), (860, 150), (860, 205)], BLUE, sw=5, size=16))
+    x0, cw, ch, y, n = 60, 62, 74, 140, 9
+    for i in range(n):
+        if i == n - 1:
+            o += dash_rect(x0 + i * cw, y - ch / 2, cw, ch, NAVY, 3, 9, 7)
+        else:
+            o.append(rect(x0 + i * cw, y - ch / 2, cw, ch, 4, fill=PALE if i >= n - 3 else LIGHT, stroke=NAVY, sw=3))
+    o.append(arrow([(90, 52), (580, 52)], NAVY, sw=4, size=14))
+    o.append(arrow([(x0 + n * cw + 12, y), (860, y), (860, 205)], BLUE, sw=5, size=16))
     gx, gy, cw, ch = 760, 220, 95, 52
     for r_ in range(4):
         for c in range(4):
@@ -1399,7 +1401,12 @@ def flow_vs_store() -> str:
 
 
 def cause_branches() -> str:
-    """경보 → 고장 유형 → 원인 후보 두 갈래 → 갈래마다 확인할 값 → 흔적 없는 아래 갈래는 내려놓고(회색 · X) 위 갈래만 조치로."""
+    """경보 → 고장 유형 → 원인 후보 두 갈래 → 갈래마다 확인할 값 → 흔적 없는 아래 갈래는 내려놓고(회색 · X) 위 갈래만 조치로.
+    두 후보는 같은 꼴(물음표)이다 — 사례의 어느 원인이 남는지를 그림이 보이지 않게(덱 D-7)."""
+    def cause_mark(cx, cy, color):
+        return [path(f"M {cx - 15},{cy - 12} Q {cx - 15},{cy - 32} {cx},{cy - 32} Q {cx + 17},{cy - 32} {cx + 17},{cy - 15} "
+                     f"Q {cx + 17},{cy - 2} {cx},{cy + 3} L {cx},{cy + 11}", stroke=color, sw=6),
+                circle(cx, cy + 24, 4.5, fill=color, stroke=color, sw=1)]
     o: list[str] = []
     yb, yu, yl = 260, 130, 390
     o.append(arrow([(150, yb), (232, yb)], NAVY, sw=4.5))
@@ -1412,9 +1419,9 @@ def cause_branches() -> str:
     o.append(circle(295, yb, 62, fill=SKY, stroke=NAVY, sw=4))
     o += [line(270, yb - 22, 320, yb - 22, stroke=NAVY, sw=4), line(270, yb, 320, yb, stroke=NAVY, sw=4), line(270, yb + 22, 305, yb + 22, stroke=NAVY, sw=4)]
     o.append(circle(556, yu, 52, fill=PALE, stroke=BLUE, sw=4))
-    o += dust(556, yu, ON, 0.85)
+    o += cause_mark(556, yu, NAVY)
     o.append(circle(556, yl, 52, fill=LIGHT, stroke=GREY, sw=3))
-    o += fan(556, yl, 30, OFF)
+    o += cause_mark(556, yl, GREY)
     o.append(circle(800, yu, 46, fill=WHITE, stroke=BLUE, sw=4))
     o += gauge(800, yu, ON, r=26, hot=True)
     o.append(circle(800, yl, 46, fill=LIGHT, stroke=GREY, sw=3))
@@ -1811,8 +1818,8 @@ def ask_and_follow() -> str:
 
 def names_apart() -> str:
     """53장: 두 정비 담당이 같은 고장의 까닭을 하나씩, 서로 다른 종류 이름(원인 · 까닭)과 화살표 이름(일으킨다 · 유발한다)으로 적었다.
-    컴퓨터가 「원인 · 일으킨다」를 맞춰 따라간 위 줄 화살표만 파랑. 오른쪽 칸은 물음과 찾은 답 자리. 1200×500."""
-    o: list[str] = [rect(800, 40, 385, 420, 14, fill=LIGHT, stroke="none", sw=0)]
+    컴퓨터가 「원인 · 일으킨다」를 맞춰 따라간 위 줄 화살표만 파랑. 오른쪽 칸은 물음과 찾은 답 자리(글 높이에 맞춘 상자). 1200×500."""
+    o: list[str] = [rect(800, 110, 385, 280, 14, fill=LIGHT, stroke="none", sw=0)]
     for y, kind, hot in ((150, "pin", True), (375, "fanbad", False)):
         C, F = (300, y, 52), (600, y, 56)
         o += _edge_arrow(C, F, BLUE if hot else NAVY, sw=5 if hot else 4.5)
@@ -1837,14 +1844,15 @@ def read_and_search() -> str:
 
 def two_actions() -> str:
     """58장: 한 줄에 완화 조치 M ← 완화된다 ← 고장 유형 F → 근본 해결된다 → 근본 조치 R → 없앤다 → 원인 C(완화 · 근본은 파랑).
-    원 위 연하늘 칸은 종류 이름표 자리(조치 · 고장 유형 · 조치 · 원인), 원 아래는 이름, 그 아래는 두 조치 뒤에 남는 것. 실습 08과 같은 방향. 1200×480."""
-    M, F, R, C = (150, 270, 58), (450, 270, 64), (750, 270, 58), (1050, 270, 58)
+    원 위 연하늘 칸은 종류 이름표 자리(조치 · 고장 유형 · 조치 · 원인), 원 아래는 이름, 그 아래는 두 조치 뒤에 남는 것. 실습 08과 같은 방향.
+    1200×400 — 위 여백 없이 종류 칸이 그림 맨 위 가까이에서 시작한다(내용이 제목 밑줄 아래로 밀리지 않게)."""
+    M, F, R, C = (150, 190, 58), (450, 190, 64), (750, 190, 58), (1050, 190, 58)
     o: list[str] = []
     o += _edge_arrow(F, M, BLUE, sw=5.5, size=17) + _edge_arrow(F, R, BLUE, sw=5.5, size=17) + _edge_arrow(R, C)
     o += _node(M, "fanmax") + _node(F, "fm") + _node(R, "wash") + _node(C, "pin")
     for (x, y, r) in (M, F, R, C):
         o.append(rect(x - 78, y - r - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
-    return svg(o, h=480)
+    return svg(o, h=400)
 
 
 def ontology_two_bands() -> str:
@@ -1881,7 +1889,8 @@ def property_evidence() -> str:
 
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
                  "값_같은숫자.svg", "메모_다시적기.svg", "물음_따라가기.svg", "조치_두화살표.svg",
-                 "온톨로지_두띠.svg", "속성_증거.svg", "이름_제각각.svg", "관계_읽기찾기.svg", "메모_두읽기.svg"}
+                 "온톨로지_두띠.svg", "속성_증거.svg", "이름_제각각.svg", "관계_읽기찾기.svg", "메모_두읽기.svg",
+                 "통로_창고.svg", "원인후보_갈래.svg"}
 
 
 def main():
