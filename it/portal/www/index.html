@@ -229,12 +229,13 @@
 
   <!-- ───────── 설비 회로(유압 설비): 회로 그림과 지금 값. 사건의 경과 · 판단 · 승인 · 결과는 처리 건 화면 한 곳에 있다 — 이 화면은 그리로 잇는다 ───────── -->
   <section class="view" id="view-incidents" data-kit>
-    <!-- 밝은 캔버스 하나(디자인기준 6-4): 고른 설비의 회로를 크게, 나머지 둘을 작게(누르면 그 설비가 크게 바뀐다) → 캔버스 아래 한 줄(#incList — 고른 설비의 상태 · 그 설비의 처리 건 수 · 가는 길 하나, 목록의 사본은 두지 않는다).
+    <!-- 밝은 캔버스 하나(디자인기준 6-4): 설비 세 대의 회로를 같은 크기로 세로로 쌓는다(줄 하나 = 설비 하나 — 머리 줄에 이름 · 상태 · 운전 모드, 진행 중인 처리 건이 있을 때만 「처리 건에서 보기」).
+         캔버스 발치(#incList)는 진행 중인 처리 건이 하나도 없을 때만 다음 할 일로 가는 길 하나를 보인다. 처리 건 목록의 사본은 두지 않는다.
          그리는 코드는 app.js renderScada · renderIncList, 모양은 plant.css(.hc-*) -->
-    <div data-page-head="incidents" data-sub="고른 설비의 유압 회로에서 값이 어디서 벗어났는지 봅니다."></div>
+    <div data-page-head="incidents" data-sub="설비 3기의 유압 회로에서 값이 어디서 벗어났는지 봅니다."></div>
     <div class="canvas hc-canvas">
       <div class="canvas-bar"><span class="cv-legend"><span><i class="hc-lg pipe"></i>작동유가 흐르는 배관</span><span><i class="hc-lg sensor"></i>센서</span><span><i class="hc-lg hot"></i>경보 기준을 넘은 값</span></span></div>
-      <div class="hc-grid" id="scada" role="group" aria-label="설비 고르기"></div>
+      <div class="hc-grid" id="scada" role="group" aria-label="설비 3기의 유압 회로"></div>
       <div id="incList" aria-live="polite"></div>
     </div>
   </section>

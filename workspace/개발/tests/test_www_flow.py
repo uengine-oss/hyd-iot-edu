@@ -238,6 +238,56 @@ def test_진행_길의_끝남_지금_남음은_밝은_캔버스에서_서로_다
         served.close()
 
 
+def test_누르면_열리는_흐름_그림의_상자는_손가락_모양이고_올리면_그림자가_지며_누를_수_없는_그림의_상자는_그렇지_않다():
+    """처리 건의 흐름 그림은 상자를 누르면 그 단계의 옆 판이 열린다(onPick). 누를 수 있다는 것이 그림에서 보여야 한다(디자인기준 1-6):
+    상자(끝남 · 지금 · 남음 모두 — 남은 단계도 눌리면 정의가 열린다)는 손가락 모양이고 올리면 그림자가 지며 올려 두면 뜨는 한 줄이 있다. 갈림 · 시작 · 끝은 눌리지 않으므로 손가락 모양이 아니다.
+    누름 처리가 없는 그림(흐름 화면의 보기)의 상자는 손가락 모양도 올림 표시도 없다."""
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from playwright.sync_api import sync_playwright
+    from conftest import WWW, Served
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    view = {'definition': DEF, 'instance': {'proc_inst_id': 'p1', 'status': 'RUNNING', 'end_event': None},
+            'workitems': [wi('T_agent', 'DONE', '01'), wi('T_approve', 'IN_PROGRESS', '02'), wi('T_cmd', 'TODO', None)]}
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', lambda route: route.fulfill(status=404, body='') if '/bpmn' in route.request.url else route.fulfill(json={}))
+            page.goto(served.url + '/index.html')
+            page.wait_for_function("() => typeof hydFlow !== 'undefined' && typeof UI !== 'undefined'")
+            page.evaluate("""view => { window.picked = []; for (const [id, top, opts] of [['pickHost', 0, { mine: ['T_approve'], onPick: x => window.picked.push(x) }], ['plainHost', 430, { mine: ['T_approve'] }]]) {
+                const host = document.createElement('div'); host.id = id; host.style.cssText = `position:fixed;left:0;top:${top}px;width:1100px;z-index:999`; document.body.appendChild(host); hydFlow.mount(host, view, opts); } }""", view)
+            page.wait_for_function("() => ['pickHost', 'plainHost'].every(id => { const h = document.getElementById(id); return h._flow && h._flow.D; })", timeout=20000)
+            page.wait_for_timeout(400)
+            look = """([host, id]) => { const g = document.querySelector(`#${host} .djs-shape[data-element-id="${hydFlow.xid(id)}"]`), v = g.querySelector('.djs-visual');
+              return { cursor: getComputedStyle(g).cursor, filter: getComputedStyle(v).filter, tip: (g.querySelector(':scope > title') || {}).textContent || '' }; }"""
+            center = """([host, id]) => { const r = document.querySelector(`#${host} .djs-shape[data-element-id="${hydFlow.xid(id)}"] .djs-visual > rect`).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"""
+            for step in ('T_agent', 'T_approve', 'T_cmd'):
+                page.mouse.move(1, 899); page.wait_for_timeout(200)
+                rest = page.evaluate(look, ['pickHost', step])
+                page.mouse.move(*page.evaluate(center, ['pickHost', step])); page.wait_for_timeout(250)
+                over = page.evaluate(look, ['pickHost', step])
+                assert rest['cursor'] == 'pointer' and '자세한 내용' in rest['tip'], (step, rest)
+                assert over['filter'] != rest['filter'] and 'drop-shadow' in over['filter'], (step, rest, over)
+            page.mouse.click(*page.evaluate(center, ['pickHost', 'T_agent']))
+            assert page.evaluate('window.picked') == ['T_agent']
+            # 갈림 · 시작 · 끝은 누르는 것이 아니다
+            others = page.evaluate("""() => [...document.querySelectorAll('#pickHost .djs-shape')].filter(g => !g.classList.contains('can-pick') && g.querySelector('.djs-visual > :is(polygon, circle)')).map(g => getComputedStyle(g).cursor)""")
+            assert others and 'pointer' not in others, others
+            # 누름 처리가 없는 그림: 손가락 모양도 올림 표시도 없다
+            page.mouse.move(1, 899); page.wait_for_timeout(200)
+            rest = page.evaluate(look, ['plainHost', 'T_agent'])
+            page.mouse.move(*page.evaluate(center, ['plainHost', 'T_agent'])); page.wait_for_timeout(250)
+            over = page.evaluate(look, ['plainHost', 'T_agent'])
+            assert rest['cursor'] != 'pointer' and over == rest and not rest['tip'], (rest, over)
+            b.close()
+    finally:
+        served.close()
+
+
 def test_흐름_그림은_도구_막대가_그림_칸_밖에_서므로_맨_위_상자_위에_빈_띠를_남기지_않는다():
     """흐름 화면 작업자가 찾은 것(2026-11-16): 긴 흐름을 읽을 크기로 열 때(fitReadable) 그림 위에 56px 를 비웠다 — 도구 막대가 그림에 겹쳐 뜨던 때의 값이다.
     지금 막대는 그림 칸 위에 따로 서므로 그 자리가 60px 쯤의 빈 띠로 남았다. 흐름 화면의 그림(show)을 실제 브라우저로 잰다: 그림 칸의 윗선에서 보이는 맨 위 상자(차선 틀 포함)까지가

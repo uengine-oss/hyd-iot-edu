@@ -388,7 +388,22 @@
   }
   function setMode(mode) { I.form.mode = I.form.mode === mode ? null : mode; I.msg = ''; renderTodoPanel(); if (I.form.mode) $('#tdReason')?.focus({ preventScroll: true }); }
 
+  /* 누른 뒤 서버가 답할 때까지(승인은 서버가 지금 조건을 다시 확인하느라 1~2초, 실제 AI 모드에서는 더 길다): 단추만 꺼 두지 않고 판 아래에 지금 하는 일을 말한다
+     (I.busyNow = { text, hint, since }). 판을 다시 그려도(2초마다) 같은 줄이 남고, 걸린 시간이 이어진다 */
+  const BUSY_SAY = {
+    승인: ['승인을 보내는 중', '서버가 지금 조건으로 승인한 조치를 다시 확인한 뒤 승인을 기록하고 실행 단계로 넘깁니다.'],
+    반려: ['반려를 보내는 중', '서버가 반려를 기록하고, 승인 뒤에 하려던 조치를 실행하지 않고 처리 건을 닫습니다.'],
+    미리: ['고른 안을 미리 계산하는 중', '고른 안과 넣은 값으로 실행할 내용과 범위를 서버가 다시 계산합니다. 아직 아무것도 실행하지 않습니다.'],
+    단계: ['결과를 내는 중', '서버가 낸 값을 검사하고 다음 단계로 넘깁니다.'],
+    질문: ['답을 보내는 중', '답을 기록하면 AI 에이전트가 그 답을 받아 이어서 일합니다.'],
+  };
+  const busyNow = say => ({ text: BUSY_SAY[say][0], hint: BUSY_SAY[say][1], since: new Date().toISOString() });
   function renderTodoPanel() {
+    drawTodoPanel();
+    const box = $('#todoPanel'), B = I.busy && I.busyNow; if (!box || !B) return;
+    (box.querySelector('section.turn') || box).insertAdjacentHTML('beforeend', `<div class="turn-busy" data-turn-busy>${hydLive.waitHtml(B.text, { since: B.since, hint: B.hint, late: 2 })}</div>`);
+  }
+  function drawTodoPanel() {
     const box = $('#todoPanel'); if (!box) return;
     const asked = I.asked.find(t => t.proc_inst_id === I.sel);
     if (asked) { renderAskPanel(asked); return; }
@@ -677,12 +692,12 @@
 
   // 단계 패널의 쓰기 한 번(승인 · 거절 · 제출 · 답 · 조치 카드 승인 · 거절 공통): 바쁨 → 단추를 끈 채 다시 그림 → 요청 → 다시 읽기가 끝날 때까지
   // 단추를 꺼 둔다. 응답 뒤 옛 단추가 잠깐 켜져 있다가 두 번째 요청이 「이미 처리됨」으로 거절되는 틈이 없다(W1-07)
-  async function act(task, what, send, done) {
-    if (I.busy) return null; I.busy = true; I.msg = ''; renderTodoPanel();
+  async function act(task, what, send, done, say) {
+    if (I.busy) return null; I.busy = true; I.busyNow = busyNow(say || what); I.msg = ''; renderTodoPanel();
     let failed = null;
     try { await send(); I.msg = ''; if (done) done(); }
     catch (e) { failed = e; refused(task, e, what); }
-    try { await load(true); } finally { I.busy = false; renderTodoPanel(); }
+    try { await load(true); } finally { I.busy = false; I.busyNow = null; renderTodoPanel(); }
     // 결과만 한 줄로 알린다(오른쪽 아래). 실패의 까닭은 판 안에 남는다
     if (!failed && UI.toast) UI.toast(I.doneText || '처리했습니다. 다음 단계로 넘어갑니다.', { tone: 'ok' });
     if (!failed) window.scrollTo({ top: 0, behavior: 'smooth' });      // 누른 뒤의 상태(머리 · 기다림 안내 · 결과)가 첫 화면에 보이게 — 판이 사라지며 화면이 아래로 밀려 있었다
@@ -692,17 +707,17 @@
   function approveTask(task, decision) {
     I.doneText = decision === '승인' ? '승인했습니다. 다음 단계로 넘어갑니다.' : '반려했습니다. 승인 뒤 조치는 실행하지 않습니다.';
     return act(task, '승인', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/approve`, { decision, option: decision === '승인' ? I.form.option : null,
-      by: I.form.by, role: I.form.role, reason: I.form.reason }), () => { I.form.approveFor = null; });
+      by: I.form.by, role: I.form.role, reason: I.form.reason }), () => { I.form.approveFor = null; }, decision === '승인' ? '승인' : '반려');
   }
 
   async function previewCard(task, parameters) {
-    if (I.busy) return; I.busy = true; I.msg = ''; renderTodoPanel();
+    if (I.busy) return; I.busy = true; I.busyNow = busyNow('미리'); I.msg = ''; renderTodoPanel();
     const form = I.form, decision = I.decId, option = form.option;
     try { const review = await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/decision-preview`, { decision, option, parameters });
       if (I.form === form && I.decId === decision && I.form.option === option) { I.form.review = review; I.form.needPreview = false; }
     }
     catch (e) { if (I.form === form) { I.form.review = null; I.msg = e.message; } }
-    finally { I.busy = false; renderTodoPanel(); }
+    finally { I.busy = false; I.busyNow = null; renderTodoPanel(); }
   }
 
   async function rejectCard(task) {
@@ -712,7 +727,7 @@
     if (!I.form.by.trim() || !I.form.role) { I.msg = '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.'; renderTodoPanel(); return; }
     I.doneText = '반려했습니다. 승인 뒤 조치는 실행하지 않습니다.';
     return act(task, '승인', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/reject-card`, {
-      decision: I.decId, by: I.form.by.trim(), role: I.form.role, reason }), () => { I.dec = null; });
+      decision: I.decId, by: I.form.by.trim(), role: I.form.role, reason }), () => { I.dec = null; }, '반려');
   }
 
   async function selectCard(task) {

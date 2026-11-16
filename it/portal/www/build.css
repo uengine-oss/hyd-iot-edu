@@ -70,6 +70,13 @@
 .mcp-more > .muted { margin-top: 10px; }
 .mcp-req { color: var(--st-fail-ink); }
 .mcp-rows { max-height: 360px; overflow: auto; margin-top: 12px; }
+/* 받은 결과를 모양대로 그린 것(mcp.js shapeHtml): 표 · 목록 · 이름–값 줄. 결과 칸은 흰 바탕 위에 둔다 */
+.mcp-shape { margin-top: 12px; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--r-in); background: var(--background); min-width: 0; }
+.mcp-shape > .mcp-rows:first-child, .mcp-shape > .mcp-h:first-child { margin-top: 0; }
+.mcp-shape .table td { white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.mcp-shape-note { margin: 8px 0 0; font-size: var(--fs-xs); }
+.mcp-shape-list { margin: 0; padding-left: 18px; list-style: disc; font-size: var(--fs-body); }
+.mcp-shape-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .mcp-try .result + .code, .mcp-try .fold { margin-top: 10px; }
 .mcp-try .fold h4 { margin: 10px 0 6px; font-size: var(--fs-xs); font-weight: 600; }
 .mcp-try .fold h4:first-child { margin-top: 0; }

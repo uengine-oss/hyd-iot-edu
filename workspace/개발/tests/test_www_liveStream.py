@@ -251,3 +251,132 @@ def test_작업_행을_처음_읽어_오는_동안_지나간_도구_호출도_�
             b.close()
     finally:
         served.close()
+
+
+class CachedExtraction(Extraction):
+    """저장된 추출 결과를 쓰는 문서(제공 문서 — procsvc manual_approved_cache.start · manual_cache.result 의 꼴). AI 실행 이벤트가 없다.
+    추출 시작(POST)과 결과 읽기(GET)의 응답을 시험이 붙들었다가 풀어, 그 사이 화면이 무엇을 보이는지 잰다."""
+
+    def __init__(self):
+        super().__init__()
+        self.held = {}
+        self.origin = dict(bundle='b' * 64, revision='2026-10-27-reviewed-1', instance='manual_source_extraction.old', review_notes=['단계 4의 인용을 한 문장으로 한정'])
+        a = lambda start, end: dict(page=1, start=start, end=end, quote='인용', located='exact')
+        self.cached_preview = dict(
+            source_id=SRC, document_id='doc-1', filename='내문서.md', batch='b2', previous_batch=None, status='READY', chars=1200, warnings=[], page_reviews=None,
+            sections=[dict(ref='X-1', title='점검', excerpt='본문 1', anchor=a(10, 40)), dict(ref='X-2', title='판정 기준', excerpt='본문 2', anchor=a(300, 330)),
+                      dict(ref='X-3', title='적용 범위', excerpt='본문 3', anchor=a(700, 720))],
+            procedures=[dict(id='SOP-X-11', name='벨트 점검', section='X-1', anchor=a(50, 80), steps=[dict(order=1, text='벨트를 본다.', manual='X-1', anchor=a(90, 110))],
+                             link=dict(failureMode='fm:x', relation='MITIGATED_BY', kind='work_order', approver='role:operator', affects=[]))],
+            knowledge=dict(rules=[dict(id='rule:x1', name='판정 규칙', anchor=a(340, 380))], causes=[dict(id='cause:x1', name='원인 하나', anchor=a(400, 420))], evidence=[], failure_modes=[]),
+            coverage=dict(pages=[], chars=1200, cited=600, ratio=0.5),
+            validation=dict(checked=True, technical_ready=True, needs_human_review=True, can_commit=False, issues=[]),
+            extraction=dict(instance=INST, workitem=WID, generation=0, cache=dict(key='k' * 64, stored=True, validated=True, origin=self.origin)))
+
+    def answer(self, route):
+        url, method = route.request.url.split('?')[0], route.request.method
+        if url.endswith(f'/sources/{SRC}/extractions') and method == 'POST':
+            self.held['start'] = lambda: route.fulfill(json=dict(instance=INST, status='DONE', source_id=SRC, segments=1,
+                                                               cache=dict(key='k' * 64, reused=False, validated=False, origin=self.origin)))
+            return None
+        if url.endswith(f'/sources/{SRC}/extractions/{INST}'):
+            self.reads += 1
+            self.held['result'] = lambda: route.fulfill(json=dict(instance=INST, workitem=WID, status='DONE', log=None, preview=self.cached_preview,
+                                                                cache=dict(key='k' * 64, stored=True, validated=True, origin=self.origin)))
+            return None
+        if url.endswith('/api/todolist/' + WID):
+            return route.fulfill(json=dict(id=WID, proc_inst_id=INST, activity_id='T', activity_name='원문 근거로 SOP 제안', status='DONE', draft_status=None,
+                                           start_date=datetime.now(timezone.utc).isoformat(), end_date=datetime.now(timezone.utc).isoformat(), user_id='sys:agent',
+                                           agent_mode='COMPLETE', agent_orch='cliagents', consumer='w', log=None, output=None, generation=0, tool='formHandler:manual_proposal', events=[]))
+        return super().answer(route)
+
+    def release(self, page, what):
+        page.wait_for_function('() => true')      # 붙든 요청이 도착할 틈
+        for _ in range(100):
+            if what in self.held:
+                break
+            page.wait_for_timeout(50)
+        self.held.pop(what)()
+
+
+TRAIL_JS = "() => [...document.querySelectorAll('#manualResult [data-live-trail] .lv-step')].filter(n => n.getClientRects().length).map(n => n.className.replace('lv-step ', '') + ':' + n.querySelector('b').textContent)"
+
+
+def test_저장된_추출_결과를_쓰는_문서도_누른_순간부터_서버가_하는_일이_단계로_보이고_끝난_뒤_거친_단계와_절마다_뽑힌_것이_남는다():
+    """사용자 2026-11-16 「기존 인제스천 어떻게 처리되는지 그 과정을 볼 수 없이 그냥 기다리기만 했음」: 제공 문서는 저장된 추출 결과를 써서 「저장된 추출 결과입니다」 한 줄로
+    끝났고 「추출 과정 보기」도 없었다. 그 결과를 만든 AI 실행의 기록은 없으므로 지어내지 않고, 요청이 실제로 오간 차례와 그 결과에서 절마다 뽑힌 것을 보인다."""
+    from playwright.sync_api import sync_playwright
+    served, world = _serve(), CachedExtraction()
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.add_init_script(FAKE_ES)
+            page.route('**/svc/**', world.answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'knowledge')
+            page.click("#manualPick [data-pick-mode='file']")
+            page.set_input_files('#manualFile', dict(name='내문서.md', mimeType='text/markdown', buffer='# 절\n1. 단계'.encode()))
+            page.locator('#manualPreview').click()
+            page.locator('#manualAgentExtract').click()
+            # 누른 순간(서버가 답하기 전): 지금 하는 일이 단계 한 줄로 보인다 — 단추의 도는 고리만 있지 않다
+            page.wait_for_function(f"() => JSON.stringify(({TRAIL_JS})()) === JSON.stringify(['run:원문 확인 · 추출 작업 열기'])", timeout=1000)
+            world.release(page, 'start')
+            # 서버가 저장된 결과를 쓴다고 답했다 — 첫 단계가 그 사실을 말하고 끝나며, 다음 단계(대조)가 하는 중이 된다. 결과 읽기는 아직 붙들려 있다
+            page.wait_for_function(f"() => JSON.stringify(({TRAIL_JS})()) === JSON.stringify(['ok:원문 확인 · 추출 작업 열기', 'run:저장된 추출 결과를 원문 · 지금 지식과 대조', 'wait:검토 화면 준비'])", timeout=3000)
+            said = page.inner_text('#manualResult [data-live-trail] .lv-step.ok')
+            assert 'AI가 다시 읽지 않고 저장된 추출 결과를 씁니다' in said and '2026-10-27-reviewed-1' in said, said
+            assert page.locator('#manualLive [data-lv-seg-none]').count() == 0 or not page.locator('#manualLive [data-lv-seg-none]').first.is_visible(), '빈 실행 기록 칸이 보인다'
+            world.release(page, 'result')
+            page.wait_for_selector('#manualCommit', timeout=8000)
+            # 끝난 뒤(3단계): 거친 단계 셋이 걸린 시간과 함께 결과 요약 바로 아래에 접히지 않고 남아 있다(검토 목록보다 위)
+            assert page.evaluate(TRAIL_JS) == ['ok:원문 확인 · 추출 작업 열기', 'ok:저장된 추출 결과를 원문 · 지금 지식과 대조', 'ok:검토 화면 준비']
+            assert page.evaluate("() => { const r = s => document.querySelector(s).getBoundingClientRect(); return r('#manualResult .result').bottom <= r('#manualResult [data-live-trail]').top && r('#manualResult [data-live-trail]').bottom <= r('#manualItems').top; }")
+            steps = page.locator('#manualResult [data-live-trail] .lv-step')
+            assert all(steps.nth(i).locator('.lv-time').inner_text().strip() for i in range(3)), '끝난 단계에 걸린 시간이 없다'
+            verify = steps.nth(1).inner_text()
+            assert '인용 7곳' in verify and '50 %' in verify and '확인할 곳 0건' in verify, verify      # 절 3 · 절차 1 · 단계 1 · 규칙 1 · 원인 1
+            # 「추출 과정 보기」(접힘 — 결과가 먼저)를 펴면 절마다 뽑힌 것: 절의 원문 범위 안에 인용이 놓인 조치 방법 · 지식 후보
+            assert not page.evaluate("() => document.querySelector('#manualProcess').open")
+            page.locator('#manualProcess > summary').click()
+            page.locator('#manualProcess [data-cached-yield] .step').first.wait_for(state='visible', timeout=3000)
+            rows = page.locator('#manualProcess [data-cached-yield] .step')
+            got = [(rows.nth(i).locator('.step-title').inner_text(), rows.nth(i).locator('.step-sub').inner_text()) for i in range(rows.count())]
+            assert got == [('X-1 점검', '조치 방법 1개(SOP-X-11)'), ('X-2 판정 기준', '원인 1개 · 규칙 1개'), ('X-3 적용 범위', '뽑힌 항목 없음 — 절 본문만 보관합니다')], got
+            assert page.inner_text('#manualProcess [data-live-fail]').strip() == '', '검토 화면을 그리다 오류가 났다: ' + page.inner_text('#manualProcess [data-live-fail]')
+            note = page.inner_text('#manualProcess [data-cached-note]')
+            assert '그때 AI가 부른 도구의 기록은 이 PC에 없습니다' in note, note
+            assert '저장된 추출 결과입니다' in page.inner_text('#manualAgentStatus')
+            assert not page.locator('#manualProcess [data-live-host]').is_visible(), '저장된 결과인데 빈 AI 실행 기록 칸이 보인다'
+            b.close()
+    finally:
+        served.close()
+
+
+def test_이어지는_일을_기다리는_동안_그_단계_아래에_지금_값이_바뀌는_대로_보이고_일어난_뒤에는_끝난_사실로_바뀐다():
+    """결함 주입 뒤 유온이 경보 조건을 넘을 때까지(실측 약 36초) 「유온이 오르는 중」 한 줄이 그대로였다 — 무엇이 어디까지 왔는지 보이지 않았다.
+    지금 값은 화면이 이미 읽는 사실에서 온다(시간으로 지어내지 않는다 — 값이 그대로면 줄도 그대로다)."""
+    from playwright.sync_api import sync_playwright
+    served = _serve()
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', lambda route: route.fulfill(json={}))
+            page.goto(served.url + '/index.html')
+            page.wait_for_function('window.hydLive && typeof hydLive.follow === "function"')
+            page.evaluate("""() => { window.__temp = 48.0; const host = document.createElement('div'); host.id = 'fw'; document.querySelector('.view.active').prepend(host);
+                hydLive.follow(host, [{ key: 'rise', label: '유온이 오르는 중', check: () => __temp >= 55 ? { t: __temp } : null, now: () => `지금 유온 ${__temp.toFixed(1)} ℃ → 경보 조건 55 ℃`,
+                    done: () => '유온이 경보 조건 55 ℃를 넘었습니다', note: f => `유온 ${f.t.toFixed(1)} ℃` }], { every_ms: 100 }); }""")
+            note = "() => { const n = document.querySelector('#fw .lv-step .lv-note'); return n ? n.textContent : ''; }"
+            page.wait_for_function(f"({note})() === '지금 유온 48.0 ℃ → 경보 조건 55 ℃'", timeout=2000)
+            assert page.locator('#fw .lv-step.run').count() == 1
+            page.evaluate('() => { window.__temp = 51.5; }')
+            page.wait_for_function(f"({note})() === '지금 유온 51.5 ℃ → 경보 조건 55 ℃'", timeout=2000)      # 값이 바뀌면 그 줄이 따라 바뀐다(단계는 아직 하는 중)
+            assert page.locator('#fw .lv-step.run').count() == 1
+            page.evaluate('() => { window.__temp = 55.2; }')
+            page.wait_for_function(f"({note})() === '유온 55.2 ℃' && !!document.querySelector('#fw .lv-step.ok')", timeout=2000)
+            assert '유온이 경보 조건 55 ℃를 넘었습니다' in page.inner_text('#fw .lv-step.ok')
+            b.close()
+    finally:
+        served.close()

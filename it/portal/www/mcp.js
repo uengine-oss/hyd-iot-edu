@@ -315,21 +315,40 @@
       `<div class="result-sub">${esc(hydTrace.fmtMs(res.elapsed_ms))} · ${r.size_chars.toLocaleString()}자</div></div>` +
       readable(r.text, res.arguments);
   }
-  // 도구 결과는 {"result": "<JSON 글>"}처럼 한 번 더 감싸여 온다 — 풀어서 행이면 표로, 아니면 들여 쓴 JSON 으로. 원문은 접어 둔다
+  /* 받은 결과를 그 모양대로 읽히게 그린다(도구마다 따로 만들지 않는다 — 학생 도구 서버의 결과에도 같은 규칙이다). 원문은 늘 접어 둔다.
+       객체의 배열   → 표(줄 = 항목, 열 = 이름. 모든 줄에서 값이 없는 열은 빼고 그 수를 한 줄로 말한다. 100줄까지)
+       값의 배열     → 목록
+       객체          → 값인 항목은 이름–값 줄, 배열 · 객체인 항목은 그 이름을 작은 머리로 달고 같은 규칙으로(셋째 깊이까지, 더 깊은 것은 한 줄 글)
+       값 하나 · 글  → 그 글(길면 긴 글 접기)
+     도구 결과는 {"result": "<JSON 글>"}처럼 한 번 더 감싸여 오기도 한다 — 풀어서 그린다. JSON 이 아닌 글은 글 그대로 보인다 */
+  const colName = c => { const known = hydWords.fieldName(c); return /[가-힣]/.test(known) ? known : c; };      // 사전에 있는 이름만 한국어로, 모르는 이름은 원문 그대로
+  const blank = x => x == null || x === '' || (Array.isArray(x) && !x.length);
+  const oneLine = x => (x == null ? '' : typeof x === 'object' ? JSON.stringify(x) : typeof x === 'boolean' ? (x ? '예' : '아니요') : String(x));
+  const isRow = x => x && typeof x === 'object' && !Array.isArray(x);
+  function shapeHtml(v, depth = 0) {
+    if (Array.isArray(v)) {
+      if (!v.length) return '<p class="muted">빈 목록입니다.</p>';
+      if (v.every(isRow)) {
+        const all = [...new Set(v.flatMap(r => Object.keys(r)))], cols = all.filter(c => v.some(r => !blank(r[c])));
+        return `<div class="table-container mcp-rows"><table class="table"><thead><tr>${cols.map(c => `<th>${esc(colName(c))}</th>`).join('')}</tr></thead>`
+          + `<tbody>${v.slice(0, 100).map(r => `<tr>${cols.map(c => `<td>${esc(oneLine(r[c]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+          + `<p class="muted mcp-shape-note">${[`${v.length}줄`, v.length > 100 ? '100줄만 표로 보입니다' : '', all.length > cols.length ? `값이 없는 열 ${all.length - cols.length}개는 뺐습니다` : ''].filter(Boolean).join(' · ')}${v.length > 100 || all.length > cols.length ? ' — 전부는 원문에 있습니다.' : ''}</p>`;
+      }
+      return `<ul class="mcp-shape-list">${v.slice(0, 100).map(x => `<li>${esc(oneLine(x))}</li>`).join('')}</ul>` + (v.length > 100 ? `<p class="muted mcp-shape-note">${v.length}개 중 100개만 보입니다. 나머지는 원문에 있습니다.</p>` : '');
+    }
+    if (isRow(v)) {
+      const keys = Object.keys(v), plain = keys.filter(k => !blank(v[k]) && (typeof v[k] !== 'object' || depth >= 2)), deep = keys.filter(k => !blank(v[k]) && typeof v[k] === 'object' && depth < 2);
+      if (!plain.length && !deep.length) return '<p class="muted">빈 결과입니다.</p>';
+      return (plain.length ? `<dl class="kv">${plain.map(k => `<dt>${esc(colName(k))}</dt><dd>${esc(oneLine(v[k]))}</dd>`).join('')}</dl>` : '')
+        + deep.map(k => `<h4 class="mcp-h">${esc(colName(k))}${Array.isArray(v[k]) ? `<span class="count"> ${v[k].length}</span>` : ''}</h4>${shapeHtml(v[k], depth + 1)}`).join('');
+    }
+    const text = oneLine(v);
+    return text.length > 400 ? UI.longText(`<p class="mcp-shape-text">${esc(text)}</p>`) : `<p class="mcp-shape-text">${esc(text)}</p>`;
+  }
   function readable(text, sent) {
-    // 결과는 표로 풀 수 있으면 표로 보이고 원문은 접어 둔다. 표로 풀 수 없으면 받은 결과의 원문 판을 펼쳐 보인다(원문 판은 하나뿐이다)
-    const raw = open => UI.raw(sent ?? {}, { title: '보낸 입력 원문' }) + UI.raw(text, { title: '받은 결과 원문', open });
-    let v; try { v = JSON.parse(text); if (v && typeof v.result === 'string') v = JSON.parse(v.result); } catch (_) { return raw(true); }
-    const rows = Array.isArray(v) ? v : Array.isArray(v?.rows) ? v.rows : null;
-    const flat = rows && rows.length && rows.every(r => r && typeof r === 'object' && !Array.isArray(r));
-    const cols = flat ? [...new Set(rows.flatMap(r => Object.keys(r)))] : [];
-    const cell = x => esc(x == null ? '' : typeof x === 'object' ? JSON.stringify(x) : String(x));
-    const colName = c => { const known = hydWords.fieldName(c); return /[가-힣]/.test(known) ? known : c; };      // 사전에 있는 열만 한국어 이름으로, 모르는 열은 원문 그대로
-    const body = flat ? `<div class="table-container mcp-rows"><table class="table"><thead><tr>${cols.map(c => `<th>${esc(colName(c))}</th>`).join('')}</tr></thead>`
-        + `<tbody>${rows.slice(0, 100).map(r => `<tr>${cols.map(c => `<td>${cell(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
-        + (rows.length > 100 ? `<p class="muted">${rows.length}행 중 100행만 표로 보입니다. 나머지는 원문에 있습니다.</p>` : '')
-      : '';
-    return body + raw(!flat);
+    let v = text;
+    try { v = JSON.parse(text); if (v && typeof v.result === 'string' && /^\s*[\[{]/.test(v.result)) v = JSON.parse(v.result); } catch (_) { v = text; }
+    return `<div class="mcp-shape" data-mcp-shape>${shapeHtml(v)}</div>` + UI.raw(sent ?? {}, { title: '보낸 입력 원문' }) + UI.raw(text, { title: '받은 결과 원문' });
   }
 
   function wireTry(s, t) {

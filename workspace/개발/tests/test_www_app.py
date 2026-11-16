@@ -132,6 +132,12 @@ def test_결함_주입_뒤의_과정은_사실이_올_때만_다음_줄로_넘�
     w.incidents.append({'id': 'INC-new', 'asset': 'HYD-01', 'alertId': 'ALT-new', 'state': 'GUIDE_RECEIVED', 'terminal': False, 'created': '2026-01-01T00:01:00Z'})
     wait_step(page, 'case', 'ok')
     assert page.inner_text("#labFollow .lv-step[data-step='case'] [data-lv-go]") == '처리 건에서 보기'
+    # 그 길은 카드의 「처리 건에서 보기 →」와 같은 링크 모양이다(화살표 · 손가락 모양 · 올리면 글 색이 바뀐다 — 굵은 글처럼 보이지 않는다)
+    go = page.locator("#labFollow .lv-step[data-step='case'] [data-lv-go]")
+    rest = go.evaluate("n => [getComputedStyle(n, '::after').content, getComputedStyle(n).cursor, getComputedStyle(n).color, getComputedStyle(n).fontWeight]")
+    go.hover(); page.wait_for_timeout(200)
+    assert '→' in rest[0] and rest[1] == 'pointer' and int(rest[3]) < 600 and go.evaluate('n => getComputedStyle(n).color') != rest[2], rest
+    page.mouse.move(1, 1)
     # 과정 판은 설비 카드 아래에 펼쳐진다 — 누른 카드를 아래로 밀어내지 않는다
     assert page.evaluate("document.getElementById('labFollowPanel').getBoundingClientRect().top >= document.getElementById('units').getBoundingClientRect().bottom")
     assert '56.2' in page.inner_text("#labFollow .lv-step[data-step='rise']")      # 넘어간 때의 값이 그 줄에 남는다
@@ -307,70 +313,92 @@ def test_명령이_내려가는_길과_그_이름표는_다른_선_상자_이름
     assert page.locator('#view-home .canvas-bar').count() == 0
 
 
-def test_설비_회로는_고른_설비를_크게_나머지를_작게_놓아_캔버스를_채우고_처리_건으로_보내는_한_줄만_갖는다(world):
-    """같은 것을 두 이름 · 두 색으로 보이지 않는다: 아래 한 줄은 처리 건 화면의 거르기와 같은 말(진행 중)만 하고, 처리 건의 상태 이름(반려 · 종결 · 효과 확인 중 …)은 처리 건 화면에만 있다.
-    회로 셋을 한 줄에 놓아 캔버스의 위아래가 비던 것(카드 높이 260px 남짓)을, 고른 설비 하나를 크게 · 나머지 둘을 작게 놓아 채운다."""
+def test_설비_회로는_세_대를_같은_크기로_세로로_쌓아_캔버스를_채우고_진행_중인_처리_건이_있는_설비에만_가는_길을_둔다(world):
+    """고른 설비 하나만 크게 두던 것을 세 대 같은 크기로 바꿨다(학생이 「왜 01만 크지」 하지 않게). 카드는 누르는 것이 아니다 — 손가락 모양도 올림 표시도 없고, 누르는 것은 링크 하나다.
+    같은 것을 두 이름 · 두 색으로 보이지 않는다: 처리 건의 건수 · 상태 이름(반려 · 종결 · 효과 확인 중 …)은 처리 건 화면에만 있고, 이 화면은 진행 중인 건이 있는 설비의 머리 줄에 그리로 가는 길 하나만 둔다."""
     w, page = world, world.page
+    w.units['HYD-01'] = unit('HYD-01', ts1=56.2, health=0.6, faults=['cooler_degradation'])
     w.incidents = [
         {'id': 'INC-a', 'asset': 'HYD-01', 'alertId': 'ALT-a', 'state': 'REJECTED_BY_OPERATOR', 'terminal': True, 'created': '2026-01-01T00:00:00Z', 'closed': '2026-01-01T00:05:00Z'},
         {'id': 'INC-b', 'asset': 'HYD-01', 'alertId': 'ALT-b', 'state': 'RE_OBSERVING', 'terminal': False, 'created': '2026-01-01T01:00:00Z'},
         {'id': 'INC-c', 'asset': 'HYD-02', 'alertId': 'ALT-c', 'state': 'CLOSED', 'terminal': True, 'created': '2026-01-01T02:00:00Z', 'closed': '2026-01-01T02:05:00Z'}]
     page.goto(w.base + '/index.html#/incidents')
-    page.wait_for_selector('#incList .hc-cases b')
-    # 고른 설비(HYD-01)의 것만 센다: 두 건 가운데 진행 중 하나. 목록의 사본은 없고, 링크는 하나이며 진행 중인 그 처리 건을 연다
-    assert page.eval_on_selector_all('#incList .hc-cases b', 'ns => ns.map(n => n.textContent)') == ['2', '1'] and page.locator('#incList .row').count() == 0
-    assert page.locator('#incList a, #incList button').count() == 1 and page.get_attribute('#incList .go', 'data-open-incident') == 'INC-b'
-    assert 'HYD-01의 경보로 열린 처리 건' in page.inner_text('#incList')
+    page.wait_for_selector("#scada [data-asset='HYD-01'] .go")
+    # 가는 길: 진행 중인 건이 있는 HYD-01 의 머리 줄에만 하나(그 처리 건을 연다). 끝난 건만 있는 HYD-02 · 건이 없는 HYD-03 은 자리를 지키는 글도 두지 않는다
+    links = page.evaluate("[...document.querySelectorAll('#view-incidents a, #view-incidents button')].filter(n => n.getBoundingClientRect().width > 0).map(n => [n.closest('[data-asset]')?.dataset.asset || '', n.dataset.openIncident || '', n.innerText.trim().replace(/\\s*→$/, '')])")
+    assert links == [['HYD-01', 'INC-b', '처리 건에서 보기']], links
     text = page.inner_text('#view-incidents')
-    assert not any(word in text for word in ('반려', '종결', '효과 확인', '재관측', '사건', '열린 처리 건 없음'))
-    # 캔버스: 고른 설비의 카드가 가장 크고(나머지의 두 배 넘는 넓이) 세 카드와 아래 한 줄이 창(1440 × 900) 안에 스크롤 없이 보이며, 카드와 한 줄이 캔버스 높이의 대부분을 쓴다(위아래가 비지 않는다)
+    assert not any(word in text for word in ('반려', '종결', '효과 확인', '재관측', '사건', '열린 처리 건', '없음')), text
     seen = page.evaluate(r'''() => { const lum = c => { let m = /^rgba?\(([^)]+)\)/.exec(c), v; if (m) v = m[1].split(/[, /]+/).slice(0, 3).map(x => Number(x) / 255); else { m = /^color\(srgb ([^)]+)\)/.exec(c); if (!m) throw new Error('모르는 색: ' + c); v = m[1].split(/[ /]+/).slice(0, 3).map(Number); }
         const [r, g, b] = v.map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
       const ratio = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
       const R = e => e.getBoundingClientRect(), inside = e => { const b = R(e); return b.width > 0 && b.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth; };
-      const cards = [...document.querySelectorAll('#scada .ucard')], cv = R(document.querySelector('.hc-canvas')), line = R(document.querySelector('#incList .hc-line'));
-      const shown = c => [...c.querySelectorAll('svg text, svg tspan')].filter(t => t.textContent.trim() && t.getBoundingClientRect().width > 0);
-      const big = cards.find(c => c.getAttribute('aria-pressed') === 'true'), k = big.querySelector('svg').getScreenCTM().a;
-      return { cards: cards.map(inside), line: inside(document.querySelector('#incList .hc-line')), scroll: document.documentElement.scrollHeight - innerHeight,
-        area: cards.map(c => [c.dataset.asset, c.getAttribute('aria-pressed'), Math.round(R(c).width * R(c).height)]),
-        used: (Math.max(...cards.map(c => R(c).bottom)) - Math.min(...cards.map(c => R(c).top)) + line.height) / cv.height,
-        overlap: cards.flatMap((a, i) => cards.slice(i + 1).filter(b => R(a).left < R(b).right && R(b).left < R(a).right && R(a).top < R(b).bottom && R(b).top < R(a).bottom)).length,
-        small: shown(big).map(t => [t.textContent, +(parseFloat(getComputedStyle(t).fontSize) * k).toFixed(1)]).filter(x => x[1] < 13),
-        tiny: cards.filter(c => c !== big).flatMap(c => shown(c).map(t => t.textContent)),
-        low: shown(big).filter(t => !t.closest('.hc-sensor')).map(t => [t.textContent, ratio(getComputedStyle(t).fill, getComputedStyle(big).backgroundColor)]).filter(x => x[1] < 4.5) }; }''')
-    assert seen['cards'] == [True, True, True] and seen['line'] and seen['scroll'] <= 0 and not seen['overlap'], seen
-    area = {a: n for a, _, n in seen['area']}
-    assert [p for _, p, _ in seen['area']] == ['true', 'false', 'false'] and area['HYD-01'] > 2 * area['HYD-02'] and area['HYD-02'] == area['HYD-03'], seen['area']
-    assert seen['used'] >= 0.85, seen['used']
-    assert not seen['small'] and not seen['low'], seen      # 크게 놓인 회로의 글자는 13px 이상이고 흰 카드 위에서 읽힌다
-    assert not seen['tiny'], seen['tiny']                    # 작게 놓인 회로는 읽히지 않는 값 글자를 그리지 않는다 — 머리 줄의 유온 하나
-    assert page.inner_text("#scada [data-asset='HYD-02'] .hc-now") == '유온 48.0 ℃'
-    # 작은 카드를 누르면 그 설비가 크게 바뀌고 아래 줄이 그 설비의 것이 된다
-    page.click("#scada [data-asset='HYD-03']")
-    page.wait_for_function("document.querySelector(\"#scada [data-asset='HYD-03']\").getAttribute('aria-pressed') === 'true'")
-    area3 = page.evaluate("Object.fromEntries([...document.querySelectorAll('#scada .ucard')].map(c => [c.dataset.asset, Math.round(c.getBoundingClientRect().width * c.getBoundingClientRect().height)]))")
-    assert area3['HYD-03'] > 2 * area3['HYD-01'], area3
-    assert page.eval_on_selector_all('#incList .hc-cases b', 'ns => ns.map(n => n.textContent)') == ['0']      # HYD-03 은 열린 적이 없다
+      const cards = [...document.querySelectorAll('#scada .ucard')], cv = R(document.querySelector('.hc-canvas'));
+      const texts = c => [...c.querySelectorAll('svg text')].filter(t => t.textContent.trim() && R(t).width > 0);
+      const hit = (a, b) => R(a).left < R(b).right - 1 && R(b).left < R(a).right - 1 && R(a).top < R(b).bottom - 1 && R(b).top < R(a).bottom - 1;
+      return { cards: cards.map(inside), scroll: document.documentElement.scrollHeight - innerHeight,
+        box: cards.map(c => [c.dataset.asset, Math.round(R(c).left), Math.round(R(c).width), Math.round(R(c).height), Math.round(R(c).top)]),
+        svg: cards.map(c => { const b = R(c.querySelector('svg')); return [Math.round(b.width), Math.round(b.height)]; }),
+        used: (R(cards[2]).bottom - R(cards[0]).top) / (cv.bottom - R(cards[0]).top),
+        small: cards.flatMap(c => { const k = c.querySelector('svg').getScreenCTM().a; return texts(c).flatMap(t => [t, ...t.querySelectorAll('tspan')]).map(n => [c.dataset.asset, n.textContent, +(parseFloat(getComputedStyle(n).fontSize) * k).toFixed(1)]).filter(x => x[2] < 13); }),
+        names: cards.map(c => texts(c).map(t => t.textContent.replace(/\s+/g, ' ').trim())),
+        hit: cards.flatMap(c => { const ts = texts(c); return ts.flatMap((a, i) => ts.slice(i + 1).filter(b => hit(a, b)).map(b => [a.textContent, b.textContent])); }),
+        low: cards.flatMap(c => texts(c).filter(t => !t.closest('.hc-sensor')).flatMap(t => [t, ...t.querySelectorAll('tspan')]).map(n => [n.textContent, ratio(getComputedStyle(n).fill, getComputedStyle(c).backgroundColor)]).filter(x => x[1] < 4.5)),
+        look: cards.map(c => [getComputedStyle(c).cursor, c.getAttribute('role'), c.getAttribute('tabindex'), c.getAttribute('aria-pressed')]),
+        vals: cards.map(c => R(c.querySelector('.hc-vals')).height) }; }''')
+    # 세 카드: 같은 왼쪽 선 · 같은 폭 · 같은 높이로 위에서 아래로 쌓이고, 창(1440 × 900) 안에 스크롤 없이 다 보이며 캔버스의 위아래를 채운다
+    assert seen['cards'] == [True, True, True] and seen['scroll'] <= 0, seen
+    assert [b[0] for b in seen['box']] == ['HYD-01', 'HYD-02', 'HYD-03']
+    assert len({tuple(b[1:4]) for b in seen['box']}) == 1 and seen['box'][0][4] < seen['box'][1][4] < seen['box'][2][4], seen['box']
+    assert len({tuple(x) for x in seen['svg']}) == 1, seen['svg']
+    assert seen['used'] >= 0.9, seen['used']
+    # 회로의 글자(부품 이름 · 값 · 센서 이름)는 세 카드 모두 13px 이상이고 흰 카드 위에서 읽히며 서로 겹치지 않는다. 좁은 폭용 값 줄은 보이지 않는다(같은 값을 두 번 보이지 않는다)
+    assert not seen['small'] and not seen['low'] and not seen['hit'], seen
+    assert seen['names'][1] == ['탱크 39 ℃', '부하 90 % · 2.9 kW', '냉각 효율 84 %', '팬 60 %', 'TS1', '유온 48.0 ℃', 'PS1', '압력 182 bar'], seen['names'][1]
+    assert seen['vals'] == [0, 0, 0], seen['vals']
+    # 카드는 누르는 것이 아니다: 손가락 모양 · 단추 역할 · 고른 상태가 없고, 올려도 · 눌러도 모양과 크기가 그대로다
+    assert all(c in ('auto', 'default') for c, *_ in seen['look']) and all(rest == [None, None, None] for _, *rest in seen['look']), seen['look']
+    shape = "() => [...document.querySelectorAll('#scada .ucard')].map(c => { const b = c.getBoundingClientRect(), s = getComputedStyle(c); return [Math.round(b.width), Math.round(b.height), s.borderTopColor, s.backgroundColor, s.boxShadow]; })"
+    before = page.evaluate(shape)
+    page.hover("#scada [data-asset='HYD-03'] .hc-head h2"); page.wait_for_timeout(250)
+    assert page.evaluate(shape) == before
+    page.click("#scada [data-asset='HYD-03'] .hc-head h2"); page.wait_for_timeout(250)
+    assert page.evaluate(shape) == before and page.evaluate('state.tab') == 'incidents'
+    # 경보 조건을 넘은 유온은 그 설비에서만 빨강이고 센서 뒤에 빛이 켜진다
+    hot = page.evaluate("[...document.querySelectorAll('#scada .ucard')].map(c => [c.querySelector('svg .v-ts1').classList.contains('hot'), getComputedStyle(c.querySelector('.hc-glow')).display !== 'none'])")
+    assert hot == [[True, True], [False, False], [False, False]], hot
+    # 링크는 누를 수 있게 보이고(손가락 · 올리면 글 색이 바뀐다) 진행 중인 그 처리 건을 연다
+    go = page.locator("#scada [data-asset='HYD-01'] .go")
+    ink = go.evaluate('n => getComputedStyle(n).color')
+    go.hover(); page.wait_for_timeout(250)
+    assert go.evaluate('n => getComputedStyle(n).cursor') == 'pointer' and go.evaluate('n => getComputedStyle(n).color') != ink
+    page.mouse.move(1, 1)
+    # 진행 중인 건이 하나도 없으면 캔버스 발치에 다음 할 일로 가는 길 하나(결함 시뮬레이션)만 나오고, 그래도 세 카드는 같은 크기로 창 안에 있다
+    w.incidents = [i for i in w.incidents if i['terminal']]
+    page.wait_for_selector('#incList .go')
+    assert page.locator('#view-incidents a:visible, #view-incidents button:visible').count() == 1
     assert page.get_attribute('#incList .go', 'data-go-tab') == 'scenario' and '결함 시뮬레이션에서 결함 넣기' in page.inner_text('#incList .go')
-    assert page.locator('#incList a, #incList button').count() == 1 and '열린 처리 건 없음' not in page.inner_text('#view-incidents')      # 빈 자리를 지키는 「없음」 글을 두지 않는다 — 가는 길 하나뿐
-    # 좁은 폭에서는 고른 설비가 위에 온 폭으로, 나머지 둘이 그 아래 나란히
-    page.set_viewport_size({'width': 900, 'height': 900})
+    foot = page.evaluate("(() => { const c = [...document.querySelectorAll('#scada .ucard')].map(x => Math.round(x.getBoundingClientRect().height)), f = document.querySelector('#incList .go').getBoundingClientRect(); return [new Set(c).size, f.bottom <= innerHeight, document.documentElement.scrollHeight <= innerHeight]; })()")
+    assert foot == [1, True, True], foot
+    # 좁은 폭: 한 줄에 하나, 같은 크기. 그림 안에 13px 글자가 들어가는 폭(900 · 640)에서는 그림에 값이 있고, 들어가지 않는 폭(390)에서는 그림의 글자를 지우고 같은 여섯 값을 그림 아래 줄에 13px 이상으로 보인다
     try:
-        page.wait_for_timeout(300)
-        r = page.evaluate("Object.fromEntries([...document.querySelectorAll('#scada .ucard')].map(c => { const b = c.getBoundingClientRect(); return [c.dataset.asset, [Math.round(b.left), Math.round(b.top), Math.round(b.width)]]; }))")
-        assert r['HYD-03'][1] < r['HYD-01'][1] == r['HYD-02'][1] and r['HYD-03'][2] > 1.8 * r['HYD-01'][2], r
-        assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 0
-        # 더 좁은 폭(390 · 640): 그림이 카드 폭에 맞춰 줄어도 크게 놓인 회로의 글자는 13px 아래로 줄지 않고(줄어든 만큼 글자를 키운다), 글자끼리 겹치지 않으며, 카드는 한 줄에 하나(390)
-        for width in (640, 390):
+        for width in (900, 640, 390):
             page.set_viewport_size({'width': width, 'height': 844})
             page.wait_for_timeout(400)
-            got = page.evaluate('''() => { const big = document.querySelector('#scada .ucard[aria-pressed="true"]'), k = big.querySelector('svg').getScreenCTM().a;
-              const ts = [...big.querySelectorAll('svg text')].filter(t => t.textContent.trim() && t.getBoundingClientRect().width > 0), R = t => t.getBoundingClientRect();
-              return { small: ts.map(t => [...t.querySelectorAll('tspan'), t].map(n => [n.textContent, +(parseFloat(getComputedStyle(n).fontSize) * k).toFixed(1)])).flat().filter(x => x[1] < 13),
-                hit: ts.flatMap((a, i) => ts.slice(i + 1).filter(b => R(a).left < R(b).right - 1 && R(b).left < R(a).right - 1 && R(a).top < R(b).bottom - 1 && R(b).top < R(a).bottom - 1).map(b => [a.textContent, b.textContent])),
-                lefts: new Set([...document.querySelectorAll('#scada .ucard')].map(c => Math.round(c.getBoundingClientRect().left))).size, over: document.documentElement.scrollWidth - innerWidth }; }''')
-            assert not got['small'] and not got['hit'] and got['over'] <= 0, (width, got)
-            assert got['lefts'] == (1 if width == 390 else 2), (width, got['lefts'])
+            got = page.evaluate(r'''() => { const R = e => e.getBoundingClientRect(), cards = [...document.querySelectorAll('#scada .ucard')];
+              const hit = (a, b) => R(a).left < R(b).right - 1 && R(b).left < R(a).right - 1 && R(a).top < R(b).bottom - 1 && R(b).top < R(a).bottom - 1;
+              const per = cards.map(c => { const k = c.querySelector('svg').getScreenCTM().a, ts = [...c.querySelectorAll('svg text')].filter(t => t.textContent.trim() && R(t).width > 0), dd = [...c.querySelectorAll('.hc-vals dd')].filter(n => R(n).width > 0);
+                return { tight: c.hasAttribute('data-tight'), drawn: ts.length, small: ts.flatMap(t => [t, ...t.querySelectorAll('tspan')]).map(n => [n.textContent, +(parseFloat(getComputedStyle(n).fontSize) * k).toFixed(1)]).filter(x => x[1] < 13),
+                  hit: ts.flatMap((a, i) => ts.slice(i + 1).filter(b => hit(a, b)).map(b => [a.textContent, b.textContent])), out: ts.filter(t => R(t).left < R(c).left || R(t).right > R(c).right).map(t => t.textContent),
+                  vals: dd.map(n => n.textContent), valPx: dd.map(n => parseFloat(getComputedStyle(n).fontSize)), size: [Math.round(R(c).left), Math.round(R(c).width), Math.round(R(c).height)] }; });
+              return { per, over: document.documentElement.scrollWidth - innerWidth }; }''')
+            assert got['over'] <= 0 and len({tuple(c['size']) for c in got['per']}) == 1, (width, got)
+            for c in got['per']:
+                assert not c['small'] and not c['hit'] and not c['out'], (width, c)
+                assert (c['drawn'] == 0 and len(c['vals']) == 6 and min(c['valPx']) >= 13) if c['tight'] else (c['drawn'] >= 6 and not c['vals']), (width, c)
+            assert got['per'][0]['tight'] is (width == 390), (width, got['per'][0]['tight'])
+            if width == 390:
+                assert got['per'][1]['vals'] == ['48.0 ℃', '39 ℃', '182 bar', '90 % · 2.9 kW', '84 %', '60 %'], got['per'][1]['vals']
     finally:
         page.set_viewport_size({'width': 1440, 'height': 900})
 
@@ -488,7 +516,7 @@ def test_결함_시뮬레이션_카드_셋은_같은_종류의_단추가_같은_
 
 def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도움말은_카드의_사건_이름과_값_줄을_덮지_않는다(world):
     """화면은 읽는 곳이 아니라 보고 누르는 곳이다: 「명령 관문을 거치지 않는다」는 화면에 한 번만 보이고, 설명 문단 대신 단추마다 도움말(올리거나 초점을 주면 나온다)이 있다.
-    도움말은 단추 아래에 뜬다 — 위에 뜨면 카드의 사건 이름 · 값 줄을 덮는다. 설비의 큰 값(큰 유온 · 눈금 막대 · 값 세 칸)은 이 화면에 없다(실시간 모니터링 한 곳)."""
+    도움말은 뜨는 조각이 아니라 단추 줄 아래의 제자리 줄에 나온다 — 위에 뜨면 카드의 사건 이름 · 값 줄을, 아래에 뜨면 「현장 패널」 줄을 덮는다. 설비의 큰 값(큰 유온 · 눈금 막대 · 값 세 칸)은 이 화면에 없다(실시간 모니터링 한 곳)."""
     w, page = world, world.page
     lab_world(w)
     page.goto(w.base + '/index.html#/scenario')
@@ -513,14 +541,21 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도�
     page.focus(button)
     page.keyboard.press('Shift+Tab'); page.keyboard.press('Tab')      # 키보드로 옮겨 온 초점
     assert page.evaluate("sel => document.activeElement === document.querySelector(sel) && document.activeElement.matches(':focus-visible')", button)
-    page.wait_for_timeout(500)                                          # 도움말이 나타나는 움직임(0.15초)이 끝난 뒤에 잰다
-    shown = page.evaluate("""sel => { const b = document.querySelector(sel), s = getComputedStyle(b, '::before'), r = b.getBoundingClientRect(), card = b.closest('.unit');
-      const top = r.top + parseFloat(s.top), box = [r.left + parseFloat(s.left), top, r.left + parseFloat(s.left) + parseFloat(s.width), top + parseFloat(s.height)];
-      const lines = [...card.querySelectorAll(':scope > header, .lab-what, .lab-fact')].map(n => { const q = n.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; });
-      return { content: s.content, visibility: s.visibility, opacity: s.opacity, box, below: top >= r.top + r.height / 2, covers: lines.filter(q => q[0] < box[2] && box[0] < q[2] && q[1] < box[3] && box[1] < q[3]).length }; }""", button)
-    assert tip in shown['content'] and shown['visibility'] == 'visible' and float(shown['opacity']) > 0, shown
-    assert shown['below'] and shown['covers'] == 0, shown
-    assert page.eval_on_selector_all('#units .lab-buttons [data-tooltip]', "bs => bs.every(b => b.dataset.side === 'bottom')")
+    # 도움말은 뜨는 조각이 아니라 단추 줄 아래의 제자리 줄에 나온다: 카드의 머리 줄 · 사건 이름 · 값 줄 · 단추 · 「현장 패널」 줄 어느 것도 덮지 않고, 글이 나와도 아래 줄이 밀리지 않는다
+    seen = """sel => { const b = document.querySelector(sel), card = b.closest('.unit'), hint = card.querySelector('.lab-hint'), R = n => { const q = n.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }, h = R(hint);
+      const others = [...card.querySelectorAll(':scope > header, .lab-what, .lab-fact, .lab-buttons > *, details > summary')].map(R);
+      return { text: hint.textContent, bubble: getComputedStyle(b, '::before').display, box: h, fold: R(card.querySelector('details > summary'))[1], card: Math.round(card.getBoundingClientRect().height),
+        ink: parseFloat(getComputedStyle(hint).fontSize), lines: Math.round(hint.scrollHeight / parseFloat(getComputedStyle(hint).lineHeight)), fits: hint.scrollHeight <= hint.clientHeight + 1,
+        covers: others.filter(q => q[0] < h[2] && h[0] < q[2] && q[1] < h[3] - 0.5 && h[1] < q[3] - 0.5).length }; }"""
+    shown = page.evaluate(seen, button)
+    assert shown['text'] == tip and shown['bubble'] == 'none' and shown['covers'] == 0 and shown['fits'] and shown['ink'] >= 12, shown
+    page.mouse.move(1, 1); page.keyboard.press('Shift+Tab')
+    gone = page.evaluate(seen, button)
+    assert gone['text'] == '' and gone['fold'] == shown['fold'] and gone['box'] == shown['box'], (gone, shown)      # 초점이 떠나면 비우고, 줄은 제자리다
+    page.hover(button)
+    assert page.evaluate(seen, button)['text'] == tip      # 마우스를 올려도 같은 줄에 나온다
+    page.mouse.move(1, 1)
+    assert page.evaluate(seen, button)['text'] == ''
     # 결함이 걸린 채 새 경보가 나지 않는 상황이 되면 그때만 한 줄
     w.units['HYD-01'] = unit('HYD-01', ts1=50.0, health=0.55)
     page.wait_for_function("document.querySelector(\"#units .unit[data-asset='HYD-01'] .repeat-guide\").textContent.includes('쿨러 복구')", timeout=8000)

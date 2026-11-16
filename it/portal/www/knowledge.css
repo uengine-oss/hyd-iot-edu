@@ -67,6 +67,10 @@
 /* AI 추출 · 검토 */
 .doc-live { display: grid; gap: 10px; margin-top: var(--gap-block); }
 .doc-live[hidden] { display: none; }
+/* 추출 과정 — 방금 서버가 한 일(단계 목록)과 저장된 추출 결과에서 절마다 뽑힌 것(단계 타임라인) */
+.doc-live [data-live-trail]:empty, .doc-trail-slot:empty, .doc-live [data-live-host][hidden] { display: none; }
+.doc-trail-slot { margin-top: var(--gap-block); }
+.doc-yield-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--gap-item); margin: var(--gap-item) 0 0; font-size: var(--fs-sm); font-weight: 500; color: var(--muted-foreground); }
 .doc-progress { display: flex; align-items: center; gap: 12px; }
 .doc-progress[hidden] { display: none; }
 .doc-progress .progress { flex: 1; height: 6px; }

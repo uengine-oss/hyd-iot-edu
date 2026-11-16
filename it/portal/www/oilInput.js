@@ -30,7 +30,7 @@
     if (d.out === null) { O.err = '기준 이탈 여부를 고르세요'; render(); return; }
     // 입력자는 늘 이 PC의 담당자다. 못 읽었으면 다른 이름으로 대신하지 않고 막는다(자유 글 칸 없음)
     if (!m) { O.err = '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.'; render(); return; }
-    O.sending = true; O.err = ''; render();
+    O.sending = true; O.since = new Date().toISOString(); O.err = ''; render();
     try {
       O.last = await postJ(api('/api/human-alerts'), {
         pattern: p.code, asset: d.asset, item: d.item, out_of_spec: d.out, memo: d.memo,
@@ -44,6 +44,8 @@
   // 결과(결론 먼저 — 폼 바로 아래, 보낸 뒤에만 나타난다): 경보를 만들었는가(알약) → 서버가 준 까닭 → 어느 흐름이 여는가 → 아래 고정 줄의 「처리 건에서 보기」
   function resultHtml() {
     const r = O.last;
+    // 보내는 동안: 앞 결과를 그대로 두지 않고 지금 서버가 하는 일을 말한다(누른 단추가 「보내는 중」으로만 바뀌면 무엇을 기다리는지 모른다)
+    if (O.sending) return `<div class="oil-result" data-oil-sending>${hydLive.waitHtml('분석 결과를 보내는 중 — 기준과 견줘 경보를 만들지 정하는 중', { since: O.since, hint: '기준 이탈이면 서버가 경보를 만들어 경보 경로로 보내고, 그 경보를 맡을 흐름을 찾아 처리 건을 엽니다.' })}</div>`;
     if (!r) return '';
     if (!r.raised) return UI.card({ cls: 'oil-result', attrs: 'role="status"', title: '보낸 결과', chips: UI.chipText('경보를 만들지 않았습니다'), body: `<p>${esc(r.reason)}</p>` });
     const target = r.definition || {};

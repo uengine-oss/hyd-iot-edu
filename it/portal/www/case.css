@@ -74,6 +74,7 @@
 .turn-foot { border-top: 1px solid #eef0f6; }
 .turn-msg { margin: 0; padding: 0 var(--pad-card) 16px; background: #fff; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
 .turn-msg[data-tone="danger"] { color: var(--st-fail-ink); }
+.turn-busy { padding: 0 var(--pad-card) 16px; background: #fff; }      /* 누른 뒤 서버가 답할 때까지의 「지금 하는 일」 한 줄(instances.js renderTodoPanel) */
 .stuck-list { display: grid; gap: 10px; margin: 6px 0 0; padding: 0; list-style: none; }
 .stuck-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 

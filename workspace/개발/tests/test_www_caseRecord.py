@@ -388,3 +388,19 @@ def test_승인_전에_닫혀_취소된_단계는_멈춤이_아니라_보통_색
     assert got['row'].count(why) == 1 and '닫혔습니다' in got['row'] and '멈춤' not in got['row'], got['row']
     assert '추천안 그대로' not in got['sheet'] and '고른 안' not in got['sheet'], got['sheet']          # 하지 않은 승인을 한 것처럼 적지 않는다
     assert got['mark'] == 'cancel' and got['node'] == ['cancel'], got                                  # 흐름 그림도 멈춤으로 칠하지 않는다
+
+
+def test_일이_끝난_단계의_결과를_처리_흐름이_받는_사이에는_결과가_없다고_하지_않고_받는_중이라고_말한다():
+    """실행 중인 처리 건에서 단계의 끝 이벤트는 실시간 연결로 먼저 오고 그 단계의 결과 값은 다음 읽기에 온다. 그 사이(1초 안팎) 단계 줄이
+    「결과 기록이 없습니다 — 단계 상태: 제출됨」 · 「정비 요청 등록 결과가 없습니다」로 바뀌었다 사라져, 결과가 빠진 것처럼 읽혔다(2026-11-16 실측). 멈춘 단계는 그대로 「결과 기록이 없습니다」다."""
+    done = lambda wid: {'id': 'e-' + wid, 'todo_id': wid, 'event_type': 'task_completed', 'timestamp': T, 'job_id': 'j', 'data': {}}
+    wis = [{'id': 'w1', 'activity_id': 'T_wo', 'activity_name': '정비 요청 등록', 'tool': 'ent:WO_CREATE', 'status': 'SUBMITTED', 'agent_orch': 'hyd-process', 'start_date': T, 'end_date': None},
+           {'id': 'w2', 'activity_id': 'R_ok', 'activity_name': '결과 보고', 'tool': 'report', 'status': 'SUBMITTED', 'agent_orch': 'hyd-process', 'start_date': T, 'end_date': None}]
+    v = view(wis, ['T_wo', 'R_ok'], events=[done('w1'), done('w2')])
+    v['instance'].update(status='RUNNING', end_date=None)
+    got = run(FILES, "out(hydRecord.build(DATA, { agents: [], people: [] }, []).steps.filter(s => s.key !== 'start' && s.sentence).map(s => s.sentence))", v)
+    assert len(got) == 2 and all(s == '이 단계의 일은 끝났습니다 — 처리 흐름이 결과를 받아 다음 단계로 넘기는 중입니다.' for s in got), got
+    # 실행이 실패로 끝나 멈춘 단계(끝 이벤트는 있지만 실패)는 받는 중이 아니다
+    v['workitems'][1]['draft_status'] = 'FAILED'
+    got = run(FILES, "out(hydRecord.build(DATA, { agents: [], people: [] }, []).steps.filter(s => s.key !== 'start' && s.sentence).map(s => s.sentence))", v)
+    assert '결과 기록이 없습니다' in got[1] and '실행 실패' in got[1], got

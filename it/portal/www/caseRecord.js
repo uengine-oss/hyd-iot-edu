@@ -31,7 +31,11 @@
   const ts = x => { const t = x ? Date.parse(x) : NaN; return Number.isFinite(t) ? t : null; };
   const fmtMs = ms => TR().fmtMs(ms), hhmmss = t => TR().hhmmss(t);   // 시간 표시는 trace.js 하나
   // 결과 값이 아직 없을 때의 문장 — 진행 중일 때만 「…하는 중」. 끝났거나 멈춘 단계는 그 상태와 함께 「결과 기록 없음」(진행 중처럼 읽히지 않게)
-  const notYet = (b, doing) => b.live ? doing : `결과 기록이 없습니다 — 단계 상태: ${UI.status(b.w.status)}${b.w.draft_status === 'FAILED' ? ' · 실행 실패' : ''}.`;
+  // 일은 끝났는데(끝 이벤트가 실시간 연결로 먼저 왔다) 처리 흐름이 그 결과를 아직 단계에 적지 않은 사이(1초 안팎): 「결과 기록이 없습니다」가 아니라 받는 중이다 —
+  // 실행 중인 처리 건에서 그 문장이 잠깐 떴다 사라져, 결과가 빠진 것처럼 읽혔다
+  const settling = b => ['IN_PROGRESS', 'SUBMITTED'].includes(b.w.status) && !['FAILED', 'CANCELLED'].includes(b.w.draft_status) && b.terminal?.event_type === 'task_completed';
+  const SETTLING = '이 단계의 일은 끝났습니다 — 처리 흐름이 결과를 받아 다음 단계로 넘기는 중입니다.';
+  const notYet = (b, doing) => b.live ? doing : settling(b) ? SETTLING : `결과 기록이 없습니다 — 단계 상태: ${UI.status(b.w.status)}${b.w.draft_status === 'FAILED' ? ' · 실행 실패' : ''}.`;
   const icon = (k, cls) => TR() ? TR().icon(k, cls) : '';
   const vars = inst => UI.valuesOf(inst);
   const nm = id => W().idName(id);
@@ -555,7 +559,7 @@
       const performs = { performs: (ctx.view.definition && ctx.view.definition.activities || []).some(a => a.tool === 'plant:restore') };
       const scoped=W().maintenanceReceiptHtml(wo, performs);
       const later = performs.performs ? ' 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.' : '';
-      sentence = scoped ? W().maintenanceReceiptSummary(wo, performs) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 요청 ${wo.ref}의 일정을 바꿨습니다.${later}` : '기존 정비 요청 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 요청 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 요청을 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
+      sentence = scoped ? W().maintenanceReceiptSummary(wo, performs) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 요청 ${wo.ref}의 일정을 바꿨습니다.${later}` : '기존 정비 요청 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 요청 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 요청을 등록하는 중입니다.` : settling(b) ? SETTLING : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
       if (wo.ref) chips.push(chip(wo.ref, 'accent'));
       if (win) chips.push(chip(UI.words(win)));
       if(scoped) sections.push(sec('설비별 정비 범위 · 정비 요청',scoped,{open:true}));

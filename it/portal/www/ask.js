@@ -43,6 +43,8 @@
   async function send() {
     const q = A.draft.trim();
     if (!q || A.sending) return;
+    // 보내는 순간: 내 질문과 「질문을 보내는 중」이 바로 대화에 놓인다 — 서버가 처리 건을 열어 답할 때까지(길면 몇 초) 빈 화면 · 앞 질문의 답이 그대로 있지 않게
+    A.pending = { question: q, since: new Date().toISOString(), agent: (A.agents.find(a => a.id === A.agent) || {}).name || 'AI 에이전트' };
     A.sending = true; A.err = ''; render();
     try {
       A.cur = await postJ(api(''), { question: q, agent: A.agent || null, by: ((window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || {}).name || '', request_id: uuid() });
@@ -50,7 +52,7 @@
       poll();
       loadHistory().then(render);
     } catch (e) { A.err = e.message; }
-    finally { A.sending = false; render(); }
+    finally { A.sending = false; A.pending = null; render(); }
   }
   async function open(id) {
     if (A.cur?.id !== id) { A.retryNote = ''; A.retryId = null; A.processOpen = false; A.evidenceOpen = false; }
@@ -183,7 +185,10 @@
     return list.length ? `<div class="chips">${list.map(q => `<button type="button" class="chip" data-ask-pick="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
   }
   function threadHtml() {
-    const v = A.cur;
+    const v = A.cur, P = A.pending;
+    if (P) return `<div class="ask-q"><div class="ask-bubble">${esc(P.question)}</div><span class="muted">${esc(UI.dateTime(P.since))}</span></div>
+      <section class="ask-a" aria-label="답"><div class="ask-who"><b>${esc(P.agent)}</b>${tag('보내는 중', 'run')}</div>
+        <div data-ask-sending>${hydLive.waitHtml('질문을 보내는 중 — 이 질문의 처리 건을 여는 중', { since: P.since, hint: '서버가 질문을 받아 처리 건을 열고 답할 에이전트에게 넘기는 중입니다. 열리면 에이전트가 부르는 도구가 여기에 한 줄씩 붙습니다.' })}</div></section>`;
     if (!v) return UI.empty({ title: '아직 보낸 질문이 없습니다', sub: '아래에 질문을 적어 보내면 에이전트가 도구로 조회하는 과정과 답이 여기에 나옵니다.' });
     const [label, tone] = STATE[v.state] || [v.state, ''];
     const live = LIVE.has(v.state), calls = (v.tool_calls || []).length;
@@ -270,19 +275,21 @@
     const v = A.cur, host = v ? workOf(v) : null;
     const proc = thread.querySelector('.ask-process'); if (proc) A.processOpen = proc.open;
     const evid = thread.querySelector('.ask-evidence'); if (evid) A.evidenceOpen = evid.open;
-    const tSig = JSON.stringify([replay(), v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, v.workitem, A.sending]]);
+    const tSig = JSON.stringify([replay(), A.pending, v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, v.workitem, A.sending]]);
     if (thread._sig !== tSig) {
       thread._sig = tSig;
       thread.innerHTML = threadHtml();
       const slot = thread.querySelector('[data-ask-work]'); if (slot && host) slot.replaceWith(host);
+      if (A.pending) thread.scrollIntoView({ block: 'end' });
       thread.querySelector('.ask-process')?.addEventListener('toggle', e => { A.processOpen = e.target.open; });
       thread.querySelector('.ask-evidence')?.addEventListener('toggle', e => { A.evidenceOpen = e.target.open; });
       thread.querySelector('#askRetry')?.addEventListener('click', retry);
       renderMarkdown(thread);
     }
     // 지금 하는 일 한 줄: 글이 바뀔 때만 다시 그린다(걸린 시간의 글자는 trace.js 의 1초 시계가 올린다)
-    const now = q('[data-ask-now]'), nowSig = v && LIVE.has(v.state) ? v.id + '|' + nowText(v) : '';
-    if (now._sig !== nowSig) { now._sig = nowSig; now.innerHTML = nowHtml(); now.hidden = !nowSig; }
+    const now = q('[data-ask-now]'), nowSig = A.pending ? 'pending|' + A.pending.since : v && LIVE.has(v.state) ? v.id + '|' + nowText(v) : '';
+    if (now._sig !== nowSig) { now._sig = nowSig; now.hidden = !nowSig;
+      now.innerHTML = A.pending ? `<i class="dot" data-tone="run" data-live></i><span data-ask-now-text>질문을 보내는 중 — 처리 건을 여는 중</span>${hydLive.timeHtml(A.pending.since)}` : nowHtml(); }
     const picks = q('[data-ask-picks]'), pSig = JSON.stringify([!!v, examples()]);
     if (picks._sig !== pSig) { picks._sig = pSig; picks.innerHTML = picksHtml(); }
     const hist = q('[data-ask-history]');

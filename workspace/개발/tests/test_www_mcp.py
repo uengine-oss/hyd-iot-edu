@@ -121,3 +121,57 @@ def test_도구_서버를_지울_때_그_서버를_부르는_흐름_단계를_�
             b.close()
     finally:
         served.close()
+
+
+def test_도구를_써_보면_받은_결과가_모양대로_첫_화면에_보이고_원문은_접혀_있다():
+    """수업 한 바퀴에서 찾음: 판단 시스템의 입력 자료 도구를 써 보면 「결과를 받았습니다 · n자」와 접힌 원문 둘만 보여 학생이 결과를 읽지 못했다.
+    결과의 모양(객체 안의 배열 → 표, 값 → 이름–값 줄, 값의 배열 → 목록)으로 그리는 한 규칙이라 도구 이름과 무관하다 — 여기서는 학생 서버의 도구로 본다."""
+    import json
+    from playwright.sync_api import sync_playwright
+    doc = {'result': 'ok', 'document': [{'id': 'in:cause', 'name': '판정 원인', 'table': None, 'source': 'sys:agent'}, {'id': 'in:ce', 'name': '냉각 효율', 'table': None, 'source': 'sen:ce'}],
+           'tags': ['읽기', '조회'], 'summary': {'count': 2, 'deep': {'a': {'b': 1}}}}
+    tool = {'name': 'read_tool_wear', 'callable': True, 'confirmable': False, 'description': '', 'input_schema': {'type': 'object', 'properties': {}}}
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+
+    def answer(route):
+        url = route.request.url.split('?')[0]
+        if url.endswith('/tools/read_tool_wear/call'):
+            text = json.dumps(doc, ensure_ascii=False)
+            return route.fulfill(json={'elapsed_ms': 12, 'arguments': {}, 'result': {'is_error': False, 'truncated': False, 'size_chars': len(text), 'limit_chars': 20000, 'text': text}})
+        if url.endswith('/api/mcp/servers/tool-wear/tools'):
+            return route.fulfill(json={'status': 'ok', 'tools': [tool]})
+        if url.endswith('/api/mcp/servers'):
+            return route.fulfill(json={'servers': [SERVER], 'list_timeout_s': 5})
+        if url.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'mcp')
+            page.locator("#mcpPane [data-try='read_tool_wear']").click()
+            page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
+            page.locator('#mcpCall').click()
+            shape = page.locator('#mcpResult [data-mcp-shape]')
+            shape.wait_for(timeout=8000)
+            # 객체 안의 배열은 표: 줄 둘, 모든 줄에서 값이 없는 열(table)은 빠지고 그 사실을 말한다
+            cells = shape.locator('table tbody tr').evaluate_all('rows => rows.map(r => [...r.children].map(td => td.textContent))')
+            heads = shape.locator('table thead th').all_inner_texts()
+            assert cells == [['in:cause', '판정 원인', 'sys:agent'], ['in:ce', '냉각 효율', 'sen:ce']] and len(heads) == 3, (heads, cells)
+            assert '값이 없는 열 1개는 뺐습니다' in shape.inner_text()
+            # 값은 이름–값 줄, 값의 배열은 목록, 셋째 깊이를 넘는 것은 한 줄 글
+            assert shape.locator('dl.kv dd').first.inner_text() == 'ok' and shape.locator('ul li').all_inner_texts() == ['읽기', '조회']
+            assert '{"b":1}' in shape.inner_text()
+            # 보이는 결과는 접힌 원문 밖에 있고(창에서 실제로 보인다), 원문 둘은 접혀 있다
+            assert shape.locator('table tbody tr').first.is_visible()
+            folds = page.locator('#mcpResult details')
+            assert folds.count() == 2 and not any(folds.nth(i).evaluate('d => d.open') for i in range(2))
+            assert page.evaluate("!document.querySelector('#mcpResult [data-mcp-shape]').closest('details')")
+            b.close()
+    finally:
+        served.close()

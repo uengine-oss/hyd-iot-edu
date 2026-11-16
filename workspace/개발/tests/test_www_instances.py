@@ -312,3 +312,29 @@ def test_취소된_단계의_점과_알약은_실패의_빨강이_아니라_남�
         page.wait_for_timeout(600)
         flow = page.evaluate("() => ({ cls: document.querySelector('#casePath .djs-shape[data-element-id=\"T_approve\"]').getAttribute('class'), tips: [...document.querySelectorAll('#casePath .bpmn-tip')].map(t => t.innerText) })")
         assert 'is-fail' not in flow['cls'] and 'is-todo' in flow['cls'] and flow['tips'] == [], flow
+
+
+def test_반려를_확정하면_서버가_답할_때까지_판이_지금_하는_일을_말하고_다시_그려져도_남으며_답이_오면_사라진다():
+    """빈 기다림 없음(디자인기준 7절): 전에는 [승인] · [반려 확정]을 누르면 서버가 답할 때까지(승인은 실측 1~2초 — 서버가 지금 조건을 다시 확인한다) 판의 단추만 꺼졌다.
+    승인 · 반려 · 제출 · 답은 한 길(instances.js act)이다 — 이 세계의 처리 건은 고를 안이 없어 반려만 누를 수 있으므로 반려로 잰다. 요청의 응답을 시험이 붙들고 그 사이의 화면을 본다."""
+    with _case_page() as page:
+        _pick(page, 'mine')
+        page.wait_for_selector('#todoPanel .turn #tdRejectOpen')
+        held = []
+        page.route('**/svc/process/api/todolist/*/approve', lambda route: held.append(route))
+        page.wait_for_function("!document.querySelector('#tdRejectOpen').disabled", timeout=8000)
+        page.click('#tdRejectOpen')
+        page.fill('#tdReason', '다른 조치를 먼저 해 본다')
+        assert page.locator('[data-turn-busy]').count() == 0
+        page.click('#tdReject')
+        page.wait_for_function("() => { const b = document.querySelector('#todoPanel .turn [data-turn-busy]'); return !!b && /반려를 보내는 중/.test(b.innerText) && !!b.querySelector('.lv-time'); }", timeout=1000)
+        assert page.locator('#tdReject').is_disabled()
+        # 2초마다의 다시 읽기가 판을 다시 그려도 그 줄이 남고, 2초 뒤에는 서버가 무엇을 하는지(까닭)가 붙는다
+        page.wait_for_function("() => /아직 하는 중입니다 — 서버가 반려를 기록하고/.test((document.querySelector('#todoPanel [data-turn-busy]') || {}).innerText || '')", timeout=6000)
+        for _ in range(100):
+            if held:
+                break
+            page.wait_for_timeout(50)
+        assert len(held) == 1 and held[0].request.post_data_json['decision'] == '반려', '반려 요청이 한 번 나가지 않았다'
+        held[0].fulfill(json={})
+        page.wait_for_function("() => !document.querySelector('[data-turn-busy]')", timeout=8000)

@@ -178,3 +178,5 @@
 }
 @keyframes tr-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes tr-blink { 50% { opacity: .55; } }
+/* 진행 목록의 끝 줄이 주는 가는 길(「처리 건에서 보기 →」): 다른 화면 링크(4-3 .go)와 같은 모양으로 그 줄의 글 아래에 선다 */
+.line-text > .lv-go { display: flex; width: max-content; margin-top: 4px; }

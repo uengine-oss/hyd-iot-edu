@@ -259,7 +259,7 @@
     const find = key => C.list.find(s => s.key === key);
     function stepHtml(s, i) {
       const time = s.state === 'run' && s.t0 ? timeHtml(s.t0) : s.t0 && s.t1 ? `<span class="lv-time num">${esc(fmt(Date.parse(s.t1) - Date.parse(s.t0)))}</span>` : '';
-      const link = s.link ? `<button type="button" class="btn" data-variant="link" data-lv-go="${esc(s.key)}">${esc(s.link.text)}</button>` : '';
+      const link = s.link ? `<button type="button" class="go lv-go" data-lv-go="${esc(s.key)}">${esc(s.link.text)}</button>` : '';
       return `<li class="lv-step ${s.state}" data-step="${esc(s.key)}"${s.state === 'run' ? ' aria-current="step"' : ''}><div class="line"${KIND[s.state] ? ` data-kind="${KIND[s.state]}"` : ''}${s.state === 'run' ? ' data-pending' : ''}>${UI.icon(MARK[s.state] || 'circle-dashed')}` +
         `<span class="line-text"><b>${esc(s.label)}</b>${s.note ? `<span class="line-sub lv-note">${esc(s.note)}</span>` : ''}${s.state === 'run' ? lateHtml(s.t0, s.hint) : ''}${link}</span><span class="line-time">${time}</span></div></li>`;
     }
@@ -333,6 +333,7 @@
 
   /* ---------------------------------------------------------------- 이어지는 일 따라가기
      stages: [{ key, label(기다리는 말), hint, check(앞 단계의 사실) → 사실 | null (async 가능), done(사실) → 끝난 말, note(사실) → 둘째 줄,
+                now(앞 단계의 사실) → 기다리는 동안의 둘째 줄(지금 값 — 1초마다 다시 읽어 바뀐 때만 고친다. 기다림이 길어도 무엇이 어디까지 왔는지 보인다),
                 link(사실) → {text, go()}, timeout_s, timeoutText }]
      1초마다 지금 단계의 check 만 부른다(가려진 화면에서는 부르지 않고, 돌아오면 이어서 확인한다). 자리가 화면에서 사라지면 스스로 멈춘다.
      check 가 실패하면 그 사유를 그 줄에 적고 다시 확인한다(삼키지 않는다). */
@@ -355,7 +356,7 @@
           if (F.i < stages.length) list.start(stages[F.i].key); else { F.stop(); if (o.onDone) o.onDone(got); }
         } else if (s.timeout_s && Date.now() - Date.parse(list.since(s.key)) > s.timeout_s * 1000) {
           list.fail(s.key, { note: s.timeoutText || `${s.timeout_s}초를 기다렸지만 아직 일어나지 않았습니다.` }); F.stop();
-        } else list.note(s.key, '');
+        } else list.note(s.key, s.now ? (s.now(F.fact) || '') : '');
       } catch (e) { list.note(s.key, `확인하지 못했습니다(${e.message}) — 다시 확인합니다`); }
       finally { F.checking = false; }
     }

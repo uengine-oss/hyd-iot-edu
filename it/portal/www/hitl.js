@@ -659,6 +659,29 @@
   }
   // 단계 줄(디자인 기준 5-3): 올리기 → AI 추출 → 검토 → 적재. 판(#manualUpload) 맨 위에 두고 지금 단계만 바꾼다. 1단계의 파일 고르기 칸은 1단계에서만 보인다
   const MANUAL_PHASES = ['올리기', 'AI 추출', '검토', '적재'];
+  /* 저장된 추출 결과를 쓰는 문서(제공 문서 — 서버 응답의 cache)의 「추출 과정」. AI가 이 문서를 읽은 것은 미리 한 번이고 그때의 도구 호출 기록은 이 PC에 없다.
+     없는 과정을 지어내지 않고 있는 사실만 보인다: ① 방금 서버가 한 일(H.trail — 요청이 실제로 오간 차례와 걸린 시간) ② 그 추출 결과에서 절마다 무엇이 뽑혔는지
+     (절의 원문 범위 안에 인용이 놓인 조치 방법 · 지식 후보를 센 값). 시간으로 차오르는 막대나 일부러 늦춘 연출은 없다. */
+  const anchorCount = r => r.sections.filter(s => s.anchor).length + r.procedures.reduce((n, p) => n + (p.anchor ? 1 : 0) + p.steps.filter(st => st.anchor).length, 0) +
+    KNOW_GROUPS.reduce((n, [g]) => n + (((r.knowledge || {})[g]) || []).filter(x => x && x.anchor).length, 0);
+  function sectionYield(r) {
+    const secs = r.sections.map((s, i) => ({ s, i })).filter(x => x.s.anchor).sort((a, b) => a.s.anchor.page - b.s.anchor.page || a.s.anchor.start - b.s.anchor.start);
+    const within = (a, k) => { const cur = secs[k].s.anchor, next = secs[k + 1] && secs[k + 1].s.anchor.page === cur.page ? secs[k + 1].s.anchor.start : Infinity;
+      return !!a && a.page === cur.page && a.start >= cur.start && a.start < next; };
+    return r.sections.map((s, i) => {
+      const k = secs.findIndex(x => x.i === i);
+      const procs = r.procedures.filter(p => p.section === s.ref || (!p.section && k >= 0 && within(p.anchor, k)));
+      const know = k < 0 ? [] : KNOW_GROUPS.map(([g, title]) => [title, (((r.knowledge || {})[g]) || []).filter(x => x && within(x.anchor, k)).length]).filter(([, n]) => n);
+      const got = [procs.length ? `조치 방법 ${procs.length}개(${procs.map(p => p.id).join(' · ')})` : '', ...know.map(([title, n]) => `${title} ${n}개`)].filter(Boolean);
+      return { state: 'done', name: `${s.ref} ${s.title || ''}`.trim(), sub: got.length ? got.join(' · ') : '뽑힌 항목 없음 — 절 본문만 보관합니다' };
+    });
+  }
+  function cachedProcessHtml(r) {
+    const origin = ((r.extraction || {}).cache || {}).origin || {}, notes = origin.review_notes || [];
+    return `<p class="muted" data-cached-note>이 문서는 AI가 미리 읽고 사람이 원문과 대조해 검토해 둔 추출 결과를 씁니다${origin.revision ? `(검토 판 ${esc(origin.revision)})` : ''}. 그때 AI가 부른 도구의 기록은 이 PC에 없습니다 — 아래는 그 추출 결과에서 절마다 뽑힌 것입니다.</p>` +
+      `<h3 class="doc-yield-head">절마다 뽑힌 것<span class="muted num">매뉴얼 절 ${r.sections.length}개</span></h3><div data-cached-yield>${UI.timeline(sectionYield(r))}</div>` +
+      (notes.length ? UI.fold(`검토하며 고친 곳<span class="muted num">${notes.length}건</span>`, `<ol class="doc-issues">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ol>`) : '');
+  }
   function renderManualSteps(stage, o = {}) {
     const host = $('#manualUpload'); if (!host) return;
     host.dataset.stage = String(stage);
@@ -669,6 +692,7 @@
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
     if (H.live && (!r || H.live.source_id !== r.source_id)) { H.live.work.stop(); H.live = null; }      // 다른 문서로 바뀌었다 — 앞 문서의 구독을 끝낸다
+    if (H.trail && (!r || H.trail.source_id !== r.source_id)) H.trail = null;
     H.commit = null;      // 다시 그리면 적재 단계(4)가 아니라 검토(3)부터다
     renderManualSteps(manualStage(r));
     if (!r) { box.innerHTML = ''; return; }
@@ -706,11 +730,12 @@
             : L ? `이 문서는 다른 원문${L.filename ? `(${esc(L.filename)})` : ''}으로 만든 판이 적재돼 있습니다 — ${esc(loadedFacts)}. 지금 연 원문은 AI가 아직 읽지 않았습니다. AI 추출을 시작해 검토한 뒤 적재하면 그 판을 개정합니다.`
             : twin ? `같은 원문이 등록한 문서 「${esc(twin.filename || '')}」로 이미 적재돼 있습니다 — ${esc(factsOf(twin))}. 새 문서로 적재하면 절차 번호가 그 문서와 겹쳐 거절됩니다. 고쳐 넣으려면 그 문서의 개정으로 여세요.`
             : '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.'}</p></div>
-        <section class="doc-live" id="manualLive" aria-label="AI 추출 과정" hidden><div class="doc-progress" data-live-progress hidden></div><div data-live-host></div><div data-live-fail></div></section>
+        <section class="doc-live" id="manualLive" aria-label="AI 추출 과정" hidden><div data-live-trail></div><div class="doc-progress" data-live-progress hidden></div><div data-live-host></div><div data-live-fail></div></section>
         <footer class="form-foot"><span id="manualAgentStatus" role="status" class="muted"></span>${another}<button type="button" class="btn" ${twin ? 'data-variant="outline" ' : ''}id="manualAgentExtract" ${ready ? '' : 'disabled'}>${icon('sparkles')}AI 추출 시작</button>${twin ? `<button type="button" class="btn" id="manualReviseSame">${icon('pencil')}${esc(UI.t('kn.revise'))}</button>` : ''}</footer>
         <div class="doc-folds">${readWarnings}${sourceFold}${history}</div></div>`;
     } else {
       const k = r.knowledge || {}, groups = KNOW_GROUPS.filter(([g]) => (k[g] || []).length);
+      const cachedRun = !!(r.extraction && r.extraction.cache);      // 저장된 추출 결과를 쓴 문서 — 과정 접기에 서버가 한 일과 절마다 뽑힌 것을 둔다
       const own = Object.fromEntries(KNOW_GROUPS.flatMap(([g]) => (k[g] || []).filter(x => x && x.id && x.name).map(x => [x.id, x.name])));
       const knowCount = groups.reduce((n, [g]) => n + k[g].length, 0);
       const v = manualValidation(r.validation, r, { ...H.catalog, ...H.manualCatalog });
@@ -743,10 +768,11 @@
         <div class="panel-sec">
           <div class="result"><div class="result-label">AI 추출 결과 · ${esc(r.filename)}</div>
             <div class="result-main">조치 방법 ${r.procedures.length}개${knowCount ? ` · 지식 후보 ${knowCount}개` : ''} · 매뉴얼 절 ${r.sections.length}개를 찾았습니다</div>
-            <p class="result-sub" id="manualAgentStatus" role="status">AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.</p></div>
+            <p class="result-sub" id="manualAgentStatus" role="status">${cachedRun ? '저장된 추출 결과입니다 — 이 문서는 AI가 다시 읽지 않습니다. 원문과 대조해 검토한 뒤 적재하세요.' : 'AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.'}</p></div>
+          ${cachedRun ? '<div class="doc-trail-slot" data-live-trail></div>' : ''}
           <div class="doc-valid"><p>${UI.chipText(v.tag, { ok: 'success', warn: 'warning', danger: 'danger' }[v.tone])}<span>${esc(v.line)}</span></p>${v.more}</div>
           <div class="doc-folds">${manualExecutionHtml(r.validation, r, { ...H.catalog, ...H.manualCatalog })}${readWarnings}
-            <details class="fold" id="manualProcess"><summary>추출 과정 보기<span class="muted">AI가 읽은 구간과 도구 호출</span></summary><div class="fold-body"><div class="doc-live" id="manualLive"><div data-live-host></div><div data-live-fail></div></div></div></details>
+            <details class="fold" id="manualProcess"><summary>추출 과정 보기<span class="muted">${cachedRun ? '절마다 뽑힌 것' : 'AI가 읽은 구간과 도구 호출'}</span></summary><div class="fold-body"><div class="doc-live" id="manualLive">${cachedRun ? cachedProcessHtml(r) : ''}<div data-live-host${cachedRun ? ' hidden' : ''}></div><div data-live-fail></div></div></div></details>
             ${sourceFold}${history}
             ${r.page_reviews ? UI.fold('쪽별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join('')) : ''}</div>
         </div>
@@ -839,6 +865,36 @@
     const SEG = { TODO: ['wait', '차례를 기다리는 중'], IN_PROGRESS: ['run', '읽는 중'], SUBMITTED: ['run', '낸 결과를 검증하는 중'], DONE: ['done', '끝남'],
       FAILED: ['fail', '실패'], CANCELLED: ['fail', '취소됨'], PENDING: ['stop', '검증에서 멈춤 — 사람 확인 필요'] };
     const segLabel = s => `구간 ${s.index}/${s.total}${s.chars ? ` · ${Number(s.chars).toLocaleString()}자` : ''}`;
+    /* 방금 서버가 한 일(H.trail): [AI 추출 시작]을 누른 순간부터 요청이 실제로 오간 차례를 단계 목록(hydLive.steps)에 적는다 — 누르자마자 첫 줄이 보이고,
+       0.몇 초 만에 끝나는 저장된 결과도 끝난 뒤 거친 단계와 걸린 시간이 결과 요약 아래에 남는다. 단계는 요청이 시작 · 끝난 때에만 넘어간다 */
+    function placeTrail() {
+      // 자리: 2단계는 실시간 칸(#manualLive) 맨 위, 3단계는 결과 요약 바로 아래(저장된 결과일 때만 — 0.몇 초 만에 끝난 일이 거친 단계를 접지 않고 남긴다)
+      const T = H.trail, slot = box.querySelector('[data-live-trail]');
+      if (!T || T.source_id !== r.source_id || !slot) return;
+      if (T.host.parentElement !== slot) slot.replaceChildren(T.host);
+      if (slot.closest('#manualLive')) $('#manualLive').hidden = false;
+    }
+    function startTrail() {
+      const host = document.createElement('div'); host.className = 'doc-trail';
+      const T = H.trail = { source_id: r.source_id, host, cached: false, list: hydLive.steps(host, [
+        { key: 'open', label: '원문 확인 · 추출 작업 열기', hint: '서버가 보관한 원문을 확인하고 이 문서의 추출 처리 건을 여는 중입니다.' }], { label: '방금 서버가 한 일' }) };
+      T.list.start('open'); placeTrail();
+      return T;
+    }
+    function trailOpened(T, created) {
+      T.cached = !!created.cache;
+      const rev = ((created.cache || {}).origin || {}).revision;
+      T.list.done('open', { note: T.cached ? `미리 추출해 검토해 둔 문서와 원문이 같습니다 — AI가 다시 읽지 않고 저장된 추출 결과를 씁니다${rev ? `(검토 판 ${rev})` : ''}`
+        : `추출 처리 건을 열었습니다${created.segments > 1 ? ` — 문서를 구간 ${created.segments}개로 나눠 AI가 읽습니다` : ' — AI가 문서를 읽기 시작합니다'}` });
+      if (!T.cached) return;
+      // 저장된 결과일 때만 뒤 단계가 있다(AI 추출은 아래 실시간 기록이 잇는다): 결과 읽기 요청(GET) → 검토 화면에 쓸 목록 읽기
+      const inner = document.createElement('div'), was = T.list;
+      T.list = hydLive.steps(inner, [{ key: 'open', label: '원문 확인 · 추출 작업 열기' },
+        { key: 'verify', label: '저장된 추출 결과를 원문 · 지금 지식과 대조', hint: '서버가 인용마다 원문의 그 자리에 있는지 보고, 지금 지식 지도와 겹치는 번호가 없는지 견주는 중입니다.' },
+        { key: 'prepare', label: '검토 화면 준비', hint: '검토 화면의 고르기 칸에 쓸 고장 유형 · 역할 · 부품 목록을 읽는 중입니다.' }], { label: '방금 서버가 한 일' });
+      T.list.done('open', { note: (was.list.find(s => s.key === 'open') || {}).note, t0: was.since('open') });
+      T.host.replaceChildren(inner);
+    }
     function liveItems(result) {
       const one = s => { const [state, stateText] = SEG[s.status] || ['wait', UI.status(s.status)]; return { id: s.workitem, instance: s.instance, state, stateText }; };
       if (Array.isArray(result.segments) && result.segments.length) return result.segments.map(s => ({ ...one(s), label: segLabel(s) }));
@@ -848,17 +904,15 @@
       const L = H.live, slot = $('#manualLive'); if (!L || !slot || H.preview !== r) return;
       const hostSlot = slot.querySelector('[data-live-host]');
       if (L.host.parentElement !== hostSlot) hostSlot.replaceChildren(L.host);        // 같은 기록 칸을 2단계 → 3단계 「추출 과정 보기」로 옮긴다(다시 만들지 않는다)
-      slot.hidden = false;
+      slot.hidden = false; placeTrail();
       const result = L.result;
       const others = L.state === 'failed' && (result.segments || []).some(s => WAITING.includes(s.status));      // 한 구간이 멈췄어도 다른 구간은 계속 돈다
       const running = L.state === 'starting' || L.state === 'running' || others;
       const p = result && result.progress, c = result && result.corrections;
       // 저장된 추출 결과를 쓰는 문서(제공 문서 — 서버 result.cache)는 AI가 다시 읽지 않는다. 한 화면에서 「AI가 읽고 있습니다」와 「다시 읽지 않습니다」를 함께 말하지 않고,
-      // 실제로 일어나는 일 하나만 말한다(이것은 키가 있을 때도 같은 제품 동작이라 숨길 재생 사정이 아니다 — 본 것을 사실로 믿을 수 있어야 한다). 실행 기록이 없으니 「추출 과정 보기」도 내지 않는다
+      // 실제로 일어나는 일 하나만 말한다(이것은 키가 있을 때도 같은 제품 동작이라 숨길 재생 사정이 아니다 — 본 것을 사실로 믿을 수 있어야 한다)
       const cached = !!(result && result.cache);
-      const proc = document.getElementById('manualProcess'); if (proc) proc.hidden = cached;
-      const said = document.getElementById('manualAgentStatus');
-      if (said && cached && stage === 3 && !said.dataset.tone) said.textContent = '저장된 추출 결과입니다 — 이 문서는 AI가 다시 읽지 않습니다. 원문과 대조해 검토한 뒤 적재하세요.';
+      hostSlot.hidden = cached;      // 저장된 결과에는 AI 실행 기록이 없다 — 빈 기록 칸 대신 서버가 한 일(H.trail)과 절마다 뽑힌 것(cachedProcessHtml)이 그 자리에 있다
       const headline = cached ? (L.state === 'done' ? '저장된 추출 결과를 불러왔습니다' : L.state === 'failed' ? '저장된 추출 결과를 불러오지 못했습니다' : '저장된 추출 결과를 불러오는 중 — 이 문서는 AI가 다시 읽지 않습니다')
         : L.state === 'starting' ? 'AI 추출 작업을 여는 중' : L.state === 'done' ? 'AI 추출이 끝났습니다'
         : L.state === 'failed' ? (others ? '한 구간이 멈췄습니다 — 남은 구간은 계속 읽는 중' : 'AI 추출이 끝나지 않았습니다') : p ? `AI가 문서를 읽고 있습니다 — 구간 ${p.total}개 가운데 ${p.done}개를 마쳤습니다` : 'AI가 문서를 읽고 있습니다';
@@ -891,18 +945,23 @@
       const L = H.live; if (!L || L.instance !== instance || H.preview !== r) return;
       if (L.checking) { L.again = true; return; }
       L.checking = true; clearTimeout(L.settle);
+      const T = H.trail && H.trail.source_id === r.source_id && H.trail.cached ? H.trail.list : null;
       try {
+        if (T && T.state('verify') === 'wait') T.start('verify');
         const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
         if (H.live !== L || H.preview !== r) return;
         L.result = result; L.error = '';
         if (result.preview) {
+          const pv = result.preview, issues = ((pv.validation || {}).issues || []).length;
+          if (T && T.state('verify') === 'run') { T.done('verify', { note: `인용 ${anchorCount(pv)}곳이 원문의 그 자리에 있습니다${pv.coverage ? ` · 원문 글자의 ${Math.round(pv.coverage.ratio * 100)} %가 인용에 쓰였습니다` : ''} · 사람이 확인할 곳 ${issues}건` }); T.start('prepare'); }
           await loadManualCatalog(); if (H.live !== L || H.preview !== r) return;
+          if (T && T.state('prepare') === 'run') T.done('prepare', { note: `매뉴얼 절 ${pv.sections.length}개 · 조치 방법 ${pv.procedures.length}개를 검토 화면에 올렸습니다` });
           L.state = 'done'; H.preview = result.preview; renderPreview(); return;      // 3단계로 — 기록 칸은 「추출 과정 보기」로 옮겨 간다
         }
         L.state = WAITING.includes(result.status) ? 'running' : 'failed';
         // 에이전트가 결과를 냈고 서버가 검증해 넘기는 사이(SUBMITTED)에는 이벤트가 더 오지 않는다 — 이 상태일 때만 1.5초 뒤 한 번 더 묻는다
         if (result.status === 'SUBMITTED' || (result.segments || []).some(s => s.status === 'SUBMITTED')) L.settle = setTimeout(() => checkLive(instance), 1500);
-      } catch (e) { if (H.live === L) L.error = e.message; }
+      } catch (e) { if (H.live === L) L.error = e.message; if (T) ['verify', 'prepare'].forEach(k => { if (T.state(k) === 'run') T.fail(k, { note: e.message }); }); }
       finally { L.checking = false; }
       if (H.live !== L || H.preview !== r) return;
       drawLive();
@@ -927,6 +986,7 @@
       L.work = hydLive.agentWork(host, { tab: 'knowledge', onChange: () => {} });
       drawLive();
     }
+    placeTrail();      // 방금 서버가 한 일 — 화면을 다시 그려도 같은 단계 목록이 제자리(2단계 자리 · 3단계 「추출 과정 보기」)에 놓인다
     if (stage === 3) {
       const fold = $('#manualProcess');
       if (H.live && H.live.instance === (r.extraction || {}).instance) { H.live.state = 'done'; drawLive(); }      // 방금 지켜본 추출 — 기록 칸을 접기 안으로 옮긴다
@@ -938,11 +998,13 @@
       if (edited && !await UI.confirm({ title: 'AI 추출을 다시 할까요?', body: '지금 고친 검토 내용은 새 추출 결과로 바뀌어 사라집니다.', ok: '다시 추출', danger: true })) return;
       const button = $('#manualAgentExtract'); say('');
       const end = hydLive.busy(button, 'AI 추출을 요청하는 중');
+      const trail = startTrail();
       try {
         const previous = extractionState();
         const state = previous && !previous.instance ? previous : { request_id: UI.uuid() };
         sessionStorage.setItem(extractionKey, JSON.stringify(state));
         const created = await postJ(extractionUrl, { request_id: state.request_id });
+        trailOpened(trail, created);
         const since = new Date().toISOString();
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance, since }));
         if (H.preview !== r) return;
@@ -955,7 +1017,7 @@
         end(true);
         loadExtractions();
         startLive(created.instance, since);
-      } catch (e) { end(false); if (H.preview === r) say('AI 추출을 시작하지 못했습니다: ' + e.message + ' — 다시 누르면 같은 요청으로 확인합니다.', true); }
+      } catch (e) { end(false); if (trail.list.state('open') === 'run') trail.list.fail('open', { note: e.message }); if (H.preview === r) say('AI 추출을 시작하지 못했습니다: ' + e.message + ' — 다시 누르면 같은 요청으로 확인합니다.', true); }
     });
     $('#manualAgentResult').addEventListener('click', async () => {
       const instance = $('#manualExtractionRuns').value;
@@ -1058,7 +1120,7 @@
       $('#manualReviewed').checked = false;
     }));
     box.onchange = changed;
-    box.querySelectorAll('[data-kind]').forEach(kind => {
+    box.querySelectorAll('select[data-kind]').forEach(kind => {      // 실행 종류 고르기 칸만(실시간 단계 줄 .line 도 data-kind 를 쓴다)
       const id=kind.dataset.kind, field=name=>box.querySelector(`[data-${name}="${CSS.escape(id)}"]`);
       const target=field('reference-target'), pin=field('reference-pin'), comparison=field('reference-comparison');
       const compare=()=>{
@@ -1252,7 +1314,7 @@
   // 올리기 요청 하나 — 내 파일이든 제공 문서든 같다: POST /api/kg/manuals/preview { filename, data(base64), document_id }
   async function uploadManual(name, blob, documentId, mine = {}) {
     H.sending = mine;
-    const end = hydLive.busy($('#manualPreview'), '올리는 중'); H.preview = null; H.commit = null; H.sent = null;
+    const end = hydLive.busy($('#manualPreview'), '올리는 중'); H.preview = null; H.commit = null; H.sent = null; H.trail = null;
     renderManualSteps(1, { busy: true }); renderProvided();
     $('#manualResult').innerHTML = `<div class="panel-sec">${hydLive.waitHtml('문서를 올리는 중', { hint: '서버가 파일을 받아 글자를 읽고 원문을 보관하는 중입니다. PDF는 쪽 수만큼 더 걸립니다.' })}</div>`;
     note($('#manualStatus'), '');
@@ -1360,15 +1422,22 @@
     $('#ddlCommit').addEventListener('click', async () => {
       const c = $('#ddlCommit'), end = hydLive.busy(c, '적재하는 중'); ddlSay('');
       renderDdlSteps(3, { busy: true });
+      // 적재는 요청 하나다 — 그동안 무엇을 지식 지도에 쓰는지(실제로 보내는 수)를 말하고, 끝나면 쓴 것이 그 줄에 남는다
+      const sysN = new Set(p.inputs.map(i => i.system)).size;
+      const flow = hydLive.steps($('#ddlDone'), [{ key: 'commit', label: `시스템 ${sysN}개 · 입력 데이터 ${p.inputs.length}개를 지식 지도에 쓰는 중`, hint: '표마다 고른 출처 시스템과 판단 입력으로 쓸 열을 한 번에 넣습니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
+        { key: 'reload', label: '적재한 표 정의 목록과 지식 지도 다시 읽기' }], { label: '적재 단계' });
+      flow.start('commit');
       try {
         const out = await postJ(API.process + '/api/kg/ddl/commit', { ...p, by: manualActor() });
         H.ddlDone = p;
+        flow.done('commit', { label: '지식 지도에 썼습니다', note: `시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개` }); flow.start('reload');
         end(true); c.textContent = '적재 완료';
         renderDdlSteps(3, { done: true });
         ddlSay(`적재했습니다. 시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개. 되돌리려면 아래 「적재한 표 정의」의 더 보기에서 되돌립니다.`);
-        $('#ddlDone').innerHTML = `<footer class="form-foot doc-next">${UI.goLink('fabric', '데이터 원천에서 보기')}${UI.goLink('ontology', '지식 지도에서 보기')}</footer>`;
         await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true);
-      } catch (e) { end(false); renderDdlSteps(2); ddlSay('적재하지 못했습니다: ' + e.message, true); }
+        flow.done('reload');
+        $('#ddlDone').insertAdjacentHTML('beforeend', `<footer class="form-foot doc-next">${UI.goLink('fabric', '데이터 원천에서 보기')}${UI.goLink('ontology', '지식 지도에서 보기')}</footer>`);
+      } catch (e) { end(false); ['commit', 'reload'].forEach(k => { if (flow.state(k) === 'run') flow.fail(k, { note: e.message }); }); renderDdlSteps(2); ddlSay('적재하지 못했습니다: ' + e.message, true); }
     });
   }
   // 표 정의 읽기 요청 하나 — 내 파일이든 제공 예시든 같다: POST /api/kg/ddl/preview { filename, text, catalog }

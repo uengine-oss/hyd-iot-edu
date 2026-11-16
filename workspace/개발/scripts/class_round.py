@@ -2060,15 +2060,15 @@ def lab_08_trends(r: Round):
         # 경보 시각 · 측정값: 처리 건의 경보(alert.t · evidence)와 그 처리 건 진행 상황의 에이전트 근거가 같은 구간인가
         inc = vars_of(view["instance"]).get("incident")
         ev = alert.get("evidence") or {}
-        # 설비 회로(app.js renderIncList): 설비를 고르면 그 설비의 경보로 열린 처리 건 수와 「처리 건에서 보기」 하나가 나온다 — 사건 목록의 사본은 두지 않는다
+        # 설비 회로(app.js renderScada): 세 대가 같은 크기로 쌓이고, 진행 중인 처리 건이 있는 설비의 머리 줄에만 「처리 건에서 보기」 하나가 나온다 — 사건 목록 · 건수의 사본은 두지 않는다
         r.tab("incidents")
-        page.locator("#scada .ucard[data-asset='HYD-01']").click(); page.wait_for_timeout(1200)
-        line = txt(r, "#incList")
+        r.wait(10, lambda: page.locator("#scada .ucard[data-asset='HYD-01'] [data-open-incident]").count() > 0, every=0.5)
         mine_open = len(running_on(r, "HYD-01"))
-        n = re.search(r"진행 중\s*(\d+)", line)
-        r.check("설비 회로: HYD-01 을 고르면 그 설비의 처리 건 수(진행 중 = 처리 건 API)와 「처리 건에서 보기」가 나온다",
-                "HYD-01의 경보로 열린 처리 건" in line and bool(n) and int(n.group(1)) == mine_open and page.locator("#incList [data-open-incident]").count() == 1,
-                f"{line.replace(chr(10), ' ')} · API 진행 중 {mine_open}")
+        sizes = page.evaluate("[...document.querySelectorAll('#scada .ucard')].map(c => { const b = c.getBoundingClientRect(); return Math.round(b.width) + 'x' + Math.round(b.height); })")
+        go_n = page.locator("#scada .ucard[data-asset='HYD-01'] [data-open-incident]").count()
+        r.check("설비 회로: 세 대의 회로가 같은 크기이고, 진행 중인 처리 건이 있는 HYD-01 의 머리 줄에 「처리 건에서 보기」 하나가 나온다",
+                len(sizes) == 3 and len(set(sizes)) == 1 and mine_open >= 1 and go_n == 1 and "처리 건에서 보기" in txt(r, "#scada .ucard[data-asset='HYD-01'] .hc-head"),
+                f"카드 크기 {sizes} · HYD-01 링크 {go_n} · API 진행 중 {mine_open}")
         card_ = vars_of(view["instance"]).get("guide_card") or {}
         evs = [e for c in card_.get("causes") or [] for e in c.get("evidence") or []]
         alert_t = datetime.fromisoformat(str(alert.get("t")).replace("Z", "+00:00"))
@@ -2077,7 +2077,7 @@ def lab_08_trends(r: Round):
         r.check("에이전트가 근거로 든 측정값은 경보 뒤 · 판단 전 구간에서 읽은 값", bool(evs) and alert_t <= made and all(e.get("coverage", {}).get("covered") for e in evs[:2]),
                 f"경보 {alert_t:%H:%M:%S} · 판단 {made:%H:%M:%S} · 근거 {[(e.get('id'), round(float(e.get('value') or 0), 2)) for e in evs[:3]]}", kind="quality")
         # 원인 근거(진단 카드의 증거)는 설비 회로 화면에 사본을 두지 않는다 — 「처리 건에서 보기」 → 처리 건의 진행 상황에서 본다
-        page.locator("#incList [data-open-incident]").click()
+        page.locator("#scada .ucard[data-asset='HYD-01'] [data-open-incident]").click()
         opened = r.wait(15, lambda: page.evaluate("id => state.tab === 'instances' && hydInstances.I.sel === id && !!hydInstances.I.view", pid), every=0.5)
         page.wait_for_timeout(1500)
         # AI 단계의 근거는 그 단계 줄을 누르면 열리는 옆 판의 「판단」 보기에 있다(caseRecord.js judgeHtml) — 판을 열어 보이는 글을 읽고 닫는다
@@ -2258,11 +2258,14 @@ def lab_10_mcp_tools(r: Round):
             kind="exception", axis=AXES[1])
     for t in writes[:1]:
         r.human(f"쓰기 도구 {t['name']} 를 못 쓰는 까닭이 사람 글", page.locator(f"#mcpPane .mcp-tool[data-tool='{t['name']}'] .mcp-why").inner_text())
+    # 받은 결과는 원문 접기 밖에, 모양대로 그린 칸(#mcpResult [data-mcp-shape] — mcp.js shapeHtml: 입력 자료는 줄마다 한 항목인 표)에 보인다
+    shape = lambda: page.locator("#mcpResult [data-mcp-shape]").inner_text() if page.locator("#mcpResult [data-mcp-shape]").count() else ""      # noqa: E731
     out = mcp_try(r, "inputs", {})
-    r.check("읽기 도구(입력 자료) [써 보기] → 결과 칸에 그래프의 입력 자료 id(in:cause)가 나온다", "in:cause" in out and "결과" in out, out[:300])
-    out2 = mcp_try(r, "inputs", {})
-    r.check("같은 읽기 도구를 다시 부르면 결과 칸이 숫자 말고 글자까지 같다", re.sub(r"\d", "", out2.split("보낸 입력")[-1]) == re.sub(r"\d", "", out.split("보낸 입력")[-1]),
-            out2[:200], axis=AXES[3])
+    seen = shape()
+    r.check("읽기 도구(입력 자료) [써 보기] → 결과 칸에 그래프의 입력 자료 id(in:cause)가 나온다", "in:cause" in seen and "결과를 받았습니다" in out, (seen or out)[:300])
+    mcp_try(r, "inputs", {})
+    seen2 = shape()
+    r.check("같은 읽기 도구를 다시 부르면 결과 칸이 숫자 말고 글자까지 같다", bool(seen2) and re.sub(r"\d", "", seen2) == re.sub(r"\d", "", seen), seen2[:200], axis=AXES[3])
     # 서버는 「누가」가 빈 요청을 도구를 부르기 전에 400 으로 거절한다(mcp_api · mcp_registry — inbox.actor_or_400). 화면처럼 담당자를 실어 보낸다
     denied, body = r.api("POST", f"{r.process}/api/mcp/servers/hyd-dmn/tools/submit_decision/call", {"arguments": {}, "by": ME})
     r.check("판단 제출은 직접 API에서도 거절", denied == 403, str(body)[:300], kind="exception", axis=AXES[1])
@@ -2670,11 +2673,20 @@ def lab_14_history(r: Round):
             tool = call.locator(".cr-toolid [data-id-copy]").first.get_attribute("data-id-copy") or ""
             asked = call.locator("details.fold.raw").filter(has_text="요청 원문").first
             open_fold(asked); page.wait_for_timeout(500)
+            # 편 원문은 JSON 나무(한국어 이름표 + 원래 키 + 값)로 보이고, 원래 JSON 글은 복사 단추가 복사하는 pre.code 에 그대로 있다.
+            # 그래서 둘을 따로 본다: 보이는 글에 입력의 키와 값이 빠짐없이 있는가, 복사되는 글이 이벤트 기록의 입력과 같은 값인가
             raw = asked.inner_text()
             starts = [e for e in end["events"] if e["event_type"] == "tool_usage_started" and (e.get("data") or {}).get("tool") == tool]
-            inp = json.dumps((starts[0].get("data") or {}).get("input"), ensure_ascii=False, indent=2) if starts else ""
-            r.check("진행 상황의 AI 단계 → 자세히 판의 「원문」에서 도구 호출의 요청 원문이 이벤트 기록과 같다", bool(starts) and bool(inp.strip())
-                    and all(line.strip() in raw for line in inp.splitlines()[:4]), f"{tool} · {inp[:120]}")
+            inp = (starts[0].get("data") or {}).get("input") if starts else None
+            lost = [f"{k}: {json.dumps(v, ensure_ascii=False)[:60]}" for k, v in (inp.items() if isinstance(inp, dict) else [])
+                    if k not in raw or (not isinstance(v, (dict, list)) and json.dumps(v, ensure_ascii=False) not in raw)]
+            r.check("진행 상황의 AI 단계 → 자세히 판의 「원문」에서 도구 호출의 요청 원문을 펴면 이벤트 기록의 입력 키 · 값이 빠짐없이 보인다",
+                    isinstance(inp, dict) and bool(inp) and not lost, f"{tool} · 안 보이는 것 {lost} · 입력 {json.dumps(inp, ensure_ascii=False)[:160]}")
+            copied = asked.locator("pre.code").evaluate("p => p.textContent")
+            try: same = json.loads(copied) == inp
+            except ValueError: same = False
+            r.check("요청 원문의 복사 단추가 복사하는 글이 이벤트 기록의 입력 JSON 과 같다", isinstance(inp, dict) and same and asked.locator("[data-raw-copy]").is_visible(),
+                    f"{tool} · {copied[:160]}")
         else:
             r.check("진행 상황의 AI 단계에 도구 호출 원문이 있다", False, sheet.inner_text()[:200])
         sheet.locator("[data-cr-sheet-close]").click()

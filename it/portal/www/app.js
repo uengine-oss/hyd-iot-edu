@@ -40,12 +40,8 @@ function requireList(value, label) {
   return value;
 }
 const postJ = (url, body, method = 'POST', options = {}) => requestJ(url, { ...options, method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-function keyboardItem(item) {
-  item.tabIndex = 0; item.setAttribute('role', 'button');
-  item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
-}
 
-const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], log: [], selectedAsset: null, showAll: false, incShown: 20 };
+const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], log: [], showAll: false, incShown: 20 };
 
 /* ---------------- 메뉴 · 화면 전환 ---------------- */
 // 화면에 들어올 때 할 일: 화면 모듈은 selectTab 을 감싸지 않고 이 표에 적는다(실린 차례대로 불린다 — 셸이 맨 마지막). fn(name)
@@ -554,7 +550,8 @@ function bizFactLine(b) {
   if (f.available < f.reorder_point) return `${part} 가용 ${n(f.available)}개 < 재주문점 ${n(f.reorder_point)}개 — 필요 수량 ${n(f.need_qty)}개`;
   return `${part} 가용 ${n(f.available)}개 ≥ 재주문점 ${n(f.reorder_point)}개 — 보충할 수량 없음${f.on_order > 0 ? ` (발주 중 ${n(f.on_order)}개 포함)` : ''}`;
 }
-/* 카드의 단추. 무엇을 하는 단추인지는 도움말(올리거나 초점을 주면 단추 아래에 나온다 — 위에 띄우면 카드의 사건 이름 · 값 줄을 덮는다)이, 누른 뒤의 일은 과정 판이 말한다.
+/* 카드의 단추. 무엇을 하는 단추인지는 도움말이, 누른 뒤의 일은 과정 판이 말한다. 사건 절의 단추 도움말은 뜨는 조각이 아니라 단추 줄 아래의 제자리 줄(.lab-hint)에 나온다 —
+   뜨는 조각은 위에 뜨면 사건 이름 · 값 줄을, 아래에 뜨면 「현장 패널」 줄을 덮는다(사용자가 곧 누를 자리다). 올리거나 초점을 주면 그 줄에 글이 나오고 떠나면 비운다(labHint).
    일으키기는 카드의 주 단추(단추 줄 첫 자리 — 4-1), 바깥 사건과 되돌리기는 보통 단추다.
    지금 누를 수 없는 단추는 흐리게 두고 도움말과 누른 뒤의 한 줄이 까닭을 말한다(눌러서 아무 일도 없는 단추를 두지 않는다):
    같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409), 바깥 사건은 서버가 준 까닭(scenarios.<키>.events[].why) */
@@ -563,6 +560,12 @@ const labBtn = (act, label, { primary = false, icon = '', tip = '', off = false,
   `<button type="button" class="btn${cls ? ' ' + cls : ''}"${primary ? '' : ' data-variant="outline"'} data-size="sm" data-act="${act}"${attrs ? ' ' + attrs : ''}${off ? ' aria-disabled="true"' : ''}${tip ? ` data-tooltip="${esc(tip)}" data-side="bottom" data-align="start"` : ''}>${icon ? UI.icon(icon) : ''}<span>${esc(label)}</span></button>`;
 const LAB_SLOT = '<span class="btn lab-slot" data-variant="outline" data-size="sm" aria-hidden="true">&nbsp;</span>';      // 그 카드에 없는 단추의 빈 자리(단추와 같은 상자 — 보이지 않는다)
 const eventBtn = ev => labBtn('biz-event', ev.button, { icon: 'clock', off: !ev.enabled, attrs: `data-event="${esc(ev.act)}"`, tip: ev.enabled ? ev.help || '' : ev.why || '지금은 누를 수 없습니다' });
+{
+  const units = $('#units'), hintOf = e => { const b = e.target.closest && e.target.closest('.lab-exp [data-tooltip]'); return b ? [b, b.closest('.lab-exp').querySelector('.lab-hint')] : []; };
+  const labHint = on => e => { const [b, box] = hintOf(e); if (box) box.textContent = on ? b.dataset.tooltip : ''; };
+  units.addEventListener('mouseover', labHint(true)); units.addEventListener('focusin', labHint(true));
+  units.addEventListener('mouseout', labHint(false)); units.addEventListener('focusout', labHint(false));
+}
 function expHtml(asset) {
   const what = (text, pill = false) => `<p class="lab-what"><span>${esc(text)}</span>${pill ? '<span class="biz-alert"></span>' : ''}</p>`;
   if (asset === FAULT_UNIT.asset) return what(`설비 결함 · ${UI.patternName(FAULT_UNIT.pattern)}`) + `<p class="lab-fact" data-f="fact"></p>
@@ -610,7 +613,7 @@ function renderUnits() {
     const expSig = own ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), !!b.running, (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
     if (exp._sig !== expSig) {
       exp._sig = expSig;
-      exp.innerHTML = expHtml(asset) + '<p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
+      exp.innerHTML = expHtml(asset) + '<p class="lab-hint" aria-hidden="true"></p><p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
     }
     const bizAlert = card.querySelector('.biz-alert'), bizMarkup = bizAlertHtml(asset);
     if (bizAlert && bizAlert._markup !== bizMarkup) { bizAlert.innerHTML = bizMarkup; bizAlert._markup = bizMarkup; }
@@ -673,12 +676,15 @@ function followFault(resumed = false) {
       done: () => '결함이 들어갔습니다 — 쿨러 성능이 떨어지기 시작했습니다', note: f => `쿨러 성능 ${fmt(f.health * 100, 0)} %` },
     { key: 'rise', label: '유온이 오르는 중', hint: `유온이 경보 조건 ${TS_HOT} ℃를 넘을 때까지 기다립니다. 쿨러 성능이 떨어질수록 빨리 오릅니다.`,
       check: () => { const u = unit(); return u && u.tags.TS1 >= TS_HOT ? { ts1: u.tags.TS1, ce: u.tags.CE } : null; },
+      now: () => { const u = unit(); return u ? `지금 유온 ${fmt(u.tags.TS1, 1)} ℃ → 경보 조건 ${TS_HOT} ℃ · 쿨러 성능 ${fmt(u.status.cooler_health * 100, 0)} % · 냉각 효율 ${fmt(u.tags.CE, 0)} %` : '설비 값을 읽지 못했습니다'; },
       done: () => `유온이 경보 조건 ${TS_HOT} ℃를 넘었습니다`, note: f => `유온 ${fmt(f.ts1, 1)} ℃ · 냉각 효율 ${fmt(f.ce, 0)} %` },
     { key: 'detect', label: '감지기가 이상 패턴의 조건을 맞춰 보는 중', hint: '유온 · 냉각 효율 · 오르는 기울기가 모두 조건에 들어야 합니다.',
       check: () => { const p = pat(); return p && ['CANDIDATE', 'RAISED'].includes(p.phase) ? { phase: p.phase } : null; },
+      now: () => { const u = unit(), p = pat(); return !p ? '감지기 상태를 읽지 못했습니다' : u ? `감지기 ${UI.status(p.phase)} · 지금 유온 ${fmt(u.tags.TS1, 1)} ℃ · 냉각 효율 ${fmt(u.tags.CE, 0)} %` : ''; },
       done: () => '감지기가 이상 패턴을 잡았습니다', note: () => `${UI.patternName(pattern)} · 조건이 이어지는지 지켜봅니다` },
     { key: 'alert', label: '조건이 이어지는지 지켜보는 중', hint: '조건이 정해진 시간 동안 이어져야 경보가 됩니다. 잠깐 스친 값으로는 경보를 내지 않습니다.',
       check: () => { const p = pat(); return p && p.phase === 'RAISED' ? { alert: p.alert_id } : null; },
+      now: () => { const u = unit(); return u ? `조건이 이어지는 중 · 지금 유온 ${fmt(u.tags.TS1, 1)} ℃` : ''; },
       done: () => '경보가 났습니다', note: () => UI.patternName(pattern) },
     { key: 'case', label: '처리 건이 열리기를 기다리는 중', hint: '경보가 흐름 엔진에 닿으면 처리 건이 열립니다.',
       check: f => { const inc = incidentsFor(asset).find(i => f && f.alert ? i.alertId === f.alert : i.pattern === pattern && !i.terminal); return inc ? { inc: inc.id, ended: inc.terminal } : null; },      // 이 경보로 열린 사건(이미 끝난 것이면 그렇다고 말한다). 경보 번호를 모르면 이 경보 종류(사건의 pattern)의 열린 사건 — 같은 설비의 다른 경보(정기 정비 · 재고) 사건을 잡지 않는다
@@ -773,95 +779,95 @@ function renderGwLog(entries, failed = '') {
   if (box._html !== html) { box.innerHTML = html; box._html = html; }      // 1초마다 불리지만 같으면 다시 그리지 않는다(펴 둔 원문 접기가 닫히지 않게)
 }
 
-/* ---------------- 설비 회로(디자인기준 6-4): 밝은 캔버스 하나에 고른 설비의 회로를 크게, 나머지 둘을 작게 놓아 캔버스를 채운다 — 작은 카드를 누르면 그 설비가 크게 바뀐다 ----------------
-   사건의 경과 · 판단 · 승인 · 결과는 처리 건 화면 한 곳에 있다 — 이 화면은 캔버스 아래 한 줄(#incList)로 그리로 잇는다(사본 없음).
-   회로 그림: 윤곽은 짙은 선 2px, 배관은 주황 5px(운전 중이면 흐른다), 센서는 빨간 원 안에 이름(TS1 · PS1), 값은 그 옆의 숫자. 유온이 경보 조건을 넘으면 값이 빨강이 되고 센서 뒤에 빛이 켜진다.
-   크게 놓인 회로는 값 글자가 화면에서 13px 이상이고, 작게 놓인 회로는 값 글자를 그리지 않는다(머리 줄의 유온 하나). 모양은 plant.css(.hc-*) */
+/* ---------------- 설비 회로(디자인기준 6-4): 밝은 캔버스 하나에 설비 세 대의 회로를 같은 크기로 세로로 쌓아 캔버스를 채운다 ----------------
+   줄 하나 = 설비 하나: 머리 줄(이름 · 상태 알약 · 운전 모드와 감지기가 보는 것 · 진행 중인 처리 건이 있을 때만 오른쪽 끝에 「처리 건에서 보기 →」) → 그 설비의 회로.
+   고르는 것이 없다 — 카드는 누르는 것이 아니라서 손가락 모양 · 올림 표시를 두지 않는다(디자인기준 1-6). 누르는 것은 머리 줄의 링크 하나다.
+   사건의 경과 · 판단 · 승인 · 결과는 처리 건 화면 한 곳에 있다 — 이 화면은 그 링크로 그리로 잇는다(사본 없음).
+   회로 그림(가로로 긴 한 줄 — 탱크 → 펌프 → 유온 센서 → 압력 센서 → 쿨러와 팬 → 탱크로 돌아오는 배관): 윤곽은 짙은 선 2px, 배관은 주황 5px(운전 중이면 흐른다),
+   센서는 빨간 원 안에 이름(TS1 · PS1), 값은 그 부품 위의 숫자. 유온이 경보 조건을 넘으면 값이 빨강이 되고 센서 뒤에 빛이 켜진다. 모양은 plant.css(.hc-*) */
 function unitSvg(asset) {
   const fins = (x0, x1, y0, y1, step) => { let d = ''; for (let x = x0; x <= x1; x += step) d += `M${x} ${y0}V${y1}`; return `<path class="hc-fin" d="${d}"/>`; };
-  const blade = 'M310 50 L310 41 A9 9 0 0 1 317.8 45.5 Z';
-  return `<svg viewBox="0 12 328 184" role="img" aria-label="${esc(asset)} 유압 회로">
+  const blade = 'M592 110 L592 99 A11 11 0 0 1 601.5 104.5 Z';
+  return `<svg viewBox="0 26 650 126" role="img" aria-label="${esc(asset)} 유압 회로">
     <defs><radialGradient id="hcHot-${esc(asset)}"><stop offset="0" class="hc-hot-0"/><stop offset="1" class="hc-hot-1"/></radialGradient></defs>
-    <circle class="hc-glow" cx="190" cy="80" r="40" fill="url(#hcHot-${esc(asset)})"/>
-    <path class="hc-pipe" d="M106 164 H190 V135"/>
-    <path class="hc-pipe flow" d="M190 106 V50 H238"/>
-    <path class="hc-pipe flow ret" d="M258 72 V176 H106"/>
-    <rect class="hc-steel" x="10" y="132" width="96" height="54" rx="5"/><rect class="hc-oil" x="12" y="152" width="92" height="32" rx="3"/>
-    <text class="hc-cap" x="58" y="124" text-anchor="middle">탱크 <tspan class="hc-val v-ts3">–</tspan></text>
-    <rect class="hc-steel" x="120" y="106" width="40" height="28" rx="5"/>${fins(128, 152, 111, 129, 8)}
-    <line class="hc-shaft" x1="160" y1="120" x2="176" y2="120"/>
-    <circle class="hc-steel" cx="190" cy="120" r="14"/><path class="hc-sym" d="M183 127 L190 110 L197 127 Z"/>
-    <text class="hc-cap" x="174" y="100" text-anchor="end">부하 <tspan class="hc-val v-load">–</tspan></text>
-    <rect class="hc-steel" x="238" y="28" width="56" height="44" rx="4"/>${fins(248, 284, 35, 65, 9)}
-    <text class="hc-cap" x="294" y="87" text-anchor="middle">냉각 효율</text><text class="hc-val v-ce" x="294" y="105" text-anchor="middle">–</text>
-    <g class="hc-fan"><circle class="hc-steel" cx="310" cy="50" r="11"/>
-      <path class="hc-blade" d="${blade}"/><path class="hc-blade" d="${blade}" transform="rotate(120 310 50)"/><path class="hc-blade" d="${blade}" transform="rotate(240 310 50)"/></g>
-    <text class="hc-cap" x="324" y="22" text-anchor="end">팬 <tspan class="hc-val v-fan">–</tspan></text>
-    <g class="hc-sensor s-ts1"><circle cx="190" cy="80" r="10"/><text x="190" y="83.5" text-anchor="middle">TS1</text></g>
-    <text class="hc-cap" x="174" y="84" text-anchor="end">유온 <tspan class="hc-val main v-ts1">–</tspan></text>
-    <g class="hc-sensor"><circle cx="214" cy="50" r="10"/><text x="214" y="53.5" text-anchor="middle">PS1</text></g>
-    <text class="hc-cap" x="230" y="32" text-anchor="end">압력 <tspan class="hc-val v-ps1">–</tspan></text>
+    <circle class="hc-glow" cx="300" cy="110" r="40" fill="url(#hcHot-${esc(asset)})"/>
+    <path class="hc-pipe" d="M110 110 H200"/>
+    <path class="hc-pipe flow" d="M228 110 H500"/>
+    <path class="hc-pipe flow ret" d="M532 132 V144 H60 V138"/>
+    <rect class="hc-steel" x="10" y="78" width="100" height="60" rx="5"/><rect class="hc-oil" x="12" y="98" width="96" height="38" rx="3"/>
+    <text class="hc-cap" x="60" y="68" text-anchor="middle">탱크 <tspan class="hc-val v-ts3">–</tspan></text>
+    <rect class="hc-steel" x="194" y="58" width="40" height="26" rx="5"/>${fins(202, 226, 63, 79, 8)}
+    <line class="hc-shaft" x1="214" y1="84" x2="214" y2="96"/>
+    <circle class="hc-steel" cx="214" cy="110" r="14"/><path class="hc-sym" d="M207 103 L224 110 L207 117 Z"/>
+    <text class="hc-cap" x="214" y="48" text-anchor="middle">부하 <tspan class="hc-val v-load">–</tspan></text>
+    <rect class="hc-steel" x="500" y="88" width="64" height="44" rx="4"/>${fins(510, 554, 95, 125, 9)}
+    <text class="hc-cap" x="532" y="80" text-anchor="middle">냉각 효율 <tspan class="hc-val v-ce">–</tspan></text>
+    <g class="hc-fan"><circle class="hc-steel" cx="592" cy="110" r="13"/>
+      <path class="hc-blade" d="${blade}"/><path class="hc-blade" d="${blade}" transform="rotate(120 592 110)"/><path class="hc-blade" d="${blade}" transform="rotate(240 592 110)"/></g>
+    <text class="hc-cap" x="602" y="142" text-anchor="middle">팬 <tspan class="hc-val v-fan">–</tspan></text>
+    <g class="hc-sensor s-ts1"><circle cx="300" cy="110" r="14"/><text x="300" y="110" text-anchor="middle" dominant-baseline="central">TS1</text></g>
+    <text class="hc-cap" x="300" y="86" text-anchor="middle">유온 <tspan class="hc-val main v-ts1">–</tspan></text>
+    <g class="hc-sensor"><circle cx="410" cy="110" r="14"/><text x="410" y="110" text-anchor="middle" dominant-baseline="central">PS1</text></g>
+    <text class="hc-cap" x="410" y="86" text-anchor="middle">압력 <tspan class="hc-val v-ps1">–</tspan></text>
   </svg>`;
 }
+/* 그림 안에 13px 글자를 넣을 수 없는 좁은 폭에서 그림 아래에 보이는 값 줄(같은 여섯 값 — plant.css 가 [data-tight] 일 때만 보인다) */
+const HC_VALS = [['v-ts1', '유온'], ['v-ts3', '탱크'], ['v-ps1', '압력'], ['v-load', '부하'], ['v-ce', '냉각 효율'], ['v-fan', '팬']];
 function renderScada() {
   const box = $('#scada');
-  if (!state.plant) { box.innerHTML = state.plantError ? UI.errorBlock(UI.t('plant.noConn'), `${state.plantError} ${UI.t('plant.noConnSub')}`) : '<div class="skeleton hc-wait"></div>'; return; }
+  if (!state.plant) { box.innerHTML = state.plantError ? UI.errorBlock(UI.t('plant.noConn'), `${state.plantError} ${UI.t('plant.noConnSub')}`) : '<div class="skeleton hc-wait"></div>'; renderIncList(); return; }
   if (!box.querySelector('.ucard')) box.innerHTML = '';
-  const units = state.plant.units;
-  if (!units[state.selectedAsset]) state.selectedAsset = Object.keys(units)[0] || null;      // 처음에는 첫 설비를 고른 채로 연다
-  for (const [asset, u] of Object.entries(units)) {
+  for (const [asset, u] of Object.entries(state.plant.units)) {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
-      card = el('div', 'ucard'); card.dataset.asset = asset; keyboardItem(card);
-      card.innerHTML = `<header class="hc-head"><h2>${esc(asset)}</h2><span data-f="state"></span><span class="hc-now num"></span></header>${unitSvg(asset)}`;
-      card.addEventListener('click', () => { state.selectedAsset = asset; renderScada(); });
+      card = el('article', 'ucard'); card.dataset.asset = asset; card.setAttribute('aria-label', `${asset} 유압 회로`);
+      card.innerHTML = `<header class="hc-head"><h2>${esc(asset)}</h2><span data-f="state"></span><span class="hc-mode" data-f="mode"></span><span class="hc-go" data-f="go"></span></header>${unitSvg(asset)}
+        <dl class="hc-vals">${HC_VALS.map(([cls, name]) => `<div><dt>${esc(name)}</dt><dd class="num ${cls}">–</dd></div>`).join('')}</dl>`;
       box.append(card);
     }
-    const t = u.tags, s = u.status, d = detOf(asset), st = unitState(s, d), running = s.state === 'RUN', on = state.selectedAsset === asset;
+    const t = u.tags, s = u.status, d = detOf(asset), st = unitState(s, d), running = s.state === 'RUN';
     card.classList.toggle('stopped', !running);
-    card.setAttribute('aria-pressed', String(on));
-    card.setAttribute('aria-label', `${asset} ${st.label} — ${on ? '크게 보는 설비입니다' : '누르면 이 설비의 회로를 크게 봅니다'}`);
     paintState(card, st);
-    const set = (cls, v) => { const n = card.querySelector('.' + cls); if (n.textContent !== v) n.textContent = v; };
-    set('hc-now', `${UI.t('plant.ts1')} ${fmt(t.TS1, 1)} ℃`);      // 작게 놓인 설비는 회로의 값 글자를 그리지 않고(작아서 읽히지 않는다) 머리 줄에 유온 하나를 보인다
+    const set = (cls, v) => card.querySelectorAll('.' + cls).forEach(n => { if (n.textContent !== v) n.textContent = v; });
+    set('hc-mode', `${UI.status(s.mode)} · 감지기 ${phaseText(d).replace(/^감지기 /, '')}${s.cmdId ? ` · ${UI.t('plant.lastCmd')} ${UI.status(s.result)}` : ''}`);
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0) + ' ℃'); set('v-ce', fmt(t.CE, 0) + ' %'); set('v-fan', fmt(t.FanSpeedSP, 0) + ' %');
     set('v-load', `${fmt(t.LoadSP, 0)} % · ${fmt(t.EPS1, 1)} kW`); set('v-ps1', fmt(t.PS1, 0) + ' bar');
     const heat = tsColor(t.TS1);                                   // '' | hot(경보 조건 이상) | trip(보호 정지 기준 이상)
-    card.querySelector('.hc-now').classList.toggle('hot', !!heat);
-    card.querySelector('.v-ts1').classList.toggle('hot', !!heat);
+    card.querySelectorAll('.v-ts1').forEach(n => n.classList.toggle('hot', !!heat));
     card.querySelector('.s-ts1').classList.toggle('hot', !!heat);
     card.querySelector('.hc-glow').classList.toggle('on', !!heat);
     const fan = card.querySelector('.hc-fan'), spinning = running && t.FanSpeedSP > 0;
     fan.classList.toggle('stop', !spinning);
     fan.style.setProperty('--spin', (spinning ? (2.4 * 60 / Math.max(10, t.FanSpeedSP)).toFixed(2) : 2) + 's');
+    // 그 설비의 경보로 열려 아직 진행 중인 처리 건이 있을 때만 그리로 가는 길 하나(없으면 자리를 지키는 글을 두지 않는다 — 디자인기준 1-4)
+    const open = state.incidentsRead ? openIncidentFor(asset) : null, go = open ? UI.goLink('instances', '처리 건에서 보기', `data-open-incident="${esc(open.id)}"`) : '', goBox = card.querySelector('[data-f="go"]');
+    if (goBox._markup !== go) { goBox.innerHTML = go; goBox._markup = go; }
   }
   scadaFit(); renderIncList();
 }
-/* 크게 놓인 회로의 글자는 화면에서 13px 아래로 줄지 않는다(디자인기준 6-1): 그림은 카드 폭에 맞춰 줄어들므로, 줄어든 만큼 글자의 그림 단위 크기를 키운다(넓은 카드에서는 바탕 크기 그대로).
-   센서 원 안의 이름(TS1 · PS1)은 원보다 커질 수 없어, 13px 로 읽히지 않는 폭에서는 그리지 않는다(그 곁의 「유온」 · 「압력」 글이 같은 것을 말한다) */
+/* 회로의 글자는 화면에서 13px 아래로 줄지 않는다(디자인기준 6-1): 그림은 카드에 맞춰 줄어들므로, 줄어든 만큼 글자의 그림 단위 크기를 키운다(넓은 카드에서는 바탕 크기 그대로).
+   그림은 글자가 16.5 단위까지 커져도 서로 겹치지 않게 그렸다. 그보다 더 키워야 13px 이 되는 좁은 폭(data-tight)에서는 그림에 글자를 그리지 않고 같은 값을 그림 아래 줄(.hc-vals)에 보인다.
+   센서 원 안의 이름(TS1 · PS1)은 원보다 커질 수 없어, 13px 로 읽히지 않는 폭(data-nosen)에서는 그리지 않는다(그 위의 「유온」 · 「압력」 글이 같은 것을 말한다) */
 function scadaFit() {
-  const card = document.querySelector('#scada .ucard[aria-pressed="true"]'), svg = card && card.querySelector('svg'), m = svg && svg.getScreenCTM();
-  document.querySelectorAll('#scada .ucard').forEach(c => { if (c !== card) { c.style.removeProperty('--hc-cap'); c.style.removeProperty('--hc-val'); c.style.removeProperty('--hc-main'); c.removeAttribute('data-tight'); } });
-  if (!m || !m.a) return;
-  const k = m.a, px = (base, min) => `${Math.max(base, min / k).toFixed(2)}px`;
-  card.style.setProperty('--hc-cap', px(8, 13.2)); card.style.setProperty('--hc-val', px(8.5, 13.4)); card.style.setProperty('--hc-main', px(9.5, 14));
-  card.toggleAttribute('data-tight', 7 * k < 13);
+  document.querySelectorAll('#scada .ucard').forEach(card => {
+    const m = card.querySelector('svg').getScreenCTM();
+    if (!m || !m.a) return;
+    const k = m.a, need = 13.2 / k, px = (base, min) => `${Math.max(base, min / k).toFixed(2)}px`;
+    card.style.setProperty('--hc-cap', px(10, 13.2)); card.style.setProperty('--hc-val', px(10.5, 13.4)); card.style.setProperty('--hc-main', px(12, 14)); card.style.setProperty('--hc-sen', px(9, 13.2));
+    card.toggleAttribute('data-tight', need > 16.5);
+    card.toggleAttribute('data-nosen', need > 11.5);
+  });
 }
 new ResizeObserver(() => { if (state.tab === 'incidents') scadaFit(); }).observe($('#scada'));
-/* 캔버스 아래 한 줄(#incList): 고른 설비의 지금 상태(운전 모드 · 감지기가 보는 것)와 그 설비의 경보로 열린 처리 건 수, 그리고 가는 길 하나.
-   처리 건의 목록 · 상태 이름 · 색은 처리 건 화면이 정본이다 — 이 화면에 그 목록의 사본을 두지 않는다(같은 것을 두 곳 · 두 이름으로 보이지 않는다).
-   가는 길: 진행 중인 건이 있으면 그 처리 건, 끝난 건만 있으면 처리 건 화면, 한 건도 없으면 결함 시뮬레이션 */
+/* 캔버스 발치(#incList): 진행 중인 처리 건이 어느 설비에도 없을 때만, 이 화면에서 다음에 할 일로 가는 길 하나(결함 시뮬레이션)를 둔다.
+   진행 중인 건이 있으면 그 설비의 머리 줄에 「처리 건에서 보기 →」가 있다. 처리 건의 목록 · 건수 · 상태 이름은 처리 건 화면이 정본이다 — 이 화면에 사본을 두지 않는다.
+   처리 건 목록을 읽지 못했으면 「없음」으로 보이지 않고 읽지 못했다고 말한다 */
 function renderIncList() {
-  const box = $('#incList'), asset = state.selectedAsset, u = state.plant && state.plant.units[asset];
-  let html;
-  if (!u) html = '';
+  const box = $('#incList');
+  let html = '';
+  if (!state.plant) html = '';
   else if (state.incidentError && !state.incidents.length) html = UI.errorBlock('처리 건 목록을 읽지 못했습니다', state.incidentError);
-  else {
-    const s = u.status, d = detOf(asset), rows = incidentsFor(asset), open = rows.filter(i => !i.terminal);
-    const cases = !state.incidentsRead ? '처리 건을 읽는 중' : `${esc(asset)}의 경보로 열린 처리 건 <b class="num">${rows.length}</b>건${rows.length ? ` · ${esc(UI.t('inst.running'))} <b class="num">${open.length}</b>` : ''}`;
-    const go = !state.incidentsRead ? '' : open.length ? UI.goLink('instances', '처리 건에서 보기', `data-open-incident="${esc(open[0].id)}"`) : rows.length ? UI.goLink('instances', '처리 건에서 보기') : UI.goLink('scenario', `${UI.t('nav.scenario')}에서 결함 넣기`);
-    html = `<div class="hc-line"><span class="hc-sel"><b>${esc(asset)}</b>${esc(UI.status(s.mode))} · 감지기 ${esc(phaseText(d).replace(/^감지기 /, ''))}${s.cmdId ? ` · ${esc(UI.t('plant.lastCmd'))} ${esc(UI.status(s.result))}` : ''}</span><span class="hc-cases">${cases}</span>${go}</div>`;
-  }
+  else if (state.incidentsRead && !Object.keys(state.plant.units).some(a => openIncidentFor(a))) html = `<div class="hc-foot">${UI.goLink('scenario', `${UI.t('nav.scenario')}에서 결함 넣기`)}</div>`;
   if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
 

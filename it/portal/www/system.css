@@ -131,7 +131,8 @@
 .sys-row-bg { fill: rgb(15 23 42 / .028); }      /* 계층 하나 걸러 옅은 띠 — 아홉 계층이 세 영역을 가로지르는 줄로 읽힌다 */
 .sys-row-t { font-size: 14px; font-weight: 600; fill: var(--cv-ink); }
 .sys-row-cap, .sys-row-n { font-size: 14px; fill: var(--cv-ink-2); }
-.sys-nd { cursor: pointer; }
+.sys-nd { cursor: pointer; }      /* 누르면 그 도구의 화면이 새 탭으로 열리는 부품 */
+.sys-nd:not([href]) { cursor: default; }      /* 여는 화면이 없는 부품: 올리면 정보 카드가 뜰 뿐 눌러도 더 일어나는 일이 없다 — 손가락 모양을 주지 않는다(1-6) */
 .sys-nd:focus-visible { outline: none; }
 .sys-nd .box { fill: var(--cv-node); stroke: #d9dce3; stroke-width: 1; filter: drop-shadow(0 1px 2px rgb(15 23 42 / .09)); transition: stroke .15s, filter .15s; }
 .sys-nd .ib { fill: currentColor; opacity: .12; }

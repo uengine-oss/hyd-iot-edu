@@ -273,7 +273,13 @@
       seen.observe(container);
       viewer.get('eventBus').on('diagram.destroy', () => seen.disconnect());
     }
-    if (opts.onPick) viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(defIdOf(el.id)); });
+    if (opts.onPick) {
+      viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(defIdOf(el.id)); });
+      // 누르면 열리는 상자는 누를 수 있게 보인다(디자인기준 1-6): 손가락 모양 · 올리면 그림자(.can-pick — portal-kit.css) · 올려 두면 뜨는 한 줄
+      const reg = viewer.get('elementRegistry'), canvas = viewer.get('canvas');
+      reg.forEach(el => { if (skip(el) || !isBox(el)) return; canvas.addMarker(el.id, 'can-pick');
+        const g = reg.getGraphics(el), t = document.createElementNS('http://www.w3.org/2000/svg', 'title'); t.textContent = '눌러서 이 단계의 자세한 내용 보기'; g.prepend(t); });
+    }
     return D;
   }
   const LEGEND = '<span><i style="background:var(--cv-green)"></i>끝남</span><span><i style="background:var(--cv-now)"></i>지금</span><span><i></i>남음</span>';
@@ -337,7 +343,7 @@
       <span class="cv-tools" role="group" aria-label="그림 도구">${zoomTools}<button type="button" data-flow-now aria-label="지금 단계로" data-tooltip="지금 단계로" data-side="bottom">${UI.icon('locate-fixed')}</button><button type="button" class="wide" data-flow-all>${UI.icon('maximize-2')}전체 흐름</button></span></div>
       <div class="bpmn" data-flow-stage role="img" aria-label="흐름 그림"></div><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div>`;
     const stage = host.querySelector('[data-flow-stage]'), wait = host.querySelector('[data-flow-wait]');
-    draw(stage, view, { mine: opts.mine, crop: F.crop, onPick: id => host._flow && host._flow.opts.onPick && host._flow.opts.onPick(id) }).then(D => {
+    draw(stage, view, { mine: opts.mine, crop: F.crop, onPick: opts.onPick ? id => host._flow && host._flow.opts.onPick && host._flow.opts.onPick(id) : null }).then(D => {
       if (host._flow !== F) { D.viewer.destroy(); return; }    // 그리는 사이 다른 처리 건을 골랐다
       F.D = D; wait.remove();
       if (F.view !== view || F.opts !== opts) { paint(D, F.view, F.opts.mine); focus(D); if (F.crop) F.crop(D); }

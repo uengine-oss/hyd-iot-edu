@@ -20,6 +20,7 @@ def portal():
         with sync_playwright() as p:
             b = p.chromium.launch()
             ctx = b.new_context(viewport={'width': 1440, 'height': 900}, permissions=['clipboard-read', 'clipboard-write'])
+            ctx.add_init_script(CLICK_HOOK)      # 어느 요소에 click 처리가 바로 걸렸는지 적어 둔다(누를 수 있게 보이는가 판정이 쓴다)
             page = ctx.new_page()
             page.route('**/svc/**', lambda route: route.abort('connectionrefused'))
             page.goto(served.url + '/index.html')
@@ -399,3 +400,108 @@ def test_두_칸_틀의_오른쪽_칸에서_선으로_가른_구역의_글은_�
         return                                   # 두 칸 틀을 쓰지 않는 화면
     assert got['want'] >= 16 and got['line'] >= 1, got
     assert got['above'] >= got['want'] and got['below'] >= got['want'] and got['left'] == 0, (tab, got)
+
+
+# ---- 디자인기준 1-6: 누를 수 있는 것은 누를 수 있게 보인다 — 22화면 공통 판정 ----
+# 누르는 것 = 마크업 · 역할로 누르는 것(단추 · 링크 · 접기 줄 · 고르기 칸 · 체크 · 탭 · 메뉴 항목 · [data-go-tab]) + click 처리가 그 요소에 바로 걸린 것(대신 받는 통은 뺀다 — CLICK_HOOK).
+CLICK_HOOK = r"""(() => { const add = EventTarget.prototype.addEventListener; window.__clk = new WeakSet();
+  EventTarget.prototype.addEventListener = function (type, fn, o) { if (type === 'click' && this instanceof Element && !/\.target\b|closest\(/.test(String(fn))) window.__clk.add(this); return add.call(this, type, fn, o); }; })();"""
+PRESSABLE = r"""(scope) => {
+  const NATIVE = 'a[href],button,summary,select,input:not([type=hidden]),textarea,label:has(input[type=checkbox]),label:has(input[type=radio]),[role=button],[role=tab],[role=link],[role=menuitem],[role=option],[role=switch],[role=checkbox],[role=radio],[data-go-tab],[onclick],[aria-pressed],[aria-expanded]';
+  const VENDOR = '.uplot, .bjs-powered-by, .__________cytoscape_container, .djs-container';
+  const shown = el => { const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2 || r.right <= 0 || r.left >= innerWidth) return false; const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none' || cs.pointerEvents === 'none' || +cs.opacity === 0) return false;
+    for (let p = el; p; p = p.parentElement) { if (p.tagName === 'DETAILS' && !p.open && p !== el && !(el.closest('summary') && el.closest('summary').parentElement === p)) return false; if (p.hidden) return false; } return true; };
+  const all = [...document.querySelectorAll(scope)].flatMap(root => [...root.querySelectorAll('*')]).filter(e => !e.closest(VENDOR) && !e.matches('.skip-link') && shown(e));
+  const native = all.filter(e => e.matches(NATIVE)), direct = all.filter(e => window.__clk.has(e) && !e.matches(NATIVE) && !e.querySelector(NATIVE));
+  const cand = new Set([...native, ...direct]), inCand = e => { for (let p = e; p; p = p.parentElement) if (cand.has(p)) return true; return false; };
+  const sel = e => (e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + '.' + (typeof e.className === 'string' ? e.className : '').trim().split(/\s+/).slice(0, 3).join('.')).replace(/\.$/, '');
+  const name = e => (e.innerText || e.value || e.getAttribute('aria-label') || e.getAttribute('title') || '').trim().replace(/\s+/g, ' ').slice(0, 24);
+  window.__press = [...cand].filter(e => !(e.disabled || e.getAttribute('aria-disabled') === 'true'));
+  return { list: window.__press.map(e => ({ what: sel(e) + ' 「' + name(e) + '」', cursor: getComputedStyle(e).cursor,
+      text: e.matches('textarea, input:not([type=checkbox], [type=radio], [type=file], [type=button], [type=submit], [type=range], [type=color])'),
+      picked: e.checked === true || ['aria-selected', 'aria-pressed', 'aria-current', 'aria-checked'].some(a => e.getAttribute(a) && e.getAttribute(a) !== 'false') || e.matches('.active'),
+      inner: [...cand].some(c => c !== e && c.contains(e)) })),
+    fake: all.filter(e => getComputedStyle(e).cursor === 'pointer' && !inCand(e) && !(e.parentElement && getComputedStyle(e.parentElement).cursor === 'pointer')).map(e => sel(e) + ' 「' + name(e) + '」') }; }"""
+# 그 요소에만 닿는 점(안에 다른 누르는 것이 있으면 피한다)과, 그 요소 · 그 안 · 그 요소가 통째로 덮는 조상의 지금 모양
+PRESS_POINT = r"""i => { const e = window.__press[i]; if (!e || !e.isConnected) return null; e.scrollIntoView({ block: 'center', inline: 'nearest' }); const r = e.getBoundingClientRect();
+  for (const fx of [0.5, 0.1, 0.9, 0.3, 0.7]) for (const fy of [0.5, 0.2, 0.8]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, at = document.elementFromPoint(x, y);
+    if (at && (at === e || e.contains(at)) && !window.__press.some(o => o !== e && e.contains(o) && o.contains(at))) return [x, y]; } return null; }"""
+PRESS_LOOK = r"""i => { const e = window.__press[i]; if (!e || !e.isConnected) return null;
+  const P = ['backgroundColor', 'backgroundImage', 'color', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'boxShadow', 'outlineStyle', 'textDecorationLine', 'textDecorationColor', 'opacity', 'filter', 'fill', 'stroke', 'strokeWidth'];
+  const one = (n, ps) => { const cs = getComputedStyle(n, ps); return P.map(p => cs[p]).join('|'); }, A = n => { const r = n.getBoundingClientRect(); return r.width * r.height; };
+  const ns = [e, ...[...e.querySelectorAll('*')].slice(0, 40)];
+  const cover = ['::before', '::after'].some(ps => { const c = getComputedStyle(e, ps); return c.content !== 'none' && c.position === 'absolute'; });      // 이름의 ::after 가 카드 전체를 덮는 단추(지표 카드)
+  for (let p = e.parentElement, k = 0; p && k < 3; p = p.parentElement, k++) if (A(e) >= 0.6 * A(p) || cover) ns.push(p);
+  return ns.map(n => one(n) + '#' + one(n, '::before') + '#' + one(n, '::after')).join('\n'); }"""
+
+
+def pressable_flaws(page, scope):
+    """scope 안의 보이는 누르는 것을 하나씩 올려 보고 어긋난 것을 돌려준다: 손가락 모양이 아닌 것, 올려도 모양이 그대로인 것, 누르는 것이 아닌데 손가락 모양인 것.
+    글을 넣는 칸은 글 넣는 모양(text)이면 되고, 이미 고른 것(고른 탭 · 고른 줄 · 켠 체크)은 올려도 바뀌지 않아도 된다."""
+    found = page.evaluate(PRESSABLE, scope)
+    flaws = [f'손가락 모양인데 누르는 것이 아니다: {x}' for x in found['fake']]
+    tried = 0
+    for i, c in enumerate(found['list']):
+        if c['cursor'] != ('text' if c['text'] else 'pointer'):
+            flaws.append(f"손가락 모양이 아니다({c['cursor']}): {c['what']}")
+        if c['text'] or c['picked']:
+            continue
+        page.mouse.move(1, 1); page.wait_for_timeout(160)
+        before, after = page.evaluate(PRESS_LOOK, i), None
+        for _ in range(2):      # 재는 사이에 화면이 밀리면(늦게 온 응답이 위에 줄을 더함) 점을 다시 잡는다
+            point = page.evaluate(PRESS_POINT, i)
+            if not point:
+                break
+            page.mouse.move(*point); page.wait_for_timeout(200)
+            if page.evaluate("i => { const e = window.__press[i]; return !!e && e.isConnected && e.matches(':hover'); }", i):
+                after = page.evaluate(PRESS_LOOK, i)
+                break
+        if before is None or after is None:
+            continue      # 재는 사이에 화면이 그 줄을 다시 그렸다 — 같은 종류의 다른 것이 잰다
+        tried += 1
+        if before == after:
+            flaws.append(f"올려도 모양이 바뀌지 않는다: {c['what']}")
+    page.mouse.move(1, 1)
+    return flaws, tried, len(found['list'])
+
+
+@pytest.mark.parametrize('tab', SCREENS)
+def test_모든_화면에서_누르는_것은_손가락_모양이고_올리면_모양이_바뀌며_누르지_못하는_것은_손가락_모양이_아니다(portal, tab):
+    """사용자 2026-11-16 「누르면 바뀐다는 것이 화면에서 바로 보여야 합니다. 마우스를 올리면 손가락 모양 · 테두리가 바뀌는지」(디자인기준 1-6).
+    화면마다 본문의 누르는 것을 모두 실제로 올려 본다. 메뉴 줄 · 위 막대는 어느 화면에서나 같으므로 홈에서 한 번 본다."""
+    page = portal
+    page.evaluate("() => document.getElementById('partsProbe')?.remove()")
+    open_screen(page, tab)
+    page.locator(f'#view-{tab} .page-head').first.wait_for(state='visible')
+    page.wait_for_timeout(600)
+    for _ in range(3):      # 응답이 없는 화면은 오류 줄을 되풀이해 다시 그린다 — 그 사이에 걸려 하나도 못 쟀으면 다시 잰다
+        flaws, tried, n = pressable_flaws(page, f'#view-{tab}' + (', #sidebar, .topbar' if tab == 'main' else ''))
+        if flaws or tried or not n:
+            break
+        page.wait_for_timeout(700)
+    assert not flaws, f'{tab}: ' + ' / '.join(flaws)
+    assert tried >= 1 or n == 0, f'{tab}: 누르는 것 {n}개 가운데 하나도 올려 보지 못했다'
+
+
+def test_공통_부품의_누르는_것은_모두_누를_수_있게_보인다(portal):
+    """화면이 서비스 응답 없이 그리지 못하는 부품(접기 · 긴 글 접기 · 원문 · 목록 줄 · 더 보기 · 다른 화면 링크 · 숫자 카드 · 세그먼트 · 보기 탭 · 고르기 칸 · 체크 · 글 속 링크)을 한 칸에 그려 놓고 같은 잣대로 잰다.
+    누르는 것이 아닌 것(상태 알약 · 구역 머리 · 범위 한 줄 · 꺼진 단추)은 손가락 모양이 아니다."""
+    page = portal
+    open_screen(page, 'kpi')
+    box = draw(page, """UI.fold('후보 비교<span class="muted">4</span>', '<p>안</p>') + UI.longText('<div class="prose">' + '<p>긴 글</p>'.repeat(30) + '</div>') + UI.raw({ a: 1 }, { title: '원문' })
+      + '<div class="rows"><button type="button" class="row"><span class="row-title">줄 하나</span><span class="row-meta">보조</span></button><button type="button" class="row" aria-current="true"><span class="row-title">고른 줄</span></button></div>'
+      + UI.moreButton(3, 'data-probe-more', { what: '처리 완료', unit: '건' }) + UI.goLink('instances', '처리 건에서 보기')
+      + '<div class="stats">' + UI.statCard({ label: '진행 중', value: '2', unit: '건', tab: 'instances', go: '처리 건' }) + UI.statCard({ label: '누르지 않는 카드', value: '1', unit: '건' }) + '</div>'
+      + UI.tabs([['a', '전체', 3], ['b', '내가 할 일', 1]], 'a') + UI.viewTabs([['a', '거래 기록', 3], ['b', '지금 기록', 2]], 'a')
+      + '<select class="select"><option>하나</option><option>둘</option></select><label class="pane-opt"><input type="checkbox" class="input"> 고르기</label><label><input type="radio" class="input" name="pr"> 예</label>'
+      + '<p class="muted">지우려면 <a href="#/admin">관리 › 내 설정에서 되돌리기</a></p><button type="button" class="btn">주 단추</button><button type="button" class="btn" data-variant="outline">보통 단추</button><button type="button" class="btn" disabled>꺼진 단추</button>'
+      + UI.chipText('내 차례 2', 'mine') + UI.scope('가상 설비 3기의 지금 값으로 계산합니다.') + '<div class="sec-head"><h2>구역 머리</h2></div>'""")
+    box.locator('.row').first.wait_for(state='visible')
+    page.evaluate("() => UI.fitLongText && UI.fitLongText(document.getElementById('partsProbe'))")
+    flaws, tried, n = pressable_flaws(page, '#partsProbe')
+    assert not flaws, ' / '.join(flaws)
+    assert tried >= 12, (tried, n)
+    still = page.evaluate("""() => [...document.querySelectorAll('#partsProbe :is(.tag, .scope, .sec-head h2, .stat:not(a, button), button:disabled, .prose p)')].filter(n => getComputedStyle(n).cursor === 'pointer').map(n => n.className || n.tagName)""")
+    assert not still, f'누르는 것이 아닌데 손가락 모양이다: {still}'
+    page.evaluate("() => document.getElementById('partsProbe')?.remove()")
