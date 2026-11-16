@@ -38,10 +38,10 @@
       <button data-menu="trial" data-tabs="decision whatif eval compare" data-icon="flask-conical" data-term="nav.menu.trial">판단 실험</button>
       <button data-menu="system" data-tabs="home kpi admin" data-icon="settings" data-term="nav.menu.system">시스템</button>
     </div></section>
-    <!-- 메뉴 줄 맨 아래: 지금 단계(courseAccess.js 가 #courseStatus 에 쓴다) → 서비스 상태와 배속 한 줄(app.js pollHealth · refreshFast). 누르면 시스템 구성 화면 -->
+    <!-- 메뉴 줄 맨 아래: 지금 단계(courseAccess.js 가 #courseStatus 에 쓴다) → 서비스 상태와 배속(app.js pollHealth · refreshFast — 조각이 메뉴 줄 폭을 넘으면 조각 단위로 둘째 줄로 넘어간다, 말줄임으로 자르지 않는다). 누르면 시스템 구성 화면 -->
     <footer>
       <span id="courseStatus" class="course-status" aria-live="polite"></span>
-      <button type="button" class="rail-status" id="railStatus" data-go-tab="home" data-tooltip="서비스 상태" data-side="right"><i class="dot" id="healthDot"></i><span><span id="healthDots">서비스 확인 중</span><span id="railScale" hidden><span class="sep"> · </span><span id="scale" class="num">–</span>배속</span></span></button>
+      <button type="button" class="rail-status" id="railStatus" data-go-tab="home" data-tooltip="서비스 상태" data-side="right"><i class="dot" id="healthDot"></i><span><span class="rail-bits"><span id="healthDots"><span class="rail-bit">서비스 확인 중</span></span><span id="railScale" class="rail-bit" hidden><span class="sep"> · </span><span id="scale" class="num">–</span>배속</span></span></span></button>
     </footer>
   </nav>
 </aside>

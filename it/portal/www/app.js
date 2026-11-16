@@ -417,7 +417,9 @@ async function pollHealth() {
     // 일부가 없으면 주황, 모두 없으면 빨강. 어느 서비스인지는 title 과 시스템 구성 화면(누르면 열린다)이 말한다. 접은 메뉴 줄에서는 점만 보이고 같은 글이 툴팁으로 나온다
     const up = all.length - down.length, status = $('#railStatus'), dot = $('#healthDot');
     const out = (state.leftOut || []).length;
-    dots.innerHTML = `${esc(UI.t('header.services'))} <b class="num">${up}/${all.length}</b>${down.length ? ` · ${down.length}개 ${esc(UI.t('header.noResponse'))}` : out ? ` · 감지에서 빠진 패턴 ${out}` : ''}`;
+    // 조각(.rail-bit — 서비스 수 · 응답 없음 또는 빠진 패턴 · 배속)은 저마다 한 덩어리이고, 한 줄에 다 들어가지 않으면 조각 단위로 다음 줄로 넘어간다(portal-kit.css — 글을 말줄임으로 자르지 않는다)
+    const more = down.length ? `${down.length}개 ${esc(UI.t('header.noResponse'))}` : out ? `감지에서 빠진 패턴 ${out}` : '';
+    dots.innerHTML = `<span class="rail-bit">${esc(UI.t('header.services'))} <b class="num">${up}/${all.length}</b></span>${more ? `<span class="rail-bit"><span class="sep"> · </span>${more}</span>` : ''}`;
     dot.dataset.tone = !down.length ? (out ? 'warn' : 'ok') : up ? 'warn' : 'danger';
     dot.toggleAttribute('data-live', !down.length && !out);
     status.toggleAttribute('data-down', down.length > 0);
@@ -553,8 +555,15 @@ function bizFactLine(b) {
    그 줄은 단추 줄과 「현장 패널」 사이가 아니라 카드 본문의 맨 아래에 있다 — 두 줄 높이를 늘 지키지만 카드 가운데에 빈 띠를 만들지 않는다.
    일으키기는 카드의 주 단추(단추 줄 첫 자리 — 4-1), 바깥 사건과 되돌리기는 보통 단추다.
    지금 누를 수 없는 단추는 흐리게 두고 도움말과 누른 뒤의 한 줄이 까닭을 말한다(눌러서 아무 일도 없는 단추를 두지 않는다):
-   같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409), 바깥 사건은 서버가 준 까닭(scenarios.<키>.events[].why) */
+   같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409), 그 사건의 표시가 꺼져 있으면(이미 처리됨 — 서버는 409) 시작할 사건이 없다, 바깥 사건은 서버가 준 까닭(scenarios.<키>.events[].why) */
 const BIZ_RUNNING = '진행 중인 처리 건이 있어 새로 시작할 수 없습니다. 카드 아래 「처리 건에서 보기」로 그 건을 끝낸 뒤 시작하세요.';
+// 업무 사건 [시작]을 지금 누를 수 없는 까닭(누를 수 있으면 빈 글). 서버가 준 상태 값만 본다: 진행 중인 처리 건(running) → 표시가 꺼짐(alert 가 false — 서버의 거절 문장과 같은 사실).
+// 업무 시스템을 못 읽어 표시를 모를 때(alert 가 null · error)는 끄지 않는다 — 모르는 것을 「이미 처리됨」으로 말하지 않고, 누르면 서버가 까닭을 말한다
+function bizStartOff(b) {
+  if (b.running) return BIZ_RUNNING;
+  if (b.alert === false) return `「${b.label}」 표시가 꺼져 있습니다(이번 사건은 이미 처리됐습니다). 다시 하려면 [${state.biz.reset_button}]를 누르세요.`;      // 카드의 도움말 줄(두 줄)에 들어가는 길이다
+  return '';
+}
 const labBtn = (act, label, { primary = false, icon = '', tip = '', off = false, attrs = '', cls = '' } = {}) =>
   `<button type="button" class="btn${cls ? ' ' + cls : ''}"${primary ? '' : ' data-variant="outline"'} data-size="sm" data-act="${act}"${attrs ? ' ' + attrs : ''}${off ? ' aria-disabled="true"' : ''}${tip ? ` data-tooltip="${esc(tip)}" data-side="bottom" data-align="start"` : ''}>${icon ? UI.icon(icon) : ''}<span>${esc(label)}</span></button>`;
 const LAB_SLOT = '<span class="btn lab-slot" data-variant="outline" data-size="sm" aria-hidden="true">&nbsp;</span>';      // 그 카드에 없는 단추의 빈 자리(단추와 같은 상자 — 보이지 않는다)
@@ -575,7 +584,7 @@ function expHtml(asset) {
   if (!b) return what('업무 사건') + '<p class="lab-fact">이 설비에 걸린 업무 사건이 없습니다.</p>';
   const events = b.events || [];
   return what(`업무 사건 · ${b.title}`, true) + `<p class="lab-fact" title="${esc(bizFactLine(b))}">${esc(bizFactLine(b))}</p>
-    <div class="lab-buttons">${labBtn('biz-start', b.button, { primary: true, icon: 'play', off: !!b.running, tip: b.running ? BIZ_RUNNING : '설비를 거치지 않고 처리 건이 바로 열립니다' })}${events.length ? events.map(eventBtn).join('') : LAB_SLOT}${labBtn('biz-reset', state.biz.reset_button, { icon: 'rotate-ccw', tip: '업무 데이터를 처음 값으로 되돌립니다', cls: 'lab-undo' })}</div>`;
+    <div class="lab-buttons">${labBtn('biz-start', b.button, { primary: true, icon: 'play', off: !!bizStartOff(b), tip: bizStartOff(b) || '설비를 거치지 않고 처리 건이 바로 열립니다' })}${events.length ? events.map(eventBtn).join('') : LAB_SLOT}${labBtn('biz-reset', state.biz.reset_button, { icon: 'rotate-ccw', tip: '업무 데이터를 처음 값으로 되돌립니다', cls: 'lab-undo' })}</div>`;
 }
 function labCardHtml(asset) {
   const manual = (act, label, tip = '') => labBtn(act, label, { tip });
@@ -609,7 +618,7 @@ function renderUnits() {
     mode.title = s.mode === 'REMOTE_AUTO' ? '원격 자동 — 승인된 원격 명령을 설비가 받는 운전 모드입니다. 저절로 조치하지 않으며, 명령은 사람이 승인한 뒤에만 나갑니다.' : '';
     // 사건 절(이름 · 값 한 줄 · 단추)은 내용이 바뀔 때만 다시 그린다(누르는 동안 단추가 바뀌지 않게). 알약 · 값 · 안내 줄은 그 아래에서 따로 맞춘다
     const exp = card.querySelector('.lab-exp');
-    const expSig = own ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), !!b.running, (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
+    const expSig = own ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), bizStartOff(b), (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
     if (exp._sig !== expSig) {
       exp._sig = expSig;
       exp.innerHTML = expHtml(asset) + '<p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
@@ -719,7 +728,8 @@ async function unitAction(asset, act, mode, button) {
     if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 주입 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`); followFault(); await refreshBiz(); }
     else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록했습니다' : ' · 이어진 처리 건이 없어 감사 기록에만 남겼습니다'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
-      if (b.running) { logLine(`[${b.button}]을 지금 누를 수 없습니다 — ${BIZ_RUNNING}`, true); return; }
+      const off = bizStartOff(b);
+      if (off) { logLine(`[${b.button}]을 지금 누를 수 없습니다 — ${off}`, true); return; }
       const r = await postJ(API.process + `/api/scenario/${b.key}/start`, pressedBy());
       followBiz(asset, b.title);
       await refreshBiz();

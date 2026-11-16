@@ -2427,7 +2427,7 @@ def lab_12_compare_eval(r: Round):
         return f"{names[node_id]} ({node_id.split(':')[-1]})" if len(same) > 1 else names[node_id]
 
     ev("[data-act='new']").click()
-    ev("[data-f='title']").fill("쿨러 성능 저하 · 원격 수동(수업 한 바퀴)")
+    ev("[data-f='title']").fill("쿨러 성능 저하 · 원격 수동")
     ev("[data-f='asset']").select_option("HYD-01")
     ev("[data-f='pattern']").select_option("COOLER_DEGRADATION")
     ev("[data-f='plc_mode']").select_option(json.dumps("REMOTE_MANUAL"))     # 가정 사실 고르기 값은 JSON 글(참 · 거짓도 담게 — evaluation.js sel)(한바퀴3)
@@ -2745,8 +2745,16 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
     def run_once(i):
         rec: dict = {}
         if i == 2:
-            msg = unit_button(r, asset, "biz-start")
-            r.human(f"{label}: 처리된 뒤 다시 누르면 「이미 처리됐습니다 · [초기화]」", msg.replace("실패: ", ""), msg.startswith("실패:") and "초기화" in msg, axis=AXES[3])
+            # 처리돼 표시가 꺼지면 시작 단추는 꺼져 있다(app.js bizStartOff) — 올렸을 때의 까닭과 눌렀을 때의 한 줄이 「이미 처리됐습니다 · [초기화]」를 말하고, 서버로 가지 않는다
+            start = r.page.locator(f"#units .unit[data-asset='{asset}'] button[data-act='biz-start']").first
+            r.tab("scenario")
+            off = r.wait(30, lambda: start.get_attribute("aria-disabled") == "true", every=1)
+            why = start.get_attribute("data-tooltip") or ""
+            start.click(force=True)
+            r.wait(10, lambda: "누를 수 없습니다" in r.page.locator("#scenarioMsg").inner_text(), every=0.5)
+            msg = r.page.locator("#scenarioMsg").inner_text().strip()
+            r.human(f"{label}: 처리된 뒤에는 시작 단추가 꺼져 있고 까닭이 「이미 처리됐습니다 · [초기화]」", f"{why} / {msg}",
+                    bool(off) and "이미 처리됐습니다" in why and "초기화" in why and "이미 처리됐습니다" in msg, axis=AXES[3])
             msg = unit_button(r, asset, "biz-reset")
             r.check(f"{label}: [초기화] → 업무 데이터를 수업 시작값으로", "초기화" in msg and not msg.startswith("실패:"), msg, kind="exception", axis=AXES[3])
             chip = biz_chip(r, asset)
@@ -2767,7 +2775,7 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
             # 열린 처리 건을 학생처럼 닫는다 — 다음 실습([초기화] · 재고 표시)이 이 건에 막히지 않게
             open_w = next((w for w in view.get("workitems") or [] if w["status"] in ("PENDING", "IN_PROGRESS") and w.get("agent_mode")), None)
             if view["instance"]["status"] == "RUNNING" and open_w:
-                closed = close_step(r, pid, open_w["id"], "수업 한 바퀴: 멈춘 단계를 닫고 다음으로 넘어갑니다")
+                closed = close_step(r, pid, open_w["id"], "멈춘 단계라 닫고 다음으로 넘어갑니다")
                 rec["closed"] = closed
             return rec
         dec = decision_of(r, view)
@@ -2790,7 +2798,7 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
             r.page.fill("#tdReason", "")
             r.page.click("#tdRejectCard"); r.page.wait_for_timeout(600)
             r.human(f"{label}: 사유 없이 [반려] → 「반려 사유를 1~2000자로 적으세요」", panel_msg(r), "반려 사유" in panel_msg(r))      # instances.js rejectCard
-        ok_d, pmsg = card_decide(r, pid, task, approve=(i == 1), reason=f"실습 {label} 승인" if i == 1 else "실습: 이번 회차는 보류합니다")
+        ok_d, pmsg = card_decide(r, pid, task, approve=(i == 1), reason=f"{label} 승인" if i == 1 else "이번 회차는 보류합니다")
         fin = wait_end(r, pid, 300)
         rec["outcome"] = (vars_of(fin["instance"]).get("result_report") or {}).get("outcome")
         check_effects("approve" if i == 1 else "reject", ent0, fin, i, dec)
@@ -3285,7 +3293,7 @@ def lab_92_biz_reset(r: Round):
         left = running_on(r, asset)
         r.check(f"{key} 시작 전: {asset} 에 열린 처리 건이 없다(앞 실습이 닫았다)", not left, str([i["proc_inst_id"] for i in left]), axis=AXES[3])
         for i in left:                                                    # 남은 건은 학생처럼 닫고 잇는다(닫지 않으면 [초기화]가 거절된다)
-            close_instance(r, i["proc_inst_id"], "앞 실습이 남긴 처리 건을 닫습니다")
+            close_instance(r, i["proc_inst_id"], "앞서 열어 둔 처리 건을 닫습니다")
         msg = unit_button(r, asset, "biz-reset")
         r.check(f"{key} [초기화](대기 중) → 수업 시작값", "초기화" in msg and not msg.startswith("실패:"), msg, axis=AXES[3])
         chip = biz_chip(r, asset)
@@ -3304,7 +3312,7 @@ def lab_92_biz_reset(r: Round):
         msg = unit_button(r, asset, "biz-reset")
         r.human(f"{key} 진행 중 [초기화] → 서버가 받지 않음 · 사람 글(끝낸 뒤 누르라는 안내)", msg.replace("실패: ", ""), msg.startswith("실패:") and "진행 중" in msg)
         r.check(f"{key} 진행 중 [초기화]를 받지 않은 뒤에도 처리 건은 그대로 진행", view_of(r, inst["proc_inst_id"])["instance"]["status"] == "RUNNING", "", kind="exception", axis=AXES[1])
-        end = close_instance(r, inst["proc_inst_id"], "초기화 시험 뒤 닫기")
+        end = close_instance(r, inst["proc_inst_id"], "다시 시작하려고 이 건을 닫습니다")
         r.check(f"{key} 시험 처리 건을 화면에서 닫았다([반려] → 반려 종결 · 보류면 단계 닫기)", end == "COMPLETED", end, axis=AXES[1])
 
 
@@ -3325,7 +3333,7 @@ def lab_93_pump_fan(r: Round):
             w, why = got_state or ({}, None)
             r.human("수업 단계: 수업 밖 흐름의 AI 단계는 실행하지 않고 까닭을 사람 글로", why or "", bool(got_state) and w.get("status") != "DONE")
             if w:
-                closed = close_step(r, pid, w["id"], "수업 단계에서 실행하지 않는 AI 단계라 닫습니다")
+                closed = close_step(r, pid, w["id"], "지금 단계에서는 이 AI 단계를 실행하지 않아 닫습니다")
                 r.check("멈춘 AI 단계를 처리 건 화면 [단계 닫기]로 닫는다", closed == "CANCELLED", closed, kind="exception", axis=AXES[1])
         reset_units(r)
         return
@@ -3343,7 +3351,7 @@ def lab_93_pump_fan(r: Round):
         held = r.wait(SECONDS["agent"], lambda: next((w for w in view_of(r, pid)["workitems"] if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None), every=5)
         r.human("팬 진동(지식 없음) → 지어내지 않고 보류, 무엇이 없는지 사람 글", ((held or {}).get("draft") or {}).get("_deferral", {}).get("reason", ""), bool(held))
         if held:
-            close_step(r, pid, held["id"], "수업 지식에 팬 진동 조치가 없어 닫음")
+            close_step(r, pid, held["id"], "지식에 팬 진동 조치가 없어 닫습니다")
     reset_units(r)
 
 
@@ -3390,7 +3398,7 @@ def fault_case(r: Round, asset: str, fault: str, pattern: str):
         r.human(f"{pattern}: 지식에 조치 후보 없음(판단 엔진) → 다시 평가해도 지어내지 않고 보류 · 사람 글", why, state == "deferred")
         held = next((w for w in view.get("workitems", []) if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None)
         if held:
-            close_step(r, pid, held["id"], "수업 지식에 펌프 조치가 없어 닫음")
+            close_step(r, pid, held["id"], "지식에 펌프 조치가 없어 닫습니다")
         return
     r.check(f"{pattern}: AI 4단계 → 조치 선택 차례", state == "ready", f"{state} {why} {ai_s:.0f}초", seconds=ai_s)
     if state != "ready":
@@ -3402,7 +3410,7 @@ def fault_case(r: Round, asset: str, fault: str, pattern: str):
     r.check(f"{pattern}: 추천 = 실행 가능한 1순위 · 제외 카드에 규칙 · 승인 역할 = 원문, 카드가 둘 이상(지는 대안)", not card_findings(dec, approvers_of("HM-8", "PM-02", "PR-07")) and len(card["evidence"]) > 1,
             json.dumps(card, ensure_ascii=False)[:400], kind="quality")
     task = item_named(view, select_name)
-    ok_d, pmsg = card_decide(r, pid, task, approve=True, reason="실습: 추천 조치를 승인합니다")
+    ok_d, pmsg = card_decide(r, pid, task, approve=True, reason="추천 조치를 승인합니다")
     r.check(f"{pattern}: 추천 조치 승인", ok_d, pmsg)
     fin = r.wait(420, lambda: (x := view_of(r, pid))["instance"]["status"] != "RUNNING" and x
                  or (any(w["activity_id"] == "task:escalate" and w["status"] == "IN_PROGRESS" for w in x["workitems"]) and x), every=3) or view_of(r, pid)

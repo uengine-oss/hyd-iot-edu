@@ -767,6 +767,76 @@ def test_업무_사건_카드의_알약은_지금_표시와_처리_중만_말하
         assert card.locator(':scope > footer a.go').is_visible() == bool(scen.get('running')), asset      # 처리 건으로 가는 길은 진행 중인 건이 있을 때만
 
 
+def test_표시가_꺼진_업무_사건의_시작_단추는_꺼져_있고_까닭이_이미_처리됐다는_것과_초기화를_말하며_표시를_모를_때는_켜_둔다(world):
+    """대역 뒤(2026-11-16): 처리가 끝나 표시가 꺼진 카드에서 [정기 정비 시작]이 눌렸고 서버가 409(「표시가 없습니다 — 이미 처리됐습니다」)로 거절했다. 끝난 건의 결과 알약을 걷은 뒤로는
+    누르기 전에 알 길이 값 한 줄뿐이었다. 서버가 준 상태(alert 가 false · 진행 중인 건 없음)면 단추가 꺼져 있고, 올렸을 때의 줄과 누른 뒤의 한 줄이 까닭과 되돌리는 단추의 이름(서버가 준 reset_button)을
+    말하며 서버로 가지 않는다. 표시가 켜진 카드는 그대로 눌리고, 업무 시스템을 못 읽어 표시를 모르는 카드(alert 가 null · error)는 「이미 처리됨」이라고 지어내지 않고 켜 둔다."""
+    w, page = world, world.page
+    done = {'instance': 'c3_pm.1', 'status': 'COMPLETED', 'ended_at': '2026-01-01T00:05:00Z', 'outcome': '정상'}
+    lab_world(w, B={'alert': False, 'last': done})
+    posts = []
+    page.on('request', lambda r: posts.append(r.url) if r.method == 'POST' else None)
+    page.goto(w.base + '/index.html#/scenario')
+    off = page.locator("#units .unit[data-asset='HYD-02'] button[data-act='biz-start']")
+    on = page.locator("#units .unit[data-asset='HYD-03'] button[data-act='biz-start']")
+    off.wait_for(timeout=8000)
+    cur = lambda loc: loc.evaluate('b => getComputedStyle(b).cursor')
+    assert off.get_attribute('aria-disabled') == 'true' and cur(off) != 'pointer', cur(off)
+    assert on.get_attribute('aria-disabled') is None and cur(on) == 'pointer'                       # 표시가 켜진 사건은 그대로 누를 수 있다
+    off.hover()
+    hint = page.locator("#units .unit[data-asset='HYD-02'] .lab-hint")
+    page.wait_for_function("""() => document.querySelector("#units .unit[data-asset='HYD-02'] .lab-hint").innerText.includes('이미 처리됐습니다')""", timeout=4000)
+    said = hint.inner_text()
+    assert '「정기 점검 도래」 표시가 꺼져 있습니다' in said and '[업무 데이터 초기화]' in said, said
+    cards = page.evaluate(LAB_ROWS)
+    assert len({c['height'] for c in cards}) == 1 and len({c['top'] for c in cards}) == 1, cards      # 까닭 글이 도움말 줄(두 줄)에 들어가 그 카드만 길어지지 않는다
+    off.click(force=True)
+    page.wait_for_function("document.querySelector('#scenarioMsg').textContent.includes('이미 처리됐습니다')", timeout=8000)
+    msg = page.inner_text('#scenarioMsg')
+    assert '[정기 정비 시작]을 지금 누를 수 없습니다' in msg and '[업무 데이터 초기화]' in msg and page.get_attribute('#scenarioMsg', 'data-tone') == 'danger', msg
+    assert not any('/api/scenario/B/start' in u for u in posts), posts                               # 서버에 409 를 받으러 가지 않는다
+    # 초기화로 표시가 다시 켜지면(서버 상태) 단추가 다시 켜진다
+    lab_world(w)
+    page.wait_for_function("document.querySelector(\"#units .unit[data-asset='HYD-02'] button[data-act='biz-start']\").getAttribute('aria-disabled') !== 'true'", timeout=8000)
+    # 표시를 모를 때(업무 시스템 응답 없음): 끄지 않는다 — 누르면 서버가 까닭을 말한다
+    lab_world(w, B={'alert': None, 'error': 'CMMS 응답 없음', 'facts': {}})
+    page.wait_for_function("document.querySelector(\"#units .unit[data-asset='HYD-02'] .biz-alert\").innerText.includes('업무 시스템 응답 없음')", timeout=8000)
+    assert page.get_attribute("#units .unit[data-asset='HYD-02'] button[data-act='biz-start']", 'aria-disabled') is None
+
+
+RAIL_TEXT = r"""() => { const btn = document.getElementById('railStatus'), clip = btn.querySelector(':scope > span').getBoundingClientRect(), box = btn.getBoundingClientRect();
+  const walk = document.createTreeWalker(btn, NodeFilter.SHOW_TEXT), seen = [];
+  for (let n; (n = walk.nextNode());) { for (let i = 0; i < n.data.length; i++) { const ch = n.data[i]; if (!ch.trim()) continue;
+    const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1); const b = r.getBoundingClientRect(); if (!b.width) continue;
+    seen.push({ ch, left: b.left, mid: Math.round((b.top + b.bottom) / 2), shown: b.left >= clip.left - 0.5 && b.right <= clip.right + 0.5 && b.top >= box.top - 0.5 && b.bottom <= box.bottom + 0.5 }); } }
+  const lines = {}; for (const c of seen.filter(c => c.shown)) (lines[c.mid] = lines[c.mid] || []).push(c);
+  return { text: btn.textContent.trim(), ellipsis: getComputedStyle(btn.querySelector(':scope > span')).textOverflow, cut: seen.filter(c => !c.shown && c.ch !== '·').map(c => c.ch).join(''),
+    lines: Object.keys(lines).sort((a, b) => a - b).map(k => lines[k].sort((a, b) => a.left - b.left).map(c => c.ch).join('')),
+    inRail: box.right <= document.getElementById('sidebar').getBoundingClientRect().right + 0.5 && box.bottom <= innerHeight }; }"""
+
+
+def test_메뉴_줄_아래_서비스_상태_글은_가장_긴_때에도_말줄임_없이_끝까지_보인다(world):
+    """대역(2026-11-16, 1440 폭): 감지에서 빠진 패턴이 있을 때 「서비스 14/14 · 감지에서 빠진 패턴 1 · 20배속」의 끝(배속)이 말줄임으로 잘렸다. 실제 브라우저에서 그 줄의 글자 하나하나가
+    보이는 자리 안에 있는지 잰다(RAIL_TEXT — 글자 상자가 잘라 내는 상자 밖으로 나가면 잘린 글자다). 넘치면 조각 단위로 다음 줄로 가고, 어느 줄도 가름 점 「·」으로 시작하거나 끝나지 않는다.
+    짧을 때는 한 줄 그대로다."""
+    w, page = world, world.page
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_function("(t => t.includes('20배속') && t.includes('14/14'))(document.getElementById('railStatus').textContent)", timeout=15000)
+    got = page.evaluate(RAIL_TEXT)
+    assert got['text'] == '서비스 14/14 · 20배속' and got['lines'] == ['서비스14/14·20배속'] and not got['cut'], got      # 짧을 때는 한 줄
+    w.left_out = [{'code': f'P{i}', 'id': f'pattern:p{i}', 'reason': '지속 시간이 0초입니다'} for i in range(12)]
+    page.wait_for_function("document.getElementById('railStatus').textContent.includes('감지에서 빠진 패턴 12')", timeout=15000)
+    got = page.evaluate(RAIL_TEXT)
+    assert got['text'] == '서비스 14/14 · 감지에서 빠진 패턴 12 · 20배속', got
+    assert not got['cut'] and got['ellipsis'] != 'ellipsis' and got['inRail'], got                              # 한 글자도 잘리지 않는다
+    assert ''.join(got['lines']).replace('·', '') == '서비스14/14감지에서빠진패턴1220배속', got
+    assert all(not ln.startswith('·') and not ln.endswith('·') for ln in got['lines']), got                     # 줄이 가름 점으로 시작하거나 끝나지 않는다
+    w.left_out, w.down = [], {'detector'}
+    page.wait_for_function("document.getElementById('railStatus').textContent.includes('응답 없음')", timeout=20000)
+    got = page.evaluate(RAIL_TEXT)
+    assert got['text'] == '서비스 13/14 · 1개 응답 없음 · 20배속' and not got['cut'], got
+    assert all(not ln.startswith('·') and not ln.endswith('·') for ln in got['lines']), got
+
 def test_지금_누를_수_없는_단추는_손가락_모양이_아니고_눌러도_요청을_보내지_않으며_그_자리에_까닭이_있다(world):
     """디자인 기준 1-6: 누를 수 없는 것은 누를 수 있게 보이지 않는다. 진행 중인 예비품 구매가 없을 때의 [공급사 납기 지연]은 흐린 단추(aria-disabled)인데 올리면 손가락 모양이었다
     (켜진 단추와 같은 모양). 켜진 단추와 꺼진 단추의 마우스 모양이 달라야 하고, 꺼진 단추를 눌러도 서버로 아무것도 가지 않으며, 올렸을 때 까닭이 카드 안에 보여야 한다."""

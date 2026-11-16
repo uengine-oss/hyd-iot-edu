@@ -143,9 +143,16 @@ select:not(:disabled):hover, input:is([type="checkbox"], [type="radio"]):not(:di
 .course-status [data-tone="run"] { color: var(--foreground); }
 .course-status [data-tone="warn"] { color: var(--st-warn-ink); }
 .course-status [data-tone="danger"] { color: var(--st-fail-ink); }
-.rail-status { display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 8px; border-radius: calc(var(--radius) - 2px); font-size: var(--fs-sm); color: var(--muted-foreground); text-align: left; cursor: pointer; }
+/* 서비스 상태 줄: 조각(.rail-bit)마다 한 덩어리로 두고, 메뉴 줄 폭에 다 들어가지 않으면 조각 단위로 다음 줄로 넘긴다(말줄임으로 자르지 않는다 — 「· 20배속」이 잘려 읽히지 않았다).
+   조각 앞의 가름 점(.sep)은 폭이 정해진 칸이고, 줄 맨 앞에 온 가름 점은 왼쪽으로 그 폭만큼 당긴 묶음(.rail-bits)과 바깥 span 의 overflow 가 가린다 — 어느 줄도 「·」으로 시작하거나 끝나지 않는다. */
+.rail-status { --sep-w: 14px; display: flex; align-items: flex-start; gap: 8px; width: 100%; min-height: 32px; padding: 6px 8px; border-radius: calc(var(--radius) - 2px); font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); text-align: left; cursor: pointer; }
 .rail-status:hover { background: var(--sidebar-accent); color: var(--sidebar-foreground); }
-.rail-status > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-status > .dot { margin-top: 6px; }
+.rail-status > span { min-width: 0; overflow: hidden; }
+.rail-bits { display: block; margin-left: calc(-1 * var(--sep-w)); }
+.rail-bit { display: inline-block; white-space: nowrap; vertical-align: top; }
+.rail-bit:not(:has(> .sep)) { padding-left: var(--sep-w); }
+.rail-bit > .sep { display: inline-block; width: var(--sep-w); text-align: center; white-space: pre; }
 .rail-status b { font-weight: 500; color: var(--sidebar-foreground); }
 .rail-status .sep { color: var(--ring); }
 .rail-status[data-down] b { color: var(--st-fail-ink); }
