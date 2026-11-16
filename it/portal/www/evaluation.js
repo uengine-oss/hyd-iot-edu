@@ -1,9 +1,9 @@
 /* A4 (U6) 판단 채점 — 사람이 적은 정답표에 AI 판단을 대어 점수를 내고, 실행을 남겨 지식 고치기 전·후를 비교한다.
    API: process /api/eval/* (procsvc/eval_api.py). 정답표는 화면에서 적는 데이터이고 처음엔 비어 있다 — 이 파일에도 정답은 없다.
    화면: window.hydEval.mount(el). 포털 셸이 컨테이너(#evalView)를 주면 그 안에 전부 그린다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않는다.
-   짜임(디자인 기준 5-6 「조건 → 결과」): 보기 셋(채점 · 정답표 · 전 · 후 비교). 채점은 왼쪽 조건 판과 [채점 실행], 오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩 채워지고,
-   항목 몇 개 가운데 몇 개가 끝났는지 진행 막대가 센다) → 고른 실행의 결과(평균 한 줄과 검사 네 가지의 맞은 수 → 항목별 검사 → 원문 접기) → 「지난 실행」 목록.
-   부품은 키트의 것(panel · fieldset · field · seg · turn-facts · evid · rows · table · fold · stream · progress)이고 격자는 portal-kit.css(.io)다. 맞음 · 틀림은 상태 뱃지(점 + 글)로 보인다. */
+   짜임(디자인기준 5-2 「조건 + 결과」, 본: shadcn/ui playground): 보기 셋(채점 · 정답표 · 전 · 후 비교). 채점은 왼쪽 조건 칸(판단 경로 → [채점 실행] → 그 아래 「지난 실행」 목록),
+   오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩 채워지고, 항목 몇 개 가운데 몇 개가 끝났는지 진행 막대가 센다) → 고른 실행의 결과(평균 한 줄과 검사 네 가지의 맞은 수 → 항목별 검사 → 원문 접기).
+   부품은 키트의 것(panel · fieldset · field · turn-facts · evid · rows · table · fold · stream · progress)이고 격자는 portal-kit.css(.io), 이 무리의 배치는 trial.css 다. 맞음 · 틀림은 상태 알약으로 보인다. */
 (function () {
   const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
     knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run' };
@@ -40,7 +40,7 @@
   function skeleton() {
     E.el.innerHTML = `
       ${UI.pageHead('eval', { sub: '사람이 적은 정답표에 판단을 대어 점수를 내고, 지식을 고치기 전과 후를 비교합니다.', more: [{ act: 'reload', attrs: 'data-act="reload"' }] })}
-      <div class="io-bar"><div class="tabs view-tabs"><nav role="tablist" aria-orientation="horizontal" aria-label="보기" data-r="seg"></nav></div><span class="muted" data-r="knowledge"></span></div>
+      <div class="tabs view-tabs"><nav role="tablist" aria-orientation="horizontal" aria-label="보기" data-r="seg"></nav></div>
       <div data-view="run">
         <div class="io"><div class="io-in"><form class="panel" data-r="runform" aria-label="채점 조건"></form>
             <aside class="io-past" aria-label="지난 실행"><h3>지난 실행</h3><div data-r="runs"></div></aside></div>
@@ -66,24 +66,20 @@
     E.el.querySelectorAll('[data-view]').forEach(n => { n.hidden = n.dataset.view !== view; });
     renderStats();
   }
-  // 보기 줄(건수는 이름 뒤 작은 숫자)과 그 오른쪽의 지금 지식 한 줄
+  // 보기 줄(건수는 이름 뒤 작은 숫자)
   function renderStats() {
     const seg = [['run', '채점', E.runsError || !E.runsRead ? null : E.runs.length], ['golden', '정답표', E.goldenError || !E.goldenRead ? null : E.golden.length], ['cmp', '전 · 후 비교', null]];      // 아직 읽지 못한 것을 0으로 보이지 않는다
     q('[data-r="seg"]').innerHTML = seg.map(([k, l, n]) =>
       `<button type="button" role="tab" data-act="view" data-to="${k}" aria-selected="${k === E.view}" tabindex="${k === E.view ? 0 : -1}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('');
-    const k = E.knowledge, host = q('[data-r="knowledge"]');
-    if (!k) { host.textContent = E.knowledgeError || ''; if (E.knowledgeError) host.dataset.tone = 'danger'; else delete host.dataset.tone; return; }
-    delete host.dataset.tone;
-    // 이 수가 세는 범위(서버 scope — 가상 설비 3기 전체)는 마우스를 올리면 뜬다: 지식 지도는 고른 설비 하나로 세므로 수가 다르다
-    host.title = k.scope || '';
-    host.textContent = `지금 지식(설비 전체): 항목 ${k.nodes}개 · 연결 ${k.relationships}개${k.last_change ? ' · 마지막 변경 ' + UI.dateTime(k.last_change) : k.last_change_note ? ' · ' + k.last_change_note : ''}`;
   }
+  // 지금 지식 한 줄(가상 설비 3기 전체 — 지식 지도는 고른 설비 하나로 세므로 수가 다르다): 채점 결과 맨 아래에 「채점 때 지식」과 나란히 둔다 — 그 사이 지식이 바뀌었는지가 거기서 읽힌다
+  const knowledgeNow = () => { const k = E.knowledge; return k ? `<span${k.scope ? ` title="${esc(k.scope)}"` : ''}>지금 지식: 항목 ${esc(k.nodes)}개 · 연결 ${esc(k.relationships)}개${k.last_change ? ' · 마지막 변경 ' + esc(UI.dateTime(k.last_change)) : k.last_change_note ? ' · ' + esc(k.last_change_note) : ''}</span>` : E.knowledgeError ? `<span data-tone="danger">${esc(E.knowledgeError)}</span>` : ''; };
 
   /* ---------------------------------------------------------------- 1. 정답표 */
   function renderGolden() {
     const host = q('[data-r="golden"]');
     if (!E.golden.length) {
-      host.innerHTML = `${UI.empty({ icon: 'clipboard-check', title: `정답표가 비어 있습니다`, sub: `[새 항목 적기]로 경보 상황 하나와 기대하는 판단을 적습니다. 미리 들어 있는 정답은 없습니다.` })}`;
+      host.innerHTML = UI.empty('정답표가 비어 있습니다', '[새 항목 적기]로 경보 상황 하나와 기대하는 판단을 적습니다. 미리 들어 있는 정답은 없습니다.');
       return;
     }
     host.innerHTML = table('<th>채점</th><th>경보 상황</th><th>기대 원인</th><th>1위 허용</th><th>빠질 조치</th><th>있어야 할 근거</th>',
@@ -267,6 +263,7 @@
       : `판단 엔진에 ${n}번 묻습니다(항목 ${n / body.repeats}개 × ${body.repeats}회). 항목이 끝날 때마다 아래에 결과가 채워집니다.` }) };
     body.request_id = E.runWait.track.id;
     msg('run', ''); showRunWait();
+    if (!E.run) q('[data-r="detail"]').innerHTML = '';      // 도는 동안에는 「아직 고른 채점 실행이 없습니다」를 실시간 상자 아래에 두지 않는다
     let failed = null;
     try {
       const run = await longJ(API.process + '/api/eval/runs', 'POST', body);
@@ -278,6 +275,7 @@
       E.runWait.track.stop(); E.runWait.watch?.disconnect(); E.busy = false; E.runWait = null;
       const live = q('[data-r="live"]');      // 실시간 상자는 끝나면 거둔다 — 성공이면 그 아래에 결과가 열려 있고, 실패면 그 자리에 까닭이 남는다
       live.innerHTML = failed ? UI.errorBlock('채점하지 못했습니다', failed) : ''; live.hidden = !failed;
+      if (failed && !E.run) renderDetail();
       renderRunForm();      // 실행 칸을 다시 그려 단추를 원래대로 한다
     }
   }
@@ -288,7 +286,7 @@
     const host = q('[data-r="runs"]');
     if (!E.runs.length) { host.innerHTML = `<p class="muted">정답표를 적고 [채점 실행]을 누르면 여기에 남습니다.</p>`; return; }
     host.innerHTML = `<div class="rows eval-runs">${E.runs.map(r =>
-      `<button type="button" class="row" data-run="${esc(r.id)}"${r.id === E.sel ? ' data-pick aria-current="true"' : ''}><span class="row-ic">${UI.icon('clipboard-check')}</span><span class="row-title">${esc(UI.dateTime(r.created))}</span><span class="tag" data-plain><b class="num">${esc(r.summary.score)}</b>점</span>` +
+      `<button type="button" class="row" data-run="${esc(r.id)}"${r.id === E.sel ? ' aria-current="true"' : ''}><span class="row-title">${esc(UI.dateTime(r.created))}</span><span class="num">${esc(r.summary.score)}점</span>` +
       `<span class="row-meta">${esc(PATH[r.path] || r.path)} · 항목 ${esc(r.summary.items)}개${r.note ? ' · ' + esc(r.note) : ''}</span></button>`).join('')}</div>`;
   }
   // 검사 한 줄: 맞음 · 틀림은 상태 뱃지(점 + 글)로, 그 뒤에 판단과 정답
@@ -331,7 +329,7 @@
   // 결과의 차례: 평균 점수(결론) → 검사 네 가지의 맞은 수 → 항목별
   function renderDetail() {
     const host = q('[data-r="detail"]'), r = E.run;
-    if (!r) { host.innerHTML = `${UI.empty({ icon: 'clipboard-check', title: `아직 고른 채점 실행이 없습니다`, sub: `왼쪽에서 [채점 실행]을 누르거나 「지난 실행」에서 한 줄을 고르면 항목별 점수와 검사 네 가지가 보입니다.` })}`; return; }
+    if (!r) { host.innerHTML = UI.empty('아직 고른 채점 실행이 없습니다', '왼쪽에서 [채점 실행]을 누르거나 「지난 실행」에서 한 줄을 고르면 항목별 점수와 검사 네 가지가 보입니다.'); return; }
     const s = r.summary, of = k => `<span class="num">${esc(s[k])}</span><small>/ ${esc(s.items)}</small>`;
     const extra = [s.withheld ? `판단 없음(보류 · 오류) ${esc(s.withheld)}개` : '', s.unstable ? `흔들림 ${esc(s.unstable)}개` : ''].filter(Boolean).join(' · ');
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>평균 ${esc(s.score)}점 — 항목 ${esc(s.items)}개 · ${esc(PATH[r.path] || r.path)}</h2>` +
@@ -339,7 +337,7 @@
       `<dl class="turn-facts">${fact('원인 적중', of('cause_hits'))}${fact('1위 허용', of('top_ok'))}${fact('빠질 조치 미추천', of('forbidden_ok'))}${fact('근거 모두 포함', of('evidence_ok'))}</dl>` +
       (extra ? `<div class="panel-sec">${warn(extra)}</div>` : '') +
       (r.items || []).map(itemResult).join('') +
-      `<div class="panel-sec">${note('채점 때 지식: ' + knowledgeLine(r.knowledge))}</div></section>`;
+      `<div class="trial-foot">${note('채점 때 지식: ' + knowledgeLine(r.knowledge))}${note(knowledgeNow())}</div></section>`;
   }
   async function selectRun(id) {
     E.sel = id; renderRuns();
@@ -368,7 +366,7 @@
   // 비교 결과의 차례: 평균이 얼마나 바뀌었나(결론) → 좋아짐 · 나빠짐 · 같음의 수 → 두 실행 사이 지식 변화 → 항목별 변화 표
   function renderCmp() {
     const host = q('[data-r="cmp"]'), c = E.cmp;
-    if (!c) { host.innerHTML = `${UI.empty({ icon: 'git-compare', title: `아직 비교한 결과가 없습니다`, sub: `왼쪽에서 고치기 전 실행과 고친 뒤 실행을 고르고 [두 실행 비교]를 누릅니다.` })}`; return; }
+    if (!c) { host.innerHTML = UI.empty('아직 비교한 결과가 없습니다', '왼쪽에서 고치기 전 실행과 고친 뒤 실행을 고르고 [두 실행 비교]를 누릅니다.'); return; }
     const kd = c.knowledge || {};
     // 지식 변화: 서버가 바뀐 항목의 이름을 함께 준다(kd.names — 지식 지도와 같은 차례로 고른 이름). 이름이 있는 항목과 연결은 이름으로 보이고,
     // 이름이 없는 항목은 수만 말하고 원문은 접기에 둔다. 서버의 항목 수 · 연결 수는 지식 지도가 그리는 것만 센다(실행 기록 · 적재 이력은 세지 않는다 — judgment_eval.NOT_KNOWLEDGE_LABELS)

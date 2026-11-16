@@ -97,7 +97,7 @@ function selectTab(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   if (changed) window.scrollTo(0, 0);
   if (name === 'scenario') renderUnits();
-  if (name === 'incidents') { renderScada(); renderIncList(); }
+  if (name === 'incidents') renderScada();
   if (name === 'trends') renderTrends();
   updateNavigation(name);
   tabHooks.forEach(fn => fn(name));
@@ -156,16 +156,17 @@ function updateNavigation(name) {
 selectTab('main');
 
 /* ---------------- 시스템 구성: 구조 그림 + 서비스 상태 ----------------
-   어두운 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉(layers.js 의 차례 그대로 — 위가 업무, 아래가 현장), 부품 상자, 길 셋(디자인 기준 5-8).
+   밝은 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉(layers.js 의 차례 그대로 — 위가 업무, 아래가 현장), 부품 상자, 길 넷(디자인기준 6-4).
    부품의 계층 · 영역 · 역할 · 현업 대응 · 주소 · 상태 확인 주소는 layers.js 의 표에서 읽는다. 이 화면이 갖는 것은 화면 이름 · 아이콘 · 띠 안의 칸과 길뿐이다.
    길은 실제 통로대로 그린다: 값은 설비 → MQTT 브로커 → 수집 중계(DMZ) → 이벤트 저장 → 탐지 · 시계열로, 승인된 명령은 흐름 엔진 → 이벤트 저장 → 명령 관문(DMZ) → MQTT 브로커 → 설비로. */
 const healthState = {};
 // 선택 도구: 서비스 자체가 선택(optional)이거나, 서비스는 기본인데 사람이 여는 화면만 선택 도구(entryHealth — Redpanda 는 기본, Console 은 tools 프로필)인 것
 const optionalOf = c => c.entryHealth || c.optional;
 const SYS = {
-  // 그림의 치수(viewBox 단위). 캔버스가 화면 머리 아래를 가로 · 세로로 가득 쓰고 그림은 그 안에 통째로 맞춰진다(1440 × 900 에서 한 단위가 약 0.95px).
-  // 상자 156 × 54, 줄 사이 72(상자 사이 18), 영역 띠 사이 12
-  W: 1240, NW: 156, NH: 54, y0: 112, dy: 72,
+  /* 그림의 치수(viewBox 단위). 캔버스가 화면 머리 아래를 가로 · 세로로 가득 쓰고 그림은 그 안에 통째로 맞춰진다(1440 × 900 창에서 한 단위가 약 0.93px).
+     그림의 글자는 모두 14 단위 이상이다 — 그 창에서 13px 아래로 줄지 않는다(디자인기준 6-1). 상자 160 × 48, 줄 사이 76(상자 사이 28 — 길과 이름표가 그 사이를 지난다), 영역 띠 사이 12.
+     범례는 그림 안 오른쪽 아래(영역 띠 밖의 빈 줄)에 있다 — 캔버스 위에 따로 줄을 차지하지 않는다 */
+  W: 1240, NW: 160, NH: 48, y0: 110, dy: 76,
   band: { ot: [116, 192, 'OT', '현장 · 실시간 제어', 'cv-red'], dmz: [320, 368, 'DMZ', '값은 중계하고 명령은 검증한다', 'cv-amber'], it: [700, 528, 'IT', '업무 · 분석 · 지식 · AI', 'cv-blue'] },
   col: { ot: 212, d1: 414, d2: 594, a: 792, b: 964, c: 1136 },
   // 부품(layers.js 이름의 첫 낱말) → [화면 이름, 아이콘, 칸, 폭]
@@ -175,9 +176,11 @@ const SYS = {
     FUXA: ['관제 화면', 'gauge', 'ot'], Grafana: ['추이 화면', 'chart-line', 'b'], Prometheus: ['서비스 감시', 'signal', 'c'],
     TimescaleDB: ['시계열 저장소', 'database', 'b'], 'connect-sink': ['시계열 기록', 'download', 'c'], detector: ['이상 탐지', 'activity', 'b'],
     'cmd-gateway': ['명령 관문', 'shield-check', 'd1'], 'connect-ingest': ['수집 중계', 'arrow-up-right', 'd2'], Redpanda: ['이벤트 저장', 'layers', 'a'],
-    EMQX: ['MQTT 브로커', 'radio', 'ot', 164], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 164],
+    EMQX: ['MQTT 브로커', 'radio', 'ot', 168], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 168],
   },
   ai: ['agent-worker', 'agent', 'Neo4j'],
+  // 길의 종류와 범례의 말(그림 안 오른쪽 아래)
+  legend: [['data', '값이 올라가는 길'], ['cmd', '승인된 명령이 내려가는 길'], ['ai', 'AI가 지식을 읽는 길'], ['sim', '명령 길 밖의 조작']],
 };
 const sysKey = c => c.name.split(' ')[0];
 const sysComps = () => LAYERS.flatMap((L, row) => L.comps.map(c => ({ ...c, key: sysKey(c), layer: L.name, row })));
@@ -196,8 +199,8 @@ function renderStack() {
   const stack = $('#stack'), comps = sysComps();
   const lost = comps.filter(c => !SYS.node[c.key]).map(c => c.name);
   if (lost.length) { stack.innerHTML = UI.errorBlock('구조 그림에 자리가 없는 부품이 있습니다', `부품 표(layers.js)에는 있는데 그림의 자리 표(app.js SYS.node)에 없습니다: ${lost.join(', ')}`); return; }
-  // HB = 영역 띠가 끝나는 높이. 그 아래 한 줄(SIM)은 영역 밖의 길(가상 설비 API 망)이 지나는 자리다
-  const { W, NW, NH, y0, dy } = SYS, HB = y0 + dy * (LAYERS.length - 1) + dy / 2, SIM = HB + 14, H = HB + 46;
+  // HB = 영역 띠가 끝나는 높이. 그 아래 한 줄은 영역 밖의 길(가상 설비 API 망 — SIM)이 지나고 오른쪽에 범례가 놓이는 자리다
+  const { W, NW, NH, y0, dy } = SYS, HB = y0 + dy * (LAYERS.length - 1) + dy / 2, SIM = HB + 16, H = HB + 50;
   const at = Object.fromEntries(comps.map(c => { const [, , col, w] = SYS.node[c.key]; return [c.key, { x: SYS.col[col], y: y0 + c.row * dy, w: w || NW }]; }));
   const Lp = (k, d = 0) => [at[k].x - at[k].w / 2, at[k].y + d], Rp = (k, d = 0) => [at[k].x + at[k].w / 2, at[k].y + d];
   const Tp = (k, d = 0) => [at[k].x + d, at[k].y - NH / 2], Bp = (k, d = 0) => [at[k].x + d, at[k].y + NH / 2];
@@ -210,33 +213,36 @@ function renderStack() {
     }
     const e = pts[pts.length - 1]; return d + ` L${e[0]},${e[1]}`;
   };
-  const gap = k => at[k].y - dy / 2;      // 그 부품의 줄과 윗줄 사이
-  const mid = (a, b) => (at[a].y + at[b].y) / 2;
+  const rowY = i => y0 + i * dy;      // 위에서 i 번째 계층의 가운데 높이
+  const gw = at['cmd-gateway'], bus = at.Redpanda;
+  /* 길: [종류, 꺾이는 점들, 이름표, 이름표 자리, 맞춤]. 이름표는 그 길 곁의 빈 자리에 둔다 — 다른 길 · 상자 · 이름표와 겹치지 않고 글자 높이만큼 떨어진다(시험이 실제 브라우저에서 잰다).
+     「검증할 명령」은 이벤트 저장에서 한 계층 위(부품이 없는 스트림 처리 줄의 DMZ 칸)로 올라가 명령 관문의 위로 내려온다 — 상자 사이의 좁은 틈을 지나지 않는다.
+     세로로 긴 두 길(경보 · 사건이 올라가는 길, 승인된 명령이 내려가는 길)의 이름표는 그 길 위에, 서로 다른 계층 높이에 둔다 */
   const P = [
     // 값이 올라가는 길
     ['data', [Tp('plant-sim', 34), Bp('EMQX', 34)]],
     ['data', [Rp('EMQX', 12), [at['connect-ingest'].x, at.EMQX.y + 12], Bp('connect-ingest')]],
     ['data', [Rp('connect-ingest'), Lp('Redpanda')]],
-    ['data', [Rp('Redpanda', -12), [at.detector.x, at.Redpanda.y - 12], Bp('detector')]],
-    ['data', [Rp('Redpanda', 12), [at['connect-sink'].x, at.Redpanda.y + 12], Bp('connect-sink')]],
+    ['data', [Rp('Redpanda', -12), [at.detector.x, bus.y - 12], Bp('detector')]],
+    ['data', [Rp('Redpanda', 12), [at['connect-sink'].x, bus.y + 12], Bp('connect-sink')]],
     ['data', [Lp('connect-sink'), Rp('TimescaleDB')]],
     ['data', [Tp('TimescaleDB'), Bp('Grafana')]],
-    ['data', [Tp('Redpanda', -18), Bp('process', -18)], '경보 · 사건', [at.Redpanda.x - 28, at.Redpanda.y - dy * 4 + 4], 'end'],
+    ['data', [Tp('Redpanda', -30), Bp('process', -30)], '경보 · 사건', [bus.x - 30, rowY(2) + 5], 'middle'],
     // 승인된 명령이 내려가는 길
-    ['cmd', [Bp('process', 18), Tp('Redpanda', 18)], '승인된 명령', [at.Redpanda.x + 28, at.Redpanda.y - dy * 4 + 4], 'start'],
-    ['cmd', [Tp('Redpanda', -52), [at.Redpanda.x - 52, gap('Redpanda')], [at['cmd-gateway'].x + 34, gap('Redpanda')], Tp('cmd-gateway', 34)], '검증할 명령', [at['connect-ingest'].x, gap('Redpanda') - 9], 'middle'],
-    ['cmd', [Bp('cmd-gateway', -34), [at['cmd-gateway'].x - 34, at.EMQX.y - 12], Rp('EMQX', -12)], '검증을 통과한 명령', [at['cmd-gateway'].x - 22, at.EMQX.y - 22], 'start'],
+    ['cmd', [Bp('process', 30), Tp('Redpanda', 30)], '승인된 명령', [bus.x + 30, rowY(3) + 5], 'middle'],
+    ['cmd', [Tp('Redpanda', -56), [bus.x - 56, at.detector.y], [gw.x, at.detector.y], Tp('cmd-gateway')], '검증할 명령', [(gw.x + bus.x - 56) / 2 - 40, at.detector.y - 11], 'middle'],
+    ['cmd', [Bp('cmd-gateway', -34), [gw.x - 34, at.EMQX.y - 12], Rp('EMQX', -12)], '검증을 통과한 명령', [gw.x - 20, gw.y + NH / 2 + 35], 'start'],
     ['cmd', [Bp('EMQX', -34), Tp('plant-sim', -34)]],
     // AI 가 지식을 읽는 길
-    ['ai', [Bp('process', 52), [at.process.x + 52, at['agent-worker'].y], Lp('agent-worker')]],
+    ['ai', [Bp('process', 56), [at.process.x + 56, at['agent-worker'].y], Lp('agent-worker')]],
     ['ai', [Rp('agent-worker'), Lp('agent')]],
     ['ai', [Bp('agent'), Tp('Neo4j')]],
     // 그 밖의 연결
-    ['plain', [Bp('FUXA'), Tp('EMQX')], '감시 · 수동 조작', [at.FUXA.x, mid('FUXA', 'EMQX') + 4], 'middle'],
+    ['plain', [Bp('FUXA'), Tp('EMQX')], '감시 · 수동 조작', [at.FUXA.x, rowY(5) + 5], 'middle'],
     ['plain', [Lp('portal'), Rp('process')]],      // 사람은 포털에서 승인한다
-    ['plain', [Tp('process', 34), [at.process.x + 34, at.process.y - NH / 2 - 16], [at['enterprise-sim'].x, at.process.y - NH / 2 - 16], Tp('enterprise-sim')], '정비 요청 · 구매', [at.portal.x, at.process.y - NH / 2 - 24], 'middle'],
+    ['plain', [Tp('process', 34), [at.process.x + 34, at.process.y - NH / 2 - 14], [at['enterprise-sim'].x, at.process.y - NH / 2 - 14], Tp('enterprise-sim')], '정비 요청 · 구매', [at.portal.x, at.process.y - NH / 2 - 22], 'middle'],
     // 명령 길 밖: 흐름 엔진 · 포털 → 가상 설비 API(sim-net). 영역 띠 바깥(아래)으로 돌아 설비에 직접 닿는다 — 브로커와 명령 관문을 지나지 않는다
-    ['sim', [Lp('process'), [SYS.band.it[0] - 6, at.process.y], [SYS.band.it[0] - 6, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접(sim-net), 브로커와 명령 관문을 거치지 않음', [SYS.band.it[0] - 16, SIM + 20], 'end'],
+    ['sim', [Lp('process'), [SYS.band.it[0] - 6, at.process.y], [SYS.band.it[0] - 6, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접(sim-net), 브로커와 명령 관문을 거치지 않음', [SYS.band.it[0] - 18, SIM + 22], 'end'],
   ];
   const COLOR = { data: 'var(--cv-blue)', cmd: 'var(--cv-amber)', ai: 'var(--cv-violet)', plain: 'var(--cv-edge)', sim: 'var(--cv-red)' };
   const netsOf = zone => NETS.filter(n => n.zone === zone).map(n => n.id).join(' · ');
@@ -245,29 +251,38 @@ function renderStack() {
     return `<a class="sys-nd comp" data-key="${esc(c.key)}" data-zone="${esc(c.zone)}" data-st="${sysStatus(c)}"${SYS.ai.includes(c.key) ? ' data-ai' : ''} ${c.url ? `href="${esc(c.url)}" target="_blank" rel="noopener"` : 'tabindex="0"'} aria-label="${esc(title)} (${esc(c.key)}) — ${esc(c.layer)}">
       <title>${esc(title)} (${esc(c.key)}) — ${esc(c.role)}${c.real ? ` · 현업에서는 ${esc(c.real)}` : ''}</title>
       <rect class="box" x="${x0}" y="${y0n}" width="${w}" height="${NH}" rx="12"/>
-      <rect class="ib" x="${x0 + 11}" y="${y - 15}" width="30" height="30" rx="8"/>
-      <svg class="ico" x="${x0 + 18}" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="vendor/lucide/icons.svg#${icon}"/></svg>
-      <text class="t" x="${x0 + 51}" y="${y - 2}">${esc(title)}</text><text class="s" x="${x0 + 51}" y="${y + 14}">${esc(c.key)}</text>
-      <circle class="st" cx="${x0 + w - 14}" cy="${y0n + 14}" r="4"/></a>`;
+      <rect class="ib" x="${x0 + 10}" y="${y - 14}" width="28" height="28" rx="8"/>
+      <svg class="ico" x="${x0 + 16}" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="vendor/lucide/icons.svg#${icon}"/></svg>
+      <text class="t" x="${x0 + 46}" y="${y - 3}">${esc(title)}</text><text class="s" x="${x0 + 46}" y="${y + 15}">${esc(c.key)}</text>
+      <circle class="st" cx="${x0 + w - 12}" cy="${y0n + 11}" r="4"/></a>`;
   };
+  // 계층 이름: 교재의 「Layer 9 · 프로세스 · 승인 · 앱」을 세 줄(번호 · 첫 낱말 · 나머지)로 — 왼쪽 칸을 좁혀 그림에 폭을 준다. 나머지가 길면 한 줄을 더 쓴다
+  const layerLines = (L, i) => {
+    const [head, ...rest] = L.name.split(' · '), tail = rest.join(' · ');
+    const more = !tail ? [] : tail.length <= 8 ? [tail] : rest;
+    const lines = [['sys-row-n', `Layer ${LAYERS.length - i}`], ['sys-row-t', head], ...more.map(t => ['sys-row-cap', t])], top = rowY(i) - (lines.length - 1) * 8.5 + 5;
+    return lines.map(([cls, t], k) => `<text class="${cls}" x="16" y="${top + k * 17}">${esc(t)}</text>`).join('');
+  };
+  // 범례(영역 띠 아래 오른쪽): 두 줄 × 두 칸
+  const LX = SYS.band.it[0] + SYS.band.it[1] - 392, legend = SYS.legend.map(([k, t], n) => { const x = LX + (n % 2) * 180, y = HB + 20 + Math.floor(n / 2) * 20;
+    return `<path class="sys-p sys-lg" data-k="${k}" d="M${x},${y - 5} h26"/><text class="sys-lg-t" x="${x + 34}" y="${y}">${esc(t)}</text>`; }).join('');
   stack.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="OT · DMZ · IT 세 영역과 계층 아홉의 부품, 값이 올라가는 길과 승인된 명령이 내려가는 길">
     <defs>${Object.entries(COLOR).map(([k, c]) => `<marker id="sysAh-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1.5 L9,5 L1,8.5" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>`).join('')}</defs>
     ${Object.entries(SYS.band).map(([zone, [x, w, name, what, color]]) => `<rect class="sys-band" x="${x}" y="12" width="${w}" height="${HB - 12}" rx="14" style="fill:color-mix(in srgb, var(--${color}) 4%, transparent);stroke:color-mix(in srgb, var(--${color}) 40%, transparent)"/>` +
-      `<text class="sys-band-t" x="${x + 16}" y="38" style="fill:var(--${color})">${name}</text><text class="sys-band-s" x="${x + 16 + name.length * 12 + 10}" y="38">${esc(what)}</text>` +
-      `<text class="sys-band-n" x="${x + 16}" y="58">망 ${esc(netsOf(zone))}</text>`).join('')}
-    <text class="sys-row-t" x="16" y="38">계층</text><text class="sys-row-cap" x="16" y="55">위가 업무</text><text class="sys-row-cap" x="16" y="69">아래가 현장</text>
-    ${LAYERS.map((L, i) => { const [head, ...rest] = L.name.split(' · ');      // 계층 이름은 두 줄(첫 낱말 · 나머지)로 — 왼쪽 칸을 좁혀 그림에 폭을 준다
-      return `${i % 2 ? '' : `<rect class="sys-row-bg" x="8" y="${y0 + i * dy - dy / 2 + 3}" width="${W - 16}" height="${dy - 6}" rx="10"/>`}` +
-        `<text class="sys-row-t" x="16" y="${y0 + i * dy + (rest.length ? -3 : 5)}">${esc(head)}</text>${rest.length ? `<text class="sys-row-cap" x="16" y="${y0 + i * dy + 14}">${esc(rest.join(' · '))}</text>` : ''}`; }).join('')}
-    ${P.map(([k, pts]) => `<path class="sys-p" data-k="${k}" d="${path(pts)}" marker-end="url(#sysAh-${k})"/>`).join('')}
-    ${P.filter(p => p[2]).map(([k, , t, [x, y], anchor]) => `<text class="sys-p-t" data-k="${k}" x="${x}" y="${y}" text-anchor="${anchor}">${esc(t)}</text>`).join('')}
+      `<text class="sys-band-t" x="${x + 16}" y="38" style="fill:var(--${color})">${name}</text><text class="sys-band-s" x="${x + 16 + name.length * 13 + 10}" y="38">${esc(what)}</text>` +
+      `<text class="sys-band-n" x="${x + 16}" y="59">망 ${esc(netsOf(zone))}</text>`).join('')}
+    <text class="sys-row-t" x="16" y="38">계층</text><text class="sys-row-cap" x="16" y="57">위가 업무</text><text class="sys-row-cap" x="16" y="74">아래가 현장</text>
+    ${LAYERS.map((L, i) => `${i % 2 ? '' : `<rect class="sys-row-bg" x="8" y="${rowY(i) - dy / 2 + 3}" width="${W - 16}" height="${dy - 6}" rx="10"/>`}${layerLines(L, i)}`).join('')}
+    ${P.map(([k, pts], i) => `<path class="sys-p" data-k="${k}" data-i="${i}" d="${path(pts)}" marker-end="url(#sysAh-${k})"/>`).join('')}
+    ${P.map(([k, , t, pos, anchor], i) => t ? `<text class="sys-p-t" data-k="${k}" data-i="${i}" x="${pos[0]}" y="${pos[1]}" text-anchor="${anchor}">${esc(t)}</text>` : '').join('')}
     ${comps.map(node).join('')}
-    <rect id="sysSlot" x="${SYS.band.it[0] + 12}" y="${at.EMQX.y - dy / 2 + 8}" width="${SYS.band.it[1] - 24}" height="${H - 10 - (at.EMQX.y - dy / 2 + 8)}" fill="none" pointer-events="none"/></svg>`;
+    <g class="sys-legend" aria-label="길의 종류">${legend}</g>
+    <rect id="sysSlot" x="${SYS.band.it[0] + 12}" y="${bus.y + NH / 2 + 10}" width="${SYS.band.it[1] - 24}" height="${HB - 10 - (bus.y + NH / 2 + 10)}" fill="none" pointer-events="none"/></svg>`;
   // 그림 아래: 이 구성이 현업 공장과 다른 곳(layers.js SYS_DIFFS) — 이름 + 한 문장씩
   $('#sysDiffs').innerHTML = SYS_DIFFS.map(d => `<div class="sys-diff">${UI.icon(d.icon)}<dt>${esc(d.name)}</dt><dd>${esc(d.text)}</dd></div>`).join('');
   sysShow(null); sysPlace();
 }
-// 정보 카드의 자리: 그림에서 늘 비어 있는 칸(IT 영역의 아래 두 계층 — #sysSlot)에 맞춰 캔버스 위에 띄운다. 그림이 창에 맞춰 커지고 줄어도 부품 상자를 가리지 않는다.
+// 정보 카드의 자리: 그림에서 늘 비어 있는 칸(IT 영역의 이벤트 저장 상자 아래 — 아래 두 계층, #sysSlot)에 맞춰 캔버스 위에 띄운다. 그림이 창에 맞춰 커지고 줄어도 부품 상자를 가리지 않는다.
 // 좁은 폭(그림을 끌어서 보는 폭)에서는 CSS 가 이 값을 쓰지 않고 카드를 그림 아래에 둔다
 function sysPlace() {
   const slot = $('#sysSlot'), info = $('#sysInfo'); if (!slot) return;
@@ -283,14 +298,14 @@ function sysShow(key) {
   sysPicked = c ? key : null;
   document.querySelectorAll('#stack .sys-nd').forEach(n => n.toggleAttribute('data-on', n.dataset.key === sysPicked));
   // 아무것도 고르지 않았을 때: 쓰는 법 한 줄(명령 길 밖의 조작은 그림의 빨간 길과 그림 아래 목록이 말한다)
-  if (!c) { info.innerHTML = `<p class="sys-hint">${UI.icon('info')}부품에 올리면 하는 일이 보이고, 누르면 그 도구가 새 탭으로 열립니다.</p>`; return; }
+  if (!c) { info.innerHTML = `<p class="sys-hint">${UI.icon('info')}부품에 올리면 하는 일과 상태가 보이고, 누르면 그 도구가 새 탭으로 열립니다. 점선 상자는 꺼 두어도 되는 선택 도구입니다.</p>`; return; }
   const [title, icon] = SYS.node[c.key], st = sysStatus(c);
-  info.innerHTML = `<h3>${UI.icon(icon)}${esc(title)} <code class="mono">${esc(c.key)}</code><small>${esc(c.layer)} · ${esc(c.zone.toUpperCase())}</small></h3>` +
+  const nets = c.nets.map(id => `<span title="${esc((NETS.find(n => n.id === id) || {}).what || '')}">${esc(id)}</span>`).join(', ');
+  info.innerHTML = `<h3>${UI.icon(icon)}${esc(title)} <code class="mono">${esc(c.key)}</code><small>Layer ${LAYERS.length - c.row} · ${esc(c.zone.toUpperCase())}</small></h3>` +
     `<span class="state"><i class="dot"${st === 'ok' ? ' data-tone="ok"' : st === 'down' ? ' data-tone="danger"' : ''}></i>${esc(sysNote || sysStatusText(c))}</span>` +
     (c.url ? `<a class="btn-cv open" href="${esc(c.url)}" target="_blank" rel="noopener" data-sys-open="${esc(c.key)}">열기${UI.icon('external-link')}</a>` : '') +      // 여는 화면이 없는 부품은 [열기]를 두지 않는다
-    `<p>${esc(c.role)}${c.real ? ` <b>· 현업에서는 ${esc(c.real)}</b>` : ''}</p>${c.url ? '' : `<p>${esc(c.how || '여는 화면이 없습니다.')}</p>`}` +
-    (c.key === 'detector' && (state.leftOut || []).length ? `<p class="sys-warn"><b>감지에서 빠진 이상 패턴 ${state.leftOut.length}</b> — ${state.leftOut.map(r => esc(leftOutLine(r))).join(' / ')}</p>` : '') +
-    `<p class="sys-nets">붙은 망 ${c.nets.map(id => `<code class="mono" title="${esc((NETS.find(n => n.id === id) || {}).what || '')}">${esc(id)}</code>`).join(' ')}</p>`;
+    `<p>${esc(c.role)}${c.real ? ` <b>· 현업에서는 ${esc(c.real)}</b>` : ''} <span class="sys-nets">· 망 ${nets}</span></p>${c.url ? '' : `<p>${esc(c.how || '여는 화면이 없습니다.')}</p>`}` +
+    (c.key === 'detector' && (state.leftOut || []).length ? `<p class="sys-warn"><b>감지에서 빠진 이상 패턴 ${state.leftOut.length}</b> — ${state.leftOut.map(r => esc(leftOutLine(r))).join(' / ')}</p>` : '');
 }
 // 감지에서 빠진 이상 패턴 한 줄: 이름(코드) — 까닭. 까닭이 영문 예외 글이면 한국어 틀을 씌우고 원문을 그대로 붙인다(지어 옮기지 않는다)
 const requireListOr = x => Array.isArray(x) ? x : [];
@@ -426,7 +441,7 @@ async function pollHealth() {
   pick('configBundlePanel');
 }
 
-/* ---------------- 설비 카드(실시간 모니터링 · 결함 시뮬레이션이 함께 쓴다 — 디자인 기준 5-5) ---------------- */
+/* ---------------- 설비 한 기의 상태 낱말과 유온 기준 — 결함 시뮬레이션 · 실시간 모니터링 · 설비 회로 · 홈(main.js)이 함께 쓴다 ---------------- */
 const FAULT_LABEL = { cooler_degradation: '쿨러 성능 저하', pump_leakage: '펌프 내부 누설', fan_vibration: '팬 베어링 마모', restore: '복구' };
 // 감지기 패턴(쿨러 · 펌프 · 팬 …) 중 가장 급한 단계 — 설비 카드는 쿨러 하나가 아니라 모든 패턴을 본다
 const PHASE_ORDER = ['RAISED', 'CLEARING', 'CANDIDATE', 'IDLE'];
@@ -441,34 +456,42 @@ function phaseText(d) {
 const TS_HOT = 55, TS_TRIP = 65, TS_MIN = 30, TS_MAX = 70;
 const tsPct = t => Math.max(0, Math.min(100, (t - TS_MIN) / (TS_MAX - TS_MIN) * 100));
 function tsColor(t) { return t >= TS_TRIP ? 'trip' : t >= TS_HOT ? 'hot' : ''; }
-const KIT_TONE = { accent: 'run', success: 'ok', warning: 'warn', danger: 'danger' };
-// 설비 한 기의 상태 낱말 하나: 보호 정지 → 경보(감지기의 가장 급한 단계) → 운전 상태 차례로 급한 것을 보인다. 감지기를 못 읽었으면 그 사실을 보인다
+// 설비 한 기의 상태 낱말 하나: 보호 정지 → 경보(감지기의 가장 급한 단계) → 운전 상태 차례로 급한 것을 보인다. 감지기를 못 읽었으면 그 사실을 보인다.
+// tone 은 상태 알약(UI.chipText)의 색 이름이다. 경보 쪽 단계(이상 징후 · 경보 발생 · 해제 확인)는 주의(주황), 실패색(빨강)은 보호 정지와 감지기 응답 없음뿐이다
 function unitState(s, d) {
   if (s.state === 'TRIP') return { label: UI.status('TRIP'), tone: 'danger' };
-  if (!state.det) return { label: state.detError ? '감지기 응답 없음' : '감지기 확인 중', tone: state.detError ? 'danger' : '' };
-  // 색 기준(디자인 기준 5-5): 경보 쪽 단계(이상 징후 · 경보 발생 · 해제 확인)는 주황, 빨강은 보호 정지뿐이다
-  if (worstPhase(d) !== 'IDLE') return { label: UI.status(worstPhase(d)), tone: 'warn' };
-  return { label: UI.status(s.state), tone: KIT_TONE[UI.toneOf(s.state)] || '' };
+  if (!state.det) return { label: state.detError ? '감지기 응답 없음' : '감지기 확인 중', tone: state.detError ? 'danger' : 'neutral' };
+  if (worstPhase(d) !== 'IDLE') return { label: UI.status(worstPhase(d)), tone: 'warning' };
+  return { label: UI.status(s.state), tone: UI.toneOf(s.state) };
 }
+const KIT_TONE = { accent: 'run', success: 'ok', warning: 'warn', danger: 'danger' };      // 알약의 색 이름 → 점 · 회로 카드 · 카드 테의 data-tone
 const detOf = asset => (state.det && state.det.assets && state.det.assets[asset]) || {};
+// 카드 머리 줄의 상태 알약(이름 바로 뒤 — 디자인기준 4-5)과 카드 테(경보 · 보호 정지일 때만 색). 같은 알약이면 다시 그리지 않는다
+function paintState(card, st) {
+  const tag = UI.chipText(st.label, st.tone), box = card.querySelector('[data-f="state"]');
+  if (box._markup !== tag) { box.innerHTML = tag; box._markup = tag; }
+  const alert = KIT_TONE[st.tone];
+  if (alert === 'danger' || alert === 'warn') card.dataset.alert = alert; else delete card.dataset.alert;
+}
+/* 실시간 모니터링의 설비 카드(디자인기준 5-7): 설비의 지금 값이 크게 보이는 곳은 이 화면 하나다(1-2).
+   머리 줄(이름 · 상태 알약 · 운전 모드) → 큰 유온과 작은 추이 선 → 눈금 막대(경보 · 정지 자리부터 주황 · 빨강, 지금 값에 핀) → 작은 값 여섯.
+   카드 전체가 그 설비의 추이를 고르는 단추이고, 그 설비에 열린 처리 건이 있을 때만 아래 고정 줄에 「처리 건 열기」가 나타난다 */
 const VALUE_CELLS = { PS1: ['plant.ps1', 'bar', 1], FS1: ['plant.fs1', 'L/min', 2], VS1: ['plant.vs1', 'mm/s', 2], CE: ['plant.ce', '%', 0], FanSpeedSP: ['plant.fan', '%', 0], LoadSP: ['plant.load', '%', 0] };
-// 카드 한 장의 틀. cells = 작은 값으로 보일 태그, spark = 큰 값 옆 작은 추이 선 자리, pick = 카드 전체가 고르기 단추
-function unitCardHtml(asset, { cells, spark = false, pick = false }) {
-  const body = `<div class="unit-head"><b>${esc(asset)}</b><span data-f="state"></span><span class="muted" data-f="mode"></span></div>
-    <div class="unit-main"><div><div class="unit-cap">${esc(UI.t('plant.ts1'))}</div><div class="unit-big num"><span data-f="TS1">–</span><small>℃</small></div></div>${spark ? '<div class="unit-spark" data-f="spark"></div>' : '<div class="unit-cap" data-f="phase"></div>'}</div>
+function monCardHtml(asset) {
+  return `<article class="card unit" data-asset="${esc(asset)}"><button type="button" class="unit-pick" aria-pressed="false">
+    <div class="unit-head"><b>${esc(asset)}</b><span data-f="state"></span><span class="muted" data-f="mode"></span></div>
+    <div class="unit-main"><div><div class="unit-cap">${esc(UI.t('plant.ts1'))}</div><div class="unit-big num"><span data-f="TS1">–</span><small>℃</small></div></div><div class="unit-spark" data-f="spark"></div></div>
     <div class="gauge" role="img" data-f="gauge" style="--hot:${tsPct(TS_HOT)}%;--trip:${tsPct(TS_TRIP)}%"><i data-f="pin"></i></div>
     <div class="gauge-scale" aria-hidden="true" style="--hot:${tsPct(TS_HOT)}%;--trip:${tsPct(TS_TRIP)}%"><span>${TS_MIN}</span><span>경보 ${TS_HOT}</span><span>정지 ${TS_TRIP}</span><span>${TS_MAX}</span></div>
-    <dl class="unit-grid">${cells.map(k => `<div><dt>${esc(UI.t(VALUE_CELLS[k][0]))}</dt><dd class="num"><span data-f="${k}">–</span><small>${VALUE_CELLS[k][1]}</small></dd></div>`).join('')}</dl>`;
-  return pick ? `<button type="button" class="unit-pick" aria-pressed="false">${body}</button>` : body;
+    <dl class="unit-grid">${Object.entries(VALUE_CELLS).map(([k, [term, unit]]) => `<div><dt>${esc(UI.t(term))}</dt><dd class="num"><span data-f="${k}">–</span><small>${unit}</small></dd></div>`).join('')}</dl>
+  </button><footer hidden>${UI.goLink('instances', '처리 건 열기')}</footer></article>`;
 }
-function paintUnitCard(card, asset, u, cells) {
-  const t = u.tags, s = u.status, d = detOf(asset), st = unitState(s, d);
+function paintMonCard(card, asset, u) {
+  const t = u.tags, s = u.status;
   const set = (f, text) => { const n = card.querySelector(`[data-f="${f}"]`); if (n && n.textContent !== text) n.textContent = text; };
-  const tag = `<span class="tag"${st.tone ? ` data-tone="${st.tone}"` : ''}>${esc(st.label)}</span>`, box = card.querySelector('[data-f="state"]');
-  if (box._markup !== tag) { box.innerHTML = tag; box._markup = tag; }
-  if (st.tone === 'danger' || st.tone === 'warn') card.dataset.alert = st.tone; else delete card.dataset.alert;
-  set('mode', UI.status(s.mode)); set('TS1', fmt(t.TS1, 1)); set('phase', `감지기 · ${phaseText(d)}`);
-  cells.forEach(k => set(k, fmt(t[k], VALUE_CELLS[k][2])));
+  paintState(card, unitState(s, detOf(asset)));
+  set('mode', UI.status(s.mode)); set('TS1', fmt(t.TS1, 1));
+  Object.entries(VALUE_CELLS).forEach(([k, [, , digits]]) => set(k, fmt(t[k], digits)));
   card.querySelector('[data-f="pin"]').style.left = tsPct(t.TS1) + '%';
   card.querySelector('[data-f="gauge"]').setAttribute('aria-label', `유온 ${fmt(t.TS1, 1)} ℃ — 경보 조건 ${TS_HOT} ℃, 보호 정지 ${TS_TRIP} ℃`);
 }
@@ -486,34 +509,42 @@ document.addEventListener('click', e => {
   e.preventDefault(); selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(a.dataset.openInst);
 });
 
-/* ---------------- 결함 시뮬레이션 ----------------
-   설비 카드 셋. 카드마다 결함 절 하나: HYD-01 은 설비 결함(쿨러 열화 — 유온이 올라 감지기가 경보를 낸다), 나머지는 업무 사건(서버의 GET /api/scenario/status 가 말하는
-   설비 · 이름 · 단추 — 정기 점검 도래 · 재고 보충 필요). 업무 사건은 설비까지 가지 않고 단추가 처리 건을 바로 연다(POST /api/scenario/{key}/start).
-   [초기화]는 그 업무 사건의 업무 데이터를 처음 값으로 되돌려 표시를 다시 켠다. 주입 뒤 경보 · 처리 건까지의 과정은 hydLive.follow 로 한 줄씩 보인다(실제 사건이 올 때만 넘어간다). */
+/* ---------------- 결함 시뮬레이션(디자인기준 5-7 카드 줄) ----------------
+   설비 카드 셋. 카드 한 장 = 그 설비에 일으킬 사건 하나이고, 줄의 차례와 수가 세 카드에서 같다:
+     머리 줄(이름 · 상태 알약) → 사건 이름 한 줄(업무 사건은 그 표시 알약) → 그 사건이 보는 값 한 줄 → 단추 줄 둘(첫 줄: 일으키기 · 바깥 사건 / 둘째 줄: 되돌리기)
+     → 현장 패널 접기(오른쪽 끝에 지금 운전 모드) → 아래 고정 줄(그 설비의 처리 건이 있을 때만 「처리 건 열기」).
+   그 카드에 없는 단추(HYD-01 · HYD-02 의 바깥 사건)는 그 자리를 비워 둔다 — 같은 종류의 단추가 카드마다 같은 줄 · 같은 차례에 선다.
+   설비의 큰 값(유온 · 눈금 막대 · 냉각 효율 · 팬 · 부하)은 여기에 두지 않는다 — 실시간 모니터링 한 곳에 있다(1-2).
+   HYD-01 은 설비 결함(쿨러 열화 — 유온이 올라 감지기가 경보를 낸다), 나머지는 업무 사건(서버의 GET /api/scenario/status 가 말하는 설비 · 이름 · 단추 — 정기 점검 도래 · 재고 보충 필요).
+   업무 사건은 설비까지 가지 않고 단추가 처리 건을 바로 연다(POST /api/scenario/{key}/start). 되돌리기는 그 사건이 바꾼 것을 처음 값으로 돌린다(쿨러 성능 · 업무 데이터).
+   주입 뒤 경보 · 처리 건까지의 과정은 hydLive.follow 로 한 줄씩 보인다(실제 사건이 올 때만 넘어간다). */
 const FAULT_UNIT = { asset: 'HYD-01', pattern: 'COOLER_DEGRADATION', fault: 'cooler_degradation' };      // 설비 결함 주입은 쿨러 열화 하나다(서버 POST /api/scenario/A/degrade · restore)
 function bizOf(asset) {
   const all = state.biz && state.biz.scenarios ? Object.values(state.biz.scenarios) : [];
   return all.find(b => b.asset === asset) || null;
 }
-// 표시 뱃지: 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 처리됨 · 업무 시스템 응답 없음 — 못 읽은 것을 「표시 없음」으로 보이지 않는다
+// 업무 사건의 표시 알약(사건 이름 바로 뒤): 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 처리됨 · 업무 시스템 응답 없음 — 못 읽은 것을 「표시 없음」으로 보이지 않는다.
+// 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 고정 줄 「처리 건 열기」 하나다(알약을 링크로 쓰지 않는다)
 function bizAlertHtml(asset) {
+  const pill = (label, tone, why = '') => why ? `<span title="${esc(why)}">${UI.chipText(label, tone)}</span>` : UI.chipText(label, tone);
   if (asset === FAULT_UNIT.asset) return '';
-  if (state.biz === undefined) return '<span class="tag">확인 중</span>';
-  if (state.biz && state.biz.failed) return `<span class="tag" data-tone="danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
+  if (state.biz === undefined) return pill('확인 중');
+  if (state.biz && state.biz.failed) return pill('표시를 읽지 못함', 'danger', state.biz.failed);
   const b = bizOf(asset); if (!b) return '';
-  if (b.running) return '<span class="tag" data-tone="run">처리 중</span>';      // 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 「처리 건에서 보기」 한 줄이다(뱃지를 링크로 쓰지 않는다)
+  if (b.running) return pill('처리 중', 'accent');
   // 반려 뒤 [초기화]를 눌렀으면 표시가 「반려」로 남지 않는다 — 마지막 처리 건이 끝난 뒤의 [초기화]면 다시 도래/필요
   const press = state.biz && state.biz.presses && state.biz.presses[asset];
   const resetAfter = press && press.button === state.biz.reset_button && b.last && b.last.ended_at && Date.parse(press.at) >= Date.parse(b.last.ended_at);
-  if (b.alert && (b.last?.outcome !== '반려' || resetAfter)) return `<span class="tag" data-tone="warn" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
-  if (b.last && !b.running) return `<span class="tag"${b.last.outcome === '반려' ? ' data-tone="danger"' : ['미달', '지연'].includes(b.last.outcome) ? ' data-tone="warn"' : ' data-tone="ok"'}>${b.last.outcome === '반려' ? '반려' : `처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}`}</span>`;
-  return b.error ? `<span class="tag" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
+  if (b.alert && (b.last?.outcome !== '반려' || resetAfter)) return pill(b.label, 'warning');
+  if (b.last && !b.running) return b.last.outcome === '반려' ? pill('반려') : pill(`처리됨${b.last.outcome ? ` · ${b.last.outcome}` : ''}`, ['미달', '지연'].includes(b.last.outcome) ? 'warning' : 'success');
+  return b.error ? pill('업무 시스템 응답 없음', 'neutral', b.error) : '';
 }
 // 설비마다 마지막으로 누른 단추(서버의 감사 기록 — 처리 건이 없는 [초기화]도 남는다). 화면 아래 「조작 기록」 접기 안에 보인다
 function pressLines() {
   const presses = (state.biz && state.biz.presses) || {};
   return Object.entries(presses).filter(([, p]) => p).map(([asset, p]) => `<div class="line biz-press" data-asset="${esc(asset)}">${UI.icon('history')}<span class="line-text">${esc(asset)} [${esc(p.button)}]${p.by ? ` · ${esc(p.by)}` : ''}</span><time class="line-time num">${esc(UI.time(p.at))}</time></div>`).join('');
 }
+// 업무 사건이 보는 값 한 줄: 그 사건이 왜 생기는지의 사실이다(처리 건의 시작 근거와 같은 값)
 function bizFactLine(b) {
   const f = b.facts || {};
   if (b.pattern === 'PM_DUE') return `운전 시간 ${fmt(f.pm_since_h, 0)} h / 정비 주기 ${fmt(f.pm_interval_h, 0)} h — 기한까지 ${fmt(f.pm_due_in_h, 0)} h`;
@@ -523,53 +554,60 @@ function bizFactLine(b) {
   if (f.available < f.reorder_point) return `${part} 가용 ${n(f.available)}개 < 재주문점 ${n(f.reorder_point)}개 — 필요 수량 ${n(f.need_qty)}개`;
   return `${part} 가용 ${n(f.available)}개 ≥ 재주문점 ${n(f.reorder_point)}개 — 보충할 수량 없음${f.on_order > 0 ? ` (발주 중 ${n(f.on_order)}개 포함)` : ''}`;
 }
-// 결함 절: 절 이름과 단추. 무엇을 하는 단추인지는 단추의 도움말(올리거나 초점을 주면 나온다)이, 누른 뒤의 일은 과정 판이 말한다 — 설명 문단을 깔지 않는다.
-// 업무 사건은 그 사건이 왜 생기는지의 사실 한 줄만 둔다. 주 단추는 화면에 하나(쿨러 열화 주입)다
-// 업무 사건 카드의 바깥 사건 단추(서버 GET /api/scenario/status 의 scenarios.<키>.events — 이름 · 누를 수 있는지 · 못 누르는 까닭 · 부를 길을 서버가 준다).
-// 지금 누를 수 없으면 흐리게 두고, 누르면 그 까닭을 카드 아래 한 줄로 말한다(눌러서 아무 일도 없는 단추를 두지 않는다)
-// 같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409) — 단추를 꺼 두고 까닭을 말한다. 그 건으로 가는 길은 카드 아래 「처리 건에서 보기」다
-const BIZ_RUNNING = '진행 중인 처리 건이 있어 새로 시작할 수 없습니다. 아래 「처리 건에서 보기」로 그 건을 끝낸 뒤 시작하세요.';
-const eventBtn = ev => `<button type="button" class="btn" data-variant="outline" data-size="sm" data-act="biz-event" data-event="${esc(ev.act)}"${ev.enabled ? '' : ' aria-disabled="true"'} data-tooltip="${esc(ev.enabled ? ev.help || '' : ev.why || '지금은 누를 수 없습니다')}" data-side="top" data-align="start">${UI.icon('clock')}${esc(ev.button)}</button>`;
+/* 카드의 단추. 무엇을 하는 단추인지는 도움말(올리거나 초점을 주면 단추 아래에 나온다 — 위에 띄우면 카드의 사건 이름 · 값 줄을 덮는다)이, 누른 뒤의 일은 과정 판이 말한다.
+   일으키기는 카드의 주 단추(단추 줄 첫 자리 — 4-1), 바깥 사건과 되돌리기는 보통 단추다.
+   지금 누를 수 없는 단추는 흐리게 두고 도움말과 누른 뒤의 한 줄이 까닭을 말한다(눌러서 아무 일도 없는 단추를 두지 않는다):
+   같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409), 바깥 사건은 서버가 준 까닭(scenarios.<키>.events[].why) */
+const BIZ_RUNNING = '진행 중인 처리 건이 있어 새로 시작할 수 없습니다. 카드 아래 「처리 건 열기」로 그 건을 끝낸 뒤 시작하세요.';
+const labBtn = (act, label, { primary = false, icon = '', tip = '', off = false, attrs = '', cls = '' } = {}) =>
+  `<button type="button" class="btn${cls ? ' ' + cls : ''}"${primary ? '' : ' data-variant="outline"'} data-size="sm" data-act="${act}"${attrs ? ' ' + attrs : ''}${off ? ' aria-disabled="true"' : ''}${tip ? ` data-tooltip="${esc(tip)}" data-side="bottom" data-align="start"` : ''}>${icon ? UI.icon(icon) : ''}<span>${esc(label)}</span></button>`;
+const LAB_SLOT = '<span class="btn lab-slot" data-variant="outline" data-size="sm" aria-hidden="true">&nbsp;</span>';      // 그 카드에 없는 단추의 빈 자리(단추와 같은 상자 — 보이지 않는다)
+const eventBtn = ev => labBtn('biz-event', ev.button, { icon: 'clock', off: !ev.enabled, attrs: `data-event="${esc(ev.act)}"`, tip: ev.enabled ? ev.help || '' : ev.why || '지금은 누를 수 없습니다' });
 function expHtml(asset) {
-  const btn = (act, label, variant, icon, tip) => `<button type="button" class="btn"${variant ? ` data-variant="${variant}"` : ''} data-size="sm" data-act="${act}" data-tooltip="${esc(tip)}" data-side="top" data-align="start">${icon ? UI.icon(icon) : ''}${esc(label)}</button>`;
-  if (asset === FAULT_UNIT.asset) return `<h3>설비 결함 · ${esc(UI.patternName(FAULT_UNIT.pattern))}</h3><p class="lab-fact"></p>
-    <div class="lab-buttons">${btn('degrade', '쿨러 열화 주입', '', 'zap', '쿨러 성능을 서서히 떨어뜨립니다. 유온이 오르면 경보가 납니다')}${btn('restore', '쿨러 복구', 'outline', UI.acts.repair[1], '쿨러 성능을 처음 값으로 되돌립니다')}</div>`;
-  if (state.biz === undefined) return '<h3>업무 사건</h3><div class="skeleton" style="height:32px"></div>';
-  if (state.biz && state.biz.failed) return `<h3>업무 사건 <span class="biz-alert"></span></h3><p>업무 사건의 상태를 읽지 못했습니다: ${esc(state.biz.failed)} — 잠시 뒤 다시 읽습니다.</p>`;
+  const what = (text, pill = false) => `<p class="lab-what"><span>${esc(text)}</span>${pill ? '<span class="biz-alert"></span>' : ''}</p>`;
+  if (asset === FAULT_UNIT.asset) return what(`설비 결함 · ${UI.patternName(FAULT_UNIT.pattern)}`) + `<p class="lab-fact" data-f="fact"></p>
+    <div class="lab-buttons">${labBtn('degrade', '쿨러 열화 주입', { primary: true, icon: 'zap', tip: '쿨러 성능을 서서히 떨어뜨립니다. 유온이 오르면 경보가 납니다' })}${LAB_SLOT}${labBtn('restore', '쿨러 복구', { icon: UI.acts.repair[1], tip: '쿨러 성능을 처음 값으로 되돌립니다', cls: 'lab-undo' })}</div>`;
+  if (state.biz === undefined) return what('업무 사건') + '<div class="skeleton" style="height:96px"></div>';
+  if (state.biz && state.biz.failed) return what('업무 사건', true) + `<p class="lab-fact" data-tone="danger">업무 사건의 상태를 읽지 못했습니다: ${esc(state.biz.failed)} — 잠시 뒤 다시 읽습니다.</p>`;
   const b = bizOf(asset);
-  if (!b) return '<h3>업무 사건</h3><p>이 설비에 걸린 업무 사건이 없습니다.</p>';
-  return `<h3>업무 사건 · ${esc(b.title)} <span class="biz-alert"></span></h3><p title="${esc(bizFactLine(b))}">${esc(bizFactLine(b))}</p>
-    <div class="lab-buttons">${b.running ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-act="biz-start" aria-disabled="true" data-tooltip="${esc(BIZ_RUNNING)}" data-side="top" data-align="start">${UI.icon('play')}${esc(b.button)}</button>`
-      : btn('biz-start', b.button, 'outline', 'play', '설비를 거치지 않고 처리 건이 바로 열립니다')}${(b.events || []).map(eventBtn).join('')}${btn('biz-reset', state.biz.reset_button, 'ghost', 'rotate-ccw', '업무 데이터를 처음 값으로 되돌립니다')}</div>`;
+  if (!b) return what('업무 사건') + '<p class="lab-fact">이 설비에 걸린 업무 사건이 없습니다.</p>';
+  const events = b.events || [];
+  return what(`업무 사건 · ${b.title}`, true) + `<p class="lab-fact" title="${esc(bizFactLine(b))}">${esc(bizFactLine(b))}</p>
+    <div class="lab-buttons">${labBtn('biz-start', b.button, { primary: true, icon: 'play', off: !!b.running, tip: b.running ? BIZ_RUNNING : '설비를 거치지 않고 처리 건이 바로 열립니다' })}${events.length ? events.map(eventBtn).join('') : LAB_SLOT}${labBtn('biz-reset', state.biz.reset_button, { icon: 'rotate-ccw', tip: '업무 데이터를 처음 값으로 되돌립니다', cls: 'lab-undo' })}</div>`;
+}
+function labCardHtml(asset) {
+  const manual = (act, label, tip = '') => labBtn(act, label, { tip });
+  return UI.card({ cls: 'unit', attrs: `data-asset="${esc(asset)}" role="group" aria-label="${esc(asset)} 설비"`, title: esc(asset), chips: '<span data-f="state"></span>',
+    body: `<div class="lab-exp"></div>
+      <details class="fold lab-field"><summary>현장 패널<span class="muted" data-f="mode"></span></summary><div class="fold-body lab-panel">
+        <div role="group" class="field"><label for="mode-${esc(asset)}">${esc(UI.t('plant.modes'))}</label><select class="select" id="mode-${esc(asset)}" data-mode-pick><option value="REMOTE_AUTO">원격 자동 — 승인된 원격 명령을 받음</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
+        <div class="lab-manual" role="group" aria-label="수동 조작">${manual('fan', '팬 80 %', '적용하면 원격 수동으로 바뀝니다')}${manual('load', '부하 70 %', '적용하면 원격 수동으로 바뀝니다')}${manual('reset', '보호 정지 해제')}</div>
+        <dl class="kv"><dt>${esc(UI.t('plant.state'))}</dt><dd class="plc"></dd><dt>${esc(UI.t('plant.lastCmd'))}</dt><dd class="ack"></dd></dl>
+      </div></details>`,
+    foot: UI.goLink('instances', '처리 건 열기') });
 }
 function renderUnits() {
   const box = $('#units');
   // 아직 한 번도 읽지 못한 것(읽는 중)과 읽기 실패를 가른다 — 처음 여는 순간을 「읽지 못했습니다」로 보이지 않는다
-  if (!state.plant && !state.plantError) { box.innerHTML = '<div class="skeleton" style="height:320px"></div><div class="skeleton" style="height:320px"></div><div class="skeleton" style="height:320px"></div>'; delete box.dataset.built; return; }
+  if (!state.plant && !state.plantError) { box.innerHTML = '<div class="skeleton" style="height:280px"></div>'.repeat(3); return; }
   if (!state.plant) { box.innerHTML = UI.errorBlock(UI.t('plant.noConn'), `${state.plantError || ''} ${UI.t('plant.noConnSub')}`.trim()); return; }
   if (!box.querySelector('.unit')) box.innerHTML = '';
-  const kv = rows => rows.map(([name, cls]) => `<dt>${esc(name)}</dt><dd class="${cls}"></dd>`).join('');
   for (const [asset, u] of Object.entries(state.plant.units)) {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
-      card = el('article', 'unit'); card.dataset.asset = asset; card.setAttribute('aria-label', `${asset} 설비`);
-      card.innerHTML = unitCardHtml(asset, { cells: ['CE', 'FanSpeedSP', 'LoadSP'] }) + `<section class="lab-exp" aria-label="결함 넣기"></section>
-        <details class="fold"><summary>현장 패널</summary><div class="fold-body lab-panel">
-          <div role="group" class="field"><label for="mode-${esc(asset)}">${esc(UI.t('plant.modes'))}</label><select class="select" id="mode-${esc(asset)}" data-mode-pick><option value="REMOTE_AUTO">원격 자동 — 승인된 원격 명령을 받음</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
-          <div class="lab-buttons" role="group" aria-label="수동 조작"><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="fan" data-tooltip="적용하면 원격 수동으로 바뀝니다" data-side="top" data-align="start">팬 80 %</button><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="load" data-tooltip="적용하면 원격 수동으로 바뀝니다" data-side="top">부하 70 %</button><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="reset">보호 정지 해제</button></div>
-          <dl class="kv">${kv([[UI.t('plant.state'), 'plc'], [UI.t('plant.lastCmd'), 'ack']])}</dl>
-        </div></details>
-        <a class="unit-go" href="#/instances" hidden><span>처리 건에서 보기</span>${UI.icon('arrow-right')}</a><p class="unit-go-none muted">열린 처리 건 없음</p>`;
+      box.insertAdjacentHTML('beforeend', labCardHtml(asset)); card = box.lastElementChild;
+      card.querySelector(':scope > footer').hidden = true;
       card.querySelector('[data-mode-pick]').addEventListener('change', e => unitAction(asset, 'mode', e.target.value, null));
       card.addEventListener('click', e => { const b = e.target.closest('button[data-act]'); if (b) unitAction(asset, b.dataset.act, b.dataset.mode, b); });
-      box.append(card);
     }
-    const t = u.tags, s = u.status, d = detOf(asset);
-    paintUnitCard(card, asset, u, ['CE', 'FanSpeedSP', 'LoadSP']);
-    card.querySelector('[data-f="mode"]').title = s.mode === 'REMOTE_AUTO' ? '원격 자동 — 승인된 원격 명령을 설비가 받는 운전 모드입니다. 저절로 조치하지 않으며, 명령은 사람이 승인한 뒤에만 나갑니다.' : '';
-    // 결함 절은 내용이 바뀔 때만 다시 그린다(누르는 동안 단추가 바뀌지 않게). 뱃지 · 안내 줄은 그 아래에서 따로 맞춘다
-    const exp = card.querySelector('.lab-exp'), b = bizOf(asset);
-    const expSig = asset === FAULT_UNIT.asset ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), !!b.running, (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
+    const s = u.status, d = detOf(asset), own = asset === FAULT_UNIT.asset, b = bizOf(asset);
+    paintState(card, unitState(s, d));
+    const mode = card.querySelector('[data-f="mode"]'), modeText = UI.status(s.mode);
+    if (mode.textContent !== modeText) mode.textContent = modeText;
+    mode.title = s.mode === 'REMOTE_AUTO' ? '원격 자동 — 승인된 원격 명령을 설비가 받는 운전 모드입니다. 저절로 조치하지 않으며, 명령은 사람이 승인한 뒤에만 나갑니다.' : '';
+    // 사건 절(이름 · 값 한 줄 · 단추)은 내용이 바뀔 때만 다시 그린다(누르는 동안 단추가 바뀌지 않게). 알약 · 값 · 안내 줄은 그 아래에서 따로 맞춘다
+    const exp = card.querySelector('.lab-exp');
+    const expSig = own ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), !!b.running, (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
     if (exp._sig !== expSig) {
       exp._sig = expSig;
       exp.innerHTML = expHtml(asset) + '<p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
@@ -577,32 +615,29 @@ function renderUnits() {
     const bizAlert = card.querySelector('.biz-alert'), bizMarkup = bizAlertHtml(asset);
     if (bizAlert && bizAlert._markup !== bizMarkup) { bizAlert.innerHTML = bizMarkup; bizAlert._markup = bizMarkup; }
     const dz = u.disturbances || {};
-    // 지금 걸려 있는 그 밖의 결함 한 줄(없으면 줄도 없다). 쿨러 성능은 결함 설비 카드의 사실 한 줄이 이미 말하므로 거기서는 되풀이하지 않는다
-    const own = asset === FAULT_UNIT.asset;
+    // 지금 걸려 있는 그 밖의 결함 한 줄(없으면 줄도 없다). 쿨러 성능은 결함 설비 카드의 값 한 줄이 이미 말하므로 거기서는 되풀이하지 않는다
     const active = [!own && dz.cooler_health != null && dz.cooler_health < 0.999 ? `쿨러 성능 ${fmt(dz.cooler_health * 100, 0)} %` : '', dz.leak > 0 ? `펌프 A 누설 ${fmt(dz.leak * 100, 0)} %` : '', dz.bearing_wear > 0 ? `팬 베어링 마모 ${fmt(dz.bearing_wear * 100, 0)} %` : ''].filter(Boolean);
     const ramps = (u.faults || []).filter(k => !(own && k === FAULT_UNIT.fault)).map(k => FAULT_LABEL[k] || k);
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${active.join(' · ')}` : '');
-    // 열린 처리 건이 있으면 그리로 가는 줄 하나(경과 · 승인은 처리 건에서)
-    const openInc = openIncidentFor(asset), go = card.querySelector('.unit-go');
-    // 설비 결함 카드는 열린 사건의 처리 건으로, 업무 사건 카드는 진행 중(없으면 마지막) 처리 건으로
-    const bizCase = !own && b ? (b.running || b.last) : null;
-    go.hidden = own ? !openInc : !bizCase;
-    card.querySelector('.unit-go-none').hidden = !go.hidden;      // 갈 처리 건이 없는 카드도 같은 자리에 한 줄 — 카드 셋의 아래 줄이 같은 높이에 놓인다
+    // 아래 고정 줄: 그 설비에 진행 중인 처리 건이 있을 때만 나타난다(경과 · 승인은 처리 건에서 — 끝난 건의 결과는 사건 이름 뒤 알약이 말한다).
+    // 설비 결함 카드는 열린 사건의 처리 건으로, 업무 사건 카드는 진행 중인 처리 건으로
+    const openInc = openIncidentFor(asset), foot = card.querySelector(':scope > footer'), go = foot.querySelector('.go');
+    const bizCase = !own && b ? b.running : null;
+    foot.hidden = own ? !openInc : !bizCase;
     if (own && openInc) go.dataset.openIncident = openInc.id; else delete go.dataset.openIncident;
     if (bizCase) go.dataset.openInst = bizCase.instance; else delete go.dataset.openInst;
-    if (asset === FAULT_UNIT.asset) {
-      const phase = d.patterns?.[FAULT_UNIT.pattern]?.phase;
-      // 사실 한 줄: 이 결함이 바꾸는 값(쿨러 성능)의 지금 값 — 업무 사건 카드의 근거 한 줄과 같은 자리
-      const fact = card.querySelector('.lab-fact'), degraded = s.cooler_health < 0.999;
-      fact.textContent = `쿨러 성능 ${fmt(s.cooler_health * 100, 0)} %${(u.faults || []).includes(FAULT_UNIT.fault) ? ' · 떨어지는 중' : ''}`;
-      if (degraded) fact.dataset.tone = 'warn'; else delete fact.dataset.tone;
-      const pat =d.patterns?.[FAULT_UNIT.pattern], handled = !!pat?.alert_id && state.incidents.some(i => i.alertId === pat.alert_id);      // 이 경보의 사건이 이미 있으면(끝난 것 포함) 이어 보일 과정이 없다
-      // 안내는 그 상황일 때만 한 줄: 감지기를 못 읽었을 때, 그리고 결함이 걸린 채 새 경보가 나지 않는 때(경보의 처리 건이 이미 끝났거나, 결함은 남았는데 감지기가 조용할 때).
-      // 감지기의 지금 단계는 큰 값 옆 한 줄(감지기 · …)이, 주입 뒤의 일은 과정 판이 이미 말한다
-      const stuck = s.cooler_health < 0.999 && !openInc && state.incidentsRead && (phase === 'IDLE' || (phase === 'RAISED' && handled)) && !(u.faults || []).includes(FAULT_UNIT.fault);
+    if (own) {
+      const pat = d.patterns?.[FAULT_UNIT.pattern], phase = pat?.phase, ramping = (u.faults || []).includes(FAULT_UNIT.fault);
+      // 값 한 줄: 이 결함이 바꾸는 값(쿨러 성능)과 그 값이 올리는 유온의 지금 값 — 업무 사건 카드의 근거 한 줄과 같은 자리. 감지기의 단계는 머리 줄의 상태 알약이 말한다
+      const fact = card.querySelector('[data-f="fact"]'), text = `유온 ${fmt(u.tags.TS1, 1)} ℃ · 쿨러 성능 ${fmt(s.cooler_health * 100, 0)} %${ramping ? ' · 떨어지는 중' : ''}`;
+      if (fact.textContent !== text) fact.textContent = text;
+      if (s.cooler_health < 0.999) fact.dataset.tone = 'warn'; else delete fact.dataset.tone;
+      const handled = !!pat?.alert_id && state.incidents.some(i => i.alertId === pat.alert_id);      // 이 경보의 사건이 이미 있으면(끝난 것 포함) 이어 보일 과정이 없다
+      // 안내는 그 상황일 때만 한 줄: 감지기를 못 읽었을 때, 그리고 결함이 걸린 채 새 경보가 나지 않는 때(경보의 처리 건이 이미 끝났거나, 결함은 남았는데 감지기가 조용할 때)
+      const stuck = s.cooler_health < 0.999 && !openInc && state.incidentsRead && (phase === 'IDLE' || (phase === 'RAISED' && handled)) && !ramping;
       card.querySelector('.repeat-guide').textContent = !phase ? '감지기 상태를 읽지 못했습니다.' : stuck ? '다시 하려면 [쿨러 복구]를 누른 뒤 주입하세요.' : '';
       // 화면을 다시 열었는데 결함이 진행 중이면 그 과정을 이어서 보인다(한 번만 — 닫았으면 다시 열지 않는다)
-      if (!labFollow && !renderUnits.resumed && state.incidentsRead && !handled && ((u.faults || []).includes(FAULT_UNIT.fault) || ['CANDIDATE', 'RAISED'].includes(phase))) { renderUnits.resumed = true; followFault(true); }
+      if (!labFollow && !renderUnits.resumed && state.incidentsRead && !handled && (ramping || ['CANDIDATE', 'RAISED'].includes(phase))) { renderUnits.resumed = true; followFault(true); }
     }
     card.querySelector('.plc').textContent = UI.status(s.state) + (s.trip_text && s.trip_text !== '–' ? ' · ' + s.trip_text : '');
     card.querySelector('.ack').textContent = s.cmdId ? UI.status(s.result) + (s.reason ? ' · ' + s.reason : '') : UI.t('plant.none');
@@ -610,7 +645,7 @@ function renderUnits() {
     const pickMode = card.querySelector('[data-mode-pick]'); if (document.activeElement !== pickMode && pickMode.value !== s.mode) pickMode.value = s.mode;
   }
 }
-/* 주입 뒤의 과정(디자인 기준 7절): 결함 주입 → 유온이 오름 → 감지기가 조건을 잡음 → 경보 → 처리 건 열림. 줄마다 그 사실이 실제로 일어났는지를 1초마다 확인하고,
+/* 주입 뒤의 과정(디자인기준 7절): 결함 주입 → 유온이 오름 → 감지기가 조건을 잡음 → 경보 → 처리 건 열림. 줄마다 그 사실이 실제로 일어났는지를 1초마다 확인하고,
    일어난 것만 채운다(시간으로 넘기지 않는다). 사실은 이 파일이 이미 읽는 것(설비 상태 · 감지기 상태 · 사건 목록 · 업무 사건 상태)에서 본다. */
 let labFollow = null;
 // resumed: 화면을 다시 열어 이미 진행 중인 과정을 이어 보이는 것. 이미 지난 줄은 언제 일어났는지 이 화면이 모른다 —
@@ -627,6 +662,7 @@ function showFollow(title, stages, resumed = false) {
     if (n) past.textContent = `#labFollow .lv-step:nth-child(-n+${n}) .lv-time { display: none; }`;
   }, 1500);
 }
+$('#gwLog').closest('details').addEventListener('toggle', () => refreshFast());      // 조작 기록을 펴면 명령 관문의 기록을 곧바로 읽어 그린다
 $('#labFollowClose').addEventListener('click', () => { if (labFollow) labFollow.stop(); $('#labFollowPanel').hidden = true; });
 function followFault(resumed = false) {
   const { asset, pattern, fault } = FAULT_UNIT;
@@ -648,7 +684,7 @@ function followFault(resumed = false) {
       check: f => { const inc = incidentsFor(asset).find(i => f && f.alert ? i.alertId === f.alert : i.pattern === pattern && !i.terminal); return inc ? { inc: inc.id, ended: inc.terminal } : null; },      // 이 경보로 열린 사건(이미 끝난 것이면 그렇다고 말한다). 경보 번호를 모르면 이 경보 종류(사건의 pattern)의 열린 사건 — 같은 설비의 다른 경보(정기 정비 · 재고) 사건을 잡지 않는다
       done: f => f.ended ? '이 경보로 열린 처리 건은 이미 끝났습니다' : '처리 건이 열렸습니다',
       note: f => f.ended ? '경보가 아직 꺼지지 않아 새 처리 건이 열리지 않습니다. 새로 해 보려면 [쿨러 복구]를 누르고 감지기가 「감시 중」으로 돌아온 뒤 다시 주입하세요.' : 'AI 에이전트가 원인과 조치 후보를 판단합니다',
-      link: f => ({ text: '처리 건에서 보기', go: () => openIncidentCase(f.inc) }) },
+      link: f => ({ text: '처리 건 열기', go: () => openIncidentCase(f.inc) }) },
   ], resumed);
 }
 function followBiz(asset, title) {
@@ -656,7 +692,7 @@ function followBiz(asset, title) {
     { key: 'case', label: '처리 건을 여는 중', hint: '흐름 엔진이 업무 데이터를 근거로 처리 건을 엽니다.',
       check: () => { const b = bizOf(asset); return b && b.running ? { inst: b.running.instance } : null; },
       done: () => '처리 건이 열렸습니다', note: () => 'AI 에이전트가 판단을 시작합니다',
-      link: f => ({ text: '처리 건에서 보기', go: () => { selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(f.inst); } }) },
+      link: f => ({ text: '처리 건 열기', go: () => { selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(f.inst); } }) },
   ]);
 }
 // 누가 눌렀나: 이 PC의 담당자(로그인 없음 — inbox.js me). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
@@ -714,32 +750,33 @@ async function unitAction(asset, act, mode, button) {
 function logLine(s, failed = false, go = null) { state.log.unshift({ t: new Date(), text: s, failed }); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(s, failed, go); }
 function scenarioMessage(text, failed = false, go = null) {
   const box = $('#scenarioMsg'); box.textContent = text; if (failed) box.dataset.tone = 'danger'; else delete box.dataset.tone;
-  if (go) box.insertAdjacentHTML('beforeend', ` <a href="${esc(go.href)}">${esc(go.label)}${UI.icon('arrow-right')}</a>`);
+  if (go) box.insertAdjacentHTML('beforeend', ` <a class="go" href="${esc(go.href)}">${esc(go.label)}</a>`);
 }
-$('#btnReset').innerHTML = UI.actHtml('plantReset');      // 이름과 아이콘은 동작 사전의 것(ui.js acts)
-$('#btnReset').addEventListener('click', async (e) => {
-  const b = e.currentTarget;
+// [설비 초기화]는 화면 머리의 더 보기(「…」) 안에 있다(index.html data-head-more — 이름과 아이콘은 동작 사전의 것)
+$('#btnReset').addEventListener('click', async () => {
   if (!await UI.confirm({ title: '설비 3기를 정상 운전점으로 되돌릴까요?', body: '진행 중인 결함과 보호 정지가 모두 풀립니다. 열린 처리 건은 그대로 남고, 그 처리 건의 효과 확인 결과가 달라질 수 있습니다.', ok: UI.acts.plantReset[0], danger: true })) return;
-  b.disabled = true; scenarioMessage('설비를 되돌리는 중');
+  scenarioMessage('설비를 되돌리는 중');
   try { await postJ(API.plant + '/api/reset'); logLine('설비 3기를 정상 운전점으로 되돌렸습니다'); }
   catch (err) { logLine('설비 초기화 실패: ' + err.message, true); }
-  finally { b.disabled = false; await refreshFast(); }
+  finally { await refreshFast(); }
 });
 // 조작 기록: 출처가 다른 두 기록을 이름을 붙여 나눠 보인다 — 이 화면에서 누른 것과 명령 관문이 검증한 것. failed 는 명령 관문 기록을 못 읽은 사유(「기록 없음」으로 보이지 않는다)
 function renderGwLog(entries, failed = '') {
   const box = $('#gwLog');
   const mine = state.log.map(l => `<div class="line" data-kind="${l.failed ? 'fail' : 'ok'}">${UI.icon(l.failed ? 'circle-x' : 'check')}<span class="line-text">${esc(l.text)}</span><time class="line-time num">${esc(UI.time(l.t))}</time></div>`).join('');
-  const gw = (entries || []).slice(0, 12).map(e => UI.eventRecord({ time: e.t, name: e.ok ? '명령 검증 통과' : '명령 거절', actor: e.asset, detail: e.reason || '', raw: e })).join('');
+  // 명령 관문의 기록(줄마다 원문 접기가 딸린다)은 접기를 펴 둔 동안에만 그린다 — 접힌 채 1초마다 다시 그리지 않는다
+  const open = box.closest('details').open;
+  const gw = open ? (entries || []).slice(0, 12).map(e => UI.eventRecord({ time: e.t, name: e.ok ? '명령 검증 통과' : '명령 거절', actor: e.asset, detail: e.reason || '', raw: e })).join('') : '';
   const last = pressLines();
-  const html = (mine ? `<h4>이 화면에서 누른 단추의 결과</h4>${mine}` : '') + (last ? `<h4>설비마다 마지막으로 누른 단추</h4>${last}` : '') + (failed ? UI.errorBlock('명령 관문의 기록을 읽지 못했습니다', failed) : gw ? `<h4>명령 관문이 검증한 명령</h4>${gw}` : '') ||
-    `<p class="muted">${esc(UI.t('plant.noCmd'))}</p>`;
+  const html = (mine ? `<h4>이 화면에서 누른 단추의 결과</h4>${mine}` : '') + (last ? `<h4>설비마다 마지막으로 누른 단추</h4>${last}` : '') + (!open ? '' : failed ? UI.errorBlock('명령 관문의 기록을 읽지 못했습니다', failed) : gw ? `<h4>명령 관문이 검증한 명령</h4>${gw}` : '') ||
+    (open ? `<p class="muted">${esc(UI.t('plant.noCmd'))}</p>` : '');
   if (box._html !== html) { box.innerHTML = html; box._html = html; }      // 1초마다 불리지만 같으면 다시 그리지 않는다(펴 둔 원문 접기가 닫히지 않게)
 }
 
-/* ---------------- 설비 회로(유압 설비): 어두운 캔버스 하나에 회로 그림 셋 + 고른 설비의 정보 띠 + 그 설비에서 난 사건 목록 ----------------
-   사건의 경과 · 판단 · 승인 · 결과는 처리 건 화면 한 곳에 있다 — 이 화면은 사건을 누르면 그 처리 건을 연다(사본 없음).
-   회로 그림은 홈 그림의 설비 부분과 같은 결이다(디자인 기준 6-4): 윤곽은 밝은 선 2px, 배관은 주황 5px(운전 중이면 흐른다),
-   센서는 빨간 원 안에 이름(TS1 · PS1), 값은 그 옆의 노란 숫자. 유온이 경보 조건을 넘으면 값이 빨강이 되고 센서 뒤에 빛이 켜진다. 모양은 canvas.css(.hc-*) */
+/* ---------------- 설비 회로(디자인기준 6-4): 밝은 캔버스 하나에 고른 설비의 회로를 크게, 나머지 둘을 작게 놓아 캔버스를 채운다 — 작은 카드를 누르면 그 설비가 크게 바뀐다 ----------------
+   사건의 경과 · 판단 · 승인 · 결과는 처리 건 화면 한 곳에 있다 — 이 화면은 캔버스 아래 한 줄(#incList)로 그리로 잇는다(사본 없음).
+   회로 그림: 윤곽은 짙은 선 2px, 배관은 주황 5px(운전 중이면 흐른다), 센서는 빨간 원 안에 이름(TS1 · PS1), 값은 그 옆의 숫자. 유온이 경보 조건을 넘으면 값이 빨강이 되고 센서 뒤에 빛이 켜진다.
+   크게 놓인 회로는 값 글자가 화면에서 13px 이상이고, 작게 놓인 회로는 값 글자를 그리지 않는다(머리 줄의 유온 하나). 모양은 plant.css(.hc-*) */
 function unitSvg(asset) {
   const fins = (x0, x1, y0, y1, step) => { let d = ''; for (let x = x0; x <= x1; x += step) d += `M${x} ${y0}V${y1}`; return `<path class="hc-fin" d="${d}"/>`; };
   const blade = 'M310 50 L310 41 A9 9 0 0 1 317.8 45.5 Z';
@@ -767,8 +804,8 @@ function unitSvg(asset) {
   </svg>`;
 }
 function renderScada() {
-  const box = $('#scada'), info = $('#scadaInfo');
-  if (!state.plant) { box.innerHTML = `<p class="hc-empty"><b>${esc(UI.t('plant.noConn'))}</b>${esc(UI.t('plant.noConnSub'))}</p>`; info.innerHTML = ''; return; }
+  const box = $('#scada');
+  if (!state.plant) { box.innerHTML = state.plantError ? UI.errorBlock(UI.t('plant.noConn'), `${state.plantError} ${UI.t('plant.noConnSub')}`) : '<div class="skeleton hc-wait"></div>'; return; }
   if (!box.querySelector('.ucard')) box.innerHTML = '';
   const units = state.plant.units;
   if (!units[state.selectedAsset]) state.selectedAsset = Object.keys(units)[0] || null;      // 처음에는 첫 설비를 고른 채로 연다
@@ -776,19 +813,21 @@ function renderScada() {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
       card = el('div', 'ucard'); card.dataset.asset = asset; keyboardItem(card);
-      card.innerHTML = `<header class="hc-head"><h2>${esc(asset)}</h2><span class="hc-state"></span></header>${unitSvg(asset)}`;
-      card.addEventListener('click', () => { state.selectedAsset = asset; renderScada(); renderIncList(); });
+      card.innerHTML = `<header class="hc-head"><h2>${esc(asset)}</h2><span data-f="state"></span><span class="hc-now num"></span></header>${unitSvg(asset)}`;
+      card.addEventListener('click', () => { state.selectedAsset = asset; renderScada(); });
       box.append(card);
     }
-    const t = u.tags, s = u.status, d = detOf(asset), st = unitState(s, d), running = s.state === 'RUN';
+    const t = u.tags, s = u.status, d = detOf(asset), st = unitState(s, d), running = s.state === 'RUN', on = state.selectedAsset === asset;
     card.classList.toggle('stopped', !running);
-    card.setAttribute('aria-pressed', String(state.selectedAsset === asset));
-    card.setAttribute('aria-label', `${asset} ${st.label} — 누르면 이 설비에서 난 사건을 아래에 보입니다`);
-    const chip = card.querySelector('.hc-state'); chip.textContent = st.label; if (st.tone) chip.dataset.tone = st.tone; else delete chip.dataset.tone;
-    const set = (cls, v) => { card.querySelector('.' + cls).textContent = v; };
+    card.setAttribute('aria-pressed', String(on));
+    card.setAttribute('aria-label', `${asset} ${st.label} — ${on ? '크게 보는 설비입니다' : '누르면 이 설비의 회로를 크게 봅니다'}`);
+    paintState(card, st);
+    const set = (cls, v) => { const n = card.querySelector('.' + cls); if (n.textContent !== v) n.textContent = v; };
+    set('hc-now', `${UI.t('plant.ts1')} ${fmt(t.TS1, 1)} ℃`);      // 작게 놓인 설비는 회로의 값 글자를 그리지 않고(작아서 읽히지 않는다) 머리 줄에 유온 하나를 보인다
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0) + ' ℃'); set('v-ce', fmt(t.CE, 0) + ' %'); set('v-fan', fmt(t.FanSpeedSP, 0) + ' %');
     set('v-load', `${fmt(t.LoadSP, 0)} % · ${fmt(t.EPS1, 1)} kW`); set('v-ps1', fmt(t.PS1, 0) + ' bar');
     const heat = tsColor(t.TS1);                                   // '' | hot(경보 조건 이상) | trip(보호 정지 기준 이상)
+    card.querySelector('.hc-now').classList.toggle('hot', !!heat);
     card.querySelector('.v-ts1').classList.toggle('hot', !!heat);
     card.querySelector('.s-ts1').classList.toggle('hot', !!heat);
     card.querySelector('.hc-glow').classList.toggle('on', !!heat);
@@ -796,35 +835,26 @@ function renderScada() {
     fan.classList.toggle('stop', !spinning);
     fan.style.setProperty('--spin', (spinning ? (2.4 * 60 / Math.max(10, t.FanSpeedSP)).toFixed(2) : 2) + 's');
   }
-  // 정보 띠: 고른 설비의 상태 한 줄과 가는 길 하나(열린 사건이 있으면 그 처리 건, 없으면 결함 시뮬레이션)
-  const asset = state.selectedAsset, u = units[asset];
-  if (!u) { info.innerHTML = ''; return; }
-  const s = u.status, d = detOf(asset), st = unitState(s, d), inc = openIncidentFor(asset);
-  const html = `<h3>${UI.icon('factory')}${esc(asset)}<small>${esc(UI.status(s.mode))}</small></h3>` +
-    `<span class="state"><i class="dot"${st.tone ? ` data-tone="${st.tone}"` : ''}></i>${esc(st.label)}</span>` +
-    (inc ? `<button type="button" class="btn-cv open" data-open-incident="${esc(inc.id)}">처리 건에서 보기${UI.icon('arrow-right')}</button>`
-      : `<button type="button" class="btn-cv open" data-go-tab="scenario">결함 시뮬레이션 열기${UI.icon('arrow-right')}</button>`) +
-    // 한 줄: 감지기가 지금 보는 것 · 열린 처리 건이 있는가. 처리 건의 상태 이름은 여기서 따로 부르지 않는다(처리 건 화면이 정본)
-    `<p>감지기 <b>${esc(phaseText(d))}</b> · ${inc ? '<b>열린 처리 건이 있습니다</b>' : '열린 처리 건 없음'}${s.cmdId ? ` · ${esc(UI.t('plant.lastCmd'))} <b>${esc(UI.status(s.result))}</b>` : ''}</p>`;
-  if (info._html !== html) { info.innerHTML = html; info._html = html; }
+  renderIncList();
 }
-// 고른 설비의 경보로 열린 처리 건: 몇 건이고 그중 몇 건이 진행 중인지 한 줄 + 처리 건 화면으로 가는 링크 하나.
-// 처리 건의 목록 · 상태 이름 · 색은 처리 건 화면이 정본이다 — 이 화면에 그 목록의 사본을 두지 않는다(같은 것을 두 곳 · 두 이름으로 보이지 않는다)
+/* 캔버스 아래 한 줄(#incList): 고른 설비의 지금 상태(운전 모드 · 감지기가 보는 것)와 그 설비의 경보로 열린 처리 건 수, 그리고 가는 길 하나.
+   처리 건의 목록 · 상태 이름 · 색은 처리 건 화면이 정본이다 — 이 화면에 그 목록의 사본을 두지 않는다(같은 것을 두 곳 · 두 이름으로 보이지 않는다).
+   가는 길: 진행 중인 건이 있으면 그 처리 건, 끝난 건만 있으면 처리 건 화면, 한 건도 없으면 결함 시뮬레이션 */
 function renderIncList() {
-  const box = $('#incList');
-  const sig = JSON.stringify([state.selectedAsset, state.incidents.map(i => [i.id, i.asset, i.terminal]), state.incidentError, state.incidentsRead]);
-  if (box.dataset.sig === sig) return;
-  box.dataset.sig = sig;
-  const asset = state.selectedAsset, rows = asset ? incidentsFor(asset) : state.incidents, open = rows.filter(i => !i.terminal);
-  if (state.incidentError && !state.incidents.length) { box.innerHTML = UI.errorBlock('처리 건 목록을 읽지 못했습니다', state.incidentError); return; }
-  if (!state.incidentsRead) { box.innerHTML = '<div class="skeleton" style="height:44px"></div>'; return; }
-  const go = open.length ? `data-open-incident="${esc(open[0].id)}"` : 'data-go-tab="instances"';
-  box.innerHTML = `<div class="case-link"><span>${UI.icon('inbox')}<span>${asset ? `${esc(asset)}의 경보로` : '경보로'} 열린 처리 건 <b class="num">${rows.length}</b>건${rows.length ? ` · ${esc(UI.t('inst.running'))} <b class="num">${open.length}</b>` : ''}</span></span>` +
-    (rows.length ? `<button type="button" class="btn" data-variant="link" ${go}>${open.length ? '진행 중인 처리 건 열기' : '처리 건에서 보기'}${UI.icon('arrow-right')}</button>`
-      : `<button type="button" class="btn" data-variant="link" data-go-tab="scenario">${esc(UI.t('nav.scenario'))}에서 결함 넣기${UI.icon('arrow-right')}</button>`) + '</div>';
+  const box = $('#incList'), asset = state.selectedAsset, u = state.plant && state.plant.units[asset];
+  let html;
+  if (!u) html = '';
+  else if (state.incidentError && !state.incidents.length) html = UI.errorBlock('처리 건 목록을 읽지 못했습니다', state.incidentError);
+  else {
+    const s = u.status, d = detOf(asset), rows = incidentsFor(asset), open = rows.filter(i => !i.terminal);
+    const cases = !state.incidentsRead ? '처리 건을 읽는 중' : `${esc(asset)}의 경보로 열린 처리 건 <b class="num">${rows.length}</b>건${rows.length ? ` · ${esc(UI.t('inst.running'))} <b class="num">${open.length}</b>` : ''}`;
+    const go = !state.incidentsRead ? '' : open.length ? UI.goLink('instances', '진행 중인 처리 건 열기', `data-open-incident="${esc(open[0].id)}"`) : rows.length ? UI.goLink('instances', '처리 건 열기') : UI.goLink('scenario', `${UI.t('nav.scenario')}에서 결함 넣기`);
+    html = `<div class="hc-line"><span class="hc-sel"><b>${esc(asset)}</b>${esc(UI.status(s.mode))} · 감지기 ${esc(phaseText(d).replace(/^감지기 /, ''))}${s.cmdId ? ` · ${esc(UI.t('plant.lastCmd'))} ${esc(UI.status(s.result))}` : ''}</span><span class="hc-cases">${cases}</span>${go}</div>`;
+  }
+  if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
 
-/* ---------------- 실시간 모니터링: 설비 카드 셋 + 추이 판(uPlot) — 디자인 기준 5-5 ----------------
+/* ---------------- 실시간 모니터링: 설비 카드 셋 + 추이(uPlot) — 디자인기준 5-7 ----------------
    값은 포털이 1초마다 읽는 설비 상태(refreshFast)를 이 창을 연 뒤부터 모은 것이다(설비마다 최근 30분). 더 긴 기간과 다른 패널은 Grafana 에서 본다.
    한 차트에 값 하나. 기준선: 감지기의 이상 패턴 조건(GET /api/detector/patterns 의 조건식에서 그 태그의 문턱)을 주황 점선으로, 유온의 보호 정지 기준을 빨강 점선으로 긋는다. */
 const TREND_TAGS = { TS1: ['plant.ts1', '℃', 1, [40, 70]], CE: ['plant.ce', '%', 0, [0, 100]], PS1: ['plant.ps1', 'bar', 1, [120, 200]], FS1: ['plant.fs1', 'L/min', 2, [0, 12]], VS1: ['plant.vs1', 'mm/s', 2, [0, 2.5]] };
@@ -862,16 +892,16 @@ function trendBuild() {
   $('#trendTitle').textContent = `${TREND.asset} 추이`;
   if (TREND.chart) { TREND.chart.destroy(); TREND.chart = null; }
   box.innerHTML = '';
-  const width = Math.floor(box.getBoundingClientRect().width) - 16;
+  const width = Math.floor(box.getBoundingClientRect().width);
   if (width <= 0 || !h) return;      // 가려진 화면 — 다시 보일 때(ResizeObserver) 그린다
-  const axis = { stroke: ink, font: '12px "Pretendard Variable", sans-serif', grid: { stroke: '#eef0f4', width: 1 }, ticks: { show: false }, gap: 8 };
+  const axis = { stroke: ink, font: '12px "Pretendard Variable", sans-serif', grid: { stroke: cs.getPropertyValue('--border').trim(), width: 1 }, ticks: { show: false }, gap: 8 };
   const two = n => String(n).padStart(2, '0');
   TREND.chart = new uPlot({ width, height: 300, legend: { show: false }, padding: [14, 8, 0, 4],
     cursor: { points: { size: 8, width: 2 }, y: false, drag: { x: false, y: false } },
     scales: { x: { time: true }, y: { range: (u, min, max) => [Math.min(base[0], ...lines.map(l => l.value), min ?? base[0]), Math.max(base[1], ...lines.map(l => l.value), max ?? base[1])] } },
     axes: [{ ...axis, values: (u, ts) => ts.map(t => { const d = new Date(t * 1000); return `${two(d.getHours())}:${two(d.getMinutes())}:${two(d.getSeconds())}`; }), space: 90 }, { ...axis, size: 46, values: (u, vs) => vs.map(x => String(x)) }],
     series: [{}, { label: UI.t(TREND_TAGS[TREND.tag][0]), stroke: brand, width: 2, points: { show: false }, spanGaps: true,
-      fill: u => { const g = u.ctx.createLinearGradient(0, u.bbox.top, 0, u.bbox.top + u.bbox.height); g.addColorStop(0, 'rgba(79,70,229,.16)'); g.addColorStop(1, 'rgba(79,70,229,0)'); return g; } }],
+      fill: u => { const g = u.ctx.createLinearGradient(0, u.bbox.top, 0, u.bbox.top + u.bbox.height); g.addColorStop(0, 'rgba(23,23,23,.10)'); g.addColorStop(1, 'rgba(23,23,23,0)'); return g; } }],      // 선 아래 옅은 면도 무채색(색은 기준선 — 상태 — 에만)
     hooks: { draw: [u => { const ctx = u.ctx; ctx.save(); lines.forEach(l => { const y = Math.round(u.valToPos(l.value, 'y', true)); ctx.strokeStyle = l.color; ctx.lineWidth = 1.5 * devicePixelRatio; ctx.setLineDash([6 * devicePixelRatio, 5 * devicePixelRatio]); ctx.beginPath(); ctx.moveTo(u.bbox.left, y); ctx.lineTo(u.bbox.left + u.bbox.width, y); ctx.stroke(); }); ctx.restore(); }] },
   }, [h.t, h[TREND.tag]], box);
   trendLegend();
@@ -901,7 +931,7 @@ $('#monUnits').addEventListener('click', e => { const b = e.target.closest('.uni
 // 차트와 작은 추이 선은 담긴 칸의 너비를 따라간다(메뉴 줄을 접거나 창 크기를 바꿀 때, 가려졌다 다시 보일 때)
 const trendResize = new ResizeObserver(() => {
   if (state.tab !== 'trends' || !window.uPlot) return;
-  const box = $('#trendChart'), w = Math.floor(box.getBoundingClientRect().width) - 16;
+  const box = $('#trendChart'), w = Math.floor(box.getBoundingClientRect().width);
   if (w > 0) { if (TREND.chart) TREND.chart.setSize({ width: w, height: 300 }); else if (TREND.asset) trendBuild(); }
   for (const [a, sp] of Object.entries(TREND.sparks)) { const host = document.querySelector(`#monUnits [data-asset="${a}"] [data-f="spark"]`), sw = host ? Math.floor(host.getBoundingClientRect().width) : 0; if (sw > 0) sp.setSize({ width: sw, height: 44 }); }
 });
@@ -914,17 +944,17 @@ function renderTrends() {
     return;
   }
   notice.hidden = true;
-  const units = state.plant.units, cells = Object.keys(VALUE_CELLS);
+  const units = state.plant.units;
   if (!box.querySelector('.unit')) {
-    box.innerHTML = Object.keys(units).map(a => `<article class="unit" data-asset="${esc(a)}">${unitCardHtml(a, { cells, spark: true, pick: true })}<a class="unit-go" href="#/instances" hidden><span>처리 건에서 보기</span>${UI.icon('arrow-right')}</a><p class="unit-go-none muted">열린 처리 건 없음</p></article>`).join('');
+    box.innerHTML = Object.keys(units).map(monCardHtml).join('');
     trendResize.observe(box);
   }
   for (const [a, u] of Object.entries(units)) {
     const card = box.querySelector(`[data-asset="${a}"]`); if (!card) continue;
-    paintUnitCard(card, a, u, cells);
-    const inc = openIncidentFor(a), go = card.querySelector('.unit-go');
-    go.hidden = !inc; if (inc) go.dataset.openIncident = inc.id; else delete go.dataset.openIncident;
-    card.querySelector('.unit-go-none').hidden = !!inc;      // 카드 셋의 높이선이 같게: 링크가 없는 카드는 같은 자리에 「열린 처리 건 없음」
+    paintMonCard(card, a, u);
+    // 아래 고정 줄은 그 설비에 열린 처리 건이 있을 때만 나타난다(「열린 처리 건 없음」 줄로 빈 자리를 지키지 않는다 — 1-4)
+    const inc = openIncidentFor(a), foot = card.querySelector(':scope > footer'), go = foot.querySelector('.go');
+    foot.hidden = !inc; if (inc) go.dataset.openIncident = inc.id; else delete go.dataset.openIncident;
   }
   if (!TREND.asset || !units[TREND.asset]) trendPick(Object.keys(units)[0]);
   // 차트 부품(uPlot)과 감지기의 경보 조건은 이 화면을 처음 열 때 한 번 싣는다. 실패하면 까닭을 차트 자리에 적고 다음에 열 때 다시 싣는다
@@ -944,7 +974,7 @@ function trendSparks() {
       const w = Math.floor(host.getBoundingClientRect().width); if (w <= 0) continue;
       TREND.sparks[a] = new uPlot({ width: w, height: 44, cursor: { show: false }, legend: { show: false }, select: { show: false }, padding: [4, 0, 4, 0], scales: { x: { time: false }, y: { range: (u, min, max) => [Math.min(40, min ?? 40), Math.max(TS_MAX, max ?? TS_MAX)] } }, axes: [{ show: false }, { show: false }],
         series: [{}, { stroke: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(), width: 1.6, points: { show: false },
-          fill: u => { const g = u.ctx.createLinearGradient(0, 0, 0, u.bbox.height); g.addColorStop(0, 'rgba(79,70,229,.18)'); g.addColorStop(1, 'rgba(79,70,229,0)'); return g; } }] }, [[], []], host);
+          fill: u => { const g = u.ctx.createLinearGradient(0, 0, 0, u.bbox.height); g.addColorStop(0, 'rgba(23,23,23,.10)'); g.addColorStop(1, 'rgba(23,23,23,0)'); return g; } }] }, [[], []], host);
     }
     TREND.sparks[a].setData([h.t.slice(-90), h.TS1.slice(-90)]);
   }
@@ -991,7 +1021,7 @@ async function refreshSlow() {
     try { state.incidents = requireList(await getJ(API.process + '/api/incidents'), '사건 목록'); state.incidentError = ''; state.incidentsRead = true; } catch (e) { state.incidentError = e.message; }
     if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed || labFollow) await refreshBiz();
     await refreshTodoCount();
-    if (state.tab === 'incidents') { renderScada(); renderIncList(); }
+    if (state.tab === 'incidents') renderScada();
   } finally { refreshSlow.busy = false; }
 }
 renderStack(); pollHealth(); refreshFast(); refreshSlow(); UI.loadPatterns();

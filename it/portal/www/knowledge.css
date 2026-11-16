@@ -2,79 +2,95 @@
    그리는 코드: hitl.js(문서 등록 · 조치 방법) · enterprise.js(지식 지도) · fabric.js · legacyMeaning.js(업무 DB 표 정의)
    부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다(디자인기준.md 4절). 이 파일에는 이 무리의 화면 배치만 두고, 숫자 대신 2절의 이름을 쓴다. 다른 무리의 규칙을 덮어쓰지 않는다. */
 
-/* ================================================================= 지식: 조치 방법 · 문서 등록 · 데이터 원천(hitl.js · legacyMeaning.js · fabric.js)
-   부품은 키트와 portal-kit.css 의 것(.split · .rows · .panel · .seg · .result · .stream-phases · .fold · .table · .stats · .chips)을 쓰고, 여기는 이 화면들의 배치만 둔다 */
+/* 이 무리의 상세 칸 · 판: 선으로 가른 절(.panel-sec)의 위아래 여백. 키트는 두 칸 틀의 오른쪽 칸에서 좌우 여백만 0 으로 두므로, 글이 선에 붙지 않게 위아래를 --pad-card 로 준다 */
+:is(#view-skills, #view-knowledge, #view-fabric) { --sec-y: 20px; }      /* = 2-4 의 --pad-card 값(상세 칸 안에서는 키트가 --pad-card 를 0 으로 둔다) */
+:is(#view-skills, #view-knowledge, #view-fabric) .panel-sec { padding-block: var(--sec-y); }
+:is(#view-skills, #view-knowledge, #view-fabric) .panel-sec.pane-fold { padding-block: 6px; }
 
-/* ---------------- 조치 방법: 목록 + 상세(디자인기준 5-1) ---------------- */
-.sk-side { display: grid; gap: 16px; align-content: start; }
+/* ================================================================= 조치 방법: 목록 + 상세(디자인기준 5-1)
+   왼쪽 = 거르기(세그먼트) + 목록(키트 .pane-side · .rows), 오른쪽 = 상세(공통 상세 머리 .pane-head → 절차 → 대상 고장 유형 · 승인 역할 → 「연결된 지식」 접기) */
 #skillKinds:empty { display: none; }
-.sk-side .rows { max-height: calc(100dvh - var(--top-h) - 220px); min-height: 240px; overflow: auto; }
-.sk-side .rows > .row .badge { justify-self: end; }
-.sk-row { padding: 14px; }
-.sk-row > .empty, .sk-none > .empty { border: 0; }
-.sk-none { padding-top: 20px; }
-.sk-head { justify-content: flex-start; gap: 16px; }
-.sk-head > div { min-width: 0; }
-.sk-head p { color: var(--foreground); max-width: 68ch; }
-.sk-ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--muted); color: var(--foreground); }
-.sk-ic .ic { width: 16px; height: 16px; }
-.sk-steps { display: grid; gap: 8px; margin: 0; padding-left: 22px; list-style: decimal; font-size: var(--fs-body); line-height: 22px; color: var(--foreground); }
+.sk-steps { display: grid; gap: var(--gap-item); margin: 0; padding-left: 22px; list-style: decimal; font-size: var(--fs-body); line-height: 22px; color: var(--foreground); max-width: var(--read-w); }
 .sk-steps li::marker { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.sk-steps .badge { margin-left: 4px; vertical-align: 1px; }
-.sk-fold { padding-block: 4px; }
-.sk-fold > .fold { border-top: 0; }
-.sk-fold .fold-body { padding-left: 0; }
-.sk-form > .alert { margin-bottom: 16px; }
-#skAlert:not(:empty) { padding: 16px var(--pad-card) 0; }
+.sk-ref { margin-left: 6px; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }      /* 그 단계의 근거 절 번호 */
+#skillDetail .kv { max-width: var(--read-w); }
+.sk-form > .alert { margin-bottom: var(--gap-block); }
+#skAlert:not(:empty) { margin-bottom: var(--gap-block); }
 .sk-msg:empty { display: none; }
-.sk-msg { display: block; padding: 0 var(--pad-card) 12px; }
-#skillDetail .kv .btn[data-variant="link"] { height: auto; padding: 0; }
-@media (max-width: 1000px) {
-  .sk-side .rows { max-height: 300px; }
+.sk-msg { display: block; padding-top: 12px; }
+@media (max-width: 640px) {      /* 좁은 폭: 이름과 더 보기를 한 줄에 둔다(키트는 머리 왼쪽 아이콘 칸만큼 더 보기를 들여 다음 줄로 내린다 — 이 무리의 머리에는 아이콘이 없다) */
+  :is(#view-skills, #view-fabric) .pane-head { flex-wrap: nowrap; }
+  :is(#view-skills, #view-fabric) .pane-title { flex-basis: auto; }
+  :is(#view-skills, #view-fabric) .pane-acts { margin-left: auto; }
 }
 
-/* ---------------- 문서 등록(디자인 기준 5-3): 단계 줄 → 지금 단계의 내용 하나 → 등록된 문서 ---------------- */
+/* ================================================================= 문서 등록(디자인기준 5-3): 보기 탭 → 단계 줄 → 지금 단계의 내용 하나 → 적재한 문서 */
 .doc-panel > .panel-sec:first-of-type, .doc-panel > :not(.doc-phases):first-child { border-top: 0; }
-.doc-phases { padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; row-gap: 8px; font-size: var(--fs-sm); }
+.doc-phases { padding: 4px 0 var(--gap-block); border-bottom: 1px solid var(--border); flex-wrap: wrap; row-gap: 8px; font-size: var(--fs-sm); }
 .doc-phases .phase { font-size: var(--fs-sm); }
 .doc-phases .phase i { width: 20px; height: 20px; }
-/* 사람이 할 차례인 단계는 돌지 않는다: 제품색 고리 안에 점 하나 */
-.doc-phases .phase[data-state="now"][data-idle] i { animation: none; border: 2px solid var(--primary); }
-.doc-phases .phase[data-state="now"][data-idle] i::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
 .doc-panel #manualPick, .doc-panel #ddlPick { border-top: 0; }
 .doc-panel > div > .panel-sec:first-child, .doc-panel > div > .mprev > .panel-sec:first-child, .doc-panel > div > .mprev.panel-sec { border-top: 0; }
 .doc-panel .fieldset > [role="group"] { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
-.doc-panel .field > .chips { margin-top: 2px; }
 .doc-panel .field > :is(select, input:not([type="file"]):not([type="checkbox"]), textarea) { max-width: 100%; min-width: 0; }
-.doc-panel .result-main .muted { font-weight: 450; font-size: var(--fs-sm); margin-left: 6px; }
+.doc-panel .result-main .muted { font-weight: 400; font-size: var(--fs-sm); margin-left: 6px; }
 .doc-panel .result-sub { max-width: 72ch; }
-.doc-live { display: grid; gap: 10px; margin-top: 14px; }
+.doc-panel .result + .alert { margin-top: var(--gap-block); }
+/* 올리기 단계: 길 둘(세그먼트)과 목록 위 한 줄 */
+.doc-review-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.doc-review-bar > .muted { font-size: var(--fs-sm); }
+/* 제공 문서 줄(hitl.js renderProvided · index.html #providedDdl): 고르기 칸 │ 제목 · 아래 파일 이름 │ 상태 알약 │ … │ [원문 보기] │ 꺾쇠.
+   제목 칸의 폭을 정해 두어 상태 알약이 모든 줄에서 같은 세로선에 서고, [원문 보기]와 꺾쇠는 줄의 오른쪽 끝에 선다(키트 .row-act 가 줄 안에 겹쳐 놓는다) */
+.doc-prov .row-act > .row { grid-template-columns: minmax(0, 26rem) max-content; padding-right: 132px; }
+.doc-prov[data-pickable] .row-act > .row { padding-left: 48px; }
+.doc-prov .row > .row-title { grid-column: 1; grid-row: 1; }
+.doc-prov .row > .row-meta { grid-column: 1; grid-row: 2; }
+.doc-prov .row > .doc-state { grid-column: 2; grid-row: 1 / span 2; align-self: center; justify-self: start; display: inline-flex; }
+.doc-prov .row > .doc-state:empty { display: none; }
+.doc-prov .row > .doc-go { position: absolute; right: 12px; top: 50%; translate: 0 -50%; display: grid; color: var(--muted-foreground); }
+.doc-prov .row:hover > .doc-go { color: var(--foreground); }
+.doc-go .ic { width: 16px; height: 16px; }
+.doc-prov .row-act > .doc-view { right: 40px; padding: 4px 6px; border-radius: 6px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); white-space: nowrap; }
+.doc-prov .row-act > .doc-view:hover { color: var(--foreground); text-decoration: underline; }
+.doc-prov .row-act > .doc-pick { left: 12px; right: auto; z-index: 1; width: 24px; height: 24px; display: grid; place-items: center; cursor: pointer; }      /* 줄(button) 위에 놓여야 눌린다 — 줄보다 먼저 적혀 있다 */
+.doc-prov .row:disabled { cursor: progress; }
+.doc-prov .row:disabled:not([aria-current="true"]) { opacity: .55; }
+/* 한 번에 적재(본: process-gpt-vue3 KbUploadZone): 고른 수와 단추 한 줄 → 「n / 전체 처리」 + 진행 막대 + 문서별 단계 타임라인 */
+.doc-batch-bar > .muted { margin-right: auto; font-size: var(--fs-sm); }
+.doc-batch { display: grid; gap: 12px; margin-top: var(--gap-block); padding: var(--pad-card); border: 1px solid var(--border); border-radius: var(--r-card); --pad-card: 20px; }
+.doc-batch-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: var(--fs-body); }
+.doc-batch-head > .muted { font-size: var(--fs-sm); }
+.doc-batch .steps { margin-top: 4px; }
+.doc-batch .form-foot { margin-top: 0; }
+/* 다음 할 일(적재가 끝난 자리): 단추 하나 + 다른 화면으로 가는 링크 */
+.doc-next { gap: var(--gap-block); }
+/* AI 추출 · 검토 */
+.doc-live { display: grid; gap: 10px; margin-top: var(--gap-block); }
 .doc-live[hidden] { display: none; }
 .doc-progress { display: flex; align-items: center; gap: 12px; }
 .doc-progress[hidden] { display: none; }
 .doc-progress .progress { flex: 1; height: 6px; }
-.doc-folds { margin-top: 14px; }
+.doc-folds { margin-top: var(--gap-block); }
 .doc-folds:empty { display: none; }
 .doc-links { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
 .doc-links .field { flex: 1 1 240px; max-width: 360px; }
 #manualSourceText { margin-top: 10px; }
 .doc-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-sm); line-height: 22px; color: var(--foreground); max-height: 360px; overflow: auto; }
-.doc-valid { margin-top: 14px; display: grid; gap: 8px; }
+.doc-valid { margin-top: var(--gap-block); display: grid; gap: 8px; }
 .doc-valid > p { margin: 0; display: flex; align-items: flex-start; gap: 10px; font-size: var(--fs-sm); color: var(--foreground); }
 .doc-valid > p > .tag { flex: none; margin-top: 1px; }
 .doc-issues { display: grid; gap: 4px; margin: 0; padding-left: 20px; font-size: var(--fs-sm); line-height: 21px; color: var(--foreground); }
 ul.doc-issues { list-style: disc; } ol.doc-issues { list-style: decimal; }
 /* 검토: 목록 + 상세 */
-.doc-review-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.doc-split { grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 16px; }
+.doc-split { grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); }
 .doc-split > .rows { max-height: 640px; overflow: auto; }
 .doc-split > .rows > .row[hidden], .doc-pane[hidden] { display: none; }
 .doc-split > .rows > .row > [data-item-tag] { justify-self: end; }
 .doc-split > .rows > .row > [data-item-tag]:empty { display: none; }
 .doc-detail { min-width: 0; }
-.doc-pane .panel-head h2 { font-size: var(--fs-body); line-height: 24px; }
+.doc-pane .panel-head h2 { font-size: var(--fs-lg); line-height: 24px; }
 .doc-pane .panel-sec > h3 .num { margin-left: auto; }
-.doc-quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--border); background: var(--muted); border-radius: 0 8px 8px 0; }
+.doc-quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--border); background: var(--muted); border-radius: 0 var(--r-in) var(--r-in) 0; }
 .doc-quote blockquote { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-sm); line-height: 22px; color: var(--foreground); max-height: 260px; overflow: auto; }
 .doc-quote figcaption { margin-top: 6px; font-size: var(--fs-xs); color: var(--muted-foreground); }
 .doc-steps { display: grid; gap: 12px; margin: 0; padding-left: 22px; list-style: decimal; }
@@ -82,8 +98,8 @@ ul.doc-issues { list-style: disc; } ol.doc-issues { list-style: decimal; }
 .doc-steps textarea { width: 100%; }
 .doc-steps .badge { margin-top: 6px; }
 .doc-steps .fold { border-top: 0; }
-.doc-steps .fold > summary { padding: 6px 0 2px; font-size: var(--fs-xs); }
-.doc-sub { grid-column: 1 / -1; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted); display: grid; gap: 10px; }
+.doc-steps .fold > summary { min-height: 0; padding: 6px 0 2px; font-size: var(--fs-xs); }
+.doc-sub { grid-column: 1 / -1; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-in); background: var(--muted); display: grid; gap: 10px; }
 .doc-sub[hidden] { display: none; }
 .doc-sub > p { margin: 0; }
 .doc-sub > p:empty { display: none; }
@@ -95,27 +111,34 @@ ul.doc-issues { list-style: disc; } ol.doc-issues { list-style: decimal; }
 .doc-compare p { margin: 0; }
 .doc-check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-body); font-weight: 500; cursor: pointer; }
 .doc-check + .muted { margin: 6px 0 0; }
-.doc-confirm > .form-foot { margin-top: 12px; }
 .doc-msg { border-top: 0; padding-top: 0; }
 .doc-msg:has(#manualMsg:empty):has(#manualDone:empty) { display: none; }
 .doc-msg > p { margin: 0; font-size: var(--fs-sm); }
 .doc-msg > p:empty { display: none; }
 #manualCommitView .lv-steps, #manualCommitSteps { margin-top: 10px; }
 #manualCommitView { border-top: 0; }
-#manualSources { margin-top: 12px; }
-#manualSources > .fold, #manualHistory > .fold, .doc-tpl { border-top: 0; }
-#manualSources .fold-body > .muted, #manualHistory .fold-body > .muted { margin: 8px 0 0; }
+/* 적재한 문서 · 적재한 표 정의: 줄마다 이름 · 넣은 내용 · 오른쪽 끝 더 보기(올렸을 때만 보인다 — 4-4). 검토하는 동안(2 · 3단계)에는 보이지 않는다 — 지금 단계의 내용 하나만 */
+#manualUpload:is([data-stage="2"], [data-stage="3"]) ~ #manualHistory, #ddlUpload[data-stage="2"] ~ #ddlHistory { display: none; }
+.doc-sec-tools { display: inline-flex; align-items: center; gap: 8px; }
+.doc-loaded .row-act > .row { padding-right: 60px; }
+.doc-loaded .row[data-static] { cursor: default; }
+.doc-loaded .row[data-static]:hover { background: none; }
+.doc-loaded .row-act > .row > .tag { justify-self: end; }
+.doc-loaded .row-act:has(> .dropdown-menu [aria-expanded="true"]) { z-index: 10; }      /* 열린 메뉴가 아래 줄에 가리지 않게 */
+@media (hover: hover) {
+  .doc-loaded .row-act > .dropdown-menu { opacity: 0; transition: opacity .12s; }
+  .doc-loaded .row-act:is(:hover, :focus-within) > .dropdown-menu, .doc-loaded .row-act > .dropdown-menu:has([aria-expanded="true"]) { opacity: 1; }
+}
 #manualHistoryMsg:empty, #ddlHistoryMsg:empty { display: none; }
-#manualHistoryMsg, #ddlHistoryMsg { margin: 8px 0 0; }
+#manualHistoryMsg, #ddlHistoryMsg { margin: 8px 0 0; font-size: var(--fs-sm); }
 #view-knowledge .table td { white-space: normal; overflow-wrap: break-word; }
 #view-knowledge .table td:first-child { min-width: 180px; }      /* 좁은 폭에서 파일 이름이 글자 단위로 쪼개지지 않게 — 표는 옆으로 민다(.table-container) */
-#view-knowledge .table td.num, #view-knowledge .table th.num { text-align: right; white-space: nowrap; }
 .doc-acts { text-align: right; white-space: nowrap !important; width: 1%; }
-.doc-acts .btn + .btn { margin-left: 6px; }
-.doc-acts .btn { vertical-align: middle; }
-tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
-.doc-undo { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
-/* 이 문서로 답할 수 있는 질문 */
+#view-knowledge [data-doc-pane] .alert { margin-bottom: 12px; }
+/* 카드 · 옆 판 · 대화 안의 표: 첫 칸 · 끝 칸의 옆 여백(옮겨 오기 전부터 이 파일에 있던 공통 규칙 — 다른 무리의 표에도 걸린다. portal-kit.css 로 갈 규칙이다) */
+:is(.card, .turn, dialog) .table :is(td, th):first-child { padding-left: 12px; }
+:is(.card, .turn, dialog) .table :is(td, th):last-child { padding-right: 12px; }
+/* 옆 판 안: 이 문서로 답할 수 있는 질문 */
 .doc-q-title { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: var(--fs-body); font-weight: 600; }
 .doc-q-sum { margin: 0 0 4px; font-size: var(--fs-sm); color: var(--foreground); }
 .doc-q { padding: 12px 0; border-top: 1px solid var(--border); }
@@ -123,20 +146,17 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
 .doc-q h4 .tag { flex: none; margin-top: 1px; }
 .doc-q-answer { margin: 4px 0 2px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--foreground); max-width: 76ch; }
 .doc-q .fold { border-top: 0; }
-.doc-q .fold > summary { padding: 4px 0; font-size: var(--fs-xs); }
+.doc-q .fold > summary { min-height: 0; padding: 4px 0; font-size: var(--fs-xs); }
 .doc-q-more { margin: 14px 0 6px; padding-top: 12px; border-top: 1px solid var(--border); font-size: var(--fs-sm); font-weight: 600; }
 .doc-q-form { max-width: 720px; margin-top: 8px; }
 .doc-q-form .form-foot { margin-top: 8px; }
 /* 업무 DB 표 정의: 표마다 출처 시스템과 열 고르기 */
 .ddl-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 12px; }
-.ddl-table { padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.ddl-table { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-in); display: grid; gap: 10px; align-content: start; min-width: 0; }
 .ddl-name { margin: 0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .ddl-name .muted { font-size: var(--fs-xs); }
 .ddl-cols { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--fs-xs); }
 .ddl-cols label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.doc-tpl { margin-top: 28px; }
-.doc-tpl .chips { margin-bottom: 10px; }
-.doc-tpl .chip[aria-pressed="true"] { border-color: var(--border); color: var(--foreground); background: var(--accent); }
 #legacyMeaning:empty { display: none; }
 /* 업무 DB 표의 뜻 후보(legacyMeaning.js) */
 .lm-body { display: grid; gap: 12px; }
@@ -149,54 +169,42 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
   .doc-split > .rows { max-height: 280px; }
 }
 @media (max-width: 640px) {
-  .doc-phases { padding-inline: 14px; }
   .doc-phases .phase { gap: 5px; font-size: var(--fs-xs); }
   .doc-phases .phase + .phase::before { width: 8px; margin: 0 5px; }
   .doc-panel .form-foot .btn { flex: 1 1 auto; }
+  /* 좁은 폭: 제목 → 상태 → 파일 이름을 세로로 쌓고, 꺾쇠 대신 [원문 보기]만 줄 끝에 둔다 */
+  .doc-prov .row-act > .row { grid-template-columns: minmax(0, 1fr); padding-right: 84px; }
+  .doc-prov .row > .row-title, .doc-prov .row > .row-meta { white-space: normal; overflow-wrap: anywhere; }
+  .doc-prov .row > .doc-state { grid-column: 1; grid-row: 2; margin: 2px 0; }
+  .doc-prov .row > .row-meta { grid-row: 3; }
+  .doc-prov .row > .doc-go { display: none; }
+  .doc-prov .row-act > .doc-view { right: 8px; }
 }
 
-/* ---------------- 데이터 원천(fabric.js): 지금 상태(숫자 타일) → 보기 셋 ---------------- */
-.fab-stats { margin-bottom: var(--gap-head); }
-.fab-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.fab-stats .stat-note[data-tone="danger"] { color: var(--st-fail-ink); }
-.fab-stats .stat-note[data-tone="warn"] { color: var(--st-warn-ink); }
-.fab-body { margin-top: 16px; display: grid; gap: 16px; }
-.fab-out h3, .fab-body .panel-sec > h3 { font-size: var(--fs-sm); font-weight: 600; }
+/* ================================================================= 데이터 원천(fabric.js): 보기 탭 셋 — 원천과 표(목록 + 상세) · 두 DB 묶어 보기(조건 + 결과) · 지식 지도 ↔ 표 · 열 */
+.fab-body { margin-top: var(--gap-block); display: grid; gap: var(--gap-block); }
+.fab-line { margin: 0; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }      /* 그 탭의 지금 상태 한 줄 */
+.fab-line[data-tone="danger"] { color: var(--st-fail-ink); }
+.fab-line[data-tone="warn"] { color: var(--st-warn-ink); }
+.fab-out h3, .fab-body .panel-sec > h3 { font-size: var(--fs-sm); font-weight: 500; }
 .fab-answer > h3 { margin: 14px 0 8px; }
 .fab-answer > h3:first-child { margin-top: 0; }
 .fab-answer > .alert, .fab-answer > .muted { margin-bottom: 10px; }
+.fab-out > h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: var(--gap-block) 0 8px; color: var(--foreground); }
+.fab-out > h3:first-child { margin-top: 0; }
 #fabricView .table td { white-space: normal; overflow-wrap: break-word; vertical-align: top; min-width: 96px; }
-#fabricView h3 > .btn { margin-left: 8px; vertical-align: 1px; }
 #fabricView .table td small { display: block; font-size: var(--fs-xs); color: var(--muted-foreground); }
-.fab-body .panel-sec > .muted { margin: 0 0 10px; }
-.fab-body .sec-head { margin: 8px 0 0; }
-#view-knowledge [data-doc-pane] .alert { margin-bottom: 12px; }
-
-/* ================================================================= 문서 등록 — 제공 문서 고르기(hitl.js renderProvided · index.html #providedDdl)
-   목록은 키트의 .rows 그대로다. 줄(누르면 그 문서를 올린다)마다 오른쪽 끝에 [원문 보기] 링크가 하나씩 놓인다(키트 .row-act) */
-.doc-prov .row > .tag, .doc-prov .row > [data-prov-tag] { justify-self: end; }
-.doc-prov .row:disabled { cursor: progress; }
-.doc-prov .row:disabled:not([aria-current="true"]) { opacity: .55; }
-.doc-prov .row > [data-prov-tag]:empty { display: none; }
-@media (max-width: 640px) {
-  .doc-prov .row-title, .doc-prov .row-meta { white-space: normal; overflow-wrap: anywhere; }
-  .doc-prov .row-act > .row { padding-right: 84px; }
-}
-#manualPick > .doc-review-bar, #ddlPick > .doc-review-bar { margin-bottom: 12px; }
-:is(.step-card, .card, .turn, tr.doc-open, dialog) .table :is(td, th):first-child { padding-left: 12px; }
-:is(.step-card, .card, .turn, tr.doc-open, dialog) .table :is(td, th):last-child { padding-right: 12px; }
-
-/* 데이터 원천 › 원천과 표: 왼쪽 목록은 원천마다 묶은 표 이름 한 줄씩 */
-.fab-tables > .row { padding-block: 7px; }
-.fab-tables > .row > .row-ic { grid-row: auto; margin-top: 0; }
-.fab-tables > .rows-group { display: flex; justify-content: space-between; gap: 8px; }
-.fab-tables > .rows-group .muted { font-size: var(--fs-xs); font-weight: 450; }
+.fab-body .panel-sec > .muted { margin: 0 0 10px; font-size: var(--fs-sm); }
+/* 원천과 표: 왼쪽 목록은 원천마다 묶은 표 이름 한 줄씩 */
+.fab-tables > .row { min-height: 36px; padding-block: 7px; }
+.fab-tables > .row > .row-ic { grid-row: auto; }
 
 /* ================================================================= 지식 지도 (6-3)
-   머리 띠 아래를 가득 쓰는 두 칸: 왼쪽 큰 캔버스(Cytoscape 가 그린다 — enterprise.js) + 오른쪽 상세 판(고른 항목, 372px, 세로 선 하나로 가른다).
+   머리 띠 아래를 가득 쓰는 캔버스(Cytoscape 가 그린다 — enterprise.js). 오른쪽 판(340px, 세로 선 하나로 가른다)은 항목이나 묶음을 골랐을 때만 열린다(.kg[data-side]).
    점 · 선 · 글자의 색과 크기는 enterprise.js kgStyle 이 갖는다(캔버스에 그리므로 CSS 가 닿지 않는다). 여기는 틀의 배치와 캔버스 안 도구 · 오른쪽 판의 모양만 정한다 */
 #ontoNote { margin: 0; padding: 10px 24px; border-bottom: 1px solid var(--border); }
-.kg { display: grid; grid-template-columns: minmax(0, 1fr) 372px; height: var(--cvs-h); min-height: 520px; }
+.kg { display: grid; grid-template-columns: minmax(0, 1fr); height: var(--cvs-h); min-height: 520px; }
+.kg[data-side] { grid-template-columns: minmax(0, 1fr) 340px; }
 .kg-canvas { height: 100%; min-width: 0; }
 .kg-map { position: absolute; inset: 0; z-index: 0; }
 /* 캔버스 안 도구 줄 · 묶음 조각 뒤에 바탕색을 옅게 깔아, 확대해서 점과 선이 그 밑으로 와도 도구가 읽힌다(이름은 그 자리에 쓰지 않는다 — enterprise.js kgLabels) */
@@ -223,15 +231,15 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
 .kg-next:hover { color: var(--cv-ink); background: rgb(15 23 42 / .09); }
 .kg-next[hidden] { display: none; }
 .kg-next .ic { width: 13px; height: 13px; }
-.kg-hint { position: absolute; left: 16px; right: 16px; bottom: 52px; z-index: 4; margin: 0; text-align: center; font-size: var(--fs-xs); line-height: 18px; color: var(--cv-ink-2); pointer-events: none; text-shadow: 0 0 6px var(--cv-bg), 0 0 2px var(--cv-bg); }
-/* 오른쪽 상세 판 */
+.kg-hint { position: absolute; left: 16px; right: 16px; bottom: 56px; z-index: 4; margin: 0; text-align: center; font-size: var(--fs-sm); line-height: 20px; color: var(--cv-ink-2); pointer-events: none; text-shadow: 0 0 6px var(--cv-bg), 0 0 2px var(--cv-bg); }
+/* 오른쪽 판 */
 .kg-side { display: flex; flex-direction: column; min-width: 0; overflow: auto; border-left: 1px solid var(--border); background: var(--card); }
-/* 안 골랐을 때: 목차(묶음 → 종류 → 항목 이름) */
-.kg-index-head h2 { margin-top: 0; font-size: var(--fs-body); line-height: 22px; }
+.kg-side[hidden] { display: none; }
 .kg-group .rel-more .chip, .rel-group .rel-more .chip { cursor: pointer; }
 .node-head.kg-group { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .node-head.kg-group h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
-.empty.kg-index-head { flex: none; width: auto; min-width: 0; margin: 20px 22px 4px; }      /* 키트의 빈 상태는 폭 100% 라 옆 여백만큼 판 밖으로 넘쳤다 */
+.node-head.kg-group ~ .rel-group { padding: 0 22px; }
+.node-head.kg-group + .rel-group { margin-top: 18px; }
 .node-head { position: sticky; top: 0; z-index: 1; padding: 22px 22px 16px; border-bottom: 1px solid var(--border); background: var(--card); }
 .node-head h2 { margin: 8px 0 0; font-size: var(--fs-lg); line-height: 26px; font-weight: 600; overflow-wrap: anywhere; }
 .node-head p { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--muted-foreground); overflow-wrap: anywhere; }
@@ -239,8 +247,8 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
 .node-head p.node-lead { margin-top: 8px; color: var(--foreground); }
 .node-sec { padding: 18px 22px; border-bottom: 1px solid var(--border); }
 .node-sec:last-child { border-bottom: 0; }
-.node-sec > h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: var(--fs-xs); line-height: 18px; font-weight: 600; color: var(--muted-foreground); }
-.node-sec > h3 .num { margin-left: auto; font-weight: 500; }
+.node-sec > h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: var(--fs-sm); line-height: 20px; font-weight: 500; color: var(--muted-foreground); }
+.node-sec > h3 .num { margin-left: auto; font-weight: 400; }
 .node-sec > p { margin: 0; }
 .node-sec.node-fold { padding-block: 4px; }
 .node-sec.node-fold .fold { border: 0; }
@@ -249,7 +257,7 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
 .node-sec .kv dt.mono { font-size: var(--fs-xs); }
 .node-sec .kv-more > summary { cursor: pointer; color: var(--foreground); }
 .node-sec .kv-more > div { margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--foreground); }
-.gtag { --c: var(--ring); display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); line-height: 18px; font-weight: 550; color: var(--foreground); }
+.gtag { --c: var(--ring); display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); line-height: 18px; font-weight: 500; color: var(--foreground); }
 .gtag i, .kg-side .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--ring)); flex: none; }
 .kg-side .chip { max-width: 100%; cursor: pointer; }
 .kg-side .chip > span:not(.num) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -263,12 +271,16 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
 .rel-more > summary::-webkit-details-marker { display: none; }
 .rel-more[open] > summary { display: none; }
 .rel-more > .chips { display: contents; }
+/* 옆 판: AI가 이 지도를 읽는 질의문 */
+.kg-tpl .chips { margin-bottom: 12px; }
+.kg-tpl .chip { cursor: pointer; }
+.kg-tpl .chip[aria-pressed="true"] { background: var(--accent); font-weight: 600; }
 /* 묶음 조각이 두 줄이 되는 폭에서는 안내 한 줄을 두지 않는다(조각과 겹친다) */
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
   .kg-hint { display: none; }
 }
 @media (max-width: 1000px) {
-  .kg { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .kg, .kg[data-side] { grid-template-columns: minmax(0, 1fr); height: auto; }
   .kg-canvas { height: 62vh; min-height: 440px; }
   .kg-side { max-height: none; border-left: 0; border-top: 1px solid var(--border); }
 }
@@ -276,13 +288,5 @@ tr.doc-open > td { padding: 16px 20px 18px; background: var(--muted); }
   .kg-canvas .canvas-bar > .cv-search { flex: 1 1 100%; }
   .kg-canvas .cv-search input { flex: 1; width: auto; min-width: 0; }
   .kg-canvas .canvas-bar > .kg-select { flex: 1; max-width: none; min-width: 0; }
-  .kg-stat, .kg-hint { display: none; }
+  .kg-stat { display: none; }
 }
-
-/* 문서 등록 2 · 3단계에서는 1단계의 파일 고르기 칸을 접는다 — 지금 단계의 내용 하나만 보인다 */
-#manualUpload[data-stage="2"] .mprev, #manualUpload[data-stage="3"] .mprev { border-top: 0; margin-top: 0; padding-top: 0; }
-
-/* ═════════ 옛 모양 — 이 무리 작업자가 마크업을 옮기면 지운다 ═════════ */
-/* 데이터 원천(fabric.js)의 결과 칸: 세로로 쌓는 틀과 그 안의 작은 제목 */
-.fab-body, #fabResult { display: flex; flex-direction: column; gap: 16px; }
-.fab-body h4 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0 8px; font-size: var(--fs-body); line-height: 22px; }

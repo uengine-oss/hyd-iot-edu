@@ -264,7 +264,7 @@
     // 그림을 놓는 일(맞춤 · 지금 단계로)은 캔버스에 크기가 있어야 한다. 가려진 화면에서 그리면 — 다른 화면에 있는 동안 흐름 목록이 다시 읽힐 때(관리 화면의
     // 기준으로 되돌리기 등) — 크기가 0 이라 bpmn-js 의 배율이 0 이 되고 다음 배율 계산이 0 으로 나눠 「흐름 그림을 그리지 못했습니다」로 끝났다.
     // 그림은 실어 두고, 캔버스가 보이는 순간 한 번 놓는다(opts.onPlace: 놓은 뒤에 정해지는 알림 — 긴 흐름이라 시작 쪽만 열었는지 — 을 화면이 다시 적는다)
-    const place = () => { if (opts.fit) openAt(D, opts.plain); else if (opts.plain) fitReadable(D); else focus(D); if (opts.onPlace) opts.onPlace(D); };
+    const place = () => { if (opts.fit) openAt(D, opts.plain); else if (opts.plain) fitReadable(D); else { focus(D); if (opts.crop) opts.crop(D); } if (opts.onPlace) opts.onPlace(D); };
     const sized = () => { const r = container.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     if (sized()) place();
     else {
@@ -288,14 +288,34 @@
       const F = host._flow, D = F && F.D; if (!D) return;
       const zb = ev.target.closest('[data-flow-zoom]');
       if (zb) zoomBy(D, zb.dataset.flowZoom === '1' ? 1 : -1);
-      else if (ev.target.closest('[data-flow-now]')) focus(D);
+      else if (ev.target.closest('[data-flow-now]')) { focus(D); if (F.crop) F.crop(D); }
       else if (ev.target.closest('[data-flow-fit]')) fit(D);
       else if (ev.target.closest('[data-flow-all]')) openFull(F.view, F.plain ? { plain: true, title: F.plain.title, mine: F.plain.mine, src: () => D.src } : F.opts);
     });
   }
   const zoomTools = `<button type="button" data-flow-zoom="-1" aria-label="축소" data-tooltip="축소" data-side="bottom">${UI.icon('minus')}</button><button type="button" data-flow-zoom="1" aria-label="확대" data-tooltip="확대" data-side="bottom">${UI.icon('plus')}</button>`;
 
-  /* 진행 길 캔버스. host 는 instances.js 가 한 건의 뼈대에 둔 칸 하나다. 같은 처리 건 · 같은 흐름 판본이면 상태 표시만 고친다 */
+  /* 처리 건의 흐름 그림(진행 상황 › 흐름 그림). host 는 instances.js 가 한 건의 뼈대에 둔 칸 하나다. 같은 처리 건 · 같은 흐름 판본이면 상태 표시만 고친다.
+     opts.autoHeight: 그림 칸의 높이를 지금 보이는 그림에 맞춘다(디자인기준 6-2 — 위아래가 비지 않게). 글자가 읽히는 배율로 지금 단계 둘레를 연 뒤(focus),
+     그 가로 범위 안에 있는 상자 · 갈림 · 이름표의 위 끝과 아래 끝만큼만 칸을 세운다(차선의 빈 띠를 그리려고 칸을 키우지 않는다). 창보다 길어지지 않게 묶고, 넘치는 쪽은 끌어서 · [전체 흐름]으로 본다 */
+  function cropTo(host, D) {
+    const box = host.querySelector('.flow-canvas'), bar = box && box.querySelector('.canvas-bar'); if (!box) return;
+    const canvas = D.viewer.get('canvas'), vb = canvas.viewbox(); if (!vb.outer.width || !vb.scale) return;
+    const z = vb.scale, x0 = vb.x, x1 = vb.x + vb.width; let top = Infinity, bottom = -Infinity;
+    D.viewer.get('elementRegistry').forEach(el => {
+      if (el.waypoints || el.x == null || !el.parent || /Lane$|Participant$|Process$|Collaboration$/.test(el.type || '')) return;
+      if (el.x + el.width < x0 || el.x > x1) return;
+      top = Math.min(top, el.y); bottom = Math.max(bottom, el.y + el.height);
+    });
+    if (!(bottom > top)) return;
+    const padTop = 48, padBottom = 44;                               // 위: 지금 단계의 꼬리표 자리, 아래: bpmn.io 표시 자리
+    const max = Math.max(280, Math.min(640, window.innerHeight - 220));
+    const stage = Math.min(max, Math.max(200, Math.round((bottom - top + padTop + padBottom) * z)));
+    box.style.height = (stage + (bar ? bar.offsetHeight : 0)) + 'px';
+    canvas.resized();
+    const o = canvas.viewbox().outer;
+    canvas.viewbox({ x: x0, y: top - padTop, width: o.width / z, height: o.height / z });
+  }
   function mount(host, view, opts = {}) {
     const def = view.definition || {}, pid = view.instance.proc_inst_id;
     if (!(def.activities || []).length) { host.innerHTML = UI.empty('그릴 흐름이 없습니다', '이 처리 건의 흐름 정의에 단계가 없습니다.', 'compact'); host._flow = null; return; }
@@ -307,22 +327,22 @@
       if (F.sig === sig || !F.D) { F.sig = sig; return; }      // 그리는 중이면 끝난 뒤 가장 새 view 로 칠한다
       const before = (F.D.marks.now || []).join('|');
       F.sig = sig; paint(F.D, view, opts.mine);
-      if ((F.D.marks.now || []).join('|') !== before) focus(F.D);
+      if ((F.D.marks.now || []).join('|') !== before) { focus(F.D); if (F.crop) F.crop(F.D); }
       return;
     }
     if (F && F.D) F.D.viewer.destroy();
-    F = host._flow = { key, sig, view, opts, D: null };
+    F = host._flow = { key, sig, view, opts, D: null, crop: opts.autoHeight ? D => cropTo(host, D) : null };
     host.innerHTML = `<div class="canvas flow-canvas"><div class="canvas-bar"><span class="cv-legend" data-flow-legend>${LEGEND}</span><span class="grow"></span>
       <span class="cv-tools" role="group" aria-label="그림 도구">${zoomTools}<button type="button" data-flow-now aria-label="지금 단계로" data-tooltip="지금 단계로" data-side="bottom">${UI.icon('locate-fixed')}</button><button type="button" class="wide" data-flow-all>${UI.icon('maximize-2')}전체 흐름</button></span></div>
-      <div class="bpmn" data-flow-stage role="img" aria-label="진행 길"></div><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div>`;
+      <div class="bpmn" data-flow-stage role="img" aria-label="흐름 그림"></div><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div>`;
     const stage = host.querySelector('[data-flow-stage]'), wait = host.querySelector('[data-flow-wait]');
-    draw(stage, view, { mine: opts.mine, onPick: id => host._flow && host._flow.opts.onPick && host._flow.opts.onPick(id) }).then(D => {
+    draw(stage, view, { mine: opts.mine, crop: F.crop, onPick: id => host._flow && host._flow.opts.onPick && host._flow.opts.onPick(id) }).then(D => {
       if (host._flow !== F) { D.viewer.destroy(); return; }    // 그리는 사이 다른 처리 건을 골랐다
       F.D = D; wait.remove();
-      if (F.view !== view || F.opts !== opts) { paint(D, F.view, F.opts.mine); focus(D); }
+      if (F.view !== view || F.opts !== opts) { paint(D, F.view, F.opts.mine); focus(D); if (F.crop) F.crop(D); }
     }).catch(err => {
       if (host._flow !== F) return;
-      console.error('[hydFlow] 진행 길을 그리지 못했습니다', key, err);
+      console.error('[hydFlow] 처리 건의 흐름 그림을 그리지 못했습니다', key, err);
       wait.innerHTML = UI.errorBlock('흐름 그림을 그리지 못했습니다', err.message, { retry: true });
       wait.querySelector('[data-retry]')?.addEventListener('click', () => { host._flow = null; mount(host, F.view, F.opts); });
     });

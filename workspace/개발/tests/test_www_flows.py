@@ -59,13 +59,18 @@ def test_다른_화면에서_만든_에이전트가_흐름_화면을_다시_열�
         served.close()
 
 
-def test_수업_단계의_제공_교대_매핑은_칸_줄_더하기_빼기도_잠겨_있다(world):
-    """한바퀴3 고침: 잠금이 입력 칸만 덮어, 칸 줄 더하기 단추로 시작 입력 줄을 더할 수 있었고(새 줄은 잠기지 않음) 등록에서야 거절됐다."""
+def test_제한_단계의_교대_흐름은_열린_칸만_그리고_저장해도_나머지_단계_설정이_그대로이며_머리의_주_단추_하나로_등록하고_시작한다(world):
+    """전에는 고칠 수 없는 칸 백여 개를 꺼진 입력 칸으로 그렸다. 지금은 읽기 전용 표에 서버가 연 칸(흐름 이름 · 초안 단계의 AI 에이전트)만 입력 칸이다 —
+    저장 함수가 화면에 없는 칸을 빈 값으로 읽어 시작 조건 · 갈림 조건을 지우지 않는지를 서버에 저장된 단계 설정으로 본다.
+    이어서 머리의 주 단추 하나([판본 등록] → [처리 건 시작])로 끝까지 가고, 시작한 결과(「처리 건 열기」)가 흐름 화면에 남는지 본다."""
     from playwright.sync_api import sync_playwright
     status, out = world.api('DELETE', f'/api/flows/{FLOW}?by={ME}')
     assert status in (200, 404), out
     status, view = world.api('POST', '/api/flows/import', {'xml': HANDOVER['xml'], 'file_name': 'shift-handover.bpmn'})
     assert status == 200, view
+    before = world.api('GET', f'/api/flows/{FLOW}')[1]['mapping']
+    status, agent = world.api('POST', '/api/agents', {'name': '내 인수인계 에이전트', 'goal': '교대 인계안을 쓴다', 'tools': ['neo4j']})
+    assert status in (200, 201), agent
     app = FastAPI()
     app.mount('/', StaticFiles(directory=WWW, html=True))
     served = Served(app)
@@ -80,15 +85,46 @@ def test_수업_단계의_제공_교대_매핑은_칸_줄_더하기_빼기도_�
     try:
         with sync_playwright() as p:
             b = p.chromium.launch()
-            page = b.new_page()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
             page.route('**/svc/**', answer)
             page.goto(served.url + '/index.html')
             open_screen(page, 'flows')
             page.locator(f"#flowList [data-open='{FLOW}']").first.click()
-            page.locator("#flowEditor select[data-agent='task_draft']").wait_for(timeout=15000)
-            adds = page.locator("#flowEditor section button[data-add], #flowEditor section button[data-del]")
-            assert adds.count() > 0 and all(adds.nth(i).is_disabled() for i in range(adds.count()))
-            assert page.locator("#flowEditor select[data-agent='task_draft']").is_enabled() and page.locator('#flowCheck').is_enabled()
+            pick = page.locator("#flowEditor select[data-agent='task_draft']")
+            pick.wait_for(timeout=15000)
+            # 입력 칸은 열린 것뿐이고 꺼진 칸이 없다
+            controls = page.locator('#flowEditor input, #flowEditor select, #flowEditor textarea, #flowEditor button')
+            assert page.locator('#flowEditor :disabled').count() == 0
+            assert controls.count() == 1 + page.locator('#flowEditor select[data-agent]').count() and page.locator('#flowEditor #flowName').count() == 1
+            # 흐름 그림은 상세 칸의 폭을 다 쓰고 창 바닥 가까이까지 찬다(위아래로 빈 띠가 남지 않는다)
+            box = page.evaluate("""() => { const c = document.querySelector('#flowPicture .flow-canvas').getBoundingClientRect(), p = document.querySelector('#flowsView').getBoundingClientRect();
+                return { left: Math.round(c.left - p.left), right: Math.round(p.right - c.right), bottom: c.bottom, vh: innerHeight }; }""")
+            assert box['left'] == 0 and box['right'] == 0 and box['vh'] - box['bottom'] <= 150, box
+            pick.select_option(agent['id'])
+            # 머리에 주 단추는 하나
+            primary = page.locator('#flowHead .pane-acts > button.btn:not([data-variant])')
+            assert primary.count() == 1
+            page.locator('#flowMore-trigger').click()
+            page.locator('#flowMore-menu [data-flow-check]').click()
+            page.wait_for_function("document.querySelector('#flowMsg').textContent.includes('단계 설정을 저장했습니다')", timeout=15000)
+            after = world.api('GET', f'/api/flows/{FLOW}')[1]['mapping']
+            want = json.loads(json.dumps(before))
+            want['tasks']['task_draft']['agent'] = agent['id']
+            assert after == want, '고르지 않은 칸의 단계 설정이 저장하면서 바뀌었다'
+            page.locator('#flowRegister').click()
+            page.locator('#flowStartOpen').wait_for(timeout=15000)
+            assert page.locator('#flowSteps').is_hidden()                          # 시작만 남은 흐름에는 단계 줄이 없다
+            assert page.locator('#flowHead .pane-acts > button.btn:not([data-variant])').count() == 1
+            page.locator('#flowStartOpen').click()
+            form = page.locator('#flowsStart')
+            form.locator("[data-sv='asset']").wait_for(timeout=15000)
+            for key, value in {'asset': 'HYD-01', 'shift_label': '다음 교대', 'as_of': '2026-11-16T18:00:00+09:00', 'work_notes': '정비 완료라고 전달받음'}.items():
+                form.locator(f"[data-sv='{key}']").fill(value)
+            form.locator('[data-go]').click()
+            link = page.locator('#flowNote a.go')
+            link.wait_for(timeout=15000)
+            assert link.get_attribute('href').startswith(f'#/instances/{FLOW}.') and not page.evaluate("document.getElementById('flowsStart').open")
+            assert page.evaluate('state.tab') == 'flows'                           # 화면을 떠나지 않고 결과가 이 화면에 남는다
             b.close()
     finally:
         served.close()

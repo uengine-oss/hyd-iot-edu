@@ -28,14 +28,17 @@
         plan?.code !== 'WO_CREATE' || !Array.isArray(plan.assets) || !plan.assets.length || !Array.isArray(orders) || orders.length !== plan.assets.length ||
         !orders.some(o => o.id === receipt.ref) || orders.some(o => !o.id || !o.asset || !plan.assets.some(a => a.asset === o.asset)) ||
         new Set(orders.map(o => o.asset)).size !== orders.length) return original;
-    return '원문 정비 범위 ' + orders.map(o => o.asset).join(', ') + ' 정비 요청 등록';
+    // 「정비 요청 … 등록 — 원문 정비 범위 HYD-02 정비 요청 등록」처럼 같은 말(정비 요청 등록)이 한 줄에 두 번 읽혔다 — 뒤쪽은 범위만 말한다(문서 원문이 정한 설비)
+    return '정비 범위 ' + orders.map(o => o.asset).join(', ') + '(문서 원문 기준)';
   }
   function reportSummary(report, values) {
     const original = report?.summary || report?.text;
     const receipt = values?.work_order, detail = receiptDetail(receipt);
     const expected = receipt?.ref && `정비 요청 ${receipt.ref} 등록 · 생산팀 공지 — ${receipt.detail}`;
-    return detail !== receipt?.detail && report?.refs?.work_order === receipt?.ref && original === expected
+    const text = detail !== receipt?.detail && report?.refs?.work_order === receipt?.ref && original === expected
       ? `정비 요청 ${receipt.ref} 등록 · 생산팀 공지 — ${detail}` : original;
+    // 「정비 요청 WO-… 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 정비 요청 등록」: 앞머리가 이미 말한 「정비 요청 등록」을 꼬리에서 되풀이하지 않는다(범위만 남긴다). 저장된 보고는 그대로다
+    return typeof text === 'string' ? text.replace(/^(정비 요청 \S+ 등록 .*— .+?) 정비 요청 등록$/, '$1') : text;
   }
   // 사건과 이 보고의 관계 한 줄: 보고가 사건을 닫았는가, 아니면 사건은 이미(앞 단계 — 정비 요청 등록 · 입고 등에서) 끝났는가
   function incidentMeaning(report, incident, read) {
@@ -104,25 +107,23 @@
       orderWarned.add(inst.proc_inst_id);
       console.error('[hydResultReport] 처리 건 응답에 flow_order 가 없어 같은 시각에 끝난 단계의 순서를 가를 수 없습니다', inst.proc_inst_id);
     }
-    // 결과 한 장(디자인 기준 5-2): 결과 문장 하나(판정 — 요약)와 그 아래 값 · 승인한 안. 흰 바탕, 왼쪽에 상태색 점 하나.
-    // 시스템이 한 일의 목록은 바로 아래 단계 기록이 보이므로 여기에 다시 그리지 않는다(한 가지는 한 곳에서)
+    // 결과 문장 하나(판정 — 요약)와 그 아래 값 · 승인한 안. 시스템이 한 일의 목록은 바로 아래 진행 상황이 보이므로 여기에 다시 그리지 않는다(한 가지는 한 곳에서)
     const summary = rep && rep.summary ? UI.idText(rep.summary) : !done && inst.status === 'RUNNING' ? '시스템이 실행하고 확인하는 중입니다. 끝나면 결과가 여기에 올라옵니다.' : '';
     const end = inst.end_label && inst.end_label !== label ? inst.end_label : '';
     const values = (rep && rep.values || []).map(x => `<dt>${e(UI.idText(x.name))}</dt><dd class="num"${x.ok === false ? ' data-bad' : ''}>${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}${x.limit != null ? ` <span class="muted">· 기준 ${e(x.limit)}</span>` : ''}${x.ok === false ? ' · 기준 밖' : ''}</dd>`).join('');
     const who = chosen || v.approved_by ? `<dt>승인한 안</dt><dd>${e(UI.idText(chosen || '–'))}${approver ? ` <span class="muted">· ${e(approver)}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}</span>` : ''}</dd>` : '';
-    // 결론 카드(키트 .step-card > .result): 상태 뱃지 + 보고 제목 → 결과 한 문장 → 값 · 승인한 안. 끝 이벤트의 이름이 「끝」처럼 뜻 없는 말이면 그 줄을 그리지 않는다
+    // 결과 카드(디자인기준 4-15 · 5-1): 머리 줄(보고 제목 · 상태 알약) → 결론 한 문장 → 근거(이어지는 설명 · 값 · 승인한 안) → 아래 고정 줄(다음 할 일로 가는 링크).
+    // 끝 이벤트의 이름이 「끝」처럼 뜻 없는 말이면 그 줄을 그리지 않는다
     const TONE = { ok: 'success', fail: 'danger', wait: 'accent', other: 'neutral' };
     const endLine = end && !UI.plainEnd(end) ? `처리 건은 「${end}」에서 끝났습니다.` : '';
-    // 긴 결과 문장은 첫 마디(결론)만 굵게 두고 나머지 근거(번호 · 계산 · 기다린 시간)는 그 아래 보통 글씨로 잇는다 — 글은 빼지 않는다
+    // 긴 결과 문장은 첫 마디(결론)만 크게 두고 나머지 근거(번호 · 계산 · 기다린 시간)는 그 아래 보통 글씨로 잇는다 — 글은 빼지 않는다
     const [lead, rest] = UI.leadRest(summary || label);
-    return `<section class="step-card case-result" data-tone="${tone}" aria-label="결과"><div class="result">
-      <div class="result-label">${UI.chipText(label, TONE[tone])}${e((rep && rep.title) || '결과')}</div>
-      <div class="result-main">${e(lead)}</div>
-      ${rest ? `<div class="result-sub" data-rest>${e(rest)}</div>` : ''}
-      ${endLine ? `<div class="result-sub">${e(endLine)}</div>` : ''}</div>
-      ${values || who ? `<dl class="kv">${values}${who}</dl>` : ''}
-      ${rep && rep.valuesError ? `<p class="muted" data-tone="danger">${e(rep.valuesError)}</p>` : ''}
-    </section>`;
+    // 다음 할 일(4-3): 실행이 업무 시스템에 남긴 거래(정비 요청 · 발주 · 입고 번호)가 있을 때만 그 기록으로 가는 길을 둔다
+    const receipts = ['work_order', 'purchase_order', 'goods_receipt'].some(k => v[k] && typeof v[k] === 'object' && (v[k].ref || v[k].id)) || Object.keys((v.result_report && v.result_report.refs) || {}).length > 0;
+    return UI.card({ cls: 'case-result', attrs: `data-tone="${tone}" aria-label="결과"`, title: e((rep && rep.title) || '결과'), chips: UI.chipText(label, TONE[tone]),
+      body: `<div class="result-main">${e(lead)}</div>${rest ? `<div class="result-sub" data-rest>${e(rest)}</div>` : ''}${endLine ? `<div class="result-sub">${e(endLine)}</div>` : ''}
+        ${values || who ? `<dl class="kv">${values}${who}</dl>` : ''}${rep && rep.valuesError ? `<p class="muted" data-tone="danger">${e(rep.valuesError)}</p>` : ''}`,
+      foot: receipts ? UI.goLink('process', '업무 시스템 기록에서 보기') : '' });
   }
   window.hydResultReport = { html, fromValues, receiptDetail, incidentMeaning };
 })();

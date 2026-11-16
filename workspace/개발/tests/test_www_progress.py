@@ -163,7 +163,7 @@ def test_진행_단계가_서버가_적는_대로_하나씩_채워지고_요청�
 
 
 def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_서버가_적는_단계를_채우다가_끝나면_지운_것을_보인다():
-    """관리 화면의 [기준으로 되돌리기](configBundle.js) — 확인 대화상자가 무엇을 지우고 무엇을 남기는지 말하고, 도는 동안 단계가 채워진다."""
+    """관리 화면의 [기준으로 되돌리기](configBundle.js) — 설정 줄에는 단추 하나뿐이고, 확인 창이 범위와 무엇을 지우고 무엇을 남기는지 말하며, 도는 동안 단계가 채워진다."""
     from playwright.sync_api import sync_playwright
     job, wire = Job(), Wire('/api/config/reset')
     served = _serve(job, '/api/config/reset')
@@ -177,18 +177,21 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             page.goto(served.url + '/index.html')
             _open(page, 'admin')
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
-            # 절의 글: 지우는 것에 지식(적재한 문서 · 표 정의 · 화면에서 만든 조치 방법)이 들어 있고, 남는 것은 한 줄이다
-            # 긴 목록은 접기 하나에 있다(처음에는 접혀 있고, 펴면 전부 보인다)
-            assert page.locator('#cfgResetWhat details').evaluate('d => d.open') is False
-            page.locator('#cfgResetWhat summary').click()
-            page.wait_for_function("document.querySelector('#cfgResetWhat').innerText.includes('남는 것 ')", timeout=3000)      # 접기가 펴지는 움직임이 끝난 뒤에 읽는다
+            # 설정 줄에는 이름 · 한 줄 설명 · 단추 하나만 있다 — 지우는 것 · 남는 것의 긴 목록과 범위 고르기는 누른 뒤의 확인 창에 있다
+            row = page.locator('#cfgResetSec')
+            assert '지우는 것' not in row.inner_text() and row.locator('select').count() == 0 and row.locator('button:visible').count() == 1
+            page.locator('#cfgReset').click()
+            assert page.locator('#cfgResetScope').input_value() == 'all' and page.locator('#cfgResetScope option').count() == 5      # 전체가 기본, 종류 하나만 되돌리는 범위 넷
             what = page.inner_text('#cfgResetWhat')
             assert '내가 적재한 문서의 지식' in what and '업무 DB 표 정의' in what and '화면에서 만든 조치 방법' in what
             assert page.locator('#cfgResetWhat [data-reset-keeps]').count() == 1 and '처리 건과 처리 건 기록' in page.inner_text('#cfgResetWhat [data-reset-keeps]')
-            page.locator('#cfgReset').click()
+            # 범위를 바꾸면 그 범위가 지우는 것만 말한다(전체의 목록이 남아 있지 않다)
+            page.select_option('#cfgResetScope', 'flows')
+            assert '내가 가져온 흐름과 판본' in page.inner_text('#cfgResetWhat') and '내가 적재한 문서의 지식' not in page.inner_text('#cfgResetWhat')
+            page.select_option('#cfgResetScope', 'all')
             said = page.inner_text('dialog.confirm-dialog')
             # 확인 창은 지우는 것과 남는 것(그리고 그것을 되돌리는 자리)을 둘 다 말한다. 지식은 이제 지우는 쪽이다 — 「남는 것」에서 문서 등록 · 조치 방법을 가리키지 않는다
-            lost, kept = said.split('남는 것:')
+            lost, kept = said.split('남는 것', 1)
             assert '내가 적재한 문서의 지식' in lost and '화면에서 만든 조치 방법' in lost and '업무 DB 표 정의' in lost
             assert '「지식 › 문서 등록」' not in said and '「지식 › 조치 방법」' not in said and '이 단추만으로 처음 상태가 되지는 않습니다' not in said
             assert '지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다' in kept and '「유압 설비 › 결함 시뮬레이션」의 [설비 초기화] · [업무 데이터 초기화]' in kept and '기본 제공 문서의 지식' in kept
@@ -231,7 +234,8 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
 
 
 def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서버가_적는_단계를_채우다가_멈추면_그_까닭을_보인다():
-    """관리 화면의 [불러오기](configBundle.js) — 길면 3분인 일이다. 도는 동안 단계가 채워지고, 서버가 멈추면 진행 목록 자리에 서버의 까닭이 남는다."""
+    """관리 화면의 [파일 골라 불러오기](configBundle.js) — 길면 3분인 일이다. 파일을 고르면 무엇이 들었는지 말하고 확인을 받은 뒤 보낸다.
+    도는 동안 단계가 채워지고, 서버가 멈추면 진행 목록 자리에 서버의 까닭이 남는다."""
     from playwright.sync_api import sync_playwright
     job, wire = Job(), Wire('/api/config/import')
     served = _serve(job, '/api/config/import')
@@ -246,11 +250,22 @@ def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서�
             page.goto(served.url + '/index.html')
             _open(page, 'admin')
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
-            page.set_input_files('#cfgFile', {'name': '출발본.json', 'mimeType': 'application/json', 'buffer': json.dumps(bundle, ensure_ascii=False).encode()})
-            page.wait_for_function("document.querySelector('#cfgImportMsg').textContent.includes('역할 1개')", timeout=8000)
-            # 파일의 요약: 서버가 내 것(flows · deployments)과 기본 제공 흐름(provided_flows)을 갈라 센 수를 그대로 말한다
-            assert page.inner_text('#cfgImportMsg') == '출발본.json — 역할 1개 · 함께 담긴 기본 제공 흐름 3개(지금 배포된 판본)'
-            page.locator('#cfgImport').click()
+            # 줄의 동작은 단추 하나다(파일 칸은 보이지 않는다 — 단추가 파일 고르기 창을 연다)
+            row = page.locator('#configBundleView .setting', has=page.locator('#cfgImport'))
+            assert row.locator('button:visible').count() == 1 and not page.locator('#cfgFile').is_visible()
+            with page.expect_file_chooser() as chooser:
+                page.locator('#cfgImport').click()
+            pick = {'name': '출발본.json', 'mimeType': 'application/json', 'buffer': json.dumps(bundle, ensure_ascii=False).encode()}
+            chooser.value.set_files(pick)
+            page.wait_for_selector('dialog.confirm-dialog[open] form', timeout=8000)
+            # 파일의 요약: 서버가 내 것(flows · deployments)과 기본 제공 흐름(provided_flows)을 갈라 센 수를 그대로 말한다 — 줄 아래와 확인 창에
+            what = '출발본.json — 역할 1개 · 함께 담긴 기본 제공 흐름 3개(지금 배포된 판본)'
+            assert page.inner_text('#cfgImportMsg') == what and what in page.inner_text('dialog.confirm-dialog')
+            # 취소하면 아무것도 보내지 않고, 불러오지 않았다는 것이 줄 아래에 남는다
+            page.locator("dialog.confirm-dialog button[value='cancel']").click()
+            page.wait_for_function("document.querySelector('#cfgImportMsg').textContent.includes('불러오지 않았습니다')", timeout=8000)
+            assert job.bodies == []
+            page.set_input_files('#cfgFile', pick)                                # 같은 파일을 다시 골라도 다시 묻는다
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             job.do(lambda p: (p.plan(plan), p.start('validate'), p.done('validate'), p.start('check')))
             _wait_steps(page, '#cfgImportResult', ['ok:' + plan[0][1], 'run:' + plan[1][1]] + ['wait:' + label for key, label in plan[2:]])
@@ -414,6 +429,7 @@ def test_판단_채점_화면은_항목이_끝날_때마다_서버가_적는_결
             page.locator("#evalView [data-act='run']").click()
             job.do(lambda p: (p.plan([('golden', '정답표 읽기'), ('knowledge', '지식 상태 읽기')]), p.start('golden')))
             _wait_steps(page, "#evalView [data-r='live']", ['run:정답표 읽기', 'wait:지식 상태 읽기'])
+            assert '아직 고른 채점 실행이 없습니다' not in page.inner_text('#evalView .io-out')      # 도는 동안에는 「아직 없음」 문장을 실시간 상자 아래에 두지 않는다
             [body] = job.bodies
             assert (body['path'], body['by'], body['repeats']) == ('decide', 'user:me', 1) and progress.read(body['request_id'])['state'] == 'running'
             job.do(lambda p: (p.done('golden', '항목 1개'), p.start('knowledge'), p.done('knowledge'),

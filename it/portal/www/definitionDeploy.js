@@ -1,5 +1,6 @@
 /* U4: 흐름 판본 배포 · 비교 · 되돌리기 — 경보가 여는 "운영 판본"을 바꾼다. 열린 처리 건은 자기 판본으로 끝난다.
-   자리: 흐름 화면에서 고른 흐름의 「판본 · 배포」 절(index.html view-flows 의 #definitionDeployPanel)과, 화면 아래의 「경보별 운영 흐름」 표(#deployRoutes).
+   자리: 흐름 화면에서 고른 흐름의 「판본 · 배포」 접기(index.html view-flows 의 #definitionDeployPanel — 배포할 차례일 때만 흐름 화면이 펼친다)와,
+        화면 머리의 더 보기 메뉴가 여는 옆 판의 「경보별 운영 흐름」 표(#deployRoutes).
    어느 흐름을 보일지는 흐름 화면(flows.js)이 목록에서 고른 것이다 — select(정의). 이 파일에는 흐름을 고르는 칸이 없다.
    읽는 때: 흐름 화면에 들어올 때마다(hydTabs.onShow) 정의 · 배포 상태를 새로 읽는다. 다른 화면에 있을 때는 읽지 않는다. 흐름 화면이 판본을 등록하면 reload(정의)를 부른다.
    API: GET /api/process/definitions · GET …/{id}/versions · GET …/{id}/compare?from_version&to_version · POST …/{id}/deploy · POST …/{id}/rollback
@@ -13,7 +14,7 @@
   const tag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   // 경보 → 흐름 한 줄의 구분: 흐름 목록과 같은 말(기본 제공 / 내가 배포한 흐름)로, 서버가 준 표시로 가른다. 종류 표시라 상태색(초록)을 쓰지 않는다.
   // 주황은 상태다 — 기본 제공 흐름의 운영 판본이 처음 판본에서 바뀌어 있을 때
-  const kindTag = (label, tone) => `<span class="tag" data-plain${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
+  const kindTag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   // 기본 제공 흐름은 표시하지 않는다(모든 줄이 같은 값인 뱃지는 정보가 없다) — 내가 배포했거나 운영 판본이 바뀐 줄만 말한다
   const routeKind = x => x.reference || x.class_flow ? '' : /기준 흐름/.test(x.source || '') ? tag('기본 제공 · 운영 판본 바뀜', 'warn') : kindTag('내가 배포한 흐름', '');
 
@@ -145,7 +146,6 @@
     await loadDefinitions(status.id);
     message(doneText(out, status.name, '되돌림'));
   }));
-  // 고른 흐름의 절(#definitionDeployPanel)과 화면 아래의 경보별 운영 흐름(#deployRoutesBox) 두 자리의 누름을 한 곳에서 받는다
   function onClick(ev) {
     const deploy = ev.target.closest('[data-deploy]'), compare = ev.target.closest('[data-compare]'), refCompare = ev.target.closest('[data-refcompare]');
     if (refCompare) return action(() => runRefCompare(refCompare.dataset.refcompare));
@@ -158,5 +158,4 @@
     else if (ev.target.closest('[data-deploy-compare]')) action(runCompare);
   }
   $d('definitionDeployPanel').addEventListener('click', onClick);
-  $d('deployRoutesBox').addEventListener('click', onClick);
 })();

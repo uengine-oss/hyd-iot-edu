@@ -1,7 +1,19 @@
 /* trial.css — 판단 실험 무리의 배치: 규칙 판단(#/decision) · 조건별 손익(#/whatif) · 판단 채점(#/eval) · 에이전트 시험 비교(#/compare).
-   「조건 + 결과」 두 칸 틀(.io)은 portal-kit.css 에 있다. 그리는 코드: enterprise.js(규칙 판단) · whatif.js · evaluation.js · compare.js
+   「조건 + 결과」 두 칸 틀(.io — 본: shadcn/ui 예제 playground)은 portal-kit.css 에 있다. 그리는 코드: enterprise.js(규칙 판단) · whatif.js · evaluation.js · compare.js
    부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다(디자인기준.md 4절). 이 파일에는 이 무리의 화면 배치만 두고, 숫자 대신 2절의 이름을 쓴다. 다른 무리의 규칙을 덮어쓰지 않는다. */
 
+/* 결과 칸(5-2): 결론 → 숫자 넷 → 구역들 → 원문 접기. 두 칸 틀은 결과 칸의 좌우 여백을 0 으로 두는데(--pad-card), 구역(.panel-sec)의 위아래까지 0 이 되면
+   구역 머리가 앞 구역의 글에 붙는다 — 이 무리의 결과 칸은 구역 위아래를 카드 안 여백만큼 띄운다 */
+.trial .io-out .panel > .panel-sec { padding-block: 20px; }
+.trial .io-out .panel > .panel-sec:last-child { padding-bottom: 0; }
+.trial .io-out .panel > .turn-facts > div { padding-inline: 16px; }
+.trial .io-out .panel > .turn-facts > div:first-child { padding-left: 0; }
+.trial .io-out .panel > .panel-sec > .muted + .muted { margin-top: 4px; }
+/* 결과 맨 아래의 한 줄(평가 범위 · 채점 때 지식): 구역 선 없이 옅은 글 */
+.trial .io-out .trial-foot { padding-top: var(--gap-block); border-top: 1px solid var(--border); font-size: var(--fs-sm); color: var(--muted-foreground); }
+/* 조건 칸 아래 「지난 것」 목록의 줄: 아이콘 없이 이름 · 오른쪽 끝 값, 아래 보조 줄 */
+.trial .io-past .rows > .row { grid-template-columns: minmax(0, 1fr) auto; min-height: 52px; padding: 6px 10px; }
+.trial .io-past .rows > .row > .row-meta { grid-column: 1 / -1; }
+.trial .io-past .rows > .row > .num { font-size: var(--fs-sm); color: var(--muted-foreground); }
+/* 조치 후보 하나의 근거에 붙는 손익 표의 머리(whatif.js moneyHtml) */
 .opt-money { display: flex; align-items: baseline; gap: 8px; margin: 16px 0 8px; font-size: var(--fs-body); font-weight: 600; }
-
-

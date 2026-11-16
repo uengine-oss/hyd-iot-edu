@@ -93,3 +93,196 @@ def test_자세한_기록은_사람_id와_안쪽_이름을_그대로_보이지_�
                  '|단계 시작|시스템 · 원인 진단 · Claude Code|'):
         assert line in log, (line, log)
     assert '담당자 · 담당자' not in log
+
+
+# ---- 2026-11-16 process-gpt-lite 인스턴스 화면을 본으로 다시 짠 처리 건 화면(디자인기준 5-1): 실제 브라우저에서 잰 관계로 판정한다 ----
+def _iso(m, s=0):
+    return f'2026-11-16T05:{m:02d}:{s:02d}Z'
+
+
+CASE_DEF = {'processDefinitionId': 'cool', 'version': '1', 'processDefinitionName': '냉각 긴급 대응',
+            'roles': [{'name': 'AI 에이전트', 'endpoint': 'agent:cooling'}, {'name': '운전원', 'endpoint': 'role:operator'}, {'name': '프로세스', 'endpoint': 'sys:process'}],
+            'events': [{'id': 'Start', 'type': 'startEvent', 'name': '경보'}, {'id': 'E_end', 'type': 'endEvent', 'name': '처리 완료'}, {'id': 'E_rej', 'type': 'endEvent', 'name': '처리 완료'}],
+            'activities': [{'id': 'T_agent', 'name': '원인 진단', 'type': 'userTask', 'role': 'AI 에이전트', 'agent': 'agent:cooling'},
+                           {'id': 'T_approve', 'name': '운전원 승인', 'type': 'userTask', 'role': '운전원', 'tool': 'formHandler:approve', 'outputData': ['approval']},
+                           {'id': 'T_cmd', 'name': '냉각 명령', 'type': 'serviceTask', 'role': '프로세스', 'tool': 'incident:command'},
+                           {'id': 'R_ok', 'name': '결과 보고: 정상', 'type': 'serviceTask', 'role': '프로세스', 'tool': 'process:report'},
+                           {'id': 'R_rej', 'name': '결과 보고: 반려', 'type': 'serviceTask', 'role': '프로세스', 'tool': 'process:report'}],
+            'gateways': [{'id': 'G', 'name': '승인?', 'type': 'exclusiveGateway'}],
+            'sequences': [{'id': 'F1', 'source': 'Start', 'target': 'T_agent'}, {'id': 'F2', 'source': 'T_agent', 'target': 'T_approve'}, {'id': 'F3', 'source': 'T_approve', 'target': 'G'},
+                          {'id': 'F_ok', 'name': '승인', 'source': 'G', 'target': 'T_cmd'}, {'id': 'F_no', 'name': '반려', 'source': 'G', 'target': 'R_rej'},
+                          {'id': 'F5', 'source': 'T_cmd', 'target': 'R_ok'}, {'id': 'F6', 'source': 'R_ok', 'target': 'E_end'}, {'id': 'F7', 'source': 'R_rej', 'target': 'E_rej'}]}
+
+
+def _row(pid, name, status, minute, **more):
+    return {'proc_inst_id': pid, 'proc_inst_name': name, 'status': status, 'proc_def_id': 'cool', 'proc_def_version': '1', 'start_date': _iso(minute),
+            'end_date': None if status == 'RUNNING' else _iso(minute, 50), 'current_activity_ids': [], 'attention': None, 'end_label': '처리 완료', 'variables_data': [], **more}
+
+
+def _wi(wid, act, status, minute, **more):
+    names = {a['id']: a['name'] for a in CASE_DEF['activities']}
+    return {'id': wid, 'activity_id': act, 'activity_name': names[act], 'status': status, 'start_date': _iso(minute, 1), 'end_date': _iso(minute, 30) if status == 'DONE' else None,
+            'reached_at': _iso(minute, 1), 'generation': 0, 'agent_orch': 'system', 'agent_mode': None, 'user_id': 'sys:process', 'output': {}, 'log': '', **more}
+
+
+REPORT = {'outcome': '정상', 'level': 'ok', 'title': 'HYD-01 긴급 대응 결과', 'summary': '유온 정상 · 경보 해제', 'refs': {'work_order': 'WO-1'}}
+ROWS = [_row('mine', '냉각 긴급 대응 HYD-01', 'RUNNING', 40, current_activity_ids=['T_approve']),
+        _row('ai', '냉각 긴급 대응 HYD-02 — 이름이 아주 긴 처리 건도 목록 줄에서 상태 알약을 밀어내지 않는다', 'RUNNING', 41, current_activity_ids=['T_agent']),
+        _row('q1', '질문에 답하기', 'COMPLETED', 39, proc_def_id='ask_agent'),
+        *[_row(f'd{i}', f'끝난 건 {i}', 'COMPLETED', 30 - i, variables_data=[{'key': 'result_report', 'value': REPORT}]) for i in range(1, 6)]]
+VIEWS = {
+    'mine': [_wi('m1', 'T_agent', 'DONE', 40, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
+             _wi('m2', 'T_approve', 'IN_PROGRESS', 40, agent_orch=None, user_id='role:operator', tool='formHandler:approve')],
+    'd1': [_wi('a1', 'T_agent', 'DONE', 29, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
+           _wi('a2', 'T_approve', 'DONE', 29, agent_orch=None, user_id='role:operator', tool='formHandler:approve', output={'approval': '승인'}),
+           _wi('a3', 'T_cmd', 'DONE', 29, tool='incident:command'), _wi('a4', 'R_ok', 'DONE', 29, tool='process:report', output={'result_report': REPORT}),
+           _wi('a5', 'R_rej', 'CANCELLED', 29, reached_at=None, tool='process:report')],
+}
+TASK = {'id': 'm2', 'proc_inst_id': 'mine', 'proc_inst_name': '냉각 긴급 대응 HYD-01', 'activity_id': 'T_approve', 'activity_name': '운전원 승인', 'status': 'IN_PROGRESS',
+        'user_id': 'role:operator', 'tool': 'formHandler:approve', 'agent_orch': None, 'agent_mode': None, 'draft_status': None, 'inputs': {}, 'events': []}
+
+
+def _answer(route):
+    from urllib.parse import urlparse, parse_qs
+    u = urlparse(route.request.url); path, q = u.path, parse_qs(u.query)
+    api = path.split('/api/', 1)[1] if '/api/' in path else ''
+    if '/svc/process/' not in path:
+        return route.fulfill(json={})
+    if api == 'process/mode':
+        return route.fulfill(json={'mode': 'bpmn'})
+    if api == 'instances':
+        st = (q.get('status') or [''])[0]
+        return route.fulfill(json=[r for r in ROWS if not st or r['status'] == st])
+    if api.startswith('instances/'):
+        pid = api.split('/')[1]
+        row = next((r for r in ROWS if r['proc_inst_id'] == pid), None)
+        if not row or len(api.split('/')) > 2:
+            return route.fulfill(status=404, json={'detail': '없음'})
+        return route.fulfill(json={'instance': {**row, 'end_event': None if row['status'] == 'RUNNING' else 'E_end', 'variable_sources': {}, 'initial_variables': {}},
+                                   'definition': CASE_DEF, 'workitems': VIEWS.get(pid, VIEWS['d1']), 'events': [], 'approvals': [], 'reworks': [], 'attention': None,
+                                   'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+    if api.startswith('process/definitions/'):
+        return route.fulfill(json=CASE_DEF)
+    if api == 'todolist':
+        return route.fulfill(json=[TASK] if (q.get('proc_inst_id') or ['mine'])[0] == 'mine' else [])
+    if api == 'todolist/m2':
+        return route.fulfill(json=TASK)
+    if api == 'inbox/users':
+        return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': ['role:operator']}])
+    if api.startswith('flows/') and api.endswith('/bpmn'):
+        return route.fulfill(status=404, json={'detail': '그림 없음'})
+    if api in ('agents', 'skills', 'inbox/notifications'):
+        return route.fulfill(json=[])
+    return route.fulfill(json={})
+
+
+import contextlib
+
+
+@contextlib.contextmanager
+def _case_page(width=1440, height=900):
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': width, 'height': height})
+            errors = []
+            page.on('pageerror', lambda e: errors.append(str(e)))
+            page.route('**/svc/**', _answer)
+            page.goto(served.url + '/index.html#/instances')
+            page.wait_for_selector('#instList .row', timeout=20000)
+            page.wait_for_selector('#instDetail .case-progress .step', timeout=20000)
+            yield page
+            assert errors == [], errors
+            b.close()
+    finally:
+        served.close()
+
+
+def _pick(page, pid):
+    page.locator(f"#instList .row[data-inst='{pid}']").first.click()
+    page.wait_for_function("id => hydInstances.I.view && hydInstances.I.view.instance.proc_inst_id === id && document.querySelectorAll('#instRecord .step[data-step]').length > 0", arg=pid, timeout=15000)
+    page.wait_for_timeout(400)
+
+
+def test_목록은_거르기_단추_없이_내_차례_진행_중_처리_완료_세_묶음이고_처리_완료는_세_건과_더_보기다():
+    """lite ProjectList(L-7): 묶음의 차례가 거르기를 대신한다. 처리 완료는 사건 3건만 보이고(질문 같은 시스템 작업은 뒤로) 나머지는 숨은 건수를 단 「더 보기」 뒤에 있다.
+    줄 = 이름 · 오른쪽 끝 상태 알약 · 그 아래 보조 줄, 끝난 줄은 옅게."""
+    with _case_page() as page:
+        got = page.evaluate("""() => { const box = document.getElementById('instList'), r = e => e.getBoundingClientRect();
+          const kids = [...box.children].map(k => k.classList.contains('rows-group') ? 'G:' + k.firstChild.textContent : k.classList.contains('row') ? 'R:' + k.dataset.inst : 'M:' + k.innerText.trim());
+          const rows = [...box.querySelectorAll('.row')].map(row => { const t = r(row.querySelector('.row-title')), c = r(row.querySelector('.tag')), m = r(row.querySelector('.row-meta')), b = r(row);
+            return { id: row.dataset.inst, done: 'done' in row.dataset, pillRight: Math.round(b.right - c.right), sameLine: Math.abs((t.top + t.bottom) / 2 - (c.top + c.bottom) / 2) < 3, metaBelow: m.top >= t.bottom - 1, noOverlap: t.right <= c.left,
+              ink: getComputedStyle(row.querySelector('.row-title')).color }; });
+          return { kids, rows, filters: document.querySelectorAll('#view-instances .case-side .seg, #instTabs').length }; }""")
+        assert got['filters'] == 0
+        assert got['kids'] == ['G:내 차례', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 3건 더 보기'], got['kids']
+        assert all(r['sameLine'] and r['metaBelow'] and r['noOverlap'] for r in got['rows']), got['rows']
+        assert len({r['pillRight'] for r in got['rows']}) == 1, got['rows']                      # 상태 알약은 모든 줄에서 같은 세로선(오른쪽 끝)
+        open_ink = {r['ink'] for r in got['rows'] if not r['done']}; done_ink = {r['ink'] for r in got['rows'] if r['done'] and r['id'] != page.evaluate('hydInstances.I.sel')}
+        assert got['rows'][0]['done'] is False and len(done_ink) == 1 and not (open_ink & done_ink), (open_ink, done_ink)      # 끝난 줄은 옅게
+        page.click('#instList [data-done-more]')
+        page.wait_for_function("() => document.querySelectorAll('#instList .row[data-done]').length === 6")
+        assert page.locator('#instList [data-done-more]').count() == 0
+
+
+def test_한_건의_머리는_이름과_알약_보조_줄_진행_막대이고_내_차례일_때만_내가_할_일이_뜨며_끝난_건에는_결과와_다음_할_일_링크가_있다():
+    """lite InstanceHeader(L-3 · L-6 · L-13): 상태일 때만 나타난다 — 내 차례가 아니면 「내가 할 일」을 그리지 않고, 끝나지 않았으면 결과 카드를 그리지 않는다.
+    진행 막대는 센 값만큼만 찬다(시간으로 차오르지 않는다)."""
+    with _case_page() as page:
+        probe = """() => { const q = s => document.querySelector('#instDetail ' + s), r = e => e.getBoundingClientRect();
+          const title = r(q('.case-title > span')), pill = r(q('.case-title .tag')), meta = r(q('.case-meta')), bar = r(q('.case-bar .pbar')), fill = r(q('.case-bar .pbar > i')), menu = r(q('#caseMenu-trigger')), head = r(q('.case-head'));
+          return { pillAfterName: pill.left >= title.right && Math.abs((pill.top + pill.bottom) - (title.top + title.bottom)) < 8, metaUnder: meta.top >= title.bottom - 1, barUnder: bar.top >= meta.bottom, barWide: Math.round(bar.width) === Math.round(head.width),
+            fill: Math.round(fill.width / bar.width * 100), menuRight: Math.round(head.right - menu.right) <= 1, meta: q('.case-meta').innerText, pill: q('.case-title .tag').innerText,
+            turn: !!q('#todoPanel .turn'), result: !!q('#caseTop .case-result'), links: [...document.querySelectorAll('#instDetail a.go')].map(a => a.dataset.goTab),
+            order: ['.case-head', '#todoPanel', '#caseTop', '.case-progress'].map(s => Math.round(r(q(s)).top)) }; }"""
+        _pick(page, 'mine')
+        page.wait_for_selector('#todoPanel .turn #tdGo')
+        a = page.evaluate(probe)
+        assert a['pillAfterName'] and a['metaUnder'] and a['barUnder'] and a['barWide'] and a['menuRight'], a
+        assert a['pill'] == '내 차례' and a['turn'] and not a['result'], a
+        assert '1단계 끝남' in a['meta'] and '/' not in a['meta'].split('시작')[1], a      # 갈림 뒤가 정해지지 않았으면 「n/m」이라 하지 않는다
+        assert 0 < a['fill'] < 100, a
+        _pick(page, 'd1')
+        b = page.evaluate(probe)
+        assert b['pill'] == '정상' and b['result'] and not b['turn'], b
+        assert '4/4 단계' in b['meta'] and '걸림' in b['meta'] and b['fill'] == 100, b
+        assert b['links'] == ['process', 'flows'], b                                     # 다음 할 일: 업무 시스템 기록 · 흐름
+        assert b['order'][2] < b['order'][3], b                                          # 결과가 진행 상황보다 위
+
+
+def test_진행_상황의_단계_줄은_점이_한_세로선에_서고_줄을_누르면_옆_판이_열리며_흐름_그림은_세그먼트_뒤에서_위아래가_비지_않는다():
+    """lite StepTimeline · AgentActivity(L-4 · L-5): 기본은 단계 목록이고 그림은 「목록 / 흐름 그림」 뒤에 있다. 단계의 자세한 것은 줄을 눌러 여는 옆 판에 있다.
+    그림 칸의 높이는 보이는 그림의 높이를 따른다(6-2) — 맨 위 상자 위와 맨 아래 상자 아래에 상자 한 개 높이보다 큰 빈 띠가 없다."""
+    with _case_page() as page:
+        _pick(page, 'd1')
+        got = page.evaluate("""() => { const r = e => e.getBoundingClientRect(); const steps = [...document.querySelectorAll('#instRecord .step')];
+          return { marks: [...new Set(steps.map(s => Math.round(r(s.querySelector('.step-mark')).left)))], times: [...new Set(steps.filter(s => s.querySelector('.step-time')).map(s => Math.round(r(s.querySelector('.step-time')).right)))],
+            states: steps.map(s => s.dataset.state), subs: steps.every(s => { const h = r(s.querySelector('.step-head')), b = r(s.querySelector('.step-sub')); return b.top >= h.bottom - 1; }),
+            seg: [...document.querySelectorAll('#instDetail [data-case-view]')].map(b => [b.innerText.trim(), b.getAttribute('aria-pressed')]), path: document.getElementById('casePath').hidden }; }""")
+        assert len(got['marks']) == 1 and len(got['times']) == 1 and got['subs'], got
+        assert got['states'] == ['done', 'done', 'done', 'done', 'done', 'skip'], got              # 시작 · 단계 넷 · 가지 않은 단계(흐리게)
+        assert got['seg'] == [['목록', 'true'], ['흐름 그림', 'false']] and got['path'] is True, got
+        page.locator("#instRecord .step[data-step='a3'] [data-cr-sheet]").click()
+        page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open]')
+        page.wait_for_timeout(500)                                           # 판이 들어오는 움직임(0.22초)이 끝난 뒤에 잰다
+        sheet = page.evaluate("() => { const d = document.querySelector('dialog.sheet[data-cr-sheet-box]'), b = d.getBoundingClientRect(); return { title: d.querySelector('h2').innerText, right: Math.round(innerWidth - b.right), tall: Math.round(b.height) === innerHeight, tabs: [...d.querySelectorAll('[data-cr-tab]')].map(t => t.innerText.trim()) }; }")
+        assert sheet == {'title': '냉각 명령', 'right': 0, 'tall': True, 'tabs': ['내용', '받은 값 · 넘긴 값', '원문']}, sheet
+        page.click('dialog.sheet [data-cr-sheet-close]')
+        page.wait_for_function("() => !document.querySelector('dialog.sheet[data-cr-sheet-box]').open")
+        page.click("#instDetail [data-case-view='flow']")
+        page.wait_for_selector('#casePath .bpmn .djs-shape', timeout=20000)
+        page.wait_for_timeout(800)
+        flow = page.evaluate("""() => { const r = e => e.getBoundingClientRect(); const stage = r(document.querySelector('#casePath .bpmn'));
+          const boxes = [...document.querySelectorAll('#casePath .djs-shape')].filter(g => !g.classList.contains('is-lane') && g.getAttribute('data-element-id').indexOf('_label') < 0).map(r).filter(b => b.right > stage.left && b.left < stage.right && b.width > 0);
+          const top = Math.min(...boxes.map(b => b.top)), bottom = Math.max(...boxes.map(b => b.bottom)), h = Math.max(...boxes.map(b => b.height));
+          return { above: Math.round(top - stage.top), below: Math.round(stage.bottom - bottom), box: Math.round(h), list: document.getElementById('instRecord').hidden, inside: top >= stage.top && bottom <= stage.bottom }; }""")
+        assert flow['list'] is True and flow['inside'], flow
+        assert flow['above'] <= flow['box'] and flow['below'] <= flow['box'], flow
+        # 목록이 가려진 그림 보기에서도 상자를 누르면 그 단계의 옆 판이 열린다
+        page.locator('#casePath .djs-shape[data-element-id="T_cmd"]').click()
+        page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open]', timeout=5000)
+        assert page.locator('dialog.sheet[data-cr-sheet-box] h2').inner_text() == '냉각 명령' and page.locator('dialog.sheet[data-cr-sheet-box]').is_visible()

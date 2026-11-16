@@ -281,3 +281,86 @@ def test_긴_단계_문장은_괄호_밖의_첫_마디에서_결론과_근거로
     assert got[0][1].startswith('불합격 1개 반품. 펌프 축 씰 키트') and got[0][1].endswith('로트 LOT-PR-1)')
     assert len(got[0][0]) + len(got[0][1]) == len(long) - len(' — '), '가르는 표시만 빠지고 글은 그대로다'
     assert got[1] == [short, ''] and got[2] == [nocut, ''], '짧은 문장과 가를 자리가 없는 문장은 통째로 결론이다'
+
+
+# ---- 2026-11-16 process-gpt-lite 를 본으로 다시 짠 진행 상황(단계 타임라인)과 단계의 옆 판 ----
+def _live_view():
+    """AI 단계가 도구 하나를 끝내고 다음 도구를 부르는 중인 처리 건(다음 단계는 사람 승인)."""
+    t = lambda s: f'2026-11-16T07:00:{s:02d}Z'
+    wis = [{'id': 'wa', 'activity_id': 'T_agent', 'activity_name': '원인 진단', 'start_date': t(1), 'status': 'IN_PROGRESS', 'draft_status': 'STARTED',
+            'agent_orch': 'cliagents', 'agent_mode': 'COMPLETE', 'consumer': 'worker-1', 'user_id': 'agent:cooling', 'reached_at': t(1)}]
+    evs = [{'id': 'e1', 'todo_id': 'wa', 'proc_inst_id': 'c.1', 'event_type': 'task_started', 'job_id': 'run-1', 'timestamp': t(2), 'data': {'goal': '원인 진단'}},
+           {'id': 'e2', 'todo_id': 'wa', 'proc_inst_id': 'c.1', 'event_type': 'tool_usage_started', 'job_id': 'run-1', 'timestamp': t(3), 'data': {'tool': 'mcp__dmn__diagnose', 'tool_use_id': 'u1', 'input': {'asset': 'HYD-01'}}},
+           {'id': 'e3', 'todo_id': 'wa', 'proc_inst_id': 'c.1', 'event_type': 'tool_usage_finished', 'job_id': 'run-1', 'timestamp': t(4), 'data': {'tool': 'mcp__dmn__diagnose', 'tool_use_id': 'u1', 'output': '{"causes": []}'}},
+           {'id': 'e4', 'todo_id': 'wa', 'proc_inst_id': 'c.1', 'event_type': 'tool_usage_started', 'job_id': 'run-1', 'timestamp': t(5), 'data': {'tool': 'mcp__dmn__evaluate', 'tool_use_id': 'u2', 'input': {'asset': 'HYD-01'}}}]
+    v = view(wis, ['T_agent'], events=evs)
+    v['instance']['status'] = 'RUNNING'; v['instance']['end_date'] = None
+    v['workitems'][0].update(status='IN_PROGRESS', agent_orch='cliagents')
+    return v
+
+
+LIVE_JS = """const m = hydRecord.build(DATA, { agents: [], people: [] }, []); const s = m.steps.find(x => x.type === 'agent');
+  const p = hydRecord.rowParts(s, m, new Set(), new Set()); const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim();
+  out({ live: s.live, state: p.state, busy: p.busy, row: strip(p.row), body: strip(p.body), folds: (p.body.match(/<details class="line-fold"/g) || []).length,
+        names: [UI.toolName('mcp__dmn__diagnose'), UI.toolName('mcp__dmn__evaluate')], tabs: hydRecord.detailGroups(s, [], m).map(g => g.key) })"""
+
+
+def test_AI가_일하는_동안_그_단계_줄에_지금_부르는_도구가_보이고_줄_아래에_끝낸_일이_한_줄씩_붙는다():
+    """DoD 15 — 도는 고리나 「처리 중」 글만 두지 않는다: 일이 끝나기 전에 단계 이름과 부른 도구 이름이 화면에 나온다. 끝낸 호출의 줄은 누르면 원문이 펼쳐지는 접기다."""
+    got = run(FILES, LIVE_JS, _live_view())
+    done, now = got['names']
+    assert got['live'] is True and got['state'] == 'now' and got['busy'] is True, got      # 기계가 실제로 일하는 중 — 맥박
+    assert got['row'].startswith('원인 진단') and now in got['row'], got                    # ① 지금 하는 일 한 줄: 단계 이름 + 부르는 도구 이름
+    assert done in got['body'] and '마쳤습니다' in got['body'] and now in got['body'], got   # ② 방금 한 일이 한 줄씩
+    assert got['folds'] == 1, got                                                          # 끝낸 호출 하나 = 원문을 펴는 접기 하나(하는 중인 호출은 아직 원문이 없다)
+    assert 'judge' not in got['tabs'], got                                                 # 아직 내지 않은 결론을 옆 판에 그리지 않는다
+
+
+def test_사람을_기다리는_단계는_멈춘_내_차례이고_끝난_단계의_줄은_누가와_결론_한_마디다():
+    """디자인기준 1-5 · 4-11: 맥박은 기계가 실제로 일할 때만이다 — 사람을 기다리는 단계는 주황 점의 멈춘 「내 차례」다. 끝난 단계의 보조 줄은 「누가 · 결론 한 마디」이고,
+    문장이 이미 그 이름으로 시작하면 이름을 앞에 또 적지 않는다(「설비 제어 · 설비 제어에 …」로 읽혔다)."""
+    wis = [{'id': 'w1', 'activity_id': 'T_cmd', 'activity_name': '냉각 명령', 'tool': 'incident:command', 'start_date': T, 'end_date': T, 'reached_at': T},
+           {'id': 'w2', 'activity_id': 'T_ok', 'activity_name': '운전원 승인', 'tool': 'formHandler:select_card', 'start_date': T, 'status': 'IN_PROGRESS', 'agent_orch': None, 'user_id': 'role:operator', 'reached_at': T}]
+    v = view(wis, ['T_cmd', 'T_ok'], variables=[('commands', [{'code': 'FAN', 'param': 'fan_pct', 'value': 100}])])
+    v['definition']['activities'][1]['type'] = 'userTask'
+    v['instance']['status'] = 'RUNNING'; v['instance']['end_date'] = None
+    got = run(FILES, """const m = hydRecord.build(DATA, { agents: [], people: [] }, []); const strip = h => h.replace(/<[^>]+>/g, '|').replace(/\\|+/g, '|');
+      const by = id => m.steps.find(x => x.w && x.w.id === id); const mine = new Set(['w2']);
+      const a = hydRecord.rowParts(by('w1'), m, mine, new Set()), b = hydRecord.rowParts(by('w2'), m, mine, new Set()), c = hydRecord.rowParts(by('w2'), m, new Set(), new Set());
+      out({ cmd: [a.state, a.busy, strip(a.row)], mine: [b.state, b.busy, strip(b.row)], other: [c.state, c.busy], actor: by('w1').actor })""", v)
+    assert got['mine'][:2] == ['mine', False] and '|내 차례|' in got['mine'][2], got
+    assert got['other'] == ['now', False], got                    # 내 차례인지 모를 때도 사람 단계는 맥박치지 않는다
+    assert got['cmd'][0] == 'done' and got['cmd'][2].count(got['actor']) == 1, got      # 누가는 한 번만
+
+
+def test_끝난_AI_단계의_줄은_결론_한_문장이고_옆_판의_첫_보기가_결론_근거_후보_비교다():
+    """DoD 13 — 결론 먼저 · 근거 다음: 단계 줄에는 AI 의 결론 한 문장만 서고, 줄을 누르면 열리는 옆 판의 첫 보기 「판단」에 결론 → 근거 → 후보 비교가 차례로 있다."""
+    opt = lambda i, name, score: {'id': f'skill:{i}', 'name': name, 'feasible': True, 'rank': i, 'score': score, 'actions': [], 'kind': 'control', 'approver': {'id': 'role:operator', 'name': '운전원'}}
+    d = {'id': 'D-1', 'recommended': 'skill:1', 'options': [opt(1, '팬 최대 운전', 3.4), opt(2, '부하 낮춤', 2.1)], 'origin': {'cause_route': 'diagnosis'}, 'evaluation_mode': 'execution', 'execution_checked': True,
+         'explanation': '1순위 팬 최대 운전.', 'scenario': {}}
+    guide = {'topCause': 'cause:fin', 'causes': [{'id': 'cause:fin', 'name': '쿨러 핀 오염', 'failureMode': '쿨러 냉각 성능 상실', 'evidence': [{'name': '냉각 효율 저하', 'tag': 'CE', 'expect': 'lt', 'threshold': 70, 'value': 46.2, 'passed': True, 'status': 'PASS'}]}]}
+    wis = [{'id': 'wa', 'activity_id': 'T_agent', 'activity_name': '원인 진단', 'start_date': T, 'end_date': T, 'agent_orch': 'cliagents', 'agent_mode': 'COMPLETE', 'user_id': 'agent:cooling', 'reached_at': T}]
+    v = view(wis, ['T_agent'], variables=[('decision_id', 'D-1'), ('cause', 'cause:fin'), ('guide_card', guide)])
+    got = run(FILES, """const m = hydRecord.build(DATA.v, { agents: [], people: [], decision: DATA.d }, []); const s = m.steps.find(x => x.type === 'agent');
+      const strip = h => h.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim(); const g = hydRecord.detailGroups(s, [], m);
+      out({ row: strip(hydRecord.rowParts(s, m, new Set(), new Set()).row), tabs: g.map(x => x.key), judge: strip(g[0].html) })""", {'v': v, 'd': d})
+    verdict = '원인은 쿨러 핀 오염으로 보고, 「팬 최대 운전」을 추천합니다.'
+    assert verdict in got['row'] and '냉각 효율 저하' not in got['row'], got                       # 줄에는 결론만 — 근거는 옆 판
+    assert got['tabs'][0] == 'judge' and got['tabs'][-1] == 'raw' and 'io' in got['tabs'], got
+    j = got['judge']
+    assert j.index('결론') < j.index(verdict) < j.index('근거') < j.index('냉각 효율 저하') < j.index('후보 비교') < j.index('부하 낮춤'), j
+
+
+def test_정비_요청_결과는_같은_말을_두_번_적지_않고_업무_시스템에_남긴_거래가_있을_때만_그_기록으로_가는_길을_둔다():
+    """기록.md 「사용자만 정할 수 있는 것」 — 「정비 요청 WO-… 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 정비 요청 등록」: 흐름 정의를 바꾸지 않고 화면에서 꼬리의 되풀이만 뺀다.
+    DoD 6-3 — 끝난 건의 결과에서 다음 할 일로 가는 링크는 실행이 업무 시스템에 남긴 거래가 있을 때만."""
+    def card(report, variables=()):
+        v = view([{'id': 'w1', 'activity_id': 'R', 'activity_name': '결과 보고', 'start_date': T, 'end_date': T}], ['R'], variables=[('result_report', report), *variables])
+        return run(FILES, "const h = hydResultReport.html(DATA); out([h.replace(/<[^>]+>/g, '|').replace(/\\|+/g, '|'), (h.match(/data-go-tab=\"([^\"]+)\"/) || [])[1] || null])", v)
+    summary = '정비 요청 WO-1 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 정비 요청 등록'
+    text, link = card({'outcome': '정비 요청 등록', 'level': 'info', 'title': 'HYD-02 정기 정비 결과', 'summary': summary, 'refs': {'work_order': 'WO-1'}},
+                      [('work_order', {'ref': 'WO-1', 'detail': '원문 정비 범위 HYD-02 정비 요청 등록'})])
+    assert '|정비 요청 WO-1 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02|' in text and text.count('정비 요청 등록') == 1, text      # 남은 한 번은 상태 알약
+    assert link == 'process' and '업무 시스템 기록에서 보기' in text
+    text, link = card({'outcome': '반려', 'verdict': 'rejected', 'title': 'HYD-01 냉각 조치 결과', 'summary': '담당자가 반려했습니다'})
+    assert link is None and '업무 시스템 기록' not in text, text

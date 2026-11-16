@@ -8,8 +8,8 @@
    결론은 두 구성이 같은 원인 · 같은 1순위 조치에 이르렀는가, 한쪽만 판단에 이르지 못했는가, 둘 다 판단을 보류했는가로 말한다(verdict). 서버의 same_result(호출 기록 지문)는 결론에 쓰지 않는다.
    판단 보류(그 설비에 지금 이상 값이 없음)는 실패가 아니라 정상 결과이고, 시나리오가 다른 시험 둘은 견주지 않는다.
    에이전트 설정은 읽기만 한다(「에이전트 · 스킬」 화면에서 만든 에이전트 · 스킬이 그대로 목록에 나온다). B 에서 '빼 보기'는 이번 시험에만 쓰고 저장하지 않는다.
-   짜임(디자인 기준 5-6 「조건 → 결과」): 왼쪽 조건 판과 [시험 실행], 오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩) → 결과 판(결론 한 줄과 숫자 넷 → 무엇이 다른가 →
-   A · B 나란히 → 도구 호출 순서 → 조치 순위 → 다른 점과 원본 기록 접기) → 지난 시험과 비교. 부품은 키트의 것이고 격자는 reading.css(.io · .io-two)다.
+   짜임(디자인기준 5-2 「조건 + 결과」, 본: shadcn/ui playground): 왼쪽 조건 칸(시험 조건 → [시험 실행] → B에서 빼 보기 접기 → 그 아래 「지난 시험과 비교」), 오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩)
+   → 결과(결론 한 줄과 숫자 넷 → 입력이 같은가와 숫자 넷에 없는 차이 → A · B 나란히 → 도구 호출 순서 → 조치 순위 → 다른 점과 원본 기록 접기). 부품은 키트의 것이고 격자는 portal-kit.css(.io · .io-two), 이 무리의 배치는 trial.css 다.
    도구 이름은 이름 사전 하나(plainWords.js hydWords.toolName). API: process /api/agent-trials/*. */
 (function () {
   const STATUS = { EVALUATED: ['계산 완료', 'neutral'], WITHHELD: ['근거 부족으로 보류', 'warning'], NO_ENGINE_TOOL: ['판단 도구 없음', 'danger'],
@@ -113,20 +113,20 @@
         `<button type="button" class="btn" data-variant="link" data-go-tab="agents">에이전트 · 스킬 열기${UI.icon('arrow-right')}</button></footer>${note(WHAT, ' data-cmp-what')}</div></details></div>`;
   }
 
-  // 무엇이 다른가: 한 줄씩(아이콘 + 문장). 접지 않는다
+  // 호출 차이: 한쪽에만 있는 호출 가운데 실제로 부른 것과 부르지 못한 것을 갈라 말한다(막힌 제출 호출 한 줄을 「다른 판단」으로 읽지 않게)
+  function callGap(r) {
+    const d = r.diff, only = (t, key) => d.calls.filter(row => row[key] != null && row[key === 'a' ? 'b' : 'a'] == null).map(row => t.result.calls[row[key]]);
+    const cnt = xs => { const miss = xs.filter(c => c.status !== 'DONE').length; return `${xs.length}회${miss ? `(부르지 못한 호출 ${miss}회 포함)` : ''}`; };
+    return `A에만 ${cnt(only(r.a, 'a'))} · B에만 ${cnt(only(r.b, 'b'))}`;
+  }
+  // 결론과 숫자 넷(원인 · 1순위 · 도구 호출 순서 · 판단 사실 차이) 아래의 한 줄씩: 입력이 같았는가와, 숫자 넷에 없는 차이(근거 인용 · 읽은 규칙)만. 같은 말을 되풀이하지 않는다
   function headlineLines(r) {
     const d = r.diff, a = r.a, b = r.b, lines = [], both = reach(a) === 'ok' && reach(b) === 'ok';
     const one = (id, sop) => id ? `${esc(sop || '')} ${nm(id)}` : '없음';
     lines.push(['lock', d.same_input ? `같은 입력(${esc(UI.dateTime(r.snapshot?.created_at || a.created_at))}에 고정)으로 계산했습니다. 차이는 구성에서만 나옵니다.`
       : `두 시험의 입력이 다릅니다 — A는 ${esc(UI.dateTime(a.created_at))}, B는 ${esc(UI.dateTime(b.created_at))}에 읽은 값입니다. 아래 차이에는 그 사이 설비 값과 지식의 변화가 섞여 있습니다.`]);
     if (both && !d.cause.same) lines.push(['search', `<b>원인이 다릅니다</b> A ${one(d.cause.a)} · B ${one(d.cause.b)}`]);
-    if (both) lines.push(['scale', d.recommended.same ? `<b>1순위는 같습니다</b> ${one(d.recommended.a, d.recommended.a_sop)}`
-      : `<b>1순위가 다릅니다</b> A ${one(d.recommended.a, d.recommended.a_sop)} · B ${one(d.recommended.b, d.recommended.b_sop)}`]);
-    // 호출 차이: 한쪽에만 있는 호출 가운데 실제로 부른 것과 부르지 못한 것을 갈라 말한다(막힌 제출 호출 한 줄을 「다른 판단」으로 읽지 않게)
-    const only = (t, key) => d.calls.filter(row => row[key] != null && row[key === 'a' ? 'b' : 'a'] == null).map(row => t.result.calls[row[key]]);
-    const cnt = xs => { const miss = xs.filter(c => c.status !== 'DONE').length; return `${xs.length}회${miss ? `(부르지 못한 호출 ${miss}회 포함)` : ''}`; };
-    lines.push(['plug', d.order_same ? '<b>도구 호출 순서는 같습니다</b>' : `<b>도구 호출이 다릅니다</b> A에만 ${cnt(only(a, 'a'))} · B에만 ${cnt(only(b, 'b'))}. 아래 「도구 호출 순서」에서 줄마다 봅니다.`]);
-    if (both && d.facts.length) lines.push(['database', `<b>판단 사실 ${d.facts.length}개가 다릅니다</b> 도구 구성에 따라 받지 못한 값을 포함합니다.`]);
+    if (both && !d.recommended.same) lines.push(['scale', `<b>1순위가 다릅니다</b> A ${one(d.recommended.a, d.recommended.a_sop)} · B ${one(d.recommended.b, d.recommended.b_sop)}`]);
     if (both && d.citations.only_a.length + d.citations.only_b.length) lines.push(['file-text', `<b>근거 인용</b> A에만 ${d.citations.only_a.length}개 · B에만 ${d.citations.only_b.length}개`]);
     // 읽은 규칙의 차이는 두 쪽이 모두 판단까지 갔을 때만 뜻이 있다(한쪽이 판단하지 않았으면 그쪽은 규칙을 읽지 않은 것이다). 같은 입력이면 지식이 같으므로 차이가 나지 않는다
     if (both && !d.same_input && d.rules.only_a.length + d.rules.only_b.length) lines.push(['list-checks', `<b>읽은 판단 규칙이 다릅니다</b> A에만 ${d.rules.only_a.length}개 · B에만 ${d.rules.only_b.length}개 — 두 시험 사이에 지식의 규칙이 바뀌었습니다.`]);
@@ -154,8 +154,8 @@
         ['1순위', rec ? `<b>${esc(rec.sopId)} ${nm(rec.id)}</b>` : top ? esc(whyNot(t)) : '원인을 가리지 않아 조치를 견주지 않았습니다'],      // 원인을 못 가린 까닭은 원인 줄에 한 번만 쓴다
         ['도구 서버', ((r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음') + cutNote(cutTools)],
         ['스킬', skills + cutNote(cutSkills)]]) +
-      (r.explanation ? UI.fold('판단 엔진 설명 전문', note(esc(UI.idText(r.explanation)))) : '') +
-      UI.fold('시험 번호 · 결과 지문', kv([['시험 번호', `<span class="mono">${esc(t.id)}</span>`], ['입력', `<span class="mono">${esc(t.snapshot_id)}</span>`], ['결과 지문', `<span class="mono">${esc(String(t.fingerprint).slice(0, 12))}</span>`]]) + UI.evaluationHtml(r, undefined, { raw: false })) });
+      UI.fold('판단 엔진 설명과 시험 번호', (r.explanation ? note(esc(UI.idText(r.explanation))) : '') +
+        kv([['시험 번호', UI.id(t.id)], ['입력', UI.id(t.snapshot_id)], ['결과 지문', UI.id(String(t.fingerprint).slice(0, 12))]]) + UI.evaluationHtml(r, undefined, { raw: false })) });
   }
 
   // 호출 한 칸: 번호 · 도구 이름 · 서버 → 무엇이 나왔나. mark = 이 줄이 어떻게 다른지(「A에만」 · 「B에만」 · 「결과 다름」) — 글로 적는다
@@ -189,7 +189,7 @@
       return `<tr>${callCell(row.a == null ? null : A[row.a], row.a == null ? '' : row.a + 1, row.b == null ? 'A에만' : changed, 'A')}${callCell(row.b == null ? null : B[row.b], row.b == null ? '' : row.b + 1, row.a == null ? 'B에만' : changed, 'B')}</tr>`;
     }).join('');
     return sec('도구 호출 순서', r.diff.order_same ? '두 구성이 같은 순서로 불렀습니다' : '두 구성의 호출 순서가 다릅니다',
-      table('<th>A</th><th>B</th>', rows).replace('<table class="table"', '<table class="table io-even"') + note('한쪽에만 있는 호출에는 「A에만」이나 「B에만」이, 같은 호출인데 결과 요약이 다르면 「결과 다름」이 붙습니다.'));
+      table('<th>A</th><th>B</th>', rows).replace('<table class="table"', '<table class="table io-even"'));
   }
 
   function rankTable(d) {
@@ -222,7 +222,7 @@
   }
 
   function resultView(r) {
-    if (!r) return `${UI.empty({ icon: 'git-compare', title: `아직 시험한 결과가 없습니다`, sub: `왼쪽에서 시나리오와 에이전트 둘을 고르고 [시험 실행]을 누르면, 같은 입력에서 두 구성이 계산한 결과가 나란히 보입니다.` })}`;
+    if (!r) return UI.empty('아직 시험한 결과가 없습니다', '왼쪽에서 시나리오와 에이전트 둘을 고르고 [시험 실행]을 누르면, 같은 입력에서 두 구성이 계산한 결과가 나란히 보입니다.');
     if (!r.b) return `<section class="panel"><div class="panel-sec">${sideCard('A', r.a)}</div></section>`;
     const d = r.diff, v = verdict(r), head = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div>` +
       `<h2>${esc(v.title)}</h2>${v.sub ? `<p>${esc(v.sub)}</p>` : ''}`;
@@ -233,7 +233,7 @@
     return head + `</div></div>` +
       `<dl class="turn-facts">${fact('원인', same(d.cause, '가림'))}` +
         `${fact('1순위 조치', same(d.recommended, '정함'))}` +
-        `${fact('도구 호출 순서', d.order_same ? '같음' : `${UI.chipText('다름', 'warning')}<small>A에만 ${esc(d.calls_only_a)}회 · B에만 ${esc(d.calls_only_b)}회</small>`)}` +
+        `${fact('도구 호출 순서', d.order_same ? '같음' : `${UI.chipText('다름', 'warning')}<small>${esc(callGap(r))}</small>`)}` +
         `${fact('판단 사실 차이', `<span class="num">${d.facts.length}</span><small>개</small>`)}</dl>` +
       `<div class="panel-sec">${headlineLines(r)}</div>` +
       `<div class="panel-sec"><div class="io-two">${sideCard('A', r.a)}${sideCard('B', r.b)}</div></div>` +

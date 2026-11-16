@@ -1,7 +1,8 @@
 /* A7 조건별 손익 · 규칙 바꿔 보기 — 시험 실행만. window.hydWhatif.mount(el)
    판단 한 번을 읽기 전용으로 계산해 기준으로 삼고(POST /api/agent/whatif), 시험값 · 규칙 시험값은 그 기준의 사본에만 적용한다.
    업무 DB · 지식 그래프 · 순위 정책은 바뀌지 않는다("원래대로"는 시험값을 비우고 기준 결과로 돌아간다).
-   짜임(디자인 기준 5-6 「조건 → 결과」): 왼쪽 조건 판(시험 기준 → 바꿔 볼 것과 그 칸 · 계산 단추), 오른쪽 결과 판(결론 한 줄과 숫자 넷 → 조치 후보별 순위와 손익(.opts) → 내역 · 1순위가 바뀌는 값 → 원문 접기).
+   짜임(디자인기준 5-2 「조건 + 결과」, 본: shadcn/ui playground): 왼쪽 조건 칸(시험 기준 → 바꿔 볼 것과 그 칸 · 계산 단추), 오른쪽 결과 칸(결론 한 줄과 숫자 넷 → 조치 후보별 순위와 손익(.opts) → 고른 보기의 내역(기준: 손익 내역 / 업무 값 · 규칙: 1순위가 바뀌는 값 / 주별: 주마다) → 원문 접기).
+   「지난 것」 목록은 두지 않는다 — 시험값은 저장하지 않는 사본 계산이고, 견줄 기준은 늘 결과 표의 「기준 → 시험값」 칸에 함께 보인다.
    부품은 키트의 것(panel · fieldset · field · seg · turn-facts · opts · table · fold)이고 격자는 portal-kit.css(.io)다. 색은 상태에만 쓴다 — 출처의 종류(데이터 · 문서 · 가정 · 시험값)와 순위의 종류는 글로 쓴다.
    B5: 「규칙」 보기의 "관점 중요도" — 성과 관점(이름은 지식 그래프에서)마다 비중을 주면 조치 점수의 성과 지표 득실이 그 비중으로 다시 계산된다. */
 (function () {
@@ -9,7 +10,9 @@
     busy: false, msg: '', card: '', values: {}, policy: { weights: {}, penalties: {}, perspectives: {} }, perspForm: {}, weeks: null, weeksForm: { card: '', variable: 'load_pct', value: '', weeks: 4 },
     ruleForm: { target: '', value: '' } };
   const won = v => v == null ? '미확인' : `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toLocaleString('ko-KR')}원`;
-  const num = (v, unit) => v == null ? '–' : `${Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 3 })}${unit ? ' ' + unit : ''}`;
+  // 계산식 · 단위 글의 영문 약자를 화면 말로(시간 · 개). 서버가 글로 만들어 주는 식과 단위라 단위 낱말만 바꾼다
+  const plainUnits = text => String(text || '').replace(/ea\/h\b/g, '개/시간').replace(/\/h\b/g, '/시간').replace(/(\d)\s?h\b/g, '$1시간').replace(/(\d)\s?ea\b/g, '$1개').replace(/^h$/, '시간').replace(/^ea$/, '개');
+  const num = (v, unit) => v == null ? '–' : `${Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 3 })}${unit ? ' ' + plainUnits(unit) : ''}`;
   const sec = (title, side, body) => body ? `<div class="panel-sec"><h3>${title}${side ? `<span class="muted">${side}</span>` : ''}</h3>${body}</div>` : '';
   const fact = (label, value) => `<div><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
   const note = (text, attrs = '') => text ? `<p class="muted"${attrs}>${text}</p>` : '';
@@ -116,7 +119,7 @@
       : W.assetsError && !(W.assets && W.assets.length) ? UI.errorBlock('설비 목록을 읽지 못했습니다', W.assetsError, { retry: true }) : '';
     if (W.msg) right += UI.errorBlock('계산하지 못했습니다', W.msg);
     right += v ? resultPane(v) : W.busy ? hydLive.waitHtml('시험 기준을 계산하는 중', { since: W.busySince, hint: '고른 설비와 이상 패턴으로 판단을 한 번 계산해 기준으로 잡는 중입니다(원인 진단 → 조치 후보 → 손익).' })
-      : right ? '' : `${UI.empty({ icon: 'calculator', title: `아직 불러온 시험 기준이 없습니다`, sub: `왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 조치 후보별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 볼 수 있습니다.` })}`;
+      : right ? '' : UI.empty('아직 불러온 시험 기준이 없습니다', '왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 조치 후보별 순위와 손익이 여기에 보이고, 값과 규칙을 바꿔 볼 수 있습니다.');
     const html = `<div class="io"><form class="panel io-in" id="wiForm" aria-label="시험 조건">${left}</form><div class="io-out" aria-live="polite">${right}</div></div>`;
     // 다시 그리기(1순위가 바뀌는 값 도착 · 다시 계산 결과)가 치던 칸의 포커스 · 커서와 펼친 접기를 지우지 않게(값은 input 이벤트로 이미 상태에 있다)
     const a = document.activeElement, key = a && W.el.contains(a) ? focusKey(a) : null, typed = key && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a.value : null;
@@ -139,7 +142,7 @@
   function inputsPane(v) {
     if (W.tab === 'values') {
       const vars = v.variables.filter(x => x.kinds.includes('decision') || x.kinds.includes('money'));
-      return UI.section('업무 값', vars.map(x => UI.field({ label: `${x.label} (${x.unit})`, hint: x.source.kind === '데이터' ? `${x.source.where.split(' · ')[0]} 값 ${num(x.base, x.unit)}` : `${x.source.kind} · ${x.source.where}`,
+      return UI.section('업무 값', vars.map(x => UI.field({ label: `${x.label} (${plainUnits(x.unit)})`, hint: x.source.kind === '데이터' ? `${x.source.where.split(' · ')[0]} 값 ${num(x.base, x.unit)}` : `${x.source.kind} · ${x.source.where}`,
         input: `<input type="number" step="any" data-wi-var="${esc(x.id)}" value="${W.values[x.id] ?? ''}" placeholder="${esc(x.base ?? '')}">` })).join('')) +
         calc('wiTry', '다시 계산') + note('빈 칸은 업무 DB 값 그대로입니다.');
     }
@@ -167,7 +170,7 @@
       const vars = [{ id: 'load_pct', label: '조치 부하 설정', unit: '%' }].concat(v.variables.filter(x => x.kinds.includes('weeks')));
       return UI.section('주별 예측',
         UI.field({ label: '조치', input: `<select id="wiWCard">${cardOpts}</select>` }) +
-        UI.field({ label: '바꿀 값', input: `<select id="wiWVar">${vars.map(x => `<option value="${esc(x.id)}" ${x.id === f.variable ? 'selected' : ''}>${esc(x.label)} (${esc(x.unit)})</option>`).join('')}</select>` }) +
+        UI.field({ label: '바꿀 값', input: `<select id="wiWVar">${vars.map(x => `<option value="${esc(x.id)}" ${x.id === f.variable ? 'selected' : ''}>${esc(x.label)} (${esc(plainUnits(x.unit))})</option>`).join('')}</select>` }) +
         UI.field({ label: '새 값', hint: '비우면 기준만 계산합니다.', input: `<input type="number" step="any" id="wiWValue" value="${esc(f.value)}">` }) +
         UI.field({ label: '기간 (주)', input: `<input type="number" min="${lim('weeks')[0]}" max="${lim('weeks')[1]}" id="wiWWeeks" value="${esc(f.weeks)}">`, hint: '조치 → 설비 값(부하 · 팬) → 지표(가동률 · 생산량 · 비용 · 이익)를 영향 계수로 이어 주별로 계산합니다.' })) +
         calc('wiWeeks', '주별 계산');
@@ -179,7 +182,11 @@
   function resultPane(v) {
     const n = trialCount(), topD = cardOf(v.top.decision), topM = cardOf(v.top.money);
     const cause = [UI.idText(v.cause && v.cause.name || ''), v.cause && v.cause.failureMode ? UI.idText(v.cause.failureMode) : '', v.asset, UI.dateTime(v.created)].filter(Boolean).join(' · ');
-    let html = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>${esc(v.summary)}</h2><p>${esc(cause)}</p></div></div>` +
+    // 결론 문장은 응답의 칸(판단 1순위 · 손익 1순위)으로 짓는다 — 두 순위가 같은 조치를 고르는지가 이 화면의 결론이다
+    const nameD = cardName(v.top.decision), nameM = cardName(v.top.money), josa = (w, pair) => window.hydWords.josa(w, pair);
+    const says = !topD && !topM ? '실행할 수 있는 조치 후보가 없습니다.' : topD && topM && topD.id === topM.id ? `판단 순위와 손익 순위 모두 「${nameD}」${josa(nameD, '이/가')} 1순위입니다.`
+      : `판단 1순위는 「${nameD}」, 손익 1순위는 「${nameM}」입니다 — 정책 점수와 예상 손익이 서로 다른 조치를 고릅니다.`;
+    let html = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>${esc(says)}</h2><p>${esc(cause)}</p></div></div>` +
       `<dl class="turn-facts">${fact('판단 1순위', esc(cardName(v.top.decision)))}${fact('손익 1순위', esc(cardName(v.top.money)))}` +
       `${fact('판단 1순위의 예상 손익', `<span class="num">${esc(won(topD && topD.money ? topD.money.total_won : null))}</span>${topM && topD && topM.id !== topD.id ? `<small>손익 1순위는 ${esc(won(topM.money.total_won))}</small>` : ''}`)}` +
       `${fact('시험값', n ? `<span class="num">${n}</span><small>개 적용 중</small>` : '없음<small>기준 그대로</small>')}</dl>`;
@@ -203,13 +210,11 @@
       }
     }
     // 평가 범위 안내(규칙 비교 · 모의 순위이고 실제 승인 준비는 확인하지 않음)는 결과 맨 아래에 둔다 — 첫 줄은 결론이다
-    return html + `<div class="panel-sec">${v.original && v.original.note ? note(esc(v.original.note)) : ''}${UI.evaluationHtml(v)}</div></section>`;
+    return html + `<div class="trial-foot">${v.original && v.original.note ? note(esc(v.original.note)) : ''}${UI.evaluationHtml(v)}</div></section>`;
   }
 
   // 규칙 주석의 첫 문장(마침표나 줄표 앞까지), 길면 줄인다
   const ruleShort = text => { const t = UI.idText(text), cut = t.split(/(?<=[.。])\s|\s—\s/)[0]; return cut.length > 60 ? cut.slice(0, 58) + '…' : cut; };
-  // 계산식 글의 영문 단위를 화면 말로(시간 · 개). 서버가 글로 만들어 주는 식이라 단위 낱말만 바꾼다
-  const plainUnits = text => String(text || '').replace(/ea\/h\b/g, '개/시간').replace(/\/h\b/g, '/시간').replace(/(\d)\s?h\b/g, '$1시간').replace(/(\d)\s?ea\b/g, '$1개');
   // 손익 내역: 첫 화면에는 합계와 항목별 금액만 둔다(결론 먼저). 항목마다의 계산식과 출처는 그 아래 접기 안이다
   function moneyTable(m) {
     const value = i => i.value_won == null ? `<span class="muted">미확인${i.missing ? ' — ' + esc(plainUnits(i.missing)) : ''}</span>` : esc(won(i.value_won));
@@ -233,15 +238,14 @@
       <td class="num"><button type="button" class="btn" data-variant="outline" data-size="sm" data-wi-bound="${W.bounds.indexOf(b)}">이 값으로 계산</button></td></tr>`).join('')}</tbody></table></div>`;
   }
 
-  // 조치 하나의 손익 내역: 조치를 고르면 항목별 손익 · 출처와, 그 조치에서 1순위가 바뀌는 값이 보인다
+  // 조치 하나의 손익 내역: 조치를 고르면 항목별 손익이 보이고, 계산식과 출처는 그 아래 접기에 있다
   function cardDetail(v) {
     const list = v.cards.slice().sort((a, b) => (a.decisionRank || 99) - (b.decisionRank || 99));
     const c = list.find(x => x.id === W.card) || list[0];
     if (!c) return '';
     const picks = `<div class="seg" role="group" aria-label="내역을 볼 조치">${list.map(x => `<button type="button" aria-pressed="${x.id === c.id}" data-wi-card="${esc(x.id)}">${esc(UI.idText(x.name))}</button>`).join('')}</div>`;
     const why = c.feasible ? (c.money.complete ? '' : '계산하지 못한 항목: ' + c.money.missing.join(', ')) : '규정상 제외 — ' + c.excluded.join(' · ');
-    return sec('손익 내역', '조치를 골라 항목별로 봅니다', picks + note(esc(why)) + moneyTable(c.money)) +
-      sec(`「${esc(UI.idText(c.name))}」에서 1순위가 바뀌는 값`, '', boundaryTable((W.bounds || []).filter(b => b.card === c.id)));
+    return sec('손익 내역', '조치를 골라 항목별로 봅니다', picks + note(esc(why)) + moneyTable(c.money));      // 1순위가 바뀌는 값은 「업무 값」 · 「규칙」 보기에 있다(그 값으로 바로 계산하는 자리)
   }
 
   function compareTable(v) {
@@ -273,7 +277,7 @@
 
   function weeksResult() {
     const w = W.weeks;
-    if (!w) return `<div class="panel-sec">${UI.empty('아직 주별로 계산한 결과가 없습니다', '왼쪽에서 조치와 바꿀 값을 고르고 [주별 계산]을 누릅니다.', 'compact')}</div>`;
+    if (!w) return `<div class="panel-sec">${UI.empty('아직 주별로 계산한 결과가 없습니다', '왼쪽에서 조치와 바꿀 값을 고르고 [주별 계산]을 누릅니다.')}</div>`;
     const last = rows => rows && rows[rows.length - 1];
     const b = last(w.base), c = last(w.changed);
     const diff = c && c.cum_profit_won != null && b.cum_profit_won != null ? c.cum_profit_won - b.cum_profit_won : null;

@@ -198,9 +198,11 @@ def serve_onto(holder, width=1366):
 HOLDER = {'graph': SMALL}      # 그래프 응답(시험이 바꾸고 [다시 읽기]를 누른다)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def onto():
-    """서비스 없이 화면 파일만 낸 포털의 지식 지도. 그래프 · 이상 패턴 · 지식 묶음 · 흐름 이름 응답만 이 시험이 주고 그 밖의 서비스 요청은 끊는다."""
+    """서비스 없이 화면 파일만 낸 포털의 지식 지도. 그래프 · 이상 패턴 · 지식 묶음 · 흐름 이름 응답만 이 시험이 주고 그 밖의 서비스 요청은 끊는다.
+    시험마다 브라우저를 새로 띄운다 — 한 브라우저를 세 시험이 이어 쓰면, 부하로 한 시험의 브라우저가 죽었을 때 뒤 시험이 함께 실패하고 앞 시험이 남긴 그래프 · 화면 상태에 기댄다."""
+    HOLDER['graph'] = SMALL
     yield from serve_onto(HOLDER)
 
 
@@ -208,11 +210,24 @@ def marks(page):
     return page.evaluate("() => Object.fromEntries(hydEnt.kg.cy.nodes().filter(n => !n.hasClass('gtitle') && !n.hasClass('rhead')).map(n => [n.id(), ['pick', 'near', 'path', 'hit', 'dim', 'off'].filter(c => n.hasClass(c)).join(' ')]))")
 
 
+def settle(page):
+    """항목 · 화면이 옮겨 가기를 다 마칠 때까지 기다린다. 정해 둔 시간(0.5초)만 기다리면 부하가 걸린 PC에서 움직임(0.34 ~ 0.38초)이 그 안에 끝나지 않아
+    옮겨 가는 도중의 자리를 재게 된다 — 움직임이 실제로 멎은 것을 확인한 뒤, 이름을 다시 고를 틈(멎고 0.09 ~ 0.44초 뒤)을 둔다."""
+    page.wait_for_timeout(120)
+    page.wait_for_function("() => { const cy = hydEnt.kg.cy; return !!cy && !cy.animated() && !cy.nodes().some(n => n.animated()); }", timeout=20000)
+    page.wait_for_timeout(480)
+
+
 def tap(page, node):
     """그림의 점을 실제로 누른다(캔버스 안 그 점의 화면 자리를 마우스로)."""
+    settle(page)                                                            # 점이 아직 옮겨 가는 중이면 누를 자리가 어긋난다
     at = page.evaluate("id => { const p = hydEnt.kg.cy.getElementById(id).renderedPosition(), b = document.getElementById('ontoMap').getBoundingClientRect(); return [b.left + p.x, b.top + p.y]; }", node)
     page.mouse.click(*at)
-    page.wait_for_timeout(500)                                              # 모으기 · 화면 옮기기가 끝날 때까지(0.34 ~ 0.38초)
+    settle(page)
+
+
+# 오른쪽 판과 캔버스의 폭: side = 판의 폭(닫혀 있으면 0), map = 캔버스 자리의 폭, frame = 두 칸 틀의 폭, cy = 그림이 아는 캔버스 폭
+SIDE_JS = "() => { const w = s => document.querySelector(s).getBoundingClientRect().width; return { side: w('#ontoNode'), map: w('#ontoMap'), frame: w('#view-ontology .kg'), cy: hydEnt.kg.cy.width() }; }"
 
 
 def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에서도_글자가_읽히며_풀면_제자리로_돌아간다(onto):
@@ -223,27 +238,33 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert set(marks(page).values()) == {''} and not low() and page.inner_text('#ontoStats') == '항목 10 · 연결 9'
     # 설비 고르기는 서버가 준 설비 목록이다(화면에 적어 둔 이름이 아니다)
     assert page.locator('#ontoAsset option').all_inner_texts() == ['HYD-01', 'HYD-02']
-    # 안 골랐을 때 오른쪽 칸은 무엇을 누르면 되는지와 가장 많이 이어진 항목만 보인다 — 묶음의 목록(이름 · 수)은 캔버스 아래 조각 한 곳에만 있다(같은 목록을 두 곳에 두지 않는다)
-    index = page.inner_text('#ontoNode')
-    assert '항목을 고르세요' in index and '가장 많이 이어진 항목' in index and '설비 진단' not in index
-    assert page.locator('#ontoNode .kg-group').count() == 0
+    # 아무것도 고르지 않았을 때 오른쪽 판은 닫혀 있고 캔버스가 틀의 폭을 다 쓴다(디자인 기준 6-3) — 무엇을 누르면 되는지는 캔버스 아래 안내 한 줄이 말하고,
+    # 묶음의 목록(이름 · 수)은 캔버스 아래 조각 한 곳에만 있다(같은 목록을 두 곳에 두지 않는다)
+    shut = page.evaluate(SIDE_JS)
+    assert shut['side'] == 0 and abs(shut['map'] - shut['frame']) <= 1 and abs(shut['cy'] - shut['map']) <= 1, shut
+    assert page.is_hidden('#ontoNode') and '점을 누르면' in page.inner_text('#ontoHint')
     assert len([t for t in page.locator('#view-ontology .cv-chip').all_inner_texts() if '설비 진단' in t]) == 1, '묶음 목록은 캔버스 아래 조각에 있다'
     z0 = page.evaluate('hydEnt.kg.cy.zoom()')
     # 지도의 묶음 이름을 누르면 그 묶음의 항목 이름이 종류별로 다 보이고 지도는 그 묶음만 밝게 크게 보인다
     page.evaluate("() => hydEnt.kg.cy.nodes('.gtitle').filter(n => n.data('g') === 'diagnosis').emit('tap')")
-    page.wait_for_timeout(500)
+    settle(page)
+    # 고른 것이 생기면 오른쪽 판이 열리고, 캔버스는 그만큼 좁아진 폭을 곧바로 안다(이웃을 모으는 자리와 화면 옮기기가 열린 뒤의 폭으로 정해진다)
+    wide = page.evaluate(SIDE_JS)
+    assert wide['side'] >= 300 and abs(wide['map'] + wide['side'] - wide['frame']) <= 2 and abs(wide['cy'] - wide['map']) <= 1, wide
     opened = page.inner_text("#ontoNode")
     assert '증상\n2' in opened and all(name in opened for name in ('쿨러 성능 저하', '유온 상승', '냉각 효율 저하', '쿨러 냉각 성능 상실', '쿨러 핀 오염'))
     got = marks(page)
     assert got['fm:cool'] == '' and got['skill:fan'] == 'dim' and got['obj:up'] == 'dim' and page.evaluate('hydEnt.kg.cy.zoom()') > z0
-    page.click("#ontoNode [data-kg-group-close]")      # 닫으면 전체로
-    page.wait_for_timeout(500)
+    page.click("#ontoNode [data-kg-group-close]")      # 닫으면 전체로 — 판도 닫히고 캔버스가 다시 폭을 다 쓴다
+    settle(page)
     assert set(marks(page).values()) == {''} and abs(page.evaluate('hydEnt.kg.cy.zoom()') - z0) < 1e-6
+    assert page.evaluate(SIDE_JS) == shut
     # 눌러서 고름: 고른 것 · 바로 이어진 것만 밝고 나머지는 흐리다. 오른쪽 칸에 묶음 · 종류 → 이름 → ID → 속성 → 이어진 것이 나온다
     tap(page, 'fm:cool')
     assert marks(page) == {'pattern:cool': 'dim', 'sym:hot': 'near', 'sym:ce': 'dim', 'fm:cool': 'pick', 'cause:fin': 'near', 'skill:fan': 'near', 'skill:wash': 'near', 'role:op': 'dim', 'obj:up': 'dim', 'comp:fan': 'dim'}
     assert not low()
     panel = page.inner_text('#ontoNode')
+    assert page.evaluate(SIDE_JS)['side'] >= 300
     assert '설비 진단 · 고장 유형' in panel and page.inner_text('#ontoNode h2') == '쿨러 냉각 성능 상실' and 'fm:cool' in panel and '팬 최대 운전' in panel
     # 이웃이 고른 점 둘레에 모였다: 고른 점은 제자리, 이 항목을 가리키는 것은 왼쪽 · 이 항목이 가리키는 것은 오른쪽, 모두 가까이
     now = page.evaluate(POS_JS)
@@ -261,7 +282,7 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert not re.search(r'[A-Z]{3,}_?[A-Z]*', ' '.join(heads) + page.inner_text('#ontoNode .node-sec:has(.rel-group)'))
     # 겹침: 고른 채로 이름을 검색한다 — 고른 것이 검색에도 걸린다. 고른 것 · 검색에 걸린 것 · 둘 다인 것의 글자가 모두 그려지고 읽힌다
     page.fill('#ontoSearch', '쿨러')
-    page.wait_for_timeout(300)                                              # 흐리던 항목이 밝아지는 데 0.18초
+    settle(page)                                                            # 흐리던 항목이 밝아지고(0.18초) 이름을 다시 고른 뒤
     got = marks(page)
     assert got['fm:cool'] == 'pick hit' and got['pattern:cool'] == 'hit' and got['skill:wash'] == 'near hit' and got['sym:hot'] == 'near' and got['role:op'] == 'dim'
     seen = {x['id']: x for x in page.evaluate(CONTRAST_JS)}
@@ -270,49 +291,50 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert '검색 결과 5개' in page.inner_text('#ontoStats') and page.is_visible('#ontoNext')
     # 오른쪽 칸의 이어진 항목을 누르면 그 항목이 골라지고, 이웃이 새로 고른 점 둘레에 모인다
     page.click("#ontoNode [data-go='skill:fan']")
-    page.wait_for_timeout(500)
+    settle(page)
     assert marks(page)['skill:fan'] == 'pick' and page.inner_text('#ontoNode h2') == '팬 최대 운전'
     now = page.evaluate(POS_JS)
     assert now['skill:fan'] == home['skill:fan'] and all(math.dist(now[i], now['skill:fan']) < 260 for i in ('fm:cool', 'role:op', 'comp:fan'))
     # 고른 항목을 다시 누르면 풀리고, 검색을 지우면 처음 모양으로 — 모든 항목이 제자리로 돌아간다
     tap(page, 'skill:fan')
     page.fill('#ontoSearch', '')
-    page.wait_for_timeout(500)
+    settle(page)
     assert set(marks(page).values()) == {''} and page.is_hidden('#ontoNext') and page.evaluate(POS_JS) == home
+    assert page.is_hidden('#ontoNode')                                      # 고른 것이 없으면 판은 다시 닫힌다
     assert page.evaluate("() => hydEnt.kg.cy.nodes('.rhead').length") == 0
     # 찾기 칸에서 Enter: 걸린 항목을 차례로 고른다
     page.fill('#ontoSearch', '유온')
     page.press('#ontoSearch', 'Enter')
-    page.wait_for_timeout(500)
+    settle(page)
     assert marks(page)['sym:hot'] == 'pick hit' and not low()
     page.fill('#ontoSearch', '')
     page.keyboard.press('Escape')                                           # 찾기 칸의 Esc 는 지도에 닿지 않는다 — 지도에 초점을 두고 Esc 로 푼다
     page.focus('#ontoMap')
     page.keyboard.press('Escape')
-    page.wait_for_timeout(500)
+    settle(page)
     assert set(marks(page).values()) == {''}
     # 이상 패턴 경로: 그 패턴에서 조치 방법까지 가는 길만 밝고, 왼쪽에서 오른쪽으로 놓인다(패턴 → 증상 → 고장 유형 → 원인 · 조치 방법)
     page.select_option('#ontoFocus', 'pattern:cool')
-    page.wait_for_timeout(500)
+    settle(page)
     got = marks(page)
     assert got['pattern:cool'] == 'path' and got['skill:fan'] == 'path' and got['cause:fin'] == 'path' and got['obj:up'] == 'dim' and got['role:op'] == 'dim' and not low()
     now = page.evaluate(POS_JS)
     assert now['pattern:cool'][0] < now['sym:hot'][0] < now['fm:cool'][0] < now['skill:fan'][0] and now['cause:fin'][0] == now['skill:fan'][0] and now['cause:fin'][1] < now['skill:fan'][1]
     assert '강조 경로 7개' in page.inner_text('#ontoStats')
     page.select_option('#ontoFocus', '')
-    page.wait_for_timeout(500)
+    settle(page)
     assert page.evaluate(POS_JS) == home
     # 묶음 끄기: 그 묶음의 항목이 사라지고, 다시 켜면 돌아온다
     page.click("#ontoLayers [data-layer='skill']")
     assert marks(page)['skill:fan'] == 'off'
     # 끈 묶음의 항목은 그림에서 사라진다 — Cytoscape 는 표시(.off)의 모양을 다음 그리기 때 계산하므로 누른 직후가 아니라 그려진 뒤에 센다
-    page.wait_for_function("() => hydEnt.kg.cy.nodes().filter(n => !n.hasClass('gtitle') && !n.visible()).length === 2", timeout=5000)
+    page.wait_for_function("() => hydEnt.kg.cy.nodes().filter(n => !n.hasClass('gtitle') && !n.visible()).length === 2", timeout=15000)
     assert page.get_attribute("#ontoLayers [data-layer='skill']", 'aria-pressed') == 'false'
     page.click("#ontoLayers [data-layer='skill']")
     assert set(marks(page).values()) == {''}
     # 확대 · 축소 · 화면에 맞춤, 끌어서 옮기기
     page.click('#ontoFit')
-    page.wait_for_timeout(450)
+    settle(page)
     k0 = page.evaluate('hydEnt.kg.cy.zoom()')
     page.click('#ontoZoomIn')
     assert page.evaluate('hydEnt.kg.cy.zoom()') > k0
@@ -323,7 +345,7 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     page.mouse.up()
     assert round(page.evaluate('hydEnt.kg.cy.pan().x') - pan) == 80 and set(marks(page).values()) == {''}      # 끌기는 고르기가 아니다
     page.click('#ontoFit')
-    page.wait_for_timeout(450)
+    settle(page)
     assert abs(page.evaluate('hydEnt.kg.cy.zoom()') - k0) < 5e-3                                          # 같은 보기로 돌아온다
     out = page.evaluate("() => { const cy = hydEnt.kg.cy; return cy.nodes().filter(n => { const p = n.renderedPosition(); return p.x < 0 || p.x > cy.width() || p.y < 0 || p.y > cy.height(); }).length; }")
     assert out == 0                                                         # 화면에 맞추면 모든 항목이 캔버스 안에 있다
@@ -368,15 +390,13 @@ def test_보이는_이름은_서로_겹치지_않고_점과_캔버스_안_도구
         page.evaluate("() => { hydEnt.kg.cy.scratch('old', true); }")
         page.click('#ontologyHeadMore-trigger')      # 다시 읽기는 화면 머리의 더 보기 안에 있다
         page.click('#ontoReload')
-        page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')")
-        page.wait_for_timeout(400)
+        page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')", timeout=60000)      # 수업 크기 그래프의 배치는 부하가 걸리면 몇 초가 걸린다
+        settle(page)
 
     def clean(said):
         # 화면과 항목이 옮겨 가기를 다 마친 뒤(정해 둔 시간이 아니라 움직임이 실제로 멎은 뒤) 이름을 다시 고를 틈(화면이 멎고 0.09초 뒤에 고른다)을 두고 잰다 —
         # 0.7초로 정해 두었을 때는 찾기가 화면을 옮기는 동안(0.38초 + 그동안 미뤄지는 이름 고르기) 재서 「찾기에 걸린 이름 0개」로 읽혔다
-        page.wait_for_timeout(150)
-        page.wait_for_function("() => !hydEnt.kg.cy.animated() && !hydEnt.kg.cy.nodes().some(n => n.animated())")
-        page.wait_for_timeout(450)
+        settle(page)
         got = page.evaluate(OVERLAP_JS)
         assert not got['pairs'] and not got['covered'] and not got['tools'], (said, got)
         return got
@@ -409,7 +429,7 @@ def test_보이는_이름은_서로_겹치지_않고_점과_캔버스_안_도구
         tap(page, 'decision:000')
         page.fill('#ontoSearch', 'AnomalyPattern 항목의 긴 이름 0번')
         page.press('#ontoSearch', 'Enter')
-        page.wait_for_timeout(500)
+        settle(page)
         head = page.inner_text('#ontoNode .node-sec >> nth=0')
         assert '심각도' in head and '높음' in head and 'HIGH' not in head and '조건이 지속 시간 동안 이어지면 경보' in head and 'held' not in head
         assert 'TS1 > 55 and CE < 70' in head and 'COOLER_DEGRADATION' not in head
@@ -430,7 +450,7 @@ def test_같은_그래프는_서버가_준_차례가_달라도_늘_같은_자리
         page.evaluate("() => { hydEnt.kg.cy.scratch('old', true); }")
         page.click('#ontologyHeadMore-trigger')      # 다시 읽기는 화면 머리의 더 보기 안에 있다
         page.click('#ontoReload')
-        page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')")      # 새로 그린 지도
+        page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')", timeout=60000)      # 새로 그린 지도
         return page.evaluate(POS_JS)
     try:
         a = reload(SMALL)

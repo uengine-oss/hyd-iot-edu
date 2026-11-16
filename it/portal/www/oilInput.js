@@ -36,38 +36,37 @@
         pattern: p.code, asset: d.asset, item: d.item, out_of_spec: d.out, memo: d.memo,
         value: d.value === '' ? null : Number(d.value), by: m.id });      // 입력자는 담당자 id 만 보낸다 — 이름은 서버가 사용자 표에서 읽는다(human_alert.py entered_by)
       if (O.last.raised) { d.memo = ''; d.value = ''; d.out = null; }
-      UI.toast(O.last.raised ? '경보를 만들었습니다' : '경보를 만들지 않았습니다', { tone: O.last.raised ? 'pos' : 'neutral' });
+      UI.toast(O.last.raised ? '경보를 만들었습니다' : '경보를 만들지 않았습니다', { tone: O.last.raised ? 'ok' : 'neutral' });
     } catch (e) { O.err = e.message; }
     finally { O.sending = false; render(); }
   }
 
-  // 결과(결론 먼저): 경보를 만들었는가 → 서버가 준 까닭 → 어느 흐름이 여는가 → 처리 건으로 가는 길
+  // 결과(결론 먼저 — 폼 바로 아래, 보낸 뒤에만 나타난다): 경보를 만들었는가(알약) → 서버가 준 까닭 → 어느 흐름이 여는가 → 아래 고정 줄의 「처리 건 열기」
   function resultHtml() {
     const r = O.last;
-    if (!r) return UI.empty({ icon: 'droplets', title: '아직 보낸 입력이 없습니다', sub: '기준을 벗어난 분석 결과를 보내면 경보가 만들어지고, 그 경보를 맡은 흐름이 처리 건을 엽니다.' });
-    const head = (tone, text) => `<div class="panel-sec result"><p class="result-label">결과</p><p class="result-main">${UI.chipText(text, tone)}</p><p class="result-sub">${esc(r.reason)}</p></div>`;
-    if (!r.raised) return `<section class="panel" role="status">${head('neutral', '경보를 만들지 않았습니다')}</section>`;
+    if (!r) return '';
+    if (!r.raised) return UI.card({ cls: 'oil-result', attrs: 'role="status"', title: '보낸 결과', chips: UI.chipText('경보를 만들지 않았습니다'), body: `<p>${esc(r.reason)}</p>` });
     const target = r.definition || {};
-    return `<section class="panel" role="status">${head('warning', '경보를 만들었습니다')}
-      <div class="panel-sec"><h3>이 경보를 맡은 흐름</h3><dl class="kv"><dt>흐름</dt><dd>${esc(target.name || '흐름')} <span class="muted">판본 ${esc(target.version || '')}</span></dd>
-        <dt>여는 길</dt><dd>${esc(r.route === 'response' ? '배포된 흐름' : '사람 검토')} · ${esc(r.route_text)}</dd></dl>
-        ${r.instance ? `<footer class="form-foot"><a class="btn" data-variant="outline" href="#/instances/${encodeURIComponent(r.instance)}">${UI.icon('inbox')}처리 건에서 보기</a></footer>` : ''}</div></section>`;
+    return UI.card({ cls: 'oil-result', attrs: 'role="status"', title: '보낸 결과', chips: UI.chipText('경보를 만들었습니다', 'warning'),
+      body: `<p>${esc(r.reason)}</p><dl class="kv"><dt>맡은 흐름</dt><dd>${esc(target.name || '흐름')} <span class="muted">판본 ${esc(target.version || '')}</span></dd>
+        <dt>여는 길</dt><dd>${esc(r.route === 'response' ? '배포된 흐름' : '사람 검토')} · ${esc(r.route_text)}</dd></dl>`,
+      foot: r.instance ? UI.goLink('instances', '처리 건 열기', `data-open-inst="${esc(r.instance)}"`) : '' });
   }
 
   function render() {
     if (!O.el) return;
     const p = pattern(), d = O.draft, m = meNow();
     if (!O.form) {
-      O.el.innerHTML = O.err ? UI.errorBlock('입력 칸을 읽지 못했습니다', O.err, { retry: true }) : '<div class="skeleton" style="height:320px;max-width:420px"></div>';
+      O.el.innerHTML = O.err ? UI.errorBlock('입력 칸을 읽지 못했습니다', O.err, { retry: true }) : '<div class="skeleton oil-form" style="height:360px"></div>';
       O.el.querySelector('[data-retry]')?.addEventListener('click', () => mount(O.el));
       return;
     }
     if (!p) { O.el.innerHTML = UI.empty('오일 분석 입력 칸이 서버에 없습니다', '처리 서비스가 이 화면과 다른 판입니다. 서비스를 이 화면과 같은 판으로 다시 시작하세요.'); return; }
     const opt = (v, t, sel) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`;
     const unit = (p.items.find(i => i.key === d.item) || {}).unit || '';
-    // 조건 → 결과(판단 실험 화면과 같은 격자 .io): 왼쪽에 폼 판(주 단추 하나 — 입력 보내기), 오른쪽에 결과. 꺼진 단추의 까닭과 오류는 단추 위 판에 글로
+    // 폼 한 칸(디자인기준 5-2 의 조건 칸 하나 — 주 단추는 칸 맨 아래 칸 폭 가득) → 그 아래에 보낸 결과. 꺼진 단추의 까닭과 오류는 단추 위에 글로
     const why = !m ? '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.' : O.err;
-    O.el.innerHTML = `<div class="io"><form class="panel io-in" aria-label="분석 결과"><div class="panel-head"><div><h2>분석 결과</h2></div></div><div class="panel-sec"><div class="io-fields">
+    O.el.innerHTML = `<form class="oil-form" aria-label="분석 결과"><div class="io-fields">
         ${UI.field({ label: '설비', required: true, input: `<select id="oilAsset"><option value="">설비 선택</option>${O.form.assets.map(a => opt(a, a, d.asset)).join('')}</select>` })}
         ${UI.field({ label: '분석 항목', required: true, input: `<select id="oilItem"><option value="">항목 선택</option>${p.items.map(i => opt(i.key, i.text, d.item)).join('')}</select>` })}
         ${UI.field({ label: `측정값${unit ? ' (' + unit + ')' : ''} (선택)`, input: `<input id="oilValue" type="number" step="any" value="${esc(d.value)}">` })}
@@ -77,8 +76,7 @@
         ${UI.field({ label: '메모 (선택)', input: `<textarea id="oilMemo" rows="3" maxlength="2000">${esc(d.memo)}</textarea>` })}</div>
       ${why ? `<div class="alert oil-why" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>보내지 못했습니다</h2><section>${esc(why)}</section></div>` : ''}
       <footer class="form-foot"><button type="button" class="btn" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${UI.icon('send')}${O.sending ? '보내는 중' : '입력 보내기'}</button></footer>
-      <p class="muted oil-by">${esc(m ? m.name : '담당자')} 이름으로 기록됩니다.</p></div></form>
-      <div class="io-out oil-result">${resultHtml()}</div></div>`;
+      <p class="muted oil-by">${esc(m ? m.name : '담당자')} 이름으로 기록됩니다.</p></form>${resultHtml()}`;
     wire();
   }
   function wire() {

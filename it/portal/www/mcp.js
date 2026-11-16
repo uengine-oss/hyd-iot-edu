@@ -2,7 +2,9 @@
    ① 도구 지도: tenants.mcp 서버 → 연결 상태(시간 제한) → 도구(사전 이름 · 입력 형식 · 읽기 전용 판정) → 이 서버로 실제로 도는 에이전트 단계 · 담당
    ② 도구 써 보기: 도구 고르기 → 입력 형식에서 만든 폼 → 실제 호출 → 결과 (읽기 전용 도구만, 결과 크기 제한)
    ③ 호출 기록: events 에서 그 도구가 불린 처리 건 · task · 입력 · 결과 요약 · 시각 → #/instances/<id>/task/<taskId>
-   ④ 서버 직접 등록 · 고치기 · 지우기 · 연결 검사 · 기준으로 되돌리기 · 비밀 값: 폼 → 연결 검사 통과해야 저장(실패는 사유), 기준 서버는 보기만.
+   ④ 서버 직접 등록 · 고치기 · 지우기 · 연결 검사 · 비밀 값: 폼 → 연결 검사 통과해야 저장(실패는 사유), 기준 서버는 보기만.
+   화면은 목록 + 상세다(디자인기준 5-1 — 본: process-gpt-lite 인스턴스 화면): 왼쪽 서버 목록 │ 머리(이름 · 연결 상태 알약 · 보조 줄, 오른쪽 끝 [연결 검사]와 「…」)
+   → 도구 목록 | 호출 기록(보기 탭) → 쓰는 곳(접기) → 연결 설정(접기). 화면 아래에 설정 줄(4-16 — 본: lite 설정 시트): 잠긴 까닭 · 비밀 값.
       등록하는 서버는 HTTP 주소 하나다(명령형 stdio 는 서버가 받지 않는다 — 명령으로 띄우는 서버는 HTTP 로 띄워 등록).
    도구 이름은 이름 사전 하나(plainWords.js hydWords.toolName)로 보인다. 서버가 준 도구 설명은 에이전트가 읽는 원문이라 접어 둔다.
    원본: process-gpt-vue3 account-settings/MCPServer.vue(서버 목록 + 검사 요약 · 도구 수 · 펼침) · process-gpt-mcp-validator(도구 목록 · 실패 사유).
@@ -91,7 +93,7 @@
   const T = { streamable_http: 'HTTP', sse: 'SSE(구형)' };      // 목록 · 상세와 등록 폼이 같은 이름을 쓴다
   const KIND = { refused: '연결 거부', unreachable: '주소 없음', timeout: '시간 초과', auth: '인증 실패', not_mcp: '도구 연결 형식 아님',
     protocol: '프로토콜 오류', server: '서버 오류', closed: '연결 끊김', too_large: '응답 너무 큼', config: '설정 오류', secret: '비밀 값 없음' };
-  const S = { el: null, servers: [], tools: {}, sel: null, tab: 'tools', trying: null, info: null, openCall: null, results: {}, callTool: '', form: null,
+  const S = { el: null, servers: [], tools: {}, sel: null, tab: 'tools', trying: null, openCall: null, results: {}, callTool: '', form: null,
     confirming: null, secrets: null, listTimeout: null, acting: new Set() };
   const api = p => API.process + p;
   const REGISTER = 'tool_servers.register';                 // 수업 경계 행동 키(서버 course_policy.ACTIONS) — 등록 · 고치기 · 지우기 · 되돌리기 · 비밀 값이 같은 키다
@@ -112,8 +114,7 @@
 
   const ORIGIN = { seed: '기본 제공', user: '내가 등록한 것', external: '포털 밖에서 추가한 것' };
   const icon = (name, cls) => UI.icon(name, cls);
-  const tag = (label, tone, plain) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}${plain ? ' data-plain' : ''}>${esc(label)}</span>`;
-  const originTag = s => tag(ORIGIN[s.origin] || '기본 제공', '', true);
+  const tag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   // 이름–값. 값이 없는 줄은 그리지 않는다
   const kv = rows => { const r = rows.filter(([, v]) => v != null && v !== ''); return r.length ? `<dl class="kv">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>` : ''; };
   const CHECK = { ok: '연결 검사 통과', failed: '연결 검사 실패', stale: '설정이 바뀌어 다시 검사 필요', never: '연결 검사 전' };
@@ -164,63 +165,73 @@
   }
 
   function select(name) {
-    S.sel = name; S.tab = 'tools'; S.trying = null; S.info = null; S.openCall = null; S.callTool = ''; S.removed = null;
+    S.sel = name; S.tab = 'tools'; S.trying = null; S.openCall = null; S.callTool = ''; S.removed = null;
     if (S.form) { S.form = null; renderForm(); }      // 다른 서버를 고르면 쓰던 등록 폼을 닫는다(상세 자리는 하나다)
     renderServers(); renderDetail(); UI.revealDetail(S.el.querySelector('#mcpPanel'));
   }
 
-  // 읽는 차례(디자인 기준 5-4): 머리(이름 + 연결 상태 + 한 문장, 오른쪽에 연결 검사 · 고치기 · 지우기) → 에이전트 도구로 고를 수 있는지 →
-  // 쓰는 곳(에이전트 · 흐름 단계) → 도구 · 호출 기록 → 「자세히」(연결 설정)
+  /* 읽는 차례(디자인기준 5-1): 머리(이름 + 연결 상태 알약, 보조 줄 = 기본 제공인지 · 연결 방식 · 마지막 확인, 오른쪽 끝에 [연결 검사]와 「…」)
+     → (그 상황일 때만) 연결 확인 중의 과정 · 연결 실패의 까닭 · 에이전트 도구로 고를 수 있는지 → 도구 목록 | 호출 기록(보기 탭) → 쓰는 곳(접기 — 에이전트 · 흐름) → 연결 설정(접기) */
+  const row = (attrs, ic, title, right, meta) => `<button type="button" class="row" ${attrs}><span class="row-ic">${icon(ic)}</span><span class="row-title">${title}</span>${right || ''}${meta ? `<span class="row-meta">${meta}</span>` : ''}</button>`;
   function renderDetail() {
     const box = S.el.querySelector('#mcpDetail');
     if (S.form) { box.innerHTML = ''; return; }      // 등록 · 고치기 폼을 쓰는 동안 상세 자리는 폼이 쓴다
     const s = S.servers.find(x => x.name === S.sel);
-    if (!s) { box.innerHTML = removedNote() + (S.servers.length ? `<div class="pane-none">${UI.empty({ icon: 'plug', title: `도구 서버를 고르세요`, sub: `왼쪽 목록에서 고르면 그 서버의 도구와 호출 기록이 보입니다.` })}</div>` : ''); return; }
+    if (!s) { box.innerHTML = removedNote() + (S.servers.length ? `<div class="pane-none">${UI.empty({ title: '도구 서버를 고르세요', sub: '왼쪽 목록에서 고르면 그 서버의 도구와 호출 기록이 보입니다.' })}</div>` : ''); return; }
     const r = S.tools[s.name] || { loading: true };
     const tools = r.status === 'ok' ? r.tools : [];
     const limit = r.timeout_s || S.listTimeout;
+    // 그 상황일 때만 뜨는 줄: 설정 오류 · 확인하는 동안의 과정 · 연결 실패의 까닭. 연결돼 있으면 머리의 알약과 보조 줄이 이미 말한다
     const status = s.config_error ? failAlert('연결 설정에 오류가 있습니다', esc(s.config_error))
       : r.loading && r.track ? '<div data-mcp-track></div>'
       : r.loading ? hydLive.waitHtml('연결 확인 중', { since: r.since, hint: `도구 서버가 도구 목록을 돌려주기를 기다립니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}.` })
-      : r.status === 'ok' ? `<p class="muted">도구 ${tools.length}개 · 응답 ${esc(hydTrace.fmtMs(r.elapsed_ms))} · ${esc(UI.dateTime(r.checked_at))} 확인</p>`
+      : r.status === 'ok' ? ''
       : failAlert('지금 이 서버에 연결되지 않습니다', esc(r.error || '연결 실패') + (r.checked_at ? `<p class="muted">${esc(UI.dateTime(r.checked_at) + ' 확인' + (limit ? ' · 제한 ' + limit + '초' : ''))}</p>` : ''));
     const settings = [['서버 식별자', s.name], ['등록한 설명 원문', s.description], ['연결 오류 원문', s.config_error || r.error], ['서버가 보고한 이름', r.server_info?.name],
       ['종류', T[s.transport]], ['주소', s.url], ...Object.entries(s.headers || {}).map(([k, v]) => ['접속 헤더 ' + k, v])];
-    const about = [s.description && /[가-힣]/.test(s.description) ? s.description : '에이전트가 읽고 부르는 도구를 내놓는 서버입니다.', T[s.transport] ? T[s.transport] + ' 연결' : ''].filter(Boolean).join(' · ');
-    const seg = [['tools', '도구', r.status === 'ok' ? tools.length : null], ['calls', '호출 기록', null]].map(([k, l, n]) =>
-      `<button type="button" role="tab" aria-selected="${k === S.tab}" tabindex="${k === S.tab ? 0 : -1}" data-mcp-tab="${k}">${esc(l)}${n != null ? `<span class="num">${n}</span>` : ''}</button>`).join('');
-    const agents = s.agents.length ? s.agents.map(a => `<button type="button" class="use" data-goto-agent="${esc(a.id)}">${icon('bot')}<span><b>${esc(a.name)}</b></span><span class="muted">에이전트 보기</span></button>`).join('')
-      : '<p class="muted">이 서버를 쓰는 에이전트가 없습니다.</p>';
+    const sub = [ORIGIN[s.origin] || '기본 제공', s.description && /[가-힣]/.test(s.description) ? s.description : '', T[s.transport] ? T[s.transport] + ' 연결' : '',
+      r.status === 'ok' ? `응답 ${hydTrace.fmtMs(r.elapsed_ms)} · ${UI.dateTime(r.checked_at)} 확인` : ''].filter(Boolean).join(' · ');
+    const tabs = UI.viewTabs([['tools', '도구', r.status === 'ok' ? tools.length : null], ['calls', '호출 기록', null]], S.tab, 'data-mcp-tab', { small: true });
+    const agents = s.agents.map(a => row(`data-goto-agent="${esc(a.id)}"`, 'bot', esc(a.name), '<span class="go">에이전트 보기</span>')).join('');
     // 이 서버로 도는 에이전트 단계(서버 계산 — agents_store.run_servers, AI 에이전트 실행 서비스와 같은 규칙)는 흐름마다 한 줄로 모은다(단계 열두 줄을 늘어놓지 않는다)
     const byFlow = new Map();
     s.tasks.forEach(t => { if (!byFlow.has(t.definition)) byFlow.set(t.definition, { name: t.definition_name || UI.defName(t.definition), steps: [] }); byFlow.get(t.definition).steps.push(UI.flowName(t.activity_name)); });
-    const steps = [...byFlow].map(([id, f]) => `<button type="button" class="use" data-goto-flow="${esc(id)}">${icon('workflow')}<span><b>${esc(f.name)}</b> <span class="mcp-step-names">${esc(f.steps.join(' · '))}</span></span><span class="muted">단계 ${f.steps.length}</span></button>`).join('');
+    const steps = [...byFlow].map(([id, f]) => row(`data-goto-flow="${esc(id)}"`, 'workflow', esc(f.name), `<span class="go">흐름에서 보기</span>`, esc(f.steps.join(' · ')))).join('');
     // 이 서버의 도구를 직접 부르는 흐름 단계(「승인 뒤 MCP 호출」 — 서버 mcp_dependencies.steps_using). 지우면 이 단계가 멈춘다
-    const calls = (s.flow_steps || []).map(t => `<button type="button" class="use" data-goto-flow="${esc(t.definition)}">${icon('zap')}<span><b>${esc(t.definition_name || UI.defName(t.definition))}</b> ${esc(UI.flowName(t.activity_name))}</span>` +
-      `<span class="muted">${esc([`도구 ${t.tool || '미정'}`, `판본 ${t.version}`, t.running ? `진행 중 ${t.running}건` : ''].filter(Boolean).join(' · '))}</span></button>`).join('');
-    box.innerHTML = `<div class="panel-head pane-head"><span class="pane-ic">${icon('plug')}</span><div class="pane-title"><h2>${esc(serverLabel(s.name))}${statusTag(s.name)}${originTag(s)}</h2><p>${esc(about)}</p></div>` +
+    const calls = (s.flow_steps || []).map(t => row(`data-goto-flow="${esc(t.definition)}"`, 'zap', `${esc(t.definition_name || UI.defName(t.definition))} <span class="ag-step">${icon('chevron-right', 'ic-sm')}${esc(UI.flowName(t.activity_name))}</span>`,
+      `<span class="go">흐름에서 보기</span>`, esc([`도구 ${t.tool || '미정'}`, `판본 ${t.version}`, t.running ? `진행 중 ${t.running}건` : ''].filter(Boolean).join(' · ')))).join('');
+    const used = [s.agents.length ? `에이전트 ${s.agents.length}` : '', byFlow.size ? `흐름 ${byFlow.size}` : '', calls ? `부르는 흐름 단계 ${s.flow_steps.length}` : ''].filter(Boolean).join(' · ');
+    const uses = (agents ? `<h4 class="mcp-h">쓰는 에이전트</h4><div class="rows">${agents}</div>` : '') +
+      (calls ? `<div data-mcp-calls><h4 class="mcp-h">이 서버를 부르는 흐름 단계</h4><div class="rows">${calls}</div></div>` : '') +
+      (steps ? `<div data-mcp-flows><h4 class="mcp-h">이 서버로 도는 흐름</h4><div class="rows">${steps}</div></div>` : '');
+    const gate = gateLine(s, r);
+    // 방금 한 연결 검사의 과정(서버 진행 기록 — 단계마다 무엇을 받았는지와 걸린 시간): 다시 검사하거나 다시 읽을 때까지 남는다
+    const rec = !r.loading && S.lastCheck && S.lastCheck.name === s.name ? S.lastCheck.rec : null;
+    const checked = rec && (rec.steps || []).length ? `<div data-mcp-checked><h3>방금 한 연결 검사<span class="muted">${esc(UI.dateTime(rec.ended_at || rec.updated_at))}</span></h3>${UI.timeline(rec.steps.map(x => ({ state: x.state === 'ok' ? 'done' : x.state === 'fail' ? 'fail' : 'todo', name: x.label, sub: x.note || '',
+      time: x.started_at && x.ended_at ? hydTrace.fmtMs(Date.parse(x.ended_at) - Date.parse(x.started_at)) : '' })))}</div>` : '';
+    const canEdit = s.editable && !window.hydCourseAccess.blocked(REGISTER);      // 잠긴 단계에서는 고치기 · 지우기를 그리지 않는다 — 까닭은 화면 아래 설정 줄이 한 번 말한다
+    box.innerHTML = `<div class="panel-head pane-head"><div class="pane-title"><h2>${esc(serverLabel(s.name))}${statusTag(s.name)}</h2><p>${esc(sub)}</p></div>` +
       `<div class="pane-acts"><button type="button" class="btn" data-variant="outline" id="mcpProbe" ${r.loading || s.config_error ? 'disabled' : ''}>${icon('activity')}연결 검사</button>` +
-      (s.editable ? `<button type="button" class="btn" data-variant="outline" id="mcpEdit"${reg()}>${icon('pencil')}고치기</button>` +
-        `<button type="button" class="btn" data-variant="ghost" data-size="icon" id="mcpDelete" aria-label="지우기" data-tooltip="지우기" data-side="bottom"${reg()}>${icon('trash-2')}</button>` : '') +
-      `</div></div>` +
-      `<div class="panel-sec mcp-state">${gateLine(s, r)}${status}</div>` +
-      `<div class="panel-sec"><h3>쓰는 에이전트<span class="muted num">${s.agents.length || ''}</span></h3><div class="mcp-uses">${agents}</div></div>` +
-      (calls ? `<div class="panel-sec" data-mcp-calls><h3>이 서버를 부르는 흐름 단계<span class="muted num">${s.flow_steps.length}</span></h3><div class="mcp-steps">${calls}</div></div>` : '') +
-      `<div class="panel-sec" data-mcp-flows><h3>이 서버로 도는 흐름<span class="muted num">${byFlow.size || ''}</span></h3><div class="mcp-steps">${steps || '<p class="muted">이 서버로 도는 에이전트 단계가 없습니다.</p>'}</div></div>` +
-      `<div class="panel-sec"><div class="tabs view-tabs" data-size="sm"><nav role="tablist" aria-orientation="horizontal" aria-label="보기">${seg}</nav></div><div id="mcpPane"></div></div>` +
-      `<div class="panel-sec pane-fold"><details class="fold"><summary>연결 설정</summary><div class="fold-body">${kv(settings.map(([k, v]) => [k, v ? `<code class="inline">${esc(v)}</code>` : '']))}` +
-        `<p class="muted">비밀 값은 ******** 로 가려 보입니다. ${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기본 제공 서버는 고치거나 지울 수 없습니다. 내 서버는 새 이름으로 등록해 씁니다.'}</p></div></details></div>`;
+      (canEdit ? UI.moreMenu('mcpMore', [{ icon: 'pencil', label: '고치기', attrs: 'id="mcpEdit"' }, { act: 'remove', attrs: 'id="mcpDelete"' }]) : '') + `</div></div>` +
+      (gate || status || checked ? `<div class="panel-sec mcp-state">${gate}${status}${checked}</div>` : '') +
+      `<div class="panel-sec mcp-main">${tabs}<div id="mcpPane"></div></div>` +
+      `<div class="panel-sec pane-fold">${UI.fold(`쓰는 곳<span class="muted">${esc(used || '쓰는 에이전트 · 흐름 없음')}</span>`, uses || '<p class="muted">이 서버를 쓰는 에이전트도, 이 서버로 도는 흐름 단계도 없습니다.</p>', { cls: 'mcp-uses' })}` +
+        UI.fold('연결 설정', `${kv(settings.map(([k, v]) => [k, v ? `<code class="inline">${esc(v)}</code>` : '']))}` +
+        `<p class="muted">비밀 값은 ******** 로 가려 보입니다. ${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기본 제공 서버는 고치거나 지울 수 없습니다. 내 서버는 새 이름으로 등록해 씁니다.'}</p>`) + `</div>`;
     if (r.loading && r.track) r.track.mount(box.querySelector('[data-mcp-track]'));      // [연결 검사]가 도는 동안: 서버가 적는 단계(hydLive.track)
     box.querySelector('#mcpProbe')?.addEventListener('click', ev => checkSaved(s.name, ev.currentTarget));
     box.querySelector('#mcpEdit')?.addEventListener('click', () => openForm(s));
-    box.querySelector('#mcpDelete')?.addEventListener('click', ev => removeServer(s, ev.currentTarget));
+    box.querySelector('#mcpDelete')?.addEventListener('click', () => removeServer(s, null));
     box.querySelectorAll('[data-mcp-tab]').forEach(b => b.addEventListener('click', () => { S.tab = b.dataset.mcpTab; renderDetail(); }));
     box.querySelectorAll('[data-goto-agent]').forEach(b => b.addEventListener('click', () => { window.hydAgents.pick('agents', b.dataset.gotoAgent); window.hydShell.navigate({ tab: 'agents' }); }));
     box.querySelectorAll('[data-goto-flow]').forEach(b => b.addEventListener('click', () => { window.hydFlows.pick(b.dataset.gotoFlow); window.hydShell.navigate({ tab: 'flows' }); }));
+    // 펼친 채로 다시 그려도(연결 확인이 끝날 때) 그대로 둔다 — 누른 그 자리에서 적는다(toggle 은 한 박자 늦게 온다)
+    const fold = box.querySelector('.mcp-uses'); fold.open = !!S.usesOpen; fold.querySelector('summary').addEventListener('click', () => { S.usesOpen = !fold.open; });
     if (S.tab === 'calls') renderCalls(s); else renderTools(s, r);
   }
 
-  // 도구 한 줄: 이름과 쓸 수 있는지. 설명 원문 · 입력 형식은 [설명 · 입력 형식]을 눌렀을 때, 폼은 [써 보기]를 눌렀을 때 그 줄 아래에 열린다
+  // 도구 한 줄: 이름 · 쓸 수 있는지 한 줄 · [써 보기] 하나. 누르면 그 줄 아래에 입력 폼과 「에이전트가 읽는 설명 · 입력 형식」 접기가 열린다.
+  // 써 볼 수 없는 도구(쓰기 도구)는 단추가 꺼져 있고 그 까닭이 줄에 보이며, 설명 접기는 줄 아래에 바로 있다
   function renderTools(s, r) {
     const pane = S.el.querySelector('#mcpPane');
     if (r.loading) { pane.innerHTML = UI.loading(''); return; }
@@ -234,23 +245,21 @@
     pane.innerHTML = `<ul class="mcp-tools">${r.tools.map(t => {
       const fields = fieldsOf(t.input_schema);
       const usable = t.callable || (confirmed.has(t.name) && t.confirmable);
-      const open = S.trying === t.name, info = S.info === t.name;
+      const open = S.trying === t.name;
       // G2 ②: 표시(readOnlyHint)만 없는 도구는 읽기로 확인할 수 있다 — 확인한 도구는 에이전트 도구 · 써 보기에 들어간다
       const kind = t.callable ? '읽기 전용' : usable ? '읽기로 확인함' : '';
       const confirmBtn = !s.editable || t.callable ? '' : usable ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-unconfirm="${esc(t.name)}"${reg()}>확인 취소</button>`
         : t.confirmable ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-confirm="${esc(t.name)}"${reg()}>읽기로 확인</button>` : '';
-      const more = !info ? '' : `<div class="mcp-more"><h4>에이전트가 읽는 설명 원문</h4><p>${esc(t.description || '설명 없음')}</p><h4>입력 형식</h4>` +
+      const more = UI.fold('에이전트가 읽는 설명 · 입력 형식', `<div class="mcp-more"><h4>에이전트가 읽는 설명 원문</h4><p>${esc(t.description || '설명 없음')}</p><h4>입력 형식</h4>` +
         (fields.length ? `<div class="table-container"><table class="table"><thead><tr><th>입력 칸</th><th>데이터 형식</th><th>설명</th></tr></thead><tbody>${fields.map(f =>
           `<tr><td><code class="inline">${esc(f.key)}</code>${f.required ? ' <span class="mcp-req" aria-label="필수">*</span>' : ''}</td><td>${esc(typeName(f))}</td><td>${esc(f.description || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">입력 없이 부릅니다.</p>') +
-        `<p class="muted">도구 원래 이름 <code class="inline">${esc(t.name)}</code></p></div>`;
+        `<p class="muted">도구 원래 이름 <code class="inline">${esc(t.name)}</code></p></div>`, { cls: 'mcp-info' });
       return `<li class="mcp-tool" data-tool="${esc(t.name)}"><div class="mcp-tool-head"><div><b>${esc(toolLabel(s.name, t.name))}</b>${usable ? '' : ' ' + tag('써 보기 불가', 'warn')}` +
         `<span class="mcp-desc">${esc([kind, fields.length ? `입력 ${fields.length}칸` : '입력 없음'].filter(Boolean).join(' · '))}</span>${usable ? '' : `<span class="mcp-why">${esc(t.refuse_reason || '')}</span>`}</div>` +
-        `<div class="mcp-acts">${confirmBtn}<button type="button" class="btn" data-variant="ghost" data-size="sm" data-info="${esc(t.name)}" aria-expanded="${info}">${info ? '설명 닫기' : '설명 · 입력 형식'}</button>` +
-        `<button type="button" class="btn" data-variant="outline" data-size="sm" data-try="${esc(t.name)}" aria-expanded="${open}" ${usable ? '' : 'disabled'}>${open ? '닫기' : `${icon('play')}써 보기`}</button></div></div>` +
-        (S.confirming === t.name ? confirmForm(s, t) : '') + more + (open ? tryForm(s, t, fields) : '') + '</li>';
+        `<div class="mcp-acts">${confirmBtn}<button type="button" class="btn" data-variant="outline" data-size="sm" data-try="${esc(t.name)}" aria-expanded="${open}" ${usable ? '' : 'disabled'}>${open ? '닫기' : `${icon('play')}써 보기`}</button></div></div>` +
+        (S.confirming === t.name ? confirmForm(s, t) : '') + (open ? tryForm(s, t, fields, more) : usable ? '' : more) + '</li>';
     }).join('')}</ul>`;
     pane.querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', () => { S.trying = S.trying === b.dataset.try ? null : b.dataset.try; renderTools(s, r); }));
-    pane.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () => { S.info = S.info === b.dataset.info ? null : b.dataset.info; renderTools(s, r); }));
     pane.querySelectorAll('[data-confirm]').forEach(b => b.addEventListener('click', () => { S.confirming = S.confirming === b.dataset.confirm ? null : b.dataset.confirm; renderTools(s, r); }));
     pane.querySelectorAll('[data-unconfirm]').forEach(b => b.addEventListener('click', () => readConfirm(s, b.dataset.unconfirm, false, b)));
     pane.querySelector('#mcpConfirmSave')?.addEventListener('click', ev => readConfirm(s, S.confirming, true, ev.currentTarget));
@@ -287,18 +296,18 @@
     return `<input id="${esc(id)}" data-key="${esc(f.key)}" ${f.type === 'number' || f.type === 'integer' ? 'inputmode="decimal"' : ''} placeholder="${esc(ph)}">`;
   }
 
-  function tryForm(s, t, fields) {
+  function tryForm(s, t, fields, more = '') {
     const res = S.results[s.name + '/' + t.name];
     // 칸 도움말: 데이터 형식 · 원래 이름, 그리고 이름표로 쓰지 않은 설명 원문(이름표가 이미 설명이면 되풀이하지 않는다)
     const hint = f => [typeName(f), '원래 이름 ' + f.key, f.description && f.description !== fieldLabel(f) ? f.description : ''].filter(Boolean).join(' · ');
     const body = fields.length ? UI.section('', fields.map(f => UI.field({ label: fieldLabel(f), required: f.required, input: inputFor(f), hint: hint(f) })).join('')) : '<p class="muted">입력 없이 부릅니다.</p>';
     return `<div class="mcp-sub mcp-try">${body}<p class="muted">실제 서버를 부릅니다. 읽기 전용 도구만 허용되며 처리 건 · 설비 · 업무 DB를 바꾸지 않습니다. 결과가 아주 길면 앞부분만 보이고 잘린 크기를 함께 알려 줍니다.</p>` +
       `<footer class="form-foot"><button type="button" class="btn" id="mcpCall">${icon('play')}실행해 보기</button></footer>` +
-      `<div id="mcpResult" class="pane-msg" aria-live="polite">${res ? resultHtml(res) : ''}</div></div>`;
+      `<div id="mcpResult" class="pane-msg" aria-live="polite">${res ? resultHtml(res) : ''}</div>${more}</div>`;
   }
 
   function resultHtml(res) {
-    if (res.loading) return hydLive.waitHtml('도구를 실행하는 중', { since: res.since, hint: '도구 서버의 응답을 기다립니다. 서버가 결과를 한 번에 줍니다.' });
+    if (res.loading) return hydLive.waitHtml(`${res.label || '도구'} 실행하는 중`, { since: res.since, hint: `${res.server || '도구 서버'}의 응답을 기다립니다. 서버가 결과를 한 번에 줍니다.` });
     if (res.error) return failAlert('도구를 실행하지 못했습니다', esc(res.error));
     const r = res.result;
     // 결론(받았는지 · 오류인지) → 결과 → 원문 차례. 걸린 시간 · 길이 · 보낸 입력은 둘째 줄
@@ -334,7 +343,7 @@
       if (errors.length) { out.innerHTML = failAlert('입력을 확인하세요', errors.map(esc).join('<br>')); return; }
       const by = actor(); if (!by) return;
       const btn = S.el.querySelector('#mcpCall'); btn.disabled = true;
-      S.results[key] = { loading: true, since: new Date().toISOString() }; out.innerHTML = resultHtml(S.results[key]);
+      S.results[key] = { loading: true, since: new Date().toISOString(), label: `「${toolLabel(s.name, t.name)}」`, server: serverLabel(s.name) }; out.innerHTML = resultHtml(S.results[key]);
       try { S.results[key] = await postJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}/tools/${encodeURIComponent(t.name)}/call`), { arguments: args, by }); }
       catch (e) { S.results[key] = { error: e.message }; }
       if (out.isConnected) { out.innerHTML = resultHtml(S.results[key]); btn.disabled = false; }
@@ -403,6 +412,9 @@
         UI.toast(r.check.status === 'ok' ? `${serverLabel(name)}: 연결 검사를 통과했습니다. 도구 ${r.check.tools.length}개` : `${serverLabel(name)}: 연결 검사에 실패했습니다. ${r.check.error || ''}`, { tone: r.check.status === 'ok' ? 'ok' : 'neg' });
       } catch (e) { UI.toast(`${serverLabel(name)}: ${e.message}`, { tone: 'neg' }); }
       finally { track.stop(); }
+      // 검사가 1초 안에 끝나면 도는 동안의 단계 목록을 볼 틈이 없다 — 서버가 적은 진행 기록(무엇을 불렀고 무엇을 받았는지)을 한 번 읽어 그 서버의 상세에 남긴다
+      try { S.lastCheck = { name, rec: await getJ(api('/api/progress/' + encodeURIComponent(track.id))) }; }
+      catch (e) { S.lastCheck = null; console.error('연결 검사의 진행 기록을 읽지 못했습니다:', e.message); }
       await load();
     });
   }
@@ -436,10 +448,10 @@
       UI.field({ label: '주소', required: true, cls: 'mcp-wide', input: `<input data-f="url" value="${esc(v.url)}" placeholder="http://host.docker.internal:8301/mcp">`,
         hint: '내 PC 에서 띄운 서버면 localhost 대신 host.docker.internal 을 씁니다' }),
       UI.field({ label: '접속 헤더', cls: 'mcp-wide', input: `<textarea data-f="headers" rows="2" placeholder="Authorization=Bearer \${SECRET:MY_TOKEN}">${esc(v.headers)}</textarea>`,
-        hint: '토큰은 값 대신 \${SECRET:이름} 으로 적고, 값은 화면 아래 [고급]의 비밀 값에 넣으세요. 값을 그대로 적으면 저장하되 화면에서는 ******** 로 가립니다' }),
+        hint: '토큰은 값 대신 \${SECRET:이름} 으로 적고, 값은 화면 아래 「비밀 값」 줄에서 넣으세요. 값을 그대로 적으면 저장하되 화면에서는 ******** 로 가립니다' }),
       UI.field({ label: '설명', cls: 'mcp-wide', input: `<input data-f="description" maxlength="200" value="${esc(v.description)}" placeholder="이 서버가 하는 일 한 줄">` }),
     ].join('');
-    // 폼은 상세 자리에(디자인 기준 5-4): 제목 → 칸 → 못 한 까닭 → 취소 · 연결 검사만 · 검사 후 등록(주 단추) → 검사 과정과 결과
+    // 폼은 상세 자리에(디자인기준 5-1): 제목 → 칸 → 못 한 까닭 → 취소 · 연결 검사만 · 검사 후 등록(주 단추) → 검사 과정과 결과
     box.innerHTML = `<div class="panel-head"><div><h2>${F.editing ? `서버 고치기 — ${esc(v.name)}` : '서버 등록'}</h2>` +
       `<p>연결 검사를 통과해야 저장됩니다. 저장한 서버의 읽기 전용 도구만 에이전트 도구로 고를 수 있습니다.</p></div></div>` +
       `<div class="panel-sec mcp-form">${UI.section('연결', fields)}${F.error ? failAlert(F.editing ? '서버를 고치지 못했습니다' : '서버를 등록하지 못했습니다', esc(F.error)) : ''}` +
@@ -484,7 +496,7 @@
       if (!dry) {
         UI.toast(`${body.name}: ${F.editing ? '고쳤습니다' : '등록했습니다'} · 에이전트에 붙일 수 있는 도구 ${r.gate.read_tools.length}개`, { tone: 'ok' });
         (r.warnings || []).forEach(w => UI.toast(`${body.name}: ${w}`, { tone: 'neg' }));
-        S.form = null; renderForm(); S.sel = body.name; S.trying = null; S.info = null; await load(); return;
+        S.form = null; renderForm(); S.sel = body.name; S.trying = null; await load(); return;
       }
     } catch (e) {
       F.track.stop(); F.busy = false; F.error = e.message;
@@ -523,35 +535,49 @@
       (d.steps.length ? `<p>아래 흐름 단계는 실행될 때 서버가 없다는 까닭으로 멈춥니다. 흐름에서 그 단계의 도구 서버를 바꾸거나 같은 이름으로 서버를 다시 등록하세요.</p>` : '') + `<ul class="evid">${rows}</ul></section></div>`;
   }
 
-  // ---------------------------------------------------------------- G2 비밀 값 (${SECRET:이름}) — 값은 넣기만 하고 다시 보이지 않는다
+  /* ---------------------------------------------------------------- 화면 아래의 설정 줄(디자인기준 4-16 — 본: process-gpt-lite 설정 시트의 줄: 굵은 이름 · 한 줄 설명 · 오른쪽 동작 하나)
+     ① 잠긴 까닭: 서버가 tool_servers.register 를 막으면 「내 도구 서버」 줄이 그 까닭(서버 문장)을 말한다 — 머리의 [서버 등록]은 그리지 않는다(꺼진 주 단추를 가장 진한 자리에 두지 않는다).
+     ② 비밀 값(${SECRET:이름}): 줄 하나에 이름 · 쓰는 서버 · [지우기]. 값은 넣기만 하고 다시 보이지 않는다. 넣는 폼은 「비밀 값 넣기」 줄의 [넣기]가 연다.
+        잠긴 단계이고 넣어 둔 값도 없으면 비밀 값 줄을 그리지 않는다(쓸 서버를 등록할 수 없다).
+     되돌리기는 관리 › 내 설정 한 곳에 있고 같은 키로 잠긴다(configBundle.js SCOPES) */
   async function loadSecrets() {
-    const box = S.el.querySelector('#mcpSecrets');
-    try { S.secrets = await getJ(api('/api/mcp/secrets')); }
-    catch (e) { box.innerHTML = `<h3 class="mcp-h">비밀 값</h3>` + UI.errorBlock('비밀 값 목록을 불러오지 못했습니다', e.message, { retry: true }); box.querySelector('[data-retry]').addEventListener('click', loadSecrets); S.el.querySelector('#mcpOperator').open = true; return; }
-    renderSecrets();
+    try { S.secrets = await getJ(api('/api/mcp/secrets')); S.secretsError = ''; }
+    catch (e) { S.secretsError = e.message; }
+    renderOperator();
   }
-
-  function renderSecrets() {
-    const box = S.el.querySelector('#mcpSecrets');
+  function renderOperator() {
+    const box = S.el.querySelector('#mcpOperator'); if (!box) return;
+    const why = window.hydCourseAccess.blocked(REGISTER);
+    const add = S.el.querySelector('#mcpAdd');
+    add.outerHTML = `<button type="button" class="btn" id="mcpAdd"${reg()}${S.form || why ? ' hidden' : ''}>${icon('plus')}서버 등록</button>`;
+    S.el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
     const list = (S.secrets && S.secrets.secrets) || [];
-    const missing = list.filter(x => x.missing).length;
-    const rows = list.length ? `<ul class="mcp-tools">${list.map(x => `<li class="mcp-tool"><div class="mcp-tool-head"><div><b class="mono">${esc(x.key)}</b>${x.stored ? '' : ' ' + tag('값 없음', 'danger')}` +
-      `<span class="mcp-desc">${x.stored ? '저장됨 · ' : ''}${x.used_by.length ? '쓰는 서버: ' + x.used_by.map(n => esc(serverLabel(n))).join(', ') : '쓰는 서버 없음'}${x.updated_at ? ' · ' + esc(UI.dateTime(x.updated_at)) + ' ' + esc(x.updated_by ? UI.who(x.updated_by) : '') : ''}</span></div>` +
-      (x.stored ? `<div class="mcp-acts"><button type="button" class="btn" data-variant="ghost" data-size="sm" data-secret-del="${esc(x.key)}"${reg()}>${icon('trash-2')}지우기</button></div>` : '') + '</div></li>').join('')}</ul>` : '<p class="muted">아직 넣은 비밀 값이 없습니다.</p>';
-    const form = `<div class="mcp-secret-new">${UI.section('비밀 값 넣기', UI.field({ label: '이름', required: true, input: '<input id="mcpSecretKey" placeholder="MY_TOKEN">', hint: '대문자 · 숫자 · 밑줄' }) +
-      UI.field({ label: '값', required: true, input: '<input id="mcpSecretValue" type="password" autocomplete="off">', hint: '저장하면 다시 보이지 않습니다. 토큰이 만료되면 같은 이름으로 다시 넣으세요' }))}` +
-      `<div data-mcp-secret-msg class="pane-msg"></div><footer class="form-foot"><button type="button" class="btn" data-variant="outline" id="mcpSecretSave"${reg()}>비밀 값 저장</button></footer></div>`;
-    box.innerHTML = `<h3 class="mcp-h">비밀 값</h3>` + ((S.secrets && S.secrets.rule) ? `<p class="muted">${esc(S.secrets.rule)}</p>` : '') + rows + form;
-    const operator = S.el.querySelector('#mcpOperator');
-    operator.querySelector('[data-mcp-missing]').textContent = missing ? `값이 없는 비밀 값 ${missing}개` : '';
-    if (missing) operator.open = true;
+    const rows = [];
+    if (why) rows.push(UI.settingRow({ title: '내 도구 서버', desc: why, attrs: 'data-mcp-why' }));
+    if (S.secretsError) rows.push(`<div class="setting" data-mcp-secrets-error>${UI.errorBlock('비밀 값 목록을 불러오지 못했습니다', S.secretsError, { retry: true })}</div>`);
+    else if (!why || list.length) {
+      list.forEach(x => rows.push(UI.settingRow({ title: x.key, attrs: `data-secret="${esc(x.key)}"`,
+        desc: [x.stored ? '저장됨' : '값 없음 — 이 이름을 쓰는 서버는 값을 넣을 때까지 연결되지 않습니다', x.used_by.length ? '쓰는 서버: ' + x.used_by.map(n => serverLabel(n)).join(', ') : '쓰는 서버 없음',
+          x.updated_at ? UI.dateTime(x.updated_at) + (x.updated_by ? ' ' + UI.who(x.updated_by) : '') : ''].filter(Boolean).join(' · '),
+        action: (x.stored ? '' : tag('값 없음', 'danger')) + (x.stored ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-secret-del="${esc(x.key)}"${reg()}>${icon('trash-2')}지우기</button>` : '') })));
+      rows.push(UI.settingRow({ title: '비밀 값 넣기', desc: (S.secrets && S.secrets.rule) || '접속 헤더에 ${SECRET:이름}으로 적은 토큰의 값을 넣습니다. 저장하면 다시 보이지 않습니다.',
+        action: `<button type="button" class="btn" data-variant="outline" data-size="sm" id="mcpSecretOpen" aria-expanded="${!!S.secretOpen}"${reg()}>${icon('plus')}넣기</button>` }));
+    }
+    const form = S.secretOpen && !why ? `<div class="mcp-secret-new">${UI.section('', UI.field({ label: '이름', required: true, input: '<input id="mcpSecretKey" placeholder="MY_TOKEN">', hint: '대문자 · 숫자 · 밑줄' }) +
+      UI.field({ label: '값', required: true, input: '<input id="mcpSecretValue" type="password" autocomplete="off">', hint: '토큰이 만료되면 같은 이름으로 다시 넣으세요' }))}` +
+      `<div data-mcp-secret-msg class="pane-msg"></div>${UI.formFoot(`<button type="button" class="btn" id="mcpSecretSave"${reg()}>비밀 값 저장</button>`, { cancelAttrs: 'id="mcpSecretCancel"' })}</div>` : '';
+    box.hidden = !rows.length;
+    box.innerHTML = rows.length ? `<div class="settings">${rows.join('')}</div>${form}` : '';
     const say = html => { box.querySelector('[data-mcp-secret-msg]').innerHTML = html; };
+    box.querySelector('[data-retry]')?.addEventListener('click', loadSecrets);
+    box.querySelector('#mcpSecretOpen')?.addEventListener('click', () => { S.secretOpen = !S.secretOpen; renderOperator(); S.el.querySelector('#mcpSecretKey')?.focus(); });
+    box.querySelector('#mcpSecretCancel')?.addEventListener('click', () => { S.secretOpen = false; renderOperator(); });
     box.querySelector('#mcpSecretSave')?.addEventListener('click', e => once('secret:save', e.currentTarget, async () => {
       const key = box.querySelector('#mcpSecretKey').value.trim(), value = box.querySelector('#mcpSecretValue').value;
       if (!key) { say(failAlert('비밀 값을 저장하지 못했습니다', '이름을 적으세요 (대문자 · 숫자 · 밑줄).')); return; }
       if (!value) { say(failAlert('비밀 값을 저장하지 못했습니다', '값을 넣으세요.')); return; }
       const by = actor(); if (!by) return;
-      try { await postJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}`), { value, by }, 'PUT'); UI.toast(`${key}: 저장했습니다`, { tone: 'ok' }); }
+      try { await postJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}`), { value, by }, 'PUT'); UI.toast(`${key}: 저장했습니다`, { tone: 'ok' }); S.secretOpen = false; }
       catch (err) { say(failAlert('비밀 값을 저장하지 못했습니다', esc(err.message))); return; }
       await loadSecrets();
     }));
@@ -562,40 +588,32 @@
         body: users.length ? `이 값을 쓰는 서버(${users.map(n => serverLabel(n)).join(', ')})는 다시 넣을 때까지 연결 · 호출이 실패합니다. 지운 값은 되살릴 수 없습니다.` : '지운 값은 되살릴 수 없습니다.' })) return;
       await once('secret:del:' + key, b, async () => {
         try { await requestJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}?by=${encodeURIComponent(by)}`), { method: 'DELETE' }); UI.toast(`${key}: 지웠습니다`, { tone: 'ok' }); }
-        catch (err) { say(failAlert('비밀 값을 지우지 못했습니다', esc(err.message))); return; }
+        catch (err) { UI.toast(`${key}: ${err.message}`, { tone: 'neg', timeout: 8000 }); return; }
         await loadSecrets();
       });
     }));
-  }
-
-  // 수업 경계에 묶인 단추(서버 등록) — 서버가 tool_servers.register 를 막으면 머리의 주 단추를 그리지 않고(꺼진 주 단추를 가장 진한 자리에 두지 않는다) 그 까닭이 서버 목록 아래의 한 줄(누르면 까닭 전문이 펼쳐진다)로 보인다.
-  // 되돌리기는 관리 › 내 설정 한 곳에 있고 같은 키로 잠긴다(configBundle.js SCOPES)
-  function renderOperator() {
-    const why = window.hydCourseAccess.blocked(REGISTER);
-    S.el.querySelector('[data-mcp-why]').innerHTML = why ? `<details class="fold lock-note" data-plain role="status"><summary>${icon('lock', 'ic-sm')}지금은 서버를 등록 · 고치기 · 지우기 할 수 없습니다</summary><div class="fold-body">${esc(why)}</div></details>` : '';
-    S.el.querySelector('#mcpAdd').outerHTML = `<button type="button" class="btn" id="mcpAdd"${reg()}${S.form || why ? ' hidden' : ''}>${icon('plus')}서버 등록</button>`;
-    S.el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
+    window.hydCourseAccess.apply(box);
   }
 
   function mount(el) {
     if (!el) return;
     S.el = el;
-    // 차례: 제목 · 한 문장 · 주 단추 하나 → 왼쪽 서버 목록 · 오른쪽 상세(등록 폼도 이 자리) → 맨 아래 「비밀 값」 접기와 「관리에서 되돌리기」 한 줄
-    el.innerHTML = UI.pageHead('mcp', { sub: '에이전트가 읽고 부르는 도구 서버(MCP)와 그 도구를 보고, 직접 불러 결과를 확인합니다.', tools: '<button type="button" class="btn" id="mcpAdd" hidden>서버 등록</button>', more: [{ act: 'reload', attrs: 'id="mcpReload"' }] }) +
-      `<div class="split"><div class="pane-side"><div class="rows" id="mcpServers" aria-label="도구 서버 목록"></div><div class="mcp-why" data-mcp-why></div></div><section class="panel" id="mcpPanel" aria-label="고른 도구 서버"><div id="mcpForm"></div><div id="mcpDetail"></div></section></div>` +
-      `<details class="fold pane-foot" id="mcpOperator"><summary>비밀 값<span class="muted" data-tone="danger" data-mcp-missing></span></summary><div class="fold-body"><div id="mcpSecrets"></div></div></details>` +
+    // 차례: 제목 · 한 문장 · 주 단추 하나 → 왼쪽 서버 목록 · 오른쪽 상세(등록 폼도 이 자리) → 화면 아래 설정 줄(잠긴 까닭 · 비밀 값)과 「관리에서 되돌리기」 한 줄
+    el.innerHTML = UI.pageHead('mcp', { sub: '에이전트가 부르는 도구 서버(MCP)와 그 도구를 보고, 직접 불러 결과를 확인합니다.', tools: '<button type="button" class="btn" id="mcpAdd" hidden>서버 등록</button>', more: [{ act: 'reload', attrs: 'id="mcpReload"' }] }) +
+      `<div class="split"><div class="pane-side"><div class="rows" id="mcpServers" aria-label="도구 서버 목록"></div></div><section class="panel" id="mcpPanel" aria-label="고른 도구 서버"><div id="mcpForm"></div><div id="mcpDetail"></div></section></div>` +
+      `<section class="pane-foot mcp-set" id="mcpOperator" aria-label="비밀 값과 등록" hidden></section>` +
       UI.resetLink('mcp', '내가 등록한 도구 서버와 비밀 값을');
-    el.querySelector('#mcpReload').addEventListener('click', () => load());
+    el.querySelector('#mcpReload').addEventListener('click', () => { S.lastCheck = null; load(); loadSecrets(); });
     renderOperator();
     loadSecrets();
     load();
   }
   // 수업 범위가 늦게 오거나 바뀌면 이 화면의 행동 단추를 다시 맞춘다
-  window.hydCourseAccess.onChange(() => { if (!S.el) return; renderOperator(); renderDetail(); renderForm(); if (S.secrets) renderSecrets(); });
+  window.hydCourseAccess.onChange(() => { if (!S.el) return; renderOperator(); renderDetail(); renderForm(); });
 
   // pick(서버 이름): 다른 화면(에이전트의 도구 서버)이 이 화면을 그 서버를 고른 채 열 때 부른다. show: 다시 열 때 그 서버를 고른다
   function show() { if (S.el && S.want) { const name = S.want; S.want = null; if (S.servers.some(s => s.name === name)) select(name); } }
   // 관리 › 내 설정에서 되돌렸으면(이 화면이 그려져 있을 때) 고른 것 · 폼을 비우고 다시 읽는다
-  window.addEventListener('hyd-config-reset', e => { if (!S.el || !['all', 'mcp'].includes(e.detail.scope)) return; S.sel = null; S.form = null; renderForm(); load(); loadSecrets(); });
+  window.addEventListener('hyd-config-reset', e => { if (!S.el || !['all', 'mcp'].includes(e.detail.scope)) return; S.sel = null; S.form = null; S.secretOpen = false; renderForm(); load(); loadSecrets(); });
   window.hydMcp = { mount, show, pick: name => { S.want = name; S.sel = name; } };
 })();

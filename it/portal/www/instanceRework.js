@@ -74,9 +74,9 @@
           ${UI.raw({ workitems: p.affected_workitems, reasons: p.reasons, candidate_variables: p.candidate_variables, blockers: p.blockers, effects: p.effects })}` });
       }
       const finished = view.instance.status !== 'RUNNING' && !s.pending;   // A091: a finished instance folds this panel to one line
-      const body = `${s.success ? `<p class="rework-done" role="status">${esc(s.success.generation)}${esc(UI.t('inst.gen'))} 요청이 접수됐습니다. 새 단계의 진행과 사람 선택을 확인하세요.</p>` : ''}
+      const body = `${s.success ? `<p class="rework-done" role="status">${esc(Number(s.success.generation) + 1)}${esc(UI.t('inst.gen'))} 요청이 접수됐습니다. 새 단계의 진행과 사람 선택을 확인하세요.</p>` : ''}
         ${finished ? '<p class="muted">종료된 처리 건입니다. 다시 수행 이력만 남아 있습니다.</p>' : `<div>
-        <fieldset class="fieldset"><div role="group">${UI.field({ label: '다시 시작할 단계', required: true, hint: '조건이나 판단 근거가 바뀌었다면 시작할 단계를 고릅니다. 이전 결과는 이력으로 남습니다.', input: `<select id="rwStart" ${locked}><option value="">${esc(UI.t('step'))} 선택</option>${list.map(w => `<option value="${esc(w.id)}" ${w.id === s.workitem ? 'selected' : ''}>${esc(UI.flowName(w.activity_name))}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''} · ${esc(UI.status(w.status))}</option>`).join('')}</select>` })}
+        <fieldset class="fieldset"><div role="group">${UI.field({ label: '다시 시작할 단계', required: true, hint: '조건이나 판단 근거가 바뀌었다면 시작할 단계를 고릅니다. 이전 결과는 이력으로 남습니다.', input: `<select id="rwStart" ${locked}><option value="">${esc(UI.t('step'))} 선택</option>${list.map(w => `<option value="${esc(w.id)}" ${w.id === s.workitem ? 'selected' : ''}>${esc(UI.flowName(w.activity_name))}${w.generation ? ` · ${esc(w.generation + 1)}${esc(UI.t('inst.gen'))}` : ''} · ${esc(UI.status(w.status))}</option>`).join('')}</select>` })}
           <div class="rework-go"><button type="button" class="btn" data-variant="outline" id="rwPreview" ${locked}>${esc(UI.t('btn.effects'))}</button></div></div></fieldset>
         ${detail}
         ${noRole ? `<div class="alert" data-rework-norole role="status">${UI.icon('info')}<h2>이 처리 건은 다시 수행을 요청할 수 없습니다</h2><section>이 흐름에는 사람이 맡는 역할이 없습니다. 다시 수행은 사람이 맡는 단계가 있는 흐름에서 그 역할로 요청합니다.</section></div>` : `

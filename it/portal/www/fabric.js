@@ -1,9 +1,10 @@
-/* A11 데이터 패브릭 미니 — 업무 DB(Supabase ent)와 시계열 DB(TimescaleDB)를 읽기만 해서 설비 하나로 묶어 본다.
-   window.hydFabric.mount(el). 차례(결론 먼저 · 근거 다음 · 원문 접기): 원천과 연결의 지금 상태(숫자 타일) → 보기 셋(묶어 보기 = 왼쪽 조건 · 오른쪽 결과, 원천과 표, 클래스 ↔ 표·열).
-   색은 상태에만 쓴다 — 어느 원천인지는 글로 쓰고, 뱃지는 문제가 있는 상태에만 붙인다. 조회문(SQL)과 연결 정보는 접기 안에 있다. 화면 제목과 한 문장은 index.html 에, 배치는 screens.css 에 있다.
+/* 데이터 원천(#/fabric) — 업무 DB(Supabase ent)와 시계열 DB(TimescaleDB)를 읽기만 해서 AI가 쓰는 값이 어느 원천 · 표 · 열에서 오는지 본다.
+   window.hydFabric.mount(el). 보기 탭 셋(디자인 기준 4-6): 원천과 표(목록 + 상세 — 처음 보이는 보기) · 두 DB 묶어 보기(왼쪽 조건 · 오른쪽 결과) · 지식 지도 ↔ 표 · 열.
+   원천과 연결의 지금 상태는 그 탭 안의 한 줄로 말한다(같은 숫자를 카드 · 탭 · 표에 겹쳐 두지 않는다). 색은 상태에만 쓴다 — 어느 원천인지는 글로 쓰고, 알약은 문제가 있는 상태에만 붙인다.
+   조회문(SQL)과 연결 정보는 접기 안에 있다. 화면 제목과 한 문장은 index.html 에, 배치는 knowledge.css 에 있다.
    API: process /api/fabric/* (procsvc/fabric_api.py) — 에이전트의 MCP 도구 hyd-dmn fabric_query 와 같은 함수다. 쓰기 버튼 없음. */
 (function () {
-  const S = { el: null, tab: 'join', sources: null, links: null, queries: [], errors: {}, result: null, resultError: '', busy: false,
+  const S = { el: null, tab: 'sources', sources: null, links: null, queries: [], errors: {}, result: null, resultError: '', busy: false,
               picked: null, sample: {}, asset: 'HYD-01', query: 'asset' };
   const KLASS = { Asset: '설비', Sensor: '센서', Actuator: '구동기 설정값', InputData: '판단 입력', Part: '부품', Supplier: '공급사' };      // 지식 지도의 항목 종류 이름
   const STATE = { OK: ['연결됨', 'success'], MISSING: ['원천에 없음', 'danger'], SOURCE_DOWN: ['원천 연결 실패', 'danger'],
@@ -14,7 +15,6 @@
   const srcName = (id, label) => esc(label || id);
   const group = (label, body) => body ? `<h3>${label}</h3>${body}` : '';
   const table = (head, rows) => `<div class="table-container"><table class="table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
-  const dot = tone => `<i class="dot"${tone ? ` data-tone="${tone}"` : ''}></i>`;
   const srcLabel = id => ((S.sources || []).find(s => s.id === id) || {}).label || id;   // 원천 이름은 서버(fabric.SOURCES) 한 곳
   const val = (v, unit) => v == null ? '<span class="muted">값 없음</span>' : `<b>${esc(typeof v === 'number' ? window.hydWords.num(v) : v)}</b>${unit ? ' ' + esc(unit) : ''}`;
   const code = (t) => t ? `<code class="inline">${esc(t)}</code>` : '';
@@ -26,28 +26,21 @@
     return table(columns.map(c => `<th>${esc(c)}</th>`).join(''), body) + (rows.length > max ? `<p class="muted">${rows.length}행 중 ${max}행을 보입니다.</p>` : '');
   }
 
-  /* ---------- 지금 상태 ---------- */
-  // 숫자 타일 둘: 원천 몇 개가 연결됐는지, 지식 지도의 항목이 표 · 열에 닿는지. 숫자 자리에는 숫자만 둔다(원천마다 「연결됨」을 큰 글로 되풀이하지 않는다) —
-  // 연결되지 않았거나 읽기 전용이 아닌 원천만 이름과 까닭을 보조 줄에 적는다. 응답 전에는 읽는 중, 실제로 못 읽었을 때만 확인 실패
-  function summary() {
-    const tile = (name, value, sub, tone) => `<div class="stat"><div class="stat-label">${esc(name)}</div><div class="stat-value">${value}</div><div class="stat-note"${tone ? ` data-tone="${tone}"` : ''}>${sub}</div></div>`;
-    const big = (n, unit) => `<span class="num">${esc(n)}</span><small>${esc(unit)}</small>`;
-    const tiles = [];
-    if (S.sources) {
-      const bad = S.sources.filter(x => !x.ok), rw = S.sources.filter(x => x.ok && !x.read_only);
-      if (!S.sources.length) tiles.push(tile('원천', big(0, '개'), '등록된 원천이 없습니다 — 처리 서비스의 원천 설정을 확인하세요', 'warn'));
-      else tiles.push(tile('원천', big(`${S.sources.length - bad.length} / ${S.sources.length}`, '연결됨'),
-        bad.length ? esc(bad.map(x => `${x.label}: ${x.reason}`).join(' · ')) : rw.length ? esc(`읽기 전용이 아닌 원천: ${rw.map(x => x.label).join(', ')}`) : esc(S.sources.map(x => x.label).join(' · ') + ' — 모두 읽기 전용'),
-        bad.length ? 'danger' : rw.length ? 'warn' : ''));
-    } else tiles.push(S.errors.sources ? tile('원천', '확인 실패', esc(S.errors.sources) + ' — 화면을 다시 열면 다시 읽습니다', 'danger') : tile('원천', '<div class="skeleton" style="height:22px;width:90px"></div>', '업무 DB와 시계열 DB의 연결을 확인하고 있습니다'));
-    const cls = S.links ? S.links.classes : [];
-    const ok = cls.filter(c => c.state === 'OK').length;
-    const unbound = S.links ? S.links.inputs.filter(i => i.state === 'UNBOUND').length : 0;
-    // 지식 지도의 항목 종류(설비 · 센서 · 판단 입력 …)가 원천의 표 · 열에 닿는가. 판단 입력 가운데 표 · 열을 정하지 않은 것이 있으면 그 수를 말한다(「다 좋다」로 읽히지 않게)
-    tiles.push(S.links ? tile('지식 지도 ↔ 표 · 열', unbound ? big(unbound, '개 판단 입력 미연결') : big(`${ok} / ${cls.length}`, '연결됨'),
-        S.links.graph.ok ? `항목 종류 ${cls.length}개 가운데 ${ok}개가 원천에 닿습니다` : esc(S.links.graph.reason), S.links.graph.ok ? (unbound ? 'warn' : '') : 'danger')
-      : S.errors.links ? tile('지식 지도 ↔ 표 · 열', '확인 실패', esc(S.errors.links) + ' — 화면을 다시 열면 다시 읽습니다', 'danger') : tile('지식 지도 ↔ 표 · 열', '<div class="skeleton" style="height:22px;width:90px"></div>', '지식 지도의 항목과 원천의 표를 대조하고 있습니다'));
-    return `<div class="stats fab-stats" aria-label="원천과 연결의 지금 상태">${tiles.join('')}</div>`;
+  /* ---------- 지금 상태: 그 탭 안의 한 줄 ---------- */
+  // 원천과 표: 원천 몇 개가 연결됐는지. 연결되지 않았거나 읽기 전용이 아닌 원천만 이름과 까닭을 적는다
+  const line = (text, tone) => `<p class="fab-line"${tone ? ` data-tone="${tone}"` : ''}>${esc(text)}</p>`;
+  function sourcesLine() {
+    const bad = S.sources.filter(x => !x.ok), rw = S.sources.filter(x => x.ok && !x.read_only), n = S.sources.length;
+    if (!n) return line('등록된 원천이 없습니다 — 처리 서비스의 원천 설정을 확인하세요.', 'warn');
+    if (bad.length) return line(`원천 ${n}개 가운데 ${bad.length}개에 연결하지 못했습니다 — ${bad.map(x => `${x.label}: ${x.reason}`).join(' · ')}`, 'danger');
+    if (rw.length) return line(`원천 ${n}개가 연결돼 있습니다. 읽기 전용이 아닌 원천: ${rw.map(x => x.label).join(', ')}`, 'warn');
+    return line(`원천 ${n}개가 모두 연결돼 있고 읽기 전용입니다.`);
+  }
+  // 지식 지도 ↔ 표 · 열: 항목 종류가 원천에 닿는가, 판단 입력 가운데 표 · 열을 정하지 않은 것이 몇 개인가(「다 좋다」로 읽히지 않게)
+  function linksLine() {
+    const L = S.links, cls = L.classes, ok = cls.filter(c => c.state === 'OK').length, unbound = L.inputs.filter(i => i.state === 'UNBOUND').length;
+    if (!L.graph.ok) return line(L.graph.reason, 'danger');
+    return line(`지식 지도의 항목 종류 ${cls.length}개 가운데 ${ok}개가 원천에 닿습니다.` + (unbound ? ` 판단 입력 ${unbound}개는 표 · 열이 아직 정해지지 않았습니다.` : ''), unbound || ok < cls.length ? 'warn' : '');
   }
 
   /* ---------- 탭 1: 두 DB 묶어 보기 ---------- */
@@ -55,7 +48,7 @@
     const a = S.links && S.links.classes.find(c => c.klass === 'Asset' && c.source === 'hyd-enterprise');
     return a ? [...(a.matched || []), ...(a.unmatched || [])].map(m => m.key) : [];
   }
-  // 왼쪽에 조건, 오른쪽에 결과(디자인 기준 5-6)
+  // 왼쪽에 조건, 오른쪽에 결과(디자인 기준 5-2)
   function joinTab() {
     const opts = [['asset', '설비 하나로 두 원천 값 합치기'], ...S.queries.map(q => [q.id, q.title])];
     const q = S.queries.find(x => x.id === S.query);
@@ -74,7 +67,7 @@
   function result() {
     if (S.resultError) return UI.errorBlock('조회하지 못했습니다', S.resultError);
     const r = S.result;
-    if (!r) return UI.empty({ icon: 'database', title: '아직 묶어 본 결과가 없습니다', sub: '조건에서 설비와 질문을 고르고 [묶어 보기]를 누르면, 두 DB에서 읽은 값이 어느 원천 · 표 · 열에서 왔는지와 함께 보입니다.' });
+    if (!r) return UI.empty({ title: '아직 묶어 본 결과가 없습니다', sub: '조건에서 설비와 질문을 고르고 [묶어 보기]를 누르면, 두 DB에서 읽은 값이 어느 원천 · 표 · 열에서 왔는지와 함께 보입니다.' });
     const down = Object.entries(r.sources || {}).filter(([, s]) => !s.ok);
     const warn = down.length ? `<div class="alert" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>일부 원천을 읽지 못했습니다</h2><section>${down.map(([id, s]) => `${esc(srcLabel(id))}: ${esc(s.reason)}`).join(' · ')}</section></div>` : '';
     const notes = (r.notes || []).map(n => `<p class="muted">${esc(n)}</p>`).join('');
@@ -119,15 +112,15 @@
   /* ---------- 탭 2: 원천 · 표 · 샘플 — 목록 + 상세(.split) ---------- */
   // 왼쪽 = 원천마다 묶은 표 목록(묶음 머리 = 원천 이름, 줄 = 표 이름), 오른쪽 = 고른 표(머리 → 열 → 최신 행 → 조회문 · 연결 정보 접기)
   function sourcesTab() {
-    if (!S.sources) return S.errors.sources ? UI.errorBlock('원천 상태를 읽지 못했습니다', S.errors.sources) : UI.loading('');
+    if (!S.sources) return S.errors.sources ? UI.errorBlock('원천 상태를 읽지 못했습니다', S.errors.sources, { retry: true }) : UI.loading('');
     const cur = S.picked;
     const list = S.sources.map(s => `<div class="rows-group">${esc(s.label)}<span class="muted num">${s.ok ? s.tables.length : ''}</span></div>` +
       (s.ok ? s.tables.map(t => `<button type="button" class="row" data-fab-table="${esc(s.id)}|${esc(t.name)}"${cur && cur.sid === s.id && cur.name === t.name ? ' aria-current="true"' : ''}><span class="row-ic">${UI.icon('database')}</span><span class="row-title mono">${esc(t.name)}</span></button>`).join('')
         : `<div class="pane-list-note">${UI.errorBlock('이 원천에 연결하지 못했습니다', s.reason)}</div>`)).join('');
     const src = cur && S.sources.find(s => s.id === cur.sid);
     const detail = src ? tableDetail(src, cur.name)
-      : `<div class="pane-none">${UI.empty({ icon: 'database', title: '표를 고르세요', sub: '왼쪽 목록에서 표를 고르면 그 표의 열(뜻)과 최신 행이 여기에 보입니다.' })}</div>`;
-    return `<div class="split"><div class="pane-side"><div class="rows fab-tables" aria-label="원천과 표">${list}</div></div><section class="panel" aria-label="고른 표">${detail}</section></div>`;
+      : `<div class="pane-none">${UI.empty('표를 고르세요', '왼쪽 목록에서 표를 고르면 그 표의 열(뜻)과 최신 행이 여기에 보입니다.')}</div>`;
+    return sourcesLine() + `<div class="split"><div class="pane-side"><div class="rows fab-tables" aria-label="원천과 표">${list}</div></div><section class="panel" aria-label="고른 표">${detail}</section></div>`;
   }
   function tableDetail(s, name) {
     const sid = s.id;
@@ -140,7 +133,7 @@
     const sample = !sm ? UI.loading('최신 행을 읽는 중') : sm.error ? UI.errorBlock('최신 행을 읽지 못했습니다', sm.error) : rowsTable(sm.columns, sm.rows);
     const more = (sm && sm.statement ? group('최신 행을 읽은 조회문', `<pre class="code">${esc(sm.statement)}</pre>`) : '') + group('연결 정보', `<p class="muted">DB 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}</p>`);
     const sec = (title, side, body) => `<div class="panel-sec"><h3>${title}${side ? `<span class="muted num">${side}</span>` : ''}</h3>${body}</div>`;
-    return `<header class="panel-head pane-head"><span class="pane-ic">${UI.icon('database')}</span><div class="pane-title"><h2><span class="mono">${esc(name)}</span>${s.read_only ? '' : UI.chipText('읽기 전용 아님', 'danger')}</h2>` +
+    return `<header class="panel-head pane-head"><div class="pane-title"><h2><span class="mono">${esc(name)}</span>${s.read_only ? '' : UI.chipText('읽기 전용 아님', 'danger')}</h2>` +
       `<p>${esc([meta && meta.comment, s.label, s.engine, s.read_only ? '읽기 전용' : ''].filter(Boolean).join(' · '))}</p></div></header>` +
       sec('열', meta ? meta.columns.length + '개' : '', cols) + sec(sm && !sm.error ? `최신 ${sm.row_count}행` : '최신 행', '', sample) +
       `<div class="panel-sec pane-fold">${UI.fold('조회문 · 연결 정보', more)}</div>`;
@@ -149,8 +142,7 @@
   /* ---------- 탭 3: 클래스 ↔ 표·열 ---------- */
   function linksTab() {
     const L = S.links;
-    if (!L) return S.errors.links ? UI.errorBlock('연결을 읽지 못했습니다', S.errors.links) : UI.loading('');
-    const graph = L.graph.ok ? '' : UI.errorBlock('지식 지도를 읽지 못했습니다', L.graph.reason);
+    if (!L) return S.errors.links ? UI.errorBlock('연결을 읽지 못했습니다', S.errors.links, { retry: true }) : UI.loading('');
     const classes = table('<th>항목 종류 (식별 키)</th><th>원천 위치</th><th>상태</th><th>원천에 있음</th><th>원천에 없음</th>',
       L.classes.map(c => `<tr><td>${esc(c.label)}<small>${esc(c.key_label || c.key)}</small></td><td>${code(c.table + '.' + c.column)}<small>${srcName(c.source, c.source_label)}${c.window ? ' · ' + esc(c.window) : ''}</small></td>` +
         `<td>${chip(c.state)}${c.reason ? `<small>${esc(c.reason)}</small>` : ''}</td><td>${esc((c.matched || []).map(m => m.key).join(', '))}</td>` +
@@ -172,17 +164,17 @@
     const inside = byState.filter(([st]) => st !== 'DERIVED' && st !== 'OUTSIDE').map(([st, list]) => inputTable(st, list)).join('');
     const outside = byState.filter(([st]) => st === 'DERIVED' || st === 'OUTSIDE');
     const outsideCount = outside.reduce((n, [, l]) => n + l.length, 0);
-    return `<section class="panel"><div class="panel-sec"><h3>지식 지도의 항목 종류 ↔ 표 · 열</h3><p class="muted">지식 지도의 항목 종류(설비 · 센서 · 부품 …)마다 그 식별 키가 원천의 어느 열과 같은 것을 가리키는지, 지금 DB의 표 목록과 대조해 확인합니다.</p>${graph}${classes}</div></section>` +
+    return linksLine() + `<section class="panel"><div class="panel-sec"><h3>지식 지도의 항목 종류 ↔ 표 · 열</h3><p class="muted">지식 지도의 항목 종류(설비 · 센서 · 부품 …)마다 그 식별 키가 원천의 어느 열과 같은 것을 가리키는지, 지금 DB의 표 목록과 대조해 확인합니다.</p>${classes}</div></section>` +
       `<section class="panel"><div class="panel-sec"><h3>판단 입력의 원천</h3><p class="muted">AI가 판단할 때 읽는 입력 값이 어느 표와 열에서 오는지입니다. 지식 지도의 「데이터 출처」 연결과 문서 등록의 「업무 DB 표 정의」로 정해집니다.</p><div class="fab-out">` +
       (inside || (outside.length ? '' : UI.emptyGo('판단 입력이 없습니다', '문서 등록의 「업무 DB 표 정의」에서 표 정의를 올려 적재하면 여기에 나옵니다.', 'knowledge', '문서 등록 열기'))) + `</div></div>` +
-      (outside.length ? `<div class="panel-sec sk-fold">${UI.fold(`DB에 없는 값(계산 · 입력)<span class="muted num">${outsideCount}개</span>`, `<div class="fab-out">${outside.map(([st, list]) => inputTable(st, list)).join('')}</div>`)}</div>` : '') + `</section>`;
+      (outside.length ? `<div class="panel-sec pane-fold">${UI.fold(`DB에 없는 값(계산 · 입력)<span class="muted num">${outsideCount}개</span>`, `<div class="fab-out">${outside.map(([st, list]) => inputTable(st, list)).join('')}</div>`)}</div>` : '') + `</section>`;
   }
 
   /* ---------- 그리기 · 이벤트 ---------- */
   function render() {
     if (!S.el) return;
     const listTop = S.el.querySelector('.fab-tables')?.scrollTop || 0;      // 다시 그려도 표 목록의 스크롤 자리는 그대로(고른 줄이 화면 밖으로 달아나지 않게)
-    S.el.innerHTML = summary() + UI.viewTabs([['join', '두 DB 묶어 보기'], ['sources', '원천과 표', S.sources ? S.sources.length : null], ['links', '지식 지도 ↔ 표 · 열']], S.tab, 'data-fab-tab') +
+    S.el.innerHTML = UI.viewTabs([['sources', '원천과 표', S.sources ? S.sources.length : null], ['join', '두 DB 묶어 보기'], ['links', '지식 지도 ↔ 표 · 열']], S.tab, 'data-fab-tab') +
       `<div class="fab-body">${S.tab === 'join' ? joinTab() : S.tab === 'sources' ? sourcesTab() : linksTab()}</div>`;
     const list = S.el.querySelector('.fab-tables'); if (list) list.scrollTop = listTop;
   }
@@ -223,6 +215,7 @@
       el.addEventListener('click', e => {
         const tab = e.target.closest('[data-fab-tab]'); if (tab) { S.tab = tab.dataset.fabTab; render(); return; }
         if (e.target.closest('#fabRun')) { run(); return; }
+        if (e.target.closest('[data-retry]')) { load(); return; }
         const t = e.target.closest('[data-fab-table]'); if (t) { const [sid, name] = t.dataset.fabTable.split('|'); pickTable(sid, name); }
       });
       el.addEventListener('change', e => { if (e.target.id === 'fabQuery') { S.query = e.target.value; S.asset = document.getElementById('fabAsset').value; render(); } });

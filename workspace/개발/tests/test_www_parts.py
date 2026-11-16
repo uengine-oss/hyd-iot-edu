@@ -338,8 +338,11 @@ def test_되돌리기는_관리_내_설정_한_곳에만_있고_다른_화면은
         link.click()
         assert page.evaluate('() => state.tab') == 'admin'
         assert page.locator('#configBundlePanel').evaluate('d => d.open')
-        assert page.locator('#cfgResetScope').input_value() == scope, '보낸 화면의 범위가 골라져 있다'
+        # 관리의 되돌리기 줄은 단추 하나다 — 범위는 확인 창에서 고르고, 보낸 화면의 범위가 골라진 확인 창이 열려 있다(누르는 것은 사람이 한다)
         assert page.locator('#cfgReset').is_visible()
+        assert page.locator('dialog.confirm-dialog[open] #cfgResetScope').input_value() == scope, '보낸 화면의 범위가 골라져 있다'
+        page.locator("dialog.confirm-dialog button[value='cancel']").click()
+        page.wait_for_function('() => !document.querySelector("dialog.confirm-dialog[open]")')
 
 
 def test_입력_칸에_id_가_없어도_이름표는_그_칸과_이어지고_다시_그려도_같은_id_다():

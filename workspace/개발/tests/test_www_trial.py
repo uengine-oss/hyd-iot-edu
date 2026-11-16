@@ -201,6 +201,7 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
         assert '문서에서 알아본 도구 호출 1개 · 실제로 부른 것 0개 · 부르지 못한 것 1개(시험 실행은 판단 결과를 제출하지 않습니다)' in body
         assert '내 스킬 설명' in body and '순서대로 따름' not in body
         assert '부르지 못한 호출 1회 포함' in body and 'hyd-dmn' not in body
+        assert body.count('부르지 못한 호출 1회 포함') == 1 and '1순위는 같습니다' not in body      # 숫자 넷이 말한 것(원인 · 1순위 · 호출 순서)을 그 아래 줄에서 되풀이하지 않는다
         title, body = trial('pump')
         assert title.startswith('두 구성 모두 판단을 보류했습니다') and '같습니다' not in title
         assert '실패가 아니라 판단하지 않은 것입니다' in body
@@ -249,5 +250,92 @@ def test_원인_진단_대상이_아닌_이상_패턴을_고르면_누르기_전
         page.select_option('#wiPattern', 'PM_DUE')
         page.wait_for_function("document.querySelector('#wiLoad').disabled", timeout=8000)
         assert why in page.inner_text('#whatifView .io-in, #whatifView')
+    finally:
+        close()
+
+
+def _decision(top, excluded=()):
+    """판단 응답(agent /api/agent/decide): 조치 둘 가운데 top 이 1순위, excluded 는 규정에서 제외."""
+    names = {'skill:fan': '팬 최대 운전', 'skill:wash': '쿨러 핀 세척'}
+    options = [{'id': k, 'name': v, 'sopId': 'SOP-' + k[-3:].upper(), 'feasible': k not in excluded, 'rank': None if k in excluded else (1 if k == top else 2), 'score': None if k in excluded else (3.4 if k == top else 2.2),
+                'actions': [], 'approver': {'name': '운전원'}, 'violations': [{'rule': 'rule:m', 'annotation': '원격 자동이 아니면 원격 조치를 쓰지 않는다'}] if k in excluded else []} for k, v in names.items()]
+    return {'id': 'EVAL-' + top, 'created': '2026-11-14T00:00:00Z', 'asset': 'PRESS-07', 'status': 'EVALUATED', 'steps': [], 'provenance': [], 'scenario': {'name': '씰 마모 조치 판단'}, 'facts': {},
+            'causes': [{'id': 'cause:x', 'name': '씰 마모', 'failureMode': '체적 효율 저하', 'score': 0.6, 'evidence': [{'id': 'evd:x', 'name': '토출 압력 평균 165 bar 미만', 'tag': 'PS1', 'passed': True, 'status': 'PASS', 'value': 150.0}]}],
+            'result': {'options': options, 'recommended': top, 'trace': [{'rule': 'rule:m', 'when': 'plc_mode != REMOTE_AUTO', 'fired': bool(excluded), 'decision': 'dec:compliance'}], 'explanation': '설명 전문'}}
+
+
+def test_규칙_판단은_지난_판단이_조건과_결론과_함께_단추_아래에_쌓이고_누르면_그_결과가_다시_열린다():
+    """조건 칸의 차례는 칸 이름 → 입력 칸 → 맨 아래 주 단추 → 그 아래 「지난 것」이다(디자인기준 5-2). 전에는 조건을 바꿔 다시 판단하면 앞 결과가 사라져
+    무엇이 달라졌는지를 학생 기억에 맡겼다. 결과 칸의 구역 머리는 앞 구역의 글에 붙지 않는다(두 칸 틀이 구역의 위아래 여백까지 0 으로 두던 것)."""
+    def decide(body):
+        return _decision('skill:wash', ['skill:fan']) if body['facts'].get('plc_mode') == 'LOCAL' else _decision('skill:fan')
+    page, close = _page({'/plant-sim/api/state': PLANT, '/api/ontology/patterns': PATTERNS, '/api/agent/decide': decide}, [])
+    try:
+        open_screen(page, 'decision')
+        page.wait_for_function("document.querySelectorAll('#decAsset option').length > 0 && document.querySelectorAll('#decPattern option').length > 0", timeout=8000)
+        assert page.locator('#decPast').is_hidden()                                   # 판단을 한 적이 없으면 「지난 판단」 자리를 그리지 않는다
+        page.locator('#decRun').click()
+        page.wait_for_selector('#decResult .panel-head h2', timeout=8000)
+        page.locator('#decForm details.io-more > summary').click()
+        page.select_option('#decMode', 'LOCAL')
+        page.locator('#decRun').click()
+        page.wait_for_function("(document.querySelector('#decResult .panel-head h2') || {textContent: ''}).textContent.includes('쿨러 핀 세척')", timeout=8000)
+        rows = page.locator('#decPast .row')
+        assert [r.replace('\n', ' ') for r in rows.locator('.row-title, .row-meta').all_inner_texts()] == \
+            ['PRESS-07 · 씰 마모', '운전 모드 현장 제어 → 1순위 쿨러 핀 세척', 'PRESS-07 · 씰 마모', '지금 값 그대로 → 1순위 팬 최대 운전']
+        assert rows.nth(0).get_attribute('aria-current') == 'true' and rows.nth(1).get_attribute('aria-current') is None
+        # 차례: 주 단추 아래에 지난 판단, 같은 왼쪽 선
+        geo = page.evaluate("""() => { const r = s => document.querySelector(s).getBoundingClientRect(); const b = r('#decRun'), p = r('#decPast'), f = r('#decForm');
+          return { below: p.top >= b.bottom, left: Math.abs(p.left - f.left) }; }""")
+        assert geo['below'] and geo['left'] <= 1, geo
+        # 지난 판단을 누르면 그 결과가 다시 열리고, 그 판단의 조건(지금 값 그대로)이 결과에 적혀 있다 — 폼에 남은 조건(현장 제어)이 아니다
+        rows.nth(1).click()
+        page.wait_for_function("(document.querySelector('#decResult .panel-head h2') || {textContent: ''}).textContent.includes('팬 최대 운전')", timeout=8000)
+        said = page.inner_text('#decResult')
+        assert '가정한 조건 없음' in said and '앞 판단과 견주면' not in said and rows.nth(1).get_attribute('aria-current') == 'true'
+        # 결과 칸: 구역(.panel-sec)의 첫 글이 그 구역의 윗선(앞 구역의 끝)에서 8px 넘게 떨어져 있다
+        gaps = page.locator('#decResult .panel > .panel-sec').evaluate_all("""xs => xs.map(x => { const first = [...x.children].find(c => c.getClientRects().length);
+          return Math.round(first.getBoundingClientRect().top - x.getBoundingClientRect().top); })""")
+        assert gaps and min(gaps) >= 8, f'구역 머리가 앞 구역에 붙어 있다: {gaps}'
+    finally:
+        close()
+
+
+def _whatif(top_decision, top_money):
+    """조건별 손익 시작 응답(agent /api/agent/whatif)의 꼴 — 조치 둘, 판단 1순위와 손익 1순위를 따로 정한다."""
+    def card(cid, name, d_rank, m_rank, won):
+        return {'id': cid, 'name': name, 'sopId': 'SOP-' + cid[-1].upper(), 'feasible': True, 'decisionRank': d_rank, 'moneyRank': m_rank, 'score': 3.5 - d_rank, 'excluded': [], 'scoreParts': {},
+                'money': {'total_won': won, 'complete': True, 'missing': [], 'basis': '납기까지 남은 시간 동안의 예상 손익', 'hours': 6, 'items': [{'label': '고장 위험', 'value_won': won, 'formula': '고장 확률 × 12 h', 'sources': []}]}}
+    a, b = card('skill:a', '팬 최대 운전', 1 if top_decision == 'skill:a' else 2, 1 if top_money == 'skill:a' else 2, -40000), card('skill:b', '쿨러 핀 세척', 1 if top_decision == 'skill:b' else 2, 1 if top_money == 'skill:b' else 2, -90000)
+    return {'id': 'WI-1', 'asset': 'PRESS-07', 'created': '2026-11-14T00:00:00Z', 'summary': "판단 1순위 'x' · 손익 1순위 'y'.", 'cause': {'name': '씰 마모', 'failureMode': '체적 효율 저하'},
+            'top': {'decision': top_decision, 'money': top_money}, 'cards': [a, b], 'policy': {'components': [], 'penalties': []}, 'perspectives': {'available': False, 'perspectives': []},
+            'limits': {'weights': [0, 5], 'penalties': [0, 10], 'perspectives': [0, 5], 'weeks': [1, 12]}, 'evaluation_mode': 'rule_analysis', 'execution_checked': False,
+            'variables': [{'id': 'due_in_h', 'label': '납기까지 남은 시간', 'unit': 'h', 'base': 5.95, 'kinds': ['decision'], 'source': {'kind': '데이터', 'where': '생산 오더 · due'}}]}
+
+
+BOUNDS = {'id': 'WI-1', 'boundaries': [{'variable': 'due_in_h', 'kind': 'decision', 'label': '납기까지 남은 시간', 'unit': 'h', 'base': 5.95, 'value': 14.77, 'direction': '이상', 'topAfterName': '쿨러 핀 세척', 'card': 'skill:a', 'trial': {'due_in_h': 14.77}}]}
+
+
+def test_조건별_손익의_결론은_두_순위가_같은_조치를_고르는지로_말하고_단위를_화면_말로_보인다():
+    """결론 큰 글이 서버 요약 「판단 1순위 'A' · 손익 1순위 'B'.」(문장이 아닌 나열)였고, 1순위가 바뀌는 값의 표가 「5.95 h」처럼 영문 약자를 보였다.
+    기준 보기에는 순위와 손익 내역만 두고, 1순위가 바뀌는 값은 그 값으로 바로 계산하는 「업무 값」 보기에 둔다."""
+    state = {'top': ('skill:a', 'skill:a')}
+    page, close = _page({'/plant-sim/api/state': PLANT, '/api/ontology/patterns': PATTERNS, '/boundaries': BOUNDS, '/api/agent/whatif': lambda body: _whatif(*state['top'])}, [])
+    try:
+        open_screen(page, 'whatif')
+        page.wait_for_function("document.querySelectorAll('#wiAsset option').length > 0 && document.querySelectorAll('#wiPattern option').length > 0", timeout=8000)
+        page.locator('#wiLoad').click()
+        page.wait_for_selector('#whatifView .io-out .panel-head h2', timeout=8000)
+        assert page.inner_text('#whatifView .io-out .panel-head h2') == '판단 순위와 손익 순위 모두 「팬 최대 운전」이 1순위입니다.'
+        assert page.locator('#whatifView [data-wi-bound]').count() == 0                # 기준 보기에는 경계표가 없다
+        page.locator("#whatifView [data-wi-tab='values']").click()
+        page.wait_for_selector('#whatifView [data-wi-bound]', timeout=8000)
+        table = page.locator('#whatifView table', has=page.locator('[data-wi-bound]')).inner_text()
+        assert '5.95 시간' in table and '14.77 시간 이상' in table and ' h' not in table
+        assert '납기까지 남은 시간 (시간)' in page.inner_text('#whatifView .io-in')
+        state['top'] = ('skill:a', 'skill:b')
+        page.locator('#wiLoad').click()
+        page.wait_for_function("(document.querySelector('#whatifView .io-out .panel-head h2') || {textContent: ''}).textContent.includes('손익 1순위는')", timeout=8000)
+        assert page.inner_text('#whatifView .io-out .panel-head h2') == '판단 1순위는 「팬 최대 운전」, 손익 1순위는 「쿨러 핀 세척」입니다 — 정책 점수와 예상 손익이 서로 다른 조치를 고릅니다.'
     finally:
         close()

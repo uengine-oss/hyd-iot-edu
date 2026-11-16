@@ -1,4 +1,4 @@
-// L9 → L1: 계층의 할 일과 이 시스템의 부품(교재 1회차 02 의 아홉 계층과 같은 이름 · 같은 차례). 시스템 구성 화면(app.js renderStack)과 상태 확인(pollHealth)이 이 표 하나를 읽는다.
+// L9 → L1: 계층의 할 일과 이 시스템의 부품(교재 1회차 02 의 아홉 계층과 같은 이름 · 같은 차례 — 화면은 줄마다 「Layer 9」 … 「Layer 1」을 함께 적는다). 시스템 구성 화면(app.js renderStack)과 상태 확인(pollHealth)이 이 표 하나를 읽는다.
 // role = 하는 일, real = 현업에서 같은 자리에 있는 것(화면이 「현업에서는 …」으로 보인다), zone = 영역(ot · dmz · it),
 // nets = 그 서비스가 붙은 망(compose.yaml 의 networks 그대로 — 판정은 workspace/개발/tests/test_zones.py · test_www_app.py).
 // 서비스 주소는 이 파일 하나가 만든다.
@@ -33,7 +33,7 @@ const LAYERS = [
   ]},
   { name: '관제 · SCADA · 인프라 감시', role: '설비 상태와 데이터 추이를 확인', zone: 'mixed', comps: [
     // FUXA 는 기본 서비스다(compose 에 프로필이 없다) — 선택 도구로 표시하지 않는다. 선택 프로필은 monitor(Prometheus)와 tools 뿐이다.
-    { name: 'FUXA', nets: ['ot-net'], role: '설비 감시 · 수동 조작 · 운전 모드 전환', real: 'SCADA · HMI', zone: 'ot', url: P(1881), health: P(1881) + '/api/settings' },
+    { name: 'FUXA', nets: ['ot-net'], role: '설비 감시 · 수동 조작 · 운전 모드 전환', real: '운전 화면(SCADA · HMI)', zone: 'ot', url: P(1881), health: P(1881) + '/api/settings' },
     { name: 'Grafana', nets: ['it-net'], role: '센서 추이와 경보 · 조치 이력을 그래프로 표시', real: '분석 · 추이 대시보드', zone: 'it', url: P(3000) + '/d/hyd-trend', health: P(3000) + '/api/health' },
     { name: 'Prometheus', nets: ['it-net', 'dmz-it-net'], role: '서비스 상태와 처리량 수집', real: '인프라 감시 도구', zone: 'it', url: P(9090), health: P(9090) + '/-/ready', optional: true },
   ]},
@@ -46,13 +46,13 @@ const LAYERS = [
     { name: 'detector', nets: ['it-net'], role: '1초 단위 특징 계산 · 경보 발생과 해제 판정', real: '스트림 처리 · CEP 엔진 — 현장(엣지) 쪽에서도 탐지합니다', zone: 'it', url: P(8092) + '/docs', health: API.detector + '/healthz' },
   ]},
   { name: '이벤트 백본', role: '데이터와 명령을 각 서비스로 전달', zone: 'mixed', comps: [
-    { name: 'connect-ingest', nets: ['ot-dmz-net', 'dmz-it-net'], role: '현장 MQTT 데이터를 분석망으로 전달', real: 'Kafka Connect 같은 커넥터', zone: 'dmz', url: P(8093) + '/docs', health: SVC('connect-ingest') + '/healthz' },
+    { name: 'connect-ingest', nets: ['ot-dmz-net', 'dmz-it-net'], role: '현장 MQTT 데이터를 분석망으로 전달', real: 'DMZ 중계 — Kafka Connect 같은 커넥터', zone: 'dmz', url: P(8093) + '/docs', health: SVC('connect-ingest') + '/healthz' },
     { name: 'cmd-gateway', nets: ['ot-dmz-net', 'dmz-it-net'], role: '승인된 명령을 검증한 뒤 현장으로 전달', real: 'DMZ의 명령 검증 · 중계 서버', zone: 'dmz', url: P(8090) + '/docs', health: API.gateway + '/healthz' },
-    { name: 'Redpanda', nets: ['it-net', 'dmz-it-net'], role: 'Kafka 호환 이벤트 저장 · 분배', real: 'Apache Kafka(같은 규약)', zone: 'it', url: P(8085) + '/topics', health: P(9644) + '/v1/status/ready', entryHealth: P(8085) },
+    { name: 'Redpanda', nets: ['it-net', 'dmz-it-net'], role: 'Kafka 호환 이벤트 저장 · 분배', real: '이벤트 로그 — Apache Kafka(같은 규약)', zone: 'it', url: P(8085) + '/topics', health: P(9644) + '/v1/status/ready', entryHealth: P(8085) },
   ]},
   { name: 'IoT 미들웨어 · MQTT', role: '현장 장치와 메시지를 주고받음', zone: 'ot', comps: [
     { name: 'EMQX', nets: ['ot-net', 'ot-dmz-net'], role: '센서값 · 상태 · 명령을 중계하는 MQTT 브로커', real: 'MQTT 브로커(IoT 미들웨어)', zone: 'ot', url: null,
-      how: '여는 화면이 없습니다. 관리 화면과 관리 API는 꺼 두었습니다 — 그 길로 보낸 명령은 토픽 규칙과 승인을 거치지 않기 때문입니다. 지나가는 값은 관제 화면(FUXA)에서 봅니다.',
+      how: '여는 화면이 없습니다. 관리 화면 · 관리 API는 꺼 두었습니다(그 길의 명령은 토픽 규칙과 승인을 거치지 않습니다). 지나가는 값은 관제 화면에서 봅니다.',
       health: 'mqtt:EMQX', healthOf: { field: 'mqtt', from: [API.plant + '/healthz', SVC('connect-ingest') + '/healthz', API.gateway + '/healthz'] } },
   ]},
   { name: '센서 네트워크 · 설비', role: '현장을 계측하고 설비를 구동', zone: 'ot', comps: [

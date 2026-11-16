@@ -97,12 +97,18 @@ def test_도구_서버를_지울_때_그_서버를_부르는_흐름_단계를_�
             page.goto(served.url + '/index.html')
             open_screen(page, 'mcp')
             page.locator("#mcpServers [data-name='tool-wear']").click()
-            page.wait_for_selector('#mcpDetail [data-mcp-calls]', timeout=15000)
-            # 직접 부르는 흐름 단계는 따로 한 절, 에이전트 단계는 흐름마다 한 줄(단계 둘이 한 줄에)
+            page.wait_for_selector('#mcpDetail [data-mcp-calls]', state='attached', timeout=15000)
+            # 쓰는 곳은 첫 화면에 한 줄(건수)이고 접혀 있다 — 펼치면 직접 부르는 흐름 단계는 따로 한 묶음, 에이전트 단계는 흐름마다 한 줄(단계 둘이 한 줄에)
+            uses = page.locator('#mcpDetail .mcp-uses')
+            assert not uses.evaluate('d => d.open') and '흐름 1' in uses.locator('summary').inner_text() and '부르는 흐름 단계 1' in uses.locator('summary').inner_text()
+            assert page.locator('#mcpDetail [data-mcp-calls]').is_hidden()
+            uses.locator('summary').click()
+            page.locator('#mcpDetail [data-mcp-calls] .row').first.wait_for(timeout=8000)      # 펼친 내용이 보일 때까지
             calls = page.inner_text('#mcpDetail [data-mcp-calls]')
             assert '비품 재주문' in calls and '발주 넣기' in calls and '도구 place_order' in calls and '진행 중 2건' in calls
-            assert page.locator('#mcpDetail [data-mcp-flows] .use').count() == 1 and '재주문안 제안 · 재고 확인' in page.inner_text('#mcpDetail [data-mcp-flows]')
+            assert page.locator('#mcpDetail [data-mcp-flows] .row').count() == 1 and '재주문안 제안 · 재고 확인' in page.inner_text('#mcpDetail [data-mcp-flows]')
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
+            page.locator('#mcpMore-trigger').click()                          # 고치기 · 지우기는 상세 머리의 「…」 안
             page.locator('#mcpDelete').click()
             said = page.inner_text('dialog.confirm-dialog')
             assert '이 서버를 쓰는 에이전트는 없습니다' in said and '「비품 재주문」의 「발주 넣기」(도구 place_order · 진행 중인 처리 건 2건)' in said

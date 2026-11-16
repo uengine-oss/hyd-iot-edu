@@ -1,5 +1,5 @@
-/* U1 — 단계 상세 패널 (처리 건 한 건). 단계 기록의 「이 단계가 받은 값과 다음 단계로 넘긴 값 보기」나 알림 · 주소로 열면 그 단계 줄 아래에 그 단계가 한 일을 네 칸으로 보여 준다
-   (진행 길에서 아직 시작하지 않은 상자를 누르면 정의에 적힌 입력 · 출력):
+/* U1 — 단계 상세 (처리 건 한 건). 단계 한 줄을 누르면 열리는 옆 판(caseRecord.js)의 「받은 값 · 넘긴 값」 보기를 이 파일이 채운다 — 그 단계가 한 일을 네 구획으로 보여 준다
+   (아직 시작하지 않은 단계의 옆 판에는 정의에 적힌 담당 · 읽을 값 · 만들 값 — planned):
      ① 받은 입력(값과 어느 단계에서 왔는지) ② 처리 과정 타임라인(시작 · 에이전트 판단 메시지 · 도구 호출 · 판단 근거 · 사람 질문 · 완료/실패)
      ③ 판단 · 출력(판단 근거 요지 + 읽기 쉬운 표, 원문은 접기) ④ 다음 단계로 넘긴 값 ⑤ 진행 중이면 그 단계만의 실시간 흐름.
    단계 종류별: 에이전트(원인 점수 · 조건 / 카드 점수 구성 / 판단 메시지), 사람(받은 카드 · 권고 · 고른 것 · 사유 · 승인자 · 대기 경과),
@@ -248,7 +248,7 @@
     if (!src) return UI.t('inst.source.none');
     if (src.kind === 'input') return UI.t('inst.source.input');
     if (src.kind === 'runtime') return UI.t('inst.source.runtime');
-    if (src.kind === 'workitem') { const p = v.workitems.find(w => w.id === src.id); const name = UI.flowName((p && p.activity_name) || src.activity || ''); return `${name}${src.generation ? ` (${src.generation}${UI.t('inst.gen')})` : ''} ${UI.t('td.from')}`; }
+    if (src.kind === 'workitem') { const p = v.workitems.find(w => w.id === src.id); const name = UI.flowName((p && p.activity_name) || src.activity || ''); return `${name}${src.generation ? ` (${src.generation + 1}${UI.t('inst.gen')})` : ''} ${UI.t('td.from')}`; }
     return UI.t('inst.source.none');
   }
   function inputsHtml(w, item, v) {
@@ -439,12 +439,13 @@
   }
 
   /* ---------- 아직 시작하지 않은 단계 (정의만) ---------- */
-  function plannedHtml(v, actId) {
-    const act = activityOf(v, actId); if (!act) return '';
+  // 돌려주는 값: { title, sub, html } — 옆 판의 머리(이름 · 보조 줄)와 몸. 정의에 그 단계가 없으면 null
+  function planned(v, actId) {
+    const act = activityOf(v, actId); if (!act) return null;
     const roleEp = ((v.definition || {}).roles || []).find(r => r.name === act.role);
-    return `<section class="panel task-detail" data-task-detail><div class="panel-head"><div><h2>${esc(UI.flowName(act.name))}${UI.chip('TODO')}</h2><p>${esc(UI.t('td.planned'))} · ${esc(UI.t('td.plannedSub'))}</p></div><button type="button" class="btn" data-variant="outline" data-size="sm" data-td-close>${UI.icon('x')}${esc(UI.t('td.close'))}</button></div>
-      <div class="panel-body"><div class="td-rows">${UI.readonly(UI.t('td.who'), esc(UI.who(act.agent || (roleEp && roleEp.endpoint) || act.role || '')))}${UI.readonly(UI.t('td.expects'), (act.inputData || []).map(k => `<span class="badge" data-variant="secondary">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData')))}${UI.readonly(UI.t('td.produces'), (act.outputData || []).map(k => `<span class="badge" data-variant="secondary">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData')))}</div>
-      ${act.description ? `<p>${esc(act.description)}</p>` : ''}</div></section>`;
+    const badges = keys => (keys || []).map(k => `<span class="badge" data-variant="secondary">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData'));
+    return { title: UI.flowName(act.name), sub: `${UI.t('td.planned')} · ${UI.t('td.plannedSub')}`,
+      html: `<div class="task-detail" data-task-detail><div class="td-rows">${UI.readonly(UI.t('td.who'), esc(UI.who(act.agent || (roleEp && roleEp.endpoint) || act.role || '')))}${UI.readonly(UI.t('td.expects'), badges(act.inputData))}${UI.readonly(UI.t('td.produces'), badges(act.outputData))}</div>${act.description ? `<p>${esc(act.description)}</p>` : ''}</div>` };
   }
 
   /* ---------- render ---------- */
@@ -457,10 +458,9 @@
     renderNow();
     const host = T.host; if (!host) return;
     const v = view();
-    if (!v || (!T.wid && !T.act)) { host.innerHTML = ''; highlight(); return; }
-    if (T.act) { host.innerHTML = plannedHtml(v, T.act); highlight(); return; }
+    if (!v || !T.wid) { host.innerHTML = ''; return; }
     const w = workitemOf(T.wid);
-    if (!w) { host.innerHTML = ''; highlight(); return; }
+    if (!w) { host.innerHTML = ''; return; }
     const item = T.item && T.item.id === w.id ? T.item : null;
     const first = T.rendered !== w.id;
     const wasOpen = new Set([...host.querySelectorAll('details[data-k][open]')].map(d => d.dataset.k));
@@ -472,28 +472,19 @@
     const act = activityOf(v, w.activity_id) || {};
     const inputCount = (act.inputData || []).length, outCount = (act.outputData || []).length;
     const toolCount = evs.filter(e => e.event_type === 'tool_usage_started').length;
-    host.innerHTML = `<section class="panel task-detail" data-task-detail data-doer="${esc(k)}"${live ? ' data-live' : ''}>
-      <div class="panel-head"><div><h2>${esc(UI.flowName(w.activity_name))}${UI.chip(w.status)}${w.draft_status && w.status !== 'DONE' ? UI.chip(w.draft_status) : ''}${UI.chipText(k === 'agent' ? UI.t('agent') : k === 'human' ? UI.who(w.user_id) : UI.t('system'), k === 'agent' ? 'accent' : 'neutral')}${live ? `<span class="tag" data-tone="ok" data-plain><i class="dot" data-tone="ok" data-live></i>${esc(UI.t('td.liveOn'))}</span>` : ''}</h2>
-      <p>${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${dur ? ' · ' + esc(dur) : ''}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''}${w.due_date && !w.end_date ? ` · ${esc(UI.t('inst.due'))} ${esc(UI.dateTime(w.due_date))}` : ''}</p></div><button type="button" class="btn" data-variant="outline" data-size="sm" data-td-close>${UI.icon('x')}${esc(UI.t('td.close'))}</button></div>
-      <div class="panel-body">${T.error ? `<p class="muted" data-tone="danger">${esc(UI.t('td.loadFail'))}: ${esc(T.error)}</p>` : ''}
+    host.innerHTML = `<div class="task-detail" data-task-detail data-doer="${esc(k)}"${live ? ' data-live' : ''}>
+      <p class="td-meta">${UI.chip(w.status)}${w.draft_status && w.status !== 'DONE' ? UI.chip(w.draft_status) : ''}${w.generation ? `<span class="muted">${esc(w.generation + 1)}${esc(UI.t('inst.gen'))}</span>` : ''}${w.due_date && !w.end_date ? `<span class="muted">${esc(UI.t('inst.due'))} ${esc(UI.dateTime(w.due_date))}</span>` : ''}</p>
+      ${T.error ? `<p class="muted" data-tone="danger">${esc(UI.t('td.loadFail'))}: ${esc(T.error)}</p>` : ''}
       <div class="td-sections">
         ${section('inputs', UI.t('td.inputs'), inputsHtml(w, item, v), inputCount, first ? inputCount > 0 : wasOpen.has('inputs'))}
         ${section('trace', UI.t('td.trace'), timelineHtml(w, evs, v, live), toolCount || null, first ? true : wasOpen.has('trace'))}
         ${section('output', UI.t('td.output'), outputHtml(w, item, v, evs), null, first ? true : wasOpen.has('output'))}
         ${section('next', UI.t('td.next'), nextHtml(w, v), outCount, first ? outCount > 0 : wasOpen.has('next'))}
-      </div></div></section>`;
+      </div></div>`;
     if (!first) host.querySelectorAll('details[data-k]:not(.td-section)').forEach(d => { if (wasOpen.has(d.dataset.k)) d.open = true; });
     T.rendered = w.id;
     const tl = host.querySelector('[data-td-timeline]'); if (tl && live) tl.scrollTop = tl.scrollHeight;
-    highlight();
   }
-  function highlight() {
-    if (typeof document === 'undefined' || !document.querySelectorAll) return;
-    const w = T.wid && workitemOf(T.wid);
-    const actId = T.act || (w && w.activity_id);
-
-  }
-
   /* ---------- 지금: <단계> — <누가> <무엇을 하는 중> ---------- */
   function doingOf(w, v) {
     const k = kindOf(w), tool = (activityOf(v, w.activity_id) || {}).tool || '';
@@ -619,44 +610,18 @@
     catch (e) { if (T.wid === wid) T.error = e.message; }
     finally { T.loading = false; }
   }
-  async function open(wid) {
-    if (!wid) return;
-    T.act = null;
-    if (T.wid !== wid) { T.wid = wid; T.item = null; T.error = null; }
-    place();
+  /* 옆 판(caseRecord.js)이 「받은 값 · 넘긴 값」 보기를 열 때 부른다: host = 그 보기의 자리, wid = 그 단계의 작업 id. 판이 닫히거나 다른 보기로 가면 close */
+  async function mount(host, wid) {
+    T.host = host || null;
+    if (!host || !wid || !workitemOf(wid)) { T.wid = null; T.item = null; T.rendered = null; return; }
+    if (T.wid !== wid) { T.wid = wid; T.item = null; T.error = null; T.rendered = null; }
     render();
-    await refresh(); render();
-    const panel = T.host && T.host.querySelector('[data-task-detail]');
-    if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    await refresh();
+    if (T.host === host && T.wid === wid) render();
   }
-  // 단계 상세는 단계 기록의 그 단계 줄 아래에 놓는다(「자세히」를 누른 자리에서 값 표가 열린다). 그 줄이 아직 그려지지 않았으면 단계 기록 아래(처음 자리)에 둔다 —
-  // 단계 기록이 그려진 뒤 처리 건 화면이 이 함수를 다시 부른다
-  function place() {
-    if (typeof document === 'undefined' || !T.host || !document.querySelector) return;
-    const slot = T.wid ? document.querySelector(`#instDetail [data-step="${CSS.escape(T.wid)}"] [data-step-slot]`) : null;
-    const home = T.home || (T.home = T.host.parentElement);
-    const target = slot || home;
-    if (target && T.host.parentElement !== target && !(T.host.contains(document.activeElement))) target.appendChild(T.host);
-  }
-  function openActivity(actId) {
-    const v = view(); const w = v && latestFor(v, actId);
-    if (w) return open(w.id);
-    T.wid = null; T.item = null; T.act = actId; place(); render();
-    const panel = T.host && T.host.querySelector('[data-task-detail]');
-    if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
-  function close() { T.wid = null; T.act = null; T.item = null; T.rendered = null; render(); place(); }
-  function mount(host) {
-    T.host = host || null; T.home = host ? host.parentElement : null;
-    const v = view();
-    if (T.pending && v && v.instance.proc_inst_id === T.pending.pid) {        // a #/instances/<id>/task/<id> link: open once the instance is on screen
-      const wid = T.pending.wid; T.pending = null;
-      if (wid && workitemOf(wid)) { open(wid); return; }
-    }
-    if (T.wid && !workitemOf(T.wid)) { T.wid = null; T.item = null; T.rendered = null; }   // another instance is selected now
-    if (T.act) { if (!v || !activityOf(v, T.act)) T.act = null; }
-    render();
-  }
+  function close() { T.wid = null; T.item = null; T.rendered = null; T.host = null; }
+  // 다른 화면 · 줄에서 한 단계를 연다(「지금」 줄의 단계 이름, 실행 중인 AI 에이전트 목록): 처리 건 화면이 그 단계의 옆 판을 이 보기로 연다
+  function open(wid) { const I = window.hydInstances && window.hydInstances.I; if (wid && I && I.record) I.record.openSheet(wid, 'io'); }
   // ⑤ liveStream.js hands every pushed SSE event here; the open task takes its own events, the 지금 line takes every task's latest
   function onEvent(e) {
     if (!e || !e.todo_id) return;
@@ -673,16 +638,9 @@
   if (typeof document !== 'undefined' && document.addEventListener) {
     setInterval(() => { if (T.wid && onInstances() && isLive()) refresh().then(render); }, 2500);
     setInterval(() => { if (onInstances()) renderNow(); }, 1000);    // countdowns (기한 · 재측정) tick without a reload
-    document.addEventListener('click', e => {
-      if (e.target.closest('[data-td-close]')) { close(); return; }
-      const now = e.target.closest('[data-td-open]');
-      if (now) open(now.dataset.tdOpen);
-    });
-    // the instance detail is redrawn by instances.js: re-apply the highlight after each redraw (진행 길의 상자는 instances.js 가 누름 · 키보드를 맡는다)
-    const observe = () => { const box = document.getElementById('instDetail'); if (!box) return; new MutationObserver(() => { if (T.wid || T.act) requestAnimationFrame(highlight); }).observe(box, { childList: true, subtree: true }); };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe); else observe();
+    document.addEventListener('click', e => { const now = e.target.closest('[data-td-open]'); if (now) open(now.dataset.tdOpen); });
   }
 
-  window.hydTaskDetail = { open, openActivity, close, mount, place, onEvent, render, renderNow, nowHtml, valueHtml, refresh, T };
+  window.hydTaskDetail = { open, close, mount, planned, onEvent, render, renderNow, nowHtml, valueHtml, refresh, T };
   window.addEventListener('hyd-tool-payload',()=>{if(T.host?.isConnected)render();});
 })();

@@ -95,23 +95,28 @@ def test_단계_배정_지우기_되돌리기_요청은_담당자_id_를_싣고_
             page.wait_for_function('typeof selectTab === "function"')
             page.evaluate('selectTab("agents")')
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
-            page.locator('[data-del-agent]').wait_for(timeout=8000)
+            page.locator('[data-edit-agent]').wait_for(timeout=8000)
+            # 상세 머리: 주 단추는 [고치기] 하나, 복제 · 지우기는 「…」 안. 화면 머리의 만들기 단추는 거르기에 따라 하나다
+            assert page.locator('[data-ag-detail] .pane-acts > button.btn').count() == 1 and page.locator('[data-ag-detail] [data-del-agent]').is_hidden()
+            assert page.locator('#view-agents .page-tools [data-new-agent]').count() == 1 and page.locator('#view-agents .page-tools [data-new-skill]').count() == 0
+            page.locator("[data-ag-tab='skills']").click()
+            assert page.locator('#view-agents .page-tools [data-new-skill]').count() == 1 and page.locator('#view-agents .page-tools [data-new-agent]').count() == 0
 
             page.locator("[data-ag-tab='assign']").click()                          # 단계 배정
             page.locator("select[data-map='my_flow|T_judge']").select_option(MINE['id'])
             assert _sent(page, seen, 'assigned') == ME
 
-            # 기준으로 되돌리기: 이 화면에는 단추의 사본이 없다 — 맨 아래 한 줄이 관리 › 내 설정으로 보내고, 그곳에 「AI 에이전트 …」 범위가 골라져 있다
+            # 기준으로 되돌리기: 이 화면에는 단추의 사본이 없다 — 맨 아래 한 줄이 관리 › 내 설정으로 보내고, 그곳에 「AI 에이전트 …」 범위가 골라진 확인 창이 열려 있다
             page.locator('#view-agents [data-go-reset]').click()
-            assert page.evaluate('() => state.tab') == 'admin' and page.locator('#cfgResetScope').input_value() == 'agents'
-            page.locator('#cfgReset').click()
+            assert page.evaluate('() => state.tab') == 'admin' and page.locator('dialog.confirm-dialog[open] #cfgResetScope').input_value() == 'agents'
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             assert _sent(page, seen, 'reset') == ME
             page.wait_for_function('() => !document.querySelector("dialog.confirm-dialog[open]")')
             page.wait_for_function("() => document.getElementById('cfgResetMsg').textContent.startsWith('되돌렸습니다. 내가 만든 에이전트 1개, 단계 배정 1건을 지웠습니다.')")
             page.evaluate('selectTab("agents")')
 
-            page.locator("[data-ag-tab='agents']").click()                          # 지우기
+            page.locator("[data-ag-tab='agents']").click()                          # 지우기(상세 머리의 「…」 안)
+            page.locator('#agMore-trigger').click()
             page.locator('[data-del-agent]').click()
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             assert _sent(page, seen, 'deleted') == ME

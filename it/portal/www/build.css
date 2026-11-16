@@ -2,92 +2,33 @@
    그리는 코드: flows.js · definitionDeploy.js · definitionRegistry.js · agents.js · agentsPanel.js · mcp.js · ask.js
    부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다(디자인기준.md 4절). 이 파일에는 이 무리의 화면 배치만 두고, 숫자 대신 2절의 이름을 쓴다. 다른 무리의 규칙을 덮어쓰지 않는다. */
 
-/* ================================================================= 도구 연결(mcp.js): 목록 + 상세(공통 배치는 아래 「흐름 · AI 에이전트 공통」) */
-/* 막힌 까닭은 서버 목록 아래의 한 줄(.mcp-why — 접기)이 한 번 말한다 — 단추마다 붙는 까닭 줄(courseAccess.apply)은 머리 · 판의 도구 줄에서는 숨기고, 멀리 떨어진 「되돌리기」에만 둔다 */
-#view-mcp :is(.page-tools, .pane-acts, .mcp-acts, .form-foot) > [data-course-why] { display: none; }
-.mcp-why:empty { display: none; }
-.mcp-why { padding: 8px 12px 0; border-top: 1px solid var(--border); }
-/* 잠긴 까닭 한 줄(접기): 자물쇠 + 결론 한 마디, 누르면 서버가 준 까닭 전문 */
-.lock-note > summary { padding: 6px 0; font-size: var(--fs-xs); font-weight: 450; color: var(--muted-foreground); }
-.lock-note > summary::before { order: 2; }
-.lock-note > .fold-body { padding: 0 0 8px 22px; font-size: var(--fs-xs); line-height: 18px; color: var(--foreground); }
-#mcpServers > .row > .row-meta { white-space: normal; }
-.mcp-state { display: grid; gap: 10px; }
-.mcp-state > p { margin: 0; }
-.mcp-gate { display: flex; align-items: flex-start; gap: 8px; font-size: var(--fs-sm); line-height: 21px; color: var(--foreground); }
-.mcp-gate > .dot { margin-top: 7px; }
-.mcp-uses { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 8px; }
-.mcp-uses > .use + .use { margin-top: 0; }
-.mcp-step-names { color: var(--muted-foreground); }
-#mcpPane { margin-top: 12px; }
-.mcp-tools, .mcp-calls { list-style: none; margin: 0; padding: 0; }
-.mcp-tool, .mcp-calls > li { padding: 16px 0; border-bottom: 1px solid var(--border); }
-.mcp-tool:last-child, .mcp-calls > li:last-child { border-bottom: 0; }
-.mcp-tool-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.mcp-tool-head b { font-size: var(--fs-body); font-weight: 600; }
-.mcp-acts { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
-.mcp-desc { display: block; margin-top: 2px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
-.mcp-why-not, .mcp-tool .mcp-why { display: block; margin: 2px 0 0; font-size: var(--fs-sm); line-height: 20px; color: var(--foreground); }
-.mcp-sub, .mcp-more { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted); }
-.mcp-sub > .muted { margin: 12px 0 0; }
-.mcp-sub .fieldset.mcp-one > [role="group"] { grid-template-columns: minmax(0, 1fr); }
-.mcp-more h4 { margin: 12px 0 6px; font-size: var(--fs-sm); font-weight: 600; }
-.mcp-more h4:first-child { margin-top: 0; }
-.mcp-more > p { margin: 0; font-size: var(--fs-sm); color: var(--foreground); overflow-wrap: anywhere; }
-.mcp-more > .muted { margin-top: 10px; }
-.mcp-req { color: var(--st-fail); }
-.mcp-rows { max-height: 360px; overflow: auto; margin-top: 12px; }
-.mcp-try .result + .code, .mcp-try .fold { margin-top: 10px; }
-.mcp-filter { max-width: 280px; margin-bottom: 8px; }
-.mcp-calls > li > .line { padding-inline: 0; }
-.mcp-calls > li > .line:hover { background: none; }
-.mcp-call-body { padding-left: 30px; display: grid; gap: 6px; }
-.mcp-call-acts { display: flex; gap: 16px; flex-wrap: wrap; }
-.mcp-call-acts .btn { height: auto; padding: 0; }
-.mcp-form .mcp-wide { grid-column: 1 / -1; }
-.mcp-form > .alert { margin-top: 16px; }
-.mcp-h { margin: 4px 0 8px; font-size: var(--fs-sm); font-weight: 600; }
-.mcp-secret-new { margin-top: 16px; max-width: 720px; }
-#mcpOperator > summary > [data-mcp-missing]:empty { display: none; }
-#mcpOperator > summary > [data-mcp-missing] { margin-left: 8px; }
+/* ================================================================= 흐름 · AI 에이전트 공통: 상세 칸 안에서 쓰는 목록 줄(쓰는 스킬 · 도구 서버 · 맡은 단계 · 쓰는 에이전트 — 부품은 portal-kit.css 의 .rows > .row 하나) */
+:is(#view-agents, #view-mcp) .panel .rows > .row { min-height: 48px; }
+:is(#view-agents, #view-mcp) .panel .rows > .row > .go { justify-self: end; }
+:is(#view-agents, #view-mcp) .panel .rows > .row:not(:hover) > .go { visibility: hidden; }      /* 가는 길은 올렸을 때만(줄마다 같은 글을 늘어놓지 않는다) */
+:is(#view-agents, #view-mcp) .panel .rows > div.row { cursor: default; }
+/* 상세 칸의 구역: 선 하나로 가르고 위아래로 숨을 쉰다(상세 칸은 --pad-card 가 0 이라 구역이 선에 붙는다) */
+:is(#view-flows, #view-agents, #view-mcp) .split > .panel .panel-sec:not(.pane-fold) { padding-block: var(--pad-sec, 20px); }
+:is(#view-flows, #view-agents, #view-mcp) .split > .panel .pane-grid > .panel-sec { padding-top: 20px; }
+.ag-step { display: inline-flex; align-items: center; gap: 4px; font-weight: 400; color: var(--muted-foreground); }
+.pane-next { margin-top: 8px; }
+/* 스킬 문서 한 장(agents.js docHtml): 파일 이름 줄 + 긴 글 접기(4-9). 문서 등록의 원문 머리 줄(.doc-bar)과 같은 부품이다 */
+.doc { padding: 16px 20px; border-radius: var(--r-in); background: var(--muted); }
+.doc > .longtext { margin-top: 12px; }
+.doc > .longtext > .longtext-toggle { bottom: -16px; }
 @media (max-width: 640px) {
-  .mcp-tool-head { flex-direction: column; }
-  .mcp-acts { justify-content: flex-start; }
+  :is(#view-agents, #view-mcp, #view-flows) .panel-sec > h3 { flex-wrap: wrap; }
+  :is(#view-agents, #view-mcp, #view-flows) .panel-sec > h3 .muted { margin-left: 0; flex-basis: 100%; }
 }
-/* 쓰는 것 한 줄(스킬 · 도구 서버 · 맡은 단계 · 쓰는 에이전트): 아이콘 + 이름 + 오른쪽 보조 글. 누를 수 있는 것만 a · button 이다 */
-.use { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid transparent; border-radius: var(--r-in); background: var(--muted); font-size: var(--fs-sm); text-align: left; min-width: 0; }
-.use + .use { margin-top: 6px; }
-.use > .ic { color: var(--muted-foreground); flex: none; }
-.use b { font-weight: 600; }
-.use > span:not(.muted) { min-width: 0; overflow-wrap: anywhere; }
-.use > .muted { margin-left: auto; font-size: var(--fs-xs); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
-a.use:hover, button.use:hover { border-color: var(--border); background: var(--accent); }
-button.use { cursor: pointer; }
-button.use[aria-expanded="true"] { border-color: var(--border); background: var(--accent); }
-.doc { padding: 20px 22px; border: 0; border-radius: var(--r-in); background: var(--muted); max-height: 460px; overflow: auto; }
-@media (max-width: 640px) {
-  :is(#view-agents, #view-mcp, #view-flows, #view-ask) .panel-sec > h3 { flex-wrap: wrap; }
-  :is(#view-agents, #view-mcp, #view-flows, #view-ask) .panel-sec > h3 .muted { margin-left: 0; flex-basis: 100%; }
-  .use { flex-wrap: wrap; }
-  .use > .muted { margin-left: 26px; white-space: normal; }
-}
-
-/* ================================================================= 실행 중인 AI 에이전트(agentsPanel.js — 처리 건 화면의 「자세한 기록」 안) */
 
 /* ================================================================= 에이전트 · 스킬(agents.js) */
-.ag-seg { margin-bottom: 12px; }
+.ag-seg { margin-bottom: var(--gap-block); }
 .ag-error { margin-bottom: 16px; }
 .ag-sub { margin: 16px 0 8px; font-size: var(--fs-sm); font-weight: 600; }
 .ag-sub:first-child { margin-top: 0; }
-.ag-sub + .code + .muted { margin-top: 8px; }
-.ag-attached { display: flex; align-items: center; gap: 8px; }
-.ag-attached + .ag-attached { margin-top: 6px; }
-.ag-attached > .use { flex: 1; }
 .ag-attach { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .ag-attach > .select { width: auto; min-width: 220px; }
 .ag-map { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.mcp-try .fold h4 { margin: 10px 0 6px; font-size: var(--fs-xs); font-weight: 600; }
-.mcp-try .fold h4:first-child { margin-top: 0; }
 .ag-form > .alert { margin-bottom: 16px; }
 .ag-form .ag-wide { grid-column: 1 / -1; }
 .ag-form .fieldset > .muted { margin: 8px 0 0; }
@@ -95,12 +36,78 @@ button.use[aria-expanded="true"] { border-color: var(--border); background: var(
 .ag-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 10px 16px; }
 .ag-role-new { margin-top: 20px; max-width: 720px; }
 .panel-sec > .muted + .flow-vers { margin-top: 10px; }
+/* 잠긴 까닭 한 줄(담당 배정 — 접기): 자물쇠 + 결론 한 마디, 누르면 서버가 준 까닭 전문 */
+.lock-note { border-top: 0; }
+.lock-note > summary { min-height: 32px; padding: 4px 0; font-size: var(--fs-sm); font-weight: 400; color: var(--muted-foreground); }
+.lock-note > summary::before { order: 2; }
+.lock-note > .fold-body { padding: 0 0 8px 22px; font-size: var(--fs-sm); color: var(--foreground); }
+
+/* ================================================================= 도구 연결(mcp.js): 목록 + 상세, 화면 아래 설정 줄 */
+#view-mcp :is(.page-tools, .pane-acts, .mcp-acts, .form-foot, .setting-act) > [data-course-why] { display: none; }      /* 막힌 까닭은 화면 아래 설정 줄 「내 도구 서버」가 한 번 말한다 */
+#mcpServers > .row > .row-meta { white-space: normal; }
+.mcp-state { display: grid; gap: 10px; }
+.mcp-state > p { margin: 0; }
+.mcp-gate { display: flex; align-items: flex-start; gap: 8px; font-size: var(--fs-sm); line-height: 21px; color: var(--foreground); }
+.mcp-gate > .dot { margin-top: 7px; }
+.mcp-main > .view-tabs { margin-bottom: 0; }
+.mcp-tools, .mcp-calls { list-style: none; margin: 0; padding: 0; }
+.mcp-tool, .mcp-calls > li { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.mcp-tool:last-child, .mcp-calls > li:last-child { border-bottom: 0; }
+.mcp-tool-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mcp-tool-head b { font-size: var(--fs-body); font-weight: 500; }
+.mcp-acts { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.mcp-desc { display: block; margin-top: 2px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
+.mcp-tool .mcp-why { display: block; margin: 2px 0 0; font-size: var(--fs-sm); line-height: 20px; color: var(--foreground); }
+.mcp-sub { margin-top: 12px; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-in); background: var(--muted); }
+.mcp-sub > .muted { margin: 12px 0 0; }
+.mcp-sub .fieldset.mcp-one > [role="group"] { grid-template-columns: minmax(0, 1fr); }
+.mcp-info { border-top: 0; }
+.mcp-sub > .mcp-info { margin-top: 8px; }
+.mcp-tool > .mcp-info > summary { min-height: 32px; padding: 4px 0; font-size: var(--fs-sm); font-weight: 400; color: var(--muted-foreground); }
+.mcp-info > .fold-body { padding-left: 0; padding-bottom: 0; }
+.mcp-more h4 { margin: 12px 0 6px; font-size: var(--fs-sm); font-weight: 600; }
+.mcp-more h4:first-child { margin-top: 0; }
+.mcp-more > p { margin: 0; font-size: var(--fs-sm); color: var(--foreground); overflow-wrap: anywhere; }
+.mcp-more > .muted { margin-top: 10px; }
+.mcp-req { color: var(--st-fail-ink); }
+.mcp-rows { max-height: 360px; overflow: auto; margin-top: 12px; }
+.mcp-try .result + .code, .mcp-try .fold { margin-top: 10px; }
+.mcp-try .fold h4 { margin: 10px 0 6px; font-size: var(--fs-xs); font-weight: 600; }
+.mcp-try .fold h4:first-child { margin-top: 0; }
+.mcp-filter { max-width: 280px; margin: 12px 0 8px; }
+.mcp-calls > li > .line { padding-inline: 0; }
+.mcp-calls > li > .line:hover { background: none; }
+.mcp-call-body { padding-left: 30px; display: grid; gap: 6px; }
+.mcp-call-acts { display: flex; gap: 16px; flex-wrap: wrap; }
+.mcp-call-acts .btn { height: auto; padding: 0; }
+.mcp-form .mcp-wide { grid-column: 1 / -1; }
+.mcp-form > .alert { margin-top: 16px; }
+.mcp-h { margin: 16px 0 8px; font-size: var(--fs-sm); line-height: 20px; font-weight: 500; color: var(--muted-foreground); }
+.mcp-uses > .fold-body > :first-child > .mcp-h, .mcp-uses > .fold-body > .mcp-h:first-child { margin-top: 0; }
+.mcp-set { border-top: 1px solid var(--border); }
+.mcp-set[hidden] { display: none; }
+.mcp-set .setting-act { flex-wrap: wrap; justify-content: flex-end; }
+.mcp-secret-new { margin-top: 8px; max-width: var(--read-w); }
+@media (max-width: 640px) {
+  .mcp-tool-head { flex-direction: column; align-items: flex-start; }
+  .mcp-acts { justify-content: flex-start; }
+}
 
 /* ================================================================= 흐름(flows.js · definitionDeploy.js): 목록 + 상세 */
-.flow-phases { padding: 0 var(--pad-card) var(--pad-card); flex-wrap: wrap; row-gap: 8px; font-size: var(--fs-sm); }
+.flow-phases { padding: 0 0 var(--gap-block); flex-wrap: wrap; row-gap: 8px; font-size: var(--fs-sm); }
+.flow-phases[hidden] { display: none; }
 .flow-phases .phase { font-size: var(--fs-sm); }
+.flow-why { color: var(--st-warn-ink); }
 #flowNote:empty { display: none; }
-.flow-note-box { padding: 0 var(--pad-card) 16px; }
+.flow-note-box { padding: 0 0 var(--gap-block); }
+.flow-note-box .go { margin-left: 8px; }
+/* 흐름 그림: 상세 칸 폭 가득, 높이는 창에 남는 만큼(머리 아래부터 창 바닥까지) — 그림 위아래에 빈 띠가 생기지 않게 */
+.flow-picture { padding-bottom: var(--gap-block); }
+#view-flows .flow-canvas { height: clamp(360px, calc(100dvh - var(--top-h) - 300px), 760px); }
+#view-flows .flow-phases:not([hidden]) ~ .flow-picture .flow-canvas { height: clamp(360px, calc(100dvh - var(--top-h) - 344px), 760px); }
+@media (max-width: 900px) { #view-flows .flow-canvas, #view-flows .flow-phases:not([hidden]) ~ .flow-picture .flow-canvas { height: 360px; } }
+#view-flows .split > .panel .flow-import { border-top: 0; padding-top: 0; }
+[data-flash].field { outline: 2px solid var(--primary); outline-offset: 6px; border-radius: 8px; }
 /* 단계 설정 */
 .flow-editor > .alert, .flow-editor > [data-editable-note] > .alert { margin-bottom: 16px; }
 .flow-editor .fieldset.flow-one > [role="group"] { grid-template-columns: minmax(0, 1fr); }
@@ -137,7 +144,6 @@ button.use[aria-expanded="true"] { border-color: var(--border); background: var(
 .flow-issues + .muted { margin-top: 8px; }
 #flowProblems > .alert + .alert { margin-top: 10px; }
 #flowProblems:empty { display: none; }
-#flowRegisterSec > .form-foot { margin-top: 12px; }
 .flow-how { display: grid; gap: 4px; margin: 0 0 20px; padding-left: 20px; list-style: decimal; font-size: var(--fs-sm); line-height: 22px; color: var(--foreground); }
 .flow-how a { color: var(--foreground); text-decoration: underline; text-underline-offset: 3px; }
 /* 판본 · 배포 */
@@ -150,9 +156,9 @@ button.use[aria-expanded="true"] { border-color: var(--border); background: var(
 .flow-diff-list .fold { border-top: 0; }
 #deployStatus > p { margin: 0; max-width: 72ch; }
 #deployReasonField { margin-top: 14px; max-width: 640px; }
-#definitionDeployPanel > .form-foot { margin-top: 10px; justify-content: flex-start; }
-#definitionDeployPanel > .form-foot:has(> [hidden]:only-child) { display: none; }
-#definitionDeployPanel > .alert { margin-top: 12px; }
+#deployFold .form-foot { margin-top: 10px; justify-content: flex-start; }
+#deployFold .form-foot:has(> [hidden]:only-child) { display: none; }
+#deployFold .fold-body > .alert { margin-top: 12px; }
 #deployCompare { margin-top: 14px; }
 #deployCompare:empty + #deployHistory { margin-top: 14px; }
 .flow-compare { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -160,14 +166,12 @@ button.use[aria-expanded="true"] { border-color: var(--border); background: var(
 .flow-diff { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
 .flow-diff h4 { margin: 0 0 4px; font-size: var(--fs-sm); font-weight: 600; }
 .flow-diff-sum { display: flex; align-items: center; gap: 8px; margin: 0; }
-/* 시작 */
-#flowsStart .field { max-width: 360px; }
-#flowsStart > [data-start-body] > p { margin: 0; max-width: 72ch; }
-#flowsStart > [data-start-body] > .fieldset { margin-top: 12px; }
-#flowsStart [data-start-msg] > * { margin-top: 12px; }
-/* 경보별 운영 흐름 */
-.flow-resets { margin-top: 12px; }
-.flow-resets .alert { margin-top: 10px; }
+/* 처리 건 시작(대화상자) */
+#flowsStart > div { max-width: min(560px, calc(100vw - 32px)); }
+#flowsStartBody { display: grid; gap: var(--gap-block); overflow: auto; }
+#flowsStartBody :is(.input, .select, .textarea) { width: 100%; }
+#flowsStartBody [data-start-msg]:empty { display: none; }
+#flowsStartBody > [data-start-body] > p { margin: 0; }
 @media (max-width: 720px) {
   .flow-task-pick, .flow-fields { grid-template-columns: minmax(0, 1fr); }
   .flow-row-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -175,28 +179,46 @@ button.use[aria-expanded="true"] { border-color: var(--border); background: var(
   .flow-branch-to { grid-column: 1 / -1; }
 }
 
-/* ---------------- 질문하기(ask.js): 「조건 → 결과」 두 칸(.io). 왼쪽 = 질문 칸과 지난 질문 목록, 오른쪽 = 내 질문(오른쪽 말풍선)과 답(실시간 상자 → 답 → 근거 → 처리 과정) ---------------- */
-.ask-compose { display: grid; gap: 18px; border-top: 0; }
-.ask-compose > .form-foot { margin-top: 0; }
-.ask-agent { margin: -4px 0 0; font-size: var(--fs-sm); }
-.ask-picks > .muted { margin: 0 0 6px; }
-.ask-picks .chip { height: auto; min-height: 26px; padding-block: 4px; white-space: normal; text-align: left; line-height: 18px; cursor: pointer; }
+/* ================================================================= 질문하기(ask.js) — 대화(디자인기준 5-5, 본: process-gpt-lite ChatColumn · Composer)
+   왼쪽 좁은 칸 = 지난 질문 목록 │ 오른쪽 = 가운데 한 칸(최대 720px)에 내 질문(오른쪽 말풍선)과 답이 쌓이고, 바닥에 입력창이 붙는다 */
+.chat-side-head { padding: 0 12px 4px; min-height: 28px; }
+.chat-main { display: flex; }
+.chat-col { display: flex; flex-direction: column; gap: var(--gap-block); width: 100%; max-width: 720px; margin-inline: auto; min-height: calc(100dvh - var(--top-h) - 200px); }
+.ask-thread { flex: 1; display: grid; gap: var(--gap-block); align-content: start; min-width: 0; }
+.ask-thread > .empty { align-self: center; padding-block: 48px; }
 .ask-q { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.ask-bubble { max-width: 80%; padding: 10px 16px; border-radius: 12px; background: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-body); }
-.ask-a > .pane-head { padding-bottom: 14px; }
-.ask-body { display: grid; gap: 12px; }
-.ask-body > .result > .muted { margin-top: 6px; }
-.ask-body > .fold { border-top: 1px solid var(--border); }
-.ask-body .typing { margin: 0; padding: 0 2px; }
+.ask-q > .muted { font-size: var(--fs-xs); }
+.ask-bubble { max-width: 80%; padding: 10px 16px; border-radius: var(--r-card); background: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-body); }
+.ask-a { display: grid; gap: 12px; min-width: 0; }
+.ask-who { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.ask-who b { font-weight: 600; }
+.ask-a .typing { margin: 0; padding: 0 2px; }
 .ask-answer { color: var(--foreground); font-size: var(--fs-body); line-height: 24px; }
+.ask-a > .fold { border-top: 1px solid var(--border); }
+.ask-a > .fold + .fold { margin-top: -12px; }
 .ask-evid li > .ic { margin-top: 4px; }
 .ask-evid li > div { display: grid; gap: 6px; min-width: 0; }
 .ask-evid li p { margin: 0; }
 .ask-evid .code { max-height: 160px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.ask-side > h3 > .btn { margin-left: auto; }
-.ask-compose .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-.ask-compose .kv dd + dt { margin-top: 6px; }
-@media (max-width: 640px) {
-  .ask-bubble { max-width: 100%; }
-}
-.ask-thread > :not([hidden]):not(:empty) ~ :not([hidden]):not(:empty) { margin-top: 16px; padding-top: 0; border-top: 0; }
+.ask-next { margin: 0; display: flex; justify-content: flex-end; }
+/* 바닥: (그 상황일 때만) 못 쓰는 까닭 → 지금 하는 일 한 줄 → 질문 예 알약 → 입력창. 창을 굴려도 입력창은 바닥에 붙어 있다 */
+.chat-bottom { position: sticky; bottom: 0; z-index: 2; display: grid; gap: 8px; padding: 12px 0 calc(var(--gap-block) + var(--inset)); background: linear-gradient(transparent, var(--background) 12px); }
+.chat-now { display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; margin: 0; padding: 4px 12px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--st-run) 10%, var(--background)); font-size: var(--fs-sm); line-height: 20px; color: var(--foreground); }
+.chat-now[hidden], .chat-why[hidden] { display: none; }
+.chat-now > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-now > .lv-time { color: var(--muted-foreground); flex: none; }
+.chat-picks:empty { display: none; }
+.chat-picks .chip { height: auto; min-height: 28px; padding-block: 4px; white-space: normal; text-align: left; line-height: 20px; cursor: pointer; }
+.chat-why { margin: 0; font-size: var(--fs-sm); color: var(--st-warn-ink); }
+.composer { display: grid; gap: 4px; padding: 12px 12px 10px 16px; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--background); box-shadow: var(--shadow-panel); }
+.composer:focus-within { border-color: var(--ring); }
+.composer > textarea { width: 100%; min-height: 44px; max-height: 200px; padding: 0; border: 0; outline: 0; box-shadow: none; background: none; resize: none; field-sizing: content; font: inherit; font-size: var(--fs-body); line-height: 22px; color: var(--foreground); }
+.composer > textarea::placeholder { color: var(--muted-foreground); }
+.composer-bar { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.composer-bar > .select { width: auto; max-width: 240px; height: 32px; border-radius: var(--r-pill); font-size: var(--fs-sm); flex: 0 1 auto; min-width: 0; }
+.composer-bar > .muted { margin-left: auto; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.composer-send { flex: none; width: 32px; height: 32px; border-radius: 50%; }
+@media (max-width: 900px) { .chat-col { min-height: 0; } .chat-bottom { position: static; background: none; } }
+@media (max-width: 640px) { .ask-bubble { max-width: 100%; } .composer-bar > .muted { display: none; } .composer-bar > .select { max-width: none; flex: 1; } .composer-send { margin-left: auto; } }
+/* 좁은 폭: 상세 머리의 단추 줄은 이름 아래 왼쪽 끝에서 시작한다(머리 왼쪽에 아이콘 칸이 없다) */
+@media (max-width: 640px) { :is(#view-flows, #view-agents, #view-mcp) .pane-head > .pane-acts { margin-left: 0; } :is(#view-flows, #view-agents, #view-mcp) .pane-head > .pane-title { flex-basis: 100%; } }
