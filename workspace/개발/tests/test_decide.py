@@ -269,6 +269,20 @@ def test_판단_기록의_장면_이름은_학생이_읽는_고장_이름으로_
     assert scenario['name'].endswith('조치 판단') and ':' not in scenario['name'], scenario     # 센서 출처 문장은 test_approval(원천을 새로 읽는 길)
 
 
+def test_읽을_길이_없는_판단_입력은_어디서_무엇을_하면_읽히는지_말하고_멈춘다():
+    """전수 대조 02-7: 학생이 자기 업무 시스템의 값을 판단 입력으로 지식에 넣으면(표 · 열 연결 없이) 판단이 「출처 sys:… 에서 이 변수를 읽는 방법이
+    엔진에 없습니다 — 지식의 출처(SOURCED_FROM)를 확인하세요」로 멈췄다. 출처는 맞게 적혀 있어 볼 것이 없고, 실제로 되는 길(업무 DB의 표 · 열이 이어진
+    입력 — 지식 › 데이터 원천의 표 정의 적재)은 말하지 않았다. 유압과 무관한 입력으로 실제 사실 수집을 부른다."""
+    student = {'variable': 'scrap_rate', 'name': '불량률', 'source': 'sys:mes-line2', 'sourceName': '2라인 MES', 'sourceKind': 'System'}
+    with pytest.raises(decide.FactUnavailable) as stopped:
+        decide.gather_facts([student], 'LINE-2', {}, None, variables={'scrap_rate'})
+    said = str(stopped.value)
+    assert stopped.value.variable == 'scrap_rate' and not stopped.value.transient      # 다시 시도해도 같은 일 — 잠깐의 장애로 말하지 않는다
+    assert '「불량률」' in said and '2라인 MES' in said                                  # 어느 입력이 어느 출처인가
+    assert '지식 › 데이터 원천' in said and '표 정의' in said and '표 · 열' in said        # 되는 길: 어디서 무엇을
+    assert 'SOURCED_FROM' not in said and '엔진에 없습니다' not in said                  # 볼 것이 없는 곳을 가리키지 않는다
+
+
 from test_mcp_tsdb import asset, put, tsdb, tsdb_module  # noqa: E402,F401 — 시계열 읽기 준비(compose agent 의 읽기 계정 · 설비 이름)
 
 

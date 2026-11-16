@@ -160,3 +160,20 @@ def test_구매_후보_규칙에_재고_경보_조건이_없으면_까닭을_말
         r['tests'] = [t for t in r['tests'] if t.get('input') != 'in:pattern' and t.get('variable') != 'pattern']
     _, issues = mk.graph_semantics(plan, catalog)
     assert any(i['code'] == 'PURCHASE_RULE_PATTERN_REQUIRED' and '예비품 재고 기준 이탈' in i['message'] for i in issues)
+
+
+def test_판단이_읽지_않는_입력을_견주는_규칙은_쓸_수_없는_까닭과_쓸_수_있는_입력을_말한다(catalog):
+    """전수 대조 10-G4: 학생이 지식 › 데이터 원천(표 정의)으로 만든 입력을 문서 규칙이 견주면 「… 이 입력 …을 선언하지 않았습니다(REQUIRES_INPUT).
+    선언된 입력: [...]」으로 멈췄다 — 관계 이름과 id 목록만 보이고, 표 정의로 만든 입력은 판단 규칙에 쓸 수 없다는 것과 무엇으로 바꾸면 되는지를
+    말하지 않았다. 판단에 입력을 잇는 길은 기본 제공 지식뿐이다(넓히지 않는다) — 그 범위를 말하고 멈춘다."""
+    plan = _purchase_plan(PR07)
+    rule = next(r for r in plan['knowledge']['rules'] if r['tests'])
+    table = next(t for t in catalog['decision_tables'] if t['id'] == rule['table'])
+    usable = next(i for i in table['inputs'] if i.get('name'))
+    rule['tests'][0]['input'] = 'in:legacy-scrap-rate'                    # 표 정의 적재가 만든 입력 꼴 — 이 판단이 읽는 입력이 아니다
+    _, issues = mk.graph_semantics(plan, catalog)
+    (said,) = [i['message'] for i in issues if i['code'] == 'RULE_INPUT_NOT_DECLARED']
+    assert rule['id'] in said and 'in:legacy-scrap-rate' in said
+    assert '표 정의로 만든 입력은 판단 규칙에 쓸 수 없습니다' in said             # 안 되는 것은 안 된다고
+    assert f"{usable['id']}({usable['name']})" in said                     # 바꿀 수 있는 입력은 id 와 사람이 읽는 이름으로
+    assert 'REQUIRES_INPUT' not in said

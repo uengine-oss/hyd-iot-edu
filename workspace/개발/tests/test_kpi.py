@@ -245,3 +245,30 @@ def test_계산_불가_사유는_업무_말로_적고_표_열_이름을_쓰지_�
     import re
     reason = kpi.DEFINITIONS[mid]['reason']
     assert not re.search(r'\b[a-z]+_[a-z_0-9]+\b|ent\.|\b(?:TS1|EPS1|LoadSP)\b', reason), reason
+
+
+# ---------------------------------------------------------------- API: 없는 지표와 코드 결함을 같은 말로 답하지 않는다
+@pytest.fixture
+def kpi_api(pg_dsn, seeded_graph):
+    """실제 등록 함수(kpi.register)를 실제 지식 그래프 · 업무 DB 에 붙인 API. 처리되지 않은 예외는 서버가 답하는 것과 같이 500 으로 받는다."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from hydcommon import graphdb
+    app = FastAPI()
+    kpi.register(app, ts_dsn=pg_dsn, biz_dsn=pg_dsn, driver_factory=graphdb.connect, time_scale=20.0, tenant='hyd')
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
+
+
+def test_지식에_없는_성과_지표를_찾으면_그_지표가_없다고_답한다(kpi_api):
+    r = kpi_api.get('/api/kpi/trace', params={'measure': 'msr:no-such-measure'})
+    assert r.status_code == 404 and r.json()['detail'] == '성과 지표 msr:no-such-measure 를 지식 그래프에서 찾을 수 없습니다'
+
+
+def test_코드가_낸_KeyError는_없는_성과_지표_404로_보이지_않는다(kpi_api, monkeypatch):
+    """전수 대조 12-12: 성과 지표 API 가 KeyError 를 모두 404 「성과 지표 '<열쇠>' 를 … 찾을 수 없습니다」로 바꿔, 코드가 사전에서 없는 칸을 읽은
+    고장도 학생에게 「없는 지표」로 보였다. 404 는 찾는 지표가 지식에 없을 때(MeasureNotFound)만이다."""
+    def broken(sources):
+        return {}['rows']                                  # 코드 결함 대역: 없는 열쇠 읽기
+    monkeypatch.setattr(kpi, 'definitions', broken)
+    assert kpi_api.get('/api/kpi/definitions').status_code == 500

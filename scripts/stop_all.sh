@@ -17,7 +17,9 @@ compose() { AI_MODE=stop PROCESS_CALLER_TOKEN=stop CMD_FINGERPRINT_KEY=stop dock
 compose --profile '*' stop || die '시스템 컨테이너를 멈추지 못했습니다. 위 오류를 보고 Docker Desktop이 켜져 있는지 확인한 뒤 다시 실행하세요.'
 ( cd it/supabase && npx -y "supabase@$SUPABASE_CLI" stop ) || die '업무 DB(Supabase)를 끄지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요(쌓인 데이터는 그대로 있습니다). Docker Desktop의 Containers 화면에서 supabase_ 로 시작하는 컨테이너를 멈춰도 됩니다.'
 running=$(compose ps --status running -q | grep -c . || true)
-supa=$(sed -n 's/^SUPABASE_PROJECT_ID=//p' it/supabase/.env 2>/dev/null | tail -1)
+# 이름 기록이 없는 폴더에서는 파일을 읽지 않는다 — 없는 파일을 읽는 sed 의 실패가 pipefail 로 이 스크립트를 말없이 끝냈다(다 끄고도 「꺼짐」을 못 말함)
+supa=''
+[ ! -f it/supabase/.env ] || supa=$(sed -n 's/^SUPABASE_PROJECT_ID=//p' it/supabase/.env | tail -1)
 supa_note=''
 if [ -z "$supa" ]; then
   supa=$(sed -n 's/^project_id *= *"\(.*\)"/\1/p' it/supabase/config.toml | head -1)

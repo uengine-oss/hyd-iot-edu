@@ -40,6 +40,28 @@ def test_원문이_정한_예측_유온_경고를_빠뜨린_냉각_제안은_교
     assert any('예측 유온 55 ℃' in i for i in issues)
 
 
+@pytest.mark.parametrize('sentence, threshold', [
+    ('예측 토출 압력이 210 bar 이상이면 조치 실패로 보고 다른 조치 방법과 비교한다.', None),      # 같은 문장 꼴, 다른 값 — 이 검사의 대상이 아니다
+    ('납기가 5 일 이상이면 발주 실패로 보고 다른 공급사와 비교한다.', None),                       # 유압과 무관한 문서
+    ('예측 유온이 70 ℃ 이상이면 조치 실패로 보고 다른 조치 방법과 비교한다.', 70),                 # 「예측 유온」을 이름으로 부른 문서: 그 문서의 숫자로
+], ids=['다른 값의 같은 꼴', '무관한 문서', '예측 유온 다른 기준값'])
+def test_예측_유온_경고_검사는_예측_유온을_이름으로_부른_문장에만_걸리고_그_문서의_기준값으로_말한다(sentence, threshold):
+    """전수 대조 03-2: 「예측 유온이 N ℃ 이상이면 … 실패 … 비교」 검사가 HM-8 한 문서의 문장 모양에 맞춰져 있어, 같은 꼴의 문장을 다른 값으로 쓴
+    학생 문서에 예측 유온 입력(in:forecast-ts1) · ℃ 규칙을 교정 사유로 강제하는지를 본다. 이 검사는 판단 입력 「예측 유온」을 이름으로 부른 문장에만
+    걸리고(그 사이 구역 — 넓히지 않는다), 그때 말하는 기준값은 수업 문서의 55 가 아니라 그 문서가 적은 값이다."""
+    source = {'pages': [{'page': 3, 'text': f'## 판정 기준\n{sentence}\n'}]}
+    proposal = {'procedures': [], 'knowledge': {'rules': []}}
+    if threshold is None:
+        mx.check_forecast_warnings(proposal, source)                     # 교정을 강제하지 않는다
+        return
+    with pytest.raises(ValueError) as asked:
+        mx.check_forecast_warnings(proposal, source)
+    assert f'원문 3쪽의 예측 유온 {threshold} ℃ 이상 비교 경고가 없습니다' in str(asked.value)
+    proposal['knowledge']['rules'].append({'table': 'dt:compliance', 'effect': 'WARN',
+                                           'tests': [{'input': 'in:forecast-ts1', 'operator': '>=', 'value': threshold, 'unit': '℃'}]})
+    mx.check_forecast_warnings(proposal, source)                         # 그 문서의 기준값으로 쓴 경고 규칙이면 지난다
+
+
 def test_앞_단계까지_품은_단계_인용은_그_단계_문장만_인용하라고_거절한다(archive):
     """P2-02: 지운 시작 사본의 PM-02 SOP-PM-22 단계 4 인용이 앞 단계 2~3줄까지 품었다(묶음 검토가 고친 자리)."""
     source, proposal = proposal_of(archive, 'PM-02')

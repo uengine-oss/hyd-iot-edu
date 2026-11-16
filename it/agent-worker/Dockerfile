@@ -1,5 +1,5 @@
 # agent-worker: Claude Code(npm) + 워커. CLI 는 원본 키 없이 process 로컬 중계 관문이 그 점유에 묶어 준 실행 토큰으로만 모델을 부른다
-# (worker/course_access.py). 도구 서버는 모두 HTTP 다(neo4j 조회는 dmn-mcp 가 낸다, 결정 3) — 이 이미지가 띄우는 명령형 창구는 워커 자신의
+# (worker/course_access.py). 도구 서버는 모두 HTTP 다(지식 그래프 Neo4j 조회도 dmn-mcp 가 HTTP 도구로 낸다) — 이 이미지가 띄우는 명령형 창구는 워커 자신의
 # 질문 창구(worker/question_tools) · 결과 검사 창구(worker/result_check)뿐이다.
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
