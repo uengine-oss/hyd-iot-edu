@@ -1,5 +1,7 @@
 """사용자에게 확정을 받을 HTML 한 파일을 만든다: 장마다 렌더 그림 + 대본(핵심 · 풀이, `>` 줄은 「읽지 않음」).
-옛 판을 주면 바뀐 구획에 「화면 바뀜 · 대본 바뀜 · 옮김」 표시와 접어 둔 「고치기 전 화면 · 대본」을 넣는다.
+옛 판을 주면 바뀐 구획에 「화면 바뀜 · 대본 바뀜 · 옮김 · 새 구획」 표시와 접어 둔 「고치기 전 화면 · 대본」을 넣는다.
+화면 바뀜은 `### 화면 내용` 글이 다르거나 렌더 그림이 달라진 장이다(그림 파일만 고친 장도 잡는다).
+옛 판에만 있던 구획은 바로 가기 줄 끝에 「없어진 구획」으로 적는다.
 
 명령(저장소 루트에서):
   python3 <이 파일> --출력 작업/<폴더>/X.html --머리 <머리.html> --제목 "<두~네 낱말>" \
@@ -8,10 +10,18 @@
 - 렌더 폴더에는 s-NN.jpg가 있어야 한다(덱 PDF를 pymupdf로 dpi 100으로 뽑은 것).
 - 옛 덱 · 옛 대본은 `git show <커밋>:<경로> > <임시 파일>`로 꺼낸다. --옛대본은 --대본과 같은 차례로 준다.
 - --장대응은 「새 장:옛 장」 쌍(장 차례를 옮겼을 때만).
-- 머리 글의 {{바뀐장}} · {{바뀐수}}는 바뀐 구획 바로 가기와 그 수로 바뀐다.
+- 머리 글의 {{바뀐장}} · {{바뀐수}}는 바뀐 구획 바로 가기와 그 수로 바뀐다. 머리 글은 손으로 쓴다. 견본:
+    <h1>1회차 이론 — (무엇을 고친 판)</h1>
+    <div class="n">
+    <p>(누가 무슨 기준으로 읽고 몇 곳을 고쳤는지 한두 문장. 바뀐 {{바뀐수}}구획은 「고치기 전 화면 · 대본 보기」로 견준다)</p>
+    <ul><li><b>(편 장)</b>: (무엇을 어떻게 바꿨는지 한 줄)</li> …</ul>
+    <p><b>정해 주실 것</b>: (물음마다 무엇이고 · 하면 · 안 하면 생기는 일)</p>
+    <p><b>남은 확인</b>: 대체 글꼴 렌더라 줄바꿈 · 넘침 판정은 이 PC 몫입니다.</p>
+    <p>바뀐 구획 바로 가기: {{바뀐장}}</p>
+    </div>
 """
 import argparse, base64, html, io, pathlib, re
-from PIL import Image
+from PIL import Image, ImageChops
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--출력', required=True)
@@ -52,6 +62,14 @@ def jpg(p):
     return f'<img src="data:image/jpeg;base64,{base64.b64encode(buf.getvalue()).decode()}" alt="">'
 
 
+def render_differs(a_path, b_path):
+    """두 렌더가 눈에 띄게 다른가: 폭 400으로 줄인 흑백에서 40 넘게 달라진 화소가 0.1%를 넘는다."""
+    a = Image.open(a_path).convert('L'); b = Image.open(b_path).convert('L')
+    size = (400, int(a.height * 400 / a.width))
+    d = ImageChops.difference(a.resize(size), b.resize(size))
+    return sum(d.histogram()[41:]) > size[0] * size[1] * 0.001
+
+
 def sections(p):
     t = pathlib.Path(p).read_text(encoding='utf-8').split('# 촬영 본문 끝')[0]
     parts = re.split(r'(?m)^## \[SLIDE (\d+)(?:~(\d+))?\] (.*)$', t)
@@ -77,16 +95,27 @@ def paras(text):
 DN = deck_screens(a.새덱)
 DO = deck_screens(a.옛덱) if old else {}
 body, changed = [], []
+gone = []
 for k, new in enumerate(a.대본):
     olds = {(x, y): (t, s) for x, y, t, s in sections(a.옛대본[k])} if old else {}
+    seen = set()
     for x, y, ttl, txt in sections(new):
         nums = list(range(x, y + 1)) if y else [x]
         label = f'{x}~{y}장' if y else f'{x}장'
         badges, scr, txt_changed, otxt = '', [], False, ''
         if old:
             key = (N2O.get(x, x), N2O.get(y, y) if y else None)
+            if key not in olds:
+                badges = '<span class="b">새 구획</span>'
+                changed.append((x, label))
+                body.append(f'<h2 id="s{x}">{label} · {html.escape(ttl)} {badges}</h2>')
+                body += [jpg(pathlib.Path(a.새렌더) / f's-{n:02d}.jpg') for n in nums]
+                body += paras(txt)
+                continue
+            seen.add(key)
             otxt = olds[key][1]
-            scr = [n for n in nums if DN[n] != DO[N2O.get(n, n)]]
+            scr = [n for n in nums if DN[n] != DO.get(N2O.get(n, n))
+                   or render_differs(pathlib.Path(a.새렌더) / f's-{n:02d}.jpg', pathlib.Path(a.옛렌더) / f's-{N2O.get(n, n):02d}.jpg')]
             txt_changed = re.sub(r'\s+', ' ', otxt) != re.sub(r'\s+', ' ', txt)
             if scr:
                 badges += '<span class="b">화면 바뀜</span>'
@@ -108,8 +137,11 @@ for k, new in enumerate(a.대본):
             body += [jpg(pathlib.Path(a.옛렌더) / f's-{N2O.get(n, n):02d}.jpg') for n in scr]
             body += paras(otxt) if txt_changed else ['<p class="w">대본은 그대로다.</p>']
             body.append('</details>')
+    gone += [f'옛 {x}~{y}장' if y else f'옛 {x}장' for (x, y) in olds if (x, y) not in seen]
 
 nav = ' · '.join(f'<a href="#s{x}">{lab}</a>' for x, lab in changed)
+if gone:
+    nav += ' / 없어진 구획: ' + ' · '.join(gone)
 head = pathlib.Path(a.머리).read_text(encoding='utf-8').replace('{{바뀐장}}', nav).replace('{{바뀐수}}', str(len(changed)))
 css = ("body{font-family:sans-serif;max-width:1000px;margin:0 auto;padding:16px;line-height:1.75;color:#1b2430;background:#fff}"
        "h1{font-size:22px}h2{font-size:18px;margin:36px 0 8px;border-top:2px solid #1b2f55;padding-top:14px}"
@@ -122,4 +154,4 @@ css = ("body{font-family:sans-serif;max-width:1000px;margin:0 auto;padding:16px;
 out = pathlib.Path(a.출력)
 out.write_text('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
                f'<title>{html.escape(a.제목)}</title><style>{css}</style>\n{head}\n' + '\n'.join(body) + '\n', encoding='utf-8')
-print(out, out.stat().st_size, '바뀐 구획', len(changed))
+print(out, out.stat().st_size, '바뀐 구획', len(changed), '없어진 구획', len(gone))
