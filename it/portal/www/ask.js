@@ -7,7 +7,7 @@
    원본 대응: process-gpt-vue3 ui/WorkItemChat.vue(도구 입력 · 결과 접기), apps/todolist/InstanceTimeline.vue(작업 하나 = 메시지 하나). */
 (function () {
   const LIVE = new Set(['waiting', 'running', 'submitted', 'correcting', 'asking']);
-  const STATE = { waiting: ['대기 중', ''], running: ['조회 중', 'brand'], submitted: ['정리 중', 'brand'], correcting: ['답 형식 확인 중', 'warn'],
+  const STATE = { waiting: ['대기 중', ''], running: ['조회 중', 'run'], submitted: ['정리 중', 'run'], correcting: ['답 형식 확인 중', 'warn'],
     asking: ['사람에게 질문', 'warn'], done: ['답변 완료', 'ok'], failed: ['실패', 'danger'], closed: ['종료', ''], broken: ['오류', 'danger'] };
   const A = { el: null, status: null, statusErr: '', agents: [], agent: '', wanted: '', wantedMiss: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '',
     work: null, workHost: null, workFor: null, processOpen: false, retryNote: '', retryId: null };

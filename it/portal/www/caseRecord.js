@@ -714,7 +714,7 @@
       const sub = [rd && rd.value != null ? `${name} ${W().num(rd.value)}${u ? ' ' + u : ''} — 기준 ${rd.inside ? '안' : '밖'}` : '', p && p.window_s != null && !rd ? `${fmtMs(p.window_s * 1000)} 동안 지켜봅니다` : '', p && p.due_at ? `판정 예정 ${hhmmss(p.due_at)}` : ''].filter(Boolean).join(' · ');
       return `<div class="line" data-kind="${r.kind === 'error' ? 'fail' : 'ok'}">${UI.icon(r.kind === 'error' ? 'x' : 'check')}<span class="line-text"><b>${e(r.text)}</b>${sub ? `<span class="line-sub">${e(sub)}</span>` : ''}</span><span class="line-time num">${e(hhmmss(r.t0))}</span></div>`;
     }).join('');
-    return `<div class="stream" data-cr-watch><div class="stream-head"><i class="dot" data-tone="brand" data-live></i><span><b>효과 확인</b><span class="muted"> — ${extendedNote(w) ? e(extendedNote(w)) : '설비가 기준 안으로 돌아오는지 지켜보는 중'}</span></span>${b.t0 ? `<span class="elapsed num" data-since="${e(b.t0)}">${e(fmtMs(Date.now() - ts(b.t0)))}</span>` : ''}</div>
+    return `<div class="stream" data-cr-watch><div class="stream-head"><i class="dot" data-tone="run" data-live></i><span><b>효과 확인</b><span class="muted"> — ${extendedNote(w) ? e(extendedNote(w)) : '설비가 기준 안으로 돌아오는지 지켜보는 중'}</span></span>${b.t0 ? `<span class="elapsed num" data-since="${e(b.t0)}">${e(fmtMs(Date.now() - ts(b.t0)))}</span>` : ''}</div>
       <dl class="turn-facts watch-facts"><dt>지금 ${e(name)}</dt><dd class="num">${watchValue(w)}${u ? `<small>${e(u)}</small>` : ''}<span class="tag" data-cr-inside hidden></span></dd>
         ${w.limit != null ? `<dt>기준</dt><dd class="num">${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? `<small>${e(u)}</small>` : ''}</dd>` : ''}
         ${w.plan ? `<dt>판정까지${w.plan.extensions > 0 ? ' (연장)' : ''}</dt><dd class="num" data-cr-until="${e(w.plan.due_at)}">${e(untilText(w.plan.due_at, false))}</dd>` : ''}
@@ -886,7 +886,7 @@
       const total = list.reduce((n, r) => n + (r.t0 && r.t1 ? ts(r.t1) - ts(r.t0) : 0), 0);
       const bad = list.filter(r => r.status === 'fail').length, warn = list.filter(r => r.status === 'warn' || r.status === 'blocked').length, running = list.some(r => r.status === 'running');
       const state = bad ? `<span class="tg-warn" data-state="fail">실패 ${bad}회</span>` : warn ? `<span class="tg-warn" data-state="warn">${e(list.find(r => r.badge)?.badge || '확인 필요')}${warn > 1 ? ` ${warn}회` : ''}</span>` : '';
-      return `<li class="tg"${list.every(r => r.minor) ? ' data-minor' : ''}><details class="cr-call" data-k="${e(stepKey + ':g:' + tool)}"><summary><span class="tg-name"><b>${e(W().toolName(tool))}</b>${sys ? `<span class="muted">${e(sys)}</span>` : ''}</span><span class="tg-meta">${state}${running && live ? '<i class="dot" data-tone="brand" data-live></i>' : ''}<span class="num">${list.length}회</span>${total ? `<span class="cr-dur num">${e(fmtMs(total))}</span>` : ''}</span></summary>
+      return `<li class="tg"${list.every(r => r.minor) ? ' data-minor' : ''}><details class="cr-call" data-k="${e(stepKey + ':g:' + tool)}"><summary><span class="tg-name"><b>${e(W().toolName(tool))}</b>${sys ? `<span class="muted">${e(sys)}</span>` : ''}</span><span class="tg-meta">${state}${running && live ? '<i class="dot" data-tone="run" data-live></i>' : ''}<span class="num">${list.length}회</span>${total ? `<span class="cr-dur num">${e(fmtMs(total))}</span>` : ''}</span></summary>
         <div class="tg-body"><p class="cr-toolid">${UI.id(tool, { label: '도구 식별자' })}</p>${UI.toolIdentityFold(tool)}${calls.map(c => c.line).join('')}</div></details></li>`;
     }).join('');
     const items = rest.map(r => {
@@ -1028,7 +1028,7 @@
     const typing = note && (!lastTool || String(note.t0) >= String(lastTool.t1 || lastTool.t0)) ? `<div class="typing">${e(note.text.slice(0, NOTE_MAX_CHARS))}</div>` : '';
     const actor = s.actor || 'AI 에이전트';
     const conn = window.hydStream && !hydStream.connected() ? `<p class="stream-lost" role="status">연결이 끊겼습니다 — 다시 이으면 이어서 보입니다. 그동안은 2초마다 다시 읽습니다.</p>` : '';
-    return `<div class="stream" data-cr-live><div class="stream-head"><i class="dot" data-tone="brand" data-live></i><span><b>${e(actor)}</b><span class="muted">${e(W().josa(actor, '이/가'))} ${s.awaiting ? '일을 받기를 기다리는 중' : '일하는 중'}</span></span>${s.t0 ? `<span class="elapsed num" data-since="${e(s.t0)}">${e(fmtMs(Date.now() - ts(s.t0)))}</span>` : ''}</div>${conn}
+    return `<div class="stream" data-cr-live><div class="stream-head"><i class="dot" data-tone="run" data-live></i><span><b>${e(actor)}</b><span class="muted">${e(W().josa(actor, '이/가'))} ${s.awaiting ? '일을 받기를 기다리는 중' : '일하는 중'}</span></span>${s.t0 ? `<span class="elapsed num" data-since="${e(s.t0)}">${e(fmtMs(Date.now() - ts(s.t0)))}</span>` : ''}</div>${conn}
       <div class="stream-phases">${phasesOf(s).map(p => `<span class="phase" data-state="${p.state}"><i></i>${e(p.name)}</span>`).join('')}</div>
       <div class="stream-log" data-cr-livelog>${lines || `<div class="line">${UI.icon('circle-dashed')}<span class="line-text muted">${s.awaiting ? 'AI 워커가 이 일을 가져가면 한 일이 여기에 한 줄씩 붙습니다.' : '아직 부른 도구가 없습니다. 도구를 부르면 한 줄씩 붙습니다.'}</span><span></span></div>`}</div>${typing}</div>`;
   }
@@ -1140,7 +1140,7 @@
     const waitsMe = s.live && s.now && s.lane === 'person';      // 사람을 기다리는 단계는 문장 하나(무엇을 하면 넘어가는지)
     // 긴 문장(계산 · 번호 · 기다린 시간이 붙은 것)은 결론 한 마디만 줄에 두고 나머지는 그 아래 접기에 둔다 — 같은 근거가 결과 카드와 단계마다 되풀이돼 화면을 덮었다
     const [lead, more] = UI.leadRest(waitsMe ? s.now : pre + (s.sentence || ''), 110);
-    const body = `<p class="step-say">${e(lead)}</p>${more ? `<details class="fold step-rest" data-plain data-k="${e(s.key + ':rest')}"><summary>이어지는 설명</summary><div class="fold-body">${e(more)}</div></details>` : ''}${s.liveBox || ''}${s.live && s.now && !waitsMe && !s.liveBox ? `<p class="step-now"><i class="dot" data-tone="brand" data-live></i><span>${e(s.now)}</span></p>` : ''}
+    const body = `<p class="step-say">${e(lead)}</p>${more ? `<details class="fold step-rest" data-plain data-k="${e(s.key + ':rest')}"><summary>이어지는 설명</summary><div class="fold-body">${e(more)}</div></details>` : ''}${s.liveBox || ''}${s.live && s.now && !waitsMe && !s.liveBox ? `<p class="step-now"><i class="dot" data-tone="run" data-live></i><span>${e(s.now)}</span></p>` : ''}
       ${detailGroups(s, gaps, m).length ? sheetButton(s, '자세히') : ''}`;
     return { mark: markIcon(s), head, body };
   }

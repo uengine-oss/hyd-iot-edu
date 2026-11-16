@@ -26,7 +26,7 @@
   const icon = (name, cls) => UI.icon(name, cls);
   const tag = (label, tone, plain) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}${plain ? ' data-plain' : ''}>${esc(label)}</span>`;
   // 구분 뱃지: 기본 제공 / 내가 만든 것(상태가 아니라 종류라 점 없이)
-  const originTag = o => tag(o === 'user' ? '내가 만든 것' : '기본 제공', o === 'user' ? 'brand' : '', true);
+  const originTag = o => tag(o === 'user' ? '내가 만든 것' : '기본 제공', '', true);
   // 오류 · 읽는 중은 ui.js 의 부품을 쓴다. 이름–값은 값이 없는 줄을 그리지 않는다
   const errBox = (what, why) => UI.errorBlock(what, why, { retry: true });      // [다시 시도]는 onClick 의 data-retry 가 받는다
   const loading = () => UI.loading('');

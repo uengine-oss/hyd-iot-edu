@@ -74,7 +74,7 @@
     // 누르면(키보드 · 터치 포함) 지금 막힌 행동과 까닭이 펼쳐진다 — 까닭은 서버 표가 준 문장 그대로다(화면에 규칙 사본 없음)
     const label = a.phase === 'pbl' ? `제한 없이 쓰는 단계 (PBL)${until ? ` · ${until}까지` : ''}`
       : a.expired ? '제공된 문서 · 흐름 · 모델만 쓰는 단계 (PBL 기한 지남)' : '제공된 문서 · 흐름 · 모델만 쓰는 단계';
-    const tone = a.phase === 'pbl' ? 'brand' : a.expired ? 'warn' : '';
+    const tone = a.phase === 'pbl' ? 'run' : a.expired ? 'warn' : '';
     const closed = Object.values(a.actions || {}).filter(x => x && x.allowed === false).map(x => x.reason);
     const notes = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 제공된 문서 · 흐름 · 모델만 쓰는 단계로 돌아왔습니다.` : ''].filter(Boolean);
     const was = !!box.querySelector('details[open]');

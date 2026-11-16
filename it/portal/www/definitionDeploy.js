@@ -15,7 +15,7 @@
   // 주황은 상태다 — 기본 제공 흐름의 운영 판본이 처음 판본에서 바뀌어 있을 때
   const kindTag = (label, tone) => `<span class="tag" data-plain${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   // 기본 제공 흐름은 표시하지 않는다(모든 줄이 같은 값인 뱃지는 정보가 없다) — 내가 배포했거나 운영 판본이 바뀐 줄만 말한다
-  const routeKind = x => x.reference || x.class_flow ? '' : /기준 흐름/.test(x.source || '') ? tag('기본 제공 · 운영 판본 바뀜', 'warn') : kindTag('내가 배포한 흐름', 'brand');
+  const routeKind = x => x.reference || x.class_flow ? '' : /기준 흐름/.test(x.source || '') ? tag('기본 제공 · 운영 판본 바뀜', 'warn') : kindTag('내가 배포한 흐름', '');
 
   async function loadRoutes() {
     const r = await getJ(API.process + '/api/flows/deployments');

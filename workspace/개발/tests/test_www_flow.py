@@ -217,8 +217,9 @@ def test_진행_길의_끝남_지금_남음은_밝은_캔버스에서_서로_다
             page.wait_for_function("() => { const h = document.querySelector('#stateFlowHost'); return h._flow && h._flow.D; }", timeout=20000)
             page.wait_for_timeout(300)
             got = page.evaluate(r"""() => {
-              const lum = c => { let m = /^rgba?\(([^)]+)\)/.exec(c), v; if (m) v = m[1].split(/[, /]+/).slice(0, 3).map(x => Number(x) / 255); else { m = /^color\(srgb ([^)]+)\)/.exec(c); if (!m) throw new Error('모르는 색: ' + c); v = m[1].split(/[ /]+/).slice(0, 3).map(Number); }
-                const [r, g, b] = v.map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+              // 색 글(rgb · color(srgb …) · oklch — 키트의 색은 oklch 다)을 브라우저가 실제로 칠하는 값으로 읽는다: 흰 바탕 위에 칠한 한 점
+              const lum = c => { const x = document.createElement('canvas').getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 1, 1); x.fillStyle = c; x.fillRect(0, 0, 1, 1);
+                const [r, g, b] = [...x.getImageData(0, 0, 1, 1).data].slice(0, 3).map(v => v / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
               const ratio = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
               const host = document.querySelector('#stateFlowHost'), bg = getComputedStyle(host.querySelector('.canvas')).backgroundColor;
               const of = id => { const g = host.querySelector(`.djs-shape[data-element-id="${hydFlow.xid(id)}"]`), box = g.querySelector('.djs-visual > rect'), s = getComputedStyle(box), text = g.querySelector('.djs-visual text');

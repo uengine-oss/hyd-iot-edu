@@ -1,0 +1,185 @@
+/* system.css — 시스템 무리의 배치: 시스템 구성(#/home) · 성과 지표(#/kpi) · 관리(#/admin).
+   그리는 코드: app.js(renderStack · layers.js) · kpi.js · configBundle.js · studentCases.js · sourceEvents.js
+   부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다(디자인기준.md 4절). 이 파일에는 이 무리의 화면 배치만 두고, 숫자 대신 2절의 이름을 쓴다. 다른 무리의 규칙을 덮어쓰지 않는다. */
+
+/* ---------------- 관리(configBundle.js · studentCases.js · sourceEvents.js) ----------------
+   내 설정 = 설정 줄(.set-row): 왼쪽에 이름과 한 문장, 오른쪽에 고를 것과 단추 하나, 그 아래(.set-more) 진행 · 결과. 줄과 줄은 선 하나로 가른다(상자 없음).
+   접수 기록 = 목록 + 상세(.split) */
+#configBundleView { max-width: 960px; }
+.set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--pad-card) 0; border-top: 1px solid var(--border); }
+#configBundleView > :first-child > .set-row:first-child, #configBundleView > .set-row:first-child { border-top: 0; padding-top: 0; }
+.set-what { flex: 1 1 320px; min-width: 0; margin-right: 24px; }
+.set-what h3 { font-size: var(--fs-body); line-height: 22px; font-weight: 600; }
+.set-what p { margin-top: 2px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 60ch; }
+.set-do { display: contents; }      /* 고를 것 · 단추는 줄의 오른쪽 끝에 나란히, 막힌 까닭 한 줄(courseAccess.apply 가 단추 뒤에 붙인다)은 그 아래 온 줄로 */
+.set-do > .select { width: auto; min-width: 140px; flex: none; }
+.set-do > [data-course-why] { order: 5; flex: 1 1 100%; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); }
+.set-more { order: 6; flex: 1 1 100%; min-width: 0; }
+.set-more > :not(:empty):not([hidden]) { margin-top: 4px; }
+.set-more > :empty { display: none; }
+.set-more .fold > summary { padding: 4px 0; color: var(--muted-foreground); }
+.set-more .fold-body { padding: 6px 0 0 22px; display: grid; gap: 4px; max-width: 80ch; }
+.set-msg { font-size: var(--fs-sm); }
+.cases #caseAssets { margin-top: 8px; }
+.cases .table td:last-child { width: 46%; }
+#sourceEventMessage:empty { display: none; }
+#sourceEventMessage { font-size: var(--fs-xs); line-height: 18px; }
+
+/* ================================================================= 성과 지표(kpi.js) */
+.kpi-trace { margin: 16px 0; }
+.kpi-trace h4 { margin: 12px 0 4px; }
+
+.kpi-why { display: grid; gap: 2px; margin: 4px 0 0; padding-left: 16px; font-size: var(--fs-sm); color: var(--foreground); }
+
+/* 성과 지표: 거르기 한 줄(기간, 오른쪽에 그 기간의 범위) → 숫자 타일 줄 → 관점마다 지표 카드 */
+.kpi-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin: -4px 0 16px; }
+.kpi-bar:empty { display: none; }
+.kpi-bar > .muted { font-size: var(--fs-xs); }
+.kpi-grid .kpi-card > footer { justify-content: flex-start; }
+.kpi-trace { border: 1px solid var(--border); border-radius: var(--r-card); --pad-card: 20px; background: var(--card); }
+@media (max-width: 900px) {
+  .kpi-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.sys-bar { position: static; flex: none; padding: 14px 16px 0; flex-wrap: wrap; row-gap: 8px; }
+
+
+/* ================================================================= 시스템 구성 (5-8): 머리 띠 아래를 가득 쓰는 밝은 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉, 흰 부품 카드, 길 셋.
+   그림은 캔버스에 통째로 맞춰진다(스크롤 없음). 범례는 위에 뜬 흰 조각, 고른 부품의 설명은 그림의 빈 칸(IT 영역 아래 두 계층 — app.js sysPlace)에 뜬 흰 카드.
+   캔버스가 1000px 보다 좁아지는 폭(창 1240px 아래)에서는 그림을 줄이지 않고 끌어서 본다(app.js sysPan) — 정보 카드는 그림 아래에 놓인다 */
+.sys-arch { display: flex; flex-direction: column; height: var(--cvs-h); min-height: 700px; padding: 0; }      /* 낮은 창에서는 그림을 더 줄이지 않고(글자가 읽히는 크기) 화면을 스크롤한다 */
+.sys-lg { width: 26px; height: 0; border-top: 2px dotted var(--cv-blue); background: none !important; border-radius: 0 !important; }
+.sys-lg[data-k="cmd"] { border-top: 2px dashed var(--cv-amber); }
+.sys-lg[data-k="ai"] { border-top: 2px dotted var(--cv-violet); }
+.sys-lg[data-k="sim"] { border-top: 2px solid var(--cv-red); }
+.sys-lg-dot { border-radius: 50% !important; }
+.sys-lg-dot.ok { background: var(--cv-green); }
+.sys-lg-dot.down { background: var(--cv-red); }
+.sys-lg-dot.opt { background: none; box-shadow: inset 0 0 0 1.5px var(--cv-ink-3); }
+.sys-scroll { flex: 1; min-height: 0; padding: 8px 10px 10px; overflow: hidden; cursor: default; }
+.sys-scroll[data-pan] { cursor: grab; }
+.sys-scroll[data-pan].dragging { cursor: grabbing; user-select: none; }
+.sys-scroll > svg { display: block; width: 100%; height: 100%; font-family: var(--font-sans); }
+.sys-scroll > .alert { margin: 16px; }
+#sysInfo { position: absolute; left: var(--slot-l, auto); top: var(--slot-t, auto); width: var(--slot-w, 480px); max-height: var(--slot-h, none); overflow: auto; align-content: start; }
+/* 좁은 폭: 그림이 캔버스보다 넓으면 끌어서 옮긴다 — 그 사실과 지금 어느 영역을 보는지를 범례 줄 아래 한 줄로 알린다(app.js sysPan) */
+.sys-pan { display: none; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px 0; font-size: var(--fs-xs); color: var(--cv-ink-2); }
+.sys-pan[data-on] { display: flex; }
+.sys-pan button { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--cv-border); background: var(--cv-tool); color: var(--cv-ink); font-size: var(--fs-xs); cursor: pointer; }
+.sys-pan button[aria-pressed="true"] { border-color: var(--cv-now); color: var(--cv-now); }
+@media (max-width: 1240px) {
+  .sys-arch { display: block; height: auto; min-height: 0; }
+  .sys-scroll { overflow-x: auto; }
+  .sys-scroll > svg { height: auto; min-width: 1040px; }
+  #sysInfo { position: static; width: auto; max-height: none; margin: 0 16px 16px; }
+}
+.sys-info p + p { margin-top: 2px; }
+.sys-band { stroke-width: 1; stroke-dasharray: 4 5; }
+.sys-band-t { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.sys-band-s { font-size: 13px; fill: var(--cv-ink-2); }
+.sys-band-n { font-size: 11.5px; fill: var(--cv-ink-3); font-family: var(--font-mono); }
+.sys-info .sys-warn { color: color-mix(in srgb, var(--cv-amber) 70%, var(--cv-ink)); } .sys-info .sys-warn b { color: inherit; }
+.sys-info .sys-nets { color: var(--cv-ink-3); } .sys-info .sys-nets code { margin-left: 4px; padding: 1px 6px; border: 1px solid var(--cv-border); border-radius: 5px; font-size: var(--fs-xs); color: var(--cv-ink-2); }
+.sys-row-bg { fill: rgb(15 23 42 / .028); }      /* 계층 하나 걸러 옅은 띠 — 아홉 계층이 세 영역을 가로지르는 줄로 읽힌다 */
+.sys-row-t { font-size: 13px; font-weight: 600; fill: var(--cv-ink); }
+.sys-row-cap { font-size: 11.5px; fill: var(--cv-ink-3); }
+.sys-nd { cursor: pointer; }
+.sys-nd:focus-visible { outline: none; }
+.sys-nd .box { fill: var(--cv-node); stroke: #d9dce3; stroke-width: 1; filter: drop-shadow(0 1px 2px rgb(15 23 42 / .09)); transition: stroke .15s, filter .15s; }
+.sys-nd .ib { fill: currentColor; opacity: .12; }
+.sys-nd:hover .box, .sys-nd:focus-visible .box, .sys-nd[data-on] .box { stroke: var(--cv-now); stroke-width: 1.6; filter: drop-shadow(0 3px 10px rgb(94 106 210 / .26)); }
+.sys-nd .t { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; fill: var(--cv-ink); }
+.sys-nd .s { font-size: 11px; letter-spacing: -0.01em; fill: var(--cv-ink-2); font-family: var(--font-mono); }
+.sys-nd { color: var(--cv-ink-2); }
+.sys-nd[data-zone="ot"] { color: var(--cv-red); }
+.sys-nd[data-zone="dmz"] { color: var(--cv-amber); }
+.sys-nd[data-zone="it"] { color: var(--cv-blue); }
+.sys-nd[data-ai] { color: var(--cv-violet); }
+.sys-nd .st { fill: var(--cv-edge); }
+.sys-nd[data-st="ok"] .st { fill: var(--cv-green); }
+.sys-nd[data-st="down"] .st { fill: var(--cv-red); }
+.sys-nd[data-st="down"] .box { stroke: var(--cv-red); stroke-width: 1.6; }
+.sys-nd[data-st="none"] .st { display: none; }
+.sys-nd[data-st="opt"] { opacity: .62; }
+.sys-nd[data-st="opt"] .box { stroke: var(--cv-edge); stroke-dasharray: 4 4; filter: none; }
+.sys-nd[data-st="opt"] .st { fill: none; stroke: var(--cv-ink-3); stroke-width: 1.5; }
+.sys-p { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sys-p[data-k="data"] { stroke: var(--cv-blue); stroke-dasharray: 3 7; animation: sysFlow 1.6s linear infinite; }
+.sys-p[data-k="cmd"] { stroke: var(--cv-amber); stroke-dasharray: 9 7; stroke-width: 2.2; animation: sysFlow 1.4s linear infinite; }
+.sys-p[data-k="ai"] { stroke: var(--cv-violet); stroke-dasharray: 4 5; stroke-width: 1.8; animation: sysFlow 2.2s linear infinite; }
+.sys-p[data-k="plain"] { stroke: var(--cv-edge); stroke-width: 1.4; }
+.sys-p[data-k="sim"] { stroke: var(--cv-red); stroke-width: 1.4; }
+.cases [data-tone="danger"] { color: var(--st-fail-ink); }
+/* 길의 이름표: 길의 색을 글자로 읽히게 짙게 섞어 쓴다. 바탕색 테두리를 둘러 선 위에서도 읽힌다 */
+.sys-p-t { --k: var(--cv-ink-2); font-size: 12.5px; font-weight: 550; fill: color-mix(in srgb, var(--k) 60%, var(--cv-ink)); paint-order: stroke; stroke: var(--cv-bg); stroke-width: 6px; stroke-linejoin: round; }
+.sys-p-t[data-k="data"] { --k: var(--cv-blue); } .sys-p-t[data-k="cmd"] { --k: var(--cv-amber); } .sys-p-t[data-k="ai"] { --k: var(--cv-violet); } .sys-p-t[data-k="sim"] { --k: var(--cv-red); }
+.sys-p-t[data-k="plain"] { fill: var(--cv-ink-2); }
+@media (prefers-reduced-motion: reduce) {
+  .sys-p { animation: none !important; }
+}
+/* 그림 아래 구역: 현업 공장과 다른 곳 — 캔버스와 붙지 않게 넉넉히 띄우고 본문 폭으로 둔다 */
+#view-home > .sec-head { margin: var(--gap-sec) 0 12px; padding: 0 var(--page-pad); }
+#view-home > .sys-diffs { padding: 0 var(--page-pad) 96px; }
+.sys-diffs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; margin: 0; }
+.sys-diff { display: grid; grid-template-columns: 20px 132px minmax(0, 1fr); gap: 0 12px; align-items: baseline; padding: 16px 0; border-top: 1px solid var(--border); font-size: var(--fs-sm); line-height: 22px; }
+.sys-diff .ic { width: 16px; height: 16px; align-self: start; margin-top: 3px; color: var(--muted-foreground); }
+.sys-diff dt { font-weight: 600; color: var(--foreground); }
+.sys-diff dd { margin: 0; color: var(--muted-foreground); }
+@media (max-width: 1100px) {
+  .sys-diffs { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .sys-diff { grid-template-columns: 20px minmax(0, 1fr); }
+  .sys-diff dd { grid-column: 2; }
+}
+
+/* ================================================================= 시스템 — 관리(목록 + 상세) · 성과 지표 */
+.admin-pane > summary { display: none; }
+.admin-pane:not([open]) { display: none; }
+.admin-detail { min-width: 0; }
+.admin-fold { margin-top: var(--gap-sec); }
+.admin-fold .panel-sec { padding-inline: 0; }
+/* 내 설정 판(configBundle.js): 절 넷(내 사례 · 내보내기 · 불러오기 · 기준으로 되돌리기)이 같은 짜임으로 읽히게 한다.
+   - 첫 절의 위 선은 판의 테두리와 겹쳐 두 줄로 보였다 — 뺀다. 「내 사례」 제목은 다른 절의 제목(h3)과 같은 크기 · 같은 간격으로 둔다
+   - 고르기 칸 옆의 작은 단추와 안내 글은 칸의 아래 끝이 아니라 칸 높이의 가운데에 맞춘다
+   - 막힌 [불러오기]의 까닭은 단추 옆에 길게 붙지 않고 단추 줄 위의 한 줄로 둔다 */
+#configBundleView > .panel-sec:first-child { border-top: 0; }
+#configBundleView .cases .sec-head { margin: 0 0 6px; }
+#configBundleView .cases .sec-head h2 { font-size: var(--fs-sm); line-height: 20px; }
+#configBundleView .cases > p.muted { margin: 0 0 12px; font-size: var(--fs-sm); }
+#configBundleView .panel-sec > p.muted { font-size: var(--fs-sm); }
+#configBundleView .form-foot > [data-course-why] { order: -1; flex: 1 1 100%; font-size: var(--fs-sm); line-height: 20px; }
+#configBundleView .panel-sec > p.muted + .field, #cfgResetWhat { margin-top: 12px; }
+.admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.admin-wide { grid-column: 1 / -1; }
+#sourceEventDetail:empty, #sourceEventRetry[hidden] { display: none; }
+@media (max-width: 720px) {
+  .admin-grid { grid-template-columns: minmax(0, 1fr); }
+}
+.kpi-persp { margin-top: var(--gap-sec); }
+/* 지표 카드 격자: 한 카드 = 이름 · 판정 → 큰 실적 → 목표와 달성률 한 줄 → 동작 */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.kpi-card { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 2px; min-width: 0; padding: 20px 20px 10px; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--card); }
+.kpi-card[data-status="missed"] { border-color: color-mix(in srgb, var(--st-fail) 40%, transparent); }
+.kpi-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.kpi-card h4 { margin: 0; font-size: var(--fs-sm); line-height: 20px; font-weight: 600; }
+.kpi-card > header > :last-child { flex: none; }
+.kpi-card > header > .badge { height: auto; padding: 0; border: 0; background: none; font-weight: 400; color: var(--muted-foreground); }      /* 판정이 없는 지표(목표 없음 등)는 뱃지가 아니라 옅은 글 한 마디 */
+.kpi-val { margin: 10px 0 2px; font-size: var(--fs-num); line-height: 32px; font-weight: 600; letter-spacing: -0.02em; }
+.kpi-val small { margin-left: 4px; font-size: var(--fs-sm); font-weight: 450; color: var(--muted-foreground); letter-spacing: 0; }
+.kpi-goal { margin: 0; font-size: var(--fs-xs); }
+.kpi-note { margin: 4px 0 0; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.kpi-card > footer { display: flex; justify-content: flex-end; gap: 4px; margin: 12px -10px 0; }
+.kpi-folds { margin-top: var(--gap-sec); }
+.kpi-dead td:last-child { white-space: normal; min-width: 280px; }
+.kpi-sheet-h { margin: 20px 0 8px; font-size: var(--fs-sm); font-weight: 600; }
+.kpi-trace { margin-top: 20px; border-color: var(--border); }
+.kpi-trial input { width: 120px; }
+.kpi-lines { display: grid; gap: 10px; }
+.kpi-lines > li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; font-size: var(--fs-sm); }
+.kpi-lines small { display: block; color: var(--muted-foreground); font-size: var(--fs-xs); }
+@keyframes sysFlow { to { stroke-dashoffset: -40; } }
+
+/* ═════════ 옛 모양 — 이 무리 작업자가 마크업을 옮기면 지운다 ═════════ */
+/* 관리 › 접수 기록(sourceEvents.js): 다시 접수 폼의 입력 폭 · 목록 단추의 글 맞춤 */
+#sourceEventRetry input, #sourceEventRetry textarea { width: 100%; }
+#sourceEventList .btn { text-align: left; overflow-wrap: anywhere; }

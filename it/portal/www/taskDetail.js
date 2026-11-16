@@ -535,7 +535,7 @@
     }
     const cur = v.workitems.filter(w => LIVE.has(w.status) && !isEventNode(v, w.activity_id));
     if (!cur.length) return `<div class="td-now" role="status"><b>${esc(UI.t('td.now'))}</b> <span class="muted">${esc(UI.t('td.nothing'))}</span></div>`;
-    return `<div class="td-now" role="status"><i class="dot" data-tone="brand" data-live></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="btn" data-variant="link" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${what}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
+    return `<div class="td-now" role="status"><i class="dot" data-tone="run" data-live></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="btn" data-variant="link" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${what}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
   }
   const clockSpan = (kind, iso) => {
     const t = new Date(iso) - new Date();

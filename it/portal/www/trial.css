@@ -1,0 +1,7 @@
+/* trial.css — 판단 실험 무리의 배치: 규칙 판단(#/decision) · 조건별 손익(#/whatif) · 판단 채점(#/eval) · 에이전트 시험 비교(#/compare).
+   「조건 + 결과」 두 칸 틀(.io)은 portal-kit.css 에 있다. 그리는 코드: enterprise.js(규칙 판단) · whatif.js · evaluation.js · compare.js
+   부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다(디자인기준.md 4절). 이 파일에는 이 무리의 화면 배치만 두고, 숫자 대신 2절의 이름을 쓴다. 다른 무리의 규칙을 덮어쓰지 않는다. */
+
+.opt-money { display: flex; align-items: baseline; gap: 8px; margin: 16px 0 8px; font-size: var(--fs-body); font-weight: 600; }
+
+

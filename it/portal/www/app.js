@@ -441,7 +441,7 @@ function phaseText(d) {
 const TS_HOT = 55, TS_TRIP = 65, TS_MIN = 30, TS_MAX = 70;
 const tsPct = t => Math.max(0, Math.min(100, (t - TS_MIN) / (TS_MAX - TS_MIN) * 100));
 function tsColor(t) { return t >= TS_TRIP ? 'trip' : t >= TS_HOT ? 'hot' : ''; }
-const KIT_TONE = { accent: 'brand', success: 'ok', warning: 'warn', danger: 'danger' };
+const KIT_TONE = { accent: 'run', success: 'ok', warning: 'warn', danger: 'danger' };
 // 설비 한 기의 상태 낱말 하나: 보호 정지 → 경보(감지기의 가장 급한 단계) → 운전 상태 차례로 급한 것을 보인다. 감지기를 못 읽었으면 그 사실을 보인다
 function unitState(s, d) {
   if (s.state === 'TRIP') return { label: UI.status('TRIP'), tone: 'danger' };
@@ -501,7 +501,7 @@ function bizAlertHtml(asset) {
   if (state.biz === undefined) return '<span class="tag">확인 중</span>';
   if (state.biz && state.biz.failed) return `<span class="tag" data-tone="danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
   const b = bizOf(asset); if (!b) return '';
-  if (b.running) return '<span class="tag" data-tone="brand">처리 중</span>';      // 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 「처리 건에서 보기」 한 줄이다(뱃지를 링크로 쓰지 않는다)
+  if (b.running) return '<span class="tag" data-tone="run">처리 중</span>';      // 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 「처리 건에서 보기」 한 줄이다(뱃지를 링크로 쓰지 않는다)
   // 반려 뒤 [초기화]를 눌렀으면 표시가 「반려」로 남지 않는다 — 마지막 처리 건이 끝난 뒤의 [초기화]면 다시 도래/필요
   const press = state.biz && state.biz.presses && state.biz.presses[asset];
   const resetAfter = press && press.button === state.biz.reset_button && b.last && b.last.ended_at && Date.parse(press.at) >= Date.parse(b.last.ended_at);
@@ -852,13 +852,13 @@ async function loadLimits() {
 }
 function trendLines(tag) {
   const cs = getComputedStyle(document.documentElement), unit = TREND_TAGS[tag][1];
-  const lines = ((TREND.limits || {})[tag] || []).map(l => ({ value: l.value, color: cs.getPropertyValue('--warn').trim(), text: `${l.pattern} 조건 ${l.value} ${unit} ${l.below ? '미만' : '초과'}` }));
-  if (tag === 'TS1') lines.push({ value: TS_TRIP, color: cs.getPropertyValue('--danger').trim(), text: `보호 정지 ${TS_TRIP} ℃` });
+  const lines = ((TREND.limits || {})[tag] || []).map(l => ({ value: l.value, color: cs.getPropertyValue('--st-warn').trim(), text: `${l.pattern} 조건 ${l.value} ${unit} ${l.below ? '미만' : '초과'}` }));
+  if (tag === 'TS1') lines.push({ value: TS_TRIP, color: cs.getPropertyValue('--st-fail').trim(), text: `보호 정지 ${TS_TRIP} ℃` });
   return lines;
 }
 function trendBuild() {
   const box = $('#trendChart'), h = TREND.hist[TREND.asset], [, , , base] = TREND_TAGS[TREND.tag], lines = trendLines(TREND.tag);
-  const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue('--muted-foreground').trim(), brand = cs.getPropertyValue('--brand').trim();
+  const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue('--muted-foreground').trim(), brand = cs.getPropertyValue('--primary').trim();
   $('#trendTitle').textContent = `${TREND.asset} 추이`;
   if (TREND.chart) { TREND.chart.destroy(); TREND.chart = null; }
   box.innerHTML = '';
@@ -943,7 +943,7 @@ function trendSparks() {
     if (!TREND.sparks[a]) {
       const w = Math.floor(host.getBoundingClientRect().width); if (w <= 0) continue;
       TREND.sparks[a] = new uPlot({ width: w, height: 44, cursor: { show: false }, legend: { show: false }, select: { show: false }, padding: [4, 0, 4, 0], scales: { x: { time: false }, y: { range: (u, min, max) => [Math.min(40, min ?? 40), Math.max(TS_MAX, max ?? TS_MAX)] } }, axes: [{ show: false }, { show: false }],
-        series: [{}, { stroke: getComputedStyle(document.documentElement).getPropertyValue('--brand').trim(), width: 1.6, points: { show: false },
+        series: [{}, { stroke: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(), width: 1.6, points: { show: false },
           fill: u => { const g = u.ctx.createLinearGradient(0, 0, 0, u.bbox.height); g.addColorStop(0, 'rgba(79,70,229,.18)'); g.addColorStop(1, 'rgba(79,70,229,0)'); return g; } }] }, [[], []], host);
     }
     TREND.sparks[a].setData([h.t.slice(-90), h.TS1.slice(-90)]);

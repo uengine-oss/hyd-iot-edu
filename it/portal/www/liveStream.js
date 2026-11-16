@@ -181,7 +181,7 @@
         <span class="line-text"><b>${esc(title)}</b><span class="line-sub">${esc([label, text].filter(Boolean).join(' · '))}</span></span>
         <span class="line-time num" title="${esc(UI.dateTime(e.timestamp))}">${esc(UI.time(e.timestamp))}${dur && !running ? ` · ${esc(dur)}` : ''}</span></div>`;
     });
-    box.innerHTML = html + (rows.length > limit ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" id="streamMore">${esc(UI.t('stream.all'))} (${rows.length})</button>` : '');
+    box.innerHTML = html + (rows.length > limit ? `<button type="button" class="more-link" id="streamMore">${esc(UI.t('stream.all'))} (${rows.length})</button>` : '');
     S.rows.forEach(r => { r.fresh = false; });
     box.querySelectorAll('[data-inst]').forEach(row => row.addEventListener('click', () => {
       if (!row.dataset.inst) return;
@@ -299,7 +299,7 @@
   function waitHtml(text, o = {}) {
     const since = o.since || iso();
     // 실시간 상자의 머리 한 줄(키트 .stream-head): 살아 있는 점 + 무엇을 하는 중 + 흐른 시간. 그 아래에 「아직 하는 중입니다 — …」
-    return `<div class="stream lv-wait${o.cls ? ' ' + esc(o.cls) : ''}" role="status" aria-live="polite"><div class="stream-head lv-wait-line"><i class="dot" data-tone="brand" data-live></i><b>${esc(text)}</b><span class="elapsed">${timeHtml(since)}</span></div>${lateHtml(since, o.hint, o.late)}</div>`;
+    return `<div class="stream lv-wait${o.cls ? ' ' + esc(o.cls) : ''}" role="status" aria-live="polite"><div class="stream-head lv-wait-line"><i class="dot" data-tone="run" data-live></i><b>${esc(text)}</b><span class="elapsed">${timeHtml(since)}</span></div>${lateHtml(since, o.hint, o.late)}</div>`;
   }
   function busy(btn, label, since) {
     if (!btn) return () => {};
@@ -448,7 +448,7 @@
     function drawHead() {
       const c = hydStream.conn();
       q('[data-live-conn]').textContent = c.text; q('[data-live-conn]').className = 'live-conn ' + (c.ok ? 'on' : c.state);
-      const now = `<i class="dot"${W.running ? ' data-tone="brand" data-live' : ' data-tone="ok"'}></i><b>${esc(W.headline)}</b>` + (W.since && W.running ? timeHtml(W.since) : '');
+      const now = `<i class="dot"${W.running ? ' data-tone="run" data-live' : ' data-tone="ok"'}></i><b>${esc(W.headline)}</b>` + (W.since && W.running ? timeHtml(W.since) : '');
       const nowBox = q('[data-lv-now]'); if (nowBox._html !== now) { nowBox.innerHTML = now; nowBox._html = now; }
       const note = q('[data-lv-note]'); note.hidden = !W.note; note.textContent = W.note || '';
       const lost = W.running && W.awake && (c.state === 'retry' || c.state === 'off');
@@ -481,7 +481,7 @@
         if (alone) seg.node.open = true; else if (!seg.byHand) seg.node.open = live(it) && it.state !== 'wait' || it.state === 'fail' || it.state === 'stop';
         const t0 = seg.item && seg.item.start_date, t1 = seg.item && seg.item.end_date;
         const time = live(it) && t0 ? timeHtml(t0) : t0 && t1 ? `<span class="lv-time num">${esc(fmt(Date.parse(t1) - Date.parse(t0)))}</span>` : '';
-        const tone = { run: 'brand', done: 'ok', fail: 'danger', stop: 'danger' }[it.state];
+        const tone = { run: 'run', done: 'ok', fail: 'danger', stop: 'danger' }[it.state];
         const html = `<b>${esc(it.label || '')}</b><span class="tag lv-seg-state"${tone ? ` data-tone="${tone}"` : ''}>${esc(it.stateText || SEG_STATE[it.state] || '')}</span>${time}`;
         if (head._html !== html) { head.innerHTML = html; head._html = html; }
         seg.node.dataset.state = it.state || '';

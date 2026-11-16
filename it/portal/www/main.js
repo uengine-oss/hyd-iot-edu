@@ -1,6 +1,8 @@
 /* 홈: 이 시스템의 이야기를 그림 한 장으로 — 유압 파워유닛(OT)의 값이 MQTT · DMZ · Kafka · 탐지를 지나 지식 지도와 AI 에이전트(IT)에 닿고,
    사람이 승인한 조치는 명령 관문(DMZ)을 거쳐 PLC 로 내려간다(PLC 가 받을지 정한다). 실시간 값은 app.js 가 읽은 state.plant 를 쓴다.
-   그림 아래: 숫자 타일 한 줄(설비 · 열린 사건 · 내가 할 일 · 지식 항목 — 누르면 그 화면) · 처음이라면 이 순서로(네 걸음). 모양은 canvas.css(그림 .m-* 와 아래쪽 .hm-*). 디자인 기준 5-7. */
+   그림 가운데의 「값이 지나는 길」을 누르면 시스템 구성 화면이 열린다(그 길의 발치에 「시스템 구성 →」이 보인다).
+   그림 아래: 단계 카드 넷(지식 넣기 → 고장 내기 → 판단과 승인 → 결과 보기) — 카드마다 그 단계의 지금 값 하나와 그 화면으로 가는 길(UI.statCard, 디자인기준 4-17 · 5-4).
+   모양은 plant.css 의 홈 구획(그림 .m-* · .hm-*). */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
   // 지식 지도의 항목(실제 온톨로지에서 읽기 좋게 고른 일부 — it/neo4j/v2/instances.cypher 구조판 + 매뉴얼 HM-8 의 절차)
@@ -111,6 +113,7 @@
   <path d="M133 430 C 230 506, 500 440, 540 232" class="m-data"/>
   <path d="M313 238 C 380 236, 480 228, 540 220" class="m-data"/>
   <path d="M509 298 C 522 282, 530 252, 540 226" class="m-data"/>
+  <a class="hm-arch" href="#/home" data-go-tab="home" aria-label="시스템 구성 보기 — 값이 올라오고 승인된 명령이 내려가는 구조"><title>시스템 구성에서 이 구조를 자세히 봅니다</title>
   <g class="m-bus">
     <rect x="540" y="110" width="80" height="420" rx="10"/>
     <line x1="540" y1="262" x2="620" y2="262" class="m-sep"/><line x1="540" y1="340" x2="620" y2="340" class="m-sep"/>
@@ -120,6 +123,8 @@
     <path d="M580 324 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
     <path d="M580 402 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
   </g>
+  <text x="580" y="552" text-anchor="middle" class="hm-arch-t">시스템 구성 →</text>
+  </a>
   <path d="M620 452 H654" class="m-data m-data-solid" marker-end="url(#mArrowB)"/>
   <text x="637" y="442" text-anchor="middle" class="m-bus-s">경보</text>
 
@@ -138,17 +143,6 @@
 </svg>`;
   }
 
-  // 처음이라면 이 순서로: 이 시스템의 이야기 순서 — 지식을 넣는다 → 사건이 생긴다 → AI가 판단하고 사람이 승인한다 → (자기 것) 흐름을 만든다.
-  // 제목은 메뉴 표의 이름 그대로다(메뉴 › 화면 — app.js hydMenu) — 눌러서 열리는 화면의 제목과 같다
-  function stagesHtml() {
-    const st = [['knowledge', '설비 매뉴얼을 올려 AI 에이전트가 판단에 쓸 지식을 만듭니다.'], ['scenario', '설비에 결함을 넣어 경보를 냅니다. 경보가 나면 처리 건이 열립니다.'],
-      ['instances', 'AI 에이전트의 판단을 읽고 승인하거나 반려한 뒤 실행 결과를 확인합니다.'], ['flows', '직접 그린 흐름을 가져와 등록하고 배포해 처리 건으로 돌립니다.']];
-    return st.map(([tab, text], i) => {
-      const menu = hydMenu.of(tab), title = menu.tabs.length > 1 ? `${menu.name} › ${hydMenu.name(tab)}` : hydMenu.name(tab);
-      return `<button type="button" class="row" data-go="${tab}"><span class="row-ic num">${i + 1}</span><span class="row-title">${esc(title)}</span><span class="row-meta">${esc(text)}</span>${UI.icon('chevron-right')}</button>`;
-    }).join('');
-  }
-
   // 지식 수: 처음 한 번 읽고, 실패하면 사유를 두고 30초 뒤 다시 읽는다(시작 직후 Neo4j 가 늦게 떠도 새로 고침 없이 채워진다)
   let graphCount = null, graphError = '';
   async function loadCounts() {
@@ -158,31 +152,35 @@
 
   function renderLive() {
     const live = document.getElementById('mLive'); if (!live) return;
-    const box = document.getElementById('mainStats');
+    const box = document.getElementById('mainStages');
     const u = state.plant && state.plant.units;
-    if (!u) { live.textContent = UI.t('main.noConn'); box.innerHTML = UI.errorBlock(UI.t('main.noConn'), `${state.plantError || ''} ${UI.t('plant.noConnSub')}`.trim()); box.dataset.sig = ''; return; }
-    const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
-    live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
-    const hot = Object.values(u).some(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP');      // 기준은 app.js TS_HOT 한 곳
-    document.getElementById('mOilBody')?.classList.toggle('hot', hot);
-    const open = (state.incidents || []).filter(i => !i.terminal).length;
-    const alarms = Object.values(u).filter(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP').length;
     const n = v => Number(v).toLocaleString('ko-KR');
-    // 숫자 타일 넷: [이름, 값, 한 줄, 주의인가, 까닭(title), 누르면 갈 화면]. 배율은 여기 두지 않는다(결함 시뮬레이션 화면 머리에 있다)
-    const rows = [
-      [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), !!alarms, '', 'trends'],
-      // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
-      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', '처리 건 목록을 읽지 못했습니다', true, state.incidentError, 'instances']
-        : [UI.t('main.openCases'), state.incidentsRead ? String(open) : '–', open ? '경과와 결과를 봅니다' : UI.t('main.none'), false, '', 'instances'],
-      state.todo == null ? ['내가 할 일', state.todoError ? '읽기 실패' : '–', state.todoError ? '할 일 수를 읽지 못했습니다' : UI.t('loading'), !!state.todoError, state.todoError || '', 'instances']
-        : ['내가 할 일', String(state.todo), state.todo ? '승인하거나 답할 처리 건이 있습니다' : UI.t('main.none'), false, '', 'instances'],
-      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), !!graphError, graphError, 'ontology'],      // 서버 사유는 길어 줄 높이를 흔든다 — title 로
+    let alarms = null;
+    if (!u) live.textContent = UI.t('main.noConn');
+    else {
+      const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
+      live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
+      alarms = Object.values(u).filter(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP').length;      // 기준은 app.js TS_HOT 한 곳
+      document.getElementById('mOilBody')?.classList.toggle('hot', alarms > 0);
+    }
+    const all = state.incidents || [], open = all.filter(i => !i.terminal).length, done = all.length - open;
+    const failed = (why, what) => ({ value: '읽기 실패', tone: 'danger', note: what, title: why });
+    /* 단계 카드 넷 — 이야기 차례. 카드 하나 = 그 단계의 지금 값 하나 + 그 화면으로 가는 길. 읽지 못한 값은 0 이나 「없음」이 아니라 「읽기 실패」다(까닭은 title).
+       설비 수(늘 3기)는 값이 아니라서 두지 않는다. 내 차례가 있으면 「판단과 승인」 카드가 주황 알약을 단다 */
+    const cards = [
+      { label: '1  지식 넣기', tab: 'knowledge', ...(graphCount ? { value: n(graphCount.n), unit: '개 지식 항목', note: `연결 ${n(graphCount.e)}개. 매뉴얼을 올리면 AI가 판단에 쓰는 지식이 늘어납니다.` }
+        : graphError ? failed(graphError, '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.') : { value: '–', note: UI.t('loading') }) },
+      { label: '2  고장 내기', tab: 'scenario', ...(alarms == null ? failed(state.plantError || '', `${UI.t('main.noConn')} — ${UI.t('plant.noConnSub')}`)
+        : { value: String(alarms), unit: '기 유온 주의', tone: alarms ? 'warn' : '', note: '설비에 결함을 넣으면 경보가 나고 처리 건이 열립니다.' }) },
+      { label: '3  판단과 승인', tab: 'instances', pill: state.todo ? UI.chipText(`내 차례 ${state.todo}`, 'mine') : '',
+        ...(state.incidentError ? failed(state.incidentError, '처리 건 목록을 읽지 못했습니다.') : { value: state.incidentsRead ? String(open) : '–', unit: state.incidentsRead ? '건 진행 중' : '', note: 'AI 판단을 읽고 승인하거나 반려합니다.' }) },
+      { label: '4  결과 보기', tab: 'instances', go: '처리 완료한 건',
+        ...(state.incidentError ? failed(state.incidentError, '처리 건 목록을 읽지 못했습니다.') : { value: state.incidentsRead ? String(done) : '–', unit: state.incidentsRead ? '건 처리 완료' : '', note: '실행 결과와 업무 시스템에 남은 기록을 확인합니다.' }) },
     ];
-    const sig = JSON.stringify(rows);
+    const sig = JSON.stringify(cards);
     if (box.dataset.sig === sig) return;      // 1초마다 불리지만 값이 같으면 다시 그리지 않는다
     box.dataset.sig = sig;
-    box.innerHTML = rows.map(([k, v, s, warn, why, tab]) => `<button type="button" class="stat" data-go-tab="${tab}"${warn ? ' data-tone="warn"' : ''}${why ? ` title="${esc(why)}"` : ''}>` +
-      `<span class="stat-label">${esc(k)}</span><span class="stat-value num">${esc(v)}</span><span class="stat-sub">${esc(s)}</span></button>`).join('');
+    box.innerHTML = cards.map(c => UI.statCard({ ...c, attrs: 'role="listitem"' })).join('');
   }
 
   function init() {
@@ -199,11 +197,7 @@
     fitNodes(); document.fonts.ready.then(fitNodes);
     // 다른 화면 주소로 들어왔으면 홈이 가려진 채라 글자 폭을 잴 수 없다 — 홈이 보일 때 다시 맞춘다
     window.hydTabs.onShow(name => { if (name === 'main') fitNodes(); });
-    const stages = document.getElementById('mainStages');
-    stages.innerHTML = stagesHtml();
-    stages.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { selectTab(b.dataset.go); $('#content').focus({ preventScroll: true }); }));
     document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({ preventScroll: true }); });
-    document.getElementById('mainArch').addEventListener('click', () => { selectTab('home'); $('#content').focus({ preventScroll: true }); });
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);
   }

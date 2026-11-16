@@ -113,7 +113,7 @@
   const ORIGIN = { seed: '기본 제공', user: '내가 등록한 것', external: '포털 밖에서 추가한 것' };
   const icon = (name, cls) => UI.icon(name, cls);
   const tag = (label, tone, plain) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}${plain ? ' data-plain' : ''}>${esc(label)}</span>`;
-  const originTag = s => tag(ORIGIN[s.origin] || '기본 제공', s.origin === 'seed' || !s.origin ? '' : 'brand', true);
+  const originTag = s => tag(ORIGIN[s.origin] || '기본 제공', '', true);
   // 이름–값. 값이 없는 줄은 그리지 않는다
   const kv = rows => { const r = rows.filter(([, v]) => v != null && v !== ''); return r.length ? `<dl class="kv">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>` : ''; };
   const CHECK = { ok: '연결 검사 통과', failed: '연결 검사 실패', stale: '설정이 바뀌어 다시 검사 필요', never: '연결 검사 전' };
@@ -359,7 +359,7 @@
   function drawCalls(s, r) {
     const list = S.el.querySelector('#mcpCallList');
     if (!list) return;
-    const STATE = { error: ['오류', 'danger'], running: ['진행 중', 'brand'] };
+    const STATE = { error: ['오류', 'danger'], running: ['진행 중', 'run'] };
     list.innerHTML = `<ul class="mcp-calls">${r.calls.map((c, i) => {
       const state = STATE[c.state], open = S.openCall === i;
       return `<li><div class="line" data-kind="${c.state === 'error' ? 'fail' : 'tool'}">${icon('plug')}<span class="line-text"><b>${esc(toolLabel(c.server, c.tool))}</b>${state ? ' ' + tag(state[0], state[1]) : ''}` +

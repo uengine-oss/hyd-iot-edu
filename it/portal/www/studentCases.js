@@ -18,8 +18,8 @@
     // [이 사례 파일 받기]는 사례를 골랐을 때만 켜진다 — 꺼져 있으면 까닭을 옆에 쓴다
     const exportState = () => { $('caseExport').disabled = !filter || busy; $('caseExportWhy').textContent = filter ? '' : '사례를 고르면 받을 수 있습니다.'; };
     // 구분: 이 목록의 응답(/api/config/cases)에는 기본 제공 표시가 없어, 흐름 목록(/api/flows 의 class_flow)에서 읽는다. 흐름이 아닌 줄은 내가 만든 것만 온다(서버가 그렇게 고른다)
-    const origin = row => row.kind !== 'flows' ? '<span class="tag" data-tone="brand" data-plain>내가 만든 것</span>' : baseFlows == null ? '<span class="muted">구분을 읽지 못함</span>'
-      : baseFlows.has(row.asset_id) ? '<span class="tag" data-plain>기본 제공</span>' : '<span class="tag" data-tone="brand" data-plain>내가 만든 것</span>';
+    const origin = row => row.kind !== 'flows' ? '<span class="tag">내가 만든 것</span>' : baseFlows == null ? '<span class="muted">구분을 읽지 못함</span>'
+      : baseFlows.has(row.asset_id) ? '<span class="tag" data-plain>기본 제공</span>' : '<span class="tag">내가 만든 것</span>';
     function draw() {
       const labels = [...new Set(rows.map(r => r.label).filter(Boolean))].sort();
       if (filter && !labels.includes(filter)) filter = '';

@@ -1396,12 +1396,13 @@ def lab_01_runtime(r: Round):
     got = r.wait(15, lambda: (lambda h: h if h[1] > 0 and h[0] == h[1] else None)(header_health(r)), every=1)
     up, total, dot, text = got or header_health(r)
     r.check("메뉴 줄 아래 서비스 상태 점이 초록(서비스 n/n)", bool(got) and dot == "ok", f"{text} · 점 {dot}")
-    r.wait(15, lambda: re.search(r"지식 항목\s*[\d,]+", txt(r, "#mainStats").replace("\n", " ")), every=1)
-    stats = txt(r, "#mainStats", required=True)
-    m = re.search(r"지식 항목\s*([\d,]+)\s*연결\s*([\d,]+)", stats.replace("\n", " "))
+    # 홈의 단계 카드 넷(#mainStages — main.js): 「1 지식 넣기」 카드가 지식 항목 수와 연결 수를 보인다
+    r.wait(15, lambda: re.search(r"[\d,]+\s*개 지식 항목", txt(r, "#mainStages").replace("\n", " ")), every=1)
+    stats = txt(r, "#mainStages", required=True)
+    m = re.search(r"([\d,]+)\s*개 지식 항목\s*연결\s*([\d,]+)개", stats.replace("\n", " "))
     g = graph(r)
-    # 시간 배율은 홈 타일에 없다(메뉴 줄 아래 한 줄에 있다 — 바로 아래 판정이 본다)
-    r.check("홈 요약 타일: 설비 3기 · 지식 항목 · 연결 = 지식 지도 API", re.search(r"(?<!\d)3기", stats) is not None and bool(m)
+    # 시간 배율은 홈 카드에 없다(메뉴 줄 아래 한 줄에 있다 — 바로 아래 판정이 본다)
+    r.check("홈 「지식 넣기」 카드: 지식 항목 · 연결 = 지식 지도 API", bool(m)
             and (int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))) == (len(g["nodes"]), len(g["edges"])),
             f"{stats.replace(chr(10), ' ')[:160]} / API {(len(g['nodes']), len(g['edges']))}")
     scale = r.get(r.plant + "/api/state").get("time_scale")
@@ -1417,7 +1418,7 @@ def lab_01_runtime(r: Round):
         r.not_measure("왼쪽 메뉴의 수 = 실라버스 문장의 수", f"실라버스 문장에 「<수> 메뉴 묶음」이 없음 — 메뉴 {len(groups)}개 {groups}")
     else:
         r.check(f"왼쪽 메뉴의 수가 실라버스 문장의 수({want})와 같다", len(groups) == want, f"메뉴 {groups}")
-    r.page.locator("#mainArch").click()
+    r.page.locator("#mainHero a.hm-arch .m-bus rect").click()             # 홈 그림 가운데의 「값이 지나는 길」이 시스템 구성으로 가는 링크다
     r.page.wait_for_selector("#stack .comp", timeout=10_000)
     r.page.wait_for_timeout(6000)                                         # 상태 점은 pollHealth 가 채운다(5초 주기)
     # 구조 그림의 부품 상자(SVG): data-st = ok · down · wait · opt(선택 도구) · none(상태를 재지 않는 부품), 이름과 하는 일은 <title>(app.js renderStack)
@@ -1443,7 +1444,7 @@ def lab_01_runtime(r: Round):
         seen["header"] = r.wait(20, lambda: (lambda h: h if 0 <= h[0] < h[1] else None)(header_health(r)), every=1)
         seen["which"] = r.page.locator("#railStatus").get_attribute("title") or ""
         r.page.wait_for_timeout(2500)
-        seen["stats"] = txt(r, "#mainStats")
+        seen["stats"] = txt(r, "#mainStages")
         r.tab("scenario")
         r.page.wait_for_timeout(1500)
         seen["scenario"] = txt(r, "#units")
@@ -1452,7 +1453,7 @@ def lab_01_runtime(r: Round):
     r.tab("main")
     back = r.wait(25, lambda: (lambda h: h if h[1] > 0 and h[0] == h[1] else None)(header_health(r)), every=1)
     r.page.wait_for_timeout(1500)
-    seen["stats_back"] = txt(r, "#mainStats")
+    seen["stats_back"] = txt(r, "#mainStages")
     r.logs.pop(r.lab, None)
     r.lab = code
     h = seen.get("header")
@@ -1463,7 +1464,8 @@ def lab_01_runtime(r: Round):
     r.human("(모의) 홈 요약이 한국어로 「설비 연결 끊김」과 다시 보이는 조건 안내", seen.get("stats", ""), "끊김" in seen.get("stats", "") and "응답하면 저절로 다시 보입니다" in seen.get("stats", ""))
     r.human("(모의) 결함 시뮬레이션 화면도 설비 값을 못 읽은 것을 한국어로 안내", seen.get("scenario", ""), "설비 값을 읽지 못했습니다" in seen.get("scenario", "")
             and "응답하면 저절로 다시 보입니다" in seen.get("scenario", ""))
-    r.check("(모의) 응답이 돌아오면 새로 고침 없이 상단 n/n · 요약에 설비 3기", bool(back) and re.search(r"(?<!\d)3기", seen.get("stats_back", "")) is not None, seen.get("stats_back", "")[:120],
+    r.check("(모의) 응답이 돌아오면 새로 고침 없이 상단 n/n · 「고장 내기」 카드에 다시 설비 값", bool(back) and re.search(r"\d+\s*기 유온 주의", seen.get("stats_back", "").replace("\n", " ")) is not None
+            and "끊김" not in seen.get("stats_back", ""), seen.get("stats_back", "")[:120],
             kind="exception", axis=AXES[3])
     r.keyless("키 없는 PC: AI 에이전트 실행 서비스 상태 API가 「닿음 · 오류 없음」(키가 없어도 꺼진 것으로 나오지 않음)", bool(status.get("reachable")) and not status.get("error"), json.dumps(status, ensure_ascii=False)[:200])
 

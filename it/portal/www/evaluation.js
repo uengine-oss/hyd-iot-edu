@@ -3,7 +3,7 @@
    화면: window.hydEval.mount(el). 포털 셸이 컨테이너(#evalView)를 주면 그 안에 전부 그린다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않는다.
    짜임(디자인 기준 5-6 「조건 → 결과」): 보기 셋(채점 · 정답표 · 전 · 후 비교). 채점은 왼쪽 조건 판과 [채점 실행], 오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩 채워지고,
    항목 몇 개 가운데 몇 개가 끝났는지 진행 막대가 센다) → 고른 실행의 결과(평균 한 줄과 검사 네 가지의 맞은 수 → 항목별 검사 → 원문 접기) → 「지난 실행」 목록.
-   부품은 키트의 것(panel · fieldset · field · seg · turn-facts · evid · rows · table · fold · stream · progress)이고 격자는 reading.css(.io)다. 맞음 · 틀림은 상태 뱃지(점 + 글)로 보인다. */
+   부품은 키트의 것(panel · fieldset · field · seg · turn-facts · evid · rows · table · fold · stream · progress)이고 격자는 portal-kit.css(.io)다. 맞음 · 틀림은 상태 뱃지(점 + 글)로 보인다. */
 (function () {
   const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
     knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run' };

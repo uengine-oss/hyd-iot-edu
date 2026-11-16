@@ -2,7 +2,7 @@
    판단 한 번을 읽기 전용으로 계산해 기준으로 삼고(POST /api/agent/whatif), 시험값 · 규칙 시험값은 그 기준의 사본에만 적용한다.
    업무 DB · 지식 그래프 · 순위 정책은 바뀌지 않는다("원래대로"는 시험값을 비우고 기준 결과로 돌아간다).
    짜임(디자인 기준 5-6 「조건 → 결과」): 왼쪽 조건 판(시험 기준 → 바꿔 볼 것과 그 칸 · 계산 단추), 오른쪽 결과 판(결론 한 줄과 숫자 넷 → 조치 후보별 순위와 손익(.opts) → 내역 · 1순위가 바뀌는 값 → 원문 접기).
-   부품은 키트의 것(panel · fieldset · field · seg · turn-facts · opts · table · fold)이고 격자는 reading.css(.io)다. 색은 상태에만 쓴다 — 출처의 종류(데이터 · 문서 · 가정 · 시험값)와 순위의 종류는 글로 쓴다.
+   부품은 키트의 것(panel · fieldset · field · seg · turn-facts · opts · table · fold)이고 격자는 portal-kit.css(.io)다. 색은 상태에만 쓴다 — 출처의 종류(데이터 · 문서 · 가정 · 시험값)와 순위의 종류는 글로 쓴다.
    B5: 「규칙」 보기의 "관점 중요도" — 성과 관점(이름은 지식 그래프에서)마다 비중을 주면 조치 점수의 성과 지표 득실이 그 비중으로 다시 계산된다. */
 (function () {
   const W = { el: null, asset: '', assets: null, assetsError: '', pattern: '', patterns: null, base: null, view: null, bounds: null, boundsMsg: '', tab: 'money',

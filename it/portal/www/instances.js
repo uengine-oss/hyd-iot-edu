@@ -1076,7 +1076,7 @@
       const actor = CREW[e.crew_type] || (/^cliagents:/.test(e.crew_type || '') ? 'AI 에이전트' : '');
       if (actor && (detail === actor || detail.startsWith(actor + ' · '))) detail = detail.slice(actor.length).replace(/^ · /, '');      // 「담당자 · 담당자」처럼 같은 이름을 두 번 적지 않는다
       return UI.eventRecord({ time: e.timestamp, name, actor, detail, raw: e.data, chips });
-    }).join('') + (all.length > I.eventsShown ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
+    }).join('') + (all.length > I.eventsShown ? `<button type="button" class="more-link" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
     return `<h3 class="case-sub">${esc(UI.t('inst.steps'))} ${view.workitems.length}줄</h3><div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <h3 class="case-sub">${esc(UI.t('inst.events'))} ${view.events.length}줄</h3><div class="stream-log case-events">${events || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}</div>`;
   }

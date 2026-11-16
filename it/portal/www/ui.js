@@ -130,8 +130,7 @@ const UI = {
     'plant.noConn': '설비 값을 읽지 못했습니다', 'plant.noConnSub': '가상 설비(plant-sim)가 응답하면 저절로 다시 보입니다.',
     'plant.standby': '예비', 'plant.none': '아직 없음', 'plant.faultOn': '결함 진행 중', 'plant.current': '현재 상태',
     // 홈
-    'main.assets': '설비', 'main.openCases': '경보로 열린 처리 건', 'main.knowledge': '지식 항목',
-    'main.hot': '고온 · 정지', 'main.cool': '모든 설비 유온 55 ℃ 미만', 'main.noConn': '설비 연결 끊김', 'main.none': '없음', 'main.links': '연결',
+    'main.noConn': '설비 연결 끊김',
     'main.liveTs1': '실시간 유온',
     // 지식 지도 · 지식 관리 · 조치 방법
     'onto.loadFail': '지식을 불러올 수 없습니다',
@@ -354,8 +353,10 @@ const UI = {
   deliveryChip(value) { return this.chip(value, this.deliveryStates[value] || this.status(value), { PENDING: 'warning', DELIVERED: 'success', FAILED: 'danger', DISCARDED: 'neutral' }[value]); },
   status(value) { return this.states[value] || value || "–"; },
   toneOf(value) { for (const [tone, list] of Object.entries(this.tones)) if (list.includes(value)) return tone; return 'neutral'; },
-  // 상태 뱃지(키트에 더한 .tag — 점 + 글). tone 은 지금 이름(neutral · accent · success · warning · danger)으로 받아 키트의 data-tone 으로 바꾼다. 보통(neutral)은 속성이 없다
-  toneAttr(tone) { const t = { accent: 'brand', success: 'ok', warning: 'warn', danger: 'danger' }[tone]; return t ? ` data-tone="${t}"` : ''; },
+  /* 상태 알약(디자인기준 4-5 — portal-kit.css .tag): 점 없는 알약. 색은 2-2 의 다섯 상태뿐이다.
+     tone 은 neutral(보통) · accent(진행 중) · success(정상 · 완료) · warning(주의) · danger(실패 · 멈춤) · mine(내 차례 — 내가 할 일이 있을 때만)으로 받아 data-tone 으로 바꾼다. 보통은 속성이 없다.
+     어디서 쓰는가: 상세 머리의 이름 바로 뒤 · 목록 줄의 오른쪽 끝 · 카드 머리 줄의 이름 뒤. 예: UI.chip('FAILED') · UI.chipText('내 차례 2', 'mine') */
+  toneAttr(tone) { const t = { accent: 'run', success: 'ok', warning: 'warn', danger: 'danger', mine: 'mine' }[tone]; return t ? ` data-tone="${t}"` : ''; },
   chip(value, label, tone) {
     return `<span class="tag"${this.toneAttr(tone || this.toneOf(value))} data-status="${esc(value || '')}">${esc(label != null ? label : this.status(value))}</span>`;
   },
@@ -467,13 +468,14 @@ const UI = {
     const sub = [actor ? esc(this.who(actor)) : '', detail ? esc(detail) : ''].filter(Boolean).join(' · ');
     return `<article class="event-record"><div class="line">${this.icon('circle-dot')}<span class="line-text"><b>${esc(this.eventName(name))}</b>${chips ? `<span class="line-chips">${chips}</span>` : ''}${sub ? `<span class="line-sub">${sub}</span>` : ''}</span><time class="line-time num" title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time></div>${extra}${raw ? this.raw(raw) : ''}</article>`;
   },
-  /* ---------- 공통 부품 — 키트(vendor/basecoat)와 portal-kit.css 의 마크업을 낸다(디자인 기준 8-2). 함수 이름 · 인자 · 반환 꼴은 화면 모듈이 부르던 그대로다 ---------- */
+  /* ---------- 공통 부품 — 키트(vendor/basecoat)와 portal-kit.css 의 마크업을 낸다(디자인기준 4절). 함수 이름 · 인자 · 반환 꼴은 화면 모듈이 부르던 그대로다 ---------- */
   // card: 제목 · 보조 한 줄 · (오른쪽) 뱃지와 단추 · 핵심 값 · 본문
-  card({ title, chips = '', value = '', sub = '', body = '', cls = '', actions = '', attrs = '' }) {
-    const side = chips || actions ? `<div class="card-action">${chips}${actions}</div>` : '';
+  // (디자인기준 4-15) 머리 줄: 이름 · 상태 알약(chips) · 오른쪽 끝 「…」(actions) → 본문 → 아래 고정 줄(foot — 위 선 하나, 오른쪽 끝에 다른 화면 링크 UI.goLink)
+  card({ title, chips = '', value = '', sub = '', body = '', cls = '', actions = '', attrs = '', foot = '' }) {
+    const side = actions ? `<div class="card-action">${actions}</div>` : '';
     return `<div class="card${cls ? ' ' + cls : ''}" ${attrs}>` +
-      (title || sub || side ? `<header>${title ? `<h3>${title}</h3>` : ''}${sub ? `<p>${sub}</p>` : ''}${side}</header>` : '') +
-      (value || body ? `<section>${value ? `<div class="stat-value num">${value}</div>` : ''}${body}</section>` : '') + '</div>';
+      (title || sub || chips || side ? `<header>${title ? `<h3>${title}</h3>` : ''}${chips}${side}${sub ? `<p>${sub}</p>` : ''}</header>` : '') +
+      (value || body ? `<section>${value ? `<div class="stat-value num">${value}</div>` : ''}${body}</section>` : '') + (foot ? `<footer>${foot}</footer>` : '') + '</div>';
   },
   // field: 이름표 위 · 입력 아래 · 필수 * · 도움말 또는 오류 한 줄. 입력 요소에 클래스가 없으면 키트의 것(input · textarea · select)을 붙인다
   kitInput(html) {
@@ -515,6 +517,28 @@ const UI = {
     const extra = cls.split(/\s+/).filter(c => c && c !== 'small').join(' ');
     return `<details class="fold${extra ? ' ' + extra : ''}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`;
   },
+  /* longText: 긴 글 접기(디자인기준 4-9, 본: process-gpt-lite InstanceHeader) — 140px 까지 보이고 아래가 흐려지며, 아래 가운데의 둥근 꺾쇠 단추로 펼치고 다시 접는다.
+     무엇을: 이미 만든 HTML(마크다운으로 그린 글 · 문단 · 목록)을 받아 그대로 넣는다. 글이 140px 안에 다 들어가면 흐림도 단추도 없다(브라우저에서 잰다 — 아래 fitLongText).
+     어디서 쓰는가: 스킬 문서 · 결과 보고 원문 · 조치 방법의 적용 규칙처럼 긴 글이 있던 그 자리. 짧은 묶음을 접는 것은 UI.fold 다.
+     예: UI.longText(`<div class="prose">${html}</div>`) · 다시 그려도 펼친 채로 두려면 UI.longText(html, { key: 'skill-doc' }) 와 UI.swap 대신 data-k 로 찾는다 */
+  longText(html, { open = false, key = '', cls = '' } = {}) {
+    if (!html) return '';
+    return `<div class="longtext${cls ? ' ' + cls : ''}" data-longtext${key ? ` data-k="${esc(key)}"` : ''}${open ? ' data-open' : ''}><div class="longtext-body">${html}</div>` +
+      `<button type="button" class="longtext-toggle" data-longtext-toggle aria-expanded="${open}" aria-label="${open ? '접기' : '전체 보기'}">${this.icon('chevron-down')}</button></div>`;
+  },
+  // 긴 글 접기의 글이 한도(140px) 안에 다 들어가는지 재서, 들어가면 data-fits 를 붙인다(흐림 · 단추 없음). 가려진 화면에서는 높이가 0 이라 잴 수 없다 — 크기가 생길 때 다시 잰다
+  fitLongText(root = document) {
+    if (typeof ResizeObserver === 'undefined') return;
+    this.longWatch = this.longWatch || new ResizeObserver(entries => entries.forEach(en => {
+      const body = en.target, box = body.parentElement; if (!box || !body.isConnected) return;
+      if (!body.scrollHeight) return;                                    // 가려져 있다
+      const limit = 140, was = box.hasAttribute('data-fits');
+      // 펼친 채로는 한도 안인지 알 수 없다 — 글의 온 높이(scrollHeight)로 판정한다
+      const fits = body.scrollHeight <= limit + 1;
+      if (fits !== was) box.toggleAttribute('data-fits', fits);
+    }));
+    root.querySelectorAll('[data-longtext] > .longtext-body').forEach(b => { if (!b.dataset.watched) { b.dataset.watched = '1'; this.longWatch.observe(b); } });
+  },
   /* 주기적으로 다시 그리는 자리(처리 건의 복구 묶음 — 2초마다)의 HTML 바꾸기: 사람이 펴거나 접은 접기는 다시 그려도 그대로 둔다.
      접기의 열쇠는 data-k, 없으면 요약 줄의 첫 글. 처음 나오는 접기만 그 HTML 의 open 을 따른다. 전에는 다시 그릴 때마다 기본값으로 돌아가 학생이 연 [다시 수행]이 2초 안에 닫혔다 */
   swap(host, html) {
@@ -523,22 +547,26 @@ const UI = {
     host.innerHTML = html;
     host.querySelectorAll('details').forEach(d => { const k = key(d); if (open.has(k)) d.open = open.get(k); });
   },
-  // empty: 빈 상태 하나(키트 .empty). 두 가지로 부른다
-  //   empty({ icon, title, sub, action, cls, attrs }) — 화면 · 판의 빈 상태: 아이콘 + 제목 + 설명(두 줄까지) + 채울 단추 하나.
-  //     action = { label, tab }(그 화면으로 간다) | { label, attrs, icon }(그 화면이 받는 단추) | 이미 만든 단추 HTML
-  //   empty(제목, 설명, cls) — 목록 · 절 안의 「아직 없음」 한 줄(아이콘 없음)
+  /* empty: 빈 상태 하나(디자인기준 4-10, 본: process-gpt-lite) — 한 덩어리 문장 + 그 일을 하는 단추 하나(있으면). 아이콘 상자와 굵은 제목을 그리지 않는다.
+     문장은 「무엇이 아직 없는지 + 어떻게 하면 생기는지」다: 제목(title)과 설명(sub)을 한 문단으로 잇는다. 부르는 법은 그대로 둘이다
+       empty({ title, sub, action, cls, attrs }) — action = { label, tab }(그 화면으로 간다) | { label, attrs, icon }(그 화면이 받는 단추) | 이미 만든 단추 HTML. icon 은 받되 그리지 않는다
+       empty(제목, 설명, cls) — 목록 · 절 안의 「아직 없음」 한 줄
+     어디서 쓰는가: 그 목록 · 결과가 올 자리 */
   empty(title, sub = '', cls = '') {
     const o = title && typeof title === 'object' ? title : { title, sub, cls };
     const a = o.action;
     const button = !a ? '' : typeof a === 'string' ? a
       : `<button type="button" class="btn" data-variant="outline" data-size="sm" ${a.tab ? `data-go-tab="${esc(a.tab)}"` : a.attrs || ''}>${a.icon ? this.icon(a.icon) : ''}${esc(a.label)}${a.tab ? this.icon('arrow-right') : ''}</button>`;
-    return `<section class="empty${o.cls ? ' ' + o.cls : ''}"${o.attrs ? ' ' + o.attrs : ''}><header>${o.icon ? `<figure>${this.icon(o.icon)}</figure>` : ''}<h3>${esc(o.title)}</h3>${o.sub ? `<p>${esc(o.sub)}</p>` : ''}</header>${button ? `<footer>${button}</footer>` : ''}</section>`;
+    const head = String(o.title ?? '').trim(), rest = String(o.sub ?? '').trim();
+    const text = head && rest ? head + (/[.?!…]$/.test(head) ? ' ' : '. ') + rest : head || rest;
+    return `<section class="empty${o.cls ? ' ' + o.cls : ''}"${o.attrs ? ' ' + o.attrs : ''}><p>${esc(text)}</p>${button ? `<footer>${button}</footer>` : ''}</section>`;
   },
   // emptyGo: 빈 화면 + 다음 할 일로 가는 단추 하나(tab = 화면 이름, index.html 의 view-<이름>). 「없음」에서 끝나지 않고 무엇을 하면 채워지는지로 잇는다
   emptyGo(title, sub, tab, label, cls = '') { return this.empty({ title, sub, cls, action: { label, tab } }); },
 
   /* ---------- 날것의 데이터를 보이는 한 가지 방식 — 화면은 JSON.stringify 와 <pre> 를 직접 쓰지 않고 이 셋만 쓴다 ----------
-     raw(값)  원문 판: 늘 접힌 한 줄(「원문 · JSON · 7,357자」), 펼치면 어두운 판에 들여쓴 JSON + 구문 강조 + 높이 한도(판 안 스크롤) + 복사 단추.
+     raw(값)  원문 판(디자인기준 4-20): 늘 접힌 한 줄(「원문 · JSON · 7,357자」). 펼치면 밝은 코드 상자 + 복사 단추. JSON 은 들여쓴 접히는 나무로 보인다 — 이름마다 한국어 이름표(hydWords.fieldName)와
+              원래 키가 나란히, 둘째 깊이까지 펼쳐 있고 더 깊은 것은 눌러 편다(아래 jsonTree). JSON 이 아닌 글(질의문 · XML)은 구문 강조한 글 그대로. 복사는 늘 원문 글 전체다.
      id(값)   번호 · 해시 조각: 고정폭 조각, 누르면 복사. 해시 · UUID 는 앞 8자만 보이고 전체는 툴팁에. 본문 문장 안에 넣지 않는다(줄 끝이나 이름–값 줄에 둔다).
      code(글) 조건식 · 질의문 · 파일 이름: 꺾지 않는 한 줄(넘치면 가로 스크롤). */
   rawText(value) {
@@ -567,6 +595,45 @@ const UI = {
     return `<button type="button" class="idc" data-id-copy="${esc(s)}" title="${esc(s)}" aria-label="${esc((label ? label + ' ' : '') + s + ' ' + this.acts.copy[0])}">${label ? `<span>${esc(label)}</span>` : ''}${esc(this.idShort(s))}</button>`;
   },
   code(text) { return text == null || text === '' ? '' : `<code class="codeline">${esc(text)}</code>`; },
+  /* jsonTree(값) → 요소: JSON 원문을 읽는 나무(디자인기준 4-20). UI.raw 의 원문 판을 펼칠 때 쓰인다(화면 모듈이 직접 부를 일은 없다).
+     줄 하나 = 이름표 + 값. 이름표는 화면 사전에 있는 키면 한국어 이름 뒤에 원래 키를 작게, 없는 키면 원래 키 그대로다(지어내지 않는다). 배열의 줄은 차례 번호.
+     객체 · 배열은 접히는 마디(「{3}」 · 「[12]」 — 든 것의 수)이고 둘째 깊이까지 펼쳐 있다. 닫힌 마디의 안쪽은 처음 펼 때 그린다. 한 마디에 줄이 100을 넘으면 100개씩 더 보인다 */
+  jsonTree(value) {
+    const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+    const label = (key, inArray) => {
+      const box = document.createDocumentFragment();
+      if (inArray) { box.append(el('span', 'jt-raw num', String(key + 1))); return box; }
+      const known = typeof window !== 'undefined' && window.hydWords && window.hydWords.fieldName ? window.hydWords.fieldName(key) : '';
+      if (known && known !== key && known !== String(key).replace(/_/g, ' ')) { box.append(el('span', 'jt-k', known), el('code', 'jt-raw', key)); }
+      else box.append(el('span', 'jt-k', key));
+      return box;
+    };
+    const fill = (host, v, depth) => {
+      const entries = Array.isArray(v) ? v.map((x, i) => [i, x]) : Object.entries(v), inArray = Array.isArray(v), STEP = 100;
+      const draw = from => {
+        entries.slice(from, from + STEP).forEach(([k, x]) => host.append(node(k, x, depth, inArray)));
+        if (entries.length > from + STEP) {
+          const more = el('button', 'jt-more', `나머지 ${(entries.length - from - STEP).toLocaleString('ko-KR')}개 더 보기`); more.type = 'button';
+          more.addEventListener('click', () => { more.remove(); draw(from + STEP); }); host.append(more);
+        }
+      };
+      draw(0);
+    };
+    const node = (key, v, depth, inArray) => {
+      if (v !== null && typeof v === 'object') {
+        const d = el('details', 'jt-n'), sum = el('summary'), kids = el('div', 'jt-ch'), n = Array.isArray(v) ? v.length : Object.keys(v).length;
+        sum.append(label(key, inArray), el('span', 'jt-c num', Array.isArray(v) ? `[${n}]` : `{${n}}`)); d.append(sum, kids);
+        const open = () => { if (!kids.dataset.done) { kids.dataset.done = '1'; fill(kids, v, depth + 1); } };
+        if (depth < 1 && n) { d.open = true; open(); } else d.addEventListener('toggle', () => { if (d.open) open(); });
+        return d;
+      }
+      const row = el('div', 'jt-l'), val = el('span', 'jt-v', typeof v === 'string' ? JSON.stringify(v) : String(v));
+      val.dataset.t = v === null ? 'null' : typeof v; row.append(label(key, inArray), val); return row;
+    };
+    const root = el('div', 'code jt'); root.setAttribute('data-json-tree', '');
+    fill(root, value, 0);
+    return root;
+  },
 
   /* ---------- 동작 이름과 아이콘의 사전 — 같은 동작은 모든 화면에서 같은 이름 · 같은 아이콘이다 ----------
      reload 서버에서 다시 읽는다 · reset 내가 만든 것을 지우고 기준으로(관리 › 내 설정 한 곳) · revert 시험값을 비우고 기준 결과로 · cancel 폼을 닫는다 · save 저장
@@ -633,11 +700,11 @@ const UI = {
     }).join('');
     return `<div class="table-container"${attrs ? ' ' + attrs : ''}><table class="opts${cls ? ' ' + cls : ''}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   },
-  // tabs: 같은 대상의 보기를 바꾸는 묶음 단추(.seg). items = [[key, label, count?]]
+  // tabs: 거르기 — 세그먼트(디자인기준 4-6, .seg): --muted 알약 안에서 고른 칸만 흰 알약. 목록을 줄일 때 목록 칸 맨 위에 둔다. items = [[key, label, count?]]
   tabs(items, active, attr = 'data-tab-key') {
     return `<div class="seg" role="group">${items.map(([k, l, n]) => `<button type="button" aria-pressed="${k === active}" ${attr}="${esc(k)}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
   },
-  // viewTabs: 화면이나 판의 하위 보기를 바꾸는 밑줄 탭(키트 .tabs — 고른 탭 표시와 화살표 키는 키트가 한다). 목록을 거르는 것은 tabs(.seg)다
+  // viewTabs: 보기 탭(디자인기준 4-6) — 내용이 통째로 바뀌는 하위 보기를 바꾸는 밑줄 탭(키트 .tabs — 고른 탭 표시와 화살표 키는 키트가 한다). 머리 아래 첫 줄에 둔다. 목록을 거르는 것은 tabs(.seg)다
   viewTabs(items, active, attr = 'data-tab-key', { label = '보기', id = '', small = false } = {}) {
     return `<div class="tabs view-tabs"${id ? ` id="${esc(id)}"` : ''}${small ? ' data-size="sm"' : ''}><nav role="tablist" aria-orientation="horizontal" aria-label="${esc(label)}">${items.map(([k, l, n]) =>
       `<button type="button" role="tab" aria-selected="${k === active}" tabindex="${k === active ? 0 : -1}" ${attr}="${esc(k)}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('')}</nav></div>`;
@@ -651,7 +718,43 @@ const UI = {
     const pinned = items.slice(shown).find(isSelected);
     return { rows: pinned ? [pinned, ...head] : head, rest: Math.max(0, items.length - shown), pinned: !!pinned };
   },
-  moreButton(rest, attr = 'data-more') { return rest > 0 ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" ${attr}>${esc(this.t('btn.more'))} (남은 ${rest}건)</button>` : ''; },
+  // 「N개 더 보기」(디자인기준 4-14): 목록 묶음의 맨 아래에 두는 테두리 없는 글 단추. 숨은 개수를 문구에 넣는다. what = 무엇이 숨었는지(「처리 완료」 → 「처리 완료 12건 더 보기」), unit = 세는 말
+  // 예: UI.moreButton(rest) · UI.moreButton(rest, 'data-done-more', { what: '처리 완료', unit: '건' })
+  moreButton(rest, attr = 'data-more', { what = '', unit = '개' } = {}) { return rest > 0 ? `<button type="button" class="more-link" ${attr}>${what ? esc(what) + ' ' : ''}<span class="num">${rest}</span>${esc(unit)} ${esc(this.t('btn.more'))}</button>` : ''; },
+  /* ---------- 디자인기준 4절의 작은 부품 — 화면 모듈은 마크업을 손으로 적지 않고 이 도우미를 쓴다 ----------
+     goLink(tab, label)  다른 화면으로 가는 링크(4-3): 보조 글 + 「→」. 그 내용의 맨 끝(카드는 아래 고정 줄의 오른쪽 끝, 결과는 결과 맨 아래)에 둔다. 문장 안에 끼우지 않는다.
+                         label 을 주지 않으면 그 화면 이름. attrs 로 data-* 를 더한다. 예: UI.goLink('instances', '처리 건 열기')
+     scope(text)         범위 한 줄(4-22): 작은 정보 아이콘 + 한 문장. 그 범위가 걸리는 내용의 바로 아래에, 한 화면에 한 번. 예: UI.scope('가상 설비 3기의 지금 값으로 계산만 하고 실행하지 않습니다.')
+     progress(done, total, { label })  진행 막대(4-12): 센 값으로만 채운다(시간으로 차오르게 하지 않는다). 상세 머리 보조 줄 아래. 예: UI.progress(3, 7, { label: '단계' })
+     timeline(items)     단계 타임라인(4-11): items = [{ state: 'done'|'now'|'mine'|'fail'|'todo'|'skip', name, sub(누가 · 결론 한 마디 — 글), time(글), busy(기계가 지금 일하는 중), gateway(갈림길),
+                         body(줄 아래 HTML — 지금 단계의 방금 한 일), attrs(줄에 붙일 속성 — 누르면 옆 판을 여는 data-*) }]. 처리 건의 진행 상황 · 문서 등록의 단계 · 실시간 단계 목록.
+                         예: UI.timeline([{ state: 'done', name: '올리기', time: '10:02' }, { state: 'now', busy: true, name: 'AI 추출', sub: '절 3/8을 읽는 중' }, { state: 'todo', name: '검토' }])
+     statCard(o)         숫자 카드(4-17): o = { label(설명), value(큰 숫자 — 글), unit, note(아래 한 줄), pill(오른쪽 위 상태 알약 HTML), tone('warn'|'danger'|'ok' — 숫자 색), tab(누르면 갈 화면),
+                         go(아래 고정 줄의 링크 글 — tab 이 있을 때), title(까닭 툴팁), attrs }. 성과 지표 요약 · 홈 단계 카드. 여럿은 <div class="stats"> 안에 둔다.
+                         예: UI.statCard({ label: '진행 중인 처리 건', value: '2', unit: '건', pill: UI.chipText('내 차례 1', 'mine'), tab: 'instances', go: '처리 건' })
+     settingRow(o)       설정 줄(4-16): o = { title(굵은 이름), desc(한 줄 설명), action(오른쪽 끝 동작 하나 — 단추 HTML), attrs }. 여럿은 <div class="settings"> 안에 둔다. 관리 › 내 설정 · 도구 연결의 비밀 값.
+                         예: `<div class="settings">${UI.settingRow({ title: '내보내기', desc: '내가 만든 것을 파일 하나로 받습니다.', action: UI.btn('export', { variant: 'outline' }) })}</div>` */
+  goLink(tab, label, attrs = '') { return `<a class="go" href="#/${esc(tab)}" data-go-tab="${esc(tab)}"${attrs ? ' ' + attrs : ''}>${esc(label || this.t('nav.' + tab))}</a>`; },
+  scope(text) { return text ? `<p class="scope">${this.icon('info')}<span>${esc(text)}</span></p>` : ''; },
+  progress(done, total, { label = '진행' } = {}) {
+    const n = Math.max(0, Number(done) || 0), m = Math.max(0, Number(total) || 0), w = m ? Math.min(100, Math.round(n / m * 100)) : 0;
+    return `<span class="pbar" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="${m}" aria-valuenow="${Math.min(n, m)}"><i style="width:${w}%"></i></span>`;
+  },
+  timeline(items) {
+    const mark = { done: 'check', fail: 'x', mine: 'user' };
+    return `<ol class="steps">${(items || []).map(it => `<li class="step" data-state="${esc(it.state || 'todo')}"${it.busy ? ' data-busy' : ''}${it.gateway ? ' data-kind="gateway"' : ''}${it.attrs ? ' ' + it.attrs : ''}>` +
+      `<span class="step-mark">${mark[it.state] ? this.icon(mark[it.state]) : ''}</span><div class="step-main"><div class="step-head"><span class="step-title">${esc(it.name)}</span>${it.time ? `<time class="step-time">${esc(it.time)}</time>` : ''}</div>` +
+      `${it.sub ? `<span class="step-sub">${esc(it.sub)}</span>` : ''}${it.body ? `<div class="step-body">${it.body}</div>` : ''}</div></li>`).join('')}</ol>`;
+  },
+  statCard({ label, value, unit = '', note = '', pill = '', tone = '', tab = '', go = '', title = '', attrs = '' }) {
+    const tag = tab ? 'a' : 'div';
+    return `<${tag} class="stat"${tab ? ` href="#/${esc(tab)}" data-go-tab="${esc(tab)}"` : ''}${tone ? ` data-tone="${esc(tone)}"` : ''}${title ? ` title="${esc(title)}"` : ''}${attrs ? ' ' + attrs : ''}>` +
+      `<span class="stat-label">${esc(label)}</span>${pill ? `<span class="stat-pill">${pill}</span>` : ''}<span class="stat-value num">${esc(value)}${unit ? `<small>${esc(unit)}</small>` : ''}</span>` +
+      `${note ? `<span class="stat-note">${esc(note)}</span>` : ''}${tab ? `<span class="stat-foot"><span class="go">${esc(go || this.t('nav.' + tab))}</span></span>` : ''}</${tag}>`;
+  },
+  settingRow({ title, desc = '', action = '', attrs = '' }) {
+    return `<div class="setting"${attrs ? ' ' + attrs : ''}><div><b>${esc(title)}</b>${desc ? `<p>${esc(desc)}</p>` : ''}</div>${action ? `<div class="setting-act">${action}</div>` : ''}</div>`;
+  },
   // 읽기만 하는 이름–값 한 줄(이전 단계 입력 · 변수). 여럿이 이어지면 줄이 맞게 놓인다(portal-kit.css dl.kv + dl.kv)
   readonly(label, value, sub = '') { return `<dl class="kv"><dt>${esc(label)}</dt><dd>${value}${sub ? `<p class="muted">${esc(sub)}</p>` : ''}</dd></dl>`; },
 
@@ -794,7 +897,7 @@ Object.assign(UI.terms, {
     });
   };
   if (typeof document !== 'undefined' && document.addEventListener && typeof MutationObserver !== 'undefined') {
-    const boot = () => { UI.enhanceFiles(); let t = 0; new MutationObserver(() => { if (!t) t = setTimeout(() => { t = 0; UI.enhanceFiles(); }, 50); }).observe(document.body, { childList: true, subtree: true }); };
+    const boot = () => { UI.enhanceFiles(); UI.fitLongText(); let t = 0; new MutationObserver(() => { if (!t) t = setTimeout(() => { t = 0; UI.enhanceFiles(); UI.fitLongText(); }, 50); }).observe(document.body, { childList: true, subtree: true }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else if (document.body) boot();
   }
 
@@ -974,6 +1077,9 @@ if (typeof document !== 'undefined' && document.addEventListener) {
     if (raw) { e.preventDefault(); return copy(raw.parentElement.querySelector('pre.code').textContent, '원문을'); }
     const id = e.target.closest && e.target.closest('[data-id-copy]');
     if (id) { e.preventDefault(); e.stopPropagation(); return copy(id.dataset.idCopy, '번호를'); }
+    // 긴 글 접기(UI.longText)의 둥근 꺾쇠 단추: 펼치고 다시 접는다
+    const long = e.target.closest && e.target.closest('[data-longtext-toggle]');
+    if (long) { const open = long.parentElement.toggleAttribute('data-open'); long.setAttribute('aria-expanded', String(open)); long.setAttribute('aria-label', open ? '접기' : '전체 보기'); }
   });
   document.addEventListener('toggle', e => {
     const d = e.target; if (!d.matches || !d.matches('details.raw[open]')) return;
@@ -981,6 +1087,11 @@ if (typeof document !== 'undefined' && document.addEventListener) {
     pre.dataset.lit = '1';
     const code = pre.firstElementChild, text = code.textContent;
     if (text.length > 200000) return;                                   // 아주 긴 원문은 강조하지 않는다(화면이 멈춘다)
+    // JSON 은 들여쓴 접히는 나무로 보인다. 원문 글(pre)은 숨긴 채 남긴다 — 복사 단추가 그 글 전체를 복사한다. JSON 으로 읽히지 않으면 글 그대로 둔다
+    if (pre.dataset.lang === 'json') {
+      let value, ok = true; try { value = JSON.parse(text); } catch (_) { ok = false; }
+      if (ok && value !== null && typeof value === 'object') { pre.hidden = true; pre.after(UI.jsonTree(value)); return; }
+    }
     UI.need('code').then(Prism => { const g = Prism.languages[pre.dataset.lang]; if (g && code.isConnected) code.innerHTML = Prism.highlight(text, g, pre.dataset.lang); })
       .catch(err => console.error('구문 강조 부품을 싣지 못해 원문을 강조 없이 보입니다', err));
   }, true);
