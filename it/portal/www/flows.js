@@ -4,7 +4,7 @@
      → 흐름 그림(상세 칸 폭 가득 · 창 높이에 맞춤) → 단계 설정(접기) → 검사 결과 — 이 파일이 #flowsView 에,
      판본 · 배포(접기 — 배포할 차례일 때만 펼친다) — definitionDeploy.js 가 #definitionDeployPanel 에 그린다.
      처리 건 시작은 머리의 주 단추가 여는 대화상자(#flowsStart), 「경보별 운영 흐름」은 화면 머리의 더 보기 메뉴가 여는 옆 판(#deployRoutesBox)이다.
-   흐름 그림은 bpmn-js 로 학생이 그린 배치 그대로 보여 주기만 한다(flow.js 의 hydFlow.show — 처리 건의 진행 길과 같은 부품). 포털에서 그리지 않는다.
+   흐름 그림은 bpmn-js 로 학생이 그린 배치 그대로 보여 주기만 한다(flow.js 의 hydFlow.show — 처리 건의 흐름 그림과 같은 부품). 포털에서 그리지 않는다.
    window.hydFlows.mount(el) 이 그린다(셸 MOUNTS.flows).
    API: procsvc/flows_api.py (/api/flows/catalog · import · {id} · {id}/mapping · {id}/check · {id}/register ·
         {id}/versions/{v}/bpmn · reset), 직접 시작은 기존 POST /api/instances/start.

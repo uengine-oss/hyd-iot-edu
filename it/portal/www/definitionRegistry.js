@@ -94,7 +94,7 @@
     newEvent(false);
     if (!definitions.length) action(() => refresh());
   });
-  $r('definitionRefresh').addEventListener('click', () => action(() => refresh()));
+  $r('definitionRefresh').addEventListener('click', () => action(async () => { await refresh(); panel.say(`등록된 정의 판본 ${definitions.length}개를 다시 읽었습니다.`); }));      // 눌렀는데 목록이 같으면 아무 일도 없어 보였다 — 읽은 수를 말한다
   $r('definitionChoice').addEventListener('change', syncStart);
   hydCourseAccess.onChange(syncStart);
   $r('definitionCopy').addEventListener('click', () => action(async () => {

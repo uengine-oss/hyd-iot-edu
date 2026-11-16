@@ -155,7 +155,7 @@
       const shared = st === 'UNBOUND' ? '출처 시스템만 정해져 있습니다. 표와 열은 문서 등록의 「업무 DB 표 정의」에서 정합니다'
         : reasons.size === 1 ? (list[0].reason || (st === 'OK' ? '원천 표 · 열에서 바로 읽음' : '')) : '항목마다 사유가 다릅니다';
       const multi = st !== 'UNBOUND' && reasons.size > 1;
-      return group(`${esc((STATE[st] || [st])[0])} ${list.length}개${shared ? ' — ' + esc(shared) : ''}` + (st === 'UNBOUND' ? ` <button type="button" class="btn" data-variant="outline" data-size="sm" data-go-tab="knowledge">문서 등록 열기${UI.icon('arrow-right')}</button>` : ''),
+      return group(`${esc((STATE[st] || [st])[0])} ${list.length}개${shared ? ' — ' + esc(shared) : ''}` + (st === 'UNBOUND' ? ` <button type="button" class="btn" data-variant="outline" data-size="sm" data-go-tab="knowledge" data-go-doc-kind="ddl">문서 등록 열기${UI.icon('arrow-right')}</button>` : ''),
         table(`<th>판단 입력</th><th>지식 지도 출처</th><th>원천 위치</th>${multi ? '<th>사유</th>' : ''}`, list.map(i =>
           `<tr><td>${esc(i.name)}</td><td>${esc(UI.name(i.source) || i.sourceName || '')}</td><td>${code(i.table ? i.table + '.' + i.column : '')}` +
           `<small>${[i.datasource ? srcName(i.datasource, i.source_label || srcLabel(i.datasource)) : '', esc(i.where || (i.key ? i.key + ' = 설비' : ''))].filter(Boolean).join(' · ')}</small></td>${multi ? `<td>${esc(i.reason || '')}</td>` : ''}</tr>`).join('')));

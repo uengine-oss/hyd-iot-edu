@@ -1324,7 +1324,7 @@
       let m;
       try { m = C.model = build(C.view, C.ext, [...C.older.values(), ...C.live.values()]); }
       catch (err) {
-        console.error('단계 기록 그리기 실패', C.view?.instance?.proc_inst_id, err);   // 좌표(처리 건 · 줄)는 개발자 도구에
+        console.error('진행 상황 그리기 실패', C.view?.instance?.proc_inst_id, err);   // 좌표(처리 건 · 줄)는 개발자 도구에
         box.innerHTML = `<div class="alert" data-variant="destructive">${UI.icon('circle-alert')}<h2>진행 상황을 그리지 못했습니다</h2><section>화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 아래 오류 원문과 함께 시스템 관리자에게 알리세요.${UI.raw(err.stack || err.message, { title: '오류 원문' })}</section></div>`;
         return;
       }

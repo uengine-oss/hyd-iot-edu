@@ -598,3 +598,154 @@ def test_단계_줄_아래_첫_내용은_매뉴얼과_표_정의에서_같은_�
         finally:
             b.close()
             served.close()
+
+
+# ------------------------------------------------------------------ 눌러 보기에서 찾은 것(2026-11-16): 종류 칸 · 표 정의의 고른 열 · 이미 읽은 문서
+def _page(answer):
+    """실제 화면을 실제 브라우저로 여는 한 벌(served · browser · page). 부른 쪽이 with 로 쓴다."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def cm():
+        from playwright.sync_api import sync_playwright
+        app = FastAPI()
+        app.mount('/', StaticFiles(directory=WWW, html=True))
+        served = Served(app)
+        try:
+            with sync_playwright() as p:
+                b = p.chromium.launch()
+                page = b.new_page(viewport={'width': 1440, 'height': 900})
+                errors = []
+                page.on('pageerror', lambda e: errors.append(str(e)))
+                page.route('**/svc/**', answer)
+                page.goto(served.url + '/index.html')
+                yield page
+                assert errors == [], errors
+                b.close()
+        finally:
+            served.close()
+    return cm()
+
+
+def test_새_조치_방법의_종류_칸에서_고를_수_있는_것은_정비_요청_하나이고_저장_요청도_그_종류로_나간다():
+    """설비에 명령을 내리는 조치(설비 제어)는 화면에서 만들 수 없다(서버가 늘 거절한다). 전에는 종류 칸에 「설비 제어」가 있어 학생이 골라 적고 저장한 뒤에야 거절을 봤다.
+    [새 조치 방법] 폼의 종류 칸에 고를 수 있는 것이 「정비 요청」 하나이고, 칸을 채워 [추가]를 누르면 서버로 가는 요청의 종류가 그 값이다."""
+    posted = []
+
+    def answer(route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        if path.endswith('/api/kg/skills') and method == 'POST':
+            posted.append(route.request.post_data_json)
+            return route.fulfill(json=_skill('skill:sop-new-1', '새 조치'))
+        if path.endswith('/api/kg/skills'):
+            return route.fulfill(json=[_skill('skill:sop-mine-1', '내가 만든 조치')])
+        if path.endswith('/api/kg/catalog'):
+            return route.fulfill(json={'roles': [{'id': 'role:operator', 'name': '운전원'}], 'failureModes': [{'id': 'fm:x', 'name': '벨트 느슨함'}]})
+        if path.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    with _page(answer) as page:
+        open_screen(page, 'skills')
+        page.wait_for_selector("#skillList [data-skill='skill:sop-mine-1']", timeout=15000)
+        page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
+        page.click('#skillNew')
+        page.wait_for_selector('#skKind')
+        kinds = page.evaluate("[...document.querySelector('#skKind').options].map(o => [o.value, o.textContent.trim()])")
+        listed = page.evaluate("[...document.querySelectorAll(\"#skillList [data-skill-kind], #view-skills [data-skill-kind]\")].map(b => b.textContent.replace(/[0-9\\s]+$/, '').trim())")
+        assert len(kinds) == 1 and kinds[0][1] in listed and '제어' not in kinds[0][1], (kinds, listed)      # 하나뿐이고, 그 이름은 목록 거르기의 「정비 요청」과 같은 말
+        page.fill('#skName', '벨트 장력 조정'); page.select_option('#skRole', 'role:operator'); page.fill('#skSop', 'SOP-NEW-1')
+        page.select_option('#skFm', 'fm:x'); page.fill('#skSteps', '현장 제어로 전환한다.\n장력을 조정한다.')
+        page.click('#skSave')
+        for _ in range(60):
+            if posted:
+                break
+            page.wait_for_timeout(50)
+        assert len(posted) == 1 and posted[0]['kind'] == kinds[0][0] == 'work_order', posted                 # 서버가 받는 종류로 나간다
+
+
+def test_표_정의에서_열이나_출처_시스템을_바꾸면_다시_읽기_전에는_적재가_꺼지고_그_자리에_까닭이_있다():
+    """눌러 보기(2026-11-16): 열 체크를 풀고 [고른 열로 다시 읽기]를 누르지 않은 채 [적재]를 누르면, 아래 표(적재할 입력)가 아직 옛 고르기라 뺀 열이 그대로 적재됐다
+    (화면의 체크는 빠져 있는데 지식 지도에는 들어간다). 고르기를 바꾸면 [적재]가 꺼지고 까닭과 할 일이 그 줄에 나오며, 다시 읽으면 서버가 준 새 표로 켜지고,
+    그때 [적재]가 보내는 입력에 뺀 열이 없어야 한다."""
+    previews, commits = [], []
+    cols = ['WO_NO', 'CST_AMT', 'RMK']
+
+    def answer(route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        if path.endswith('/api/kg/ddl/preview') and method == 'POST':
+            body = route.request.post_data_json
+            previews.append(body)
+            picked = (body.get('selection') or {}).get('T_MNT10', cols)
+            return route.fulfill(json={'filename': body['filename'], 'chars': len(body['text']), 'catalog': body['catalog'], 'datasource': 'ds', 'warnings': [], 'systems': [{'id': 'sys:legacy', 'name': 'DB-LEGACY'}],
+                                       'existingSystems': [], 'sourceOptions': [{'id': 'ds', 'label': '옛 설비 DB', 'schema': 'legacy'}],
+                                       'inputs': [{'id': f'in:{c}', 'name': c, 'typeRef': 'string', 'schema': 'legacy', 'table': 'T_MNT10', 'column': c, 'system': 'sys:legacy', 'variable': f'db_{c}'} for c in picked],
+                                       'tables': [{'table': 'T_MNT10', 'comment': '', 'system': 'sys:legacy', 'columns': cols, 'selected': picked}]})
+        if path.endswith('/api/kg/ddl/commit') and method == 'POST':
+            commits.append(route.request.post_data_json)
+            return route.fulfill(json={'systems': 1, 'inputs': len(commits[-1]['inputs'])})
+        if path.endswith('/api/kg/ingests'):
+            return route.fulfill(json=[])
+        if path.endswith('/api/kg/manuals/sources'):
+            return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'total': 0, 'next_offset': None})
+        if path.endswith('/api/kg/manuals') or path.endswith('/api/kg/skills'):
+            return route.fulfill(json=[])
+        if path.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    with _page(answer) as page:
+        open_screen(page, 'knowledge')
+        page.click("#docKinds [data-doc-kind='ddl']")
+        page.locator("#providedDdl [data-provided='legacy-plant-db.sql']").click()
+        page.wait_for_selector('#ddlCommit', timeout=15000)
+        assert page.locator('#ddlCommit').is_enabled() and page.inner_text('#ddlMsg').strip() == ''
+        page.locator("#ddlResult input[data-col][value='RMK']").uncheck()
+        assert page.locator('#ddlCommit').is_disabled()                                              # 다시 읽기 전에는 적재할 수 없다
+        said = page.inner_text('#ddlMsg')
+        assert page.inner_text('#ddlReplan').strip() in said, said                                       # 까닭 줄이 실제 단추 이름으로 할 일을 말한다
+        msg, go = page.locator('#ddlMsg').bounding_box(), page.locator('#ddlCommit').bounding_box()
+        assert abs((msg['y'] + msg['height'] / 2) - (go['y'] + go['height'] / 2)) < go['height'], (msg, go)   # 까닭은 꺼진 단추와 같은 줄에
+        page.click('#ddlReplan')
+        page.wait_for_function("document.querySelector('#ddlCommit') && !document.querySelector('#ddlCommit').disabled && !document.querySelector(\"#ddlResult input[data-col][value='RMK']\").checked", timeout=8000)
+        assert previews[-1]['selection'] == {'T_MNT10': ['WO_NO', 'CST_AMT']}
+        page.click('#ddlCommit')
+        for _ in range(60):
+            if commits:
+                break
+            page.wait_for_timeout(50)
+        assert len(commits) == 1 and [i['column'] for i in commits[0]['inputs']] == ['WO_NO', 'CST_AMT'], commits      # 뺀 열은 가지 않는다
+
+
+def test_AI가_이미_읽은_문서를_다시_열면_아직_읽기_전이라고_말하지_않고_있는_결과와_여는_길을_말한다():
+    """눌러 보기(2026-11-16): AI 추출을 시작하고 다른 화면에 다녀오거나 창을 새로 연 뒤 그 문서를 다시 고르면 「아직 AI가 문서를 읽기 전입니다」라고 했다 —
+    추출 결과는 접힌 「이 문서의 이전 추출 결과」 안에만 있었다. 서버가 그 문서의 추출 작업을 하나라도 주면 안내가 그 결과가 있다고 말하고 그 접기가 펴져 있어야 하며,
+    하나도 없으면(처음 올린 문서) 접기는 접힌 채 「읽기 전」 안내 그대로다."""
+    from playwright.sync_api import sync_playwright
+    runs = {'items': [], 'next_offset': None}
+    docs = _Docs(['HM-8_cooler-fan-manual.md'])
+
+    def answer(route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        if path.endswith('/extractions') and method == 'GET':
+            return route.fulfill(json=runs)
+        return docs(route)
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs, answer)
+        try:
+            row = page.locator("#providedDocs [data-provided='HM-8_cooler-fan-manual.md']")
+            row.click()
+            page.wait_for_selector('#manualStageNote', timeout=15000)
+            page.wait_for_function("document.querySelector('#manualExtractionRuns').options[0].textContent !== '' && document.querySelector('#manualExtractionRuns').options.length >= 1 && !/불러오는/.test(document.querySelector('#manualExtractionRuns').options[0].textContent)", timeout=8000)
+            fresh = page.inner_text('#manualStageNote')
+            fold_open = lambda: page.evaluate("document.querySelector('#manualExtractionRuns').closest('details').open")
+            assert '읽기 전' in fresh and not fold_open()                                              # 추출한 적 없는 문서: 그대로
+            page.click('#manualAnother')
+            runs['items'] = [{'proc_inst_id': 'inst-doc-hm-8', 'start_date': '2026-11-16T02:00:00Z', 'status': 'COMPLETED'}]
+            row.click()
+            page.wait_for_function("document.querySelector('#manualExtractionRuns')?.options.length === 2", timeout=15000)
+            page.wait_for_function("!/읽기 전/.test(document.querySelector('#manualStageNote').innerText)", timeout=4000)
+            said = page.inner_text('#manualStageNote')
+            assert page.inner_text('#manualAgentResult').strip() in said and fold_open(), said               # 여는 단추의 이름으로 길을 말하고, 그 단추가 든 접기가 펴져 있다
+            assert page.locator('#manualAgentResult').is_visible() and page.input_value('#manualExtractionRuns') == 'inst-doc-hm-8'
+            b.close()
+        finally:
+            served.close()

@@ -163,7 +163,7 @@
       I.view && (I.view.approvals || []).map(a => [a.todo_id, a.status, a.attempts, a.error]), I.view && I.view.attention, I.dec && I.dec.state, I.decError, I.taskViewError, I.msg, I.pmsg, I.gone,
       I.view && [I.view.events.length, I.view.events.at(-1)?.id], I.view && I.view.instance.variables_data, I.view && [I.view.instance.status, I.view.instance.end_label],   // 이벤트는 개수 · 마지막 id 만(1500줄 전체를 2초마다 문자열로 만들지 않는다)
       I.viewErr, I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, caseSig(I.caseProjection), I.more, moreOpen(), I.eventsShown, I.pview, UI.namesVersion]);
-    feedRecord();                                  // 단계 기록은 2초 다시 읽기를 그때그때 받는다(이벤트 · 상태) — 스스로 바뀐 줄만 고친다
+    feedRecord();                                  // 진행 상황은 2초 다시 읽기를 그때그때 받는다(이벤트 · 상태) — 스스로 바뀐 줄만 고친다
     updateKnowledgeChecked();                      // 지식 대조 시각(15초마다 바뀜)은 그 줄만 고친다
     if (!force && sig === I.sig && listSig === I.listSig) return;
     const detail = force || sig !== I.sig;
@@ -331,7 +331,7 @@
   // facts: [[이름, 값, 단위]] · late: 기한 줄(clockLine) · who: 「운전원 역할로 기록됩니다」
   // msg: 막힌 까닭 · 서버가 거절한 까닭(빨간 글) · note: 알아 둘 것(보통 글)
   // 앞 AI 단계가 남긴 알림 가운데 「결과 글」에 대한 것(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 · 지금 값과 다른 곳): 그 글을 읽고 결정하는 자리에도 같은 말을 보인다.
-  // 가장 최근에 끝난 AI 단계의 것만 본다(단계 기록의 그 단계 결론 아래에 같은 문장이 있다)
+  // 가장 최근에 끝난 AI 단계의 것만 본다(진행 상황의 그 단계 옆 판에 같은 문장이 있다)
   // 결과 글이 지금 값과 다를 수 있음을 알리는 종류(worker ai_replay.NOTICE_KINDS) — 준비된 글 머리말은 뒤 문장이 있을 때만 서버가 붙인다
   const RESULT_NOTICE_KINDS = ['prepared', 'typed_differs', 'values_differ', 'reads_differ', 'reads_unchecked'];
   function resultNotices() {
@@ -341,7 +341,7 @@
     return hydRecord.noticeTexts(hydRecord.rowsOf((view.events || []).filter(ev => ev.todo_id === agentRows[0].id)), RESULT_NOTICE_KINDS);
   }
   function todoCard({ label, icon = 'user-check', title, desc = '', late = '', facts = [], acts = '', who = '', more = '', msg = '', note = '', attrs = '', ai = false }) {
-    // 결정하는 자리에는 사실 한 줄만 두고(무엇이 다른지는 길다), 문장들은 접기 안에 둔다 — 같은 문장이 아래 단계 기록의 그 AI 단계 결론 밑에 펼쳐져 있다
+    // 결정하는 자리에는 사실 한 줄만 두고(무엇이 다른지는 길다), 문장들은 접기 안에 둔다 — 같은 문장이 아래 진행 상황의 그 AI 단계 옆 판에 있다
     const notes = resultNotices();
     const told = notes.length ? `<div class="turn-notice">${UI.icon('info')}<span>이 결과 글에 적힌 값은 지금 넣은 입력이나 이 PC의 지금 값과 다를 수 있습니다.</span></div>` +
       UI.fold(`무엇이 다른가<span class="muted num">${notes.length}</span>`, notes.map(t => `<p class="turn-notice-line">${esc(t)}</p>`).join('')) : '';
@@ -355,7 +355,7 @@
   }
   const roleLine = name => name ? `${esc(name)} 역할로 기록됩니다` : '';
   /* 승인 판의 「AI 판단」 한 줄: 승인을 정하는 데 필요한 만큼만 — 이 건에서 판단을 낸 AI 단계의 결론 한 문장과, 근거 · 후보 비교를 여는 길 하나(그 단계의 옆 판).
-     결론은 단계 기록이 그 단계 줄에 적는 것과 같은 함수(caseRecord.js agentFront)에서 온다. 단계 기록이 그려진 뒤에 채운다(그 전에는 자리를 비워 둔다) */
+     결론은 진행 상황이 그 단계 줄에 적는 것과 같은 함수(caseRecord.js agentFront)에서 온다. 진행 상황이 그려진 뒤에 채운다(그 전에는 자리를 비워 둔다) */
   function fillAi() {
     const slot = document.querySelector('#todoPanel [data-ai-slot]'); if (!slot) return;
     const m = I.record && I.recordFor === I.sel ? I.record.model : null;
@@ -572,6 +572,8 @@
     const sc = d.scenario || {};
     const inst = I.view?.instance || {};
     const P = window.hydApprove.pick(d, I.form.option);
+    // 값을 바꿔 미리 본 안이 있으면 「승인하면 시스템이 …」 줄은 미리 본 조치(바꾼 값)를 말한다 — 실제로 나가는 명령이 그 값이다(부하 70 %를 75 %로 바꿔 승인하면 75 %가 나간다)
+    if (reviewed) P.actions = (reviewed.actions || []).map(x => hydCards.actionLabel(x, reviewed)).filter(Boolean);
     // 값 조정 · 미리 보기(설비에 보내는 값이 있는 안)와 사건 정보는 [다른 안 고르기]를 편 자리에 있다
     const adjust = fanA || loadA || pumpA || chosen.maintenancePlan || chosen.economicComparison ? UI.fold(fanA || loadA || pumpA ? '조치 값 조정 · 미리 보기' : '현재 조건 다시 확인 · 미리 보기', UI.section('', `${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}`) +
       `<div id="tdReviewed">${reviewed ? `<p><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.optionDetail(reviewed, { decision: review.snapshot })}` : `<p class="muted">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
@@ -579,7 +581,9 @@
     // 실행할 수 있는 안이 하나도 없으면 [승인]이 꺼진 이유와 다음 행동을 까닭 줄에 말한다
     const noneFeasible = !reviewed?.feasible && !opts.some(o => o.feasible);
     const hint = noneFeasible ? ''
-      : !canApprove && changed ? '값을 바꿨으면 미리 보기로 다시 확인한 뒤 승인합니다' : !canApprove && P.blocked ? '이 안은 지금 실행할 수 없는 상태라 승인할 수 없습니다 — [다른 안 고르기]에서 까닭을 확인하세요.' : '';
+      : !canApprove && changed ? `값을 바꿨으면 [${UI.t('btn.preview')}]로 다시 확인한 뒤 승인합니다`
+      : !canApprove && reviewed ? `지금 조건에서는 이 안을 실행할 수 없어 승인할 수 없습니다 — 까닭은 [다른 안 고르기]의 「${fanA || loadA || pumpA ? '조치 값 조정 · 미리 보기' : '현재 조건 다시 확인 · 미리 보기'}」에 있습니다. 다른 안을 고르거나 반려하세요.`
+      : !canApprove && P.blocked ? '이 안은 지금 실행할 수 없는 상태라 승인할 수 없습니다 — [다른 안 고르기]에서 까닭을 확인하세요.' : '';
     const caseInfo = UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case');
     if (I.form.needPreview || noneFeasible) I.form.mode = I.form.mode === 'reject' ? 'reject' : 'more';   // 미리 보기를 해야 하거나 고를 안이 없으면 펼쳐서 까닭을 보인다
     const mode = I.form.mode, name = UI.idText(chosen.name || '');
@@ -737,7 +741,7 @@
       reason: I.form.reason, fan_pct: I.form.fan, load_pct: I.form.load, review_id: matchingReviewId(task) }), () => { I.form.needPreview = false; });
     // 검토한 예측이 오래됐다는 거절: 승인 전에 [미리 보기]로 지금 조건을 다시 확인해야 한다 — 미리 보기 버튼을 승인 옆에 꺼내 보인다
     // 서버가 주는 기계용 코드(instance_mode.REVIEW_REQUIRED, G4-16)로 판정한다 — 안내 문장 글자로 판정하지 않는다
-    if (e && e.detail?.code === 'review_required') { I.form.needPreview = true; I.form.review = null; I.msg = e.message.replace(/[.\s]*$/, '') + ' — [미리 보기]로 지금 조건을 다시 확인한 뒤 승인하세요.'; renderTodoPanel(); }
+    if (e && e.detail?.code === 'review_required') { I.form.needPreview = true; I.form.review = null; I.msg = UI.words(String(e.message || '').replace(UI.ID_RE, m => UI.names[m] ? `「${UI.names[m]}」` : m)).replace(/[.\s]*$/, '') + ` — [${UI.t('btn.preview')}]로 지금 조건을 다시 확인한 뒤 승인하세요.`; renderTodoPanel(); }
   }
   function matchingReviewId(task) {
     const option = I.dec?.options?.find(o => o.id === I.form.option);
@@ -1082,7 +1086,7 @@
       const actor = CREW[e.crew_type] || (/^cliagents:/.test(e.crew_type || '') ? 'AI 에이전트' : '');
       if (actor && (detail === actor || detail.startsWith(actor + ' · '))) detail = detail.slice(actor.length).replace(/^ · /, '');      // 「담당자 · 담당자」처럼 같은 이름을 두 번 적지 않는다
       return UI.eventRecord({ time: e.timestamp, name, actor, detail, raw: e.data, chips });
-    }).join('') + (all.length > I.eventsShown ? `<button type="button" class="more-link" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
+    }).join('') + UI.moreButton(all.length - I.eventsShown, 'data-events-more', { what: '이전 활동', unit: '건' });
     return `<h3 class="case-sub">${esc(UI.t('inst.steps'))} ${view.workitems.length}줄</h3><div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <h3 class="case-sub">${esc(UI.t('inst.events'))} ${view.events.length}줄</h3><div class="stream-log case-events">${events || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}</div>`;
   }

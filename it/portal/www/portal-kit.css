@@ -101,8 +101,8 @@ a { color: inherit; text-decoration: none; }
 .ic-lg { width: 20px; height: 20px; }
 /* 1-6 누를 수 있는 것은 누를 수 있게 보인다 — 공통 바닥. 누르는 것은 손가락 모양이고 올리면 바탕 · 테 · 글 색 가운데 하나가 바뀐다.
    부품마다의 올림 모양(목록 줄 · 세그먼트 · 보기 탭 · 링크 · 카드)은 그 부품의 자리에 있고, 여기는 부품 클래스가 없는 것(접기 줄 · 고르기 칸 · 체크 · 글 속 링크)의 바닥이다 */
-button:not(:disabled), summary, [role="button"], [role="menuitem"]:not([aria-disabled="true"]), [role="option"]:not([aria-disabled="true"]), select:not(:disabled), input:is([type="checkbox"], [type="radio"]):not(:disabled), label:has(input:is([type="file"], [type="checkbox"], [type="radio"]):not(:disabled)) { cursor: pointer; }
-button:disabled { cursor: not-allowed; }
+button:not(:disabled, [aria-disabled="true"]), summary, [role="button"], [role="menuitem"]:not([aria-disabled="true"]), [role="option"]:not([aria-disabled="true"]), select:not(:disabled), input:is([type="checkbox"], [type="radio"]):not(:disabled), label:has(input:is([type="file"], [type="checkbox"], [type="radio"]):not(:disabled)) { cursor: pointer; }
+button:is(:disabled, [aria-disabled="true"]) { cursor: not-allowed; }
 select:not(:disabled):hover, input:is([type="checkbox"], [type="radio"]):not(:disabled, :checked):hover, label:hover > input:is([type="checkbox"], [type="radio"]):not(:disabled, :checked) { border-color: var(--foreground); }
 /* 접기 줄(summary): 올리면 옅은 바탕 띠 — 띠는 글 좌우로 8px 더 나가지만 자리를 밀지 않는다(그림자로 그린다). 메뉴 줄 · 단추 모양 · 제 올림 모양이 있는 접기 줄은 그 규칙이 앞선다 */
 :where(main, dialog) details > summary:not(.btn):hover { background: var(--accent); box-shadow: -8px 0 0 var(--accent), 8px 0 0 var(--accent); border-radius: 4px; }

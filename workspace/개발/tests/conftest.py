@@ -449,17 +449,69 @@ class _Held:
             handle.close()
 
 
+def _first_freed(handles):
+    """다 찬 칸들 가운데 먼저 풀리는 칸 하나를 잡는다 → 그 손잡이. 운영체제 잠금은 한 번에 한 파일만 기다릴 수 있으므로 칸마다 스레드
+    하나가 그 칸의 막는 잠금을 기다린다(여기부터 손잡이는 그 스레드의 것이다). 처음 잡은 스레드의 칸만 남고, 늦게 잡은 스레드는 잡자마자
+    손잡이를 닫아 그 칸을 놓는다 — 늦은 스레드는 그 칸을 쥔 묶음이 끝날 때 한 번 잡았다 바로 놓고 끝난다(Windows 는 잠금 대기가 약 10초마다
+    돌아오므로 그때 끝난다). 그래서 한 번 부를 때 남는 스레드 · 손잡이는 많아야 칸 수 − 1 이고 프로세스가 끝나면 함께 없어진다. 기다리다
+    끊기면(Ctrl+C 등) 잡았거나 뒤에 잡히는 칸을 모두 놓는다."""
+    mutex, landed = threading.Lock(), threading.Event()
+    state = {'won': None, 'over': False, 'error': None}
+
+    def wait_for(handle):
+        try:
+            while True:
+                locked = _try_lock(handle, block=True)
+                with mutex:
+                    if state['won'] is None and not state['over']:
+                        if not locked:
+                            if os.name != 'nt':         # 끝없이 막는 잠금이 못 잡고 돌아왔다 — 기다림이 아니라 잠금 오류다
+                                raise OSError('칸 잠금 파일을 잠그지 못했다')
+                            continue                    # Windows: 약 10초 기다렸는데 아직 잠겨 있다 — 다시 기다린다
+                        state['won'] = handle
+                        landed.set()
+                        return
+                break
+            handle.close()                              # 다른 칸이 먼저 잡혔거나 기다림이 끊겼다 — 이 칸은 (잡았어도) 놓는다
+        except BaseException as error:                  # 삼키지 않는다 — 기다리는 쪽이 이 오류로 실패한다
+            handle.close()
+            with mutex:
+                state['error'] = state['error'] or error
+            landed.set()
+
+    started = 0
+    try:
+        for i, handle in enumerate(handles):
+            threading.Thread(target=wait_for, args=(handle,), name=f'take-slot-{i}', daemon=True).start()
+            started += 1
+        while not landed.wait(1.0):                     # 칸을 다시 보는 것이 아니다 — Windows 에서 Ctrl+C 가 먹게 깨어날 뿐(칸 대기는 스레드의 잠금 대기)
+            pass
+        with mutex:
+            if state['won'] is None:
+                raise RuntimeError('칸 잠금을 기다리던 스레드가 오류로 끝났다') from state['error']
+            return state['won']
+    except BaseException:
+        with mutex:
+            state['over'] = True
+            if state['won'] is not None:
+                state['won'].close()
+        for handle in handles[started:]:
+            handle.close()
+        raise
+
+
 def take_slot(directory, slots=HEAVY_SLOTS, what='', say=print, count=1):
     """directory 의 잠금 파일 slots 칸 가운데 count 칸을 잡는다 → 잡은 것(close() 로 풀림). 다 차 있으면 한 줄 알리고 잠금이 풀리기를
     기다린다(고정 sleep 이 아니라 운영체제 잠금 대기). 기다리는 묶음은 문(gate.lock)을 쥔 차례로 하나씩 — 문을 쥔 묶음이 칸을 다 잡아야
-    다음이 칸을 본다(칸 여럿을 바라는 묶음이 뒤에 온 한 칸 묶음들에 밀려 끝없이 기다리지 않게). 한 칸은 아무 칸이나(칸을 돌아가며),
-    여러 칸은 0번부터 차례로."""
+    다음이 칸을 본다(칸 여럿을 바라는 묶음이 뒤에 온 한 칸 묶음들에 밀려 끝없이 기다리지 않게). 한 칸은 아무 칸이나(다 찼으면 어느 칸이든
+    먼저 풀리는 칸 — _first_freed), 여러 칸은 0번부터 차례로."""
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     if count > slots:
         raise ValueError(f'칸 {count}개를 바라지만 이 PC 칸은 {slots}개다')
     gate = open(directory / 'gate.lock', 'a+b')
     handles = [open(directory / f'slot-{i}.lock', 'a+b') for i in range(slots)]
+    mine = list(handles)                      # 이 함수가 닫을 손잡이(_first_freed 에 넘긴 것은 그쪽이 닫는다)
     told = False
 
     def wait_note():
@@ -481,16 +533,13 @@ def take_slot(directory, slots=HEAVY_SLOTS, what='', say=print, count=1):
                         break
             held = handles[:count]
         else:
-            turn, held = os.getpid() % slots, None
-            while held is None:
-                held = next(([h] for h in handles if _try_lock(h, block=False)), None)
-                if held is None:
-                    wait_note()
-                    if _try_lock(handles[turn], block=True):
-                        held = [handles[turn]]
-                    turn = (turn + 1) % slots
+            held = next(([h] for h in handles if _try_lock(h, block=False)), None)
+            if held is None:
+                wait_note()
+                mine = []
+                return _Held([_first_freed(handles)])
     except BaseException:
-        for handle in handles:
+        for handle in mine:
             handle.close()
         raise
     finally:

@@ -89,3 +89,50 @@ def test_처음_보이는_보기는_원천과_표이고_숫자_카드_없이_한
             b.close()
     finally:
         served.close()
+
+
+def test_표와_열이_정해지지_않은_판단_입력의_문서_등록_열기는_업무_DB_표_정의_보기로_데려간다():
+    """눌러 보기(2026-11-16): 「표 · 열 미연결 — 표와 열은 문서 등록의 「업무 DB 표 정의」에서 정합니다 [문서 등록 열기]」를 누르면 문서 등록의 「매뉴얼」 보기가 열렸다 —
+    말한 자리와 데려간 자리가 달랐다. 누른 뒤 보이는 보기가 그 줄이 꺽쇠로 말한 이름의 보기여야 한다."""
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from playwright.sync_api import sync_playwright
+
+    from conftest import WWW, Served, open_screen
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+
+    def answer(route):
+        path = route.request.url.split('?')[0]
+        if path.endswith('/api/fabric/sources'):
+            return route.fulfill(json=SOURCES)
+        if path.endswith('/api/fabric/links'):
+            return route.fulfill(json=LINKS)
+        if path.endswith('/api/fabric/queries') or path.endswith('/api/kg/manuals') or path.endswith('/api/kg/skills') or path.endswith('/api/kg/ingests'):
+            return route.fulfill(json=[])
+        if path.endswith('/api/kg/manuals/sources'):
+            return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'total': 0, 'next_offset': None})
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'fabric')
+            page.wait_for_selector('#fabricView [role=tab]', timeout=15000)
+            page.locator('#fabricView [role=tab]').nth(2).click()
+            go = page.locator('#fabricView button', has_text='문서 등록 열기').first
+            go.wait_for(timeout=8000)
+            line = go.evaluate("b => b.parentElement.innerText")
+            named = __import__('re').findall(r'「([^」]+)」', line)
+            assert named, line
+            go.click()
+            page.wait_for_selector('#view-knowledge.active', timeout=8000)
+            picked = page.locator('#docKinds [role=tab][aria-selected=true]').inner_text().strip()
+            panes = page.evaluate("[...document.querySelectorAll('#view-knowledge [data-doc-pane]')].filter(p => !p.hidden).map(p => p.dataset.docPane)")
+            assert picked == named[0] and panes == ['ddl'], (picked, named, panes)
+            b.close()
+    finally:
+        served.close()

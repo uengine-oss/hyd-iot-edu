@@ -271,6 +271,8 @@
     document.querySelectorAll('#view-knowledge [data-doc-pane]').forEach(p => { p.hidden = p.dataset.docPane !== kind; });
   }
   $('#docKinds').addEventListener('click', ev => { const b = ev.target.closest('[data-doc-kind]'); if (b) showDocKind(b.dataset.docKind); });
+  // 다른 화면의 「문서 등록 열기」가 올릴 것을 정해 부르면(data-go-doc-kind) 그 보기로 연다 — 표 · 열이 정해지지 않은 판단 입력에서 온 사람은 「업무 DB 표 정의」에 닿아야 한다
+  document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-go-doc-kind]'); if (b) showDocKind(b.dataset.goDocKind); });
   async function loadManualCatalog() {
     H.manualCatalog = null; H.manualCatalogError = '';
     try {
@@ -725,7 +727,7 @@
       const loadedFacts = L ? factsOf(L) : '';
       box.innerHTML = `<div class="panel-sec mprev" data-doc-stage="2">
         <div class="result"><div class="result-label">${here ? '이미 적재된 문서' : twin ? '이미 적재한 원문' : '올린 문서'}</div><div class="result-main">${esc(r.filename)} <span class="muted num">${r.chars.toLocaleString()}자</span></div>
-          <p class="result-sub" id="manualStageNote">${!ready ? `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`
+          <p class="result-sub" id="manualStageNote"${ready && !L && !twin ? ' data-fresh' : ''}>${!ready ? `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`
             : here ? `이 원문으로 만든 판이 지식 지도에 적재돼 있습니다 — ${esc(loadedFacts)}. AI 추출을 다시 시작하면 새 결과를 검토해 이 문서를 개정합니다.`
             : L ? `이 문서는 다른 원문${L.filename ? `(${esc(L.filename)})` : ''}으로 만든 판이 적재돼 있습니다 — ${esc(loadedFacts)}. 지금 연 원문은 AI가 아직 읽지 않았습니다. AI 추출을 시작해 검토한 뒤 적재하면 그 판을 개정합니다.`
             : twin ? `같은 원문이 등록한 문서 「${esc(twin.filename || '')}」로 이미 적재돼 있습니다 — ${esc(factsOf(twin))}. 새 문서로 적재하면 절차 번호가 그 문서와 겹쳐 거절됩니다. 고쳐 넣으려면 그 문서의 개정으로 여세요.`
@@ -854,6 +856,12 @@
         else if (!select.value && select.options.length > 1) select.selectedIndex = 1;
         extractionOffset = page.next_offset;
         $('#manualExtractionMore').hidden = page.next_offset === null;
+        // 이 문서를 AI가 읽은 결과가 이미 있는데(다른 화면에 다녀왔거나 창을 새로 열었을 때) 「아직 읽기 전」이라고 말하지 않는다 — 있는 결과와 여는 길을 말하고 그 접기를 편다
+        const noteEl = $('#manualStageNote'), last = page.items[0];
+        if (!append && last && noteEl && noteEl.dataset.fresh !== undefined) {
+          noteEl.textContent = `AI가 이 문서를 읽은 결과가 있습니다 — 최근 ${UI.dateTime(last.start_date)} · ${UI.status(last.status)}. 아래 「이 문서의 이전 추출 결과」에서 [선택한 결과 열기]로 이어서 검토하거나, AI 추출을 다시 시작하세요.`;
+          delete noteEl.dataset.fresh; select.closest('details').open = true;
+        }
       } catch (e) { if (H.preview === r) say('추출 이력을 읽지 못했습니다: ' + e.message, true); }
     };
     $('#manualExtractionMore').addEventListener('click', () => loadExtractions(true));
@@ -1375,7 +1383,7 @@
   $('#ddlHistory').addEventListener('click', async ev => {
     if (ev.target.closest('[data-retry]')) { loadIngests(); return; }
     const b = ev.target.closest('[data-clear]'); if (!b) return;
-    if (!await UI.confirm({ title: '이 연결을 되돌릴까요?', body: '이 스키마 파일로 넣은 시스템 · 입력 데이터를 지식 지도에서 지웁니다. 다른 연결이 함께 쓰는 항목은 남습니다.', ok: '되돌리기', danger: true })) return;
+    if (!await UI.confirm({ title: '이 표 정의를 되돌릴까요?', body: '이 표 정의 파일로 넣은 시스템 · 입력 데이터를 지식 지도에서 지웁니다. 다른 표 정의가 함께 쓰는 항목은 남습니다.', ok: '되돌리기', danger: true })) return;
     note($('#ddlHistoryMsg'), '되돌리는 중입니다.');
     try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent(manualActor()), null, 'DELETE'); await loadIngests(`되돌렸습니다. 지운 항목 ${out.deleted}개 · 되살린 항목 ${out.restored || 0}개 · 남긴 항목 ${out.retained || 0}개`); if (window.hydEnt) hydEnt.loadGraph(true); }
     catch (e) { note($('#ddlHistoryMsg'), '되돌리지 못했습니다: ' + e.message, true); }
@@ -1411,6 +1419,11 @@
       try { H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, datasource: e.target.value, catalog: p.catalog }); renderDdlPreview(); }
       catch (err) { ddlSay('고른 원천으로 다시 읽지 못했습니다: ' + err.message, true); }
     });
+    // 열 체크나 출처 시스템을 바꾸면 아래 표(적재할 입력)는 아직 옛 고르기다 — 그대로 [적재]하면 뺀 열이 들어간다. 다시 읽을 때까지 [적재]를 끄고 그 자리에 까닭을 말한다
+    box.querySelectorAll('[data-col], [data-sys]').forEach(x => x.addEventListener('change', () => {
+      if (H.ddlDone === p) return;
+      $('#ddlCommit').disabled = true; ddlSay('고른 열이나 출처 시스템을 바꿨습니다 — [고른 열로 다시 읽기]를 눌러 아래 표를 맞춘 뒤 적재하세요.');
+    }));
     $('#ddlReplan').addEventListener('click', async () => {
       const end = hydLive.busy($('#ddlReplan'), '다시 읽는 중');
       const selection = {}, systems = {};

@@ -134,8 +134,8 @@ const UI = {
     'main.liveTs1': '실시간 유온',
     // 지식 지도 · 지식 관리 · 조치 방법
     'onto.loadFail': '지식을 불러올 수 없습니다',
-    'kn.noFile': '선택한 파일 없음', 'kn.preview': '문서 등록', 'kn.ddlPreview': '미리보기',
-    'kn.docs': '등록된 매뉴얼', 'kn.docsEmpty': '등록된 매뉴얼이 없습니다', 'kn.docsEmptySub': '위에서 매뉴얼 파일을 등록하고 AI 추출 결과를 검토해 적재하면 여기에 표시됩니다', 'kn.history': '매뉴얼 등록 이력',
+    'kn.noFile': '선택한 파일 없음',
+    'kn.history': '매뉴얼 등록 이력',
     'kn.current': '현재 판본', 'kn.previous': '이전 판본', 'kn.rolledBack': '되돌림', 'kn.revise': '이 문서 개정', 'kn.undo': '이 판본 되돌리기', 'kn.sections': '절', 'kn.procedures': '조치 방법', 'kn.steps': '단계',
     // 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 — 화면 문구만)
     'golden.title': '이 문서로 답할 수 있는 질문', 'golden.questions': '질문', 'golden.questionsHint': '한 줄에 하나 · 최대 20개 · 이 문서를 읽은 뒤 답할 수 있어야 하는 질문을 적습니다',
@@ -147,7 +147,7 @@ const UI = {
     'inst.resultFile': '결과 파일로 제출',
     // A141 다이어트: 보조 정보 접기 · 에이전트 도구 이름 · 정의 이름
     'fold.meta': '상세 정보', 'fold.case': '사건 정보', 'fold.kpi': '성과 지표 영향', 'fold.penalty': '감점 · 경고', 'fold.violations': '제외 사유',
-    'inst.eventsMore': '이전 활동 더 보기', 'card.sop': '절차 번호', 'log.raw': '원문',
+    'card.sop': '절차 번호', 'log.raw': '원문',
     'def.anomaly_response': '설비 이상 조치', 'def.alert_triage': '미지원 경보 현장 검토', 'def.ask_agent': '에이전트에게 질문하기',
     'def.c3_cooling': '냉각 긴급 대응', 'def.c3_pm': '정기 정비', 'def.c3_spare': '예비품 구매',
     'def.manual_extraction': '매뉴얼 추출', 'def.manual_source_extraction': '문서 원천 추출', 'def.golden_questions': '매뉴얼 확인 질문', 'def.timeseries_question': '시계열 질문', 'def.business_question': '업무 질문', 'def.rule_question': '규칙 질문',
@@ -157,8 +157,6 @@ const UI = {
     'skill.allCauses': '고장 유형의 모든 원인', 'skill.noSteps': '절차 없음', 'skill.none': '없음', 'skill.noFm': '대상 고장 유형 없음', 'skill.add': '추가', 'skill.unsaved': '저장하지 않은 변경 사항',
     'skill.saved': '저장했습니다', 'skill.nameRequired': '이름을 입력하세요', 'skill.fromDoc': '등록한 매뉴얼에서 만든 조치 방법입니다. 매뉴얼 개정 화면에서 수정합니다.', 'skill.openDoc': '매뉴얼 개정 열기',
     // 스트림
-    'stream.title': '에이전트 활동', 'stream.filter.all': '전체', 'stream.filter.tool': '도구', 'stream.filter.task': '단계', 'stream.filter.human': '사람', 'stream.filter.error': '오류', 'stream.filter.work': '진행',
-    'stream.pause': '멈춤', 'stream.resume': '다시 흐르게', 'stream.empty': '아직 활동이 없습니다', 'stream.emptySub': '에이전트가 일하면 여기에 실시간으로 나타납니다', 'stream.all': '모두 보기',
     'stream.tool': '도구', 'stream.start': '단계 시작', 'stream.done': '단계 완료', 'stream.working': '진행', 'stream.cancel': '단계 취소', 'stream.deferred': '보류', 'stream.reassess': '다시 평가 요청',
     'stream.asked': '사람에게 질문', 'stream.answered': '사람의 답변', 'stream.error': '오류', 'stream.cancelReq': '실행 취소 요청 (사람)', 'stream.closed': '단계 닫음 (사람)', 'stream.stopped': '실행 멈춤',
     // 흐름도 (정의 이름 → 화면 이름, UIUX_PLAN §4)
@@ -186,7 +184,7 @@ const UI = {
     return s;
   },
   // 끝 이벤트의 이름이 이런 말이면 「어디서 끝났는지」로 따로 보일 것이 없다(그냥 처리 완료다) — 「처리 건은 「처리 완료」에서 끝났습니다」 같은 문장을 만들지 않는다.
-  // 처리 건 목록(instances.js) · 단계 기록(caseRecord.js) · 결과 보고(resultReport.js)가 이 한 곳을 쓴다
+  // 처리 건 목록(instances.js) · 진행 상황(caseRecord.js) · 결과 보고(resultReport.js)가 이 한 곳을 쓴다
   PLAIN_ENDS: new Set(['끝', '종료', '완료', '처리 완료', 'end', 'End', '']),
   plainEnd(name) { return this.PLAIN_ENDS.has(String(name ?? '').trim()); },
   /* definition names (process definition JSON) → display names; the definition itself is not changed */
@@ -215,7 +213,7 @@ const UI = {
   idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
   // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
-  // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 단계 기록 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
+  // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 진행 상황 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
   words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
     .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
@@ -339,7 +337,7 @@ const UI = {
   // 처리 건 작업 행을 일어난 차례로: 시작 시각 → 끝 시각 → 같은 순간이면 흐름 순서(서버 view.flow_order = 정의의 흐름 차례 — 단계 id → 순번).
   // 한 트랜잭션에서 연달아 끝난 시스템 단계(정비 오더 등록 → 결과 보고)는 시각이 같다 — 시각만으로는 순서가 거꾸로 보일 수 있다(W1-01).
   /* 가지 않은 길의 단계: 처리 건이 열릴 때(다시 수행이면 새 차수가 열릴 때) 예정으로 만들어졌다가 한 번도 시작되지 않은 채 닫힌 작업 행.
-     처리 건이 다른 갈래로 끝났거나(반려 · 다른 조치 종류) 다시 수행이 새 차수를 열어 닫힌 것이라, 실행된 일도 실패도 아니다 — 단계 기록 · 진행 길 · 단계 표가 모두 이 한 판정을 쓴다.
+     처리 건이 다른 갈래로 끝났거나(반려 · 다른 조치 종류) 다시 수행이 새 차수를 열어 닫힌 것이라, 실행된 일도 실패도 아니다 — 진행 상황의 목록 · 흐름 그림 · 단계 표가 모두 이 한 판정을 쓴다.
      판정은 서버가 작업 행마다 싣는 reached_at 하나다(흐름이 그 단계에 닿은 시각, 닿은 적이 없으면 null — procsvc engine.reached_at).
      취소된 줄은 둘로 갈린다: reached_at 이 null 이면 가지 않은 길, 값이 있으면 닿았다가(하다가) 취소된 단계다.
      서버가 적는 까닭 글이나 시작 시각으로 짐작하지 않는다 — 까닭 글이 한국어로 바뀌자 옛 판정이 모두 빗나가 취소 줄이 「명령을 보냈습니다」로 읽혔다.
@@ -501,7 +499,7 @@ const UI = {
   // 폼 아래의 단추 줄: (왼쪽) 못 한 까닭 한 줄 · (오른쪽) 단추
   actions(body, msg = '') { return `<footer class="form-foot">${msg ? `<span class="muted" data-tone="danger" role="status">${esc(msg)}</span>` : ''}${body}</footer>`; },
   /* 긴 문장을 결론 한 마디(lead)와 이어지는 근거(rest)로 가른다 — 글은 빼지 않는다. 가르는 자리는 괄호 밖의 첫 「 (」 · 「 — 」 · 「. 」이고(앞머리 12자는 건너뛴다),
-     문장이 min 자보다 짧거나 가를 자리가 없으면 통째로 lead 다. 처리 건의 결과 카드와 단계 기록이 같은 규칙으로 쓴다 */
+     문장이 min 자보다 짧거나 가를 자리가 없으면 통째로 lead 다. 처리 건의 결과 카드와 진행 상황이 같은 규칙으로 쓴다 */
   leadRest(text, min = 90) {
     const whole = String(text || '');
     if (whole.length <= min) return [whole, ''];

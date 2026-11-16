@@ -1,9 +1,8 @@
 /* U5 — 포털 안 알림 · 담당자. process 의 instance-mode API 를 읽는다(procsvc/inbox_api.py):
      GET  /api/inbox/users · /api/inbox/notifications?user_id= · /api/inbox/notifications/unread-count?user_id=
      POST /api/inbox/notifications/read · SSE /api/inbox/notifications/stream?user_id=
-   옛 「내 작업함」 화면은 처리 건 화면으로 합쳤다(2026-11-14 구조 개편). 사람이 처리할 열린 단계는 처리 건 화면의 「내 할 일」 탭과 한 건 맨 위의
-   「내가 할 일」 카드가 보이고(instances.js — GET /api/todolist 하나로 읽는다. 역할별 보기 · 기한도 그 자리), 이 파일은 그 화면 목록 아래의
-   「알림」 접기(#noticeView)와 위 막대의 종 숫자, 그리고 담당자 정보를 맡는다.
+   사람이 처리할 열린 단계는 처리 건 화면이 보인다 — 목록의 「내 차례」 묶음과 고른 건 맨 위의 「내가 할 일」 카드(instances.js — GET /api/todolist 하나로 읽는다.
+   기한도 그 카드에 있다). 탭이나 역할별 보기는 없다. 이 파일은 그 화면 목록 아래의 「알림」 접기(#noticeView)와 위 막대의 종 숫자, 그리고 담당자 정보를 맡는다.
    HYD 포털에는 로그인이 없고 한 사람이 자기 PC에서 쓴다. 그래서 사람을 고르는 자리가 없다 — 쓰는 사람은 늘 담당자 한 명이고
    (사용자 표의 사람 한 명, 모든 역할의 구성원 — seed.sql · migration 000072), 화면에는 사람 이름이 아니라 그 일을 맡는 역할이 보인다.
    승인할 때는 담당자 id 와 그 단계가 요구하는 역할이 들어가고, 서버가 담당자가 그 역할의 구성원인지 · 역할 등급이 카드 승인 역할

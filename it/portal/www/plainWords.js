@@ -36,7 +36,7 @@
     vs1_slope: ['진동 상승 속도', '(mm/s)/설비 초'], cooler_health: ['쿨러 상태', ''], plc_mode: ['운전 모드', ''], plc_state: ['설비 상태', ''], hot_lot_qty: ['출하 대기 로트', '개'],
     order_due_h: ['납기까지', '시간'], fan100_hours: ['팬 100 % 운전 누적', '시간'], standby_ready: ['예비 설비 준비', ''], order_customer_tier: ['고객 등급', ''],
     order_penalty_per_h: ['지연 보상', '만원/시간'], hot_lot_claim: ['출하 로트 클레임', '만원'], oil_analysis_out_of_spec: ['오일 분석 기준 밖', ''],
-    cause: ['판정 원인', ''], pattern: ['경보 패턴', ''], failure_mode: ['고장 유형', ''],
+    cause: ['판정 원인', ''], pattern: ['경보 패턴', ''], failure_mode: ['고장 유형', ''], severity: ['심각도', ''], alertid: ['경보 번호', ''], alert_id: ['경보 번호', ''],
     // 정기 정비 (CMMS 계수기 · 계획)
     hours_since_pm: ['마지막 정비 뒤 운전시간', '시간'], pm_since_h: ['마지막 정비 뒤 운전시간', '시간'], pm_interval_h: ['정비 주기', '시간'], pm_tolerance_pct: ['허용 오차', '%'],
     pm_notice_h: ['사전 알림', '시간'], pm_due_in_h: ['정비 기한까지', '시간'], pm_limit_in_h: ['허용 한도까지', '시간'], hours_at_next_window: ['이번 정비 시간의 운전시간', '시간'],

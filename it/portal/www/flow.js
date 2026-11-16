@@ -8,7 +8,7 @@
    처리 건 화면(instances.js)이 쓰는 것:
      pathModel(def, workitems, instance)   지나온 단계와 남은 길(「몇 단계 가운데 몇 번째」 · 「남은 단계」 줄)
      show(host, { key, title, load })       흐름 화면(flows.js)의 흐름 그림: 상태 표시 없이 그림만, 축소 · 확대 · 화면에 맞춤 · 전체 흐름 보기
-     mount(host, view, { mine, onPick })    진행 길 캔버스: 지금 단계가 왼쪽 40 % 자리에 오게 열고, 축소 · 확대 · 지금 단계로 · 전체 흐름(큰 대화상자)
+     mount(host, view, { mine, onPick })    처리 건의 흐름 그림 캔버스: 지금 단계가 왼쪽 40 % 자리에 오게 열고, 축소 · 확대 · 지금 단계로 · 전체 흐름(큰 대화상자)
    2초마다 다시 읽어도 같은 처리 건이면 그림을 다시 싣지 않는다 — 상태 표시만 바꾸고, 끌어 옮긴 자리와 배율은 그대로 둔다. 지금 단계가 바뀐 때에만 그 단계로 옮긴다. */
 (function () {
   const e = s => esc(s);
@@ -287,7 +287,7 @@
   const noticeText = (src, mine) => !mine ? '' : src.note || (!src.laidOut ? '' : src.source === 'file' ? '배치 정보가 없어 자동으로 놓았습니다 — bpmn.io에서 열어 배치를 고치면 그대로 보입니다'
     : '그림 원본 없이 등록된 흐름이라 단계 정의에서 자동으로 그렸습니다');
   const zoomBy = (D, dir) => { const canvas = D.viewer.get('canvas'); canvas.zoom(Math.min(2.5, Math.max(0.2, canvas.zoom() * (dir > 0 ? 1.2 : 1 / 1.2)))); };
-  // 캔버스 도구의 누름(진행 길 · 흐름 그림이 함께 쓴다): 축소 · 확대 · 지금 단계로 · 화면에 맞춤 · 전체 흐름
+  // 캔버스 도구의 누름(처리 건의 흐름 그림 · 흐름 화면의 그림이 함께 쓴다): 축소 · 확대 · 지금 단계로 · 화면에 맞춤 · 전체 흐름
   function wireHost(host) {
     if (host._flowWired) return;
     host._flowWired = true;

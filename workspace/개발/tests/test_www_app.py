@@ -687,3 +687,86 @@ def test_목록과_상세_조건과_결과는_같은_두_칸_뼈대다(world):
         assert stacked and f['line'] == '0px', f
     finally:
         page.set_viewport_size({'width': 1440, 'height': 900})
+
+
+def test_시스템_구성_그림_아래에_현업_공장과_다른_곳_여섯_줄이_가려지지_않고_보인다(world):
+    """화면이 범위를 정직하게 말하는 자리(layers.js SYS_DIFFS — 인증 · 영역 경계 · 한 프로그램 · 탐지 …). 목록이 사전에만 있고 화면에 안 그려지거나,
+    그려졌는데 그림 · 다른 줄에 가려져 읽히지 않으면 학생은 이 구성을 현업 그대로라고 믿는다. 실제 브라우저에서 여섯 줄이 저마다 이름과 한 문장을 갖고,
+    창 폭 안에 있으며, 서로 겹치지 않고, 그림(#stack) 아래에 놓이는지 잰다. 무엇을 말하는지는 사전의 줄 수와 화면의 줄 수 · 글을 대어 본다."""
+    w, page = world, world.page
+    page.goto(w.base + '/index.html#/home')
+    page.wait_for_selector('#sysDiffs .sys-diff', timeout=15000)
+    page.evaluate('document.fonts.ready')
+    want = page.evaluate('SYS_DIFFS.map(d => [d.name, d.text])')
+    got = page.evaluate('''() => { const stack = document.querySelector('#stack').getBoundingClientRect();
+      const rows = [...document.querySelectorAll('#sysDiffs .sys-diff')];
+      const out = rows.map(n => { const b = n.getBoundingClientRect(), c = getComputedStyle(n);      // 자리는 스크롤하기 전 한 번에 잰다(같은 기준)
+        return { name: n.querySelector('dt').innerText.trim(), text: n.querySelector('dd').innerText.trim(), box: [b.left, b.top, b.right, b.bottom],
+                 shown: c.display !== 'none' && c.visibility !== 'hidden' && b.width > 40 && b.height > 10, inView: b.left >= 0 && b.right <= innerWidth + 1,
+                 clipped: n.querySelector('dd').scrollWidth > n.querySelector('dd').clientWidth + 1, belowStack: b.top >= stack.bottom - 1 }; });
+      rows.forEach((n, i) => { n.scrollIntoView({ block: 'center', behavior: 'instant' }); const b = n.getBoundingClientRect(), top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        out[i].onTop = !!top && n.contains(top); });      // 그 줄을 창 가운데로 데려왔을 때 맨 위에 그려진 것이 그 줄이다(다른 것에 덮이지 않는다)
+      return out; }''')
+    assert len(want) == 6 and [[g['name'], g['text']] for g in got] == want                    # 사전의 여섯 줄이 그대로, 빠짐없이
+    bad = [(g['name'], k) for g in got for k in ('shown', 'onTop', 'inView', 'belowStack') if not g[k]] + [(g['name'], 'clipped') for g in got if g['clipped']]
+    assert not bad, bad
+    hit = lambda a, b: a[0] < b[2] - 1 and b[0] < a[2] - 1 and a[1] < b[3] - 1 and b[1] < a[3] - 1
+    assert not [(a['name'], b['name']) for i, a in enumerate(got) for b in got[i + 1:] if hit(a['box'], b['box'])]      # 줄끼리 겹치지 않는다
+    said = ' '.join(g['name'] + ' ' + g['text'] for g in got)
+    assert all(k in said for k in ('인증', '영역', '한 프로그램', '탐지')), said                  # 인증 · 영역 경계 · 한 프로그램 · 탐지를 말한다
+
+
+@pytest.mark.parametrize('facts, want, never', [
+    ({'available': 1, 'reorder_point': 2, 'need_qty': 6, 'on_order': 0}, ['가용 1개 < 재주문점 2개', '필요 수량 6개'], ['≥', '읽지 못했습니다']),
+    ({'available': 7, 'reorder_point': 2, 'need_qty': 0, 'on_order': 6}, ['가용 7개 ≥ 재주문점 2개', '보충할 수량 없음', '발주 중 6개'], ['<', '필요 수량']),
+    ({'available': 2, 'reorder_point': 2, 'need_qty': 0, 'on_order': 0}, ['가용 2개 ≥ 재주문점 2개', '보충할 수량 없음'], ['<', '발주 중', '필요 수량']),
+    ({'available': None, 'reorder_point': None, 'need_qty': None, 'on_order': None}, ['재고 값을 읽지 못했습니다'], ['<', '≥', '필요 수량', '없음']),
+])
+def test_결함_시뮬레이션의_재고_줄은_가용과_재주문점의_크기에_따라_갈리고_값이_없으면_읽지_못했다고_말한다(world, facts, want, never):
+    """전에는 재고가 재주문점 위로 올라온 뒤(발주가 열린 뒤 · 입고 뒤)에도 「가용 7개 < 재주문점 2개 — 필요 수량 0개」를 그렸다 — 숫자와 부등호가 서로 어긋난다.
+    서버가 준 값(GET /api/scenario/status 의 facts)에 따라 실제 화면의 HYD-03 카드 값 줄이 무엇을 말하는지 본다."""
+    w, page = world, world.page
+    lab_world(w, C={'facts': {'part_no': 'P-PMP-SEAL', 'name': '펌프 축 씰 키트', **facts}})
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_selector("#units .unit[data-asset='HYD-03'] button[data-act='biz-start']")
+    line = page.evaluate('''() => { const card = document.querySelector("#units .unit[data-asset='HYD-03']"); const start = card.querySelector("button[data-act='biz-start']").getBoundingClientRect();
+      const ps = [...card.querySelectorAll('.lab-exp *')].filter(n => !n.children.length && (n.textContent || '').includes('펌프 축 씰 키트') && n.getBoundingClientRect().bottom <= start.top + 1);
+      return ps.map(n => n.textContent.trim()); }''')
+    assert len(line) == 1, line                                                              # 값 줄은 단추 위 한 줄
+    assert all(x in line[0] for x in want) and not [x for x in never if x in line[0]], line
+
+
+def test_지금_누를_수_없는_단추는_손가락_모양이_아니고_눌러도_요청을_보내지_않으며_그_자리에_까닭이_있다(world):
+    """디자인 기준 1-6: 누를 수 없는 것은 누를 수 있게 보이지 않는다. 진행 중인 예비품 구매가 없을 때의 [공급사 납기 지연]은 흐린 단추(aria-disabled)인데 올리면 손가락 모양이었다
+    (켜진 단추와 같은 모양). 켜진 단추와 꺼진 단추의 마우스 모양이 달라야 하고, 꺼진 단추를 눌러도 서버로 아무것도 가지 않으며, 올렸을 때 까닭이 카드 안에 보여야 한다."""
+    w, page = world, world.page
+    lab_world(w)
+    page.goto(w.base + '/index.html#/scenario')
+    off = page.locator("#units .unit[data-asset='HYD-03'] button[data-act='biz-event']")
+    on = page.locator("#units .unit[data-asset='HYD-03'] button[data-act='biz-start']")
+    off.wait_for()
+    cur = lambda loc: loc.evaluate('b => getComputedStyle(b).cursor')
+    assert off.get_attribute('aria-disabled') == 'true' and cur(on) == 'pointer' and cur(off) != 'pointer', (cur(on), cur(off))
+    before = len([u for u in w.asked if '/api/scenario/C/' in u])
+    off.hover()
+    page.wait_for_function("""() => document.querySelector("#units .unit[data-asset='HYD-03'] .lab-hint").innerText.includes('늦출 발주가 없습니다')""", timeout=4000)      # 까닭이 그 카드의 제자리 줄에
+    off.click(force=True)
+    page.wait_for_timeout(500)
+    assert len([u for u in w.asked if '/api/scenario/C/' in u]) == before                         # 눌러도 요청이 나가지 않는다
+
+
+def test_경보가_꺼지지_않아_새_처리_건이_열리지_않을_때의_안내는_그_화면의_상태_알약에_실제로_나오는_말로_언제_다시_넣을지_말한다(world):
+    """[쿨러 복구]를 누르고 곧바로 다시 주입하면 경보가 아직 꺼지지 않아 새 처리 건이 열리지 않는다(실측: 복구 뒤 알약이 「운전 중」으로 돌아오기까지 약 50초).
+    전에는 카드가 「[쿨러 복구]를 누른 뒤 주입하세요」라고만 했고, 과정 판은 이 화면에 없는 말(「감시 중」 — 설비 회로 화면의 말)을 기다리라고 했다.
+    안내가 꺽쇠로 가리키는 상태 이름이, 조용한 설비의 카드 머리 알약에 실제로 보이는 말과 같아야 한다."""
+    w, page = world, world.page
+    lab_world(w)
+    w.units['HYD-01'] = unit('HYD-01', ts1=57.0, health=0.55)
+    w.phase, w.alert = 'RAISED', 'ALT-1'
+    w.incidents = [{'id': 'INC-1', 'asset': 'HYD-01', 'alertId': 'ALT-1', 'pattern': 'COOLER_DEGRADATION', 'terminal': True, 'state': 'CLOSED'}]
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_function("""() => document.querySelector("#units .unit[data-asset='HYD-01'] .repeat-guide")?.innerText.trim().length > 0""", timeout=15000)
+    guide = page.inner_text("#units .unit[data-asset='HYD-01'] .repeat-guide")
+    idle = page.evaluate("""() => { const head = document.querySelector("#units .unit[data-asset='HYD-02'] header"); return [...head.querySelectorAll('*')].filter(n => !n.children.length).map(n => n.innerText.trim()).filter(Boolean); }""")
+    named = __import__('re').findall(r'「([^」]+)」', guide)
+    assert '쿨러 복구' in guide and named and all(n in idle for n in named), (guide, idle)      # 기다릴 상태 이름 = 조용한 설비의 알약 글

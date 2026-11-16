@@ -338,3 +338,153 @@ def test_반려를_확정하면_서버가_답할_때까지_판이_지금_하는_
         assert len(held) == 1 and held[0].request.post_data_json['decision'] == '반려', '반려 요청이 한 번 나가지 않았다'
         held[0].fulfill(json={})
         page.wait_for_function("() => !document.querySelector('[data-turn-busy]')", timeout=8000)
+
+
+# ------------------------------------------------------------------ 눌러 보기에서 찾은 것(2026-11-16): 조치 카드의 값 조정 · 미리 보기 · 꺼진 승인의 까닭
+def _opt(oid, name, rank, score, actions):
+    return {'id': oid, 'kind': 'control', 'name': name, 'rank': rank, 'score': score, 'sopId': oid.split(':')[1].upper(), 'actions': actions, 'feasible': True,
+            'approver': {'id': 'role:operator', 'name': '운전원', 'level': 1}, 'approvable_roles': ['role:operator'], 'evaluation_mode': 'execution', 'execution_checked': True}
+
+
+_LOAD = {'id': 'action:set-load', 'max': 100, 'min': 60, 'seq': 1, 'code': 'LOAD_SET', 'kind': 'command', 'name': '펌프 부하 설정', 'param': 'load_pct', 'value': 70.0, 'target': 'actr:pump-drive', 'targetName': '펌프 부하 설정'}
+_FAN = {'id': 'action:set-fan', 'max': 100, 'min': 40, 'seq': 1, 'code': 'FAN_SET', 'kind': 'command', 'name': '팬 속도 설정', 'param': 'fan_pct', 'value': 100.0, 'target': 'actr:fan', 'targetName': '팬 인버터'}
+CARD_DEC = {'id': 'DEC-1', 'asset': 'HYD-01', 'recommended': 'skill:sop-cool-11', 'evaluation_mode': 'execution', 'execution_checked': True, 'scenario': {}, 'explanation': '',
+            'roles': {'role:operator': {'id': 'role:operator', 'name': '운전원', 'level': 1, 'deptName': '생산팀'}},
+            'options': [_opt('skill:sop-cool-11', '팬 최대 운전', 1, 3.38, [_FAN]), _opt('skill:sop-cool-13', '부하 낮추기', 2, 3.05, [_LOAD])]}
+
+
+@contextlib.contextmanager
+def _card_page(preview, select=None):
+    """조치 카드(formHandler:select_card)가 열린 처리 건 화면. preview(parameters) → 미리 보기 응답의 options[0] 에 덮을 칸, select() → [승인] 요청의 (status, json)."""
+    task = {**TASK, 'tool': 'formHandler:select_card'}
+    sent = {'preview': [], 'select': []}
+
+    def answer(route):
+        from urllib.parse import urlparse
+        path, method = urlparse(route.request.url).path, route.request.method
+        api = path.split('/api/', 1)[1] if '/api/' in path else ''
+        if api == 'decisions/DEC-1':
+            return route.fulfill(json=CARD_DEC)
+        if api == 'todolist/m2/decision-preview' and method == 'POST':
+            body = route.request.post_data_json
+            sent['preview'].append(body)
+            base = next(o for o in CARD_DEC['options'] if o['id'] == body['option'])
+            acts = [{**a, 'value': body['parameters'].get(a['param'], a['value'])} for a in base['actions']]
+            reviewed = {**base, 'actions': acts, 'reviewed_choice': {'parameters': body['parameters'], 'reference_name': base['name'], 'reference_actions': base['actions']}, **preview(body['parameters'])}
+            return route.fulfill(json={'id': 'rev-1', 'created': '2026-11-16T05:41:00Z', 'scope': {'decision': 'DEC-1', 'option': body['option'], 'workitem': 'm2'},
+                                       'snapshot': {**CARD_DEC, 'options': [reviewed]}})
+        if api == 'todolist/m2/select' and method == 'POST':
+            sent['select'].append(route.request.post_data_json)
+            status, body = select() if select else (200, {})
+            return route.fulfill(status=status, json=body)
+        if api == 'todolist' or api == 'todolist/m2':
+            return route.fulfill(json=[task] if api == 'todolist' else task)
+        if api == 'instances/mine':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'mine')
+            return route.fulfill(json={'instance': {**row, 'variables_data': [{'key': 'decision_id', 'value': 'DEC-1'}], 'end_event': None, 'variable_sources': {}, 'initial_variables': {}},
+                                       'definition': CASE_DEF, 'workitems': [VIEWS['mine'][0], {**VIEWS['mine'][1], 'tool': 'formHandler:select_card'}], 'events': [], 'approvals': [], 'reworks': [],
+                                       'attention': None, 'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        return _answer(route)
+    with _case_page(height=1400) as page:
+        page.route('**/svc/process/api/**', answer)
+        _pick(page, 'd1'); _pick(page, 'mine')
+        page.wait_for_selector('#todoPanel #tdMore', timeout=15000)
+        page.sent = sent
+        yield page
+
+
+def _will(page):
+    """「승인하면 시스템이 …」 한 줄(머리 물음 바로 아래)."""
+    return page.evaluate("() => [...document.querySelectorAll('#todoPanel p')].map(p => p.innerText.trim()).find(t => t.startsWith('승인하면 시스템이')) || ''")
+
+
+def test_값을_바꿔_미리_본_안은_승인하면_일어나는_일이_바꾼_값으로_적히고_승인_요청도_그_값으로_나간다():
+    """눌러 보기(2026-11-16): 부하 70 %인 안을 75 %로 바꿔 미리 본 뒤에도 머리 줄은 「승인하면 시스템이 부하 70 % …를 실행합니다」였고, 승인하면 설비에는 75 %가 나갔다 —
+    화면이 말한 것과 실제로 한 일이 달랐다. 미리 본 뒤의 그 줄에 바꾼 값이 있고 옛 값이 없으며, 값을 바꾸기 전 · 미리 보기 전에는 [승인]이 꺼지고 까닭 줄이 실제 단추 이름으로 할 일을 말한다."""
+    with _card_page(lambda params: {}) as page:
+        page.click('#tdMore')
+        page.locator("input[name=hopt][value='skill:sop-cool-13']").check()
+        page.wait_for_function("document.querySelector('#tdLoad')")
+        before = _will(page)
+        assert '70' in before, before
+        page.locator('summary', has_text='미리 보기').first.click() if not page.locator('#tdLoad').is_visible() else None
+        page.fill('#tdLoad', '75')
+        page.wait_for_function("document.querySelector('#tdGo').disabled")
+        hint = page.inner_text('#todoPanel')
+        assert f"[{page.inner_text('#tdPreview').strip()}]" in hint                                # 꺼진 까닭이 실제 단추 이름으로
+        page.click('#tdPreview')
+        page.wait_for_function("!document.querySelector('#tdGo').disabled", timeout=8000)
+        after = _will(page)
+        assert page.sent['preview'][-1]['parameters'] == {'load_pct': 75} and '75' in after and '70' not in after, (before, after)
+        page.click('#tdGo')
+        for _ in range(60):
+            if page.sent['select']:
+                break
+            page.wait_for_timeout(50)
+        assert page.sent['select'] and page.sent['select'][0]['load_pct'] == 75 and page.sent['select'][0]['review_id'] == 'rev-1', page.sent      # 말한 값과 보내는 값이 같다
+
+
+def test_미리_본_안이_지금_조건에서_실행할_수_없으면_승인이_꺼지고_그_자리에_까닭과_할_일이_있다():
+    """눌러 보기(2026-11-16): 운전 모드가 현장 제어로 바뀐 뒤 미리 보면 서버가 그 안을 제외하는데, [승인]만 꺼지고 왜 꺼졌는지가 단추 줄에 없었다(까닭은 접힌 미리 보기 안에만).
+    꺼진 [승인]과 같은 판 안에 까닭 줄이 생기고, 그 줄이 까닭이 적힌 접기의 실제 이름을 가리키며, 그 접기 안에 서버가 준 제외 사유가 보여야 한다."""
+    why = 'PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치를 쓰지 않는다.'
+    with _card_page(lambda params: {'feasible': False, 'violations': [{'rule': 'rule:x', 'text': why}]}) as page:
+        page.click('#tdMore')
+        fold = page.locator('#todoPanel details', has=page.locator('#tdPreview'))
+        if not fold.evaluate('d => d.open'):
+            fold.locator('summary').first.click()
+        quiet = page.inner_text('#todoPanel')
+        page.click('#tdPreview')
+        page.wait_for_function("document.querySelector('#tdReviewed b')", timeout=8000)
+        assert page.locator('#tdGo').is_disabled()
+        said = page.inner_text('#todoPanel').replace(quiet, '')
+        new = [line for line in page.inner_text('#todoPanel').split('\n') if '승인할 수 없습니다' in line and line not in quiet]
+        name = fold.locator('summary').first.inner_text().split('\n')[0].strip()
+        assert len(new) == 1 and name in new[0] and '반려' in new[0], (new, name, said[:200])      # 까닭 줄 하나: 어디에 까닭이 있는지(접기의 실제 이름)와 할 수 있는 일
+        go, line = page.locator('#tdGo').bounding_box(), page.get_by_text(new[0], exact=True).bounding_box()
+        assert 0 <= line['y'] - (go['y'] + go['height']) < 3 * go['height'], (go, line)              # 꺼진 단추 바로 아래
+        assert page.locator('#tdRejectOpen').is_enabled()                                            # 반려는 할 수 있다
+
+
+def test_서버가_다시_확인하라며_승인을_돌려보내면_까닭_줄이_조치_이름과_실제_단추_이름으로_말한다():
+    """눌러 보기(2026-11-16): 서버의 거절 문장에 든 내부 식별자(skill:…)가 그대로 보였고, 「[미리 보기]로 다시 확인」이라 했는데 화면의 단추 이름은 「예측 다시 보기」였다.
+    식별자는 이름 사전에 있으면 그 이름으로 바뀌고, 까닭 줄이 가리키는 단추 이름이 승인 옆에 새로 나온 단추의 이름과 같아야 한다."""
+    refuse = lambda: (409, {'detail': {'code': 'review_required', 'message': '현재 조건에서 승인을 보류합니다: 권고 카드 skill:sop-cool-11가 규정에 걸려 있다'}})
+    with _card_page(lambda params: {}, refuse) as page:
+        page.evaluate("UI.names['skill:sop-cool-11'] = '팬 최대 운전'")
+        page.wait_for_function("!document.querySelector('#tdGo').disabled", timeout=8000)
+        page.click('#tdGo')
+        page.wait_for_selector('#tdPreviewNow', timeout=8000)
+        text = page.inner_text('#todoPanel')
+        assert 'skill:sop-cool-11' not in text and '「팬 최대 운전」' in text, text[-300:]
+        assert f"[{page.inner_text('#tdPreviewNow').strip()}]" in text, text[-300:]
+
+
+def test_자세한_기록의_사건_줄이_한_번에_보이는_수를_넘으면_남은_건수가_적힌_더_보기가_있고_누르면_그만큼_더_보인다():
+    """눌러 보기(2026-11-16): 이 단추만 옛 꼴 「이전 활동 더 보기 (남은 N건)」이었다(다른 더 보기는 모두 「N건 더 보기」 — 수가 앞). 떠 있는 스택에서 누른 기록도 없었다.
+    단추의 수가 실제로 가려진 줄 수와 같고, 누르면 그 줄들이 보이며 다 보이면 단추가 사라진다. 글의 꼴은 목록의 「처리 완료 N건 더 보기」와 같은 차례(수 → 단위 → 더 보기)다."""
+    events = [{'id': f'e{i}', 'proc_inst_id': 'mine', 'event_type': 'task_started', 'timestamp': _iso(40, i % 60), 'crew_type': 'system', 'job_id': f'j{i}', 'data': {'name': f'사건 {i}'}} for i in range(27)]
+
+    def answer(route):
+        from urllib.parse import urlparse
+        api = urlparse(route.request.url).path.split('/api/', 1)[1]
+        if api == 'instances/mine':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'mine')
+            return route.fulfill(json={'instance': {**row, 'end_event': None, 'variable_sources': {}, 'initial_variables': {}}, 'definition': CASE_DEF, 'workitems': VIEWS['mine'], 'events': events,
+                                       'approvals': [], 'reworks': [], 'attention': None, 'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        return _answer(route)
+    with _case_page(height=1200) as page:
+        page.route('**/svc/process/api/instances/mine', answer)
+        _pick(page, 'd1'); _pick(page, 'mine')
+        page.click('#caseMenu-trigger')
+        page.locator('[role=menuitem]', has_text='자세한 기록').click()
+        page.wait_for_selector('#caseLog [data-events-more]', timeout=8000)
+        shown = lambda: page.locator('#caseLog .event-record').count()
+        first, more = shown(), page.inner_text('#caseLog [data-events-more]')
+        num = int(__import__('re').search(r'(\d+)', more).group(1))
+        done_more = page.inner_text('#instList [data-done-more]')
+        shape = lambda t: __import__('re').sub(r'\d+', 'N', t).split('N', 1)[1].strip()               # 수 뒤의 글(단위 + 더 보기)
+        assert first + num == len(events) and shape(more) == shape(done_more), (first, more, done_more)
+        page.click('#caseLog [data-events-more]')
+        page.wait_for_function("n => document.querySelectorAll('#caseLog .event-record').length === n", arg=len(events), timeout=8000)
+        assert page.locator('#caseLog [data-events-more]').count() == 0
