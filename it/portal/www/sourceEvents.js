@@ -44,7 +44,7 @@
       q('sourceEventDetail').innerHTML=`<header class="panel-head pane-head"><div class="pane-title"><h2>${esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))}${UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')}</h2><p class="num">접수 ${esc(row.id)}${row.received_at?' · '+esc(UI.dateTime(row.received_at)):''}</p></div>
           <div class="pane-acts"><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="sourceEventDetailRefresh" aria-label="이 접수 다시 읽기" data-tooltip="이 접수 다시 읽기" data-side="left">${UI.icon('refresh-cw')}</button></div></header>
         <div class="panel-sec">${kv([['처리 결과',resultLine(row)],['오류',row.error],['받은 방식',sources[row.source]||row.source],['처리 시도',row.attempts!=null?row.attempts+'회'+(row.failures?' · 실패 '+row.failures+'회':''):''],['원본 접수 번호',row.parent_id]])}
-          ${row.result&&row.result.instance?`<p class="pane-foot"><a class="go" href="#/instances/${encodeURIComponent(row.result.instance)}">처리 건 열기</a></p>`:''}</div>
+          ${row.result&&row.result.instance?`<p class="pane-foot"><a class="go" href="#/instances/${encodeURIComponent(row.result.instance)}">처리 건에서 보기</a></p>`:''}</div>
         <div class="panel-sec pane-fold se-folds">${raw(row.payload,'접수 원문')}${row.result&&typeof row.result==='object'?raw(row.result,'처리 결과 원문'):''}${raw(row.policy,'접수 당시 처리 정의')}${raw(row.history,'처리 이력')}
           ${UI.fold('전송 원문과 무결성 확인',kv([['형식',wires[row.wire_kind]||row.wire_kind],['지문(SHA-256)',row.wire_sha],['원문(base64)',row.wire_base64],['토픽',row.topic],['파티션',row.partition_no],['위치(offset)',row.offset_no]]))}</div>`;
       q('sourceEventRetry').hidden=row.status!=='FAILED';

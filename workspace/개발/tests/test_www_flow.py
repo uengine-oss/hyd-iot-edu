@@ -236,3 +236,39 @@ def test_진행_길의_끝남_지금_남음은_밝은_캔버스에서_서로_다
             b.close()
     finally:
         served.close()
+
+
+def test_흐름_그림은_도구_막대가_그림_칸_밖에_서므로_맨_위_상자_위에_빈_띠를_남기지_않는다():
+    """흐름 화면 작업자가 찾은 것(2026-11-16): 긴 흐름을 읽을 크기로 열 때(fitReadable) 그림 위에 56px 를 비웠다 — 도구 막대가 그림에 겹쳐 뜨던 때의 값이다.
+    지금 막대는 그림 칸 위에 따로 서므로 그 자리가 60px 쯤의 빈 띠로 남았다. 흐름 화면의 그림(show)을 실제 브라우저로 잰다: 그림 칸의 윗선에서 보이는 맨 위 상자(차선 틀 포함)까지가
+    상자 한 개 높이의 절반을 넘지 않는다. 처리 건의 흐름 그림은 test_www_instances.py 의 진행 상황 시험이 같은 것을 잰다."""
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from playwright.sync_api import sync_playwright
+    from conftest import ROOT, WWW, Served
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    xml = (ROOT / 'it/process/definitions/shift_handover.bpmn').read_text(encoding='utf-8')
+    gap = """sel => { const stage = document.querySelector(sel + ' .bpmn').getBoundingClientRect();
+        const all = [...document.querySelectorAll(sel + ' .djs-shape')].map(g => g.getBoundingClientRect()).filter(b => b.width > 0 && b.right > stage.left && b.left < stage.right && b.bottom > stage.top);
+        const tasks = [...document.querySelectorAll(sel + ' .djs-shape')].filter(g => !g.classList.contains('is-lane') && g.querySelector('.djs-visual > rect')).map(g => g.getBoundingClientRect()).filter(b => b.width > 60);
+        return { top: Math.round(Math.min(...all.map(b => b.top)) - stage.top), box: Math.round(Math.max(...tasks.map(b => b.height))) }; }"""
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', lambda route: route.fulfill(json={}))
+            page.goto(served.url + '/index.html')
+            page.wait_for_function("() => typeof hydFlow !== 'undefined' && typeof UI !== 'undefined'")
+            page.evaluate("""xml => { const host = document.createElement('div'); host.id = 'longFlowHost'; host.style.width = '900px'; document.querySelector('main .view.active').prepend(host);
+                hydFlow.show(host, { key: 'k2', title: '교대', cap: '판본 1', mine: false, load: async () => ({ xml }) }); }""", xml)
+            page.wait_for_function("() => { const h = document.querySelector('#longFlowHost'); return h._flow && h._flow.D && h._flow.D.viewer.get('canvas').zoom() > 0; }", timeout=20000)
+            page.wait_for_timeout(500)
+            shown = page.evaluate(gap, '#longFlowHost')
+            partial = page.evaluate("() => document.querySelector('#longFlowHost')._flow.D.partial")
+            assert partial is True, '이 시험은 긴 흐름(시작 쪽만 여는 경우)을 재야 한다'
+            assert 0 <= shown['top'] <= shown['box'] / 2, shown
+            b.close()
+    finally:
+        served.close()

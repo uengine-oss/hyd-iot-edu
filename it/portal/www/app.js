@@ -475,7 +475,7 @@ function paintState(card, st) {
 }
 /* 실시간 모니터링의 설비 카드(디자인기준 5-7): 설비의 지금 값이 크게 보이는 곳은 이 화면 하나다(1-2).
    머리 줄(이름 · 상태 알약 · 운전 모드) → 큰 유온과 작은 추이 선 → 눈금 막대(경보 · 정지 자리부터 주황 · 빨강, 지금 값에 핀) → 작은 값 여섯.
-   카드 전체가 그 설비의 추이를 고르는 단추이고, 그 설비에 열린 처리 건이 있을 때만 아래 고정 줄에 「처리 건 열기」가 나타난다 */
+   카드 전체가 그 설비의 추이를 고르는 단추이고, 그 설비에 열린 처리 건이 있을 때만 아래 고정 줄에 「처리 건에서 보기」가 나타난다 */
 const VALUE_CELLS = { PS1: ['plant.ps1', 'bar', 1], FS1: ['plant.fs1', 'L/min', 2], VS1: ['plant.vs1', 'mm/s', 2], CE: ['plant.ce', '%', 0], FanSpeedSP: ['plant.fan', '%', 0], LoadSP: ['plant.load', '%', 0] };
 function monCardHtml(asset) {
   return `<article class="card unit" data-asset="${esc(asset)}"><button type="button" class="unit-pick" aria-pressed="false">
@@ -484,7 +484,7 @@ function monCardHtml(asset) {
     <div class="gauge" role="img" data-f="gauge" style="--hot:${tsPct(TS_HOT)}%;--trip:${tsPct(TS_TRIP)}%"><i data-f="pin"></i></div>
     <div class="gauge-scale" aria-hidden="true" style="--hot:${tsPct(TS_HOT)}%;--trip:${tsPct(TS_TRIP)}%"><span>${TS_MIN}</span><span>경보 ${TS_HOT}</span><span>정지 ${TS_TRIP}</span><span>${TS_MAX}</span></div>
     <dl class="unit-grid">${Object.entries(VALUE_CELLS).map(([k, [term, unit]]) => `<div><dt>${esc(UI.t(term))}</dt><dd class="num"><span data-f="${k}">–</span><small>${unit}</small></dd></div>`).join('')}</dl>
-  </button><footer hidden>${UI.goLink('instances', '처리 건 열기')}</footer></article>`;
+  </button><footer hidden>${UI.goLink('instances', '처리 건에서 보기')}</footer></article>`;
 }
 function paintMonCard(card, asset, u) {
   const t = u.tags, s = u.status;
@@ -512,7 +512,7 @@ document.addEventListener('click', e => {
 /* ---------------- 결함 시뮬레이션(디자인기준 5-7 카드 줄) ----------------
    설비 카드 셋. 카드 한 장 = 그 설비에 일으킬 사건 하나이고, 줄의 차례와 수가 세 카드에서 같다:
      머리 줄(이름 · 상태 알약) → 사건 이름 한 줄(업무 사건은 그 표시 알약) → 그 사건이 보는 값 한 줄 → 단추 줄 둘(첫 줄: 일으키기 · 바깥 사건 / 둘째 줄: 되돌리기)
-     → 현장 패널 접기(오른쪽 끝에 지금 운전 모드) → 아래 고정 줄(그 설비의 처리 건이 있을 때만 「처리 건 열기」).
+     → 현장 패널 접기(오른쪽 끝에 지금 운전 모드) → 아래 고정 줄(그 설비의 처리 건이 있을 때만 「처리 건에서 보기」).
    그 카드에 없는 단추(HYD-01 · HYD-02 의 바깥 사건)는 그 자리를 비워 둔다 — 같은 종류의 단추가 카드마다 같은 줄 · 같은 차례에 선다.
    설비의 큰 값(유온 · 눈금 막대 · 냉각 효율 · 팬 · 부하)은 여기에 두지 않는다 — 실시간 모니터링 한 곳에 있다(1-2).
    HYD-01 은 설비 결함(쿨러 열화 — 유온이 올라 감지기가 경보를 낸다), 나머지는 업무 사건(서버의 GET /api/scenario/status 가 말하는 설비 · 이름 · 단추 — 정기 점검 도래 · 재고 보충 필요).
@@ -524,7 +524,7 @@ function bizOf(asset) {
   return all.find(b => b.asset === asset) || null;
 }
 // 업무 사건의 표시 알약(사건 이름 바로 뒤): 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 처리됨 · 업무 시스템 응답 없음 — 못 읽은 것을 「표시 없음」으로 보이지 않는다.
-// 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 고정 줄 「처리 건 열기」 하나다(알약을 링크로 쓰지 않는다)
+// 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 고정 줄 「처리 건에서 보기」 하나다(알약을 링크로 쓰지 않는다)
 function bizAlertHtml(asset) {
   const pill = (label, tone, why = '') => why ? `<span title="${esc(why)}">${UI.chipText(label, tone)}</span>` : UI.chipText(label, tone);
   if (asset === FAULT_UNIT.asset) return '';
@@ -558,7 +558,7 @@ function bizFactLine(b) {
    일으키기는 카드의 주 단추(단추 줄 첫 자리 — 4-1), 바깥 사건과 되돌리기는 보통 단추다.
    지금 누를 수 없는 단추는 흐리게 두고 도움말과 누른 뒤의 한 줄이 까닭을 말한다(눌러서 아무 일도 없는 단추를 두지 않는다):
    같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409), 바깥 사건은 서버가 준 까닭(scenarios.<키>.events[].why) */
-const BIZ_RUNNING = '진행 중인 처리 건이 있어 새로 시작할 수 없습니다. 카드 아래 「처리 건 열기」로 그 건을 끝낸 뒤 시작하세요.';
+const BIZ_RUNNING = '진행 중인 처리 건이 있어 새로 시작할 수 없습니다. 카드 아래 「처리 건에서 보기」로 그 건을 끝낸 뒤 시작하세요.';
 const labBtn = (act, label, { primary = false, icon = '', tip = '', off = false, attrs = '', cls = '' } = {}) =>
   `<button type="button" class="btn${cls ? ' ' + cls : ''}"${primary ? '' : ' data-variant="outline"'} data-size="sm" data-act="${act}"${attrs ? ' ' + attrs : ''}${off ? ' aria-disabled="true"' : ''}${tip ? ` data-tooltip="${esc(tip)}" data-side="bottom" data-align="start"` : ''}>${icon ? UI.icon(icon) : ''}<span>${esc(label)}</span></button>`;
 const LAB_SLOT = '<span class="btn lab-slot" data-variant="outline" data-size="sm" aria-hidden="true">&nbsp;</span>';      // 그 카드에 없는 단추의 빈 자리(단추와 같은 상자 — 보이지 않는다)
@@ -584,7 +584,7 @@ function labCardHtml(asset) {
         <div class="lab-manual" role="group" aria-label="수동 조작">${manual('fan', '팬 80 %', '적용하면 원격 수동으로 바뀝니다')}${manual('load', '부하 70 %', '적용하면 원격 수동으로 바뀝니다')}${manual('reset', '보호 정지 해제')}</div>
         <dl class="kv"><dt>${esc(UI.t('plant.state'))}</dt><dd class="plc"></dd><dt>${esc(UI.t('plant.lastCmd'))}</dt><dd class="ack"></dd></dl>
       </div></details>`,
-    foot: UI.goLink('instances', '처리 건 열기') });
+    foot: UI.goLink('instances', '처리 건에서 보기') });
 }
 function renderUnits() {
   const box = $('#units');
@@ -684,15 +684,15 @@ function followFault(resumed = false) {
       check: f => { const inc = incidentsFor(asset).find(i => f && f.alert ? i.alertId === f.alert : i.pattern === pattern && !i.terminal); return inc ? { inc: inc.id, ended: inc.terminal } : null; },      // 이 경보로 열린 사건(이미 끝난 것이면 그렇다고 말한다). 경보 번호를 모르면 이 경보 종류(사건의 pattern)의 열린 사건 — 같은 설비의 다른 경보(정기 정비 · 재고) 사건을 잡지 않는다
       done: f => f.ended ? '이 경보로 열린 처리 건은 이미 끝났습니다' : '처리 건이 열렸습니다',
       note: f => f.ended ? '경보가 아직 꺼지지 않아 새 처리 건이 열리지 않습니다. 새로 해 보려면 [쿨러 복구]를 누르고 감지기가 「감시 중」으로 돌아온 뒤 다시 주입하세요.' : 'AI 에이전트가 원인과 조치 후보를 판단합니다',
-      link: f => ({ text: '처리 건 열기', go: () => openIncidentCase(f.inc) }) },
+      link: f => ({ text: '처리 건에서 보기', go: () => openIncidentCase(f.inc) }) },
   ], resumed);
 }
 function followBiz(asset, title) {
-  showFollow(`${asset} ${title} — 처리 건 열기`, [
+  showFollow(`${asset} ${title} — 처리 건이 열릴 때까지`, [
     { key: 'case', label: '처리 건을 여는 중', hint: '흐름 엔진이 업무 데이터를 근거로 처리 건을 엽니다.',
       check: () => { const b = bizOf(asset); return b && b.running ? { inst: b.running.instance } : null; },
       done: () => '처리 건이 열렸습니다', note: () => 'AI 에이전트가 판단을 시작합니다',
-      link: f => ({ text: '처리 건 열기', go: () => { selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(f.inst); } }) },
+      link: f => ({ text: '처리 건에서 보기', go: () => { selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(f.inst); } }) },
   ]);
 }
 // 누가 눌렀나: 이 PC의 담당자(로그인 없음 — inbox.js me). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
@@ -741,7 +741,7 @@ async function unitAction(asset, act, mode, button) {
   } catch (e) {
     // 이미 도는 처리 건 때문에 거절됐으면(409 — 서버가 그 건을 instance · started_at 칸으로 싣는다) 까닭 옆에 그 처리 건으로 가는 길을 둔다
     const running = e.status === 409 && e.body && e.body.instance;
-    logLine('실패: ' + e.message, true, running ? { href: '#/instances/' + encodeURIComponent(e.body.instance), label: `${e.body.started_at ? UI.time(e.body.started_at) + '에 시작한 ' : ''}처리 건 열기` } : null);
+    logLine('실패: ' + e.message, true, running ? { href: '#/instances/' + encodeURIComponent(e.body.instance), label: `${e.body.started_at ? UI.time(e.body.started_at) + '에 시작한 ' : ''}처리 건에서 보기` } : null);
   }
   finally { if (button) button.disabled = false; }
   refreshFast();
@@ -793,7 +793,7 @@ function unitSvg(asset) {
     <circle class="hc-steel" cx="190" cy="120" r="14"/><path class="hc-sym" d="M183 127 L190 110 L197 127 Z"/>
     <text class="hc-cap" x="174" y="100" text-anchor="end">부하 <tspan class="hc-val v-load">–</tspan></text>
     <rect class="hc-steel" x="238" y="28" width="56" height="44" rx="4"/>${fins(248, 284, 35, 65, 9)}
-    <text class="hc-cap" x="294" y="88" text-anchor="middle">냉각 효율</text><text class="hc-val v-ce" x="294" y="103" text-anchor="middle">–</text>
+    <text class="hc-cap" x="294" y="87" text-anchor="middle">냉각 효율</text><text class="hc-val v-ce" x="294" y="105" text-anchor="middle">–</text>
     <g class="hc-fan"><circle class="hc-steel" cx="310" cy="50" r="11"/>
       <path class="hc-blade" d="${blade}"/><path class="hc-blade" d="${blade}" transform="rotate(120 310 50)"/><path class="hc-blade" d="${blade}" transform="rotate(240 310 50)"/></g>
     <text class="hc-cap" x="324" y="22" text-anchor="end">팬 <tspan class="hc-val v-fan">–</tspan></text>
@@ -835,8 +835,19 @@ function renderScada() {
     fan.classList.toggle('stop', !spinning);
     fan.style.setProperty('--spin', (spinning ? (2.4 * 60 / Math.max(10, t.FanSpeedSP)).toFixed(2) : 2) + 's');
   }
-  renderIncList();
+  scadaFit(); renderIncList();
 }
+/* 크게 놓인 회로의 글자는 화면에서 13px 아래로 줄지 않는다(디자인기준 6-1): 그림은 카드 폭에 맞춰 줄어들므로, 줄어든 만큼 글자의 그림 단위 크기를 키운다(넓은 카드에서는 바탕 크기 그대로).
+   센서 원 안의 이름(TS1 · PS1)은 원보다 커질 수 없어, 13px 로 읽히지 않는 폭에서는 그리지 않는다(그 곁의 「유온」 · 「압력」 글이 같은 것을 말한다) */
+function scadaFit() {
+  const card = document.querySelector('#scada .ucard[aria-pressed="true"]'), svg = card && card.querySelector('svg'), m = svg && svg.getScreenCTM();
+  document.querySelectorAll('#scada .ucard').forEach(c => { if (c !== card) { c.style.removeProperty('--hc-cap'); c.style.removeProperty('--hc-val'); c.style.removeProperty('--hc-main'); c.removeAttribute('data-tight'); } });
+  if (!m || !m.a) return;
+  const k = m.a, px = (base, min) => `${Math.max(base, min / k).toFixed(2)}px`;
+  card.style.setProperty('--hc-cap', px(8, 13.2)); card.style.setProperty('--hc-val', px(8.5, 13.4)); card.style.setProperty('--hc-main', px(9.5, 14));
+  card.toggleAttribute('data-tight', 7 * k < 13);
+}
+new ResizeObserver(() => { if (state.tab === 'incidents') scadaFit(); }).observe($('#scada'));
 /* 캔버스 아래 한 줄(#incList): 고른 설비의 지금 상태(운전 모드 · 감지기가 보는 것)와 그 설비의 경보로 열린 처리 건 수, 그리고 가는 길 하나.
    처리 건의 목록 · 상태 이름 · 색은 처리 건 화면이 정본이다 — 이 화면에 그 목록의 사본을 두지 않는다(같은 것을 두 곳 · 두 이름으로 보이지 않는다).
    가는 길: 진행 중인 건이 있으면 그 처리 건, 끝난 건만 있으면 처리 건 화면, 한 건도 없으면 결함 시뮬레이션 */
@@ -848,7 +859,7 @@ function renderIncList() {
   else {
     const s = u.status, d = detOf(asset), rows = incidentsFor(asset), open = rows.filter(i => !i.terminal);
     const cases = !state.incidentsRead ? '처리 건을 읽는 중' : `${esc(asset)}의 경보로 열린 처리 건 <b class="num">${rows.length}</b>건${rows.length ? ` · ${esc(UI.t('inst.running'))} <b class="num">${open.length}</b>` : ''}`;
-    const go = !state.incidentsRead ? '' : open.length ? UI.goLink('instances', '진행 중인 처리 건 열기', `data-open-incident="${esc(open[0].id)}"`) : rows.length ? UI.goLink('instances', '처리 건 열기') : UI.goLink('scenario', `${UI.t('nav.scenario')}에서 결함 넣기`);
+    const go = !state.incidentsRead ? '' : open.length ? UI.goLink('instances', '처리 건에서 보기', `data-open-incident="${esc(open[0].id)}"`) : rows.length ? UI.goLink('instances', '처리 건에서 보기') : UI.goLink('scenario', `${UI.t('nav.scenario')}에서 결함 넣기`);
     html = `<div class="hc-line"><span class="hc-sel"><b>${esc(asset)}</b>${esc(UI.status(s.mode))} · 감지기 ${esc(phaseText(d).replace(/^감지기 /, ''))}${s.cmdId ? ` · ${esc(UI.t('plant.lastCmd'))} ${esc(UI.status(s.result))}` : ''}</span><span class="hc-cases">${cases}</span>${go}</div>`;
   }
   if (box._html !== html) { box.innerHTML = html; box._html = html; }

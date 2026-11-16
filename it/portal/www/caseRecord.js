@@ -165,11 +165,19 @@
       if (s.state === 'idle' && running && ['IN_PROGRESS', 'SUBMITTED'].includes(w.status)) s.state = 'run';
       // 시작은 됐지만 실행 기록 없이 취소된 단계: 한 일의 문장(「명령을 보냈고 …」 · 「회복으로 판정했습니다」)을 만들지 않는다 — 실행하지 않았다는 것과 까닭만 말한다.
       // (입고 대기처럼 그 단계의 만들개가 멈춘 까닭을 스스로 적은 것은 그대로 둔다)
+      /* 닿았다가 취소된 단계(승인 전에 경보가 풀려 건이 닫힘 · 다른 갈래가 먼저 끝남 · 사람이 닫음): 고장이 아니다 — 빨간 「멈춤」이 아니라 보통 색의 「취소」로 보이고(state cancel),
+         한 일의 문장(「명령을 보냈고 …」 · 「승인을 기다리는 중」)을 만들지 않는다. 문장은 「언제 닫혔는지 — 까닭」 한 번이다. 까닭은 서버가 작업 행에 적은 글의 첫 마디(영문 머리 cancelled: 는 뗀다).
+         (입고 대기처럼 그 단계의 만들개가 멈춘 까닭을 스스로 적은 것 — 기한이 먼저 와서 입고가 없는 것 — 은 실제로 밟은 실패 가지라 그대로 둔다) */
       if (w.status === 'CANCELLED' && !s.stopNote) {
-        s.stopNote = UI.logText(w.log) || '취소됨';
-        if (!byTodo.has(w.id) && s.type !== 'approve' && s.type !== 'human') Object.assign(s, { sentence: '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 취소됐습니다.', chips: [], verdict: null, sections: (s.sections || []).filter(x => x && x.raw), notRun: true });
-        // 다시 수행으로 닫힌 앞 차수의 줄(사람이 답하기 전이던 단계 등): 실패가 아니다 — 붉은 표시 없이, 새 차수에서 다시 진행했다는 것만 말한다(까닭 글을 두 번 적지 않는다)
-        if (/^rework superseded/i.test(String(w.log || '').trim())) Object.assign(s, { state: 'idle', stopNote: '', sentence: '다시 수행을 요청해 이 단계는 닫혔고, 새 차수에서 다시 진행했습니다.' });
+        const first = String(w.log || '').split(/;\s*/).map(x => x.trim()).filter(Boolean)[0] || '', own = /^(?:cancelled|취소):\s*(.+)$/i.exec(first);
+        const why = (own && /[가-힣]/.test(own[1]) ? UI.idText(own[1]) : UI.logText(first)).replace(/^취소 — /, '').replace(/[.\s]+$/, '');
+        const started = byTodo.has(w.id) || s.type === 'approve' || s.type === 'human';
+        const when = s.lane === 'person' ? '사람이 처리하기 전에 이 단계가 닫혔습니다' : started ? '일을 끝내기 전에 이 단계가 닫혔습니다' : '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 닫혔습니다';
+        Object.assign(s, { state: 'cancel', stopNote: '', sentence: `${when}${why ? ` — ${why}` : ''}.`, chips: [], verdict: null, now: '', liveBox: '', notRun: !started,
+          // 하지 않은 일의 구획(「누가 · 언제 · 무엇을 — 고른 안 · 추천안 그대로」 · 「처리 메모」)은 두지 않는다. 일을 하다가 닫힌 기계 단계만 그때까지의 기록을 남긴다
+          sections: (s.sections || []).filter(x => x && (started && s.lane !== 'person' ? x.title !== '처리 메모' : x.raw)) });
+        // 다시 수행으로 닫힌 앞 차수의 줄(사람이 답하기 전이던 단계 등): 새 차수에서 다시 진행했다는 것만 말한다(까닭 글을 두 번 적지 않는다)
+        if (/^rework superseded/i.test(String(w.log || '').trim())) Object.assign(s, { state: 'idle', sentence: '다시 수행을 요청해 이 단계는 닫혔고, 새 차수에서 다시 진행했습니다.' });
       }
       steps.push(s);
     });
@@ -923,7 +931,7 @@
   }
 
   /* ---------------------------------------------------------------- 단계 한 줄(디자인기준 4-11, 키트 .steps > .step — UI.timeline 과 같은 마크업)과 그 단계의 옆 판(4-19) */
-  const PIN = { ok: 'done', run: 'now', wait: 'now', idle: 'todo', bad: 'fail', fail: 'fail', stop: 'fail' };
+  const PIN = { ok: 'done', run: 'now', wait: 'now', idle: 'todo', bad: 'fail', fail: 'fail', stop: 'fail', cancel: 'todo' };      // 취소는 보통 색(남음과 같은 점) + 「취소」 알약
   const PREFIX = { bad: '기준 밖 — ', fail: '실패 — ' };
   const MARK = { done: 'check', fail: 'x', mine: 'user' };
   // 단계마다 모아 두던 값(세는 숫자 · 값)은 옆 판 안의 한 줄로 — 알약에는 상태 낱말만 넣는다(디자인기준 4-5)
@@ -1128,7 +1136,7 @@
     const busy = s.state === 'run' && s.lane !== 'person' && !myTurn;
     const hold = s.state === 'wait' && s.w && s.w.status === 'PENDING';
     const pill = myTurn ? UI.chipText('내 차례', 'mine') : s.state === 'bad' ? UI.chipText('기준 밖', 'danger') : s.state === 'fail' ? UI.chipText('실패', 'danger')
-      : s.state === 'stop' ? UI.chipText('멈춤', 'danger') : hold ? UI.chipText('보류', 'warning') : '';
+      : s.state === 'stop' ? UI.chipText('멈춤', 'danger') : s.state === 'cancel' ? UI.chipText('취소', 'neutral') : hold ? UI.chipText('보류', 'warning') : '';
     const names = [...new Set(String(s.actor || '').split(' · ').filter(Boolean))];
     const who = (names.length ? names : [LANE[s.lane]]).join(' · ') + (s.gen ? ` · ${s.gen + 1}${UI.t('inst.gen')}` : '');
     let say;
@@ -1136,6 +1144,7 @@
     const handing = s.type === 'agent' && !s.live && s.state === 'run' && !s.t1;
     if (handing) say = '결과를 냈습니다 — 다음 단계로 넘기는 중';
     else if (s.type === 'agent' && s.live && !failed) say = s.awaiting ? '일을 받기를 기다리는 중' : s.now || '일하는 중';      // ① 지금 하는 일 한 줄: 부르는 도구 이름과 물음
+    else if (s.type === 'agent' && s.state === 'cancel') say = s.sentence;
     else if (s.type === 'agent') {
       const f = agentFront(s, m), err = [...(s.rows || [])].reverse().find(r => r.kind === 'error'), stopped = ['fail', 'stop'].includes(s.state);
       say = f.verdict || (stopped && err ? err.text : stopped ? '결론을 내지 못하고 끝났습니다.' : s.sentence || '');

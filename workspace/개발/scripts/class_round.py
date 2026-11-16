@@ -2060,13 +2060,13 @@ def lab_08_trends(r: Round):
         # 경보 시각 · 측정값: 처리 건의 경보(alert.t · evidence)와 그 처리 건 진행 상황의 에이전트 근거가 같은 구간인가
         inc = vars_of(view["instance"]).get("incident")
         ev = alert.get("evidence") or {}
-        # 설비 회로(app.js renderIncList): 설비를 고르면 그 설비의 경보로 열린 처리 건 수와 [진행 중인 처리 건 열기] 하나가 나온다 — 사건 목록의 사본은 두지 않는다
+        # 설비 회로(app.js renderIncList): 설비를 고르면 그 설비의 경보로 열린 처리 건 수와 「처리 건에서 보기」 하나가 나온다 — 사건 목록의 사본은 두지 않는다
         r.tab("incidents")
         page.locator("#scada .ucard[data-asset='HYD-01']").click(); page.wait_for_timeout(1200)
         line = txt(r, "#incList")
         mine_open = len(running_on(r, "HYD-01"))
         n = re.search(r"진행 중\s*(\d+)", line)
-        r.check("설비 회로: HYD-01 을 고르면 그 설비의 처리 건 수(진행 중 = 처리 건 API)와 [진행 중인 처리 건 열기]가 나온다",
+        r.check("설비 회로: HYD-01 을 고르면 그 설비의 처리 건 수(진행 중 = 처리 건 API)와 「처리 건에서 보기」가 나온다",
                 "HYD-01의 경보로 열린 처리 건" in line and bool(n) and int(n.group(1)) == mine_open and page.locator("#incList [data-open-incident]").count() == 1,
                 f"{line.replace(chr(10), ' ')} · API 진행 중 {mine_open}")
         card_ = vars_of(view["instance"]).get("guide_card") or {}
@@ -2076,7 +2076,7 @@ def lab_08_trends(r: Round):
         made = datetime.fromisoformat(str(dec.get("created")).replace("Z", "+00:00"))
         r.check("에이전트가 근거로 든 측정값은 경보 뒤 · 판단 전 구간에서 읽은 값", bool(evs) and alert_t <= made and all(e.get("coverage", {}).get("covered") for e in evs[:2]),
                 f"경보 {alert_t:%H:%M:%S} · 판단 {made:%H:%M:%S} · 근거 {[(e.get('id'), round(float(e.get('value') or 0), 2)) for e in evs[:3]]}", kind="quality")
-        # 원인 근거(진단 카드의 증거)는 설비 회로 화면에 사본을 두지 않는다 — [진행 중인 처리 건 열기] → 처리 건의 진행 상황에서 본다
+        # 원인 근거(진단 카드의 증거)는 설비 회로 화면에 사본을 두지 않는다 — 「처리 건에서 보기」 → 처리 건의 진행 상황에서 본다
         page.locator("#incList [data-open-incident]").click()
         opened = r.wait(15, lambda: page.evaluate("id => state.tab === 'instances' && hydInstances.I.sel === id && !!hydInstances.I.view", pid), every=0.5)
         page.wait_for_timeout(1500)
@@ -2089,7 +2089,7 @@ def lab_08_trends(r: Round):
             record = page.locator("[data-cr-sheet-box]").inner_text()
             page.locator("[data-cr-sheet-box] [data-cr-sheet-close]").click()
         shown = [e for e in evs[:2] if e.get("name") and e["name"] in record]
-        r.check("설비 회로의 [진행 중인 처리 건 열기]로 연 처리 건(사건 " + str(inc) + ")의 AI 단계 옆 판(판단)에 에이전트가 든 근거 이름이 보인다", bool(opened) and bool(evs)
+        r.check("설비 회로의 「처리 건에서 보기」로 연 처리 건(사건 " + str(inc) + ")의 AI 단계 옆 판(판단)에 에이전트가 든 근거 이름이 보인다", bool(opened) and bool(evs)
                 and len(shown) == len(evs[:2]), f"{[(e.get('name'), e.get('value')) for e in evs[:2]]}")
         r.check("경보 근거 값(유온 · 냉각 효율)이 패턴 문장의 기준을 넘었다(함께 움직인 값 ≠ 원인 단정)", float(ev.get("ts1") or 0) > 55 and float(ev.get("ce") or 100) < 70,
                 json.dumps(ev, ensure_ascii=False)[:200], kind="quality")
@@ -3120,10 +3120,10 @@ def lab_17_shift_handover(r: Round):
     inst = new_instance(r, known, did, 30)
     r.check('교대 시작 폼으로 한 처리 건 시작', bool(inst))
     if inst:
-        # 시작한 결과가 흐름 화면에 남는다: 「처리 건을 시작했습니다」와 그 처리 건으로 가는 「처리 건 열기」(flows.js startNow)
+        # 시작한 결과가 흐름 화면에 남는다: 「처리 건을 시작했습니다」와 그 처리 건으로 가는 「처리 건에서 보기」(flows.js startNow)
         link = page.locator("#flowNote [data-flow-started] a.go")
         r.wait(10, lambda: link.count() > 0, every=0.5)
-        r.check('시작한 뒤 흐름 화면에 「처리 건 열기」가 그 처리 건을 가리킨다', link.count() > 0 and (link.first.get_attribute("href") or "").endswith(inst['proc_inst_id']),
+        r.check('시작한 뒤 흐름 화면에 「처리 건에서 보기」가 그 처리 건을 가리킨다', link.count() > 0 and (link.first.get_attribute("href") or "").endswith(inst['proc_inst_id']),
                 txt(r, "#flowNote")[:200])
     if not inst:
         return

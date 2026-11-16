@@ -62,7 +62,7 @@ def test_다른_화면에서_만든_에이전트가_흐름_화면을_다시_열�
 def test_제한_단계의_교대_흐름은_열린_칸만_그리고_저장해도_나머지_단계_설정이_그대로이며_머리의_주_단추_하나로_등록하고_시작한다(world):
     """전에는 고칠 수 없는 칸 백여 개를 꺼진 입력 칸으로 그렸다. 지금은 읽기 전용 표에 서버가 연 칸(흐름 이름 · 초안 단계의 AI 에이전트)만 입력 칸이다 —
     저장 함수가 화면에 없는 칸을 빈 값으로 읽어 시작 조건 · 갈림 조건을 지우지 않는지를 서버에 저장된 단계 설정으로 본다.
-    이어서 머리의 주 단추 하나([판본 등록] → [처리 건 시작])로 끝까지 가고, 시작한 결과(「처리 건 열기」)가 흐름 화면에 남는지 본다."""
+    이어서 머리의 주 단추 하나([판본 등록] → [처리 건 시작])로 끝까지 가고, 시작한 결과(「처리 건에서 보기」)가 흐름 화면에 남는지 본다."""
     from playwright.sync_api import sync_playwright
     status, out = world.api('DELETE', f'/api/flows/{FLOW}?by={ME}')
     assert status in (200, 404), out
@@ -125,6 +125,42 @@ def test_제한_단계의_교대_흐름은_열린_칸만_그리고_저장해도_
             link.wait_for(timeout=15000)
             assert link.get_attribute('href').startswith(f'#/instances/{FLOW}.') and not page.evaluate("document.getElementById('flowsStart').open")
             assert page.evaluate('state.tab') == 'flows'                           # 화면을 떠나지 않고 결과가 이 화면에 남는다
+            b.close()
+    finally:
+        served.close()
+
+
+def test_다른_화면이_여는_흐름은_시작_단추_대신_그_화면으로_가는_링크를_둔다(world):
+    """「에이전트에게 질문하기」는 질문하기 화면이 질문마다 여는 흐름이다 — 흐름 화면에서 「시작 가능」 · [처리 건 시작]으로 보이면 학생이 여기서 시작하는 흐름으로 읽는다."""
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+
+    def answer(route):
+        parts = urlsplit(route.request.url)
+        if not parts.path.startswith('/svc/process/') or parts.path.endswith('/stream'):
+            return route.fulfill(json={}) if not parts.path.startswith('/svc/process/') else route.abort()
+        path = parts.path[len('/svc/process'):] + (f'?{parts.query}' if parts.query else '')
+        status, out = world.api(route.request.method, path, json.loads(route.request.post_data) if route.request.post_data else None)
+        return route.fulfill(status=status, json=out)
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'flows')
+            row = page.locator("#flowList [data-open='ask_agent']").first
+            row.wait_for(timeout=15000)
+            assert row.locator('.tag').inner_text() == '질문하기가 씀'
+            row.click()
+            link = page.locator('#flowHead a.go')
+            link.wait_for(timeout=15000)
+            page.wait_for_function("document.querySelector('#flowHead .pane-title p').textContent.includes('질문하기 화면이 시작합니다')", timeout=15000)
+            assert link.inner_text() == '질문하기에서 시작' and page.locator('#flowHead #flowStartOpen').count() == 0
+            link.click()
+            page.wait_for_function("state.tab === 'ask'", timeout=8000)
             b.close()
     finally:
         served.close()

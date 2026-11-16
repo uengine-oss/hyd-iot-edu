@@ -41,7 +41,7 @@
     finally { O.sending = false; render(); }
   }
 
-  // 결과(결론 먼저 — 폼 바로 아래, 보낸 뒤에만 나타난다): 경보를 만들었는가(알약) → 서버가 준 까닭 → 어느 흐름이 여는가 → 아래 고정 줄의 「처리 건 열기」
+  // 결과(결론 먼저 — 폼 바로 아래, 보낸 뒤에만 나타난다): 경보를 만들었는가(알약) → 서버가 준 까닭 → 어느 흐름이 여는가 → 아래 고정 줄의 「처리 건에서 보기」
   function resultHtml() {
     const r = O.last;
     if (!r) return '';
@@ -50,7 +50,7 @@
     return UI.card({ cls: 'oil-result', attrs: 'role="status"', title: '보낸 결과', chips: UI.chipText('경보를 만들었습니다', 'warning'),
       body: `<p>${esc(r.reason)}</p><dl class="kv"><dt>맡은 흐름</dt><dd>${esc(target.name || '흐름')} <span class="muted">판본 ${esc(target.version || '')}</span></dd>
         <dt>여는 길</dt><dd>${esc(r.route === 'response' ? '배포된 흐름' : '사람 검토')} · ${esc(r.route_text)}</dd></dl>`,
-      foot: r.instance ? UI.goLink('instances', '처리 건 열기', `data-open-inst="${esc(r.instance)}"`) : '' });
+      foot: r.instance ? UI.goLink('instances', '처리 건에서 보기', `data-open-inst="${esc(r.instance)}"`) : '' });
   }
 
   function render() {

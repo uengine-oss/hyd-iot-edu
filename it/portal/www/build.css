@@ -1,5 +1,5 @@
 /* build.css — 흐름 · AI 에이전트 무리의 배치: 흐름(#/flows) · 에이전트 · 스킬(#/agents) · 도구 연결(#/mcp) · 질문하기(#/ask).
-   그리는 코드: flows.js · definitionDeploy.js · definitionRegistry.js · agents.js · agentsPanel.js · mcp.js · ask.js
+   그리는 코드: flows.js · definitionDeploy.js · definitionRegistry.js · agents.js · mcp.js · ask.js
    부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다(디자인기준.md 4절). 이 파일에는 이 무리의 화면 배치만 두고, 숫자 대신 2절의 이름을 쓴다. 다른 무리의 규칙을 덮어쓰지 않는다. */
 
 /* ================================================================= 흐름 · AI 에이전트 공통: 상세 칸 안에서 쓰는 목록 줄(쓰는 스킬 · 도구 서버 · 맡은 단계 · 쓰는 에이전트 — 부품은 portal-kit.css 의 .rows > .row 하나) */
@@ -7,8 +7,6 @@
 :is(#view-agents, #view-mcp) .panel .rows > .row > .go { justify-self: end; }
 :is(#view-agents, #view-mcp) .panel .rows > .row:not(:hover) > .go { visibility: hidden; }      /* 가는 길은 올렸을 때만(줄마다 같은 글을 늘어놓지 않는다) */
 :is(#view-agents, #view-mcp) .panel .rows > div.row { cursor: default; }
-/* 상세 칸의 구역: 선 하나로 가르고 위아래로 숨을 쉰다(상세 칸은 --pad-card 가 0 이라 구역이 선에 붙는다) */
-:is(#view-flows, #view-agents, #view-mcp) .split > .panel .panel-sec:not(.pane-fold) { padding-block: var(--pad-sec, 20px); }
 :is(#view-flows, #view-agents, #view-mcp) .split > .panel .pane-grid > .panel-sec { padding-top: 20px; }
 .ag-step { display: inline-flex; align-items: center; gap: 4px; font-weight: 400; color: var(--muted-foreground); }
 .pane-next { margin-top: 8px; }
@@ -31,6 +29,7 @@
 .ag-map { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ag-form > .alert { margin-bottom: 16px; }
 .ag-form .ag-wide { grid-column: 1 / -1; }
+.ag-form textarea[data-f="content"] { min-height: 320px; }      /* SKILL.md 한 장을 쓰는 칸 */
 .ag-form .fieldset > .muted { margin: 8px 0 0; }
 .ag-form > .fold { margin-top: 12px; }
 .ag-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 10px 16px; }
@@ -77,7 +76,8 @@
 .mcp-filter { max-width: 280px; margin: 12px 0 8px; }
 .mcp-calls > li > .line { padding-inline: 0; }
 .mcp-calls > li > .line:hover { background: none; }
-.mcp-call-body { padding-left: 30px; display: grid; gap: 6px; }
+.mcp-call-body { padding-left: 30px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.mcp-call-body code.inline { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }      /* 입력 · 결과 요약은 두 줄까지 — 전체는 [입력 · 결과 전체 보기] */
 .mcp-call-acts { display: flex; gap: 16px; flex-wrap: wrap; }
 .mcp-call-acts .btn { height: auto; padding: 0; }
 .mcp-form .mcp-wide { grid-column: 1 / -1; }
@@ -220,5 +220,3 @@
 .composer-send { flex: none; width: 32px; height: 32px; border-radius: 50%; }
 @media (max-width: 900px) { .chat-col { min-height: 0; } .chat-bottom { position: static; background: none; } }
 @media (max-width: 640px) { .ask-bubble { max-width: 100%; } .composer-bar > .muted { display: none; } .composer-bar > .select { max-width: none; flex: 1; } .composer-send { margin-left: auto; } }
-/* 좁은 폭: 상세 머리의 단추 줄은 이름 아래 왼쪽 끝에서 시작한다(머리 왼쪽에 아이콘 칸이 없다) */
-@media (max-width: 640px) { :is(#view-flows, #view-agents, #view-mcp) .pane-head > .pane-acts { margin-left: 0; } :is(#view-flows, #view-agents, #view-mcp) .pane-head > .pane-title { flex-basis: 100%; } }

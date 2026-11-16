@@ -129,10 +129,15 @@ REPORT = {'outcome': '정상', 'level': 'ok', 'title': 'HYD-01 긴급 대응 결
 ROWS = [_row('mine', '냉각 긴급 대응 HYD-01', 'RUNNING', 40, current_activity_ids=['T_approve']),
         _row('ai', '냉각 긴급 대응 HYD-02 — 이름이 아주 긴 처리 건도 목록 줄에서 상태 알약을 밀어내지 않는다', 'RUNNING', 41, current_activity_ids=['T_agent']),
         _row('q1', '질문에 답하기', 'COMPLETED', 39, proc_def_id='ask_agent'),
-        *[_row(f'd{i}', f'끝난 건 {i}', 'COMPLETED', 30 - i, variables_data=[{'key': 'result_report', 'value': REPORT}]) for i in range(1, 6)]]
+        *[_row(f'd{i}', f'끝난 건 {i}', 'COMPLETED', 30 - i, variables_data=[{'key': 'result_report', 'value': REPORT}]) for i in range(1, 6)],
+        _row('cx', '승인 전에 닫힌 건', 'COMPLETED', 10, end_label='조치 전 해소')]
 VIEWS = {
     'mine': [_wi('m1', 'T_agent', 'DONE', 40, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
              _wi('m2', 'T_approve', 'IN_PROGRESS', 40, agent_orch=None, user_id='role:operator', tool='formHandler:approve')],
+    # 승인 전에 경보가 풀려 닫힌 건: 닿았다가 취소된 사람 단계(서버가 적은 까닭 글은 영문 머리 + 한국어)
+    'cx': [_wi('c1', 'T_agent', 'DONE', 10, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
+           _wi('c2', 'T_approve', 'CANCELLED', 10, agent_orch=None, user_id='role:operator', tool='formHandler:approve', end_date=_iso(10, 40), log='cancelled: 조치 전 해소 — 사건 조치 전 자연 회복(경보 해제), 조치 전 종료; '),
+           _wi('c3', 'T_cmd', 'CANCELLED', 10, reached_at=None, tool='incident:command', log='취소: 조치 전 해소; ')],
     'd1': [_wi('a1', 'T_agent', 'DONE', 29, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
            _wi('a2', 'T_approve', 'DONE', 29, agent_orch=None, user_id='role:operator', tool='formHandler:approve', output={'approval': '승인'}),
            _wi('a3', 'T_cmd', 'DONE', 29, tool='incident:command'), _wi('a4', 'R_ok', 'DONE', 29, tool='process:report', output={'result_report': REPORT}),
@@ -219,13 +224,13 @@ def test_목록은_거르기_단추_없이_내_차례_진행_중_처리_완료_�
               ink: getComputedStyle(row.querySelector('.row-title')).color }; });
           return { kids, rows, filters: document.querySelectorAll('#view-instances .case-side .seg, #instTabs').length }; }""")
         assert got['filters'] == 0
-        assert got['kids'] == ['G:내 차례', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 3건 더 보기'], got['kids']
+        assert got['kids'] == ['G:내 차례', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 4건 더 보기'], got['kids']
         assert all(r['sameLine'] and r['metaBelow'] and r['noOverlap'] for r in got['rows']), got['rows']
         assert len({r['pillRight'] for r in got['rows']}) == 1, got['rows']                      # 상태 알약은 모든 줄에서 같은 세로선(오른쪽 끝)
         open_ink = {r['ink'] for r in got['rows'] if not r['done']}; done_ink = {r['ink'] for r in got['rows'] if r['done'] and r['id'] != page.evaluate('hydInstances.I.sel')}
         assert got['rows'][0]['done'] is False and len(done_ink) == 1 and not (open_ink & done_ink), (open_ink, done_ink)      # 끝난 줄은 옅게
         page.click('#instList [data-done-more]')
-        page.wait_for_function("() => document.querySelectorAll('#instList .row[data-done]').length === 6")
+        page.wait_for_function("() => document.querySelectorAll('#instList .row[data-done]').length === 7")
         assert page.locator('#instList [data-done-more]').count() == 0
 
 
@@ -286,3 +291,24 @@ def test_진행_상황의_단계_줄은_점이_한_세로선에_서고_줄을_�
         page.locator('#casePath .djs-shape[data-element-id="T_cmd"]').click()
         page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open]', timeout=5000)
         assert page.locator('dialog.sheet[data-cr-sheet-box] h2').inner_text() == '냉각 명령' and page.locator('dialog.sheet[data-cr-sheet-box]').is_visible()
+
+
+def test_취소된_단계의_점과_알약은_실패의_빨강이_아니라_남은_단계와_같은_보통_색이고_그림도_멈춤으로_칠하지_않는다():
+    """정상 취소(승인 전에 경보가 풀려 건이 닫힘)를 고장처럼 보이지 않는다 — 실제 브라우저에서 칠해진 색으로 판정한다: 취소된 단계의 점은 실패 단계의 점과 다른 색이고
+    알약은 상태 색이 없는 보통 알약이며, 화면에 영문 머리(cancelled)가 없고 까닭은 한 번만 읽힌다. 흐름 그림의 그 상자에는 멈춤 표시가 없다."""
+    with _case_page() as page:
+        page.click('#instList [data-done-more]')
+        _pick(page, 'cx')
+        got = page.evaluate("""() => { const st = document.querySelector("#instRecord .step[data-step='c2']"), cs = e => getComputedStyle(e);
+          const probe = document.createElement('div'); probe.className = 'steps'; probe.innerHTML = '<div class="step" data-state="fail"><span class="step-mark"></span></div><div class="step" data-state="todo"><span class="step-mark"></span></div>'; document.querySelector('#instRecord').appendChild(probe);
+          const [fail, todo] = [...probe.querySelectorAll('.step-mark')].map(m => cs(m).backgroundColor); const mark = cs(st.querySelector('.step-mark')).backgroundColor; probe.remove();
+          const pill = st.querySelector('.tag'), neutral = document.createElement('span'); neutral.className = 'tag'; st.appendChild(neutral); const plain = cs(neutral).backgroundColor; neutral.remove();
+          return { mark, fail, todo, pill: pill.innerText, pillBg: cs(pill).backgroundColor, plain, text: document.getElementById('instDetail').innerText }; }""")
+        assert got['mark'] == got['todo'] and got['mark'] != got['fail'], got
+        assert got['pill'] == '취소' and got['pillBg'] == got['plain'], got
+        assert 'cancelled' not in got['text'].lower() and got['text'].count('사건 조치 전 자연 회복') == 1 and '멈춤' not in got['text'], got['text']
+        page.click("#instDetail [data-case-view='flow']")
+        page.wait_for_selector('#casePath .bpmn .djs-shape', timeout=20000)
+        page.wait_for_timeout(600)
+        flow = page.evaluate("() => ({ cls: document.querySelector('#casePath .djs-shape[data-element-id=\"T_approve\"]').getAttribute('class'), tips: [...document.querySelectorAll('#casePath .bpmn-tip')].map(t => t.innerText) })")
+        assert 'is-fail' not in flow['cls'] and 'is-todo' in flow['cls'] and flow['tips'] == [], flow

@@ -1070,7 +1070,7 @@ async function refreshProcess() {
   try {
     const all = requireList(await getJ(API.process + '/api/decisions'), '판단 목록');
     ent.decisions = all.filter(orphan); ent.decisionsError = '';
-    // 판단 → 그 판단이 속한 처리 건: 거래 줄의 「처리 건 열기」가 쓴다(거래는 판단 번호만 갖는다)
+    // 판단 → 그 판단이 속한 처리 건: 거래 줄의 「처리 건에서 보기」가 쓴다(거래는 판단 번호만 갖는다)
     ent.decCase = new Map(all.map(d => [d.id, (((d.origin || {}).process_scope) || {}).instance]).filter(([, inst]) => inst));
   } catch (e) { ent.decisionsError = e.message; }
   try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions?limit=12')]); ent.entError = ''; } catch (e) { ent.entState = null; ent.tx = []; ent.entError = e.message; }
@@ -1177,7 +1177,7 @@ function txRecordHtml(x) {
     esc(txNote(x)), `<span class="mono">${esc(x.ref || x.id || '–')}</span>`];
   const inst = ent.decCase && ent.decCase.get(x.decision);      // 이 거래를 낳은 판단이 속한 처리 건(없으면 링크를 두지 않는다)
   return `<article class="event-record"><details class="tx"><summary>${cells.map((c, i) => `<span data-col="${esc(TX_COLS[i])}">${c}</span>`).join('')}` +
-    `<span class="tx-go">${inst ? UI.goLink('instances', '처리 건 열기', `data-open-inst="${esc(inst)}"`) : ''}</span>${UI.icon('chevron-down')}</summary>` +
+    `<span class="tx-go">${inst ? UI.goLink('instances', '처리 건에서 보기', `data-open-inst="${esc(inst)}"`) : ''}</span>${UI.icon('chevron-down')}</summary>` +
     `<div class="tx-body"><p class="muted">${esc(window.hydWords.system(x.system))} · ${esc(UI.who(x.by))}</p>${txDiff(x)}${UI.raw(x)}</div></details></article>`;
 }
 function renderSystems() {
@@ -1206,7 +1206,7 @@ function renderSystems() {
   const all = ent.tx, shown = ent.txAll ? all : all.slice(0, TX_SHOWN);
   const openIds = new Set([...document.querySelectorAll('#txList details.tx[open]')].map(d => d.dataset.tx));
   $('#txList').innerHTML = shown.length ? `<div class="tx-head" aria-hidden="true">${TX_COLS.map(c => `<span>${esc(c)}</span>`).join('')}</div>` + shown.map(txRecordHtml).join('') + UI.moreButton(all.length - shown.length, 'data-tx-more', { unit: '건' })
-    : UI.empty({ title: '아직 거래가 없습니다', sub: '처리 건에서 조치를 승인하면 업무 시스템이 실행한 거래가 여기에 남습니다.', action: { label: '처리 건 열기', tab: 'instances' } });
+    : UI.empty({ title: '아직 거래가 없습니다', sub: '처리 건에서 조치를 승인하면 업무 시스템이 실행한 거래가 여기에 남습니다.', action: { label: '처리 건에서 보기', tab: 'instances' } });
   $('#txList').querySelectorAll('details.tx').forEach((d, i) => { d.dataset.tx = shown[i].id || shown[i].ref || String(i); if (openIds.has(d.dataset.tx)) d.open = true; });
 }
 document.getElementById('view-process').addEventListener('click', e => {

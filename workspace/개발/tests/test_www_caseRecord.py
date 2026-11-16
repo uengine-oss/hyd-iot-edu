@@ -159,7 +159,7 @@ def test_가지_않은_길의_단계는_단계_기록의_본줄에_서지_않고
     wis[1]['reached_at'] = T0
     got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ steps: m.steps.map(s => [s.title, s.sentence || '']), skipped: m.skipped.map(x => x.name) })", view(wis, ['T_cmd', 'T_obs', 'R_rej']))
     assert got['skipped'] == ['효과 확인']
-    assert ['냉각 명령', '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 취소됐습니다.'] in got['steps']
+    assert ['냉각 명령', '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 닫혔습니다 — 처리 건이 끝남 — 반려 종결.'] in got['steps']      # 한 일의 문장이 아니라 닫혔다는 것과 까닭 한 번
 
 
 def test_효과_확인이_늘어나면_연장됐다는_것과_까닭을_말하고_판정_전을_판정_중했습니다로_적지_않는다():
@@ -364,3 +364,27 @@ def test_정비_요청_결과는_같은_말을_두_번_적지_않고_업무_시�
     assert link == 'process' and '업무 시스템 기록에서 보기' in text
     text, link = card({'outcome': '반려', 'verdict': 'rejected', 'title': 'HYD-01 냉각 조치 결과', 'summary': '담당자가 반려했습니다'})
     assert link is None and '업무 시스템 기록' not in text, text
+
+
+def test_승인_전에_닫혀_취소된_단계는_멈춤이_아니라_보통_색의_취소이고_까닭은_한국어로_한_번만_말한다():
+    """감독이 본 결함(2026-11-16): 승인 전에 경보가 풀려 「조치 전 해소」로 닫힌 건의 「운전원 승인」이 빨간 ✕ · 빨간 「멈춤」으로 서고, 문장이
+    「운전원 · cancelled: 조치 전 해소 — … — cancelled: 조치 전 해소 — …」로 영문 머리와 같은 말이 두 번 읽혔다. 정상 취소를 고장처럼 보이면 화면이 거짓말을 한다.
+    옆 판에도 하지 않은 승인의 구획(「고른 안 – 추천안 그대로」)이 섰다. 흐름 그림도 그 상자를 멈춤(빨간 테)으로 칠했다."""
+    log = 'cancelled: 조치 전 해소 — 사건 조치 전 자연 회복(경보 해제), 조치 전 종료; '
+    wis = [{'id': 'w1', 'activity_id': 'T_ok', 'activity_name': '운전원 승인', 'tool': 'formHandler:select_card', 'status': 'CANCELLED', 'agent_orch': None, 'user_id': 'role:operator',
+            'start_date': T, 'end_date': T, 'reached_at': T, 'log': log}]
+    v = view(wis, ['T_ok'])
+    v['definition']['activities'][0]['type'] = 'userTask'
+    got = run(FILES + ['instanceSteps.js', 'flow.js'], """const m = hydRecord.build(DATA, { agents: [], people: [] }, []); const s = m.steps.find(x => x.w); const p = hydRecord.rowParts(s, m, new Set(), new Set());
+      const strip = h => h.replace(/<[^>]+>/g, '|').replace(/\\|+/g, '|');
+      out({ state: s.state, dot: p.state, busy: p.busy, pill: (p.row.match(/<span class="tag"[^>]*>[^<]*<\\/span>/) || [''])[0], row: strip(p.row),
+            sheet: strip(hydRecord.detailGroups(s, [], m).filter(g => g.key !== 'raw').map(g => g.html).join('')), memo: UI.logText(DATA.workitems[0].log),
+            mark: hydFlow.marksOf(DATA).st.T_ok, node: hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance).nodes.map(n => n.state) })""", v)
+    assert got['state'] == 'cancel' and got['dot'] == 'todo' and got['busy'] is False, got            # 실패(fail)의 빨간 점이 아니다
+    assert got['pill'] == '<span class="tag">취소</span>', got['pill']                                 # 색 없는 보통 알약
+    why = '조치 전 해소 — 사건 조치 전 자연 회복(경보 해제), 조치 전 종료'
+    for text in (got['row'], got['sheet'], got['memo']):
+        assert 'cancelled' not in text.lower() and text.count(why) <= 1, text
+    assert got['row'].count(why) == 1 and '닫혔습니다' in got['row'] and '멈춤' not in got['row'], got['row']
+    assert '추천안 그대로' not in got['sheet'] and '고른 안' not in got['sheet'], got['sheet']          # 하지 않은 승인을 한 것처럼 적지 않는다
+    assert got['mark'] == 'cancel' and got['node'] == ['cancel'], got                                  # 흐름 그림도 멈춤으로 칠하지 않는다

@@ -47,9 +47,6 @@
 #sourceEventMessage { font-size: var(--fs-xs); line-height: 18px; }
 #sourceEventDetail:empty, #sourceEventRetry[hidden] { display: none; }
 #sourceEventRetry .textarea { width: 100%; }
-/* 두 칸 틀은 상세 칸의 좌우 여백을 0 으로 둔다(--pad-card) — 구역(.panel-sec)의 위아래는 띄운다 */
-#sourceEventsPanel .panel > :is(#sourceEventDetail, form).panel-sec, #sourceEventDetail > .panel-sec { padding-block: 20px; }
-#sourceEventDetail > .pane-fold { padding-block: 6px; }
 #sourceEventDetail .pane-foot { margin-top: var(--gap-block); }
 
 /* ================================================================= 성과 지표(kpi.js) — 현황(5-4, 본: shadcn/ui dashboard-01 SectionCards)

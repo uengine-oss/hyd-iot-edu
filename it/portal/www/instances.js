@@ -604,7 +604,7 @@
     on('tdRejectCard', 'click', () => rejectCard(task));
     on('tdPreview', 'click', () => previewCard(task, parameters));
     on('tdPreviewNow', 'click', () => previewCard(task, parameters));
-    box.querySelectorAll('details').forEach(el => { const key = el.querySelector('summary')?.textContent; if (folds.has(key)) el.open = folds.get(key); });
+    box.querySelectorAll('details').forEach(el => { const key = el.querySelector('summary')?.textContent; if (folds.has(key) && !el.hasAttribute('data-ap-open')) el.open = folds.get(key); });      // 고른 안 · 추천 안의 값은 늘 편 채로
     if (I.form.needPreview) { const fold = $('#tdPreview')?.closest('details'); if (fold) fold.open = true; }
     if (I.busy) box.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = true; });
     else if (focused?.id) { const next = document.getElementById(focused.id); next?.focus({ preventScroll: true }); if (caret && next?.setSelectionRange) next.setSelectionRange(...caret); }

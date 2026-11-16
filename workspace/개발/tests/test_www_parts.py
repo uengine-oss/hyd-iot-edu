@@ -380,3 +380,22 @@ def test_다시_그려도_사람이_편_접기는_열린_채이고_처음_나온
       host.remove(); return { first, kept, closed, fresh }; }""")
     assert got == {'first': [False, False], 'kept': [True, False], 'closed': [False, False], 'fresh': [False, False, True]}, got
 
+
+
+@pytest.mark.parametrize('tab', SCREENS)
+def test_두_칸_틀의_오른쪽_칸에서_선으로_가른_구역의_글은_선에_붙지_않는다(portal, tab):
+    """지식 · 판단 실험 · 관리 작업자가 같은 것을 짚었다(2026-11-16): 두 칸 틀(목록 + 상세 · 조건 + 결과)의 오른쪽 칸은 좌우 여백(--pad-card)을 0 으로 두는데,
+    구역(.panel-sec)의 위아래까지 0 이 되어 글이 구역을 가르는 선에 붙었고 무리마다 따로 덮어 썼다. 공통 규칙이 위아래를 카드 안 여백(2-4 --pad-card)만큼 띄운다.
+    두 칸 틀을 쓰는 화면마다 그 오른쪽 칸에 구역 둘을 실제로 그려, 둘째 구역의 윗선에서 글까지와 첫 구역의 글에서 아랫선까지를 실제 브라우저로 잰다(좌우는 0 그대로)."""
+    page = portal
+    page.evaluate("() => document.getElementById('partsProbe')?.remove()")
+    open_screen(page, tab)
+    got = page.evaluate("""() => { const col = [...document.querySelectorAll('main .view.active :is(.split > :last-child, .io > .io-out)')].find(c => c.offsetParent); if (!col) return null;
+      const box = document.createElement('div'); box.id = 'partsProbe'; box.innerHTML = '<section class="panel-sec"><p data-a>첫 구역의 글</p></section><section class="panel-sec"><p data-b>둘째 구역의 글</p></section>'; col.appendChild(box);
+      const r = e => e.getBoundingClientRect(), [s1, s2] = box.querySelectorAll('.panel-sec'), a = r(box.querySelector('[data-a]')), b = r(box.querySelector('[data-b]'));
+      const want = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pad-card')), line = parseFloat(getComputedStyle(s2).borderTopWidth);
+      const out = { want, line, above: Math.round(b.top - r(s2).top - line), below: Math.round(r(s1).bottom - a.bottom), left: Math.round(a.left - r(s1).left) }; box.remove(); return out; }""")
+    if got is None:
+        return                                   # 두 칸 틀을 쓰지 않는 화면
+    assert got['want'] >= 16 and got['line'] >= 1, got
+    assert got['above'] >= got['want'] and got['below'] >= got['want'] and got['left'] == 0, (tab, got)

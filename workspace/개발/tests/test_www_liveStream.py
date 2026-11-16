@@ -206,3 +206,48 @@ def test_이어지는_일은_다음_사실을_기다려_한_줄씩_채우고_한
             b.close()
     finally:
         served.close()
+
+
+def test_작업_행을_처음_읽어_오는_동안_지나간_도구_호출도_줄로_붙고_머리_줄의_점은_하나다():
+    """흐름 · 에이전트 화면 작업자가 찾은 것(2026-11-16): 재생이 빨리 지나가면 실시간 상자(hydLive.agentWork)에 「아직 기록이 없습니다」가 남은 채 도구 호출이 지나갔다 —
+    작업 행을 처음 읽어 오는 동안 온 실시간 줄을 받지 않았기 때문이다. 머리 줄에는 점이 둘(일하는 중 · 연결 상태) 그려졌다.
+    실제 화면 부품을 실제 브라우저에서: 작업 행 응답을 붙잡아 둔 채 도구 호출 이벤트를 밀어 넣고, 응답이 오기 전에 그 줄이 보이는지 본다."""
+    from playwright.sync_api import sync_playwright
+    served = _serve()
+    held = []
+    world = Extraction()
+
+    def answer(route):
+        if route.request.url.split('?')[0].endswith('/api/todolist/' + WID):
+            held.append(route)                                         # 첫 읽기를 붙잡아 둔다(느린 서버)
+            return None
+        return world.answer(route)
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1200, 'height': 800})
+            page.add_init_script(FAKE_ES)
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            page.wait_for_function("() => window.hydLive && window.hydStream && hydStream.connected()", timeout=15000)
+            page.evaluate("""([wid, inst]) => { const host = document.createElement('div'); host.id = 'workProbe'; document.querySelector('main .view.active').prepend(host);
+              window.__work = hydLive.agentWork(host, {}); __work.set({ items: [{ id: wid, instance: inst, state: 'run' }], running: true, since: new Date().toISOString(), headline: 'AI 에이전트가 일하는 중' }); }""", [WID, INST])
+            page.wait_for_function("() => document.querySelector('#workProbe .lv-seg')")
+            page.wait_for_timeout(300)
+            assert len(held) == 1                                       # 작업 행은 아직 오지 않았다
+            page.evaluate("es => es.forEach(e => __sse.push(e))", [world.event('task_started', {'goal': '원문 근거로 SOP 제안'}, stored=False),
+                                                                    world.event('tool_usage_started', {'tool': 'mcp__neo4j-readonly__get_neo4j_schema', 'tool_use_id': 'u1', 'input': {}}, stored=False),
+                                                                    world.event('tool_usage_finished', {'tool': 'mcp__neo4j-readonly__get_neo4j_schema', 'tool_use_id': 'u1', 'output': '{}'}, stored=False)])
+            page.wait_for_selector('#workProbe [data-lv-body] .tr-row.tr-k-tool', timeout=5000)      # 작업 행이 오기 전에 도구 호출 줄이 보인다
+            text = page.inner_text('#workProbe [data-lv-body]')
+            assert '아직 기록이 없습니다' not in text, text
+            dots = page.evaluate("""() => { const head = document.querySelector('#workProbe .stream-head'); const shown = (el, pseudo) => { const cs = getComputedStyle(el, pseudo); return cs.display !== 'none' && cs.content !== 'none' && parseFloat(cs.width) > 0; };
+              return head.querySelectorAll('.dot').length + [...head.querySelectorAll('*')].filter(el => shown(el, '::before') && getComputedStyle(el, '::before').borderRadius === '50%').length; }""")
+            assert dots == 1, dots
+            held[0].fulfill(json=dict(id=WID, proc_inst_id=INST, activity_id='T', activity_name='원문 근거로 SOP 제안', status='IN_PROGRESS', draft_status=None, start_date=datetime.now(timezone.utc).isoformat(),
+                                      end_date=None, user_id='sys:agent', agent_mode='COMPLETE', agent_orch='cliagents', consumer='w', log=None, output=None, generation=0, tool='x', events=[]))
+            page.wait_for_timeout(600)
+            assert page.locator('#workProbe [data-lv-body] .tr-row.tr-k-tool').count() == 1          # 늦게 온 작업 행(그 줄이 아직 없는 판)이 이미 붙은 줄을 지우지 않는다
+            b.close()
+    finally:
+        served.close()

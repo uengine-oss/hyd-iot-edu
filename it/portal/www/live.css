@@ -38,6 +38,8 @@
 .lv-work-head { justify-content: space-between; flex-wrap: wrap; }
 .lv-now { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .lv-now .lv-time { font-size: var(--fs-xs); color: var(--muted-foreground); }
+/* 머리 줄의 점은 하나다(지금 일하는 중인지) — 연결 상태는 글로만 적는다(점이 둘이면 어느 것이 무엇인지 읽히지 않는다) */
+.lv-work-tools .live-conn::before { display: none; }
 .lv-work-tools { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; font-size: var(--fs-xs); color: var(--muted-foreground); }
 .lv-work-note { margin: 10px 14px 0; color: var(--muted-foreground); font-size: var(--fs-sm); line-height: 20px; }
 .lv-work-note[hidden] { display: none; }

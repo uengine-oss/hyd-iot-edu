@@ -4,7 +4,6 @@
 
 /* 결과 칸(5-2): 결론 → 숫자 넷 → 구역들 → 원문 접기. 두 칸 틀은 결과 칸의 좌우 여백을 0 으로 두는데(--pad-card), 구역(.panel-sec)의 위아래까지 0 이 되면
    구역 머리가 앞 구역의 글에 붙는다 — 이 무리의 결과 칸은 구역 위아래를 카드 안 여백만큼 띄운다 */
-.trial .io-out .panel > .panel-sec { padding-block: 20px; }
 .trial .io-out .panel > .panel-sec:last-child { padding-bottom: 0; }
 .trial .io-out .panel > .turn-facts > div { padding-inline: 16px; }
 .trial .io-out .panel > .turn-facts > div:first-child { padding-left: 0; }

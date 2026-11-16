@@ -38,7 +38,6 @@
 .case-meta { margin-top: 6px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
 .case-bar { grid-column: 1 / -1; margin-top: 12px; }
 .case-bar:empty { display: none; }
-.case-bar > .pbar { width: 100%; }
 #caseTop > * + * { margin-top: 12px; }
 #caseNotes:empty { display: none; }
 #caseNotes { margin-top: 8px; }
@@ -52,8 +51,6 @@
 /* 진행 상황 카드: 구역 머리(4-8) + 오른쪽 끝 세그먼트(목록 / 흐름 그림), 아래 고정 줄에 흐름 이름과 「흐름 보기 →」 */
 .case-progress > header > h3 { font-size: var(--fs-sm); line-height: 20px; font-weight: 500; color: var(--muted-foreground); }
 .case-progress > footer { justify-content: space-between; font-size: var(--fs-sm); }
-/* 카드 아래 고정 줄은 위 선 하나뿐이다(4-15) — 키트가 주는 옅은 바탕을 쓰지 않고, 카드의 아래 여백과 겹치지 않게 한다 */
-.case :is(.case-result, .case-progress) > footer { background: none; padding-bottom: 0; }
 .case-progress #casePath[hidden], .case-progress #instRecord[hidden] { display: none; }
 
 /* ───────── 내가 할 일(.turn)의 펼친 자리 · 까닭 줄 ───────── */
@@ -83,6 +80,8 @@
 /* 승인 판의 「다른 안 고르기」: 고를 수 있는 안 전부를 후보 비교 표(.opts)로 */
 .ap-choices td:first-child { width: 36px; }
 .ap-choices label { cursor: pointer; }
+.ap-detail > summary { min-height: 28px; padding: 2px 0; font-size: var(--fs-sm); font-weight: 400; color: var(--muted-foreground); }
+.ap-detail > .fold-body { padding: 4px 0 8px; }
 .opts td .rank { vertical-align: 1px; }
 .ap-card { display: grid; gap: 8px; }
 .ap-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -239,17 +238,6 @@ ol.cr-list { list-style: decimal; }
 .case-table tr[data-status="CANCELLED"] td:first-child { text-decoration: line-through; text-decoration-color: var(--ring); }
 .case-table td.case-memo { max-width: 48ch; white-space: normal; font-size: var(--fs-sm); color: var(--foreground); }
 .case-events { max-height: 360px; padding: 0; }
-/* 모든 처리 건의 실시간 활동(liveStream.js): 거르는 묶음 단추 · 연결 상태 · 잠시 멈춤, 그 아래 처리 건 · 단계별로 묶은 줄 */
-.activity-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.activity-head .seg { flex-wrap: wrap; }
-.activity-conn { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
-.activity-list { max-height: 420px; padding: 0; margin-top: 8px; }
-.activity-list .line { cursor: pointer; }
-.activity-group { display: flex; gap: 8px; align-items: baseline; width: 100%; padding: 10px 8px 2px; border-top: 1px solid var(--border); font-size: var(--fs-sm); text-align: left; cursor: pointer; }
-.activity-group:first-child { border-top: 0; }
-.activity-group b { font-weight: 600; }
-.activity-group:hover b { color: var(--foreground); }
-
 /* 흐름 화면의 그림 아래 한 줄(flow.js show): 어느 그림인지(판본 · 초안) · 알림 — 캔버스 위에는 도구 막대 하나만 둔다 */
 .rework-who { display: grid; gap: 12px; margin-top: 12px; }
 /* 실행의 알림 줄(재생한 결과 글의 조회 값 안내 등): 옆 판의 AI 결론 아래와, 그 글을 읽고 결정하는 「내가 할 일」 카드 */
@@ -274,21 +262,9 @@ ol.cr-list { list-style: decimal; }
 .td-prose { margin: 0; max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .td-count { font-variant-numeric: tabular-nums; }
 
-/* 지금: <단계> — <누가> <무엇을 하는 중> (처리 건 머리글의 한 줄) */
-.td-now { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
-.td-now > b { color: var(--foreground); }
-
 /* 판단 근거 · 에이전트 판단 메시지 · 조건 · 점수 구성 — 상자를 겹치지 않고 이름표와 1px 선으로 가른다 */
 .td-basis { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .td-basis-title { margin: 0 0 4px; font-size: var(--fs-xs); line-height: 16px; font-weight: 600; color: var(--muted-foreground); }
 .td-note { margin: 4px 0; padding: 8px 12px; border-radius: 8px; background: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 .td-cond { margin: 2px 0; font-size: var(--fs-sm); }
 .td-part { display: inline-block; margin: 0 8px 2px 0; font-size: var(--fs-sm); white-space: nowrap; }
-
-/* 「자세한 기록」 안의 AI 에이전트 서비스 상태(agentsPanel.js) */
-.agents-service { margin-bottom: 14px; }
-.agents-service > .fold { border-top: 0; }
-.agents-state { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: var(--fs-sm); line-height: 21px; color: var(--foreground); }
-.agents-state > .dot { margin-top: 7px; }
-.agents-group + .agents-group { margin-top: 16px; }
-.agents-group > h3 { margin: 0 0 8px; font-size: var(--fs-sm); font-weight: 600; }

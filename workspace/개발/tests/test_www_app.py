@@ -131,7 +131,7 @@ def test_결함_주입_뒤의_과정은_사실이_올_때만_다음_줄로_넘�
     assert steps(page)[-1] == ['case', 'run']
     w.incidents.append({'id': 'INC-new', 'asset': 'HYD-01', 'alertId': 'ALT-new', 'state': 'GUIDE_RECEIVED', 'terminal': False, 'created': '2026-01-01T00:01:00Z'})
     wait_step(page, 'case', 'ok')
-    assert page.inner_text("#labFollow .lv-step[data-step='case'] [data-lv-go]") == '처리 건 열기'
+    assert page.inner_text("#labFollow .lv-step[data-step='case'] [data-lv-go]") == '처리 건에서 보기'
     # 과정 판은 설비 카드 아래에 펼쳐진다 — 누른 카드를 아래로 밀어내지 않는다
     assert page.evaluate("document.getElementById('labFollowPanel').getBoundingClientRect().top >= document.getElementById('units').getBoundingClientRect().bottom")
     assert '56.2' in page.inner_text("#labFollow .lv-step[data-step='rise']")      # 넘어간 때의 값이 그 줄에 남는다
@@ -360,6 +360,17 @@ def test_설비_회로는_고른_설비를_크게_나머지를_작게_놓아_캔
         r = page.evaluate("Object.fromEntries([...document.querySelectorAll('#scada .ucard')].map(c => { const b = c.getBoundingClientRect(); return [c.dataset.asset, [Math.round(b.left), Math.round(b.top), Math.round(b.width)]]; }))")
         assert r['HYD-03'][1] < r['HYD-01'][1] == r['HYD-02'][1] and r['HYD-03'][2] > 1.8 * r['HYD-01'][2], r
         assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 0
+        # 더 좁은 폭(390 · 640): 그림이 카드 폭에 맞춰 줄어도 크게 놓인 회로의 글자는 13px 아래로 줄지 않고(줄어든 만큼 글자를 키운다), 글자끼리 겹치지 않으며, 카드는 한 줄에 하나(390)
+        for width in (640, 390):
+            page.set_viewport_size({'width': width, 'height': 844})
+            page.wait_for_timeout(400)
+            got = page.evaluate('''() => { const big = document.querySelector('#scada .ucard[aria-pressed="true"]'), k = big.querySelector('svg').getScreenCTM().a;
+              const ts = [...big.querySelectorAll('svg text')].filter(t => t.textContent.trim() && t.getBoundingClientRect().width > 0), R = t => t.getBoundingClientRect();
+              return { small: ts.map(t => [...t.querySelectorAll('tspan'), t].map(n => [n.textContent, +(parseFloat(getComputedStyle(n).fontSize) * k).toFixed(1)])).flat().filter(x => x[1] < 13),
+                hit: ts.flatMap((a, i) => ts.slice(i + 1).filter(b => R(a).left < R(b).right - 1 && R(b).left < R(a).right - 1 && R(a).top < R(b).bottom - 1 && R(b).top < R(a).bottom - 1).map(b => [a.textContent, b.textContent])),
+                lefts: new Set([...document.querySelectorAll('#scada .ucard')].map(c => Math.round(c.getBoundingClientRect().left))).size, over: document.documentElement.scrollWidth - innerWidth }; }''')
+            assert not got['small'] and not got['hit'] and got['over'] <= 0, (width, got)
+            assert got['lefts'] == (1 if width == 390 else 2), (width, got['lefts'])
     finally:
         page.set_viewport_size({'width': 1440, 'height': 900})
 
@@ -523,7 +534,7 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도�
 
 def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_꺼져_있고_서버가_겹쳐_열기를_거절하면_그_처리_건으로_가는_길을_준다(world):
     """한 바퀴 23: 정기 정비 처리 건이 진행 중인데 [정기 정비 시작]이 켜져 있어 누르면 409 가 났다. 누를 수 없으면 꺼 두고 까닭을 한 줄로 말하며,
-    그 건으로 가는 길(카드 아래 고정 줄 「처리 건 열기」)을 둔다. 화면이 아직 모르는 사이에 눌러 서버가 409 로 거절하면, 까닭 옆에 그 처리 건으로 가는 링크가 붙는다."""
+    그 건으로 가는 길(카드 아래 고정 줄 「처리 건에서 보기」)을 둔다. 화면이 아직 모르는 사이에 눌러 서버가 409 로 거절하면, 까닭 옆에 그 처리 건으로 가는 링크가 붙는다."""
     w, page = world, world.page
     running = {'instance': 'c3_pm.1', 'status': 'RUNNING', 'started_at': '2026-11-14T00:08:43Z', 'ended_at': None, 'outcome': None}
     posts = []
@@ -534,7 +545,7 @@ def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_�
     start.wait_for(timeout=8000)
     assert start.get_attribute('aria-disabled') == 'true' and '진행 중인 처리 건이 있어' in start.get_attribute('data-tooltip')
     go = page.locator("#units .unit[data-asset='HYD-02'] > footer .go")
-    assert go.is_visible() and go.inner_text().strip() == '처리 건 열기' and go.get_attribute('data-open-inst') == 'c3_pm.1'      # 그 건으로 가는 길
+    assert go.is_visible() and go.inner_text().strip() == '처리 건에서 보기' and go.get_attribute('data-open-inst') == 'c3_pm.1'      # 그 건으로 가는 길
     assert not page.locator("#units .unit[data-asset='HYD-03'] > footer").is_visible()                                            # 진행 중인 건이 없는 카드에는 그 줄이 없다
     # 아래 고정 줄이 있는 카드와 없는 카드에서 단추 · 현장 패널 접기의 높이가 같다
     cards = page.evaluate(LAB_ROWS)
@@ -549,7 +560,7 @@ def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_�
     page.click("#units .unit[data-asset='HYD-02'] button[data-act='biz-start']")
     page.wait_for_selector('#scenarioMsg a.go')
     assert '이미 진행 중입니다' in page.inner_text('#scenarioMsg') and page.get_attribute('#scenarioMsg', 'data-tone') == 'danger'
-    assert page.get_attribute('#scenarioMsg a.go', 'href') == '#/instances/c3_pm.1' and page.inner_text('#scenarioMsg a.go').strip().endswith('처리 건 열기')
+    assert page.get_attribute('#scenarioMsg a.go', 'href') == '#/instances/c3_pm.1' and page.inner_text('#scenarioMsg a.go').strip().endswith('처리 건에서 보기')
     page.click('#scenarioMsg a.go')
     page.wait_for_function("location.hash === '#/instances/c3_pm.1'")
 
@@ -573,7 +584,7 @@ def test_실시간_모니터링의_설비_카드는_열린_처리_건이_있을_
 
 
 def test_오일_분석_입력은_폼_한_칸이고_보낸_결과가_폼_아래에_나오며_처리_건이_열리면_그리로_가는_길을_준다(world):
-    """빈 오른쪽 결과 칸을 두지 않는다 — 결과는 보낸 뒤에만, 폼 바로 아래에 나타난다. 기준 이탈을 보내 처리 건이 열리면 결과 카드의 아래 고정 줄에 「처리 건 열기」가 있다."""
+    """빈 오른쪽 결과 칸을 두지 않는다 — 결과는 보낸 뒤에만, 폼 바로 아래에 나타난다. 기준 이탈을 보내 처리 건이 열리면 결과 카드의 아래 고정 줄에 「처리 건에서 보기」가 있다."""
     w, page = world, world.page
     w.extra['/svc/process/api/human-alerts/form'] = {'assets': ['HYD-01', 'HYD-02', 'HYD-03'], 'patterns': [{'code': 'OIL_ANALYSIS', 'items': [{'key': 'tan', 'text': '산가 TAN', 'unit': 'mgKOH/g'}, {'key': 'water', 'text': '수분', 'unit': 'ppm'}]}]}
     w.extra['/svc/process/api/users/me'] = {'id': 'user:me', 'name': '담당자', 'roles': []}
@@ -602,7 +613,7 @@ def test_오일_분석_입력은_폼_한_칸이고_보낸_결과가_폼_아래�
     assert w.sent_oil['asset'] == 'HYD-02' and w.sent_oil['out_of_spec'] is True and w.sent_oil['by'] == 'user:me'
     assert not errors, errors      # 보낸 뒤의 알림이 모르는 색 이름으로 콘솔 오류를 내지 않는다
     go = page.locator('.oil-result footer .go')
-    assert go.inner_text().strip() == '처리 건 열기' and go.get_attribute('data-open-inst') == 'alert_triage.9'
+    assert go.inner_text().strip() == '처리 건에서 보기' and go.get_attribute('data-open-inst') == 'alert_triage.9'
     go.click()
     page.wait_for_function("state.tab === 'instances'")
     # 기준 안: 경보를 만들지 않았다는 결과가 같은 자리에, 가는 길 없이

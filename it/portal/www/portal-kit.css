@@ -273,7 +273,10 @@ main:focus { outline: none; }
 .split, .io { display: grid; grid-template-columns: var(--list-w) minmax(0, 1fr); gap: 0; align-items: start; }
 .split > *, .io > * { min-width: 0; }
 .split > :first-child, .io > .io-in { padding-right: 20px; }
-.split > :last-child, .io > .io-out { --pad-card: 0px; min-height: calc(100dvh - var(--top-h) - 264px); padding-left: 32px; border-left: 1px solid var(--border); }
+.split > :last-child, .io > .io-out { --pad-card: 0px; --pad-sec: 20px; min-height: calc(100dvh - var(--top-h) - 264px); padding-left: 32px; border-left: 1px solid var(--border); }
+/* 오른쪽 칸은 상자가 아니라서 좌우 여백(--pad-card)을 0 으로 둔다. 선으로 가른 구역(.panel-sec)의 위아래까지 0 이 되면 글이 선에 붙으므로, 위아래는 2-4 의 카드 안 여백과 같은 값(--pad-sec 20px)으로 띄운다.
+   접기 한 줄짜리 구역(.pane-fold)은 제 값(6px)을 쓴다 */
+:is(.split > :last-child, .io > .io-out) .panel-sec:not(.pane-fold) { padding-block: var(--pad-sec); }
 .split > :last-child .panel-head:first-child, .split > :last-child .panel-sec:first-child, .io-out > .panel:first-child > :is(.panel-head, .panel-sec):first-child { padding-top: 0; }
 .split[data-wide-list] { grid-template-columns: minmax(var(--list-w), 360px) minmax(0, 1fr); }
 :is(.io-in, .io-in > .panel) > .panel-head { padding: 0 0 12px; min-height: 44px; align-items: center; }
@@ -326,7 +329,7 @@ main:focus { outline: none; }
 .more-link:hover { color: var(--foreground); background: var(--accent); }
 /* 판(.panel)은 상자가 아니라 구역이다: 머리(.panel-head) → 선으로 가른 절(.panel-sec). 나란히 쌓인 판은 선 하나로 가른다 */
 .panel { --pad-card: 0px; min-width: 0; }
-:is(.panel, .split, .io) :is(.turn, .card, .stream, .lv-work, .step-card, .unit, .stat, .alert) { --pad-card: 20px; }
+:is(.panel, .split, .io) :is(.turn, .card, .stream, .lv-work, .unit, .stat, .alert) { --pad-card: 20px; }
 .panel + .panel { margin-top: var(--gap-block); padding-top: var(--gap-block); border-top: 1px solid var(--border); }
 .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: var(--pad-card) var(--pad-card) 20px; }
 .panel-head h2 { font-size: var(--fs-lg); line-height: 24px; font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -431,7 +434,6 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); fo
 /* ───────── 내가 할 일(.turn): 내 차례일 때만 뜨는 카드. 배치는 case.css ───────── */
 .turn { border: 1px solid color-mix(in srgb, var(--st-mine) 45%, transparent); border-radius: var(--r-card); background: var(--card); overflow: hidden; }
 .turn-head { display: flex; align-items: flex-start; gap: 16px; padding: var(--pad-card) var(--pad-card) 16px; }
-.turn-badge { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: color-mix(in srgb, var(--st-mine) 16%, transparent); color: var(--st-warn-ink); flex: none; }
 .turn-eyebrow { font-size: var(--fs-xs); font-weight: 600; color: var(--st-warn-ink); display: flex; align-items: center; gap: 8px; }
 .turn-eyebrow .late { color: var(--st-warn-ink); font-weight: 550; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .turn-eyebrow .late::before { content: "·"; color: var(--ring); margin-right: 4px; }
@@ -447,7 +449,6 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); fo
 .turn-foot .who { margin-left: auto; font-size: var(--fs-xs); color: var(--muted-foreground); }
 @media (max-width: 900px) { .turn-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .turn-facts > div:nth-child(2) { border-right: 0; } .turn-facts > div:nth-child(-n+2) { border-bottom: 1px solid #eef0f6; } }
 
-.wait-note { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border: 1px dashed var(--border); border-radius: var(--r-card); background: var(--accent); color: var(--foreground); font-size: var(--fs-sm); }
 .form-foot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: var(--gap-block); }
 .form-foot { flex-wrap: wrap; }
 .form-foot > [role="status"] { margin-right: auto; font-size: var(--fs-sm); }
@@ -521,30 +522,19 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); fo
 .step-main { min-width: 0; }
 .step-head { display: flex; align-items: center; gap: 8px; min-height: 24px; flex-wrap: wrap; }
 .step-title { font-weight: 500; font-size: var(--fs-body); line-height: 22px; }
-.step-sub, .step-who { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
+.step-sub { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
 .step-sub { display: block; }
-.step-who .ic { width: 13px; height: 13px; }
 .step-time { margin-left: auto; font-size: var(--fs-sm); color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .step-body { grid-column: 2; margin-top: 4px; }
-.step-say { color: var(--foreground); max-width: 70ch; }
-.step-card { margin-top: 10px; border: 1px solid var(--border); border-radius: var(--r-in); background: #fff; overflow: hidden; }
-.step-card > .result { padding: 18px 20px; }
 .result-label { font-size: var(--fs-xs); font-weight: 600; color: var(--muted-foreground); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
 .result-main { font-size: var(--fs-body); line-height: 23px; font-weight: 600; }
 .result-sub { margin-top: 4px; color: var(--foreground); font-size: var(--fs-sm); }
-.step-card > .fold { padding: 0 20px; }
-.step-card > .fold:first-of-type { border-top: 1px solid var(--border); }
-.step-evid { padding: 16px 20px; border-top: 1px solid var(--border); }
-.step-foot { display: flex; justify-content: flex-end; padding: 6px 12px; border-top: 1px solid var(--border); background: var(--muted); }
-.cr-open { gap: 6px; color: var(--foreground); }      /* 단계의 자세한 내용을 옆 판으로 여는 단추 */
-.cr-open > .muted { font-weight: 400; }
-.step-main > .cr-open { margin: 4px 0 0 -10px; }
 .evid { display: grid; gap: 8px; }
 .evid li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; font-size: var(--fs-sm); color: var(--foreground); }
 .evid li .ic { margin-top: 3px; color: var(--muted-foreground); width: 14px; height: 14px; }
 .evid b { color: var(--foreground); font-weight: 600; }
 /* 4-12 진행 막대(UI.progress → .pbar): 높이 4px · 바탕 --border · 채움 --primary. 센 값(끝난 단계 / 전체)으로만 채운다 — 시간으로 차오르게 하지 않는다 */
-.pbar { display: block; height: 4px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.pbar { display: block; width: 100%; height: 4px; border-radius: 4px; background: var(--border); overflow: hidden; }
 .pbar > i { display: block; height: 100%; border-radius: 4px; background: var(--primary); transition: width .8s var(--ease); }
 
 /* ───────── 실시간 줄(기준 7절의 바탕 — 치수와 단계 목록은 live.css): AI 가 방금 한 일이 한 줄씩 붙는다 ───────── */
@@ -702,9 +692,9 @@ dialog.flow-dialog .canvas { height: min(760px, calc(100dvh - 96px)); border: 0;
 .card > header > p { flex-basis: 100%; order: 3; font-size: var(--fs-sm); color: var(--muted-foreground); }
 .card > header > .card-action { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 .card > section > :first-child { margin-top: 0; }
-.card > footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+.card > footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px; padding-bottom: 0; border-top: 1px solid var(--border); background: none; }      /* 아래 고정 줄은 위 선 하나뿐 — 키트가 주는 옅은 바탕을 쓰지 않고, 카드의 아래 여백과 겹치지 않는다 */
 .card > :where(:not(header):not(section):not(footer)) { margin-inline: var(--pad-card); }      /* header · section 없이 바로 내용을 넣은 카드 */
-:is(.panel, .split, .io) :is(.turn, .card, .stream, .lv-work, .step-card, .unit, .stat, .alert) { --pad-card: 20px; }
+:is(.panel, .split, .io) :is(.turn, .card, .stream, .lv-work, .unit, .stat, .alert) { --pad-card: 20px; }
 /* 4-17 숫자 카드(UI.statCard → .stat): 설명(13px 보조) → 큰 숫자(28px) → 아래 한 줄 보조. 상태 알약은 오른쪽 위(본: shadcn SectionCards).
    누르면 다른 화면으로 가는 카드(a.stat)는 맨 아래 고정 줄에 그 화면 이름과 화살표를 둔다 */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--gap-block); }
@@ -816,8 +806,6 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 .lv-work > :is(.lv-work-note, .lv-work-conn) { margin: 0 14px; }
 .lv-work > .lv-work-body { padding: 0 14px 12px; }
 .lv-work .lv-log { border-color: var(--border); border-radius: 8px; }
-.lv-now > b::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--primary); vertical-align: 1px; animation: blink 1.6s steps(2) infinite; }
-.lv-now:has(.tr-spin) > b::before { display: none; }
 .lv-wait { color: var(--foreground); }
 .btn.lv-busy { cursor: progress; }
 
@@ -832,10 +820,6 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 .pane-list-note { padding: 14px; }
 .pane-list-note > .empty { border: 0; padding: 14px 8px; }
 .pane-head { justify-content: flex-start; gap: 14px; padding: var(--pad-card) var(--pad-card) 20px; }
-/* .pane-ic(머리 왼쪽의 아이콘 칸)는 여러 무리(처리 건 · 흐름 · 에이전트 · 도구 연결 · 데이터 원천 · 접수 기록)가 아직 쓰는 옛 모양이다 — 기준 5-1의 상세 머리에는 아이콘이 없다. 마지막으로 쓰는 무리가 마크업을 옮기면 아래 세 줄을 지운다 */
-.pane-ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--muted); color: var(--foreground); }
-.pane-ic .ic { width: 16px; height: 16px; }
-.pane-ic[data-kind="agent"] { color: var(--primary); background: var(--accent); }
 .pane-title { flex: 1; min-width: 0; }
 .pane-title h2 { font-size: var(--fs-head); line-height: 28px; letter-spacing: -0.01em; }
 .pane-title p { margin-top: 4px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 64ch; }
@@ -862,8 +846,8 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 }
 @media (max-width: 640px) {
   .pane-head { flex-wrap: wrap; }
-  .pane-title { flex-basis: calc(100% - 58px); }
-  .pane-acts { margin-left: 58px; flex-wrap: wrap; }
+  .pane-title { flex-basis: 100%; }
+  .pane-acts { margin-left: 0; flex-wrap: wrap; }
 }
 [data-row][data-flash] { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
 
@@ -938,9 +922,6 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 .io-out .panel-sec > .fold:last-child > .fold-body { padding-bottom: 0; }
 .io-out .panel-sec > .fold:last-child:not([open]) > summary { padding-bottom: 0; }
 .io-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }      /* 둘을 나란히(에이전트 A · B) */
-.io-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 16px; margin: 0 0 var(--gap-block); border-bottom: 1px solid var(--border); }
-.io-bar > .view-tabs { margin: 0 0 -1px; border-bottom: 0; }
-.io-bar > .muted { font-size: var(--fs-xs); }      /* 보기 바꾸기 줄 */
 .io-progress { display: grid; gap: 6px; padding: 4px 14px 12px; font-size: var(--fs-xs); color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
 @media (max-width: 700px) {
   .io-two { grid-template-columns: minmax(0, 1fr); }

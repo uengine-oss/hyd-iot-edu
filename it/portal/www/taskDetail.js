@@ -4,7 +4,7 @@
      ③ 판단 · 출력(판단 근거 요지 + 읽기 쉬운 표, 원문은 접기) ④ 다음 단계로 넘긴 값 ⑤ 진행 중이면 그 단계만의 실시간 흐름.
    단계 종류별: 에이전트(원인 점수 · 조건 / 카드 점수 구성 / 판단 메시지), 사람(받은 카드 · 권고 · 고른 것 · 사유 · 승인자 · 대기 경과),
    시스템(보낸 명령 · 설비 응답 · 재측정까지 남은 시간 · 회복 근거), 매뉴얼 추출(원문 · 구간 · 제안 요약)이 같은 패널에 나온다.
-   처리 건 머리글 아래 "지금: <단계> — <누가> <무엇을 하는 중>" 한 줄(#instNow), 주소 #/instances/<처리 건>/task/<단계> 로 바로 열기.
+   주소 #/instances/<처리 건>/task/<단계> 로 바로 열기(처리 건 화면이 그 단계의 옆 판을 연다).
    process-gpt-vue3 대응: apps/todolist/WorkItem.vue(업무 상세 탭: 진행 · 기록 · 산출물), apps/todolist/InstanceTimeline.vue
    (events 를 todo_id 로 묶어 업무 하나 = 메시지 하나, isAgentFinished), ui/WorkItemChat.vue(도구 입력 · 결과 접기),
    apps/todolist/InstanceProgress.vue(흐름도 단계 → 그 단계 산출물).
@@ -17,7 +17,7 @@
   const REFRESH_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'human_asked', 'human_response', 'error']);
   const NOTE_SHOW = 600;
   const T = { wid: null, act: null, item: null, error: null, host: null, loading: false, rendered: null,
-              dec: null, decId: null, decErr: null, inc: null, incId: null, incErr: null, incAt: 0, last: {}, lastOrder: [], pending: null };
+              dec: null, decId: null, decErr: null, inc: null, incId: null, incErr: null, incAt: 0 };
   Object.assign(UI.terms, {
     'td.inputs': '받은 입력', 'td.trace': '처리 과정', 'td.output': '판단 · 출력', 'td.next': '다음 단계로 넘긴 값', 'td.close': '닫기',
     'td.noInputs': '이 단계는 입력 값을 읽지 않습니다', 'td.noOutput': '아직 출력이 없습니다', 'td.noNext': '넘긴 값 없음', 'td.noTrace': '아직 기록이 없습니다',
@@ -455,7 +455,6 @@
     return [...v.events.filter(e => e.todo_id === w.id), ...((item && item.events) || [])].filter(e => e && e.id && !seen.has(e.id) && seen.add(e.id)).sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
   }
   function render() {
-    renderNow();
     const host = T.host; if (!host) return;
     const v = view();
     if (!v || !T.wid) { host.innerHTML = ''; return; }
@@ -485,66 +484,6 @@
     T.rendered = w.id;
     const tl = host.querySelector('[data-td-timeline]'); if (tl && live) tl.scrollTop = tl.scrollHeight;
   }
-  /* ---------- 지금: <단계> — <누가> <무엇을 하는 중> ---------- */
-  function doingOf(w, v) {
-    const k = kindOf(w), tool = (activityOf(v, w.activity_id) || {}).tool || '';
-    if (w.status === 'PENDING') return [UI.t('system'), esc(UI.t('td.nowPending'))];
-    if (k === 'agent') {
-      if (w.draft_status === 'HUMAN_ASKED') return [UI.t('agent'), esc(UI.t('td.nowAsk'))];
-      if (w.status === 'SUBMITTED') return [UI.t('agent'), esc(UI.t('td.nowSubmitted'))];
-      const evs = [...v.events.filter(e => e.todo_id === w.id), ...(T.last[w.id] || [])];
-      const open = new Set(); let last = null;
-      evs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || ''))).forEach(e => {
-        const d = e.data || {};
-        if (e.event_type === 'tool_usage_started') open.add(UI.toolCallKey(e)); else if (e.event_type === 'tool_usage_finished') open.delete(UI.toolCallKey(e));
-        last = e;
-      });
-      const running = [...open].pop();
-      if (running != null) { const s = lastOf(evs, e => e.event_type === 'tool_usage_started' && UI.toolCallKey(e) === running); return [UI.t('agent'), esc(UI.t('td.nowTool').replace('{tool}', UI.toolName(((s || {}).data || {}).tool)))]; }
-      if (last && isNote(last)) return [UI.t('agent'), esc(UI.t('td.nowNote'))];
-      if (last && isEvidence(last)) return [UI.t('agent'), esc(UI.t('td.nowBasis'))];
-      return [UI.t('agent'), esc(w.consumer ? (last ? UI.t('td.nowClaimed') : UI.t('td.nowStarted')) : UI.t('td.nowQueued'))];
-    }
-    if (k === 'human') {
-      const spent = w.start_date ? ` · ${clockSpan('since', w.start_date)} ${esc(UI.t('td.waitFor'))}` : '';
-      return [UI.who(w.user_id), `${esc(UI.t('td.nowHuman'))}${spent}${w.due_date ? ` · ${esc(UI.t('td.dueLeft'))} ${clockSpan('until', w.due_date)}` : ''}`];
-    }
-    if (tool === 'incident:command') return [UI.t('system'), esc(UI.t('td.nowCmd'))];
-    if (tool === 'incident:reobserve') {
-      const inc = T.inc && T.inc.id === vars(v.instance).incident ? T.inc : null, win = inc && reobsWindow(inc, w);
-      const left = win ? win.due - new Date() : null;
-      return [UI.t('system'), `${esc(UI.t('td.nowReobs'))}${left == null ? '' : left > 0 ? ` · ${esc(UI.t('td.remeasureIn'))} ${clockSpan('until', win.due.toISOString())}` : ` · ${esc(UI.t('td.remeasureDue'))}`}`];
-    }
-    if (tool === 'enterprise:WO_CREATE') return [UI.t('system'), esc(UI.t('td.nowWo'))];
-    return [UI.t('system'), esc(UI.t('td.nowSystem'))];
-  }
-  function nowHtml(v) {
-    const inst = v.instance;
-    if (inst.status !== 'RUNNING') {
-      const endName = inst.end_label || UI.status(inst.status);   // 끝난 곳의 이름은 서버(engine.end_label — 기술 끝 포함)
-      return `<div class="td-now done" role="status"><b>${esc(UI.t('td.ended'))}</b>${endName && endName !== UI.t('td.ended') ? ' ' + esc(endName) : ''}</div>`;   // 끝 이벤트 이름이 「끝」이면 「끝 끝」으로 겹치지 않게
-    }
-    const cur = v.workitems.filter(w => LIVE.has(w.status) && !isEventNode(v, w.activity_id));
-    if (!cur.length) return `<div class="td-now" role="status"><b>${esc(UI.t('td.now'))}</b> <span class="muted">${esc(UI.t('td.nothing'))}</span></div>`;
-    return `<div class="td-now" role="status"><i class="dot" data-tone="run" data-live></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="btn" data-variant="link" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${what}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
-  }
-  const clockSpan = (kind, iso) => {
-    const t = new Date(iso) - new Date();
-    const text = kind === 'since' ? fmtMs(Math.max(0, -t)) : t >= 0 ? `${fmtMs(t)} ${UI.t('trace.left')}` : UI.t('trace.overdue');
-    return `<span data-${kind}="${esc(iso)}">${esc(text)}</span>`;
-  };
-  function renderNow() {
-    if (typeof document === 'undefined' || !document.getElementById) return;
-    const box = document.getElementById('instNow'); const v = view();
-    if (!box) return;
-    if (!v) { box.innerHTML = ''; box._key = ''; return; }
-    // 글이 바뀔 때만 다시 쓴다 — 1초마다 통째로 바꾸면 화면 읽기 프로그램이 매초 읽고 [단계 이름] 단추의 키보드 포커스가 풀린다(W1-29).
-    // 남은 시간처럼 매초 바뀌는 글은 trace.js 의 [data-until] · [data-since] 시계가 그 글자만 고친다
-    const html = nowHtml(v), key = html.replace(/(data-(?:since|until)="[^"]*">)[^<]*/g, '$1');
-    if (box._key !== key) { box.innerHTML = html; box._key = key; }
-    ensureIncident(v);
-  }
-
   /* ---------- state ---------- */
   function recordedDecisionId(v, w, item) {
     if (!v || !w) return null;
@@ -625,10 +564,7 @@
   // ⑤ liveStream.js hands every pushed SSE event here; the open task takes its own events, the 지금 line takes every task's latest
   function onEvent(e) {
     if (!e || !e.todo_id) return;
-    if (!T.last[e.todo_id]) { T.lastOrder.push(e.todo_id); if (T.lastOrder.length > 300) delete T.last[T.lastOrder.shift()]; }   // 단계 수 상한(하루 열어 두어도 쌓이지 않게, W1-30)
-    const list = T.last[e.todo_id] || (T.last[e.todo_id] = []);
-    if (!list.some(x => x.id === e.id)) { list.push(e); if (list.length > 20) list.shift(); }
-    if (e.todo_id !== T.wid) { renderNow(); return; }
+    if (e.todo_id !== T.wid) return;
     if (T.item && !T.item.events.some(x => x.id === e.id)) T.item.events.push(e);
     render();
     if (REFRESH_ON.has(e.event_type)) refresh().then(render);
@@ -637,10 +573,9 @@
   const onInstances = () => typeof state !== 'undefined' && state.tab === 'instances';
   if (typeof document !== 'undefined' && document.addEventListener) {
     setInterval(() => { if (T.wid && onInstances() && isLive()) refresh().then(render); }, 2500);
-    setInterval(() => { if (onInstances()) renderNow(); }, 1000);    // countdowns (기한 · 재측정) tick without a reload
     document.addEventListener('click', e => { const now = e.target.closest('[data-td-open]'); if (now) open(now.dataset.tdOpen); });
   }
 
-  window.hydTaskDetail = { open, close, mount, planned, onEvent, render, renderNow, nowHtml, valueHtml, refresh, T };
+  window.hydTaskDetail = { open, close, mount, planned, onEvent, render, valueHtml, refresh, T };
   window.addEventListener('hyd-tool-payload',()=>{if(T.host?.isConnected)render();});
 })();

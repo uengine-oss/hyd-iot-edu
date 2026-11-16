@@ -114,7 +114,20 @@
   const startKind = x => S.starts[x.id] || (!x.versions.length && S.sel === x.id && S.mapping && S.mapping.start ? (S.mapping.start.kind === 'alert' ? 'alert' : S.mapping.start.kind === 'human' ? 'direct' : null) : null);
   // 상태 뱃지: 경보로 시작하는 흐름은 배포해야 쓰인다(운영 중 / 배포 전). 직접 시작하는 흐름(질문하기 · 문서 추출 · 교대 인수인계처럼 화면이나 사람이 여는 것)은
   // 등록돼 있으면 쓸 수 있다 — 「등록됨」만 적으면 안 쓰이는 것처럼 읽힌다
+  // 다른 화면이 안에서 여는 흐름(서버 procsvc 의 ask.py · manual_extraction.py · manual_golden.py · legacy_meaning.py 가 그 화면의 요청으로 시작한다): 흐름 화면에서 시작해도 뜻이 없다 —
+  // 목록의 알약과 머리가 「어느 화면이 쓰는지」를 말하고, 시작 단추 대신 그 화면으로 가는 링크를 둔다
+  const USED_BY = { ask_agent: 'ask', manual_source_extraction: 'knowledge', manual_golden_check: 'knowledge', legacy_column_meaning: 'knowledge' };
+  // 「미지원 경보 현장 검토」(alert_triage)는 받는 흐름이 배포돼 있지 않은 경보가 나면 서버가 여는 사람 검토 대기열이다(procsvc flow_deploy.py · business_monitor.py · human_alert.py 의
+  // alertPolicy.unsupported — 기본 상태에서는 오일 분석 입력의 기준 이탈이 이리로 온다). 사람이 직접 시작하는 흐름이 아니다
+  function usedBy(x) {
+    if (x.mine) return null;
+    if (x.id === 'alert_triage') return { tab: 'oil', tag: '경보가 엶', sub: '처리 흐름이 정해지지 않은 경보가 나면 열립니다', link: '오일 분석 입력에서 경보 내기' };
+    const tab = USED_BY[x.id], name = tab && UI.t('nav.' + tab);
+    return tab ? { tab, tag: `${name}${window.hydWords.josa(name, '이/가')} 씀`, sub: `${name} 화면이 시작합니다`, link: `${name}에서 시작` } : null;
+  }
   function stateTag(x) {
+    const by = usedBy(x);
+    if (by) return tag(by.tag);
     if (x.deployed) return tag(`운영 중`, 'ok');
     if (!x.versions.length) return tag('등록 전');
     const kind = startKind(x);
@@ -226,6 +239,7 @@
     if (at === 'start') {
       if (startKind(item) === 'alert') { const tab = alertTab(st);
         return { key: 'start', html: `<button type="button" class="btn" data-go-tab="${tab}">${h(tab === 'oil' ? '오일 분석 입력에서 경보 내기' : '결함 시뮬레이션에서 경보 내기')}${icon('arrow-right')}</button>` }; }
+      if (usedBy(item)) return { html: '' };                       // 다른 화면이 여는 흐름 — 머리에 그 화면으로 가는 링크가 있다(drawHead)
       if (startKind(item) !== 'direct') return { html: '' };      // 시작 방식을 아직 읽지 못했다
       const blocked = hydCourseAccess.startBlocked(item.id);
       return { key: 'start', html: `<button type="button" class="btn" id="flowStartOpen"${blocked ? ' disabled' : ''}>${icon('play')}처리 건 시작</button>`, why: blocked || '' };
@@ -235,9 +249,10 @@
   function drawHead() {
     const item = itemOf(S.sel), head = $('flowHead'); if (!item || !head) return;
     const st = window.hydDefinitionDeploy.status();
-    const state = item.deployed ? tag('운영 중', 'ok') : stateTag(item);
+    const state = stateTag(item);
     const version = item.deployed ? `운영 판본 ${item.deployed}` : item.versions.length ? `판본 ${item.versions[item.versions.length - 1]}` : '등록한 판본 없음';
-    const start = S.viewError ? '' : st ? (st.alert_entry ? `경보(${(st.alert_patterns || []).map(x => UI.patternName(x)).join(' · ') || '시작 조건의 경보'})가 나면 처리 건이 열립니다` : '사람이 직접 시작합니다')
+    const by = usedBy(item);
+    const start = by ? by.sub : S.viewError ? '' : st ? (st.alert_entry ? `경보(${(st.alert_patterns || []).map(x => UI.patternName(x)).join(' · ') || '시작 조건의 경보'})가 나면 처리 건이 열립니다` : '사람이 직접 시작합니다')
       : item.draft && !S.view ? '단계 설정을 읽는 중입니다' : '';
     const sub = [item.mine ? '내가 가져온 것' : '기본 제공', version, item.mine && S.view && S.view.file_name ? S.view.file_name : '', start].filter(Boolean).join(' · ');
     const main = primaryOf(item), last = item.files[item.files.length - 1];
@@ -246,7 +261,7 @@
       editable() && main.key !== 'register' && !(S.view.register && S.view.register.allowed === false) ? { icon: 'upload', label: '새 판본으로 등록', attrs: 'data-flow-register' } : null,
       last ? { icon: 'download', label: `그림 받기 (.bpmn · 판본 ${last.version})`, attrs: `data-flow-download="${h(api(`/api/flows/${encodeURIComponent(item.id)}/versions/${encodeURIComponent(last.version)}/bpmn`))}"` } : null,
       item.mine ? { act: 'remove', label: '이 흐름 지우기', attrs: `data-flow-delete="${h(item.id)}"` } : null]);
-    const html = `<div class="pane-title"><h2>${h(item.name)}${state}</h2><p>${h(sub)}</p>${main.why ? `<p class="flow-why" data-flow-why>${h(main.why)}</p>` : ''}</div>` +
+    const html = `<div class="pane-title"><h2>${h(item.name)}${state}</h2><p>${h(sub)}</p>${main.why ? `<p class="flow-why" data-flow-why>${h(main.why)}</p>` : ''}${by ? `<p class="pane-next">${UI.goLink(by.tab, by.link)}</p>` : ''}</div>` +
       (main.html || more ? `<div class="pane-acts">${main.html || ''}${more}</div>` : '');
     if (head._html === html) return;      // 같은 머리를 다시 그려 열린 메뉴 · 누르는 중인 단추를 지우지 않는다
     head._html = html; head.innerHTML = html;
@@ -803,7 +818,7 @@
   }
 
   /* 처리 건 시작(대화상자 #flowsStart): 머리의 [처리 건 시작]이 연다. 시작할 판본(여럿일 때) → 시작할 때 넣을 값 → [시작].
-     시작하면 대화상자를 닫고, 흐름 화면의 알림 자리에 무엇이 시작됐는지와 「처리 건 열기 →」가 남는다(학생이 한 일의 결과가 이 화면에 남는다) */
+     시작하면 대화상자를 닫고, 흐름 화면의 알림 자리에 무엇이 시작됐는지와 「처리 건에서 보기 →」가 남는다(학생이 한 일의 결과가 이 화면에 남는다) */
   function openStart() {
     const item = itemOf(S.sel), dlg = $('flowsStart'); if (!item || !item.versions.length) return;
     S.start = { id: item.id, version: item.deployed || item.versions[item.versions.length - 1], eventId: `flow-${item.id}-${UI.uuid()}`, def: null };
@@ -855,7 +870,7 @@
         $('flowsStart').close(); S.start = null;
         UI.toast('처리 건을 시작했습니다', { tone: 'ok' });
         const note = $('flowNote');
-        if (note) { note.innerHTML = `<div class="flow-note-box" data-flow-started="${h(inst.proc_inst_id)}">${okBox('처리 건을 시작했습니다', `${h(`「${item.name}」 판본 ${version} · ${UI.dateTime(new Date().toISOString())}`)} <a class="go" href="#/instances/${encodeURIComponent(inst.proc_inst_id)}">처리 건 열기</a>`)}</div>`;
+        if (note) { note.innerHTML = `<div class="flow-note-box" data-flow-started="${h(inst.proc_inst_id)}">${okBox('처리 건을 시작했습니다', `${h(`「${item.name}」 판본 ${version} · ${UI.dateTime(new Date().toISOString())}`)} <a class="go" href="#/instances/${encodeURIComponent(inst.proc_inst_id)}">처리 건에서 보기</a>`)}</div>`;
           note.scrollIntoView({ block: 'nearest' }); }
       } catch (e) { msg.innerHTML = failBox('처리 건을 시작하지 못했습니다', e.message); }
     });

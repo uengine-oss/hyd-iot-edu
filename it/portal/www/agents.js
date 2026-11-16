@@ -42,6 +42,9 @@
     if (t.length <= SHORT || st.open[key]) return esc(t) + (t.length > SHORT ? ` <button type="button" class="btn" data-variant="link" data-fold-text="${esc(key)}">줄이기</button>` : '');
     return esc(t.slice(0, SHORT)) + '… ' + `<button type="button" class="btn" data-variant="link" data-fold-text="${esc(key)}">더 보기</button>`;
   }
+  // 서버가 준 글(시드의 역할 · 목표)에 남은 옛 말 · 영문을 화면 말 정본으로(UIUX_PLAN 4절 — 효과 확인 · 정비 요청 · 설비에 명령). 재관측 등은 UI.words 가 바꾼다
+  const say = t => UI.words(String(t || '')).replace(/PLC 명령\s*발행(\s*\(Incident 경로\))?/g, '설비에 명령').replace(/작업지시/g, '정비 요청').replace(/타이머/g, '시간 대기');
+  const sysName = a => (a.kind !== 'agent' && UI.who(a.id) !== a.id ? UI.who(a.id) : a.name);
   const clip = (t, n = 48) => (t.length > n ? t.slice(0, n) + '…' : t);
   const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${UI.flowName(s.name)}`;   // 정의에 등록된 이름 먼저
   // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다(복제가 두 벌 생기거나 붙이기가 409 로 보이지 않게)
@@ -131,8 +134,8 @@
   const row = (attrs, ic, title, right, meta) => `<button type="button" class="row" ${attrs}><span class="row-ic">${icon(ic)}</span><span class="row-title">${title}</span>${right || ''}${meta ? `<span class="row-meta">${meta}</span>` : ''}</button>`;
   function agentRow(a) {
     const system = a.kind !== 'agent';
-    const meta = system ? (a.goal || a.role || '정해진 업무를 하는 시스템') : `스킬 ${a.skills.length} · 도구 서버 ${a.tools.length ? a.tools.length : '전체'} · ${a.steps.length ? `맡은 단계 ${a.steps.length}` : '맡은 단계 없음'}`;
-    return row(`data-pick-agent="${esc(a.id)}"${a.id === st.pick.agents && !st.form ? ' aria-current="true"' : ''}`, system ? 'cog' : 'bot', esc(a.name), system || a.origin !== 'user' ? '' : originTag(a.origin), esc(meta));
+    const meta = system ? say(a.goal || a.role || '정해진 업무를 하는 시스템') : `스킬 ${a.skills.length} · 도구 서버 ${a.tools.length ? a.tools.length : '전체'} · ${a.steps.length ? `맡은 단계 ${a.steps.length}` : '맡은 단계 없음'}`;
+    return row(`data-pick-agent="${esc(a.id)}"${a.id === st.pick.agents && !st.form ? ' aria-current="true"' : ''}`, system ? 'cog' : 'bot', esc(sysName(a)), system || a.origin !== 'user' ? '' : originTag(a.origin), esc(meta));
   }
   function skillRow(s) {
     // 알약은 그 줄이 남과 다를 때만: 어느 에이전트에도 붙지 않은 스킬(주의) · 내가 만든 것. 기본 제공은 보통이라 줄마다 적지 않는다
@@ -163,8 +166,8 @@
     `<span class="go">흐름에서 보기</span>`, esc([s.version ? `판본 ${s.version}` : '', s.assigned ? '담당 배정으로 맡음' : ''].filter(Boolean).join(' · ')));
   function agentDetail(d) {
     const isAgent = d.kind === 'agent';
-    const note = !isAgent ? '정해진 업무를 하는 시스템입니다. 스킬 · 도구 서버 같은 에이전트 설정은 쓰지 않습니다.' : d.goal || '목표가 적혀 있지 않습니다.';
-    let html = `<div class="panel-head pane-head"><div class="pane-title"><h2>${esc(d.name)}${isAgent ? originTag(d.origin) : tag('시스템 수행자')}</h2><p>${longText('goal:' + d.id, note)}</p>` +
+    const note = !isAgent ? '정해진 업무를 하는 시스템입니다. 스킬 · 도구 서버 같은 에이전트 설정은 쓰지 않습니다.' : say(d.goal) || '목표가 적혀 있지 않습니다.';
+    let html = `<div class="panel-head pane-head"><div class="pane-title"><h2>${esc(sysName(d))}${isAgent ? originTag(d.origin) : tag('시스템 수행자')}</h2><p>${longText('goal:' + d.id, note)}</p>` +
       `${isAgent ? `<p class="pane-next">${UI.goLink('ask', '질문하기에서 시험', `data-try-agent="${esc(d.id)}"`)}</p>` : ''}</div>${agentActs(d) ? `<div class="pane-acts">${agentActs(d)}</div>` : ''}</div>`;
     if (isAgent) {
       const skills = d.skills.length ? `<div class="rows">${d.skills.map(s => s.found
@@ -199,7 +202,7 @@
       html += `<div class="panel-sec pane-fold">${UI.fold(`설정<span class="muted">${d.editable ? '다음 실행부터 적용' : '역할 · 성격 · 모델 · 작업 규칙'}</span>`, setting)}` +
         `${UI.fold('원문<span class="muted">단계별 실행 설정 · 실행 지시문 · 식별자</span>', more)}</div>`;
     } else {
-      html += `<div class="panel-sec">${kv([['역할', esc(d.role || '')], ['식별자', `<span class="mono">${esc(d.id)}</span>`]])}</div>`;
+      html += `<div class="panel-sec">${kv([['하는 일', esc(say(d.goal || ''))], ['식별자', `<span class="mono">${esc(d.id)}</span>`]])}</div>`;
     }
     return html;
   }

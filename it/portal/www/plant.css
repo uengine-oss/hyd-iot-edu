@@ -318,9 +318,10 @@
 #scada svg .hc-fan.stop { animation-play-state: paused; }
 #scada svg .hc-sensor circle { fill: var(--cv-node); stroke: var(--cv-red); stroke-width: 2; }
 #scada svg .hc-sensor text { font-size: 7px; font-weight: 600; fill: var(--cv-ink); }
-#scada svg .hc-cap { font-size: 8px; fill: var(--cv-ink-2); }
-#scada svg .hc-val { font-size: 8.5px; font-weight: 600; fill: var(--cv-value); font-variant-numeric: tabular-nums; }
-#scada svg .hc-val.main { font-size: 9.5px; }
+#scada svg .hc-cap { font-size: var(--hc-cap, 8px); fill: var(--cv-ink-2); }
+#scada svg .hc-val { font-size: var(--hc-val, 8.5px); font-weight: 600; fill: var(--cv-value); font-variant-numeric: tabular-nums; }
+#scada svg .hc-val.main { font-size: var(--hc-main, 9.5px); }
+#scada .ucard[data-tight] .hc-sensor text { display: none; }
 #scada svg .hc-val.hot { fill: var(--cv-red); }
 #scada svg .hc-glow { display: none; }
 #scada svg .hc-glow.on { display: block; }

@@ -7,10 +7,10 @@
    읽기 쉽게: 모델 사용량 · 실행 시작 줄은 숨기고, 도구 호출 시작과 결과는 한 줄(소요 시간), 처리 건 · 단계별로 묶고, 호스트 경로 · 모델 이름은 지운다.
    참고: process-gpt-vue3 components/ui/EventTimeline.vue(도구 시작이 열고 끝이 닫는 한 줄), Dify workflow/run/tracing-panel.tsx(단계별 묶음). */
 (function () {
-  const S = { es: null, rows: [], ids: new Set(), idOrder: [], starts: new Map(), finished: new Map(), connected: false, filter: 'all', paused: false,
-              reloadTimer: null, lastKey: null, showAll: false, lastTs: null, lastCursor: null, lastAt: 0, backoff: 0, subs: new Set(),
+  const S = { es: null, ids: new Set(), idOrder: [], starts: new Map(), finished: new Map(), connected: false,
+              reloadTimer: null, lastKey: null, lastTs: null, lastCursor: null, lastAt: 0, backoff: 0, subs: new Set(),
               conn: 'connecting', connSubs: new Set(), fails: 0, downTimer: 0, asleep: false, hideTimer: 0 };
-  const MAX = 200, SHOWN = 40, IDS = 5000;
+  const IDS = 5000;
   const KIND = {
     tool_usage_started: ['tool', 'stream.tool'], tool_usage_finished: ['tool', 'stream.tool'],
     task_started: ['task', 'stream.start'], task_completed: ['task', 'stream.done'], task_working: ['work', 'stream.working'], task_cancelled: ['task', 'stream.cancel'],
@@ -20,13 +20,6 @@
   const RELOAD_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'task_deferred', 'human_asked', 'human_response', 'error']);
   const noise = e => e.event_type === 'task_working' && e.data && e.data.type === 'run_start';
 
-  function instName(id) {
-    const I = window.hydInstances && window.hydInstances.I;
-    const inst = I && I.instances.find(x => x.proc_inst_id === id);
-    if (inst) return inst.proc_inst_name || id;
-    if (!id) return '';
-    return UI.defName(id);          // A141: 'anomaly_response.…' → 설비 이상 조치 (UI.terms def.*)
-  }
   // 하루 수업 동안 탭을 열어 두어도 쌓이지 않게: 도구 시작 · 끝 · 단계 이름 기억은 id 기억(IDS)과 같은 상한, 오래된 것부터 버린다(W2-23)
   function bounded(map, key, value) { map.delete(key); map.set(key, value); if (map.size > IDS) map.delete(map.keys().next().value); }
   const activityByTodo = new Map();    // task_started carries the activity's goal; later events of the same work item reuse it
@@ -88,7 +81,6 @@
     if (e.event_type === 'tool_usage_started' && e.data && e.data.tool_use_id) bounded(S.starts, e.data.tool_use_id, new Date(e.timestamp));
     if (e.event_type === 'tool_usage_finished' && e.data && e.data.tool_use_id) bounded(S.finished, e.data.tool_use_id, true);
     activityOf(e);
-    if (!noise(e)) { S.rows.unshift({ e, fresh }); if (S.rows.length > MAX) S.rows.pop(); }
     // every subscriber gets every event (history too: a trace mounted after the event still wants it)
     if (window.hydTrace) hydTrace.onEvent(e);
     // 한 화면의 오류가 스트림을 멈추게 두지 않는다 — 다만 삼키지 않고 어느 구독 화면 · 어느 이벤트였는지 개발자 도구에 남긴다
@@ -148,50 +140,10 @@
     if (state === 'on' || state === 'paused' || state === 'connecting') { clearTimeout(S.downTimer); S.downTimer = 0; if (state === 'on') S.fails = 0; }
     else if (state === 'retry' && !S.downTimer) S.downTimer = setTimeout(() => { S.downTimer = 0; if (S.conn === 'retry') setConn('off'); }, 10000);
     const { text, ok } = connOf();
-    const c = document.getElementById('streamConn'); if (c) c.innerHTML = `<i class="dot"${ok ? ' data-tone="ok" data-live' : state === 'off' ? ' data-tone="danger"' : ''}></i>${esc(text)}`;
     paintTicker();
     document.querySelectorAll('[data-live-conn]').forEach(n => { n.textContent = text; n.className = 'live-conn ' + (ok ? 'on' : state); });
     if (changed) S.connSubs.forEach(fn => { try { fn(connOf()); } catch (err) { console.error('[hydStream] 연결 상태 구독 화면 오류', fn.name || '(이름 없는 구독)', state, err); } });
   }
-
-  /* ---------------------------------------------------------------- 전체 활동 목록 (처리 건 · 단계별 묶음) */
-  function render() {
-    const box = document.getElementById('streamList'); if (!box || S.paused) return;
-    const merged = r => r.e.event_type === 'tool_usage_started' && r.e.data && S.finished.has(r.e.data.tool_use_id);   // started+finished = one row
-    const publicRows = window.hydTrace ? hydTrace.publicNotes(S.rows.map(r=>r.e)).map(e=>({e,fresh:S.rows.some(r=>r.e.id===e.id && r.fresh)})) : S.rows;
-    const rows = publicRows.filter(r => !merged(r)).filter(r => S.filter === 'all' ? true
-      : S.filter === 'work' ? (KIND[r.e.event_type] || [''])[0] === 'work'
-      : (KIND[r.e.event_type] || [''])[0] === S.filter || (S.filter === 'task' && !KIND[r.e.event_type]));
-    const foldCount = document.getElementById('streamFoldCount'); if (foldCount) foldCount.textContent = rows.length ? `${rows.length}` : '';
-    if (!rows.length) { box.innerHTML = UI.empty(UI.t('stream.empty'), UI.t('stream.emptySub'), 'compact'); return; }
-    const limit = S.showAll ? 120 : SHOWN;
-    let html = '', group = null;
-    rows.slice(0, limit).forEach(({ e, fresh }) => {
-      const g = `${e.proc_inst_id || ''}|${e.todo_id || ''}`;
-      if (g !== group) {
-        group = g;
-        const act = activityOf(e);
-        html += `<button type="button" class="activity-group" data-inst="${esc(e.proc_inst_id || '')}" data-todo="${esc(e.todo_id || '')}"><b>${esc(instName(e.proc_inst_id))}</b>${act ? `<span class="muted">${esc(act)}</span>` : ''}</button>`;
-      }
-      const kind = KIND[e.event_type] || ['task', ''];
-      const label = kind[1] ? UI.t(kind[1]) : UI.eventName(e.event_type);
-      const { title, text, dur, running, tone } = describe(e);
-      const state = tone === 'fail' || kind[0] === 'error' ? 'fail' : running ? 'tool' : kind[0] === 'tool' || e.event_type === 'task_completed' ? 'ok' : '';
-      html += `<div class="line" data-activity="${kind[0]}"${state ? ` data-kind="${state}"` : ''}${running ? ' data-pending' : ''}${fresh ? ' data-new' : ''} data-inst="${esc(e.proc_inst_id || '')}">${UI.icon(ICON[kind[0]] || 'activity')}
-        <span class="line-text"><b>${esc(title)}</b><span class="line-sub">${esc([label, text].filter(Boolean).join(' · '))}</span></span>
-        <span class="line-time num" title="${esc(UI.dateTime(e.timestamp))}">${esc(UI.time(e.timestamp))}${dur && !running ? ` · ${esc(dur)}` : ''}</span></div>`;
-    });
-    box.innerHTML = html + (rows.length > limit ? `<button type="button" class="more-link" id="streamMore">${esc(UI.t('stream.all'))} (${rows.length})</button>` : '');
-    S.rows.forEach(r => { r.fresh = false; });
-    box.querySelectorAll('[data-inst]').forEach(row => row.addEventListener('click', () => {
-      if (!row.dataset.inst) return;
-      if (window.hydInstancesSelect) window.hydInstancesSelect(row.dataset.inst);
-    }));
-    box.querySelector('#streamMore')?.addEventListener('click', () => { S.showAll = true; render(); });
-  }
-  const ICON = { tool: 'plug', task: 'workflow', work: 'bot', human: 'user', error: 'circle-alert' };
-  let renderTimer = 0;
-  const renderSoon = () => { if (renderTimer) return; renderTimer = setTimeout(() => { renderTimer = 0; render(); }, 120); };
 
   /* ---------------------------------------------------------------- 연결 */
   function connect() {
@@ -206,8 +158,8 @@
       S.backoff = 0; S.openedAt = Date.now(); setConn('on');
     };
     // 깨진 기록 줄 하나가 나머지를 막지 않게 건너뛰되, 건너뛴 줄은 개발자 도구에 남긴다
-    es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (err) { console.error('[hydStream] 지난 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); } renderSoon(); });
-    es.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (err) { console.error('[hydStream] 실시간 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); return; } if (push(e, true)) renderSoon(); };
+    es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (err) { console.error('[hydStream] 지난 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); } });
+    es.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (err) { console.error('[hydStream] 실시간 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); return; } push(e, true); };
     // A147: a dropped connection (readyState CONNECTING) is retried by the browser itself (Last-Event-ID resumes it).
     // A non-200 answer (서버가 아직 준비 안 됨 503 · 프록시 502 …) closes the EventSource for good → our own backoff.
     es.onerror = () => {
@@ -244,28 +196,14 @@
     if (S.asleep || !S.es || S.es.readyState === EventSource.CLOSED) connect();
   });
 
-  function mount() {
-    const box = document.getElementById('streamPanel'); if (!box) return;
-    box.innerHTML = `<div class="activity-head"><div class="seg" id="streamFilter" role="group" aria-label="활동 종류로 거르기">${[['all', 'stream.filter.all'], ['tool', 'stream.filter.tool'], ['task', 'stream.filter.task'], ['human', 'stream.filter.human'], ['error', 'stream.filter.error'], ['work', 'stream.filter.work']].map(([k, l]) => `<button data-f="${k}" type="button" aria-pressed="${k === 'all'}">${esc(UI.t(l))}</button>`).join('')}</div>
-        <span class="muted activity-conn" id="streamConn"></span>
-        <button class="btn" data-variant="outline" data-size="sm" id="streamPause" type="button" aria-pressed="false">${esc(UI.t('stream.pause'))}</button></div>
-      <div class="stream-log activity-list" id="streamList"></div>`;
-    box.querySelectorAll('#streamFilter button').forEach(c => c.addEventListener('click', () => {
-      S.filter = c.dataset.f; box.querySelectorAll('#streamFilter button').forEach(x => x.setAttribute('aria-pressed', String(x === c))); render();
-    }));
-    setConn(S.conn);
-    const pause = document.getElementById('streamPause');
-    pause.addEventListener('click', () => { S.paused = !S.paused; pause.textContent = S.paused ? UI.t('stream.resume') : UI.t('stream.pause'); pause.setAttribute('aria-pressed', String(S.paused)); if (!S.paused) render(); });
-    render();
-    connect();
-  }
+  function mount() { setConn(S.conn); connect(); }
   document.addEventListener('DOMContentLoaded', mount);
   if (document.readyState !== 'loading') mount();
   // subscribe(fn): fn(event, fresh) for every event from now on; returns an unsubscribe function
   const subscribe = fn => { S.subs.add(fn); return () => S.subs.delete(fn); };
   // onConn(fn): fn({state, ok, text}) — 연결 상태가 바뀔 때마다. 지금 상태는 conn()
   const onConn = fn => { S.connSubs.add(fn); return () => S.connSubs.delete(fn); };
-  window.hydStream = { S, render, subscribe, fromPoll, push, connected: () => S.connected, conn: connOf, onConn, connect };
+  window.hydStream = { S, subscribe, fromPoll, push, connected: () => S.connected, conn: connOf, onConn, connect };
 })();
 
 /* 실시간 표시의 공용 부품 — window.hydLive. 오래 걸리는 일을 「도는 고리 + …중」으로 두지 않고, 지금 무엇을 하는지와 얼마나 됐는지를 보인다.
@@ -467,6 +405,11 @@
       node.querySelector('summary').addEventListener('click', () => { seg.byHand = true; });
       seg = { node, item: null, err: '', byHand: false, trace: hydTrace.mount(traceHost, { flat: true, workitem: () => it.id, detachedOk: true, shown: 200 }) };
       W.segs.set(it.id, seg);
+      /* 작업 행을 처음 읽어 오는 동안에도 실시간 줄을 받는다: 읽기가 끝나기 전에 지나간 도구 호출이 버려져, 재생처럼 빨리 도는 일은 「아직 기록이 없습니다」가 남은 채
+         끝날 때에야 한꺼번에 보였다. 읽어 온 작업 행이 오기 전까지는 아는 것(작업 id · 이름 · 도는 중)만으로 자리를 잡아 두고, 온 줄은 그 위에 붙는다 */
+      if (W.awake) hydTrace.TR.mounted.add(seg.trace);
+      seg.trace.update({ instance: { status: live(it) ? 'RUNNING' : 'COMPLETED' }, definition: { activities: [] }, events: [],
+        workitems: [{ id: it.id, proc_inst_id: it.instance || '', activity_id: '', activity_name: it.label || '', status: live(it) ? 'IN_PROGRESS' : 'DONE', user_id: 'sys:agent', agent_orch: 'cliagents', agent_mode: 'COMPLETE', start_date: W.since || null, end_date: null }] });
       return seg;
     }
     const SEG_STATE = { wait: '차례를 기다리는 중', run: '하는 중', done: '끝남', fail: '실패', stop: '멈춤' };

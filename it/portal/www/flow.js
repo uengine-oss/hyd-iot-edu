@@ -81,7 +81,8 @@
     });
     return latest;
   }
-  const rowState = w => w.draft_status === 'FAILED' || w.status === 'FAILED' || w.status === 'CANCELLED' ? 'fail' : hydSteps.stepStateOf(w.status) === 'current' ? (w.status === 'PENDING' ? 'hold' : 'now') : 'done';
+  // 닿았다가 취소된 단계(승인 전에 경보가 풀려 건이 닫힘 · 다른 갈래가 먼저 끝남)는 멈춤이 아니다 — cancel: 그림에서는 남음과 같은 보통 모양이고 빨간 테 · 「멈춤」 꼬리표를 달지 않는다
+  const rowState = w => w.draft_status === 'FAILED' || w.status === 'FAILED' ? 'fail' : w.status === 'CANCELLED' ? 'cancel' : hydSteps.stepStateOf(w.status) === 'current' ? (w.status === 'PENDING' ? 'hold' : 'now') : 'done';
 
   /* ---------------------------------------------------------------- 요소마다의 상태: 끝남(done) · 지금(now) · 보류(hold) · 멈춤(fail) · 남음(todo)
      단계는 가장 최근 작업 행의 상태, 갈림과 선은 실제로 지나간 것만 끝남(가지 않은 가지는 남음으로 흐리게), 끝 이벤트는 처리 건이 닿은 것만 끝남. */
@@ -229,7 +230,7 @@
     const m = D.marks || { now: [] };
     const at = id => (id ? reg.get(xid(id)) : null);
     const target = at(m.now[m.now.length - 1]) || (m.finished && (at(m.lastDone) || at(m.end))) || null;
-    const bar = 44;                                                   // 캔버스 위 도구 줄 자리
+    const bar = 0;                                                    // 도구 줄은 그림 칸 밖(위)에 따로 선다 — 그림 안에 그 자리를 비우지 않는다(겹치던 때는 44px를 비웠다)
     const z = Math.min(1, Math.max(zmin, (o.height - bar - 16) / inner.height));
     const w = o.width / z, h = o.height / z, pad = 24;
     const cx = target ? target.x + target.width / 2 : inner.x, cy = target ? target.y + target.height / 2 : inner.y + inner.height / 2;
@@ -246,9 +247,9 @@
     D.partial = false;
     if (canvas.zoom() >= 0.85 || !o.width || !inner.width) return;      // 0.85 아래로 줄면 상자 글자(13px)가 11px 밑으로 내려가 읽기 어렵다
     D.partial = true;                                                  // 시작 쪽만 보인다 — 그림 위 알림이 그 사실과 나머지를 보는 길을 말한다
-    const z = Math.min(1, Math.max(0.92, (o.height - 60) / inner.height)), w = o.width / z, h = o.height / z;      // 진행 길과 같은 배율(상자 글자 약 12px)
-    // 위 도구 막대(44px)가 그림의 상자를 가리지 않게: 그림이 판보다 높으면 맨 윗줄을 막대 아래에서 시작하고, 낮으면 가운데에 두되 막대 자리는 비운다
-    const top = inner.y - 56 / z, mid = inner.y + inner.height / 2 - h / 2 - 12 / z;
+    const z = Math.min(1, Math.max(0.92, (o.height - 32) / inner.height)), w = o.width / z, h = o.height / z;      // 처리 건의 흐름 그림과 같은 배율(상자 글자 약 12px)
+    // 도구 막대는 그림 칸 밖(위)에 따로 선다 — 그림이 칸보다 높으면 맨 윗줄을 위 여백 16px 아래에서 시작하고, 낮으면 가운데에 둔다(막대가 그림에 겹치던 때의 56px를 비우면 위에 빈 띠가 남는다)
+    const top = inner.y - 16 / z, mid = inner.y + inner.height / 2 - h / 2;
     canvas.viewbox({ x: inner.x - 24, y: Math.min(mid, top), width: w, height: h });
   }
   async function draw(container, view, opts = {}) {

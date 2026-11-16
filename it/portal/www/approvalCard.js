@@ -194,6 +194,8 @@
              none: opts.length > 0 && !d.recommended && !opts.some(o => o.feasible) };
   }
   // 고를 수 있는 안 전부를 표 한 장으로: 고르기 · 조치(둘째 줄에 고른 까닭 또는 진 까닭) · 점수. opt: { pending, adjust(html), extra(html) }
+  // 안마다의 값(구매 안은 열두 줄)은 접어 둔다 — 고른 안과 추천 안만 편 채로 연다(세 안을 다 펴면 화면 두 장을 넘었다). 편 채로 여는 접기는 data-ap-open(다시 그려도 편 채로 둔다)
+  const detailFold = (o, html, open) => !String(html || '').trim() ? '' : `<details class="fold ap-detail" data-plain${open ? ' open data-ap-open' : ''}><summary>${e(UI.idText(o.name))} — 이 안의 값</summary><div class="fold-body">${html}</div></details>`;
   function choicesHtml(d, chosenId, opt = {}) {
     const { rec, cur } = pick(d, chosenId);
     const opts = [...(d.options || [])].sort((a, b) => (b.id === rec.id) - (a.id === rec.id) || (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
@@ -205,7 +207,7 @@
         : e(partDiff(o, rec, d.options) || (Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score)} 낮습니다` : '')) + (said ? `<br>${e(said)}` : '');
       return { pick: o.id === cur.id, out, name: UI.idText(o.name), forId: `hopt-${o.id}`, noteHtml: why, score: out ? null : Number.isFinite(+o.score) ? +o.score : null, scoreHtml: out ? '제외' : Number.isFinite(+o.score) ? null : e(scoreText(o)),
         lead: `<input type="radio" class="input" name="hopt" id="hopt-${e(o.id)}" value="${e(o.id)}" ${o.id === cur.id ? 'checked' : ''} ${can ? '' : 'disabled'} aria-label="${e(UI.idText(o.name))} 안 고르기">`,
-        nameHtml: (o.id === rec.id ? ' <span class="muted">· 1순위</span>' : '') + UI.evaluationHtml(o, d, { raw: false }) + (window.hydWords?.purchaseContextHtml(o, d) || '') + (window.hydWords?.maintenanceHtml(o) || '') };
+        nameHtml: (o.id === rec.id ? ' <span class="muted">· 1순위</span>' : '') + detailFold(o, UI.evaluationHtml(o, d, { raw: false }) + (window.hydWords?.purchaseContextHtml(o, d) || '') + (window.hydWords?.maintenanceHtml(o) || ''), o.id === cur.id || o.id === rec.id) };
     });
     return `${UI.optionsTable(rows, { lead: '고르기', cls: 'ap-choices' })}
       ${evidence(cur)}${opt.adjust || ''}

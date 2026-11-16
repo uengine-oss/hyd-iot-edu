@@ -254,6 +254,8 @@ const UI = {
     [/^cancelled: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 취소`],
     [/^reached by abort: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 도달`],
     [/^rework superseded: (.+)$/, () => '다시 수행으로 대체됨'],
+    // 서버가 까닭을 한국어로 적은 취소 줄(「cancelled: 조치 전 해소 — …」 · 「취소: …」): 영문 머리를 화면에 내지 않는다. 위의 정해진 꼴에 걸리지 않은 것만 여기로 온다
+    [/^(?:cancelled|취소):\s*(.+)$/i, (m, U) => `취소 — ${U.idText(m[1])}`],
     [/^\[Lease expired: reclaimed by (.+?) \(claim (\d+)\)\]$/, m => `실행 임대 만료 · 다른 작업자가 이어받음 (${m[2]}번째)`],
     [/^action\.cmd (CMD-[\w-]+) issued$/, m => `설비 명령 ${m[1]} 전송`],
     [/^waiting ACK$/, () => '설비 응답 대기'],
@@ -723,7 +725,7 @@ const UI = {
   moreButton(rest, attr = 'data-more', { what = '', unit = '개' } = {}) { return rest > 0 ? `<button type="button" class="more-link" ${attr}>${what ? esc(what) + ' ' : ''}<span class="num">${rest}</span>${esc(unit)} ${esc(this.t('btn.more'))}</button>` : ''; },
   /* ---------- 디자인기준 4절의 작은 부품 — 화면 모듈은 마크업을 손으로 적지 않고 이 도우미를 쓴다 ----------
      goLink(tab, label)  다른 화면으로 가는 링크(4-3): 보조 글 + 「→」. 그 내용의 맨 끝(카드는 아래 고정 줄의 오른쪽 끝, 결과는 결과 맨 아래)에 둔다. 문장 안에 끼우지 않는다.
-                         label 을 주지 않으면 그 화면 이름. attrs 로 data-* 를 더한다. 예: UI.goLink('instances', '처리 건 열기')
+                         label 을 주지 않으면 그 화면 이름. attrs 로 data-* 를 더한다. 예: UI.goLink('instances', '처리 건에서 보기')
      scope(text)         범위 한 줄(4-22): 작은 정보 아이콘 + 한 문장. 그 범위가 걸리는 내용의 바로 아래에, 한 화면에 한 번. 예: UI.scope('가상 설비 3기의 지금 값으로 계산만 하고 실행하지 않습니다.')
      progress(done, total, { label })  진행 막대(4-12): 센 값으로만 채운다(시간으로 차오르게 하지 않는다). 상세 머리 보조 줄 아래. 예: UI.progress(3, 7, { label: '단계' })
      timeline(items)     단계 타임라인(4-11): items = [{ state: 'done'|'now'|'mine'|'fail'|'todo'|'skip', name, sub(누가 · 결론 한 마디 — 글), time(글), busy(기계가 지금 일하는 중), gateway(갈림길),

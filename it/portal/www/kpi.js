@@ -7,7 +7,7 @@
    짜임(디자인기준 5-4 현황 — 본: shadcn/ui dashboard-01 의 SectionCards 와 그 아래 보기): 머리 → 기간 거르기(세그먼트) → 숫자 카드 넷(미달 · 달성 · 판정하지 않음 · 계산할 수 없음)
    → 고른 카드의 지표(관점마다 카드 격자 — 이름 · 값 · 판정 알약, 계산할 수 없는 지표는 까닭 표) → 접기 하나(목표값 바꿔 보기).
    숫자 카드 넷은 요약이면서 보기 고르기다(dashboard-01 의 카드 아래 탭 자리): 누른 카드의 지표만 아래에 보인다. 처음에는 미달이 있으면 미달, 없으면 달성 → 판정하지 않음 → 계산할 수 없음 차례로 고른다.
-   지표 카드를 누르면 옆 판(4-19)에 그 지표의 계산 근거가, 미달 카드의 「원인 찾기」를 누르면 같은 옆 판의 「미달 원인」 보기에 영향 경로와 같은 기간의 처리 건이 열린다(처리 건 열기 → 처리 건 화면). */
+   지표 카드를 누르면 옆 판(4-19)에 그 지표의 계산 근거가, 미달 카드의 「원인 찾기」를 누르면 같은 옆 판의 「미달 원인」 보기에 영향 경로와 같은 기간의 처리 건이 열린다(처리 건에서 보기 → 처리 건 화면). */
 (function () {
   const TONE = { met: 'success', missed: 'danger', partial: 'warning', error: 'danger' };      // 알약은 판정이 있을 때만(달성 · 미달 · 부분 실적). 목표가 없는 지표는 판정 칸을 비운다
   let STATUS = {};                                     // 서버 summary.labels (첫 응답에서 받는다)
@@ -83,12 +83,12 @@
     const d = t.data, m = d.measure;
     const effect = v => EFFECT[String(v)] || '영향 불명';
     const sec = (title, side, body) => `<section class="kpi-sheet-sec"><h3>${title}${side ? `<span class="muted num">${side}</span>` : ''}</h3>${body}</section>`;
-    // 결론 먼저: 관련 처리 건이 몇 건인가 → 그 처리 건(처리 건 열기) → 설비 → 영향 경로(접기)
+    // 결론 먼저: 관련 처리 건이 몇 건인가 → 그 처리 건(처리 건에서 보기) → 설비 → 영향 경로(접기)
     const lead = d.instanceTotal ? `같은 기간의 처리 건 ${num(d.instancesRead)}건 가운데 ${num(d.instanceTotal)}건이 이 지표에 영향을 주는 경로에 걸려 있습니다.`
       : `같은 기간의 처리 건 ${num(d.instancesRead)}건 가운데 이 지표의 영향 경로에 걸린 건이 없습니다.`;
     const insts = d.instances.length ? `<ul class="kpi-lines">${d.instances.map(i => `<li><div><b>${escH(i.asset || '설비 미상')} · ${escH(i.patternName || (String(i.pattern || '').endsWith('_TRIP') ? '보호 정지 경보' : '이상 경보'))}</b>
         <small>${when(i.start)} 시작${i.chosenSkill ? ' · 고른 조치 ' + escH(i.chosenSkillName || name(i.chosenSkill)) : ' · 고른 조치 없음'}${i.causeName ? ' · 원인 ' + escH(i.causeName) : ''}</small>
-        <ul class="kpi-why">${i.reasons.map(r => `<li>${escH(r)}</li>`).join('')}</ul></div><a class="go" href="${escH(i.link)}" data-kpi-go>처리 건 열기</a></li>`).join('')}</ul>`
+        <ul class="kpi-why">${i.reasons.map(r => `<li>${escH(r)}</li>`).join('')}</ul></div><a class="go" href="${escH(i.link)}" data-kpi-go>처리 건에서 보기</a></li>`).join('')}</ul>`
       : `<p class="muted">처리 건이 없거나, 경보 · 조치가 이 지표의 경로와 닿지 않았습니다.</p>`;
     const actions = d.actions.length ? `<p class="muted"><b>고른 조치</b> ${d.actions.map(a => `${escH(a.name)} ${a.count}회 (${escH(effect(a.effect))})`).join(' · ')}</p>` : '';
     const assets = d.assets.length ? `<ul class="kpi-lines">${d.assets.map(a => `<li><div><b>${escH(a.asset)}</b> ${a.value == null ? '' : num(a.value) + ' ' + escH(unitText(m.unit))} ${a.met === false ? chip('미달', 'danger') : a.met === true ? chip('달성', 'success') : ''}
