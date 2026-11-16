@@ -31,10 +31,11 @@
   const line = (text, tone) => `<p class="fab-line"${tone ? ` data-tone="${tone}"` : ''}>${esc(text)}</p>`;
   function sourcesLine() {
     const bad = S.sources.filter(x => !x.ok), rw = S.sources.filter(x => x.ok && !x.read_only), n = S.sources.length;
+    const names = S.sources.map(x => x.label).join(' · ');      // 원천의 수만 적으면 목록의 첫 원천(표가 많아 한 화면을 채운다)만 보여 「3개인데 하나뿐」으로 읽혔다 — 수 옆에 그 이름을 적는다(아래 목록의 묶음 머리와 같은 이름)
     if (!n) return line('등록된 원천이 없습니다 — 처리 서비스의 원천 설정을 확인하세요.', 'warn');
-    if (bad.length) return line(`원천 ${n}개 가운데 ${bad.length}개에 연결하지 못했습니다 — ${bad.map(x => `${x.label}: ${x.reason}`).join(' · ')}`, 'danger');
-    if (rw.length) return line(`원천 ${n}개가 연결돼 있습니다. 읽기 전용이 아닌 원천: ${rw.map(x => x.label).join(', ')}`, 'warn');
-    return line(`원천 ${n}개가 모두 연결돼 있고 읽기 전용입니다.`);
+    if (bad.length) return line(`원천 ${n}개(${names}) 가운데 ${bad.length}개에 연결하지 못했습니다 — ${bad.map(x => `${x.label}: ${x.reason}`).join(' · ')}`, 'danger');
+    if (rw.length) return line(`원천 ${n}개(${names})가 연결돼 있습니다. 읽기 전용이 아닌 원천: ${rw.map(x => x.label).join(', ')}`, 'warn');
+    return line(`원천 ${n}개(${names})가 모두 연결돼 있고 읽기 전용입니다.`);
   }
   // 지식 지도 ↔ 표 · 열: 항목 종류가 원천에 닿는가, 판단 입력 가운데 표 · 열을 정하지 않은 것이 몇 개인가(「다 좋다」로 읽히지 않게)
   function linksLine() {

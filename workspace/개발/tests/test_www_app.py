@@ -524,6 +524,7 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도�
     page.evaluate('document.fonts.ready')
     for card in page.locator('#units .unit details').all():      # 접기를 모두 펴도 되풀이되지 않는다
         card.evaluate('d => { d.open = true; }')
+    page.wait_for_function("() => [...document.querySelectorAll('#units .unit')].every(c => c.querySelector('.lab-hint').getBoundingClientRect().top >= c.querySelector('.lab-panel').getBoundingClientRect().bottom)", timeout=5000)      # 접기가 다 펴진 뒤에 잰다(펴지는 동안에는 아래 줄이 따라 내려오는 중이다)
     text = page.inner_text('#view-scenario')
     assert text.count('명령 관문을 거치지 않습니다') == 1
     assert page.locator('#units .unit-big, #units .gauge, #units .unit-grid').count() == 0
@@ -543,7 +544,7 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도�
     assert page.evaluate("sel => document.activeElement === document.querySelector(sel) && document.activeElement.matches(':focus-visible')", button)
     # 도움말은 뜨는 조각이 아니라 단추 줄 아래의 제자리 줄에 나온다: 카드의 머리 줄 · 사건 이름 · 값 줄 · 단추 · 「현장 패널」 줄 어느 것도 덮지 않고, 글이 나와도 아래 줄이 밀리지 않는다
     seen = """sel => { const b = document.querySelector(sel), card = b.closest('.unit'), hint = card.querySelector('.lab-hint'), R = n => { const q = n.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }, h = R(hint);
-      const others = [...card.querySelectorAll(':scope > header, .lab-what, .lab-fact, .lab-buttons > *, details > summary')].map(R);
+      const others = [...card.querySelectorAll(':scope > header, .lab-what, .lab-fact, .lab-buttons > *, details > summary, .lab-panel .field, .lab-manual > *, .lab-panel dl')].map(R);
       return { text: hint.textContent, bubble: getComputedStyle(b, '::before').display, box: h, fold: R(card.querySelector('details > summary'))[1], card: Math.round(card.getBoundingClientRect().height),
         ink: parseFloat(getComputedStyle(hint).fontSize), lines: Math.round(hint.scrollHeight / parseFloat(getComputedStyle(hint).lineHeight)), fits: hint.scrollHeight <= hint.clientHeight + 1,
         covers: others.filter(q => q[0] < h[2] && h[0] < q[2] && q[1] < h[3] - 0.5 && h[1] < q[3] - 0.5).length }; }"""
@@ -556,6 +557,16 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도�
     assert page.evaluate(seen, button)['text'] == tip      # 마우스를 올려도 같은 줄에 나온다
     page.mouse.move(1, 1)
     assert page.evaluate(seen, button)['text'] == ''
+    # 「현장 패널」 안 단추의 도움말도 같은 제자리 줄에 나온다(뜨는 조각이면 옆 단추를 덮는다 — 2026-11-16). 운전 모드 칸 · 옆 단추 · 상태 줄 어느 것도 덮지 않는다
+    fan = "#units .unit[data-asset='HYD-01'] button[data-act='fan']"
+    page.hover(fan)
+    inside = page.evaluate(seen, fan)
+    assert inside['text'] == page.get_attribute(fan, 'data-tooltip') and inside['bubble'] == 'none' and inside['covers'] == 0 and inside['fits'], inside
+    assert inside['card'] == shown['card']      # 글이 나와도 카드 높이가 바뀌지 않는다
+    page.mouse.move(1, 1)
+    # 도움말 자리를 단추 줄과 「현장 패널」 사이에 비워 두지 않는다(카드 가운데의 빈 띠) — 「현장 패널」 줄은 마지막 단추 줄 바로 아래에 붙는다
+    gaps = page.eval_on_selector_all('#units .unit', "cs => cs.map(c => Math.round(c.querySelector('details > summary').getBoundingClientRect().top - Math.max(...[...c.querySelectorAll('.lab-buttons > .btn')].map(b => b.getBoundingClientRect().bottom))))")
+    assert len(set(gaps)) == 1 and 0 <= gaps[0] <= 16, gaps
     # 결함이 걸린 채 새 경보가 나지 않는 상황이 되면 그때만 한 줄
     w.units['HYD-01'] = unit('HYD-01', ts1=50.0, health=0.55)
     page.wait_for_function("document.querySelector(\"#units .unit[data-asset='HYD-01'] .repeat-guide\").textContent.includes('쿨러 복구')", timeout=8000)
@@ -734,6 +745,26 @@ def test_결함_시뮬레이션의_재고_줄은_가용과_재주문점의_크�
       return ps.map(n => n.textContent.trim()); }''')
     assert len(line) == 1, line                                                              # 값 줄은 단추 위 한 줄
     assert all(x in line[0] for x in want) and not [x for x in never if x in line[0]], line
+
+
+@pytest.mark.parametrize('state, want', [
+    ({'alert': True, 'last': {'instance': 'c3.1', 'status': 'COMPLETED', 'ended_at': '2026-01-01T00:05:00Z', 'outcome': '반려'}}, 'label'),      # 반려 뒤에도 표시가 켜져 있다 — 알약은 그 표시다
+    ({'alert': False, 'last': {'instance': 'c3.1', 'status': 'COMPLETED', 'ended_at': '2026-01-01T00:05:00Z', 'outcome': '정상'}}, ''),          # 처리돼 표시가 꺼졌다 — 알약이 없다
+    ({'alert': True, 'running': {'instance': 'c3.2'}, 'last': {'instance': 'c3.1', 'status': 'COMPLETED', 'ended_at': '2026-01-01T00:05:00Z', 'outcome': '미달'}}, '처리 중'),
+])
+def test_업무_사건_카드의_알약은_지금_표시와_처리_중만_말하고_끝난_처리_건의_결과를_따로_보이지_않는다(world, state, want):
+    """대역(2026-11-16): 반려 뒤 HYD-02 · HYD-03 카드의 알약이 「반려」였고, 그 아래 값 줄(「가용 1개 < 재주문점 2개」)과 함께 「반려돼서 재고가 그대로」로 읽혔다. 서버는 그때도
+    표시가 켜져 있다고 말한다(alert). 사건 한 건의 결과는 처리 건 화면 한 곳에 있다 — 카드의 알약은 서버가 준 지금 표시(alert · label)와 진행 중인 건(running)만 따른다."""
+    w, page = world, world.page
+    lab_world(w, B=state, C=state)
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_selector("#units .unit[data-asset='HYD-03'] button[data-act='biz-start']")
+    page.wait_for_timeout(300)
+    for asset, scen in (('HYD-02', w.scen['scenarios']['B']), ('HYD-03', w.scen['scenarios']['C'])):
+        card = page.locator(f"#units .unit[data-asset='{asset}']")
+        assert card.locator('.biz-alert').inner_text().strip() == (scen['label'] if want == 'label' else want), asset
+        assert scen['last']['outcome'] not in card.locator('.lab-exp').inner_text(), asset      # 끝난 건의 결과 낱말이 카드에 없다
+        assert card.locator(':scope > footer a.go').is_visible() == bool(scen.get('running')), asset      # 처리 건으로 가는 길은 진행 중인 건이 있을 때만
 
 
 def test_지금_누를_수_없는_단추는_손가락_모양이_아니고_눌러도_요청을_보내지_않으며_그_자리에_까닭이_있다(world):

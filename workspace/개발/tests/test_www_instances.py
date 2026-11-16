@@ -185,7 +185,7 @@ import contextlib
 
 
 @contextlib.contextmanager
-def _case_page(width=1440, height=900):
+def _case_page(width=1440, height=900, answer=None, start='#/instances'):
     from playwright.sync_api import sync_playwright
     app = FastAPI()
     app.mount('/', StaticFiles(directory=WWW, html=True))
@@ -196,10 +196,11 @@ def _case_page(width=1440, height=900):
             page = b.new_page(viewport={'width': width, 'height': height})
             errors = []
             page.on('pageerror', lambda e: errors.append(str(e)))
-            page.route('**/svc/**', _answer)
-            page.goto(served.url + '/index.html#/instances')
-            page.wait_for_selector('#instList .row', timeout=20000)
-            page.wait_for_selector('#instDetail .case-progress .step', timeout=20000)
+            page.route('**/svc/**', answer or _answer)
+            page.goto(served.url + '/index.html' + start)
+            if start == '#/instances':
+                page.wait_for_selector('#instList .row', timeout=20000)
+                page.wait_for_selector('#instDetail .case-progress .step', timeout=20000)
             yield page
             assert errors == [], errors
             b.close()
@@ -722,3 +723,60 @@ def test_일반_승인_카드에서_다른_안을_골랐다가_추천안으로_�
                 break
             page.wait_for_timeout(50)
         assert page.sent == [{'decision': '승인', 'option': '야간 세척', 'by': 'user:me', 'role': 'role:operator', 'reason': ''}], page.sent
+
+
+# 결과 보고 없이 끝난 건 둘: 사람이 닫은 건(기술 끝 「사람이 닫음」)과, 끝 이벤트의 이름이 뜻 없는 「처리 완료」인 건
+CLOSED_ROWS = [_row('hc', '설비 이상 조치 HYD-02', 'COMPLETED', 9, end_label='사람이 닫음'), _row('pe', '끝 이름이 뜻 없는 건', 'COMPLETED', 8)]
+
+
+def _answer_more(route):
+    """_answer 에 더한 것: 사건 목록(GET /api/incidents — 사건은 진행 중 1 · 끝난 것 1뿐이다. 처리 건 목록과 다른 것을 센다)과, 결과 보고 없이 끝난 건 둘."""
+    from urllib.parse import urlparse, parse_qs
+    u = urlparse(route.request.url); api = u.path.split('/api/', 1)[1] if '/api/' in u.path else ''
+    if '/svc/process/' in u.path and api == 'incidents':
+        return route.fulfill(json=[{'id': 'INC-1', 'asset': 'HYD-01', 'alertId': 'A1', 'terminal': False, 'history': []}, {'id': 'INC-2', 'asset': 'HYD-01', 'alertId': 'A2', 'terminal': True, 'history': []}])
+    if '/svc/process/' in u.path and api == 'instances':
+        st = (parse_qs(u.query).get('status') or [''])[0]
+        return route.fulfill(json=[r for r in ROWS + CLOSED_ROWS if not st or r['status'] == st])
+    if '/svc/process/' in u.path and api in ('instances/hc', 'instances/pe'):
+        row = next(r for r in CLOSED_ROWS if r['proc_inst_id'] == api.split('/')[1])
+        return route.fulfill(json={'instance': {**row, 'end_event': 'closed-by-human' if api.endswith('hc') else 'E_end', 'variable_sources': {}, 'initial_variables': {}}, 'definition': CASE_DEF,
+                                   'workitems': [_wi('h1', 'T_agent', 'CANCELLED', 9, agent_orch='cliagents', user_id='agent:cooling', end_date=_iso(9, 40), log='[담당자 단계 닫음] 닫았습니다')],
+                                   'events': [], 'approvals': [], 'reworks': [], 'attention': None, 'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+    return _answer(route)
+
+
+def test_홈_카드의_내_차례_진행_중_처리_완료_수는_그_카드를_눌러_가는_처리_건_화면의_묶음_수와_같다():
+    """대역(2026-11-16): 홈 「4 결과 보기 — 10건 처리 완료」와 처리 건 목록의 「처리 완료 13」이 달랐다. 홈은 사건(GET /api/incidents)을, 목록은 처리 건(질문 · 문서 추출 포함)을 셌다.
+    같은 이름은 같은 것을 센다: 홈 카드의 수를 읽고, 그 카드를 눌러 간 처리 건 화면의 묶음 머리 수와 견준다(대역의 사건 목록은 처리 건 목록과 건수가 다르다)."""
+    with _case_page(answer=_answer_more, start='#/main') as page:
+        page.wait_for_function("() => /\\d/.test(document.querySelector('#mainStages a.stat:nth-child(4) .stat-value')?.firstChild?.textContent || '')", timeout=20000)
+        home = page.evaluate("""() => { const card = n => document.querySelector(`#mainStages a.stat:nth-child(${n})`), num = c => c.querySelector('.stat-value').firstChild.textContent.trim();
+          return { open: [num(card(3)), card(3).querySelector('.stat-value small').textContent], mine: (card(3).querySelector('.stat-pill')?.innerText || '').trim(),
+                   done: [num(card(4)), card(4).querySelector('.stat-value small').textContent], nav: document.getElementById('navTodo').textContent.trim() }; }""")
+        page.locator('#mainStages a.stat:nth-child(4)').click()
+        page.wait_for_selector('#instList .row', timeout=20000)
+        groups = page.evaluate("Object.fromEntries([...document.querySelectorAll('#instList .rows-group')].map(g => [g.firstChild.textContent, g.querySelector('.num').textContent.trim()]))")
+        assert home['open'] == [groups['진행 중'], '건 진행 중'] and home['done'] == [groups['처리 완료'], '건 처리 완료'], (home, groups)
+        assert home['mine'] == f"내 차례 {groups['내 차례']}" and home['nav'] == groups['내 차례'], (home, groups)
+        # 묶음 머리의 수는 「더 보기」로 폈을 때 보이는 줄 수다(끝난 건 전부 — 시스템 작업 포함)
+        page.click('#instList [data-done-more]')
+        page.wait_for_function("() => !document.querySelector('#instList [data-done-more]')")
+        assert page.locator('#instList .row[data-done]').count() == int(groups['처리 완료'])
+
+
+def test_끝난_건의_목록_알약과_머리_알약과_결과_카드는_같은_말을_하고_사람이_닫은_건을_완료라고_하지_않는다():
+    """대역(2026-11-16): 사람이 닫은 건이 목록 · 머리에서 「완료」 알약인데 결과 카드는 「사람이 닫음 — 결과 보고가 남지 않은 처리 건」이었다. 한 건의 끝을 세 자리가 같은 말로 한다:
+    결과 보고가 있으면 그 보고의 말(정상), 없으면 끝 이벤트의 이름(사람이 닫음 · 조치 전 해소), 그 이름이 뜻 없는 「처리 완료」일 때만 「완료」."""
+    with _case_page(answer=_answer_more) as page:
+        page.click('#instList [data-done-more]')
+        page.wait_for_function("() => !document.querySelector('#instList [data-done-more]')")
+        said = {}
+        for pid in ('hc', 'cx', 'pe', 'd1'):
+            _pick(page, pid)
+            said[pid] = page.evaluate("""pid => { const row = document.querySelector(`#instList .row[data-inst='${pid}']`), card = document.querySelector('#caseTop .case-result');
+              return { row: row.querySelector('.tag').innerText.trim(), meta: row.querySelector('.row-meta').innerText, head: document.querySelector('#instDetail .case-title .tag').innerText.trim(),
+                       card: (card.querySelector('.tag') || card.querySelector('.result-main')).innerText.trim() }; }""", pid)
+        assert all(v['row'] == v['head'] == v['card'] for v in said.values()), said
+        assert [said[k]['row'] for k in ('hc', 'cx', 'pe', 'd1')] == ['사람이 닫음', '조치 전 해소', '완료', '정상'], said
+        assert not [k for k, v in said.items() if v['row'] in v['meta']], said      # 알약이 한 말을 보조 줄이 또 하지 않는다

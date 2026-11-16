@@ -259,11 +259,9 @@
   .lab-buttons { grid-template-columns: minmax(0, 1fr); }
 }
 .lab-buttons .btn[aria-disabled="true"] { opacity: .55; }
-#units [data-tooltip]::before { max-width: 240px; }
-/* 키트는 키보드 초점에서 도움말을 감춘다 — 현장 패널의 단추는 설명을 도움말에만 두므로 키보드로 옮겨 와도 보이게 한다 */
-#units [data-tooltip]:focus-visible::before { display: block; visibility: visible; opacity: 1; scale: 1; translate: 0 0; }
-/* 사건 절의 단추 도움말은 뜨는 조각 대신 단추 줄 아래의 제자리 줄(두 줄 높이를 늘 지킨다 — 글이 나와도 아래 줄이 밀리지 않고, 아무것도 덮지 않는다) */
-#units .lab-exp [data-tooltip]::before, #units .lab-exp [data-tooltip]:focus-visible::before { display: none; }
+/* 카드의 단추 도움말(사건 절 · 현장 패널 안)은 뜨는 조각 대신 카드 본문 맨 아래의 제자리 줄 하나에 나온다(두 줄 높이를 늘 지킨다 — 글이 나와도 카드 높이가 바뀌지 않고, 아무것도 덮지 않는다).
+   단추 줄과 「현장 패널」 사이에 두지 않는다 — 거기에 두면 카드 가운데에 늘 빈 띠가 생긴다 */
+#units .unit [data-tooltip]::before, #units .unit [data-tooltip]:focus-visible::before { display: none; }
 .lab-hint { min-height: 36px; margin-top: 6px; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); }
 .lab-note { margin-top: 8px; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); }
 .lab-note:empty { display: none; }

@@ -42,8 +42,9 @@
     if (t.length <= SHORT || st.open[key]) return esc(t) + (t.length > SHORT ? ` <button type="button" class="btn" data-variant="link" data-fold-text="${esc(key)}">줄이기</button>` : '');
     return esc(t.slice(0, SHORT)) + '… ' + `<button type="button" class="btn" data-variant="link" data-fold-text="${esc(key)}">더 보기</button>`;
   }
-  // 서버가 준 글(시드의 역할 · 목표)에 남은 옛 말 · 영문을 화면 말 정본으로(UIUX_PLAN 4절 — 효과 확인 · 정비 요청 · 설비에 명령). 재관측 등은 UI.words 가 바꾼다
-  const say = t => UI.words(String(t || '')).replace(/PLC 명령\s*발행(\s*\(Incident 경로\))?/g, '설비에 명령').replace(/작업지시/g, '정비 요청').replace(/타이머/g, '시간 대기');
+  // 서버가 준 글(시드의 역할 · 목표)에 남은 옛 말 · 영문은 공용 UI.words 가 화면 말 정본으로 바꾼다(UIUX_PLAN 4절 — 효과 확인 · 정비 요청 · 설비에 명령. 다른 화면도 같은 말을 쓴다).
+  // 이 화면만 더 바꾸는 것은 시스템 수행자의 역할 설명에 나오는 「타이머」 하나다(→ 시간 대기). 「경계 타이머」처럼 그대로 쓰는 말이 있어 공용으로 올리지 않는다
+  const say = t => UI.words(String(t || '')).replace(/타이머/g, '시간 대기');
   const sysName = a => (a.kind !== 'agent' && UI.who(a.id) !== a.id ? UI.who(a.id) : a.name);
   const clip = (t, n = 48) => (t.length > n ? t.slice(0, n) + '…' : t);
   const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${UI.flowName(s.name)}`;   // 정의에 등록된 이름 먼저

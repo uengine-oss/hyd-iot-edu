@@ -18,19 +18,21 @@
   const who = id => UI.roleName(id, I.view?.definition);
   // 복구 패널(다시 수행 · 실행 효과 · 보류 · 재전달 · 단계 닫기)의 담당자 기본값: 이 PC의 담당자 — 못 읽었으면 빈 칸(지어낸 기본 이름을 넣지 않는다)
   const actor = () => window.hydInbox?.me?.()?.id || '';
-  // 사람이 처리할 단계인가. 맡은 쪽이 AI 에이전트(agent:…)나 시스템(sys:…)인 작업 행은 워커가 아직 가져가기 전(agent_orch 가 비어 있는 순간)에도 사람 단계가 아니다 —
-  // 그 순간 목록 줄이 「승인 대기」 뱃지와 사람 아이콘을 달았다(독립 검토 가-4)
-  const isHuman = t => UI.doerOf(t) === 'human' && !/^(agent:|sys:)/.test(String(t.user_id || ''));
+  // 사람이 처리할 단계인가 — 판정은 ui.js(hydCases.isHumanTask) 한 곳이다(목록의 「내 차례」 묶음 · 메뉴의 건수 점 · 홈 카드가 같은 식으로 센다)
+  const isHuman = hydCases.isHumanTask;
   const josa = (word, pair) => window.hydWords ? hydWords.josa(word, pair) : '';
-  const WINDOW = 50;                                   // 목록 한 번에 읽는 건수
+  const WINDOW = hydCases.WINDOW;                      // 목록 한 번에 읽는 건수(ui.js — 홈 카드도 같은 건수를 읽는다)
   // 사건이 아닌 시스템 작업(질문 · 문서 추출 흐름) — 목록에서 사건과 가르는 표시. 서버가 준 흐름 정의 id 로만 가른다
   const SYSTEM_DEFS = new Set(['ask_agent', 'manual_extraction', 'manual_source_extraction', 'golden_questions', 'timeseries_question', 'business_question', 'rule_question']);
   const isSystemJob = x => SYSTEM_DEFS.has(String(x.proc_def_id || '').split('.')[0]);
-  // 끝난 처리 건의 결과(정상 · 미달 · 반려 · 지연 · 입고 완료)를 상태 낱말 하나로 — 미달(ESCALATED) 종결도 「완료」로만 보이지 않게
+  // 끝난 처리 건의 결과(정상 · 미달 · 반려 · 지연 · 입고 완료)를 상태 낱말 하나로 — 미달(ESCALATED) 종결도 「완료」로만 보이지 않게.
+  // 결과 보고가 없는 건은 끝 이벤트의 이름이 결과다(「사람이 닫음」 · 「조치 전 해소」 — 결과 카드가 말하는 것과 같은 말. 그런 건을 「완료」라고 하지 않는다).
+  // 끝 이벤트의 이름이 「끝」 · 「처리 완료」처럼 뜻 없는 말일 때만 상태 이름(완료 · 취소)으로 말한다
   function outcomeOf(inst) {
     if (!inst || inst.status === 'RUNNING') return null;
     const rep = inst.status === 'COMPLETED' && window.hydResultReport ? hydResultReport.fromValues(UI.valuesOf(inst)) : null;
-    if (!rep || !rep.verdict) return { label: UI.status(inst.status), tone: 'neutral' };
+    const end = String(inst.end_label || '').trim();
+    if (!rep || !rep.verdict) return { label: inst.status === 'COMPLETED' && !UI.plainEnd(end) ? end : UI.status(inst.status), tone: 'neutral' };
     return { label: rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : rep.verdict === 'rejected' ? '반려' : UI.status(inst.status)),
              tone: rep.verdict === 'ok' ? 'success' : rep.verdict === 'fail' ? 'danger' : 'neutral', verdict: rep.verdict };      // 반려는 실패가 아니라 사람이 내린 결정이다 — 무채색
   }
@@ -52,12 +54,12 @@
     return { label: o.label, tone: o.tone };
   }
   const stateChip = x => { const s = stateOf(x); return UI.chipText(s.label, s.tone); };
-  // 끝난 건의 보조 줄에 덧붙일 말: 결과 보고가 없는 건만 끝 이벤트의 이름 — 「끝」 같은 뜻 없는 이름은 적지 않는다
+  // 끝난 건의 보조 줄에 덧붙일 말: 알약이 상태 이름(취소)인 건만 끝 이벤트의 이름 — 「끝」 같은 뜻 없는 이름은 적지 않는다.
+  // 「처리 완료」는 묶음 머리가, 결과는 줄의 알약이 말한다(결과 보고가 없는 건의 알약은 끝 이벤트의 이름이다 — outcomeOf) — 알약과 같은 말을 또 적지 않는다
   function endText(x) {
     const o = outcomeOf(x); if (!o) return '';
     const end = String(x.end_label || '').trim();
-    const word = !o.verdict && !UI.plainEnd(end) && end !== o.label ? end : o.label;      // 결과 보고가 없는 건만 끝 이벤트의 이름으로 말한다
-    return word === o.label ? '' : word;      // 「처리 완료」는 묶음 머리가, 결과는 줄의 알약이 말한다 — 그 밖의 끝 이름만 적는다
+    return !o.verdict && !UI.plainEnd(end) && end !== o.label ? end : '';
   }
   // 지금 단계가 AI 에이전트의 단계인가(그 흐름 정의에서 읽은 것 — 이름으로 짐작하지 않는다)
   const aiNow = x => { const ag = I.defAgents[`${x.proc_def_id}@${x.proc_def_version}`]; return !!ag && (x.current_activity_ids || []).some(id => ag.has(String(id).replace(/^task:/, ''))); };
@@ -122,7 +124,7 @@
       } catch (e) { todoError = e.message; }
     }
     I.todoError = todoError;
-    if (!todoError) { I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED'); I.timers = todoRows.filter(t => t.due_date && !isHuman(t)); }
+    if (!todoError) { I.todoRows = todoRows; I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED'); I.timers = todoRows.filter(t => t.due_date && !isHuman(t)); }
     // Polling must not erase the snapshot used by an already visible action.
     // A click can render synchronously while any of these requests is waiting.
     let nextView = null, nextViewErr = null;
@@ -283,26 +285,27 @@
       box.insertAdjacentHTML('beforeend', UI.errorBlock('내가 할 일을 읽지 못했습니다', I.todoError + (I.todo.length || I.asked.length ? ' — 아래는 마지막으로 읽은 목록입니다' : ''), { retry: true, cls: 'compact' }));
       box.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     }
+    // 묶음 셋과 그 수는 ui.js hydCases.groups 가 정한다 — 홈의 단계 카드와 메뉴의 건수 점이 같은 함수로 세어, 같은 이름이 다른 수를 내지 않는다
+    const g = hydCases.groups({ all: I.all, running: I.running, done: I.done, todo: I.todoRows || [] });
     const known = pid => I.instances.find(r => r.proc_inst_id === pid);
-    const tasks = I.asked.concat(I.todo.filter(t => !I.asked.some(a => a.id === t.id)));
+    const tasks = g.mine;
     if (tasks.length) group('내 차례', tasks.length);
     tasks.forEach(t => {
       const x = known(t.proc_inst_id) || { proc_inst_id: t.proc_inst_id, proc_inst_name: t.proc_inst_name, status: 'RUNNING' };
       add(t.proc_inst_id === I.sel && (!I.taskView || I.taskView.id === t.id || t.draft_status === 'HUMAN_ASKED'), x, rowHtml(x, t), () => pick(t.proc_inst_id, t.id), { inst: t.proc_inst_id, todoTask: t.id });
     });
     // ② 진행 중: 멈춘 건(사람 조치 필요) 먼저, 그다음 서버가 준 차례(최근 것부터). 내 차례 묶음에 있는 건은 또 적지 않는다
-    const mine = new Set(tasks.map(t => t.proc_inst_id));
-    const running = I.instances.filter(x => x.status === 'RUNNING' && !mine.has(x.proc_inst_id));
+    const running = g.open;
     const open = running.filter(x => x.attention).concat(running.filter(x => !x.attention));
     if (open.length) group('진행 중', open.length);
     open.forEach(x => add(x.proc_inst_id === I.sel, x, rowHtml(x), () => pick(x.proc_inst_id, null), { inst: x.proc_inst_id }));
-    // ③ 처리 완료: 접은 채로는 사건 3건(질문 · 문서 추출 같은 시스템 작업은 사건이 모자랄 때만 채운다)과 지금 고른 건. 펴면 시작한 차례대로 전부
-    const done = (I.done || I.all).filter(x => x.status !== 'RUNNING');
+    // ③ 처리 완료: 접은 채로는 사건 3건(질문 · 문서 추출 같은 시스템 작업은 사건이 모자랄 때만 채운다)과 지금 고른 건. 펴면 시작한 차례대로 전부.
+    // 묶음 머리의 수는 접었든 폈든 끝난 건 전부(시스템 작업 포함)다 — 「더 보기」로 펴면 그 수만큼의 줄이 보인다
+    const done = g.done;
     const head = I.doneOpen ? done : done.filter(x => !isSystemJob(x)).concat(done.filter(isSystemJob)).slice(0, DONE_SHOWN);
     const sel = !I.doneOpen && done.find(x => x.proc_inst_id === I.sel && !head.includes(x));
     const shown = sel ? head.slice(0, DONE_SHOWN - 1).concat([sel]) : head;
-    const more = (I.doneOpen ? '' : `${done.length}${I.all.length >= WINDOW ? '+' : ''}`);
-    if (done.length) group('처리 완료', I.doneOpen ? `${done.length}${done.length >= WINDOW ? '+' : ''}` : more);
+    if (done.length) group('처리 완료', g.doneText);
     shown.forEach(x => add(x.proc_inst_id === I.sel, x, rowHtml(x), () => pick(x.proc_inst_id, null), { inst: x.proc_inst_id }));
     if (!I.doneOpen && done.length > shown.length) {
       const m = el('div', 'rows-more', UI.moreButton(done.length - shown.length, 'data-done-more', { what: '처리 완료', unit: I.all.length >= WINDOW ? '건 넘게' : '건' }));
@@ -807,7 +810,7 @@
     if (inst.status !== 'RUNNING') {
       const html = window.hydResultReport ? hydResultReport.html(view) : '';
       if (html) return html;
-      return UI.card({ cls: 'case-result', attrs: 'aria-label="결과"', title: '결과', body: `<p class="result-main">${esc(endText(inst) || outcomeOf(inst).label)}</p><p class="result-sub">결과 보고가 남지 않은 처리 건입니다. 무엇이 실행됐는지는 아래 진행 상황에 있습니다.</p>` });
+      return UI.card({ cls: 'case-result', attrs: 'aria-label="결과"', title: '결과', body: `<p class="result-main">${esc(outcomeOf(inst).label)}</p><p class="result-sub">결과 보고가 남지 않은 처리 건입니다. 무엇이 실행됐는지는 아래 진행 상황에 있습니다.</p>` });
     }
     const a = view.attention;
     if (!a) return '';
@@ -871,7 +874,7 @@
     setHtml(box.querySelector('.case-meta'), metaLine(view, pr));
     setHtml(box.querySelector('.case-bar'), pr.total ? UI.progress(pr.done, pr.total, { label: '끝난 단계' }) : '');
     // 다음 할 일(4-3): 이 건이 따라간 흐름을 보러 가는 길 하나 — 카드 아래 고정 줄의 오른쪽 끝
-    setHtml(box.querySelector('.case-progress > footer'), `<span class="muted">흐름 「${esc(flowNameOf(view))}」 · 판 ${esc(inst.proc_def_version ?? '')}</span>${UI.goLink('flows', '흐름 보기')}`);
+    setHtml(box.querySelector('.case-progress > footer'), `<span class="muted">흐름 「${esc(flowNameOf(view))}」 · 판본 ${esc(inst.proc_def_version ?? '')}</span>${UI.goLink('flows', '흐름 보기')}`);
     // 내가 할 일(질문 · 승인 · 입력) — 쓰는 중이면 건드리지 않는다
     const panel = box.querySelector('#todoPanel');
     if (typingIn(panel)) held = true; else renderTodoPanel();
@@ -1110,7 +1113,7 @@
     const rows = (x.workitems || []).map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(UI.flowName(w.executes_name || ''))}<br><span class="muted">${esc(KNOWLEDGE_KIND[w.executes_type] || w.executes_type || '')}</span>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');
     const warnings = (x.warnings || []).map(w => `<p class="muted" data-tone="danger">확인 필요: ${esc(w)}</p>`).join('');
     const version = x.definition || {};
-    return sync + warnings + `<p>흐름 <b title="${esc(version.id || '')}">${esc(UI.defName(version.id || ''))}</b> · 판 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}</p>
+    return sync + warnings + `<p>흐름 <b title="${esc(version.id || '')}">${esc(UI.defName(version.id || ''))}</b> · 판본 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}</p>
       <div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('knowledge'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th></tr></thead><tbody>${rows}</tbody></table></div>${cy}`;
   }
   // 기록 줄의 「누가」: 실행기 이름(cliagents:claude-code) 같은 내부 값을 그대로 보이지 않는다. 값 이름(영문 키)은 이름 사전으로, 원문(JSON)은 그 줄의 원문 접기에만 둔다

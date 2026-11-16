@@ -213,9 +213,11 @@ const UI = {
   idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
   // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
+  // 서버가 준 글(흐름 정의의 역할 설명 · 에이전트의 역할 · 목표)에 남은 「PLC 명령 발행」 · 「작업지시」도 정본 말(UIUX_PLAN 4절 — 설비에 명령 · 정비 요청)로 — 화면마다 따로 바꾸지 않는다.
+  // 「타이머」는 여기서 바꾸지 않는다: 「경계 타이머」처럼 그대로 쓰는 말이 있어 문장을 가리지 않고 바꾸면 틀린 말이 된다(에이전트 화면의 역할 설명에서만 agents.js 가 바꾼다)
   // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 진행 상황 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
   words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
-    .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
+    .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/PLC 명령\s*발행(\s*\(Incident 경로\))?/g, '설비에 명령').replace(/작업지시/g, '정비 요청').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
     try {
@@ -1103,3 +1105,22 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 
 // [data-go-tab="화면 이름"] 단추: 다음 할 일이 있는 화면으로 옮긴다(빈 화면 · 완료 안내 · 사본을 지운 자리의 「이제 어디서 하는가」 링크가 함께 쓴다 — UI.emptyGo)
 if (typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go-tab]'); if (b && typeof selectTab === 'function') selectTab(b.dataset.goTab); });
+
+/* 처리 건 목록의 묶음 셋(내 차례 · 진행 중 · 처리 완료)을 세는 곳 — 정본은 여기 하나다. 처리 건 화면의 목록(instances.js renderList), 홈의 단계 카드(main.js · app.js refreshCases),
+   메뉴 「처리 건」 곁의 건수 점(app.js refreshTodoCount)이 모두 이 함수로 센다. 같은 이름(「내 차례」 · 「진행 중」 · 「처리 완료」)이 화면마다 다른 수를 내지 않게, 세는 식의 사본을 다른 파일에 두지 않는다.
+     all · running: GET /api/instances?limit=50 과 그 status=RUNNING(서버가 거른 것), done: 「더 보기」로 편 뒤 서버가 상태로 거른 끝난 건(없으면 null), todo: GET /api/todolist?status=IN_PROGRESS 의 행.
+   돌려주는 값: mine(내 차례 — 사람이 처리할 단계 하나가 한 줄, 에이전트의 질문 먼저) · open(진행 중 — 내 차례 묶음에 있는 건은 또 세지 않는다) · done(끝난 건 — 질문 · 문서 추출 같은 시스템 작업도 처리 건이다)
+   · doneText(묶음 머리의 수 — 한 번에 읽는 건수를 채웠으면 「50+」). */
+const CASE_WINDOW = 50;      // 목록 한 번에 읽는 건수
+// 사람이 처리할 단계인가. 맡은 쪽이 AI 에이전트(agent:…)나 시스템(sys:…)인 작업 행은 워커가 아직 가져가기 전(agent_orch 가 비어 있는 순간)에도 사람 단계가 아니다
+const isHumanTask = t => UI.doerOf(t) === 'human' && !/^(agent:|sys:)/.test(String(t.user_id || ''));
+function caseGroups({ all = [], running = [], done = null, todo = [] }) {
+  const asked = todo.filter(t => t.draft_status === 'HUMAN_ASKED');
+  const mine = asked.concat(todo.filter(t => isHumanTask(t) && !asked.some(a => a.id === t.id)));
+  const turn = new Set(mine.map(t => t.proc_inst_id)), seen = new Set();
+  const rows = running.concat(all, done || []).filter(x => !seen.has(x.proc_inst_id) && seen.add(x.proc_inst_id));
+  const ended = (done || all).filter(x => x.status !== 'RUNNING');
+  return { mine, rows, open: rows.filter(x => x.status === 'RUNNING' && !turn.has(x.proc_inst_id)), done: ended,
+           doneText: `${ended.length}${(done ? ended.length : all.length) >= CASE_WINDOW ? '+' : ''}`, more: all.length >= CASE_WINDOW };
+}
+window.hydCases = { groups: caseGroups, isHumanTask, WINDOW: CASE_WINDOW };

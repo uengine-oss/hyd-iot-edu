@@ -315,21 +315,23 @@ def test_실시간_점은_연결_상태만_말하고_다시_이어지면_연결�
     assert '팬 속도를 올려도 됩니까?' in on['detail']                              # 받은 활동은 펼친 판에 남아 있다
 
 
-def test_처리_건_곁의_건수는_내_차례인_처리_건_수이고_없으면_그리지_않는다(portal):
-    """메뉴 「처리 건」 곁의 동그라미(app.js refreshTodoCount): 사람 단계가 열렸거나 AI 에이전트가 질문한 처리 건을 건 단위로 센다(한 건에 단계가 둘이어도 1).
-    AI 에이전트나 시스템이 일하는 중인 건은 세지 않는다. 0 이면 동그라미를 그리지 않는다."""
+def test_처리_건_곁의_건수는_처리_건_목록의_내_차례_묶음과_같은_셈이고_없으면_그리지_않는다(portal):
+    """메뉴 「처리 건」 곁의 동그라미(app.js refreshTodoCount): 처리 건 목록의 「내 차례」 묶음과 같은 함수(ui.js hydCases.groups)로 센다 — 사람이 처리할 단계 하나가 한 줄이고
+    (한 건에 사람 단계가 둘이면 목록에 두 줄이 서고 수도 2다), AI 에이전트가 사람에게 물은 건이 한 줄이다. AI 에이전트나 시스템이 일하는 중인 건은 세지 않는다. 0 이면 동그라미를 그리지 않는다.
+    (2026-11-16 전에는 동그라미가 건 단위로, 목록 묶음이 줄 단위로 세어 같은 「내 차례」가 다른 수를 냈다.)"""
     page = portal
     todo = '**/svc/process/api/todolist**'
-    rows = [{'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 사람 단계
-            {'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 같은 건의 사람 단계 하나 더
-            {'proc_inst_id': 'inst-b', 'agent_orch': 'cliagents', 'agent_mode': 'draft', 'draft_status': 'HUMAN_ASKED'},   # AI 에이전트가 사람에게 물은 건
-            {'proc_inst_id': 'inst-c', 'agent_orch': 'cliagents', 'agent_mode': 'draft', 'draft_status': 'STARTED'},       # AI 에이전트가 일하는 중
-            {'proc_inst_id': 'inst-d', 'agent_orch': 'service', 'agent_mode': None}]                                 # 시스템 단계
+    rows = [{'id': 'w1', 'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 사람 단계
+            {'id': 'w2', 'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 같은 건의 사람 단계 하나 더
+            {'id': 'w3', 'proc_inst_id': 'inst-b', 'agent_orch': 'cliagents', 'agent_mode': 'draft', 'draft_status': 'HUMAN_ASKED'},   # AI 에이전트가 사람에게 물은 건
+            {'id': 'w4', 'proc_inst_id': 'inst-c', 'agent_orch': 'cliagents', 'agent_mode': 'draft', 'draft_status': 'STARTED'},       # AI 에이전트가 일하는 중
+            {'id': 'w5', 'proc_inst_id': 'inst-d', 'agent_orch': 'service', 'agent_mode': None},                                 # 시스템 단계
+            {'id': 'w6', 'proc_inst_id': 'inst-e', 'agent_orch': None, 'agent_mode': None, 'user_id': 'agent:cooling'}]          # 워커가 아직 가져가지 않은 AI 에이전트 단계 — 사람 단계가 아니다
     seen = "() => { const n = document.getElementById('navTodo'); return [n.textContent, n.getAttribute('aria-label'), n.checkVisibility()]; }"
     try:
         page.route(todo, lambda route: route.fulfill(json=rows))
         page.evaluate('() => refreshTodoCount()')
-        assert page.evaluate(seen) == ['2', '내가 할 일 2건', True]
+        assert page.evaluate(seen) == ['3', '내가 할 일 3건', True]
         page.unroute(todo)
         page.route(todo, lambda route: route.fulfill(json=rows[3:]))
         page.evaluate('() => refreshTodoCount()')
@@ -416,19 +418,23 @@ def test_실시간_연결_상태는_점_하나이고_올리면_글이_뜨고_누
     page.mouse.move(600, 400)
 
 
-def _home(page, *, incidents=None, todo=None):
-    """홈을 열고, 처리 건 목록 · 내 할 일 목록을 준 값으로 읽게 한 뒤 단계 카드가 그 값으로 그려질 때까지 기다린다. 돌려주는 것은 카드 넷이 화면에 보이는 꼴이다."""
+def _home(page, *, instances=None, todo=None):
+    """홈을 열고, 처리 건 목록(GET /api/instances — 처리 건 화면이 읽는 그 목록) · 내 할 일 목록을 준 값으로 읽게 한 뒤 단계 카드가 그 값으로 그려질 때까지 기다린다. 돌려주는 것은 카드 넷이 화면에 보이는 꼴이다."""
     routes = []
-    if incidents is not None:
-        routes.append(('**/svc/process/api/incidents', incidents))
+    if instances is not None:
+        routes.append(('**/svc/process/api/instances**', instances))
     if todo is not None:
         routes.append(('**/svc/process/api/todolist**', todo))
     def answer(rows):
-        return lambda route: route.fulfill(json=rows)
+        def send(route):
+            status = '/api/instances' in route.request.url and re.search(r'[?&]status=(\w+)', route.request.url)      # 처리 건 목록은 서버처럼 상태로 거른다(진행 중인 건만 따로 읽는다)
+            route.fulfill(json=[r for r in rows if not status or r.get('status') == status.group(1)])
+        return send
     for url, rows in routes:
         page.route(url, answer(rows))
     try:
-        page.evaluate("() => { selectTab('main'); scrollTo(0, 0); return refreshSlow(); }")
+        # 2초마다 도는 읽기가 마침 돌고 있으면 refreshSlow() 는 곧바로 돌아온다(그 읽기는 대역을 물리기 전의 응답을 쓸 수 있다) — 그 읽기가 끝난 뒤 한 번 더 읽는다
+        page.evaluate("async () => { selectTab('main'); scrollTo(0, 0); while (refreshSlow.busy) await new Promise(r => setTimeout(r, 50)); await refreshSlow(); }")
         page.wait_for_function("() => document.querySelectorAll('#mainStages > .stat').length === 4")
         page.wait_for_timeout(1200)                                      # 홈은 1초마다 값이 바뀌었는지 보고 다시 그린다
         return page.evaluate("""() => [...document.querySelectorAll('#mainStages > .stat')].map(c => { const r = c.getBoundingClientRect(), pill = c.querySelector('.stat-pill .tag');
@@ -446,8 +452,8 @@ def test_홈의_단계_카드_넷은_이야기_차례로_한_줄에_서고_카�
     page = portal
     page.set_viewport_size({'width': 1440, 'height': 900})
     try:
-        rows = [{'id': 'a', 'terminal': False}, {'id': 'b', 'terminal': True}, {'id': 'c', 'terminal': True}, {'id': 'd', 'terminal': True}]
-        cards = _home(page, incidents=rows, todo=[])
+        rows = [{'proc_inst_id': 'a', 'status': 'RUNNING'}, {'proc_inst_id': 'b', 'status': 'COMPLETED'}, {'proc_inst_id': 'c', 'status': 'COMPLETED'}, {'proc_inst_id': 'd', 'status': 'CANCELLED'}]
+        cards = _home(page, instances=rows, todo=[])
         assert [c['label'] for c in cards] == ['1 지식 넣기', '2 고장 내기', '3 판단과 승인', '4 결과 보기']
         assert [c['tab'] for c in cards] == ['knowledge', 'scenario', 'instances', 'instances']
         assert len({c['top'] for c in cards}) == 1 and len({c['bottom'] for c in cards}) == 1 and len({c['foot'] for c in cards}) == 1, f'카드 넷이 같은 줄 · 같은 높이이고 아래 고정 줄이 같은 자리다: {cards}'
@@ -467,17 +473,19 @@ def test_홈의_단계_카드_넷은_이야기_차례로_한_줄에_서고_카�
 
 def test_홈의_판단과_승인_카드는_내_차례가_있을_때만_주황_알약을_단다(portal):
     page = portal
-    todo = [{'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None}, {'proc_inst_id': 'inst-b', 'agent_orch': None, 'agent_mode': None}]
-    cards = _home(page, incidents=[{'id': 'a', 'terminal': False}, {'id': 'b', 'terminal': False}], todo=todo)
+    todo = [{'id': 'w1', 'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None}, {'id': 'w2', 'proc_inst_id': 'inst-b', 'agent_orch': None, 'agent_mode': None}]
+    running = [{'proc_inst_id': 'inst-a', 'status': 'RUNNING'}, {'proc_inst_id': 'inst-b', 'status': 'RUNNING'}, {'proc_inst_id': 'inst-c', 'status': 'RUNNING'}]
+    cards = _home(page, instances=running, todo=todo)
     assert [(c['pill'], c['pillTone']) for c in cards] == [('', ''), ('', ''), ('내 차례 2', 'mine'), ('', '')], cards
-    cards = _home(page, incidents=[{'id': 'a', 'terminal': False}], todo=[])
+    assert cards[2]['value'].startswith('1'), cards      # 내 차례인 두 건은 「진행 중」에 또 세지 않는다(처리 건 목록의 묶음과 같다)
+    cards = _home(page, instances=running[:1], todo=[])
     assert [c['pill'] for c in cards] == ['', '', '', ''], '내 차례가 없어지면 알약도 없어진다'
 
 
 def test_홈의_카드는_읽지_못한_값을_0이나_없음으로_보이지_않는다(portal):
     """이 포털은 서비스 요청이 모두 끊겨 있다 — 지식 수 · 설비 값 · 처리 건 수를 읽지 못한 카드는 숫자 대신 「읽기 실패」를 보이고 까닭을 title 에 둔다."""
     page = portal
-    page.evaluate("() => { selectTab('main'); state.incidents = []; state.incidentsRead = false; return refreshSlow(); }")
+    page.evaluate("() => { selectTab('main'); state.cases = null; return refreshSlow(); }")
     page.wait_for_function("() => [...document.querySelectorAll('#mainStages > .stat')].filter(c => c.querySelector('.stat-value').textContent.trim() === '읽기 실패').length >= 3", timeout=20000)
     cards = page.evaluate("() => [...document.querySelectorAll('#mainStages > .stat')].map(c => [c.querySelector('.stat-value').textContent.trim(), c.dataset.tone || '', !!c.title])")
     assert cards[1] == ['읽기 실패', 'danger', True] and cards[2] == ['읽기 실패', 'danger', True] and cards[3] == ['읽기 실패', 'danger', True], cards

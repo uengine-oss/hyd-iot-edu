@@ -72,7 +72,9 @@ def test_처음_보이는_보기는_원천과_표이고_숫자_카드_없이_한
             assert tabs.nth(0).get_attribute('aria-selected') == 'true'
             # 숫자 카드가 없다 — 상태는 탭 안의 한 줄이고, 탭 이름 뒤 건수와 같은 수를 큰 숫자로 또 보이지 않는다
             assert page.locator('#fabricView .stat').count() == 0
-            assert page.inner_text('#fabricView .fab-line') == '원천 2개가 모두 연결돼 있고 읽기 전용입니다.'
+            # 상태 한 줄은 원천의 수와 그 이름을 함께 말한다 — 이름은 아래 목록의 묶음 머리와 같다(대역 2026-11-16: 「원천 3개」인데 첫 원천의 표가 한 화면을 채워 「하나뿐」으로 읽혔다)
+            line, heads = page.inner_text('#fabricView .fab-line'), page.evaluate("[...document.querySelectorAll('#fabricView .fab-tables .rows-group')].map(g => g.firstChild.textContent)")
+            assert heads == [x['label'] for x in SOURCES] and f'원천 {len(heads)}개({" · ".join(heads)})' in line and '모두 연결' in line and '읽기 전용' in line, (line, heads)
             current = lambda: page.locator("#fabricView [data-fab-table][aria-current='true']").all_inner_texts()
             assert current() == [] and '표를 고르세요' in page.inner_text('#fabricView .panel')
             page.click("#fabricView [data-fab-table='hyd-enterprise|parts']")

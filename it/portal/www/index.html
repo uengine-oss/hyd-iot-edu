@@ -258,14 +258,14 @@
   <section class="view" id="view-knowledge" data-kit>
     <!-- 문서 → 지식(디자인기준 5-3 단계 폼): 머리 아래 보기 탭(매뉴얼 · 업무 DB 표 정의) → 단계 줄(올리기 → AI 추출 → 검토 → 적재) → 지금 단계의 내용 하나 → 「적재한 문서」 목록.
          그리는 코드는 hitl.js(업무 DB 표의 뜻 후보는 legacyMeaning.js), 배치는 knowledge.css -->
-    <div data-page-head="knowledge" data-sub="문서를 올리면 AI가 조치 방법을 뽑고, 사람이 검토한 것만 지식 지도에 적재합니다."></div>
+    <div data-page-head="knowledge" data-sub="문서를 올리면 AI가 조치 방법을 뽑고, 사람이 검토해 지식 지도에 적재합니다."></div>
     <div class="tabs view-tabs" id="docKinds"><nav role="tablist" aria-orientation="horizontal" aria-label="올릴 것"><button type="button" role="tab" aria-selected="true" tabindex="0" data-doc-kind="manual">매뉴얼</button><button type="button" role="tab" aria-selected="false" tabindex="-1" data-doc-kind="ddl">업무 DB 표 정의</button></nav></div>
     <div data-doc-pane="manual">
       <div class="panel doc-panel" id="manualUpload">
         <div class="stream-phases doc-phases" id="manualSteps" role="list" aria-label="문서 등록 단계"></div>
         <!-- 올리기 단계의 두 길(hitl.js showPick): 제공 문서에서 고르기(목록의 줄을 누르면 그 문서를 바로 올린다) · 내 파일 올리기(파일 고르기 + 새 문서 / 개정) -->
         <div class="panel-sec" id="manualPick">
-          <div class="doc-review-bar"><div class="seg" role="group" aria-label="올릴 문서 고르는 방법"><button type="button" aria-pressed="true" data-pick-mode="provided">제공 문서에서 고르기</button><button type="button" aria-pressed="false" data-pick-mode="file">내 파일 올리기</button></div><span class="muted" data-pick="provided">문서를 누르면 올라가 AI 추출로 넘어갑니다. 왼쪽 칸으로 여럿을 고르면 검토 없이 한 번에 적재합니다.</span></div>
+          <div class="doc-review-bar"><div class="seg" role="group" aria-label="올릴 문서 고르는 방법"><button type="button" aria-pressed="true" data-pick-mode="provided">제공 문서에서 고르기</button><button type="button" aria-pressed="false" data-pick-mode="file">내 파일 올리기</button></div><span class="muted" data-pick="provided">문서를 누르면 올라가 AI 추출로 넘어갑니다. 왼쪽 칸으로 여럿을 고르면 사람 검토 대신 자동 검증을 통과한 문서만 한 번에 적재합니다.</span></div>
           <div data-pick="provided"><div id="providedDocs"></div><div id="manualBatch"></div></div>
           <div data-pick="file" hidden>
             <fieldset class="fieldset"><legend>올릴 문서</legend><div role="group">

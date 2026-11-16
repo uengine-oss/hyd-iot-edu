@@ -1273,7 +1273,7 @@
     const box = $('#manualBatch'); if (!box) return;
     const B = H.batch, n = H.picked.size;
     if (!B) {
-      box.innerHTML = n ? `<footer class="form-foot doc-batch-bar"><span class="muted">검토 없이 적재합니다. AI 추출 결과에 사람이 확인할 곳이 있는 문서는 적재하지 않고 멈춥니다.</span>` +
+      box.innerHTML = n ? `<footer class="form-foot doc-batch-bar"><span class="muted">사람 검토 없이 적재합니다. 자동 검증이 사람이 확인할 곳을 찾은 문서는 적재하지 않고 멈춥니다.</span>` +
         `<button type="button" class="btn" id="manualBatchRun">${icon('layers')}고른 ${n}개 한 번에 적재</button></footer>` : '';
       return;
     }

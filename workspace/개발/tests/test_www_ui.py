@@ -114,3 +114,11 @@ def test_기다리는_시스템_단계는_진행_중이고_일을_받기를_기�
     started = [{'todo_id': 'ai', 'event_type': 'task_started', 'job_id': 'j', 'timestamp': T}]
     assert run(FILES, "const x = UI.taskExecution(DATA.w, DATA.e, { status: 'RUNNING' }); out([x.live, x.awaiting])", {'w': rows[1], 'e': started}) == [True, False]
     assert run(FILES, "const x = UI.taskExecution(DATA, [], { status: 'COMPLETED' }); out([x.live, x.awaiting])", rows[0]) == [False, False]      # 끝난 처리 건의 줄은 진행 중이 아니다
+
+
+def test_서버가_준_글의_작업지시와_PLC_명령_발행은_어느_화면에서나_정본_말로_읽히고_경계_타이머는_그대로다():
+    """「작업지시 → 정비 요청」 · 「PLC 명령 발행 → 설비에 명령」 바꾸기가 에이전트 화면 안에만 있어(agents.js) 같은 서버 글이 다른 화면에서는 옛 말로 보였다.
+    공용 UI.words 가 바꾼다(처리 건 · 흐름 · 기록이 모두 이 함수를 거친다 — idText 도). 「타이머」는 「경계 타이머」처럼 그대로 쓰는 말이 있어 공용으로 바꾸지 않는다."""
+    got = run(FILES, "out([UI.words(DATA[0]), UI.idText(DATA[1]), UI.words(DATA[2])])",
+              ['PLC 명령 발행 (Incident 경로)만 발행 · 작업지시 등록', 'enterprise 시스템 (작업지시)', '경계 타이머가 붙은 단계'])
+    assert got == ['설비에 명령만 발행 · 정비 요청 등록', 'enterprise 시스템 (정비 요청)', '경계 타이머가 붙은 단계']

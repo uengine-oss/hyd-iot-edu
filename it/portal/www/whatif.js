@@ -103,14 +103,14 @@
     const v = W.view;
     const stale = v && W.loaded && (W.loaded.asset !== W.asset || W.loaded.pattern !== W.pattern);
     const count = { values: Object.keys(W.values).length || null, rules: ruleCount() || null };
-    // 왼쪽: 조건 판. 주 단추는 하나 — 기준을 불러오기 전에는 [불러오기], 불러온 뒤에는 고른 보기의 계산 단추(기준 보기에서는 [다시 불러오기]가 주 단추다)
+    // 왼쪽: 조건 판. 주 단추는 하나 — 기준을 계산하기 전에는 [기준 계산], 계산한 뒤에는 고른 보기의 계산 단추(기준 보기에서는 [기준 다시 계산]이 주 단추다). 이 단추는 저장된 것을 불러오지 않고 서버가 판단을 새로 계산한다(POST /api/agent/whatif) — 단추 이름이 그 일을 말한다
     const loadMain = !v || W.tab === 'money';
     let left = `<div class="panel-head"><div><h2>시험 조건</h2></div></div><div class="panel-sec">` +
       UI.section('시험 기준',
         UI.field({ label: '설비', input: `<select id="wiAsset" ${W.assets && W.assets.length ? '' : 'disabled'}>${(W.assets || []).map(a => `<option ${a === W.asset ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select>` }) +
         UI.field({ label: '이상 패턴', input: `<select id="wiPattern">${pats}</select>`, hint: patWhy || '판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 저장되지 않습니다.' })) +
-      foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset || patWhy ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
-      (stale ? note(`설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [다시 불러오기]를 눌러야 바뀝니다.`, ' role="status"') : '') + `</div>`;
+      foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset || patWhy ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '기준 다시 계산' : '기준 계산'}</button>`) +
+      (stale ? note(`설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 계산한 ${esc(W.loaded.asset)}의 결과이며, [기준 다시 계산]을 눌러야 바뀝니다.`, ' role="status"') : '') + `</div>`;
     if (v) left += `<div class="panel-sec"><fieldset class="fieldset"><legend>바꿔 볼 것</legend><div role="group">` +
       UI.viewTabs(TABS.map(([k, l]) => [k, l, count[k] || null]), W.tab, 'data-wi-tab', { label: '바꿔 볼 것', small: true }) +
       note(esc(TAB_SAYS[W.tab])) + `</div></fieldset>` + inputsPane(v) + `</div>`;
@@ -119,7 +119,7 @@
       : W.assetsError && !(W.assets && W.assets.length) ? UI.errorBlock('설비 목록을 읽지 못했습니다', W.assetsError, { retry: true }) : '';
     if (W.msg) right += UI.errorBlock('계산하지 못했습니다', W.msg);
     right += v ? resultPane(v) : W.busy ? hydLive.waitHtml('시험 기준을 계산하는 중', { since: W.busySince, hint: '고른 설비와 이상 패턴으로 판단을 한 번 계산해 기준으로 잡는 중입니다(원인 진단 → 조치 후보 → 손익).' })
-      : right ? '' : UI.empty('아직 불러온 시험 기준이 없습니다', '왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 조치 후보별 순위와 손익이 여기에 보이고, 값과 규칙을 바꿔 볼 수 있습니다.');
+      : right ? '' : UI.empty('아직 계산한 시험 기준이 없습니다', '왼쪽에서 설비와 이상 패턴을 고르고 [기준 계산]을 누르면 조치 후보별 순위와 손익이 여기에 보이고, 값과 규칙을 바꿔 볼 수 있습니다.');
     const html = `<div class="io"><form class="panel io-in" id="wiForm" aria-label="시험 조건">${left}</form><div class="io-out" aria-live="polite">${right}</div></div>`;
     // 다시 그리기(1순위가 바뀌는 값 도착 · 다시 계산 결과)가 치던 칸의 포커스 · 커서와 펼친 접기를 지우지 않게(값은 input 이벤트로 이미 상태에 있다)
     const a = document.activeElement, key = a && W.el.contains(a) ? focusKey(a) : null, typed = key && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a.value : null;
@@ -303,7 +303,7 @@
   function wire() {
     const el = W.el, q = s => el.querySelector(s);
     q('#wiForm')?.addEventListener('submit', e => e.preventDefault());      // 칸에서 Enter 를 눌러도 화면이 새로 열리지 않게
-    // 결과가 떠 있는 동안 설비 · 이상 패턴을 바꾸면 다시 그려, 오른쪽 결과가 앞서 불러온 것임을 알린다
+    // 결과가 떠 있는 동안 설비 · 이상 패턴을 바꾸면 다시 그려, 오른쪽 결과가 앞서 계산한 것임을 알린다
     q('#wiAsset')?.addEventListener('change', e => { W.asset = e.target.value; if (W.view) render(); });
     q('#wiPattern')?.addEventListener('change', e => { W.pattern = e.target.value; if (W.view) render(); });
     q('#wiLoad')?.addEventListener('click', load);

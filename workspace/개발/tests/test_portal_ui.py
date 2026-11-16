@@ -202,6 +202,36 @@ def test_상단에_지금_단계가_한_줄로_보인다(tours):
         assert 'PBL 기한 지남' in line
 
 
+def test_도구_연결의_내_도구_서버가_잠긴_까닭은_넓은_화면에서_한_줄이고_서버가_준_까닭의_첫_문장이다(tours):
+    """인수 조건 2: 범위 · 까닭을 말하는 문장은 한 화면에 한 번, 한 줄까지. 서버의 까닭은 두 문장이라 1440 폭에서도 두 줄로 꺾였다.
+    줄에는 첫 문장(무엇이 어느 단계에서 열리는가)만 적고, 실제 브라우저에서 그 글의 높이가 한 줄인지 잰다. 만들 수 있는 단계(PBL)에는 그 줄이 없다."""
+    t = tours(SIZES[1])
+    assert t.access is not None, t.access_error
+    t.open('mcp')
+    t.page.wait_for_selector('#mcpOperator', timeout=15000)
+    reason = t.page.evaluate("() => window.hydCourseAccess.blocked('tool_servers.register') || ''")
+    if not reason:
+        assert t.page.locator('[data-mcp-why]').count() == 0
+        return
+    t.page.wait_for_selector('[data-mcp-why] p', timeout=15000)
+    got = t.page.evaluate("() => { const p = document.querySelector('[data-mcp-why] p'), cs = getComputedStyle(p); return { text: p.innerText.trim(), lines: Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight)) }; }")
+    assert got['lines'] == 1 and reason.startswith(got['text']) and got['text'].endswith('.') and len(got['text']) < len(reason), (got, reason)
+
+
+def test_흐름의_읽기_전용_갈림_표는_조건_글이_줄마다_같은_세로선에서_시작한다(tours):
+    """갈림 이름 칸이 여러 줄에 걸쳐(rowspan) 둘째 줄부터는 「조건」 칸이 그 줄의 첫 칸이 되고, 「표의 첫 칸은 옆 여백을 뺀다」에 걸려 첫 줄의 조건보다 왼쪽으로 나왔다.
+    실제 브라우저에서 조건 글의 왼쪽 자리를 줄마다 잰다(고정 px 가 아니라 서로 같은지)."""
+    t = tours(SIZES[1])
+    t.open('flows')
+    t.page.wait_for_selector('.flow-editor', state='attached', timeout=20000)
+    t.page.evaluate("() => { const d = document.querySelector('.flow-editor').closest('details'); if (d) d.open = true; }")
+    t.page.wait_for_selector('.flow-forks tbody tr', timeout=10000)
+    lefts = t.page.evaluate("""() => [...document.querySelectorAll('.flow-forks tbody tr')].map(tr => { const td = tr.querySelector('td:not([rowspan])'), r = document.createRange();
+      r.selectNodeContents(td); return [!!tr.querySelector('td[rowspan]'), Math.round(r.getBoundingClientRect().left)]; })""")
+    assert {first for first, _ in lefts} == {True, False}, lefts      # 갈림의 첫 줄과 그 뒤 줄이 모두 있다
+    assert len({left for _, left in lefts}) == 1, lefts
+
+
 def test_수업_단계_정보를_못_읽으면_잠그지_않고_다시_시도를_보인다(browser, portal_url):
     """처리 서비스가 늦게 뜬 상황(수업 단계 정보 요청이 끊김) — 메뉴 · 단추를 잠그지 않고, 실패 문구와 [다시 시도]가 보이며 누르면 다시 읽는다."""
     ctx = browser.new_context(viewport={'width': 1366, 'height': 768}, locale='ko-KR')

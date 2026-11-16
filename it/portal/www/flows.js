@@ -446,7 +446,7 @@
       : '기본 제공 흐름은 읽기만 합니다. 고쳐 쓰려면 그림을 받아 bpmn.io에서 고친 뒤 다른 흐름 구분 이름으로 가져옵니다.';
     return `<section aria-label="단계 설정" class="flow-editor flow-readonly"${open ? ' data-limited' : ''} data-start-kind="${h(start.kind || '')}" data-start-keys="${h((start.fields || []).map(f => f.key).join(','))}"><dl class="kv">${kv.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join('')}</dl>
       <div class="table-container"><table class="table"><thead><tr><th>단계</th><th>종류</th><th>누가</th><th>기한</th></tr></thead><tbody>${steps}</tbody></table></div>
-      ${branches ? `<div class="table-container"><table class="table"><thead><tr><th>갈림</th><th>조건</th><th>가는 곳</th></tr></thead><tbody>${branches}</tbody></table></div>` : ''}
+      ${branches ? `<div class="table-container"><table class="table flow-forks"><thead><tr><th>갈림</th><th>조건</th><th>가는 곳</th></tr></thead><tbody>${branches}</tbody></table></div>` : ''}
       <p class="muted">${h(note)}</p></section>`;
   }
   // 제공 흐름만 가져오는 단계에서 가져온 교대 흐름인가 — 서버가 연 칸(hydCourseAccess.handoverEditable)만 고친다. 제한 없는 단계면 null

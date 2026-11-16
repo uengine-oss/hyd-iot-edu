@@ -572,7 +572,10 @@
     S.el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
     const list = (S.secrets && S.secrets.secrets) || [];
     const rows = [];
-    if (why) rows.push(UI.settingRow({ title: '내 도구 서버', desc: why, attrs: 'data-mcp-why' }));
+    // 잠긴 까닭은 한 줄까지다(범위 · 까닭을 말하는 문장은 한 화면에 한 번, 한 줄): 서버가 준 까닭의 첫 문장(무엇이 어느 단계에서 열리는가)만 줄에 적는다.
+    // 둘째 문장(지금도 되는 것 — 연결 검사 · 읽기 도구 써 보기)은 이 화면의 켜진 단추가 이미 말하므로 줄에 적지 않고 올렸을 때의 도움말(title)로 둔다. 문장은 손으로 적지 않는다
+    if (why) { const cut = why.indexOf('. '), lead = cut < 0 ? why : why.slice(0, cut + 1), rest = cut < 0 ? '' : why.slice(cut + 2).trim();
+      rows.push(UI.settingRow({ title: '내 도구 서버', desc: lead, attrs: `data-mcp-why${rest ? ` title="${esc(rest)}"` : ''}` })); }
     if (S.secretsError) rows.push(`<div class="setting" data-mcp-secrets-error>${UI.errorBlock('비밀 값 목록을 불러오지 못했습니다', S.secretsError, { retry: true })}</div>`);
     else if (!why || list.length) {
       list.forEach(x => rows.push(UI.settingRow({ title: x.key, attrs: `data-secret="${esc(x.key)}"`,

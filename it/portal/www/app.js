@@ -519,8 +519,10 @@ function bizOf(asset) {
   const all = state.biz && state.biz.scenarios ? Object.values(state.biz.scenarios) : [];
   return all.find(b => b.asset === asset) || null;
 }
-// 업무 사건의 표시 알약(사건 이름 바로 뒤): 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 처리됨 · 업무 시스템 응답 없음 — 못 읽은 것을 「표시 없음」으로 보이지 않는다.
-// 상태만 말한다 — 그 처리 건으로 가는 길은 카드 아래 고정 줄 「처리 건에서 보기」 하나다(알약을 링크로 쓰지 않는다)
+// 업무 사건의 표시 알약(사건 이름 바로 뒤): 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 업무 시스템 응답 없음 — 못 읽은 것을 「표시 없음」으로 보이지 않는다.
+// 알약은 그 사건의 지금 표시(업무 데이터의 도래 · 필요 — 바로 아래 값 한 줄과 같은 사실)와 진행 중인 처리 건이 있는지만 말한다. 끝난 처리 건의 결과(반려 · 정상 · 미달)는 여기에 두지 않는다 —
+// 사건 한 건의 결과는 처리 건 화면 한 곳에 있고, 반려된 뒤에도 표시가 켜져 있으면 알약은 그 표시(「정기 점검 도래」 · 「재고 보충 필요」)다(값 줄 옆의 「반려」는 「반려돼서 재고가 그대로」로 읽혔다).
+// 표시가 꺼졌고 진행 중인 건도 없으면 알약이 없다(값 한 줄이 「보충할 수량 없음」처럼 그 사실을 말한다). 그 처리 건으로 가는 길은 카드 아래 고정 줄 「처리 건에서 보기」 하나다(알약을 링크로 쓰지 않는다)
 function bizAlertHtml(asset) {
   const pill = (label, tone, why = '') => why ? `<span title="${esc(why)}">${UI.chipText(label, tone)}</span>` : UI.chipText(label, tone);
   if (asset === FAULT_UNIT.asset) return '';
@@ -528,11 +530,7 @@ function bizAlertHtml(asset) {
   if (state.biz && state.biz.failed) return pill('표시를 읽지 못함', 'danger', state.biz.failed);
   const b = bizOf(asset); if (!b) return '';
   if (b.running) return pill('처리 중', 'accent');
-  // 반려 뒤 [초기화]를 눌렀으면 표시가 「반려」로 남지 않는다 — 마지막 처리 건이 끝난 뒤의 [초기화]면 다시 도래/필요
-  const press = state.biz && state.biz.presses && state.biz.presses[asset];
-  const resetAfter = press && press.button === state.biz.reset_button && b.last && b.last.ended_at && Date.parse(press.at) >= Date.parse(b.last.ended_at);
-  if (b.alert && (b.last?.outcome !== '반려' || resetAfter)) return pill(b.label, 'warning');
-  if (b.last && !b.running) return b.last.outcome === '반려' ? pill('반려') : pill(`처리됨${b.last.outcome ? ` · ${b.last.outcome}` : ''}`, ['미달', '지연'].includes(b.last.outcome) ? 'warning' : 'success');
+  if (b.alert) return pill(b.label, 'warning');
   return b.error ? pill('업무 시스템 응답 없음', 'neutral', b.error) : '';
 }
 // 설비마다 마지막으로 누른 단추(서버의 감사 기록 — 처리 건이 없는 [초기화]도 남는다). 화면 아래 「조작 기록」 접기 안에 보인다
@@ -550,8 +548,9 @@ function bizFactLine(b) {
   if (f.available < f.reorder_point) return `${part} 가용 ${n(f.available)}개 < 재주문점 ${n(f.reorder_point)}개 — 필요 수량 ${n(f.need_qty)}개`;
   return `${part} 가용 ${n(f.available)}개 ≥ 재주문점 ${n(f.reorder_point)}개 — 보충할 수량 없음${f.on_order > 0 ? ` (발주 중 ${n(f.on_order)}개 포함)` : ''}`;
 }
-/* 카드의 단추. 무엇을 하는 단추인지는 도움말이, 누른 뒤의 일은 과정 판이 말한다. 사건 절의 단추 도움말은 뜨는 조각이 아니라 단추 줄 아래의 제자리 줄(.lab-hint)에 나온다 —
-   뜨는 조각은 위에 뜨면 사건 이름 · 값 줄을, 아래에 뜨면 「현장 패널」 줄을 덮는다(사용자가 곧 누를 자리다). 올리거나 초점을 주면 그 줄에 글이 나오고 떠나면 비운다(labHint).
+/* 카드의 단추. 무엇을 하는 단추인지는 도움말이, 누른 뒤의 일은 과정 판이 말한다. 카드의 단추 도움말(사건 절 · 현장 패널 안 모두)은 뜨는 조각이 아니라 카드 본문 맨 아래의 제자리 줄(.lab-hint — 카드마다 하나)에 나온다 —
+   뜨는 조각은 위에 뜨면 사건 이름 · 값 줄을, 아래에 뜨면 「현장 패널」 줄을, 현장 패널 안에서는 옆 단추를 덮는다(사용자가 곧 누를 자리다). 올리거나 초점을 주면 그 줄에 글이 나오고 떠나면 비운다(labHint).
+   그 줄은 단추 줄과 「현장 패널」 사이가 아니라 카드 본문의 맨 아래에 있다 — 두 줄 높이를 늘 지키지만 카드 가운데에 빈 띠를 만들지 않는다.
    일으키기는 카드의 주 단추(단추 줄 첫 자리 — 4-1), 바깥 사건과 되돌리기는 보통 단추다.
    지금 누를 수 없는 단추는 흐리게 두고 도움말과 누른 뒤의 한 줄이 까닭을 말한다(눌러서 아무 일도 없는 단추를 두지 않는다):
    같은 업무 사건의 처리 건이 진행 중이면 새로 시작할 수 없다(서버는 409), 바깥 사건은 서버가 준 까닭(scenarios.<키>.events[].why) */
@@ -561,7 +560,7 @@ const labBtn = (act, label, { primary = false, icon = '', tip = '', off = false,
 const LAB_SLOT = '<span class="btn lab-slot" data-variant="outline" data-size="sm" aria-hidden="true">&nbsp;</span>';      // 그 카드에 없는 단추의 빈 자리(단추와 같은 상자 — 보이지 않는다)
 const eventBtn = ev => labBtn('biz-event', ev.button, { icon: 'clock', off: !ev.enabled, attrs: `data-event="${esc(ev.act)}"`, tip: ev.enabled ? ev.help || '' : ev.why || '지금은 누를 수 없습니다' });
 {
-  const units = $('#units'), hintOf = e => { const b = e.target.closest && e.target.closest('.lab-exp [data-tooltip]'); return b ? [b, b.closest('.lab-exp').querySelector('.lab-hint')] : []; };
+  const units = $('#units'), hintOf = e => { const b = e.target.closest && e.target.closest('.unit [data-tooltip]'); return b ? [b, b.closest('.unit').querySelector('.lab-hint')] : []; };
   const labHint = on => e => { const [b, box] = hintOf(e); if (box) box.textContent = on ? b.dataset.tooltip : ''; };
   units.addEventListener('mouseover', labHint(true)); units.addEventListener('focusin', labHint(true));
   units.addEventListener('mouseout', labHint(false)); units.addEventListener('focusout', labHint(false));
@@ -586,7 +585,7 @@ function labCardHtml(asset) {
         <div role="group" class="field"><label for="mode-${esc(asset)}">${esc(UI.t('plant.modes'))}</label><select class="select" id="mode-${esc(asset)}" data-mode-pick><option value="REMOTE_AUTO">원격 자동 — 승인된 원격 명령을 받음</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
         <div class="lab-manual" role="group" aria-label="수동 조작">${manual('fan', '팬 80 %', '적용하면 원격 수동으로 바뀝니다')}${manual('load', '부하 70 %', '적용하면 원격 수동으로 바뀝니다')}${manual('reset', '보호 정지 해제')}</div>
         <dl class="kv"><dt>${esc(UI.t('plant.state'))}</dt><dd class="plc"></dd><dt>${esc(UI.t('plant.lastCmd'))}</dt><dd class="ack"></dd></dl>
-      </div></details>`,
+      </div></details><p class="lab-hint" aria-hidden="true"></p>`,
     foot: UI.goLink('instances', '처리 건에서 보기') });
 }
 function renderUnits() {
@@ -613,7 +612,7 @@ function renderUnits() {
     const expSig = own ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), !!b.running, (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
     if (exp._sig !== expSig) {
       exp._sig = expSig;
-      exp.innerHTML = expHtml(asset) + '<p class="lab-hint" aria-hidden="true"></p><p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
+      exp.innerHTML = expHtml(asset) + '<p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
     }
     const bizAlert = card.querySelector('.biz-alert'), bizMarkup = bizAlertHtml(asset);
     if (bizAlert && bizAlert._markup !== bizMarkup) { bizAlert.innerHTML = bizMarkup; bizAlert._markup = bizMarkup; }
@@ -622,7 +621,7 @@ function renderUnits() {
     const active = [!own && dz.cooler_health != null && dz.cooler_health < 0.999 ? `쿨러 성능 ${fmt(dz.cooler_health * 100, 0)} %` : '', dz.leak > 0 ? `펌프 A 누설 ${fmt(dz.leak * 100, 0)} %` : '', dz.bearing_wear > 0 ? `팬 베어링 마모 ${fmt(dz.bearing_wear * 100, 0)} %` : ''].filter(Boolean);
     const ramps = (u.faults || []).filter(k => !(own && k === FAULT_UNIT.fault)).map(k => FAULT_LABEL[k] || k);
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${active.join(' · ')}` : '');
-    // 아래 고정 줄: 그 설비에 진행 중인 처리 건이 있을 때만 나타난다(경과 · 승인은 처리 건에서 — 끝난 건의 결과는 사건 이름 뒤 알약이 말한다).
+    // 아래 고정 줄: 그 설비에 진행 중인 처리 건이 있을 때만 나타난다(경과 · 승인 · 결과는 처리 건에서 — 이 카드는 끝난 건의 결과를 따로 보이지 않는다).
     // 설비 결함 카드는 열린 사건의 처리 건으로, 업무 사건 카드는 진행 중인 처리 건으로
     const openInc = openIncidentFor(asset), foot = card.querySelector(':scope > footer'), go = foot.querySelector('.go');
     const bizCase = !own && b ? b.running : null;
@@ -1019,18 +1018,28 @@ async function refreshFast() {
     if (state.tab === 'trends') renderTrends();
   } finally { refreshFast.busy = false; }
 }
-// 메뉴 「처리 건」 곁의 건수 점: 내 차례인 처리 건 수 — 사람 단계가 열렸거나 AI 에이전트가 질문한 건(처리 건 화면의 「내 할 일」 탭과 같은 셈).
+// 메뉴 「처리 건」 곁의 건수 점: 내 차례의 수 — 처리 건 화면의 「내 차례」 묶음과 같은 셈(ui.js hydCases.groups).
 // 0 이면 그리지 않는다. 못 읽었으면 지난 수를 지우고 까닭을 메뉴 줄의 title 에 둔다(0 건으로 읽히지 않게 「?」를 보인다)
 async function refreshTodoCount() {
   const dot = $('#navTodo'), button = dot.closest('a');
   try {
     const rows = requireList(await getJ(API.process + '/api/todolist?status=IN_PROGRESS'), '담당 작업 목록');
-    const n = new Set(rows.filter(t => UI.doerOf(t) === 'human' || t.draft_status === 'HUMAN_ASKED').map(t => t.proc_inst_id)).size;
-    state.todo = n;
+    const n = hydCases.groups({ todo: rows }).mine.length;
+    state.todo = n; state.todoRows = rows; state.todoError = '';
     dot.textContent = n ? (n > 99 ? '99+' : String(n)) : ''; dot.classList.remove('unknown');
     if (n) dot.setAttribute('aria-label', `내가 할 일 ${n}건`); else dot.removeAttribute('aria-label');
     button.title = n ? `내가 할 일 ${n}건` : '';
-  } catch (e) { state.todo = null; state.todoError = e.message; dot.textContent = '?'; dot.classList.add('unknown'); button.title = '내가 할 일 수를 읽지 못했습니다: ' + e.message; }
+  } catch (e) { state.todo = null; state.todoRows = null; state.todoError = e.message; dot.textContent = '?'; dot.classList.add('unknown'); button.title = '내가 할 일 수를 읽지 못했습니다: ' + e.message; }
+}
+// 홈의 단계 카드가 보이는 처리 건 수: 처리 건 화면이 읽는 것과 같은 목록(최근 50건 · 진행 중인 건 · 담당 작업)을 같은 함수로 센다. 홈이 열려 있을 때만 읽는다
+async function refreshCases() {
+  if (state.tab !== 'main') return;
+  try {
+    if (state.todoRows == null) throw new Error(state.todoError || '담당 작업 목록을 읽지 못했습니다.');
+    const list = status => getJ(API.process + `/api/instances?limit=${hydCases.WINDOW}` + (status ? '&status=' + status : '')).then(rows => requireList(rows, '처리 건 목록'));
+    const [all, running] = await Promise.all([list(''), list('RUNNING')]);
+    state.cases = hydCases.groups({ all, running, todo: state.todoRows }); state.caseError = '';
+  } catch (e) { state.caseError = e.message; }
 }
 async function refreshSlow() {
   if (refreshSlow.busy) return; refreshSlow.busy = true;
@@ -1038,6 +1047,7 @@ async function refreshSlow() {
     try { state.incidents = requireList(await getJ(API.process + '/api/incidents'), '사건 목록'); state.incidentError = ''; state.incidentsRead = true; } catch (e) { state.incidentError = e.message; }
     if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed || labFollow) await refreshBiz();
     await refreshTodoCount();
+    await refreshCases();
     if (state.tab === 'incidents') renderScada();
   } finally { refreshSlow.busy = false; }
 }

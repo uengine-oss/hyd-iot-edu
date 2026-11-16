@@ -2821,12 +2821,12 @@ def lab_15_pm(r: Round):
         pm = r.get(f"{r.enterprise}/cmms/pm_status?asset=HYD-02")["facts"]
         if stage == "reject":
             r.check(f"B {i + 1}회 반려 → CMMS 정비 오더 없음 · 이번 오더 번호의 생산 공지 없음 · 도래 표시 그대로", wo1 == wo0 and not (v.get("work_order") or {}).get("ref")
-                    and pm.get("pm_alert") is True and biz_chip(r, "HYD-02") == "반려", f"{wo0}→{wo1} · pm_alert {pm.get('pm_alert')}", kind="exception", axis=AXES[1])
+                    and pm.get("pm_alert") is True and biz_chip(r, "HYD-02") == "정기 점검 도래", f"{wo0}→{wo1} · pm_alert {pm.get('pm_alert')}", kind="exception", axis=AXES[1])
         else:
             ref = (v.get("work_order") or {}).get("ref")
             subj = [m.get("Subject") for m in mails if ref and ref in (m.get("Subject") or "")]
-            r.check("B 승인 → CMMS 정비 오더 1건 · 생산팀 공지 메일 · 도래 표시 꺼짐 · 카드 칩 「처리됨」", wo1 == wo0 + 1 and bool(ref) and bool(subj) and pm.get("pm_alert") is False
-                    and "처리됨" in biz_chip(r, "HYD-02"), f"{wo0}→{wo1} ref={ref} · {subj[:1]}")
+            r.check("B 승인 → CMMS 정비 오더 1건 · 생산팀 공지 메일 · 도래 표시 꺼짐 · 카드의 도래 알약도 꺼짐", wo1 == wo0 + 1 and bool(ref) and bool(subj) and pm.get("pm_alert") is False
+                    and biz_chip(r, "HYD-02") == "", f"{wo0}→{wo1} ref={ref} · {subj[:1]}")
             refs = [ref] + [t.get("ref") or t.get("id") for t in tx_after(r, dec.get("id", "")) if t.get("ref") or t.get("id")][:3]
             ok, note = process_screen_shows(r, [x for x in refs if x])
             r.check("업무 시스템 기록 화면: 업무 시스템 현황 · 거래에 작업지시 · 부품 예약 · 공지의 변경 전 · 후", ok, note)

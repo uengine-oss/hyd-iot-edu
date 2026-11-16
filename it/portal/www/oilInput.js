@@ -78,7 +78,7 @@
         ${UI.field({ label: '메모 (선택)', input: `<textarea id="oilMemo" rows="3" maxlength="2000">${esc(d.memo)}</textarea>` })}</div>
       ${why ? `<div class="alert oil-why" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>보내지 못했습니다</h2><section>${esc(why)}</section></div>` : ''}
       <footer class="form-foot"><button type="button" class="btn" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${UI.icon('send')}${O.sending ? '보내는 중' : '입력 보내기'}</button></footer>
-      <p class="muted oil-by">${esc(m ? m.name : '담당자')} 이름으로 기록됩니다.</p></form>${resultHtml()}`;
+      <p class="muted oil-by">입력자는 이 PC의 담당자로 기록됩니다. 로그인으로 본인 확인을 하지는 않습니다.</p></form>${resultHtml()}`;
     wire();
   }
   function wire() {
