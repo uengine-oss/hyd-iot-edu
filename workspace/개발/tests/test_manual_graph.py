@@ -302,3 +302,57 @@ def test_다른_문서가_참고_절차를_다시_가리키면_대조한_계약_
     other = plan_of(archive, handover_doc, rebind={sop: (manual_graph.skill_id('SOP-HI-03'), pin)})
     with pytest.raises(ValueError, match='SOP 번호와 다릅니다'):
         _read(seeded_graph, manual_references.check_plan, other)
+
+
+def test_적재하지_않은_파일을_새_문서로_다시_올리면_보관한_원문이_늘지_않고_적재한_뒤에는_새_문서가_되며_이미_쌓인_중복에서도_돈다(seeded_graph, archive):
+    """V 8절 3(2026-11-16): 적재하지 않은 제공 문서의 줄을 누를 때마다(= 새 문서로 올리기) 새 문서가 생겨 「보관한 원문」에 같은 원문이 한 건씩 늘었다(HI-01 9건).
+    같은 이름 · 같은 바이트이고 적재된 판이 없는 문서가 있으면 그 문서를 다시 쓴다(보관한 원문 수 그대로 · 같은 source_id — 이전 추출 결과가 이어진다).
+    개정 · 새 문서 구분은 그대로다: 적재된 판이 있는 문서는 다시 쓰지 않아 새 문서가 되고 same_original 이 그 문서를 알린다. 이름이나 내용이 다르면 다른 원문이다.
+    고치기 전에 쌓인 중복(같은 파일의 문서 여럿)이 있어도 가장 최근 것을 다시 쓰고 더 늘지 않는다."""
+    import base64
+    from contextlib import contextmanager
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import course_policy as cp, manual_api
+    from procsvc.manual_approved_cache import ApprovedExtractions
+
+    @contextmanager
+    def driver():
+        yield seeded_graph.driver
+    app = FastAPI()
+    app.state.course = cp.Policy(cp.Phase('pbl'))
+    manual_api.register(app, archive_factory=lambda: archive, driver_factory=driver, tenant='hyd', audit=lambda *a, **k: None,
+                        runtime_factory=lambda: None, approved_cache=ApprovedExtractions())
+    client = TestClient(app)
+    raw, name = DOCS['HM-8']['raw'], DOCS['HM-8']['filename']
+
+    def upload(data, filename=name, document_id=None):
+        r = client.post('/api/kg/manuals/preview', json={'filename': filename, 'data': base64.b64encode(data).decode(), 'document_id': document_id})
+        assert r.status_code == 200, r.text
+        return r.json()
+    total = lambda: client.get('/api/kg/manuals/sources').json()['total']      # noqa: E731 — 화면의 「보관한 원문 n건」
+    # 고치기 전에 쌓인 중복: 같은 파일이 문서 셋으로 보관돼 있다(보관소에 직접 — 옛 판의 올리기가 하던 일)
+    old = [archive.save('hyd', name, raw) for _ in range(3)]
+    assert total() == 3 and len({s['document_id'] for s in old}) == 3
+    first = upload(raw)
+    again = upload(raw)
+    assert total() == 3 and first['source_id'] == again['source_id'] and first['document_id'] in {s['document_id'] for s in old}
+    assert first['loaded'] is None and first['same_original'] is None and first['status'] == 'READY'
+    assert upload(raw, filename='copy-of-' + name)['document_id'] != first['document_id'] and total() == 4      # 이름이 다르면 다른 원문
+    assert upload(raw + '\n(다른 글)\n'.encode())['document_id'] != first['document_id'] and total() == 5        # 내용이 다르면 다른 원문
+    # 그 문서를 적재한 뒤: 고르지 않고 올리면 적재된 문서를 다시 쓰지 않는다(개정은 문서를 골라 올린다). 적재 안 된 옛 중복이 남아 있으면 그것을 다시 쓴다
+    plan = plan_of(archive, 'HM-8', document_id=first['document_id'])
+    commit(seeded_graph, plan)
+    twin = upload(raw)
+    assert twin['document_id'] != first['document_id'] and twin['same_original']['document_id'] == first['document_id'] and total() == 5
+    assert upload(raw, document_id=first['document_id'])['loaded']['same_source'] is True and total() == 5      # [이 문서 개정]의 길은 그대로
+    # 빈 보관소(중복이 없는 PC): 처음 올리면 문서가 하나 생기고, 그 뒤로는 그 문서를 다시 쓴다
+    alone = ManualSources(archive.path + '.alone')
+    app2 = FastAPI()
+    app2.state.course = cp.Policy(cp.Phase('pbl'))
+    manual_api.register(app2, archive_factory=lambda: alone, driver_factory=driver, tenant='hyd', audit=lambda *a, **k: None,
+                        runtime_factory=lambda: None, approved_cache=ApprovedExtractions())
+    c2 = TestClient(app2)
+    post = lambda: c2.post('/api/kg/manuals/preview', json={'filename': 'own.md', 'data': base64.b64encode('# 내 문서\n\n본문\n'.encode()).decode()}).json()      # noqa: E731
+    a, b = post(), post()
+    assert a['source_id'] == b['source_id'] and c2.get('/api/kg/manuals/sources').json()['total'] == 1

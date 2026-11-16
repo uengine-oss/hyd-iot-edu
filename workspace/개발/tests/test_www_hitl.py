@@ -546,11 +546,20 @@ def test_적재한_문서는_줄마다_이름과_넣은_내용이고_줄을_누�
             assert page.inner_text('#docSheet .sheet-head h2') == '보관한 원문' and '보관한 원문이 아직 없습니다' in page.inner_text('#docSheet')
             page.keyboard.press('Escape')
             # 첫 줄의 더 보기는 아래 줄에 가리지 않고 눌린다(row_menu 가 실제로 누른다) → 확인 창 → 되돌리기 요청 → 목록에서 빠지고 결과 한 줄이 남는다
+            # 메뉴 · 확인 창 · 결과 줄이 같은 일을 같은 이름으로 부른다(V 8절 8: 메뉴는 「이 판본 되돌리기」인데 확인 창은 「등록을 취소할까요 · [등록 취소]」였다).
+            # 메뉴에 실제로 나온 이름에서 동사(「되돌리기」)와 대상(「판본」)을 읽어 확인 창 · 결과 줄에 댄다
+            menu_label = page.locator("#manualHistory [data-manual-undo='b1']").text_content().strip()
+            what, verb = menu_label.split()[-2:]
             row_menu(page, "#manualHistory .row-act:has([data-doc-open='b1'])", "[data-manual-undo='b1']")
-            assert '이 판의 등록을 취소할까요' in page.inner_text('dialog.confirm-dialog')
+            dialog = page.locator('dialog.confirm-dialog')
+            assert dialog.locator("button[value='ok']").inner_text().strip() == verb, (menu_label, dialog.inner_text())
+            assert what in dialog.locator('h2').inner_text() and verb[:-2] in dialog.locator('h2').inner_text() and '취소' not in dialog.locator('h2').inner_text(), dialog.inner_text()
+            assert '이전 판본이 있으면 그 판본의 내용으로 돌아갑니다' in dialog.inner_text()      # 서버가 실제로 하는 일(manual_graph.rollback — 적재 전 상태로)
             assert docs.rollbacks == []
-            page.locator("dialog.confirm-dialog button[value='ok']").click()
-            page.wait_for_function("document.querySelector('#manualHistoryMsg')?.textContent.startsWith('등록을 취소했습니다')", timeout=15000)
+            dialog.locator("button[value='ok']").click()
+            page.wait_for_function("document.querySelector('#manualHistoryMsg')?.textContent.includes('되돌렸습니다')", timeout=15000)
+            done = page.inner_text('#manualHistoryMsg')
+            assert done.startswith(what) and '빠졌습니다' in done and '취소' not in done, done      # 이전 판본이 없던 판(응답에 restored_batch 없음): 빠졌다고 말한다
             assert docs.rollbacks == [('b1', {'by': '담당자'})]
             assert [r.split('\n')[0] for r in page.locator('#manualHistory .doc-loaded .row').all_inner_texts()] == [c]
             assert page.locator(f"#providedDocs [data-provided='{a}'] .tag").count() == 0
@@ -745,7 +754,129 @@ def test_AI가_이미_읽은_문서를_다시_열면_아직_읽기_전이라고_
             page.wait_for_function("!/읽기 전/.test(document.querySelector('#manualStageNote').innerText)", timeout=4000)
             said = page.inner_text('#manualStageNote')
             assert page.inner_text('#manualAgentResult').strip() in said and fold_open(), said               # 여는 단추의 이름으로 길을 말하고, 그 단추가 든 접기가 펴져 있다
-            assert page.locator('#manualAgentResult').is_visible() and page.input_value('#manualExtractionRuns') == 'inst-doc-hm-8'
+            # 그 순간의 한 번 보기(is_visible)는 이 파일을 통째로 돌릴 때 세 번에 한 번꼴로 거짓이었다(고치기 전 판에서도 — 접기를 편 직후의 틈). 보일 때까지 3초 기다려 판정한다
+            page.locator('#manualAgentResult').wait_for(state='visible', timeout=3000)
+            assert page.input_value('#manualExtractionRuns') == 'inst-doc-hm-8'
             b.close()
         finally:
+            served.close()
+
+
+# ------------------------------------------------------------------ 마지막 고침(2026-11-16): 문서 검토 칸 · 못 한 까닭의 자리
+def _open_review(page, docs, name):
+    page.click(f"#providedDocs [data-provided='{name}']")
+    page.wait_for_selector('#manualAgentExtract', timeout=15000)
+    page.click('#manualAgentExtract')
+    page.wait_for_selector('#manualReview #manualCommit', timeout=30000)
+
+
+def _quoted(proposal, sop, quote=None):
+    """그 절차의 단계에 원문 인용을 단다(quote 를 주지 않으면 단계 글 그대로 — AI가 원문 문장을 그대로 뽑은 단계)."""
+    for p in proposal['procedures']:
+        if p['id'] == sop:
+            for st in p['steps']:
+                st['anchor'] = {'source_id': proposal['source_id'], 'page': 1, 'start': 0, 'end': len(quote or st['text']), 'quote': quote or st['text'], 'located': 'exact'}
+    return proposal
+
+
+class _QuotedDocs(_Docs):
+    """추출 결과의 단계에 원문 인용이 달린 문서 대역: SOP-A-01(고장 조치) · SOP-A-03(참고 절차)은 인용 그대로, SOP-A-02 는 AI가 낸 글이 인용과 다르다."""
+
+    def __call__(self, route):
+        path = route.request.url.split('?')[0]
+        if '/extractions/' in path and self.polls.get(path.rsplit('/', 1)[1][len('inst-'):], 0) >= 1:
+            doc = path.rsplit('/', 1)[1][len('inst-'):]
+            name = next(f for f in self.provided if self.doc_of(f) == doc)
+            preview = _quoted(_quoted(_quoted(_proposal(doc, name), 'SOP-A-01'), 'SOP-A-03'), 'SOP-A-02', quote='축 씰을 순정품으로 발주한다.')
+            return route.fulfill(json={'status': 'DONE', 'instance': 'inst-' + doc, 'segments': [], 'preview': preview})
+        return super().__call__(route)
+
+
+def test_검토에서_고친_이름은_목록_줄과_판_머리가_바로_따라가고_참고_절차의_단계는_읽기_전용이며_까닭을_한_번_말한다():
+    """V 8절 6(2026-11-16): 이름 칸을 고쳐도 목록 줄 · 판 머리는 적재 전까지 옛 이름이었고, 참고 절차의 단계 칸은 열려 있지만 고치면 적재 때 서버가
+    「참고 단계 내용은 검증한 원문 인용에 그대로 있어야 합니다」로 거절했다. 인용 그대로인 단계는 고칠 것이 없으므로 읽기 전용으로 보이고 그 자리에서 까닭을 한 번 말한다.
+    다른 종류에서 고친 단계 글은 참고로 바꾸면 원문으로 돌아가고(잠긴 칸에 고친 글이 남아 거절되지 않게), 적재 요청에는 원문 단계가 간다.
+    AI가 낸 글이 인용과 다른 단계는 잠그지 않는다 — 원문 문장으로 고쳐야 적재되는 칸이다(잠그면 고칠 길이 없다). 그때는 무엇으로 고쳐야 하는지 말한다."""
+    from playwright.sync_api import sync_playwright
+    name = 'HI-01_shift-inspection-supplement.md'
+    docs = _QuotedDocs([name])
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, name)
+            row = "#manualItems [data-item='proc:SOP-A-01'] .row-title"
+            head = "#manualPanes [data-pane='proc:SOP-A-01'] .panel-head h2"
+            page.click("#manualItems [data-item='proc:SOP-A-01']")
+            assert page.inner_text(row) == '벨트 교체'
+            page.fill("[data-manual-name='SOP-A-01']", '쿨러 팬 벨트 교체')
+            assert page.inner_text(row) == '쿨러 팬 벨트 교체' and page.inner_text(head).startswith('쿨러 팬 벨트 교체'), (page.inner_text(row), page.inner_text(head))
+            # 고장 조치(정비 요청)의 단계는 고칠 수 있고 잠금 안내가 없다
+            step1 = page.locator("textarea[data-manual-step='SOP-A-01']")
+            assert not step1.evaluate('n => n.readOnly') and not page.locator("[data-step-lock='SOP-A-01']").is_visible()
+            step1.fill('벨트를 새것으로 교체한다.')
+            # 참고 절차: 단계 칸은 읽기 전용이고(쳐도 바뀌지 않는다), 그 구역에 까닭 한 줄이 보인다
+            page.click("#manualItems [data-item='proc:SOP-A-03']")
+            step3 = page.locator("textarea[data-manual-step='SOP-A-03']")
+            lock = page.locator("[data-step-lock='SOP-A-03']")
+            assert step3.evaluate('n => n.readOnly') and lock.is_visible()
+            step3.click(); page.keyboard.type('고친 글')
+            assert step3.input_value() == '상태를 확인한다.'
+            why = lock.inner_text()
+            assert '원문 그대로' in why and '고칠 수 없습니다' in why and '종류' in why, why
+            assert page.locator('#manualPanes [data-step-lock]:visible').count() == 1      # 까닭은 그 판에서 한 번
+            assert step3.evaluate("n => getComputedStyle(n).cursor") == 'default' and step3.evaluate("n => getComputedStyle(n).backgroundColor") != step1.evaluate("n => getComputedStyle(n).backgroundColor")
+            # AI가 낸 글이 원문 인용과 다른 절차를 참고 절차로 바꾸면: 그 단계는 열려 있고(원문 문장으로 고쳐야 적재된다), 안내가 그렇게 말한다
+            page.click("#manualItems [data-item='proc:SOP-A-02']")
+            page.select_option("select[data-kind='SOP-A-02']", 'reference')
+            step2 = page.locator("textarea[data-manual-step='SOP-A-02']")
+            said = page.inner_text("[data-step-lock='SOP-A-02']")
+            assert not step2.evaluate('n => n.readOnly') and '원문 문장 그대로 고쳐야 적재됩니다' in said and '고칠 수 없습니다' not in said, said
+            step2.fill('축 씰을 순정품으로 발주한다.')
+            page.select_option("select[data-kind='SOP-A-02']", 'work_order')                 # 이 절차는 구매 절차로 두고 적재한다
+            # 고쳐 둔 고장 조치를 참고 절차로 바꾸면: 단계가 원문으로 돌아가 잠기고, 되돌리면 다시 열린다
+            page.click("#manualItems [data-item='proc:SOP-A-01']")
+            page.select_option("select[data-kind='SOP-A-01']", 'reference')
+            assert step1.evaluate('n => n.readOnly') and step1.input_value() == '벨트를 교체한다.' and page.locator("[data-step-lock='SOP-A-01']").is_visible()
+            page.select_option("select[data-kind='SOP-A-01']", 'work_order')
+            assert not step1.evaluate('n => n.readOnly') and not page.locator("[data-step-lock='SOP-A-01']").is_visible()
+            page.select_option("select[data-kind='SOP-A-01']", 'reference')
+            page.select_option("[data-reference-executable='SOP-A-01']", 'false')
+            page.check('#manualReviewed')
+            page.click('#manualCommit')
+            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
+            [sent] = docs.commits
+            steps = {p['id']: [s['text'] for s in p['steps']] for p in sent['procedures']}
+            assert steps['SOP-A-01'] == ['벨트를 교체한다.'] and steps['SOP-A-03'] == ['상태를 확인한다.'] and steps['SOP-A-02'] == ['축 씰을 순정품으로 발주한다.'], steps
+            assert next(p['name'] for p in sent['procedures'] if p['id'] == 'SOP-A-01') == '쿨러 팬 벨트 교체'      # 화면에 따라간 이름이 그대로 적재된다
+        finally:
+            b.close()
+            served.close()
+
+
+def test_검토_체크_없이_적재를_누르면_까닭이_누른_단추의_줄에_나오고_요청은_나가지_않는다():
+    """V 8절 7(2026-11-16): 안내가 단추 줄 아래 왼쪽에 떨어져 나왔다(디자인 기준 1-6 — 못 한 까닭은 그 자리에). 잰 관계: 까닭 글이 [검토한 내용 적재]와 같은 줄
+    (세로로 겹침)이고 그 왼쪽이며 창 안에 보인다. 체크하고 다시 누르면 까닭이 걷히고 적재가 나간다."""
+    from playwright.sync_api import sync_playwright
+    name = 'HI-01_shift-inspection-supplement.md'
+    docs = _Docs([name])
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, name)
+            page.click('#manualCommit')
+            page.wait_for_function("[...document.querySelectorAll('#manualUpload [role=alert]')].some(n => n.textContent.trim())", timeout=5000)
+            got = page.evaluate("""() => {
+              const why = [...document.querySelectorAll('#manualUpload [role=alert]')].filter(n => n.textContent.trim() && n.getBoundingClientRect().height > 0);
+              const w = why[0].getBoundingClientRect(), c = document.querySelector('#manualCommit').getBoundingClientRect();
+              return { n: why.length, text: why[0].textContent.trim(), sameRow: w.top < c.bottom && w.bottom > c.top, left: w.right <= c.left, inView: w.top >= 0 && w.bottom <= innerHeight,
+                       tone: why[0].dataset.tone, foot: !!why[0].closest('footer') && why[0].closest('footer') === document.querySelector('#manualCommit').closest('footer') };
+            }""")
+            assert got == {'n': 1, 'text': '원문을 대조하고 검토 완료를 표시하세요.', 'sameRow': True, 'left': True, 'inView': True, 'tone': 'danger', 'foot': True}, got
+            assert docs.commits == []
+            page.check('#manualReviewed')
+            page.click('#manualCommit')
+            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
+            assert len(docs.commits) == 1 and page.evaluate("document.querySelector('#manualCommitWhy')?.textContent || ''") == ''
+        finally:
+            b.close()
             served.close()

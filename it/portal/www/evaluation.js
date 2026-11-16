@@ -6,14 +6,15 @@
    부품은 키트의 것(panel · fieldset · field · turn-facts · evid · rows · table · fold · stream · progress)이고 격자는 portal-kit.css(.io), 이 무리의 배치는 trial.css 다. 맞음 · 틀림은 상태 알약으로 보인다. */
 (function () {
   const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
-    knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run' };
+    knowledge: null, choices: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run' };
   const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 에이전트)' };
   const CHECK = { cause: '원인 적중', top: '1위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
   const EXPECT = { excluded: '제외돼야 함', not_recommended: '1위면 안 됨' };
   // 설비 목록 · 가정 사실(이름 · 선택지)은 서버가 준다(GET /api/eval/golden 의 assets · facts — judgment_eval.FACT_CHOICES)
   const factLabel = k => (E.facts[k] || {}).label || k;
   const q = (sel) => E.el.querySelector(sel);
-  const nm = (id) => `<span title="${esc(id || '')}">${esc(UI.name(id) || '–')}</span>`;
+  // 표의 이름: 화면 사전 → 지금 지식 그래프의 이름(학생이 적재한 항목) → 종류. 원래 id 는 올리면 보인다
+  const nm = (id) => `<span title="${esc(id || '')}">${esc(!id ? '–' : UI.names[id] || graphName(id) || hydWords.idName(id))}</span>`;
   const outcomeText = (o) => String(o || '').split(' → ').map(x => x === '-' ? '없음' : UI.name(x)).join(' → ');
   const factVal = (k, v) => { const hit = ((E.facts[k] || {}).choices || []).find(([value]) => value === v); return hit ? hit[1] : typeof v === 'string' ? UI.status(v) : String(v); };
   const factsText = (f) => Object.entries(f || {}).map(([k, v]) => `${factLabel(k)} ${factVal(k, v)}`).join(' · ') || '가정 사실 없음 (지금 값 사용)';
@@ -94,17 +95,21 @@
   }
 
   // 정답표 폼의 고르기: 칸에는 지식의 이름이 보이고, 서버에는 그 항목의 id 를 보낸다(학생이 cause:… · skill:… 같은 id 를 보거나 적지 않는다).
-  // 이름 사전(UI.names — 지식 그래프에서 읽은 것)에서 종류별로 「보이는 이름 → id」 표를 만든다. 같은 이름이 둘이면 뒤에 구분 글을 붙인다
-  const KINDS = { cause: ['cause:'], fm: ['fm:'], skill: ['skill:'], evidence: ['evd:', 'rule:', 'ks:'], rule: ['rule:'] };
+  // 고를 수 있는 것은 서버가 지금 지식 그래프에서 읽어 준다(GET /api/eval/choices — 저장 때 서버가 「그래프에 있는가」로 거르는 것과 같은 재료). 화면 이름 사전(names.json)은
+  // 그래프에 없는 것(업무 시스템의 거래 이름)을 함께 갖고 학생이 적재한 것은 갖지 않으므로 후보의 재료로 쓰지 않는다 — 고를 수 없는 것이 보이고 고를 수 있는 것이 빠졌다.
+  // 종류별로 「보이는 이름 → id」 표를 만든다. 이름은 화면 사전의 것(화면 말) → 그래프의 이름 → 종류 차례이고, 같은 이름이 둘이면 뒤에 구분 글을 붙인다
+  const KINDS = ['cause', 'fm', 'skill', 'evidence', 'rule'];
   const KIND_WORD = { 'evd:': '증거', 'rule:': '규칙', 'ks:': '매뉴얼 절' };
+  const choiceName = c => UI.names[c.id] || (c.name ? UI.words(c.name) : '') || hydWords.idName(c.id);
   function nameMap(kind) {
-    const all = Object.entries(UI.names || {}).filter(([id, name]) => name && KINDS[kind].some(p => id.startsWith(p)));
+    const all = ((E.choices || {})[kind] || []).map(c => [c.id, choiceName(c)]);
     const count = {}; all.forEach(([, name]) => { count[name] = (count[name] || 0) + 1; });
     return new Map(all.map(([id, name]) => [count[name] > 1 ? `${name} (${id.split(':').pop()})` : name, id]));
   }
+  const graphName = id => { for (const list of Object.values(E.choices || {})) { const c = list.find(x => x.id === id); if (c && c.name) return UI.words(c.name); } return ''; };
   const labelOf = (kind, id) => { for (const [label, i] of nameMap(kind)) if (i === id) return label; return ''; };
   const shown = (kind, id) => labelOf(kind, id) ? esc(labelOf(kind, id)) : `<span class="muted" data-tone="danger">지식에서 이름을 찾지 못한 항목 (${esc(id)})</span>`;
-  const datalists = () => Object.keys(KINDS).map(kind => `<datalist id="evalDl-${kind}">${[...nameMap(kind)].map(([label, id]) =>
+  const datalists = () => KINDS.map(kind => `<datalist id="evalDl-${kind}">${[...nameMap(kind)].map(([label, id]) =>
     `<option value="${esc(label)}">${kind === 'evidence' ? esc(KIND_WORD[Object.keys(KIND_WORD).find(p => id.startsWith(p))] || '') : ''}</option>`).join('')}</datalist>`).join('');
   // 이름으로 찾아 넣는 칸: 글자를 치면 목록이 좁혀지고, 고르면 아래 「고른 것」 목록에 한 줄이 더해진다
   const picker = (field, kind, label) => `<input class="input" data-add-to="${field}" data-kind="${kind}" list="evalDl-${kind}" placeholder="이름으로 찾아 넣기" aria-label="${esc(label)} 이름으로 찾아 넣기" autocomplete="off">`;
@@ -152,10 +157,11 @@
         UI.field({ label: '근거에 있어야 할 지식', required: true, cls: 'wide', hint: '판단의 근거에 들어 있어야 할 증거, 규칙, 매뉴얼 절을 이름으로 찾아 고릅니다.', input: `${picker('required_evidence', 'evidence', '근거에 있어야 할 지식')}<div data-picks="required_evidence">${picksHtml('required_evidence')}</div>` })) +
       UI.section('', UI.field({ label: UI.t('form.note'), cls: 'wide', input: `<input data-f="note" value="${esc(it.note || '')}" placeholder="이 항목을 왜 적었는지(선택)">` })) +
       (pats.length ? '' : UI.errorBlock('이상 패턴 목록을 읽지 못해 지금은 저장할 수 없습니다', '화면 위의 [다시 읽기]를 눌러 주세요.')) +
+      (E.choices ? '' : UI.errorBlock('지식에서 고를 이름을 읽지 못해 지금은 저장할 수 없습니다', (E.choicesError || '') + ' 화면 위의 [다시 읽기]를 눌러 주세요.')) +
       `<footer class="form-foot">${isNew ? '' : `<button type="button" class="btn" data-variant="destructive" data-act="delete" data-tooltip="지워도 지난 채점 실행 기록은 남습니다">${UI.icon('trash-2')}이 항목 지우기</button>`}` +
       `<span class="muted" data-msg="form" role="status" hidden></span>` +
       `<button type="button" class="btn" data-variant="outline" data-act="cancel">${esc(UI.t('btn.cancel'))}</button>` +
-      `<button type="button" class="btn" data-act="save" ${pats.length ? '' : 'disabled'}>${esc(UI.t('btn.save'))}</button></footer></div></form>`;
+      `<button type="button" class="btn" data-act="save" ${pats.length && E.choices ? '' : 'disabled'}>${esc(UI.t('btn.save'))}</button></footer></div></form>`;
     host.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 
@@ -451,7 +457,7 @@
           UI.toast('정답표 항목을 지웠습니다.', { tone: 'ok' });
         }
         E.editing = null; renderForm(); await loadGolden();
-      } catch (err) { msg('form', err.message); }
+      } catch (err) { msg('form', String(err.message || '').replace(UI.ID_RE, m => { const n = UI.names[m] || graphName(m); return n ? `「${n}」` : m; })); }      // 거절 문장 속 id 는 아는 이름으로(모르는 것은 그 줄에 적힌 id 그대로)
       finally { E.busy = false; renderRunForm(); }      // 저장하는 동안 다시 그려진 [채점 실행]이 꺼진 채 남지 않게
     }
   }
@@ -497,6 +503,7 @@
   async function load() {
     try { E.patterns = await getJ(API.agent + '/api/ontology/patterns'); E.patternError = ''; } catch (e) { E.patterns = null; E.patternError = '이상 패턴 목록을 읽지 못했습니다: ' + e.message; }
     try { E.knowledge = await getJ(API.process + '/api/eval/knowledge'); E.knowledgeError = ''; } catch (e) { E.knowledge = null; E.knowledgeError = '지식 상태를 읽지 못했습니다: ' + e.message; }
+    try { E.choices = await getJ(API.process + '/api/eval/choices'); E.choicesError = ''; } catch (e) { E.choices = null; E.choicesError = e.message; }
     await Promise.all([loadGolden(), loadRuns()]);
     if (E.sel) selectRun(E.sel); else renderDetail();
     renderCmp();

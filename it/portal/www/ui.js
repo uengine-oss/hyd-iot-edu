@@ -890,10 +890,13 @@ Object.assign(UI.terms, {
       input.dataset.enhanced = '1';
       const wrap = document.createElement('label'); wrap.className = 'file-picker';
       const btn = document.createElement('span'); btn.className = 'btn'; btn.dataset.variant = 'outline'; btn.dataset.size = 'sm'; btn.textContent = '파일 선택';
-      const name = document.createElement('span'); name.className = 'file-name'; name.textContent = '선택한 파일 없음';
+      const name = document.createElement('span'); name.className = 'file-name';
+      // 이 감싸기는 칸이 그려진 조금 뒤에 붙는다(아래 MutationObserver) — 그 사이에 이미 고른 파일이 있으면 그 이름으로 시작한다(파일을 골랐는데 「선택한 파일 없음」으로 남았다)
+      const show = () => { name.textContent = input.files && input.files[0] ? input.files[0].name : '선택한 파일 없음'; };
+      show();
       input.parentNode.insertBefore(wrap, input); wrap.append(btn, input, name);
       if (!input.getAttribute('aria-label')) input.setAttribute('aria-label', '파일 선택');
-      input.addEventListener('change', () => { name.textContent = input.files && input.files[0] ? input.files[0].name : '선택한 파일 없음'; });
+      input.addEventListener('change', show);
     });
   };
   if (typeof document !== 'undefined' && document.addEventListener && typeof MutationObserver !== 'undefined') {

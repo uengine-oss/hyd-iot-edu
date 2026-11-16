@@ -165,8 +165,8 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         if iid is not None and item['id'] != iid:
             raise ValueError(f"주소의 항목 id({iid})와 내용의 id({item['id']})가 다릅니다 — id 는 바꿀 수 없습니다")
         missing = unknown_ids(je.referenced_ids(item))
-        if missing:
-            raise ValueError('지식 그래프에 없는 이름이 있습니다: ' + ', '.join(missing) + ' — 지식 지도에서 id 를 확인하세요')
+        if missing:      # 화면은 지금 그래프에 있는 것만 고르게 한다(GET /api/eval/choices) — 여기에 걸리는 것은 그 사이 지식에서 지워진 항목이다
+            raise ValueError('지금 지식 그래프에 없는 항목이 있습니다: ' + ', '.join(missing) + ' — 지식에서 지워졌거나 이름이 바뀐 항목입니다. 그 줄을 빼고 목록에서 다시 고르세요')
         rec = store().golden_put(item, by, create=create)
         audit('-', by, 'JUDGMENT_GOLDEN_SAVED', {'item': item['id'], 'created': create, 'item_hash': rec['item_hash']})
         return rec
@@ -192,6 +192,12 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
     @app.get('/api/eval/knowledge')
     async def knowledge_now():
         return je.public_knowledge(await run(knowledge))
+
+    @app.get('/api/eval/choices')
+    async def golden_choices():
+        """정답표 칸마다 고를 수 있는 지식 항목 — 지금 그래프에 있는 것만(저장 때의 unknown_ids 와 같은 재료)."""
+        rows = await run(lambda: graph_read(lambda tx: [r.data() for r in tx.run(je.CHOICES_Q, prefixes=je.choice_prefixes(), skip=je.NOT_KNOWLEDGE_LABELS)]))
+        return je.golden_choices(rows)
 
     def runtime():
         rt = runtime_factory()

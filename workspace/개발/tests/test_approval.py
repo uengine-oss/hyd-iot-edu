@@ -149,3 +149,13 @@ def test_승인_검사도_지금_세우는_카드를_정지한_설비로_다시_
     ts1 = next(x['value'] for x in report['current_option']['forecast'] if x['variable'] == 'sv:ts1')
     assert ts1 < 55, f'승인 검사의 예측이 정지한 설비의 것이 아니다: {ts1}'
 
+
+
+def test_조치값을_바꾼_안의_설명은_화면_말로_어디서_실제_값을_보는지_말한다():
+    """V 8절 2(2026-11-16): 미리 보기 카드의 설명이 「실제 적용값은 아래 원자 조치를 확인하세요」였다 — 화면은 그 목록을 「세부 동작」이라 부른다(UIUX_PLAN 4절).
+    값을 바꾸지 않은 안에는 이 설명을 붙이지 않는다(원문 설명 그대로)."""
+    effective, _ = approval._parameterized(dict(SKILL, description='원문 설명'), {'fan_pct': 100})
+    text = effective['description']
+    assert '세부 동작' in text and '원자 조치' not in text and 'SOP' not in text and text.endswith('확인하세요.'), text
+    same, changed = approval._parameterized(dict(SKILL, description='원문 설명'), {})
+    assert changed == {} and same['description'] == '원문 설명'

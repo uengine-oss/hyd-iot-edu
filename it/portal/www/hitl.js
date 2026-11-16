@@ -402,17 +402,19 @@
     note($('#manualStatus'), '개정할 문서를 골랐습니다. 새 판본 파일을 고르고 [문서 올리기]를 누르세요.');
     $('#manualUpload').scrollIntoView({ block: 'start' });
   }
-  // 판본 되돌리기: 확인 → POST …/rollback. 결과는 「적재한 문서」 아래 한 줄에 남는다
+  // 판본 되돌리기: 확인 → POST …/rollback. 결과는 「적재한 문서」 아래 한 줄에 남는다.
+  // 서버(manual_graph.rollback)가 하는 일: 최신 판본이 넣은 것을 지식 지도에서 빼고 그 판본을 적재하기 전 상태로 돌린다 — 이전 판본이 있으면 그 판본의 내용이 다시 선다(응답 restored_batch).
+  // 메뉴 · 확인 창 · 결과 줄이 모두 그 일을 「되돌리기」 한 이름으로 부른다(메뉴는 「이 판본 되돌리기」인데 확인 창은 「등록 취소」였다)
   async function undoBatch(batch) {
-    if (!await UI.confirm({ title: '이 판의 등록을 취소할까요?', body: '이 판이 넣은 절 · 조치 방법 · 규칙 연결이 지식 지도에서 빠집니다. 보관한 원문은 남습니다.', ok: '등록 취소', danger: true })) return;
+    if (!await UI.confirm({ title: '이 판본을 되돌릴까요?', body: '이 판본이 넣은 절 · 조치 방법 · 규칙 연결이 지식 지도에서 빠집니다. 이전 판본이 있으면 그 판본의 내용으로 돌아갑니다. 보관한 원문은 남습니다.', ok: '되돌리기', danger: true })) return;
     closeSheet();
-    note($('#manualHistoryMsg'), '등록을 취소하는 중입니다.');
+    note($('#manualHistoryMsg'), '판본을 되돌리는 중입니다.');
     try {
-      await postJ(API.process + '/api/kg/manuals/batches/' + encodeURIComponent(batch) + '/rollback', { by: manualActor() });
+      const out = await postJ(API.process + '/api/kg/manuals/batches/' + encodeURIComponent(batch) + '/rollback', { by: manualActor() });
       H.preview = null; H.commit = null; renderPreview(); H.skills = [];
       await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
-      note($('#manualHistoryMsg'), '등록을 취소했습니다. 지식 지도에서 이 판의 내용이 빠졌습니다.');
-    } catch (e) { note($('#manualHistoryMsg'), '등록을 취소하지 못했습니다: ' + e.message, true); }
+      note($('#manualHistoryMsg'), out && out.restored_batch ? '판본을 되돌렸습니다. 지식 지도가 이전 판본의 내용으로 돌아갔습니다.' : '판본을 되돌렸습니다. 이 판본이 넣은 내용이 지식 지도에서 빠졌습니다.');
+    } catch (e) { note($('#manualHistoryMsg'), '판본을 되돌리지 못했습니다: ' + e.message, true); }
   }
   $('#docSheet').addEventListener('close', () => { H.sheet = null; });
   $('#docSheet').addEventListener('click', async ev => {
@@ -747,7 +749,7 @@
       const knowRows = groups.map(([g, title, ic]) => k[g].map(x => row(`know:${g}:${x.id}`, 'know', ic, x.name || x.annotation || x.id, `${title} · ${manualKnowledgeSummary(g, x, own)}`)).join('')).join('');
       const secRows = r.sections.map((s, i) => row('sec:' + i, 'sec', 'file-text', `${s.ref} ${s.title}`, '매뉴얼 절')).join('');
       const procPanes = r.procedures.map(p => `<section class="panel doc-pane" data-pane="${esc('proc:' + p.id)}" hidden>
-        <header class="panel-head"><div><h2>${esc(p.name)}${needsLink(r, p) ? UI.chipText('검토 필요', 'warning') : ''}</h2><p><span class="mono">${esc(p.id)}</span> · ${esc(procWhat(p))} · 단계 ${p.steps.length}</p></div></header>
+        <header class="panel-head"><div><h2><span data-proc-title>${esc(p.name)}</span>${needsLink(r, p) ? UI.chipText('검토 필요', 'warning') : ''}</h2><p><span class="mono">${esc(p.id)}</span> · ${esc(procWhat(p))} · 단계 ${p.steps.length}</p></div></header>
         <div class="panel-sec"><h3>원문 인용</h3>${quote(p.anchor)}</div>
         <div class="panel-sec">${UI.section('이름과 연결', UI.field({ label: UI.t('skill.sop'), input: `<input aria-label="절차 번호" data-manual-id="${esc(p.id)}" value="${esc(p.id)}">` }) + UI.field({ label: UI.t('skill.name'), input: `<input aria-label="이름" data-manual-name="${esc(p.id)}" value="${esc(p.name)}">` }) +
           manualPurchaseFields(p, r) +
@@ -756,7 +758,7 @@
           UI.field({ label: UI.t('skill.kind'), input: `<select data-kind="${esc(p.id)}"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control" ${manualLink(r,p).kind === 'control' ? 'selected' : ''}>${esc(UI.t('skill.kind.control'))}</option><option value="reference" ${manualLink(r,p).kind === 'reference' ? 'selected' : ''}>일반 원문 참고 절차 · 실행 후보 제외</option></select>` }) +
           manualReferenceFields(p, r) +
           UI.field({ label: UI.t('skill.affects'), cls: 'wide', hint: '상태 변수 또는 성과 지표 id와 방향(+/-)을 쉼표로. 비우면 득실 0', input: `<input aria-label="영향" data-affects="${esc(p.id)}" value="${esc((manualLink(r,p).affects || []).map(a=>a.target+':'+a.sign).join(', '))}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+">` }))}</div>
-        <div class="panel-sec"><h3>단계<span class="muted num">${p.steps.length}</span></h3><ol class="doc-steps">${p.steps.map(s => `<li><textarea class="textarea" aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea>${s.manual ? `<span class="badge" data-variant="outline">${esc(s.manual)}</span>` : ''}${citation(s.anchor)}</li>`).join('')}</ol></div>
+        <div class="panel-sec"><h3>단계<span class="muted num">${p.steps.length}</span></h3><p class="muted" data-step-lock="${esc(p.id)}" hidden></p><ol class="doc-steps">${p.steps.map(s => `<li><textarea class="textarea" aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea>${s.manual ? `<span class="badge" data-variant="outline">${esc(s.manual)}</span>` : ''}${citation(s.anchor)}</li>`).join('')}</ol></div>
         <div class="panel-sec pane-fold">${UI.raw({inline:p.link,override:r.links && Object.prototype.hasOwnProperty.call(r.links,p.id) ? r.links[p.id] : undefined,suggestedFailureMode:p.suggestedFailureMode,existing_skill_id:p.existing_skill_id,reference_contract_sha256:p.reference_contract_sha256}, { title: '절차 연결 원문' })}</div></section>`).join('');
       const knowPanes = groups.map(([g, title]) => k[g].map(x => `<section class="panel doc-pane" data-pane="${esc(`know:${g}:${x.id}`)}" hidden>
         <header class="panel-head"><div><h2>${esc(x.name || x.annotation || x.id)}</h2><p>${esc(title)}${manualKnowledgeSummary(g, x, own) ? ' · ' + esc(manualKnowledgeSummary(g, x, own)) : ''}</p></div></header>
@@ -785,7 +787,7 @@
         <div class="panel-sec doc-confirm">
           <label class="doc-check"><input type="checkbox" class="input" id="manualReviewed"> 원문 · 단계 · 고장 유형 · 관계를 검토했습니다.</label>
           <p id="manualReviewChanged" class="muted" hidden>검토 내용을 바꿨습니다. 위 검사는 원래 제안 기준입니다. 원문과 바뀐 연결을 대조한 뒤 검토 완료를 표시하세요.</p>
-          <footer class="form-foot">${another}<button type="button" class="btn" data-variant="outline" id="manualAgentExtract">AI 추출 다시 하기</button><button type="button" class="btn" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button></footer>
+          <footer class="form-foot"><span id="manualCommitWhy" class="muted" role="status"></span>${another}<button type="button" class="btn" data-variant="outline" id="manualAgentExtract">AI 추출 다시 하기</button><button type="button" class="btn" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button></footer>
         </div></div>
         <div class="panel-sec" id="manualCommitView" data-doc-stage="4" hidden>
           <div class="result"><div class="result-label">적재 · ${esc(r.filename)}</div><div class="result-main" id="manualCommitTitle">검토한 내용을 지식 지도에 적재하는 중입니다</div></div>
@@ -1054,8 +1056,10 @@
       renderManualSteps(on ? 4 : 3, o);
     };
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
-      // 아래 검사에서 멈춘 까닭은 단추 줄 아래에 빨간 글로 보이고, 그 절차의 고칠 칸이 열린다
-      const stop = (text, key) => { msg(text, true); if (key) H.review.show('proc', key); };
+      // 아래 검사에서 멈춘 까닭은 누른 단추의 줄(단추 줄의 왼쪽 — 디자인 기준 1-6 「꺼진 · 못 한 까닭은 그 자리에」)에 빨간 글로 보이고, 그 절차의 고칠 칸이 열린다.
+      // 서버에 보낸 뒤의 진행 · 결과 글은 4단계 자리(#manualMsg)다
+      const why = $('#manualCommitWhy'), stop = (text, key) => { note(why, text, true); if (key) H.review.show('proc', key); };
+      note(why, '');
       const by = manualActor(); if (!by) { stop('담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요.'); return; }
       if (!$('#manualReviewed').checked) { stop('원문을 대조하고 검토 완료를 표시하세요.'); return; }
       const f = (p, name) => box.querySelector(`[data-${name}="${CSS.escape(p.id)}"]`);
@@ -1128,6 +1132,14 @@
       $('#manualReviewed').checked = false;
     }));
     box.onchange = changed;
+    // 이름 칸을 고치면 왼쪽 목록의 그 줄과 판 머리의 이름이 바로 따라간다(적재 전까지 옛 이름이 남아, 고친 것이 들어갔는지 알 수 없었다). 비우면 원래 이름을 보인다
+    box.querySelectorAll('[data-manual-name]').forEach(input => input.addEventListener('input', () => {
+      const key = 'proc:' + input.dataset.manualName, name = input.value.trim() || r.procedures.find(p => p.id === input.dataset.manualName).name;
+      const rowTitle = [...box.querySelectorAll('#manualItems [data-item]')].find(b => b.dataset.item === key)?.querySelector('.row-title');
+      const head = [...box.querySelectorAll('#manualPanes [data-pane]')].find(n => n.dataset.pane === key)?.querySelector('[data-proc-title]');
+      if (rowTitle) rowTitle.textContent = name;
+      if (head) head.textContent = name;
+    }));
     box.querySelectorAll('select[data-kind]').forEach(kind => {      // 실행 종류 고르기 칸만(실시간 단계 줄 .line 도 data-kind 를 쓴다)
       const id=kind.dataset.kind, field=name=>box.querySelector(`[data-${name}="${CSS.escape(id)}"]`);
       const target=field('reference-target'), pin=field('reference-pin'), comparison=field('reference-comparison');
@@ -1151,6 +1163,18 @@
         if(reference) field('rel').value='';
         ['fm','rel','affects','manual-scope'].forEach(name=>{field(name).disabled=reference;});
         field('purchase-fields').hidden=reference || field('manual-scope').value!=='purchase';
+        // 참고 절차의 단계는 그 단계의 원문 인용에 그대로 있는 글만 적재된다(서버 manual_review — 「참고 단계 내용은 검증한 원문 인용에 그대로」). 그래서 이미 인용 그대로인 단계는
+        // 고칠 것이 없다 — 열어 두면 고친 뒤 적재에서야 거절되므로 읽기 전용으로 보이고 까닭을 그 자리에서 한 번 말한다(다른 종류에서 고쳐 둔 글은 원문으로 되돌린다).
+        // AI가 낸 글이 인용과 다른 단계(인용이 없는 단계 포함)는 원문 문장으로 고쳐야 적재되므로 열어 두고, 무엇으로 고쳐야 하는지 같은 줄에서 말한다
+        const verbatim=st=>!!(st.anchor && typeof st.anchor.quote==='string' && st.anchor.quote.includes(st.text));
+        const source=new Map(r.procedures.find(p=>p.id===id).steps.map(st=>[st.order,st]));
+        let open=0;
+        box.querySelectorAll(`[data-manual-step="${CSS.escape(id)}"]`).forEach(input=>{
+          const st=source.get(Number(input.dataset.order)), lock=reference && verbatim(st);
+          input.readOnly=lock; if(lock) input.value=st.text; else if(reference) open++;
+        });
+        const lockNote=field('step-lock'); lockNote.hidden=!reference;
+        lockNote.textContent=open ? '참고 절차의 단계는 원문 그대로 보관합니다. 원문 인용과 글이 다른 단계만 열려 있습니다 — 원문 문장 그대로 고쳐야 적재됩니다.' : '참고 절차의 단계는 원문 그대로 보관하므로 고칠 수 없습니다. 단계를 고치려면 위에서 종류를 바꾸세요.';
         compare();
       };
       kind.addEventListener('change',update);

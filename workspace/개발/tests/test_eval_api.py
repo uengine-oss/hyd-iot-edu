@@ -38,7 +38,34 @@ def test_그래프에_없는_이름을_적은_정답표는_저장하지_않는�
             'expected': {'cause': 'cause:no-such', 'failure_mode': 'fm:no-such'}, 'allowed_top': ['skill:no-such'], 'forbidden': [],
             'required_evidence': ['evd:no-such']}
     status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': '수강생'})
-    assert status == 400 and '지식 그래프에 없는 이름' in body['detail']
+    assert status == 400 and body['detail'].startswith('지금 지식 그래프에 없는 항목이 있습니다: cause:no-such, fm:no-such, skill:no-such, evd:no-such'), body
+    assert '다시 고르세요' in body['detail'] and ' id ' not in body['detail']      # 학생이 할 일을 말하고, 안쪽 말(id)을 쓰지 않는다
+
+
+def test_정답표_후보는_지금_그래프에_있는_것뿐이고_어느_것을_골라도_저장된다(world, course_graph):
+    """V 8절 9(2026-11-16): 화면이 후보를 정적 이름 사전(names.json)에서 뽑아 그래프에 없는 업무 거래 이름(「정비 요청 취소」 등)이 후보에 섞였고,
+    고르면 저장이 400 이었다. 후보는 저장 때 거르는 것과 같은 재료(지금 그래프)에서 온다 — 학생이 넣은 조치도 후보에 나오고, 나온 것은 모두 저장된다."""
+    from procsvc import judgment_eval
+    judgment_eval.PgEvalStore(world.dsn, TENANT).reset()
+    course_graph.query("CREATE (:Skill {id: 'skill:student-own-fix', name: '학생이 넣은 조치'}), (:Rule {id: 'rule:student-own', annotation: '학생이 넣은 규칙 설명'})")
+    status, choices = world.api('GET', '/api/eval/choices')
+    assert status == 200 and set(choices) == {'cause', 'fm', 'skill', 'evidence', 'rule'}
+    in_graph = {r['id'] for r in course_graph.query('MATCH (n) WHERE n.id IS NOT NULL RETURN n.id AS id')}
+    offered = {c['id'] for kind in choices.values() for c in kind}
+    assert offered and offered <= in_graph, sorted(offered - in_graph)
+    assert 'skill:cancel-work-order' not in in_graph and 'skill:cancel-work-order' not in offered      # 업무 시스템의 거래 이름 — 그래프에 없다
+    assert {'id': 'skill:student-own-fix', 'name': '학생이 넣은 조치'} in choices['skill']
+    assert {'id': 'rule:student-own', 'name': '학생이 넣은 규칙 설명'} in choices['rule'] and {'id': 'rule:student-own', 'name': '학생이 넣은 규칙 설명'} in choices['evidence']
+    skills = [c['id'] for c in choices['skill']]
+    item = {'id': 'every-choice', 'title': '후보 전부', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {},
+            'expected': {'cause': choices['cause'][0]['id'], 'failure_mode': choices['fm'][0]['id']}, 'allowed_top': skills[:-1],
+            'forbidden': [{'skill': skills[-1], 'expect': 'excluded', 'rule': choices['rule'][0]['id']}],
+            'required_evidence': [c['id'] for c in choices['evidence']]}
+    try:
+        status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': '수강생'})
+        assert status == 201, body
+    finally:
+        judgment_eval.PgEvalStore(world.dsn, TENANT).reset()
 
 
 @pytest.mark.parametrize('path', ['/api/eval/runs?limit=0', '/api/eval/runs?limit=101', '/api/eval/worker-candidates?limit=-1'],

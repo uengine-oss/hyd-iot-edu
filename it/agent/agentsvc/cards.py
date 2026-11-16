@@ -21,6 +21,15 @@ STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:t
 LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
 
 
+#: 순위 근거의 「점수 계산 방법」 줄에 그대로 보이는 한 문장(rankingEvidence.conditionMode — 포털 enterprise.js optionDetail). 학생이 읽는 말로 쓴다.
+#: tradeoff = 성과 지표 경로의 조건(bsc.evaluate_paths 의 TRUE · FALSE · UNKNOWN — 화면 말은 적용 · 미적용 · 미확인: enterprise.js CHECK_STATUS)을 점수에 어떻게 넣었는가, cost = 구매 비교(견적 총비용), unresolved = 공급사 미정
+CONDITION_MODES = {
+    'tradeoff': '성과 지표 경로의 조건이 「적용」인 영향만 점수에 넣고 「미적용」은 뺍니다. 「미확인」인 영향은 순위 규칙이 정한 대로 어림해 넣습니다.',
+    'cost': '실제 부품 견적의 총비용이 낮은 순서입니다. 승인 공급사 목록(AVL) · 납기 규정은 따로 검사합니다.',
+    'unresolved': '공급사가 정해지지 않아 순위를 계산하지 않았습니다.',
+}
+
+
 def _num(v):
     if isinstance(v, bool):
         return None
@@ -431,7 +440,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
         if unresolved is not None:
             # no supplier, so no quote and no cost to rank by; the card stays visible as an excluded alternative
             o['rankingEvidence'] = {'rule': None, 'policy': None, 'policy_sha256': None, 'gains': o['gains'], 'losses': o['losses'],
-                                    'paths': bsc.consent_paths(paths), 'conditionMode': '공급사 미확정 — 순위 계산 대상 아님'}
+                                    'paths': bsc.consent_paths(paths), 'conditionMode': CONDITION_MODES['unresolved']}
             o.update(score=None, scoreParts={}, supplierUnresolved=True)
             options.append(o)
             continue
@@ -442,12 +451,12 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
         o['rankingEvidence'] = {'rule':rank_rule['rule'], 'policy':policy, 'policy_sha256':(hashlib.sha256(json.dumps(policy,sort_keys=True,ensure_ascii=False).encode()).hexdigest() if economic else ranking.fingerprint(policy)),
             'gains':o['gains'], 'losses':o['losses'],
             'paths':bsc.consent_paths(paths),
-            'conditionMode':'명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 추가 가능 영향은 순위 정책에 따른 추정'}
+            'conditionMode':CONDITION_MODES['tradeoff']}
         if economic is not None:
             o['economicComparison'] = economic
             o['forecast'] = []
             o['rankingEvidence'].update(method='source_total_cost', purchase_comparison_policy=economic['policy'],
-                economicComparison=economic, conditionMode='실제 부품 견적의 총비용이 낮은 순서; AVL·납기 규정은 별도 검사')
+                economicComparison=economic, conditionMode=CONDITION_MODES['cost'])
             o.update(score=-economic['total_cost'], scoreParts={'purchase_total_cost':-economic['total_cost']})
         else:
             o.update(score_option(o, base_facts, policy))

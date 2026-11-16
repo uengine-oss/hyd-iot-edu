@@ -120,6 +120,33 @@ def item_hash(item: dict) -> str:
     return _digest({k: item.get(k) for k in SCORED_FIELDS})
 
 
+#: 정답표 칸마다 고를 수 있는 지식 항목의 id 접두어 — validate_item 이 칸마다 받는 접두어와 같다(근거 칸은 증거 · 규칙 · 매뉴얼 절).
+CHOICE_KINDS = {'cause': ('cause:',), 'fm': ('fm:',), 'skill': ('skill:',), 'evidence': ('evd:', 'rule:', 'ks:'), 'rule': ('rule:',)}
+CHOICES_Q = '''
+MATCH (n) WHERE n.id IS NOT NULL AND any(p IN $prefixes WHERE n.id STARTS WITH p) AND NONE(l IN labels(n) WHERE l IN $skip)
+RETURN n.id AS id, properties(n) AS props ORDER BY n.id
+'''
+
+
+def choice_prefixes() -> list[str]:
+    return sorted({p for ps in CHOICE_KINDS.values() for p in ps})
+
+
+def golden_choices(rows: list[dict]) -> dict:
+    """그래프에서 읽은 항목(id · props) → 정답표 칸마다 고를 수 있는 것 [{id, name}].
+    저장할 때 「그래프에 있는 id 인가」(eval_api.unknown_ids)로 거르는 것과 같은 재료라, 여기에 나온 것은 고르면 저장된다.
+    이름은 지식 지도와 같은 차례(_node_name)이고, 이름 칸이 없는 규칙은 설명(annotation)이다. 이름이 없으면 None — 화면이 종류로 부른다."""
+    out = {kind: [] for kind in CHOICE_KINDS}
+    for row in rows:
+        props = row.get('props') or {}
+        note = props.get('annotation')
+        name = _node_name(props) or (note.strip()[:120] if isinstance(note, str) and note.strip() else None)
+        for kind, prefixes in CHOICE_KINDS.items():
+            if str(row['id']).startswith(prefixes):
+                out[kind].append({'id': row['id'], 'name': name})
+    return out
+
+
 def referenced_ids(item: dict) -> list[str]:
     """항목이 인용하는 지식 id 전부 (eval_api 가 그래프에 있는지 묻는다). 설비 · 패턴 이름은 agent 가 판단 때 확인한다."""
     out = [item['expected']['cause'], item['expected']['failure_mode'], *item['allowed_top'], *item['required_evidence']]

@@ -212,6 +212,14 @@ class ManualSources:
                              (tenant, document_id, sha256)).fetchone()
             return self._view(row) | {'replayed': cur.rowcount == 0}
 
+    def documents_of(self, tenant: str, sha256: str, filename: str, limit: int = 50) -> list[str]:
+        """같은 바이트(sha256) · 같은 파일 이름으로 이미 보관한 원문의 문서 id — 최근에 올린 것부터. 새 문서로 올린 파일이 이미 보관돼 있는지
+        (manual_api.upload 이 적재된 판이 없는 문서를 다시 쓴다) 묻는 데 쓴다. 보관소는 적재 여부(그래프)를 모른다."""
+        with self._connection() as db:
+            rows = db.execute('SELECT document_id FROM manual_sources WHERE tenant=? AND sha256=? AND filename=? '
+                              'ORDER BY created_at DESC,document_id LIMIT ?', (tenant, sha256, filename, limit)).fetchall()
+        return [row['document_id'] for row in rows]
+
     @staticmethod
     def _view(row) -> dict:
         if _hash(row['original']) != row['sha256']:

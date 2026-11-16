@@ -371,13 +371,19 @@
     const all = items();
     if (S.sel && all.some(x => x.id === S.sel)) select(S.sel); else if (all.length) select(all[0].id); else { renderList(); drawDetail(); }
   }
+  // 그림 파일(BPMN XML)에 적힌 흐름 식별 이름(첫 process 요소의 id) — 읽지 못하면 빈 글
+  function processIdIn(xml) {
+    try { const doc = new DOMParser().parseFromString(xml, 'application/xml'); return [...doc.getElementsByTagName('*')].find(n => n.localName === 'process')?.getAttribute('id') || ''; }
+    catch (e) { return ''; }
+  }
   async function doImport() {
     const msg = S.el.querySelector('#flowImportMsg');
     const file = S.el.querySelector('#flowFile').files[0];
     if (!file) { msg.innerHTML = failBox('가져올 파일을 고르지 않았습니다', 'bpmn.io에서 받은 .bpmn 파일을 고른 뒤 [가져오기]를 누르세요.'); return; }
     msg.innerHTML = hydLive.waitHtml('그림을 읽는 중', { hint: '서버가 BPMN 그림에서 단계 · 갈림 · 시작과 끝을 읽고, 같은 이름으로 가져온 적이 있으면 앞서 정한 단계 설정과 맞춰 보는 중입니다.' });
+    let xml = '';
     try {
-      const xml = await file.text();
+      xml = await file.text();
       const view = await call('POST', '/api/flows/import', { xml, file_name: file.name, start_patterns: [], definition_id: S.el.querySelector('#flowId').value.trim() || null });
       const r = view.reimport || {};
       S.xml[view.definition_id] = xml;
@@ -389,8 +395,12 @@
         h(r.previous ? `단계 설정을 유지한 단계 ${r.kept.length}개, 새 단계 ${r.new.length}개, 사라진 단계 ${r.dropped.length}개입니다.` : `단계 ${view.parsed.tasks.length}개를 읽었습니다.`) + (limitedOpen(view) ? ' 아래 「단계 설정」에서 AI 에이전트를 확인한 뒤 위의 단추로 판본을 등록합니다.' : ' 아래 「단계 설정」에서 단계마다 종류와 담당을 정한 뒤 검사하세요.'))}</div>`;
       UI.revealDetail($('flowPanel'));
     } catch (e) {
-      // 무엇이 왜 안 됐는지: 서버의 까닭 한 문장, 그림에서 고칠 곳이 있으면 그 목록
-      msg.innerHTML = failBox('그림을 가져오지 못했습니다', e.message) + (e.problems ? problemsBlock(e.problems, '그림에서 고칠 곳', false) : '');
+      // 무엇이 왜 안 됐는지: 서버의 까닭 한 문장, 그림에서 고칠 곳이 있으면 그 목록.
+      // 서버의 까닭이 폼 맨 위 안내 판이 이미 말한 문장(지금 가져올 수 있는 그림 — 수업 경계 reasons.import_flow)과 같으면 또 적지 않고, 이번 파일에 대한 사실(그 파일에 적힌 흐름 식별 이름)만 말한다
+      const told = S.el.querySelector('[data-import-only]')?.textContent.trim() ? hydCourseAccess.reason('import_flow') : '';
+      let why = e.message;
+      if (told && why === told) { const pid = processIdIn(xml); why = `고른 파일 「${file.name}」${pid ? `에 적힌 흐름 식별 이름은 ${pid}입니다. ` : '은 '}위 안내의 그림이 아니라서 가져오지 않았습니다.`; }
+      msg.innerHTML = failBox('그림을 가져오지 못했습니다', why) + (e.problems ? problemsBlock(e.problems, '그림에서 고칠 곳', false) : '');
     }
   }
   async function loadListOnly() {

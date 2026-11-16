@@ -449,14 +449,20 @@ def test_미리_본_안이_지금_조건에서_실행할_수_없으면_승인이
 def test_서버가_다시_확인하라며_승인을_돌려보내면_까닭_줄이_조치_이름과_실제_단추_이름으로_말한다():
     """눌러 보기(2026-11-16): 서버의 거절 문장에 든 내부 식별자(skill:…)가 그대로 보였고, 「[미리 보기]로 다시 확인」이라 했는데 화면의 단추 이름은 「예측 다시 보기」였다.
     식별자는 이름 사전에 있으면 그 이름으로 바뀌고, 까닭 줄이 가리키는 단추 이름이 승인 옆에 새로 나온 단추의 이름과 같아야 한다."""
-    refuse = lambda: (409, {'detail': {'code': 'review_required', 'message': '현재 조건에서 승인을 보류합니다: 권고 카드 skill:sop-cool-11가 규정에 걸려 있다'}})
+    # 거절 문장은 서버가 실제로 내는 것(agentsvc guardrail.check_cards — 제외 규칙에 걸린 후보)을 process 가 붙이는 머리말(current_approval) 뒤에 둔다
+    from agentsvc import guardrail
+    [why] = guardrail.check_cards({'options': [{'id': 'skill:sop-cool-11', 'selectedBy': [{'rule': 'r'}], 'feasible': False, 'approver': {'id': 'role:operator'}, 'steps': [{'id': 's'}]}], 'recommended': 'skill:sop-cool-11'})
+    # 응답 꼴은 process 의 것(instance_mode: 409 {code, reason, needs_new_preview}) — 앞의 대역은 까닭을 다른 칸(message)에 실어 화면이 「요청 실패 (409)」만 보였고,
+    # 판정 글 「팬 최대 운전」이 카드의 다른 줄에도 있어 이 시험이 무엇이든 통과했다
+    refuse = lambda: (409, {'detail': {'code': 'review_required', 'reason': '현재 조건에서 승인을 보류합니다: ' + why, 'needs_new_preview': False}})
     with _card_page(lambda params: {}, refuse) as page:
         page.evaluate("UI.names['skill:sop-cool-11'] = '팬 최대 운전'")
         page.wait_for_function("!document.querySelector('#tdGo').disabled", timeout=8000)
         page.click('#tdGo')
         page.wait_for_selector('#tdPreviewNow', timeout=8000)
         text = page.inner_text('#todoPanel')
-        assert 'skill:sop-cool-11' not in text and '「팬 최대 운전」' in text, text[-300:]
+        assert 'skill:sop-cool-11' not in text and '조치 후보 「팬 최대 운전」에 제외 규칙이 걸려 지금 조건에서는 실행할 수 없습니다' in text, text[-300:]
+        assert 'EXCLUDE' not in text and '권고 카드' not in text
         assert f"[{page.inner_text('#tdPreviewNow').strip()}]" in text, text[-300:]
 
 
@@ -488,3 +494,231 @@ def test_자세한_기록의_사건_줄이_한_번에_보이는_수를_넘으면
         page.click('#caseLog [data-events-more]')
         page.wait_for_function("n => document.querySelectorAll('#caseLog .event-record').length === n", arg=len(events), timeout=8000)
         assert page.locator('#caseLog [data-events-more]').count() == 0
+
+
+# ------------------------------------------------------------------ 마지막 고침(2026-11-16): 멈춘 처리 건의 같은 실패 문장 세 번
+STUCK_WHY = 'AI 키가 없을 때 쓰는 재생 모드에서는 「원인 진단」의 준비된 AI 판단을 이 처리 건에 쓸 수 없습니다. 설비 상태를 시작 상태로 되돌린 뒤 다시 시작해 주세요.'
+
+
+@contextlib.contextmanager
+def _stuck_page():
+    """AI 단계가 실패해 사람 조치를 기다리며 멈춘 처리 건(서버 instances.attention 의 꼴 — 단계 이름 · 종류 말 · 까닭 · 그 단계의 작업 id)."""
+    failed = _wi('s1', 'T_agent', 'IN_PROGRESS', 41, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling', draft_status='FAILED', log=STUCK_WHY)
+    attention = {'state': 'stuck', 'label': '멈춤 — 사람 조치 필요',
+                 'steps': [{'workitem': 's1', 'activity': 'T_agent', 'name': '원인 진단', 'kind': 'failed', 'label': 'AI 실행이 실패함', 'reason': STUCK_WHY, 'actions': ['rework', 'close']}]}
+    events = [{'id': 'e1', 'todo_id': 's1', 'proc_inst_id': 'ai', 'event_type': 'error', 'timestamp': _iso(41, 20), 'data': {'message': STUCK_WHY, 'friendly': STUCK_WHY}}]
+
+    def answer(route):
+        from urllib.parse import urlparse
+        path = urlparse(route.request.url).path
+        api = path.split('/api/', 1)[1] if '/api/' in path else ''
+        if api == 'instances/ai':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'ai')
+            return route.fulfill(json={'instance': {**row, 'end_event': None, 'variable_sources': {}, 'initial_variables': {}}, 'definition': CASE_DEF, 'workitems': [failed], 'events': events,
+                                       'approvals': [], 'reworks': [], 'attention': attention, 'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        return _answer(route)
+    with _case_page(height=1400) as page:
+        page.route('**/svc/process/api/**', answer)
+        _pick(page, 'ai')
+        page.wait_for_selector('#instDetail [aria-label="멈춘 단계"]', timeout=15000)
+        yield page
+
+
+def test_멈춘_처리_건의_까닭_문장은_맨_위_알림에_한_번만_나오고_단계_줄은_그_알림을_가리키며_조치_단추는_그_단계에_있다():
+    """V 8절 5(2026-11-16): 같은 실패 문장이 머리 알림 · 단계 줄 · 단계 아래 알림에 세 번 나왔다(디자인 기준 1-2 · 1-3 — 같은 말은 한 화면에 한 번, 결론 먼저).
+    화면에 보이는 글에서 그 문장을 센다. 단계 줄은 무슨 멈춤인지와 알림의 자리만 말하고, 알림의 [이 단계에서 조치하기]를 누르면 그 단계의 [단계 닫기]가 창 안에 들어온다."""
+    with _stuck_page() as page:
+        key = STUCK_WHY[:40]
+        got = page.evaluate("""key => {
+          const seen = n => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(n).visibility !== 'hidden'; };
+          const leaves = [...document.querySelectorAll('#instDetail *')].filter(n => seen(n) && [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.includes(key)));
+          const alert = document.querySelector('#instDetail [aria-label="멈춘 단계"]'), step = document.querySelector('#instRecord .step[data-step="s1"]');
+          return { count: leaves.length, inAlert: leaves.every(n => alert.contains(n)), alertTop: alert.getBoundingClientRect().top, stepTop: step.getBoundingClientRect().top,
+                   sub: step.querySelector('.step-sub').innerText, pill: step.querySelector('.step-head .badge, .step-head [data-tone]')?.innerText || '',
+                   stepAlerts: step.querySelectorAll('.alert').length, alertTitle: alert.querySelector('h2').innerText };
+        }""", key)
+        assert got['count'] == 1 and got['inAlert'], got                                   # 한 번, 맨 위 알림에서만
+        assert got['alertTop'] < got['stepTop'] and got['stepAlerts'] == 0, got            # 결론이 먼저 — 단계 아래에 같은 알림을 또 세우지 않는다
+        assert got['sub'].endswith('AI 실행이 실패함 — 까닭과 할 일은 맨 위 알림에 있습니다') and got['pill'] == '실패', got
+        page.evaluate("window.scrollTo(0, 0); document.querySelector('.app-main')?.scrollTo?.(0, 0)")
+        page.click('#instDetail [aria-label="멈춘 단계"] [data-goto-step="s1"]')
+        page.wait_for_timeout(900)
+        box = page.evaluate("""() => { const b = document.querySelector('#instRecord .step[data-step="s1"] [data-close-task="s1"]'); if (!b) return null;
+          const r = b.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: innerHeight, text: b.innerText.trim() }; }""")
+        assert box and 0 <= box['top'] and box['bottom'] <= box['h'], box                    # 조치 단추는 그 단계에 있고, 알림의 단추가 거기로 데려간다
+
+
+# ------------------------------------------------------------------ 마지막 고침(2026-11-16): 아무도 누르지 않은 단추 — 그 상태를 만들어 실제로 누른다
+_OUT = {'rule': 'forecast:model-unavailable', 'effect': 'EXCLUDE', 'annotation': '현재 조치 예측을 확인할 수 없습니다: 설비 상태가 15초 전 값이라 지금 예측에 쓸 수 없습니다(15초 이내만)'}
+NONE_DEC = {**CARD_DEC, 'recommended': None,
+            'options': [{**o, 'feasible': False, 'rank': None, 'score': None, 'violations': [_OUT]} for o in CARD_DEC['options']]}
+REWORK_PREVIEW = {'start_workitem': 'm1', 'affected_workitems': ['m1', 'm2'], 'cancel_workitems': ['m2'], 'invalidated_variables': ['decision_id'], 'restored_input_variables': [],
+                  'retained_outputs': [], 'reasons': {}, 'blockers': [], 'effects': None, 'retire_approvals': [], 'candidate_variables': [], 'execution_available': True,
+                  'request_roles': ['role:operator'], 'snapshot_token': 'tok-1'}
+
+
+@contextlib.contextmanager
+def _none_page():
+    """실행할 수 있는 안이 하나도 없는 판단이 올라온 승인 단계(조치 카드) — 재생 모드 스택에서는 생기지 않는 상태다(AI 단계가 「준비된 판단과 다르다」로 먼저 멈춘다).
+    반려(reject-card)가 나가면 처리 건은 반려로 닫힌 것으로 답한다(서버가 하는 일). sent 에 보낸 요청이 남는다."""
+    task = {**TASK, 'tool': 'formHandler:select_card'}
+    sent = {'reject': [], 'preview': [], 'rework': []}
+
+    def answer(route):
+        from urllib.parse import urlparse, parse_qs
+        u = urlparse(route.request.url); path, method = u.path, route.request.method
+        api = path.split('/api/', 1)[1] if '/api/' in path else ''
+        closed = bool(sent['reject'])
+        if api == 'decisions/DEC-1':
+            return route.fulfill(json=NONE_DEC)
+        if api == 'todolist/m2/reject-card' and method == 'POST':
+            sent['reject'].append(route.request.post_data_json)
+            return route.fulfill(json={})
+        if api == 'instances/mine/rework-preview':
+            sent['preview'].append(parse_qs(u.query))
+            return route.fulfill(json=REWORK_PREVIEW)
+        if api == 'instances/mine/rework' and method == 'POST':
+            sent['rework'].append(route.request.post_data_json)
+            return route.fulfill(json={'generation': 1})
+        if api == 'todolist':
+            return route.fulfill(json=[] if closed else [task])
+        if api == 'todolist/m2':
+            return route.fulfill(json={**task, 'status': 'DONE'} if closed else task)
+        if api == 'instances' and closed:
+            return route.fulfill(json=[{**r, 'status': 'COMPLETED', 'end_date': _iso(42), 'end_label': '반려'} if r['proc_inst_id'] == 'mine' else r for r in ROWS])
+        if api == 'instances/mine':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'mine')
+            row = {**row, 'status': 'COMPLETED', 'end_date': _iso(42), 'end_label': '반려'} if closed else row
+            items = [VIEWS['mine'][0], {**VIEWS['mine'][1], 'tool': 'formHandler:select_card', **({'status': 'DONE', 'end_date': _iso(42), 'output': {'approval': '반려'}} if closed else {})}]
+            return route.fulfill(json={'instance': {**row, 'variables_data': [{'key': 'decision_id', 'value': 'DEC-1'}], 'end_event': 'E_rej' if closed else None, 'variable_sources': {}, 'initial_variables': {}},
+                                       'definition': CASE_DEF, 'workitems': items, 'events': [], 'approvals': [], 'reworks': [],
+                                       'attention': None, 'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        return _answer(route)
+    with _case_page(height=1400) as page:
+        page.route('**/svc/process/api/**', answer)
+        _pick(page, 'd1'); _pick(page, 'mine')
+        page.wait_for_selector('#todoPanel [data-case-act="recover"]', timeout=15000)
+        page.sent = sent
+        yield page
+
+
+def test_승인할_안이_없을_때의_반려하고_이_건_닫기는_사유를_받아_반려_요청을_보내고_건이_닫힌_것이_화면에_남는다():
+    """V 보고 「못 누른 것」: 실행할 수 있는 안이 하나도 없는 판단에만 나오는 주 단추 — 아무도 누른 적이 없었다. 누르면 사유 칸이 열리고, 사유 없이는 나가지 않으며,
+    [반려 확정]이 조치 카드 반려(POST …/reject-card)를 그 판단 · 담당자 · 승인 역할 · 사유로 한 번 보낸다. 끝나면 결과 알림이 뜨고 그 건은 내 차례가 아니다."""
+    with _none_page() as page:
+        panel = page.inner_text('#todoPanel')
+        assert '지금은 승인할 수 있는 안이 없습니다' in panel and page.locator('#tdGo').count() == 0      # 꺼진 [승인]을 주 단추 자리에 두지 않는다
+        page.wait_for_function("!document.querySelector('#tdRejectOpen').disabled", timeout=8000)
+        assert page.inner_text('#tdRejectOpen').strip() == '반려하고 이 건 닫기'
+        page.click('#tdRejectOpen')
+        page.wait_for_selector('#tdRejectCard')
+        page.click('#tdRejectCard')                                             # 사유 없이: 나가지 않고 까닭을 말한다
+        page.wait_for_function("document.querySelector('#todoPanel').innerText.includes('반려 사유를 1~2000자로 적으세요')", timeout=5000)
+        assert page.sent['reject'] == []
+        page.fill('#tdReason', '예측을 확인할 수 없어 지금은 조치하지 않는다')
+        page.click('#tdRejectCard')
+        page.wait_for_function("() => !document.querySelector('#todoPanel #tdRejectCard')", timeout=10000)
+        assert page.sent['reject'] == [{'decision': 'DEC-1', 'by': 'user:me', 'role': 'role:operator', 'reason': '예측을 확인할 수 없어 지금은 조치하지 않는다'}]
+        page.wait_for_function("document.body.innerText.includes('반려했습니다. 승인 뒤 조치는 실행하지 않습니다.')", timeout=8000)      # 결과 알림
+        page.wait_for_function("hydInstances.I.view && hydInstances.I.view.instance.status === 'COMPLETED'", timeout=8000)
+        assert page.locator('#todoPanel #tdRejectOpen, #todoPanel [data-case-act="recover"]').count() == 0      # 내가 할 일이 걷혔다
+        assert '내 차례' not in page.inner_text('#instDetail .case-title')
+
+
+def test_승인할_안이_없을_때의_새_판단_요청하기는_다시_수행_폼을_창_안에_펴고_거기서_영향_확인과_요청이_그_단계로_나간다():
+    """V 보고 「못 누른 것」: [새 판단 요청하기]는 자세한 기록의 「다시 수행 · 복구」 보기를 펴 그 자리로 데려가는 단추다. 눌러서 폼이 창 안에 보이는지,
+    그 폼에서 AI 단계를 골라 [영향 확인] → 사유 · 확인 → 요청하면 서버로 그 단계 · 담당자 · 역할 · 사유 · 영향 확인 때 받은 토큰이 가는지, 접수 결과가 화면에 남는지 본다."""
+    with _none_page() as page:
+        assert page.inner_text('#todoPanel [data-case-act="recover"]').strip() == '새 판단 요청하기'
+        note = page.inner_text('#todoPanel')
+        assert '[새 판단 요청하기]에서 「다시 수행」을 요청하면' in note
+        page.click('#todoPanel [data-case-act="recover"]')
+        page.wait_for_selector('#caseMore[open] #reworkPanel details[open] #rwStart', timeout=8000)
+        page.wait_for_timeout(900)                                             # 부드러운 스크롤이 끝난 뒤
+        seen = page.evaluate("""() => { const r = document.querySelector('#rwStart').getBoundingClientRect(), tab = document.querySelector('#caseMoreTabs [aria-selected="true"]');
+          return { inView: r.top >= 0 && r.bottom <= innerHeight, tab: tab ? tab.dataset.moreTab : '', fold: document.querySelector('#reworkPanel summary').innerText.trim(),
+                   steps: [...document.querySelectorAll('#rwStart option')].filter(o => o.value).map(o => [o.value, o.textContent.trim()]) }; }""")
+        assert seen['inView'] and seen['tab'] == 'recover' and '다시 수행' in seen['fold'], seen
+        assert any(v == 'm1' and '원인 진단' in t for v, t in seen['steps']), seen      # 다시 판단시킬 AI 단계를 고를 수 있다
+        page.select_option('#rwStart', 'm1')
+        page.click('#rwPreview')
+        page.wait_for_selector('#rwConfirm:not([disabled])', timeout=8000)
+        assert page.sent['preview'] == [{'workitem_id': ['m1']}]
+        page.fill('#rwReason', '설비 값이 다시 들어왔다')
+        page.check('#rwConfirm')
+        page.click('#rwSubmit')
+        page.wait_for_function("document.querySelector('#reworkPanel')?.innerText.includes('요청이 접수됐습니다')", timeout=8000)
+        [body] = page.sent['rework']
+        assert body.pop('request_id') and body == {'workitem_id': 'm1', 'snapshot_token': 'tok-1', 'by': 'user:me', 'role': 'role:operator', 'reason': '설비 값이 다시 들어왔다'}, body
+        assert '2차 요청이 접수됐습니다' in page.inner_text('#reworkPanel')
+        assert page.sent['reject'] == []
+
+
+PROPOSAL_CFG = {'options': 'proposal.options', 'key': 'name', 'recommended': 'proposal.recommended', 'losers': 'proposal.losers', 'docs': 'proposal.docs'}
+PROPOSAL = {'options': [{'name': '야간 세척', 'reason': '생산 영향이 가장 작다', 'score': 3.4}, {'name': '즉시 정지', 'reason': '가장 빨리 회복한다', 'score': 2.1}], 'recommended': '야간 세척'}
+
+
+@contextlib.contextmanager
+def _proposal_page():
+    """에이전트 제안을 받는 일반 승인 단계(formHandler:approve + 활동의 approval 설정 — 학생이 만든 흐름의 꼴). 기본 제공 흐름에는 없는 카드다."""
+    definition = {**CASE_DEF, 'activities': [{**a, 'approval': PROPOSAL_CFG} if a['id'] == 'T_approve' else a for a in CASE_DEF['activities']]}
+    task = {**TASK, 'inputs': {'proposal': PROPOSAL}}
+    sent = []
+
+    def answer(route):
+        from urllib.parse import urlparse
+        path, method = urlparse(route.request.url).path, route.request.method
+        api = path.split('/api/', 1)[1] if '/api/' in path else ''
+        if api == 'todolist/m2/approve' and method == 'POST':
+            sent.append(route.request.post_data_json)
+            return route.fulfill(json={})
+        if api == 'todolist' or api == 'todolist/m2':
+            return route.fulfill(json=[task] if api == 'todolist' else task)
+        if api == 'instances/mine':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'mine')
+            return route.fulfill(json={'instance': {**row, 'end_event': None, 'variable_sources': {}, 'initial_variables': {}}, 'definition': definition, 'workitems': VIEWS['mine'], 'events': [],
+                                       'approvals': [], 'reworks': [], 'attention': None, 'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        if api.startswith('process/definitions/'):
+            return route.fulfill(json=definition)
+        return _answer(route)
+    with _case_page(height=1400) as page:
+        page.route('**/svc/process/api/**', answer)
+        _pick(page, 'd1'); _pick(page, 'mine')
+        page.wait_for_selector('#todoPanel #tdMore', timeout=15000)
+        page.sent = sent
+        yield page
+
+
+def test_일반_승인_카드에서_다른_안을_골랐다가_추천안으로_되돌리기를_누르면_물음과_승인_요청이_추천안으로_돌아온다():
+    """V 보고 「못 누른 것」: 에이전트 제안을 받는 일반 승인 카드의 「다른 안 n개 비교」 · [추천안으로 되돌리기]. 다른 안을 고르면 물음이 그 안으로 바뀌고 되돌리기 단추가 나오며,
+    누르면 물음 · 카드가 추천안으로 돌아오고 단추가 사라진다. 그 뒤 [승인]은 추천안으로 나간다(되돌리지 않았다면 고른 안으로 나간다 — 앞의 물음으로 확인)."""
+    with _proposal_page() as page:
+        asks = lambda: page.evaluate("() => [...document.querySelectorAll('#todoPanel *')].map(n => n.childNodes.length === 1 && n.firstChild.nodeType === 3 ? n.textContent.trim() : '').find(t => t.endsWith('안을 승인할까요?')) || ''")      # noqa: E731
+        assert asks() == '「야간 세척」 안을 승인할까요?'
+        # 이 세계는 첫 화면을 제안 없는 응답으로 연 뒤 제안을 붙이므로 카드가 펴진 채일 수 있다(약속과 다른 제안은 펴서 보인다) — 접힌 데서 시작해 [다른 안 고르기]를 누른다
+        if page.get_attribute('#tdMore', 'aria-expanded') == 'true':
+            page.click('#tdMore')
+            page.wait_for_function("!document.querySelector('#todoPanel .ap-card')", timeout=5000)
+        assert page.inner_text('#tdMore').strip() == '다른 안 고르기'
+        page.click('#tdMore')
+        page.wait_for_selector('#todoPanel .ap-card')
+        assert page.locator('#todoPanel [data-ap-back]').count() == 0 and 'AI 에이전트 추천' in page.inner_text('#todoPanel .ap-kicker')
+        fold = page.locator('#todoPanel .ap-card details', has_text='비교')
+        assert '다른 안 1개' in fold.locator('summary').inner_text()
+        if not fold.evaluate('n => n.open'):
+            fold.locator('summary').click()
+        page.locator("#todoPanel input[name=hopt][value='즉시 정지']").click()      # 고르면 카드가 다시 그려져 그 안이 머리로 올라간다(고르기 칸은 사라진다)
+        page.wait_for_selector('#todoPanel [data-ap-back]')
+        assert asks() == '「즉시 정지」 안을 승인할까요?' and '직접 고른 안' in page.inner_text('#todoPanel .ap-kicker')
+        back = page.locator('#todoPanel [data-ap-back]')
+        assert back.inner_text().strip() == '추천안으로 되돌리기'
+        back.click()
+        page.wait_for_function("!document.querySelector('#todoPanel [data-ap-back]')", timeout=5000)
+        assert asks() == '「야간 세척」 안을 승인할까요?' and 'AI 에이전트 추천' in page.inner_text('#todoPanel .ap-kicker')
+        page.wait_for_function("!document.querySelector('#tdGo').disabled", timeout=8000)
+        page.click('#tdGo')
+        for _ in range(100):
+            if page.sent:
+                break
+            page.wait_for_timeout(50)
+        assert page.sent == [{'decision': '승인', 'option': '야간 세척', 'by': 'user:me', 'role': 'role:operator', 'reason': ''}], page.sent

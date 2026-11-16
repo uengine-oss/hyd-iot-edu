@@ -100,6 +100,7 @@ ul.doc-issues { list-style: disc; } ol.doc-issues { list-style: decimal; }
 .doc-steps { display: grid; gap: 12px; margin: 0; padding-left: 22px; list-style: decimal; }
 .doc-steps li::marker { color: var(--muted-foreground); font-size: var(--fs-sm); }
 .doc-steps textarea { width: 100%; }
+.doc-steps textarea[readonly] { background: var(--muted); cursor: default; }      /* 참고 절차의 단계: 원문 그대로 보관 — 고칠 수 없는 칸은 그렇게 보인다(1-6) */
 .doc-steps .badge { margin-top: 6px; }
 .doc-steps .fold { border-top: 0; }
 .doc-steps .fold > summary { min-height: 0; padding: 6px 0 2px; font-size: var(--fs-xs); }

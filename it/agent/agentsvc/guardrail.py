@@ -43,19 +43,24 @@ def check(card: dict) -> list[str]:
 
 def check_cards(result: dict) -> list[str]:
     """Action-card guardrail (ontology v2): every card was selected by a DMN rule of the ontology, and the recommended
-    card is not excluded by a rule, names its approving Role and carries its SOP steps."""
+    card is not excluded by a rule, names its approving Role and carries its SOP steps.
+    문장은 학생이 화면에서 읽는다(승인 보류 409 · 미리 보기 거절 · 모의 판단의 거절 사유) — 화면 용어(조치 후보 · 규칙 · 승인 역할 · 단계)로, 「…니다」로 끝낸다.
+    무엇이 어느 관계인지는 이 함수의 조건이 말한다: 후보로 고른 규칙 = Rule -OUTPUTS-> Skill, 제외 규칙 = 효과가 EXCLUDE 인 규칙(violations) 또는 실행 불가(feasible=False),
+    승인 역할 = Skill -APPROVED_BY-> Role, 단계 = Skill -HAS_STEP-> Step. 승인 때는 사람이 고른 후보 하나를 recommended 로 넣어 부른다(approval.py).
+    후보 id 바로 뒤에는 받침에 따라 갈리지 않는 조사(의 · 에)만 붙인다 — 화면이 id 를 이름으로 바꿔 보이므로(ui.js ID_RE) id 에 맞춘 은/는 · 이/가는 이름과 어긋나고,
+    쌍점(:)을 붙이면 id 의 일부로 읽혀 이름으로 바뀌지 않는다."""
     v: list[str] = []
     for o in result.get("options", []):
         if o.get('kind') == 'reference' or o.get('executable') is False:
-            v.append(f"{o['id']}: 원문 참고 절차는 실행 카드로 제출할 수 없다")
+            v.append(f"조치 후보 {o['id']}의 종류가 원문 참고 절차라서 실행할 조치로 낼 수 없습니다")
         if not o.get("selectedBy"):
-            v.append(f"{o['id']}: 후보 선택 규칙(Rule -OUTPUTS-> Skill) 인용이 없다")
+            v.append(f"조치 후보 {o['id']}의 근거가 되는(이 조치를 후보로 고른) 규칙이 지식에 없습니다")
     rec = next((o for o in result.get("options", []) if o["id"] == result.get("recommended")), None)
     if rec:
         if rec.get("violations") or not rec.get("feasible", True):
-            v.append(f"권고 카드 {rec['id']}가 규정(EXCLUDE 규칙)에 걸려 있다")
+            v.append(f"조치 후보 {rec['id']}에 제외 규칙이 걸려 지금 조건에서는 실행할 수 없습니다")
         if not (rec.get("approver") or {}).get("id"):
-            v.append(f"권고 카드 {rec['id']}에 승인 역할(Skill -APPROVED_BY-> Role)이 없다")
+            v.append(f"조치 후보 {rec['id']}에 승인 역할이 정해져 있지 않습니다")
         if not rec.get("steps"):
-            v.append(f"권고 카드 {rec['id']}에 SOP 단계(Skill -HAS_STEP-> Step)가 없다")
+            v.append(f"조치 후보 {rec['id']}에 조치 단계가 없습니다")
     return v

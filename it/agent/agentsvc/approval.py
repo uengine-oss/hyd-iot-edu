@@ -64,7 +64,7 @@ def _parameterized(skill, parameters):
         labels = {'fan_pct':'팬', 'load_pct':'부하'}
         effective['name'] = (skill.get('sopId') or skill['name']) + ' 변경안: ' + ', '.join(
             f'{labels.get(k, k)} {v:g}' + ('%' if k.endswith('_pct') else '') for k,v in sorted(normalized.items()))
-        effective['description'] = 'SOP 원문 기본값과 구분하여 검토하는 조치값입니다. 실제 적용값은 아래 원자 조치를 확인하세요.'
+        effective['description'] = '원문 절차의 기본값을 바꿔 검토하는 안입니다. 설비에 실제로 보낼 값은 이 안의 세부 동작에서 확인하세요.'      # 화면 말: Action = 「세부 동작」(UIUX_PLAN 4절 · enterprise.js)
     return effective, normalized
 
 

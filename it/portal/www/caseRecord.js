@@ -1133,7 +1133,7 @@
   const noticeHtml = rows => { const xs = noticeTexts(rows); return xs.length ? `<div class="cr-notices">${xs.map(t => `<p class="cr-notice">${UI.icon('info')}<span>${e(t)}</span></p>`).join('')}</div>` : ''; };
   /* 한 단계의 줄: 점의 상태 · 머리(이름 · 알약 · 시각) · 보조 줄(누가 · 결론 한 마디) · 줄 아래(기계가 일하는 중일 때만 흘러나오는 줄).
      점: 끝남 done · 지금 now(기계가 실제로 일하는 중이면 busy — 맥박) · 내 차례 mine(멈춘 모양) · 실패 fail · 남음 todo. 알약은 그 상태일 때만(내 차례 · 실패 · 기준 밖 · 멈춤 · 보류) */
-  function rowParts(s, m, mine, seen) {
+  function rowParts(s, m, mine, seen, stuck) {
     const failed = ['fail', 'stop', 'bad'].includes(s.state);
     const myTurn = !!(mine && s.w && mine.has(s.w.id)) && !failed;
     const state = myTurn ? 'mine' : PIN[s.state] || 'todo';
@@ -1144,9 +1144,12 @@
     const names = [...new Set(String(s.actor || '').split(' · ').filter(Boolean))];
     const who = (names.length ? names : [LANE[s.lane]]).join(' · ') + (s.gen ? ` · ${s.gen + 1}${UI.t('inst.gen')}` : '');
     let say;
+    // 멈춘 단계의 까닭은 처리 건 맨 위 「멈춤」 알림이 한 번 크게 말한다(instances.js topCardHtml — 서버 attention 의 그 단계 까닭). 이 줄은 무슨 멈춤인지만 말하고 그 알림을 가리킨다 — 같은 문장을 또 적지 않는다
+    const told0 = failed && s.w && stuck && stuck.get(s.w.id);
     // 일은 끝냈는데 엔진이 아직 다음 단계로 넘기지 않은 순간(2~3초): 흘러나온 줄을 그대로 두고 그 사실을 말한다 — 줄이 사라졌다가 결론으로 바뀌어 보였다
     const handing = s.type === 'agent' && !s.live && s.state === 'run' && !s.t1;
-    if (handing) say = '결과를 냈습니다 — 다음 단계로 넘기는 중';
+    if (told0) say = `${told0} — 까닭과 할 일은 맨 위 알림에 있습니다`;
+    else if (handing) say = '결과를 냈습니다 — 다음 단계로 넘기는 중';
     else if (s.type === 'agent' && s.live && !failed) say = s.awaiting ? '일을 받기를 기다리는 중' : s.now || '일하는 중';      // ① 지금 하는 일 한 줄: 부르는 도구 이름과 물음
     else if (s.type === 'agent' && s.state === 'cancel') say = s.sentence;
     else if (s.type === 'agent') {
@@ -1376,9 +1379,10 @@
         return li;
       };
       const gaps = gapsByStep(m);
+      const stuck = new Map((C.view.attention?.steps || []).filter(x => x.workitem && x.reason).map(x => [x.workitem, x.label || '멈춤']));
       shown.forEach((s, i) => {
         if (!C.seen.has(s.key)) C.seen.set(s.key, new Set());
-        const parts = rowParts(s, m, mine, C.seen.get(s.key));
+        const parts = rowParts(s, m, mine, C.seen.get(s.key), stuck);
         const li = place(s.key, i, { ...parts, open: detailGroups(s, gaps.get(s.key) || [], m).length ? s.key : '' });
         li.dataset.lane = s.lane;
         if (s.live) li.dataset.live = ''; else delete li.dataset.live;

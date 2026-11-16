@@ -571,6 +571,11 @@ def loaded(session, tenant, document_id):
     return _loaded_of(json.loads(row['receipt'])) if row else None
 
 
+def loaded_documents(session, tenant) -> set[str]:
+    """지금 적재된 판이 있는 문서의 그래프 열쇠(manual_review.document_key) 모음."""
+    return {row['id'] for row in session.run('MATCH (d:ManualIngestionDocument {tenant:$tenant}) WHERE d.head IS NOT NULL RETURN d.id AS id', tenant=tenant)}
+
+
 def loaded_original(session, tenant, sha256, *, other_than):
     """같은 원본 파일(sha256)로 만든 판이 지금 적재돼 있는 **다른** 문서(없으면 None). 원문 id 는 `manual:<문서>:<원본 sha256>` 이다(manual_sources).
     이미 적재한 파일을 「새 문서 등록」으로 다시 올리면 새 문서가 생기는데, 그대로 검토 · 적재하면 절차 번호가 먼저 적재한 문서의 것과 겹쳐 적재가

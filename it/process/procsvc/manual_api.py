@@ -134,9 +134,19 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 raise ValueError('base64 파일 데이터가 올바르지 않습니다') from exc
             if not raw:
                 raise ValueError('빈 파일입니다 — 내용이 있는 문서를 고르세요')
-            app.state.course.document(hashlib.sha256(raw).hexdigest())     # 저장 전에: 수업 단계는 제공 문서만 받는다
-            source = archive_factory().save(tenant, body.get('filename'), raw,
-                                             document_id=body.get('document_id'))
+            sha256 = hashlib.sha256(raw).hexdigest()
+            app.state.course.document(sha256)     # 저장 전에: 수업 단계는 제공 문서만 받는다
+            archive, document_id = archive_factory(), body.get('document_id')
+            if not document_id and isinstance(body.get('filename'), str):
+                # 새 문서로 올린 파일이 같은 이름 · 같은 바이트로 이미 보관돼 있고 그 문서에 적재된 판이 없으면(올리기만 했거나 되돌린 문서) 그 문서를 다시 쓴다.
+                # 전에는 올릴 때마다 새 문서가 생겨, 적재하지 않은 제공 문서의 줄을 누를 때마다 「보관한 원문」에 같은 원문이 한 건씩 늘었다(같은 파일 9건).
+                # 다시 쓰면 그 원문의 이전 추출 결과도 이어 보인다. 적재된 판이 있는 문서는 다시 쓰지 않는다 — 개정은 문서를 골라(document_id) 올리는 길이고,
+                # 고르지 않고 올리면 지금처럼 새 문서가 되어 응답의 same_original 이 그 문서의 개정으로 가는 길을 알린다.
+                held = archive.documents_of(tenant, sha256, body['filename'])
+                if held:
+                    loaded = graph(lambda session: manual_graph.loaded_documents(session, tenant))
+                    document_id = next((d for d in held if manual_review.document_key(tenant, d) not in loaded), None)
+            source = archive.save(tenant, body.get('filename'), raw, document_id=document_id)
             return preview(source)
         return await run(work)
 

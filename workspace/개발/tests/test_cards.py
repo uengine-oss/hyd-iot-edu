@@ -1,6 +1,8 @@
 """조치 카드 판단의 순수 계산(it/agent/agentsvc/cards.py) — 정비 시점 · 생산 영향 · 읽을 판단 변수 · 설명 문장.
 
 카드 모양은 지식 그래프 t3_skills 행 그대로(수업 지식 HM-8 의 SOP-COOL-11~14, PM-02 의 SOP-PM-12)."""
+import re
+
 import pytest
 
 from agentsvc import cards
@@ -137,3 +139,15 @@ def test_작업지시를_언제_할지_모르는_카드는_승인_전에_그_까
     assert said == ([] if feasible else [cards.NO_MAINTENANCE_WINDOW]) and '예정된 정비 시간' in cards.NO_MAINTENANCE_WINDOW
     assert out['skill:sop-cool-14']['feasible'] and out['skill:sop-cool-14']['window'] == cards.IMMEDIATE
     assert out['skill:sop-cool-11']['feasible'] and 'window' not in out['skill:sop-cool-11']
+
+
+def test_순위_근거의_점수_계산_방법_한_줄은_화면이_쓰는_말로_쓴_문장이다():
+    """V 8절 2(2026-11-16): 조치 후보 근거의 「점수 계산 방법」 줄에 「명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 …」가 그대로 나왔다(rankingEvidence.conditionMode —
+    화면은 서버 문장을 그대로 적는다). 실제 판단(cards.evaluate)이 낸 카드의 그 칸을 본다: 조건 판정은 화면 말(적용 · 미적용 · 미확인)이고 안쪽 값(TRUE · FALSE · UNKNOWN)이 없다."""
+    facts = {'pattern': 'COOLER_DEGRADATION', 'cause': 'cause:fin', 'windows_by_variable': WINDOWS}
+    options = cards.evaluate(DMN, COOL, facts, {}, [], [], {})['options']
+    modes = {o['rankingEvidence']['conditionMode'] for o in options}
+    assert modes == {cards.CONDITION_MODES['tradeoff']}, modes
+    for text in cards.CONDITION_MODES.values():
+        assert not re.search(r'TRUE|FALSE|UNKNOWN|;', text) and text.endswith('니다.'), text
+    assert all(word in cards.CONDITION_MODES['tradeoff'] for word in ('적용', '미적용', '미확인'))

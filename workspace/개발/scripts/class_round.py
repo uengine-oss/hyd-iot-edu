@@ -1193,7 +1193,8 @@ def apply_review(r: Round, key: str, preview_body: dict) -> list[str]:
     for f in extraction_quality(src, preview_body):
         if f.get("order") and f.get("source"):
             ta = page.locator(f"textarea[data-manual-step='{f['sop']}'][data-order='{f['order']}']")
-            if ta.count():
+            # 참고 절차에서 원문 인용 그대로인 단계는 화면이 읽기 전용으로 잠근다(hitl.js — 서버가 인용 그대로만 받는다): 고칠 수 없고 고칠 것도 없다
+            if ta.count() and not ta.evaluate("n => n.readOnly"):
                 show(f["sop"])
                 ta.fill(f["source"]); done.append(f"수정 {f['sop']}#{f['order']}: {f['kind']}")
         elif f["kind"].startswith("원문 SOP 목록에 없는"):
