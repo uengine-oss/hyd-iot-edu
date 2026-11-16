@@ -1661,14 +1661,15 @@ def ontology_four() -> str:
 
 
 def memo_two_readings() -> str:
-    """51장: 위 가운데 메모 한 장을 왼쪽은 사람이, 오른쪽은 컴퓨터가 읽는다. 두 칸의 글(읽어 낸 것)은 라벨로 얹는다."""
+    """50장: 위 가운데 메모 한 장을 왼쪽은 사람이, 오른쪽은 컴퓨터가 읽는다. 두 칸의 글(칸 이름과 읽어 낸 세 줄)은 라벨로 얹는다.
+    칸 높이는 아이콘과 글 네 줄 높이에 맞추고, 아이콘은 칸 세로 가운데(298)에 둔다. 1200×400."""
     o: list[str] = []
     o += g(300, 78, 0.95, note_doc(0, 0, ON))
     o += [line(600, 150, 600, 172, stroke=NAVY, sw=3.5), line(300, 172, 900, 172, stroke=NAVY, sw=3.5)]
     o += [arrow([(300, 172), (300, 208)], NAVY, sw=3.5), arrow([(900, 172), (900, 208)], NAVY, sw=3.5)]
-    o += [rect(40, 212, 520, 296, 14, fill=LIGHT, stroke="none", sw=0), rect(640, 212, 520, 296, 14, fill=LIGHT, stroke="none", sw=0)]
-    o += g(125, 365, 1.45, person_icon(0, 0, ON)) + g(725, 360, 1.05, monitor(0, 0, ON, kind="text"))
-    return svg(o)
+    o += [rect(40, 212, 520, 172, 14, fill=LIGHT, stroke="none", sw=0), rect(640, 212, 520, 172, 14, fill=LIGHT, stroke="none", sw=0)]
+    o += g(125, 302, 1.3, person_icon(0, 0, ON)) + g(725, 298, 1.0, monitor(0, 0, ON, kind="text"))
+    return svg(o, h=400)
 
 
 def ontology_frame() -> str:
@@ -1782,16 +1783,13 @@ def same_reading() -> str:
 MEMO4 = {"Y": (190, 345, 60), "F": (480, 345, 68), "C": (770, 345, 60), "K": (1050, 345, 60)}
 
 
-def _memo_row(P, hot_edges=(), tags=True):
-    """메모를 다시 적은 한 줄: 증상 Y → 고장 유형 F ← 원인 C ← 조치 K. 원 위의 연하늘 칸은 종류 이름표 자리."""
+def _memo_row(P, hot_edges=()):
+    """메모를 다시 적은 한 줄: 증상 Y → 고장 유형 F ← 원인 C ← 조치 K. 원 바로 위는 종류 이름(덱 라벨, 테두리 없음) 자리."""
     Y, F, C, K = P["Y"], P["F"], P["C"], P["K"]
     o: list[str] = []
     for key, (a, b) in (("YF", (Y, F)), ("CF", (C, F)), ("KC", (K, C))):
         o += _edge_arrow(a, b, BLUE if key in hot_edges else NAVY, sw=5 if key in hot_edges else 4.5)
     o += _node(Y, "rise") + _node(F, "fm", hot=True) + _node(C, "pin") + _node(K, "wash")
-    if tags:
-        for (x, y, r) in (Y, F, C, K):
-            o.append(rect(x - 78, y - r - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
     return o
 
 
@@ -1808,51 +1806,50 @@ ASK4 = {"Y": (330, 330, 58), "F": (600, 330, 66), "C": (870, 330, 58), "K": (111
 
 
 def ask_and_follow() -> str:
-    """53장: 왼쪽 프로그램이 증상에서 출발해 이름 붙은 화살표를 따라 원인과 조치에 닿는다. 위 칸은 물음과 답 자리."""
-    o: list[str] = [rect(230, 14, 960, 116, 14, fill=LIGHT, stroke="none", sw=0)]
+    """52장: 왼쪽 프로그램이 증상에서 출발해 이름 붙은 화살표를 따라 원인과 조치에 닿는다. 위 칸은 물음과 답 자리(글 두 줄 높이에 맞춘다)."""
+    o: list[str] = [rect(230, 14, 960, 100, 14, fill=LIGHT, stroke="none", sw=0)]
     o += g(95, 330, 1.0, monitor(0, 0, ON, kind="text"))
     o.append(arrow([(165, 330), (258, 330)], BLUE, sw=5, size=15))
     o += _memo_row(ASK4, hot_edges=("YF", "CF", "KC"))
-    return svg(o)
+    return svg(o, h=440)
 
 
 def names_apart() -> str:
     """53장: 두 정비 담당이 같은 고장의 까닭을 하나씩, 서로 다른 종류 이름(원인 · 까닭)과 화살표 이름(일으킨다 · 유발한다)으로 적었다.
-    컴퓨터가 「원인 · 일으킨다」를 맞춰 따라간 위 줄 화살표만 파랑. 오른쪽 칸은 물음과 찾은 답 자리(글 높이에 맞춘 상자). 1200×500."""
-    o: list[str] = [rect(800, 110, 385, 280, 14, fill=LIGHT, stroke="none", sw=0)]
-    for y, kind, hot in ((150, "pin", True), (375, "fanbad", False)):
+    컴퓨터가 「원인 · 일으킨다」를 맞춰 따라간 위 줄 화살표만 파랑. 오른쪽 칸은 물음과 찾은 답 자리 — 글 다섯 줄 높이에 맞추고,
+    두 줄의 세로 가운데(248)에 둔다. 1200×500."""
+    o: list[str] = [rect(800, 141, 385, 214, 14, fill=LIGHT, stroke="none", sw=0)]
+    for y, kind, hot in ((135, "pin", True), (360, "fanbad", False)):
         C, F = (300, y, 52), (600, y, 56)
         o += _edge_arrow(C, F, BLUE if hot else NAVY, sw=5 if hot else 4.5)
         o += _node(C, kind) + _node(F, "fm")
-        for (x, yy, r) in (C, F):
-            o.append(rect(x - 78, yy - r - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
     return svg(o, h=500)
 
 
 def read_and_search() -> str:
     """57장: 왼쪽 「읽을 때」는 원인 → 일으킨다 → 고장 유형을 문장으로 읽는 화살표, 오른쪽 「찾을 때」는 같은 화살표를 두고
     고장 유형에서 원인 쪽으로 거꾸로 따라가는 길(파란 점선, 위로 꺾음). 1200×500."""
-    o: list[str] = [rect(15, 20, 570, 460, 14, fill=PALE, stroke="none", sw=0), rect(615, 20, 570, 460, 14, fill=LIGHT, stroke="none", sw=0)]
+    o: list[str] = [rect(15, 10, 570, 400, 14, fill=PALE, stroke="none", sw=0), rect(615, 10, 570, 400, 14, fill=LIGHT, stroke="none", sw=0)]
     for cx in (150, 750):
-        C, F = (cx, 270, 60), (cx + 300, 270, 64)
+        C, F = (cx, 230, 60), (cx + 300, 230, 64)
         o += _edge_arrow(C, F, BLUE if cx == 150 else NAVY, sw=5 if cx == 150 else 4.5)
         o += _node(C, "pin") + _node(F, "fm")
-    o += dash_line(1050, 200, 1050, 150, BLUE, 4, 10, 8) + dash_line(1050, 150, 750, 150, BLUE, 4, 10, 8) + dash_line(750, 150, 750, 190, BLUE, 4, 10, 8)
-    o.append(head(750, 204, math.pi / 2, BLUE, size=14))
-    return svg(o, h=500)
+    o += dash_line(1050, 160, 1050, 98, BLUE, 4, 10, 8) + dash_line(1050, 98, 750, 98, BLUE, 4, 10, 8) + dash_line(750, 98, 750, 150, BLUE, 4, 10, 8)
+    o.append(head(750, 164, math.pi / 2, BLUE, size=14))
+    return svg(o, h=420)
 
 
 def two_actions() -> str:
     """58장: 한 줄에 완화 조치 M ← 완화된다 ← 고장 유형 F → 근본 해결된다 → 근본 조치 R → 없앤다 → 원인 C(완화 · 근본은 파랑).
-    원 위 연하늘 칸은 종류 이름표 자리(조치 · 고장 유형 · 조치 · 원인), 원 아래는 이름, 그 아래는 두 조치 뒤에 남는 것. 실습 08과 같은 방향.
-    1200×400 — 위 여백 없이 종류 칸이 그림 맨 위 가까이에서 시작한다(내용이 제목 밑줄 아래로 밀리지 않게)."""
-    M, F, R, C = (150, 190, 58), (450, 190, 64), (750, 190, 58), (1050, 190, 58)
-    o: list[str] = []
+    원 바로 위는 종류 이름(덱 라벨, 테두리 없음), 원 아래는 이름, 그 아래 두 조치 밑의 연회색 칸은 조치의 갈래 이름과 조치 뒤에 남는 것.
+    실습 08과 같은 방향. 1200×395 — 위 종류 글(36)부터 아래 칸(350)까지를 그림 세로 가운데에 두고, 줄을 오른쪽으로 옮겨
+    왼쪽 칸과 오른쪽 끝 원의 이름이 좌우로 같은 여백을 갖게 한다."""
+    M, F, R, C = (205, 150, 58), (495, 150, 64), (785, 150, 58), (1075, 150, 58)
+    o: list[str] = [rect(M[0] - 150, 272, 300, 78, 14, fill=LIGHT, stroke="none", sw=0),
+                    rect(R[0] - 150, 272, 300, 78, 14, fill=LIGHT, stroke="none", sw=0)]
     o += _edge_arrow(F, M, BLUE, sw=5.5, size=17) + _edge_arrow(F, R, BLUE, sw=5.5, size=17) + _edge_arrow(R, C)
     o += _node(M, "fanmax") + _node(F, "fm") + _node(R, "wash") + _node(C, "pin")
-    for (x, y, r) in (M, F, R, C):
-        o.append(rect(x - 78, y - r - 58, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
-    return svg(o, h=400)
+    return svg(o, h=395)
 
 
 def ontology_two_bands() -> str:
@@ -1875,16 +1872,16 @@ def ontology_two_bands() -> str:
 
 def property_evidence() -> str:
     """59장: 센서 노드 둘(유온 센서 · 토출 압력 센서)에 같은 항목 단위와 저마다의 값, 원인 노드 하나(쿨러 핀 오염)에 다른 항목 증거.
-    원 위 연하늘 칸은 종류, 원 아래는 이름, 그 아래 두 칸 카드는 항목 이름(왼쪽) · 그 노드에 적은 값(오른쪽). 1200×450."""
-    o: list[str] = [*dash_line(800, 40, 800, 430, GREY, 2.5, 8, 8)]
+    원 바로 위는 종류 이름(덱 라벨), 원 아래는 이름, 그 아래 두 칸 카드는 항목 이름(왼쪽) · 그 노드에 적은 값(오른쪽)이고,
+    두 칸 모두 같은 크기의 글 한 줄이 들어가는 높이다. 1200×445 — 종류 글(63)부터 카드 아래(382)까지를 세로 가운데에 둔다."""
+    o: list[str] = [*dash_line(800, 50, 800, 390, GREY, 2.5, 8, 8)]
     for x, kind in ((205, "sensor"), (600, "sensor"), (995, "pin")):
         P = (x, 170, 62)
-        o.append(rect(x - 78, 50, 156, 40, 20, fill=PALE, stroke=NAVY, sw=2.5))
         o += _node(P, kind)
-        o.append(rect(x - 188, 300, 376, 130, 14, fill=WHITE, stroke=NAVY, sw=3))
-        o.append(rect(x - 176, 312, 92, 106, 10, fill=PALE, stroke="none", sw=0))
-        o.append(rect(x - 72, 312, 248, 106, 10, fill=LIGHT, stroke="none", sw=0))
-    return svg(o, h=450)
+        o.append(rect(x - 188, 300, 376, 80, 14, fill=WHITE, stroke=NAVY, sw=3))
+        o.append(rect(x - 176, 312, 92, 56, 10, fill=PALE, stroke="none", sw=0))
+        o.append(rect(x - 72, 312, 248, 56, 10, fill=LIGHT, stroke="none", sw=0))
+    return svg(o, h=445)
 
 
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
