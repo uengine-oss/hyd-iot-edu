@@ -1,0 +1,24 @@
+# hyd-iot-edu DMZ 브로커의 토픽 규칙 — 이름(username)마다 할 수 있는 것만 적는다. 적히지 않은 것은 거절된다(이름을 대지 않은 연결은 아무것도 못 한다).
+# 공장 쪽 브리지: 값 · 상태와 다리 상태를 내놓고(write), 명령 · 경보판을 가져간다(read)
+user ot-bridge
+topic write plant/+/tag/+
+topic write plant/+/wave/+
+topic write plant/+/status
+topic write bridge/ot/+
+topic read plant/+/cmd/auto
+topic read plant/+/alert
+
+# 명령 관문: 검증을 통과한 명령과 경보판을 놓고, 설비 상태 · 경보판 · 다리 상태를 읽는다
+user cmd-gateway
+topic write plant/+/cmd/auto
+topic write plant/+/alert
+topic read plant/+/status
+topic read plant/+/alert
+topic read bridge/ot/+
+
+# 수집 중계: 읽기만 한다
+user connect-ingest
+topic read plant/+/tag/+
+topic read plant/+/wave/+
+topic read plant/+/status
+topic read bridge/ot/+

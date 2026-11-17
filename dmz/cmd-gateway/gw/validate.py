@@ -28,7 +28,8 @@ APPROVALS_KEPT = 512
 #: The checks validate() applies, in order (a rejection names one of them; gw/main adds PUBLISH_CHECK when the broker did
 #: not take a command that passed them all). The forwarded-command audit record lists exactly these, so an auditor can match a later rejection's `check` to the list a pass went through.
 CHECKS = ("SCHEMA", "WHITELIST", "EXPIRED", "DUPLICATE", "APPROVAL", "MODE", "RATE_LIMIT")
-#: Rejection after every check passed: the plant MQTT broker did not take the command (gw/main.handle_command, G3b-14).
+#: Rejection after every check passed: the command could not be handed to the plant — the DMZ broker connection or the
+#: plant-side bridge is down (gw/main.handle_command, G3b-14).
 PUBLISH_CHECK = "MQTT"
 #: What a person reads for each rejection (the audit record's reason_text; process shows it on the case).
 CHECK_TEXT = {"SCHEMA": "명령 형식이 맞지 않아 설비로 보내지 않았습니다",
@@ -38,7 +39,7 @@ CHECK_TEXT = {"SCHEMA": "명령 형식이 맞지 않아 설비로 보내지 않�
               "APPROVAL": "승인 기록과 맞지 않는 명령이라 보내지 않았습니다",
               "MODE": "설비가 원격 자동 모드가 아니어서 보내지 않았습니다 — 운전 모드를 원격 자동으로 돌린 뒤 다시 승인합니다",
               "RATE_LIMIT": "1초에 너무 많은 명령이 와서 보내지 않았습니다",
-              # 검사는 통과했지만 설비 쪽 MQTT 브로커가 그 명령을 받지 않음(연결 끊김) — 보내지 못한 명령을 「보냄」으로 적지 않는다(G3b-14)
+              # 검사는 통과했지만 설비로 넘길 길이 끊김(DMZ 브로커 연결 또는 공장 쪽 브리지) — 보내지 못한 명령을 「보냄」으로 적지 않는다(G3b-14)
               PUBLISH_CHECK: "설비 통신(MQTT)이 끊겨 명령을 설비로 보내지 못했습니다 — 설비 연결이 돌아온 뒤 다시 승인합니다"}
 
 

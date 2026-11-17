@@ -1,4 +1,8 @@
-"""connect-ingest (L3, DMZ): one-way replication OT MQTT -> Kafka.
+"""connect-ingest (L3, DMZ): one-way replication of plant values -> Kafka.
+
+This service never connects into the plant. It reads from the DMZ broker (dmz-broker); the plant-side bridge (ot-bridge)
+connects out of the plant and puts the values there (hydcommon.mqtt). While that bridge is down /healthz is not ok and
+says so (`ot_bridge` · `ot_bridge_legs`).
 
   plant/{a}/tag/{name}   -> plant.tag     {"asset","name","t","v","q"}
   plant/{a}/wave/{sensor}-> plant.wave    {"asset","sensor","t0","hz","v":[...]}
@@ -7,7 +11,7 @@ Kafka key = asset key (hyd01) so per-asset order is preserved (v3 5.4).
 Every message is checked against its contract (hydcommon.schemas *_record — the same check the detector and connect-sink
 apply on the Kafka side): only known assets, DAQ tags, ISO times with a zone and finite numbers go on; anything else is
 counted as malformed with its reason (/healthz `malformed`, `last_malformed`) and dropped here.
-Nothing flows back: this container never publishes to MQTT (the broker rules let it subscribe only).
+Nothing flows back: this container never publishes to MQTT (the DMZ broker's rules let it read only — dmz/broker/acl).
 """
 import asyncio
 import json
@@ -70,7 +74,7 @@ def _on_message(client, msg):
     loop.call_soon_threadsafe(_enqueue, item)
 
 
-link = Link("connect-ingest", _on_message, on_connect=_on_connect)
+link = Link("connect-ingest", _on_message, on_connect=_on_connect, behind_bridge=True)
 
 
 def _enqueue(item):
@@ -109,7 +113,7 @@ async def age_updater():
 
 def health() -> dict:
     """/healthz body. `ok` (-> 200/503 in hydcommon.service) holds only while the MQTT link is up without a recent handler
-    failure, the Kafka producer runs, the broker accepted the recent records and the pump task is alive — the agent's
+    failure, the plant-side bridge reports both legs up, the Kafka producer runs, the broker accepted the recent records and the pump task is alive — the agent's
     data-trust check (mcp_prom.freshness) and the compose healthcheck both read this, so a broken leg must not look healthy."""
     return {"ok": link.healthy() and state["kafka"] and delivery.healthy() and not state.get("pump_dead", False),
             **link.health(), **delivery.health(), "kafka": state["kafka"],
@@ -118,7 +122,7 @@ def health() -> dict:
             "queue": queue.qsize(), "last_event_age_s": round(time.time() - state["last_ts"], 1) if state["last_ts"] else None}
 
 
-app = make_app("connect-ingest (L3 DMZ: OT MQTT -> Kafka)", reg, health)
+app = make_app("connect-ingest (L3 DMZ: DMZ broker -> Kafka)", reg, health)
 
 
 def _watch(task):

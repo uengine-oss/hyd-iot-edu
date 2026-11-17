@@ -1,5 +1,9 @@
-"""cmd-gateway (L3, DMZ): the only path from IT down to OT — and, with the broker rules (ot/emqx/acl.conf: only this
-service may publish plant/+/cmd/auto), the only one that can be.
+"""cmd-gateway (L3, DMZ): the only path from IT down to OT — and, with the broker rules, the only one that can be.
+
+The gateway does not push into the plant. It puts a validated command on the DMZ broker (dmz/broker/acl: only this service
+may publish plant/+/cmd/auto there); the plant-side bridge (ot-bridge), which connects out of the plant, fetches it and is
+the only client that may publish that topic on the plant broker (ot/emqx/acl.conf). While the bridge is down the link
+refuses the publish (hydcommon.mqtt) and the command is rejected as PUBLISH_CHECK — it is not left for a later delivery.
 
   Kafka action.cmd --validate (7 checks)--> MQTT plant/{a}/cmd/auto   (retain=false)
   Kafka alerts     --alert board (display only)--> MQTT plant/{a}/alert (retain=true: the active alerts of that unit)
@@ -51,7 +55,10 @@ def _malformed(where: str, reason) -> None:
 
 def _on_connect(client):
     client.subscribe([("plant/+/status", 1), ("plant/+/alert", 1)])
-    for asset in sorted(unsent_boards):      # 끊긴 동안 올리지 못한 경보판은 다시 붙으면 그 설비의 마지막 판으로 올린다(link.publish 는 못 보낸 것을 남겨 두지 않는다)
+
+
+def _on_bridge_up(client):
+    for asset in sorted(unsent_boards):      # 끊긴 동안(DMZ 브로커 연결 · 공장 쪽 브리지) 올리지 못한 경보판은 길이 다시 이어지면 그 설비의 마지막 판으로 올린다(link.publish 는 못 보낸 것을 남겨 두지 않는다)
         _publish_board(asset, unsent_boards[asset])
 
 
@@ -74,7 +81,7 @@ def _on_message(client, msg):
         board.restore(asset, body)
 
 
-link = Link("cmd-gateway", _on_message, on_connect=_on_connect)
+link = Link("cmd-gateway", _on_message, on_connect=_on_connect, behind_bridge=True, on_bridge_up=_on_bridge_up)
 
 
 async def run(prod):
@@ -164,7 +171,7 @@ async def relay_alert(value) -> None:
     display = board.apply(alert)
     if not _publish_board(alert["asset"], display):
         state["alert_relay_failed"] += 1     # 건강(/healthz)에 보인다 — 끊긴 MQTT 는 link 가 503
-        log.error("alert %s %s %s was not published to the plant board: mqtt not connected", alert["asset"], alert["state"], alert["alertId"])
+        log.error("alert %s %s %s was not published to the plant board: DMZ broker not connected or plant-side bridge down", alert["asset"], alert["state"], alert["alertId"])
         return
     c_alerts.inc(state=alert["state"])
     state["alerts_relayed"] += 1
@@ -187,7 +194,7 @@ async def handle_command(prod, v) -> gw.Decision:
              "ok": d.ok, "check": d.check, "reason": d.reason}
     key = topics.asset_key(asset) if asset else None
     if d.ok and not link.publish(topics.mqtt_cmd_auto(key), json.dumps(d.mqtt_payload), qos=1):
-        d = gw.Decision(False, gw.PUBLISH_CHECK, "mqtt broker did not take the command (not connected)", None)
+        d = gw.Decision(False, gw.PUBLISH_CHECK, "the command could not be handed to the plant (DMZ broker not connected, or the plant-side bridge is down)", None)
         entry.update(ok=False, check=d.check, reason=d.reason)
     decisions.appendleft(entry)
     c_dec.inc(result="PASS" if d.ok else "REJECT", check=d.check)

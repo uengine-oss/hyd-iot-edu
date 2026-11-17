@@ -21,14 +21,18 @@ x-py-health: &py-health
   retries: 30
   start_period: 10s
 
-# 영역은 망으로 나뉜다: OT(ot-net) │ 경계 망 ot-dmz-net │ DMZ(connect-ingest · cmd-gateway) │ 경계 망 dmz-it-net │ IT(it-net).
-# DMZ 의 두 서비스는 ot-net 에도 it-net 에도 붙지 않고 경계 망 둘에만 붙는다. OT 쪽에서 경계 망에 나와 있는 것은 브로커(emqx) 하나,
-# IT 쪽에서 나와 있는 것은 이벤트 로그(redpanda)와 DMZ 서비스의 상태(/healthz · /metrics)를 읽는 서비스뿐이다. 그래서 값은
-# 설비 → emqx → connect-ingest → redpanda 로만 올라오고, 명령은 process → redpanda → cmd-gateway → emqx → 설비 로만 내려간다.
-# 이 구조의 판정은 workspace/개발/tests/test_zones.py 한 곳이다.
+# 영역은 망으로 나뉜다: OT(ot-net) │ 경계 망 ot-dmz-net │ DMZ(dmz-broker · connect-ingest · cmd-gateway) │ 경계 망 dmz-it-net │ IT(it-net).
+# DMZ 의 서비스는 ot-net 에도 it-net 에도 붙지 않고 경계 망에만 붙는다. IT 쪽에서 경계 망에 나와 있는 것은 이벤트 로그(redpanda)와 DMZ 서비스의
+# 상태(/healthz · /metrics)를 읽는 서비스뿐이다.
+# 연결을 먼저 여는 쪽은 공장(OT)이다: 공장 브로커(emqx)는 OT 망에만 붙고, 경계 망에 나와 있는 공장 쪽 부품은 공장 쪽 브리지(ot-bridge) 하나다.
+# 이 브리지는 들어오는 입구 없이 emqx 와 DMZ 브로커(dmz-broker) 양쪽에 스스로 접속해 값을 내보내고 승인된 명령을 가져온다. 그래서 DMZ · IT 의
+# 어떤 컨테이너도 공장 안으로 연결을 열 수 없다(이름 · 계정이 아니라 망으로 — 닿을 주소도 열린 입구도 없다).
+#   값:   설비 → emqx → ot-bridge ⇒ dmz-broker → connect-ingest → redpanda          (⇒ = 공장 쪽이 여는 연결)
+#   명령: process → redpanda → cmd-gateway → dmz-broker ⇐ ot-bridge → emqx → 설비   (ot-bridge 가 와서 가져간다)
+# 이 구조의 판정은 workspace/개발/tests/test_zones.py 한 곳이다(망 정의 + 실제로 연결을 열어 보는 시험).
 networks:
-  ot-net: {}                               # OT: 설비 · 브로커 · 운전 화면
-  ot-dmz-net: {}                           # 경계 망 1(OT ↔ DMZ): emqx · connect-ingest · cmd-gateway 만
+  ot-net: {}                               # OT: 설비 · 브로커 · 운전 화면 · 공장 쪽 브리지
+  ot-dmz-net: {}                           # 경계 망 1(OT ↔ DMZ): ot-bridge(접속하는 쪽) · dmz-broker(기다리는 쪽) · connect-ingest · cmd-gateway 만
   dmz-it-net: {}                           # 경계 망 2(DMZ ↔ IT): connect-ingest · cmd-gateway · redpanda 와, DMZ 서비스의 상태를 읽는 IT 서비스(portal · agent · dmn-mcp · prometheus)
   it-net: {}                               # IT
   sim-net: {}                              # 가상 설비 API(:8000) 전용: process(결함 주입 · 정비 수행 모사) · portal(같은 출처 /svc/plant-sim/) ↔ plant-sim 만. 이 망은 실습 조작(결함 주입 · 초기화 · 현장 패널 흉내 · 정비 수행 모사)의 길이고 승인된 원격 명령의 길이 아니다 — 브로커(emqx)는 이 망에 없다
@@ -50,9 +54,9 @@ services:
     logging: *log
     mem_limit: 320m
     image: emqx/emqx:5.8
-    networks: [ot-net, ot-dmz-net]        # ot-dmz-net: DMZ 의 두 서비스가 브로커에만 닿는다(설비 · 운전 화면에는 닿지 않는다)
+    networks: [ot-net]                    # OT 망에만 붙는다 — 공장 밖(DMZ · IT)에서는 이 브로커에 닿을 길이 없다. 밖과는 ot-bridge 가 잇는다
     # 입구 · 계정 · 토픽 규칙은 ot/emqx 한 곳(emqx.conf 머리말). 호스트 1883 · 8083(웹소켓 — 3회차 대시보드 구독) = 바깥 입구(컨테이너 1884 · 8083,
-    # 계정 student — 구독만). 서비스가 쓰는 안쪽 입구(컨테이너 1883)는 호스트에 열지 않는다 — 설비 명령은 cmd-gateway 만 보낸다.
+    # 계정 student — 구독만). 서비스가 쓰는 안쪽 입구(컨테이너 1883)는 호스트에 열지 않는다 — 설비 명령은 명령 관문이 검증한 것을 ot-bridge 만 낸다.
     # 관리 화면 · 관리 API(18083)는 꺼 두었다(emqx.conf dashboard) — 관리 API 의 발행은 토픽 규칙을 거치지 않아 승인 없이 설비 명령을 낼 수 있었다
     ports: ["127.0.0.1:${HYD_PORT_1883:-1883}:1884", "127.0.0.1:${HYD_PORT_8083:-8083}:8083"]
     volumes: ["./ot/emqx:/opt/emqx/etc/hyd:ro", "./ot/emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro"]
@@ -93,6 +97,24 @@ services:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:1881/api/settings', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       <<: *py-health
 
+  ot-bridge:                              # L2 공장 쪽 브리지: 공장 브로커와 DMZ 브로커에 스스로 접속해 값을 내보내고 승인된 명령을 가져온다(ot/bridge/mosquitto.conf)
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 24m
+    image: eclipse-mosquitto:2.0.22
+    user: "1883:1883"
+    networks: [ot-net, ot-dmz-net]        # 경계 망에 나와 있는 공장 쪽 부품은 이것 하나다. 포트를 열지 않는다(ports · 바깥 입구 없음) — 밖에서 이 컨테이너로 들어오는 길이 없다
+    volumes: ["./ot/bridge:/mosquitto/config:ro"]
+    depends_on:
+      emqx: { condition: service_healthy }
+      dmz-broker: { condition: service_healthy }
+    healthcheck:                          # 두 다리(공장 브로커 · DMZ 브로커)가 모두 이어져 있을 때만 통과한다 — 다리 하나가 끊기면 「응답 확인 실패」로 보인다
+      test: ["CMD-SHELL", "[ \"$$(mosquitto_sub -h 127.0.0.1 -t 'bridge/ot/+' -C 2 -W 3 -F %p | tr -d '\\n')\" = 11 ]"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
   fuxa-init:                              # FUXA 프로젝트(태그·뷰·알람) 자동 주입
     logging: *log
     mem_limit: 64m
@@ -106,7 +128,22 @@ services:
 
 
   # ───────────────────────────── DMZ (경계 망 ot-dmz-net + dmz-it-net) ─────────────────────────────
-  connect-ingest:                         # L3 DMZ: OT MQTT → Kafka 단방향 복제
+  dmz-broker:                             # L2 DMZ 브로커: 공장 쪽 브리지가 접속해 와서 값을 내놓고 명령을 가져가는 자리. 스스로는 어디에도 접속하지 않는다(dmz/broker/mosquitto.conf)
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 24m
+    image: eclipse-mosquitto:2.0.22
+    user: "1883:1883"
+    networks: [ot-dmz-net]                # 호스트에도 IT 쪽 경계 망에도 열지 않는다
+    volumes: ["./dmz/broker:/mosquitto/config:ro"]
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "1883"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 3s
+
+  connect-ingest:                         # L3 DMZ: DMZ 브로커의 값 → Kafka 단방향 복제
     restart: unless-stopped
     logging: *log
     mem_limit: 128m
@@ -114,16 +151,17 @@ services:
     networks: [ot-dmz-net, dmz-it-net]
     ports: ["127.0.0.1:${HYD_PORT_8093:-8093}:8093"]
     environment:
-      MQTT_HOST: emqx
+      MQTT_HOST: dmz-broker               # 공장 브로커(emqx)가 아니다 — DMZ 는 공장 안으로 접속하지 않는다
       KAFKA_BOOTSTRAP: redpanda:9092
     depends_on:
+      dmz-broker: { condition: service_healthy }
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8093/healthz')"]
       <<: *py-health
 
-  cmd-gateway:                            # L3 DMZ: Kafka action.cmd/alerts → OT. gw/validate.py 의 검증(승인 장부 · 만료 · 중복 등)을 모두 통과한 명령만 내려보낸다
+  cmd-gateway:                            # L3 DMZ: Kafka action.cmd/alerts → DMZ 브로커. gw/validate.py 의 검증(승인 장부 · 만료 · 중복 등)을 모두 통과한 명령만 놓고, 공장 쪽 브리지가 가져간다
     restart: unless-stopped
     logging: *log
     mem_limit: 128m
@@ -131,10 +169,11 @@ services:
     networks: [ot-dmz-net, dmz-it-net]
     ports: ["127.0.0.1:${HYD_PORT_8090:-8090}:8090"]
     environment:
-      MQTT_HOST: emqx
+      MQTT_HOST: dmz-broker
       KAFKA_BOOTSTRAP: redpanda:9092
       CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:?시작 파일이 정합니다}   # 승인 장부 지문(HMAC) — process 와 같은 값(hydcommon/schemas.py)
     depends_on:
+      dmz-broker: { condition: service_healthy }
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
     healthcheck:

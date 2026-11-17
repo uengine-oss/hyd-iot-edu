@@ -21,7 +21,19 @@ def asset_key(asset_id: str) -> str:
 ASSET_BY_KEY = {asset_key(a): a for a in ASSETS}
 
 
-# ---- OT MQTT (emqx) ----
+# ---- MQTT: the plant broker (emqx, OT) and the DMZ broker carry the same plant/… topics; the plant-side bridge moves them ----
+#: The plant-side bridge (ot/bridge/mosquitto.conf) reports each of its two legs on the DMZ broker, retained: b"1" = up, b"0" = down.
+#: `broker` = bridge <-> plant broker (emqx), `dmz` = bridge <-> DMZ broker (its last will sets 0 when that leg dies).
+MQTT_BRIDGE_STATE = "bridge/ot/+"
+BRIDGE_LEGS = ("broker", "dmz")
+
+
+def bridge_leg(topic: str) -> str | None:
+    """'bridge/ot/dmz' -> 'dmz'; None for any other topic."""
+    parts = topic.split("/")
+    return parts[2] if len(parts) == 3 and parts[:2] == ["bridge", "ot"] and parts[2] in BRIDGE_LEGS else None
+
+
 def mqtt_tag(key: str, name: str) -> str:
     return f"plant/{key}/tag/{name}"
 
