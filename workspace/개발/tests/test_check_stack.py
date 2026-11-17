@@ -148,9 +148,9 @@ def test_해당_없음은_실패로_세지_않고_실패가_있으면_1로_끝�
 
 
 # ---------------------------------------------------------------- 쿨러 사건 한 바퀴(처리 엔진 응답의 실제 모양으로)
-def view(*rows, status='RUNNING', events=(), variables=None):
-    """GET /api/instances/{id} 의 모양 — attention 은 서버(procsvc.instances.attention)가 계산하는 그대로."""
-    inst = {'status': status, 'variables_data': [{'key': k, 'value': v} for k, v in (variables or {}).items()]}
+def view(*rows, status='RUNNING', events=(), variables=None, **instance):
+    """GET /api/instances/{id} 의 모양 — attention 은 서버(procsvc.instances.attention)가 계산하는 그대로. instance: 처리 건 칸(end_label 등)."""
+    inst = {'status': status, 'variables_data': [{'key': k, 'value': v} for k, v in (variables or {}).items()], **instance}
     items = [{'activity_id': a, 'status': s, 'id': f'w-{a}', 'tool': f'tool:{a}', **extra} for a, s, extra in rows]
     return {'instance': inst, 'workitems': items, 'events': list(events), 'attention': attention(inst, items, [], list(events))}
 
@@ -192,6 +192,21 @@ def test_AI_판단_단계가_멈추면_서버가_판정한_멈춤의_까닭을_�
     with pytest.raises(cs.CheckError) as caught:
         cs.agent_outcome(v, ai_mode)
     assert said in str(caught.value) and not_said not in str(caught.value)
+
+
+@pytest.mark.parametrize('v, said', [
+    (view(('T_agent', 'DONE', dict(AI, activity_name='AI 판단 · 제안', end_date='2026-11-17T05:00:00+00:00')),
+          ('T_decide', 'DONE', dict(activity_name='조치 필요 확인', end_date='2026-11-17T05:00:04+00:00')),
+          status='COMPLETED', end_event='incident-ended-before-action', end_label='조치 전 해소'), ('조치 전 해소', '조치 필요 확인')),
+    (view(('T_agent', 'CANCELLED', dict(AI, activity_name='AI 판단 · 제안', end_date='2026-11-17T05:00:00+00:00')), status='CANCELLED',
+          end_label='취소'), ('취소', 'AI 판단 · 제안')),
+    (view(('T_agent', 'DONE', dict(AI, activity_name='AI 판단 · 제안', end_date='2026-11-17T05:00:00+00:00')), status='COMPLETED'), ('끝남',)),
+], ids=['조치_전_해소', '취소', '끝_이름_없음'])
+def test_처리_건이_승인에_닿기_전에_끝나면_기다리지_않고_어디서_끝났는지_말한다(v, said):
+    """옛 점검은 끝난 처리 건을 「아직」으로 보아 AI 판단 한도 7분을 다 기다린 뒤 「닿지 않았다」고만 했다."""
+    with pytest.raises(cs.CheckError) as caught:
+        cs.agent_outcome(v, 'live')
+    assert '승인 단계에 닿기 전에 끝났습니다' in str(caught.value) and all(w in str(caught.value) for w in said)
 
 
 def test_추천_카드는_그_승인_역할을_가진_사람으로_승인한다():
@@ -257,6 +272,51 @@ def test_응답_모양이_다르면_기다리지_않고_바로_드러난다():
     with pytest.raises(KeyError):
         cs.wait_for(420, lambda: {}['patterns'], '경보', sleep=clock.sleep, clock=clock)
     assert clock.now == 0
+
+
+# ---------------------------------------------------------------- 점검 정리: 서버가 멈췄다고 판정한 단계를 닫는다
+@pytest.fixture
+def services():
+    """process · 설비 대역(바깥): POST 는 200 {} 로 받고 남기며, GET /api/inbox/users 는 업무 DB 의 사람 목록 모양으로 답하는 실제 HTTP 서버."""
+    import http.server
+    import json as _json
+    import threading
+    posts = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def _send(self, answer):
+            data = _json.dumps(answer, ensure_ascii=False).encode()
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
+
+        def do_GET(self):
+            self._send([{'id': 'user:kim-op', 'roles': ['role:operator']}] if self.path == '/api/inbox/users' else {})
+
+        def do_POST(self):
+            posts.append((self.path, _json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')))
+            self._send({})
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f'http://127.0.0.1:{server.server_address[1]}', posts
+    server.shutdown()
+
+
+@pytest.mark.parametrize('stopped', [
+    ('T_agent', 'IN_PROGRESS', dict(AI, draft_status='FAILED')),          # AI 실행 실패
+    ('T_agent', 'IN_PROGRESS', dict(AI, draft_status='CANCELLED')),       # 실행 취소
+    ('T_agent', 'PENDING', dict(AI, draft={'_deferral': {'id': 'run-1', 'reason': GAP}})),            # 보류
+], ids=['실행_실패', '실행_취소', '보류'])
+def test_점검_정리는_서버가_멈췄다고_판정한_AI_단계를_닫고_처리_건이_끝나면_통과다(services, monkeypatch, stopped):
+    url, posts = services
+    clock, results = Clock(), []
+    monkeypatch.setattr(cs, 'wait_for', __import__('functools').partial(cs.wait_for, sleep=clock.sleep, clock=clock))
+    closed = lambda: any(path == '/api/todolist/w-T_agent/close' for path, _ in posts)
+    current = lambda pid: view(stopped, status='COMPLETED' if closed() else 'RUNNING')       # 닫으면 처리 건이 「사람이 닫음」으로 끝난다
+    cs.cleanup(url, url, 'c3_cooling.x', None, current, lambda *row: results.append(row))
+    assert ('/api/todolist/w-T_agent/close', {'by': 'user:kim-op', 'reason': '시스템 점검이 연 처리 건 정리'}) in posts
+    assert results == [('점검 정리', PASS, '쿨러 · 설비를 되돌리고 점검이 연 처리 건을 닫았습니다')]
 
 
 # ---------------------------------------------------------------- 키 있는 PC: 결함 전에 AI가 판단에 쓰는 설비 기록이 쌓이기를 기다린다

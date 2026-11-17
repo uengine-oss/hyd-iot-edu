@@ -29,13 +29,27 @@ def observation_coverage(times, window_start, now, limit_s):
     """A083 (R05, meeting L51~79): a window aggregate (avg/max-min over N s) is evidence only if the window was observed.
     Every instant of [window_start, now] must lie within limit_s after some sample — the detector's gap rule from
     hydcommon.daq_contract (deadband tags are legitimately silent up to their heartbeat). `times` are the tag's sample
-    times from window_start - limit_s to now, ascending. Returns the coverage record kept with the result."""
+    times from window_start - limit_s to now, ascending. Returns the coverage record kept with the result.
+    ready_in_s (2026-11-17): how long until this window is observed if samples keep arriving as now — 0 when observed; the
+    seconds from the window start to the start of the unbroken run of samples that reaches now when that run is live (the
+    empty part lies before it: the stack was just started or collection broke and resumed — waiting fills it); None when the
+    newest sample is older than limit_s (nothing is arriving now — waiting does not fill it). Real AI on a just-started
+    stack deferred with 「센서 기록의 연속성을 확인」, which read as a sensor fault; this tells the two apart."""
     prior = [t for t in times if t <= window_start]
     inside = [t for t in times if window_start < t <= now]
     points = [prior[-1] if prior else window_start] + inside + [now]
     max_gap = max((b - a).total_seconds() for a, b in zip(points, points[1:]))
-    return {'samples': len(inside), 'max_gap_s': round(max_gap, 3), 'limit_s': limit_s,
-            'covered': bool(inside or prior) and max_gap <= limit_s}
+    covered = bool(inside or prior) and max_gap <= limit_s
+    ready = 0.0 if covered else None
+    seen = prior + inside
+    if not covered and seen and (now - seen[-1]).total_seconds() <= limit_s:
+        start = seen[-1]
+        for t in reversed(seen[:-1]):
+            if (start - t).total_seconds() > limit_s:
+                break
+            start = t
+        ready = round(max(0.0, (start - window_start).total_seconds()), 3)
+    return {'samples': len(inside), 'max_gap_s': round(max_gap, 3), 'limit_s': limit_s, 'covered': covered, 'ready_in_s': ready}
 
 
 class TimeSeriesDB:

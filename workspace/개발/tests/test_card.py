@@ -65,3 +65,23 @@ def test_사람이_입력한_분석은_센서_근거가_없는_원인의_근거�
     rows, results = card.with_human_evidence(rows, alert)
     assert rows[0]['evidence'][0]['id'] == 'human:H-1' and results['human:H-1']['passed'] is True
     assert card.with_human_evidence(rows, {'source': 'detector'}) == (rows, {})
+
+
+def gap(ready, window=120.0, reason='OBSERVATION_GAP'):
+    """mcp_tsdb.evaluate 가 덮이지 않은 창에 내는 결과 모양(값은 남기되 판정하지 않음)."""
+    return {'value': 0.57, 'passed': None, 'status': 'UNKNOWN', 'reason': reason,
+            'coverage': {'samples': 96, 'max_gap_s': 24.55, 'limit_s': 3.0, 'covered': False, 'ready_in_s': ready, 'tag': 'VS1', 'window_s': window}}
+
+
+@pytest.mark.parametrize('results, said', [
+    ({'evd:ce-low': {'value': 46.2, 'passed': True, 'status': 'PASS'}, 'evd:vs1-high': gap(24.55)}, '최근 120초 기록이 아직 다 차지 않았습니다'),
+    ({'evd:ce-low': gap(3.2, window=30.0), 'evd:vs1-high': gap(24.55)}, '약 25초 뒤 다시 평가하세요'),
+    ({'evd:ce-low': {'value': 46.2, 'passed': True, 'status': 'PASS'}, 'evd:vs1-high': gap(None)}, None),     # 지금 값이 오지 않음
+    ({'evd:ce-low': {'value': None, 'passed': None, 'status': 'UNKNOWN', 'reason': 'NO_DATA'}, 'evd:vs1-high': gap(24.55)}, None),
+], ids=['기록이_덜_참', '가장_긴_기다림', '지금_끊김은_말하지_않음', '다른_까닭이_섞임'])
+def test_모르는_근거가_모두_곧_찰_기록이면_보류_까닭이_기다릴_시간을_말한다(results, said):
+    """막 켠 스택의 「관측 공백」 보류가 센서 고장으로 읽히지 않게(2026-11-17 실제 AI). 근거 판정 문장은 진단 도구가 AI 에게, 판단 실험이
+    화면에 그대로 준다. 다른 까닭이 섞이거나 지금 값이 오지 않으면 기다리라고 하지 않는다."""
+    assessment = card.evidence_status(card.rank_causes(T1, results))
+    assert assessment['status'] == 'UNKNOWN' and assessment['reason'].startswith('근거 조회가 불완전하여')
+    assert (said in assessment['reason']) if said else ('다시 평가하세요' not in assessment['reason'])

@@ -8,7 +8,7 @@
   · 401 · 403 · 404 · 429 는 바로 판정(학생이 할 일이 다르다), 네트워크 · 5xx 는 세 번까지 다시 묻고 「닿지 않음」.
   · 묻는 클라이언트는 관문의 것(course_model.relay_client)이다 — 믿는 인증서 · 프록시 설정이 같아, 실제 AI 호출이 실패하는 망에서는
     확인도 실패한다(2026-11-17 클라우드 VM: urllib 로 재던 확인은 컨테이너 환경의 인증서를 믿어 통과, 실제 AI 호출은 모두 relay_failed).
-    인증서 확인 실패는 다시 묻지 않고 그 까닭(tls)으로 판정.
+    인증서 확인 실패는 다시 묻지 않고, 관문과 같은 코드(relay_untrusted — course_model.transport_refusal)와 같은 문장(course_ledger.REASONS).
   · 키 없음은 묻지 않는다. 키는 출력에 나오지 않는다.
 강의 중계(LiteLLM)는 바깥이라 conftest 의 FakeRelay(로컬 포트)로 대신한다(유료 중계를 부르지 않는다). 다시 서명하는 망은 시험이 만든
 인증 기관으로 서명한 인증서를 내는 HTTPS FakeRelay 로 대신한다.
@@ -19,6 +19,7 @@ import pytest
 
 import relay_probe
 from conftest import FakeRelay
+from procsvc.course_ledger import REASONS
 from test_course_model import call, claimed, code_of, gateway, permit
 
 KEY = 'sk-test-key'
@@ -168,7 +169,9 @@ def test_강의_중계_확인은_관문과_같은_인증서를_믿어_실제_AI_
         monkeypatch.setattr(certifi, 'where', lambda: ca)
     client = gateway(course, LLM_RELAY_URL=fake.url)
     real = call(client, permit(client, claimed(course)).json()['token'])              # 실제 AI 호출(관문 → 강의 중계)
-    assert (real.status_code == 200) is works and (works or code_of(real) == 'relay_failed')
     out = probe_in_own_process(fake.url, ca, trusted_by)
-    assert out['ok'] is works
-    assert works or (out['code'] == 'tls' and '인증서' in out['message'])                   # 다시 물어도 같은 결과 — 「닿지 않음」이 아니라 그 까닭
+    assert (real.status_code == 200) is works and out['ok'] is works
+    if not works:                       # 둘 다 「닿지 않음 · 잠시 뒤 다시」가 아니라 그 까닭 · 할 일 — 같은 코드, 같은 문장(사유 표 한 곳)
+        said = REASONS['relay_untrusted'].text
+        assert (code_of(real), real.headers['x-should-retry']) == ('relay_untrusted', 'false') and real.json()['error']['message'].endswith(said)
+        assert out['code'] == 'relay_untrusted' and out['message'].startswith(said)

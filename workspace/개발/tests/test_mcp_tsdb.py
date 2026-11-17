@@ -310,6 +310,20 @@ def test_창의_모든_순간이_어느_표본의_한도_안에_있어야_관측
     assert (out['covered'], out['samples'], out['max_gap_s'], out['limit_s']) == (covered, samples, max_gap, limit)
 
 
+@pytest.mark.parametrize('times, now_s, limit, ready', [
+    (at(0, *range(1, 31)), 30, 3, 0.0),                                  # 덮였다
+    (at(*range(12, 31)), 30, 3, 12.0),                                   # 기록이 창 시작 12초 뒤에 시작해 지금까지 이어짐(막 켬)
+    (at(-1, *range(0, 9), *range(20, 31)), 30, 3, 20.0),                 # 중간에 끊겼다 20초부터 다시 이어짐
+    (at(-1, *range(0, 21)), 30, 3, None),                               # 20초 뒤로 값이 오지 않는다 — 기다려도 차지 않음
+    ([], 30, 3, None),                                                   # 값이 하나도 없다
+], ids=['덮임', '창_앞이_기록_시작_전', '끊겼다_다시_이어짐', '지금_끊김', '값_없음'])
+def test_덮이지_않은_창은_기록이_지금_이어지면_덮이기까지_남은_초를_아니면_없음을_싣는다(times, now_s, limit, ready):
+    """2026-11-17 실제 AI: 막 켠 스택에서 「관측 공백 … 센서 기록의 연속성을 확인」으로 보류해 센서 고장처럼 읽혔다. 기다리면 차는 빈 곳과
+    지금 값이 오지 않는 끊김을 가른다."""
+    out = observation_coverage(times, T0, T0 + timedelta(seconds=now_s), limit)
+    assert out['ready_in_s'] == ready and (ready == 0.0) is out['covered']
+
+
 def observation_coverage(*args):
     from agentsvc.tools.mcp_tsdb import observation_coverage as fn
     return fn(*args)

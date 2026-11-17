@@ -224,6 +224,13 @@ def agent_outcome(view: dict, ai_mode: str):
     approve = rows_of(view).get('T_approve') or {}
     if approve.get('status') == 'IN_PROGRESS':
         return 'approval', approve
+    inst = view.get('instance') or {}
+    if inst.get('status') != 'RUNNING':                  # 승인에 닿기 전에 끝났다 — 기다려도 오지 않는다
+        last = max((w for w in view.get('workitems') or [] if w.get('end_date')), key=lambda w: str(w['end_date']), default=None)
+        where = f'끝: 「{inst.get("end_label") or ENDED.get(inst.get("status"), inst.get("status"))}」'
+        if last:
+            where += f' · 마지막으로 끝난 단계: 「{last.get("activity_name") or last.get("activity_id")}」'
+        raise CheckError(f'처리 건이 승인 단계에 닿기 전에 끝났습니다({where}) — 포털 「처리 건」에서 이 건의 결과와 기록을 확인하세요.')
     step = next((s for s in (view.get('attention') or {}).get('steps') or [] if s.get('activity') == 'T_agent'), None)
     if step is None:
         return None
@@ -236,6 +243,7 @@ def agent_outcome(view: dict, ai_mode: str):
     raise CheckError(f'AI 판단 단계가 멈췄습니다({step.get("label") or step.get("kind")}). 기록된 까닭: {said} — {hint}.')
 
 
+ENDED = {'COMPLETED': '끝남', 'CANCELLED': '취소'}     # 끝 이름(end_label)이 없는 처리 건의 상태를 학생 말로
 ASSET, PATTERN = 'HYD-01', 'COOLER_DEGRADATION'     # 점검이 넣는 결함(쿨러 열화)의 설비 · 이상 패턴
 RECORD_SPARE = 30                                   # 설비 기록 기다리기: AI가 판단에 쓰는 가장 긴 기간에 더해 기다리는 초
 
@@ -396,7 +404,9 @@ def cooler_round(root: Path, record) -> None:
 
 
 def cleanup(process, plant, pid, approval, view, record) -> None:
-    """쿨러를 되돌리고, 점검이 연 처리 건이 열린 채면 닫는다(승인 대기 = 거절, 보류 = 닫기)."""
+    """쿨러를 되돌리고, 점검이 연 처리 건이 열린 채면 닫는다(승인 대기 = 거절, 멈춘 단계 = 닫기). 멈춘 단계는 서버의 판정(attention 에서
+    할 수 있는 일에 닫기가 있는 단계 — 보류 · 실행 실패 · 실행 취소 · 한도 넘은 재시도)을 그대로 쓴다(전에는 PENDING 만 보아 실패 · 취소한
+    AI 단계가 열린 채 남아 「점검 정리 실패」가 한 줄 더 나왔다)."""
     problems = []
     for url, body in ((f'{process}/api/scenario/A/restore', WHO),):
         try:
@@ -412,15 +422,15 @@ def cleanup(process, plant, pid, approval, view, record) -> None:
                     task_id, decision_id, role, person = approval
                     http('POST', f'{process}/api/todolist/{task_id}/reject-card',
                          {'decision': decision_id, 'by': person, 'role': role, 'reason': f'{BY}이 연 처리 건 정리'})
-                stuck = [w for w in rows.values() if w.get('status') == 'PENDING' and w.get('agent_mode')]
+                stuck = [s['workitem'] for s in (current.get('attention') or {}).get('steps') or [] if 'close' in (s.get('actions') or [])]
                 if stuck:
                     # 닫기는 사람 사용자만 할 수 있다(서버가 점검 이름 같은 글은 거절한다) — 승인 때와 같이 업무 DB 의 사람으로 닫는다
                     closer = approval[3] if approval else next(
                         (p['id'] for p in http('GET', f'{process}/api/inbox/users') if str(p.get('id') or '').startswith('user:')), None)
                     if not closer:
                         raise CheckError('닫을 사람 사용자가 업무 DB에 없습니다')
-                    for w in stuck:
-                        http('POST', f'{process}/api/todolist/{w["id"]}/close', {'by': closer, 'reason': f'{BY}이 연 처리 건 정리'})
+                    for workitem in stuck:
+                        http('POST', f'{process}/api/todolist/{workitem}/close', {'by': closer, 'reason': f'{BY}이 연 처리 건 정리'})
                 wait_for(180, lambda: (lambda v: v['instance']['status'] if v['instance']['status'] != 'RUNNING' else None)(view(pid)),
                          f'점검이 연 처리 건 {pid} 이 아직 열려 있습니다 — 포털 「처리 건」에서 닫으세요', every=5)
         except (CheckError, urllib.error.URLError, OSError, KeyError) as exc:

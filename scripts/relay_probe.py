@@ -15,15 +15,14 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import ssl
 import sys
 import time
 import urllib.request
 
 import httpx
 
-from procsvc.course_ledger import Denied
-from procsvc.course_model import relay_client, relay_url
+from procsvc.course_ledger import REASONS, Denied
+from procsvc.course_model import relay_client, relay_url, transport_refusal
 
 PROCESS = 'http://127.0.0.1:8080'
 OFFLINE = '그동안 포털의 AI 단계(판단 · 제안, 에이전트에게 질문)만 막히고 나머지 실습은 그대로 할 수 있습니다.'
@@ -34,9 +33,6 @@ REFUSED = {
     404: '강의 중계 주소가 맞지 않습니다. 강사에게 알려 주세요. ' + OFFLINE,
     429: '강의 중계가 잠시 바쁘거나 이 키의 사용 한도에 닿았습니다. 1분 뒤 다시 해 보고, 계속되면 강사에게 알려 주세요. ' + OFFLINE,
 }
-UNTRUSTED = ('강의 중계의 보안 인증서를 확인하지 못해 연결하지 않았습니다 — 이 PC의 인터넷(학교 · 회사망 등)이 암호화 연결을 중간에서 다시 '
-             '서명하는 것 같습니다. 이 인터넷에서는 AI 단계가 실제로 돌지 않습니다. 다른 인터넷(예: 휴대폰 핫스팟)에 연결한 뒤 시작 파일을 다시 '
-             '실행하거나 강사에게 알려 주세요. ' + OFFLINE)
 
 
 def result(ok: bool, code: str, message: str) -> dict:
@@ -52,19 +48,10 @@ def url_problem(url: str) -> str | None:
     return None
 
 
-def certificate_refused(exc: BaseException | None) -> bool:
-    """연결 실패의 원인 사슬에 인증서 확인 실패가 있는가 — 다시 물어도 같은 결과라 바로 판정한다."""
-    while exc is not None:
-        if isinstance(exc, ssl.SSLCertVerificationError):
-            return True
-        exc = exc.__cause__ or exc.__context__
-    return False
-
-
 def ask(base: str, key: str, model: str, *, call: bool = False, attempts: int = 3, timeout: float = 30,
         wait: float = 5, sleep=time.sleep) -> dict:
     """주소 검사를 통과한 base 로 관문의 클라이언트(relay_client)로 묻는다. 네트워크 · 5xx 는 세 번까지, 401 · 403 · 404 · 429 와
-    인증서 확인 실패는 바로 판정."""
+    인증서 확인 실패(관문의 transport_refusal 이 relay_untrusted 로 가르는 것 — 관문과 같은 코드 · 같은 문장)는 바로 판정."""
     headers = {'x-api-key': key, 'Authorization': f'Bearer {key}', 'anthropic-version': '2023-06-01',
                'Content-Type': 'application/json'}
     if call:
@@ -89,8 +76,8 @@ def ask(base: str, key: str, model: str, *, call: bool = False, attempts: int = 
                 return result(False, str(status), REFUSED[status])
             last = f'응답 {status}'
         except httpx.RequestError as exc:         # 연결 · 시간 초과 · 깨진 응답(관문이 relay_failed 로 거절하는 것들)
-            if certificate_refused(exc):
-                return result(False, 'tls', UNTRUSTED)
+            if transport_refusal(exc) == 'relay_untrusted':
+                return result(False, 'relay_untrusted', REASONS['relay_untrusted'].text + ' ' + OFFLINE)
             last = type(exc).__name__
         except ValueError as exc:                # 200 인데 JSON 이 아님 — 중계가 깨어나는 중일 수 있어 다시 묻는다
             last = type(exc).__name__

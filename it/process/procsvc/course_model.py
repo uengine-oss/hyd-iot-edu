@@ -7,7 +7,8 @@
 
 모델은 수업 정책 하나(course_ledger.POLICY['model'])이고 요청이 다른 모델이면 보내지 않는다. 거절 · 중계 실패는 Anthropic 오류 모양
 {"type":"error","error":{"type","message"}}이고 message 는 [HYD:<code>] + 학생 문장(course_ledger.REASONS 한 곳)이다 — 중계의 원문은
-넘기지 않는다(분류에만 쓴다). 다시 보내도 소용없는 거절에는 x-should-retry: false. 중계 설정 확인은 장부에 적기 전에 한다.
+넘기지 않는다(분류에만 쓴다). 연결하지 못한 까닭은 transport_refusal 이 가르고(인증서 확인 실패 = relay_untrusted), 예외 종류 · 글은
+process 로그에 남긴다. 다시 보내도 소용없는 거절에는 x-should-retry: false. 중계 설정 확인은 장부에 적기 전에 한다.
 스트리밍 답은 첫 내용 블록이 올 때까지 앞부분을 읽고 나서 흘려보낸다(stream_verdict) — 강의 중계(LiteLLM)는 뒤쪽 모델 계정의 거절
 (잔액 소진 등)을 스트리밍에서는 200 + 내용 없는 메시지(토큰 0)로 내므로, 그대로 흘리면 CLI 가 「답 없음」으로 끝나 까닭이 사라진다.
 """
@@ -16,8 +17,10 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import secrets
+import ssl
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -33,6 +36,7 @@ TOKEN_SECONDS = 1800
 INPUT_MAX = 2_000_000
 STREAM_MAX = 32_000_000
 LOCAL_HOSTS = ('127.0.0.1', 'localhost', '::1')
+log = logging.getLogger('procsvc.course_model')
 
 
 def ensure_runtime_key(path):
@@ -70,6 +74,16 @@ def relay_client(timeout: float):
     trust_env=False: 환경의 HTTPS_PROXY · SSL_CERT_FILE · .netrc 를 따르지 않고 certifi 인증서 묶음만 믿는다."""
     import httpx
     return httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False)
+
+
+def transport_refusal(exc: BaseException | None) -> str:
+    """강의 중계에 연결하지 못한 까닭의 거절 코드 — 관문과 강의 중계 확인이 이 한 곳으로 가른다. 원인 사슬에 인증서 확인 실패가 있으면
+    relay_untrusted(다시 보내도 같다 — 학교 · 회사망이 HTTPS 를 다시 서명할 때), 그 밖의 연결 실패 · 시간 초과는 relay_failed."""
+    while exc is not None:
+        if isinstance(exc, ssl.SSLCertVerificationError):
+            return 'relay_untrusted'
+        exc = exc.__cause__ or exc.__context__
+    return 'relay_failed'
 
 
 def classify_relay(status: int, body: bytes) -> str:
@@ -296,9 +310,11 @@ def mount(app, *, policy, runtime_factory, settings):
         except asyncio.CancelledError:
             await client.aclose()
             raise
-        except Exception:  # noqa: BLE001 — 연결 실패 · 시간 초과: 원문 없이 종류만
+        except Exception as exc:  # noqa: BLE001 — 연결 실패 · 시간 초과: 학생에게는 종류의 문장, 까닭(예외 종류 · 글)은 process 로그에
             await client.aclose()
-            raise Refusal('relay_failed') from None
+            code = transport_refusal(exc)
+            log.warning('강의 중계에 연결하지 못했습니다(%s → %s): %s', type(exc).__name__, code, exc)
+            raise Refusal(code) from None
         if response.status_code != 200:
             try:
                 body = await asyncio.wait_for(response.aread(), 10)
@@ -321,7 +337,8 @@ def mount(app, *, policy, runtime_factory, settings):
                     await response.aclose()
                     await client.aclose()
                     raise
-                except Exception:  # noqa: BLE001 — 중계에서 읽기 실패 · 기한 · 크기 한도만: 원문 없이 종류만
+                except Exception as exc:  # noqa: BLE001 — 중계에서 읽기 실패 · 기한 · 크기 한도만: 학생에게는 종류만, 까닭은 로그에
+                    log.warning('강의 중계의 답을 읽다 멈췄습니다(%s): %s', type(exc).__name__, exc)
                     verdict = 'relay_failed'
                     break
                 verdict = stream_verdict(head)    # 판정 함수는 이 try 밖 — 그 함수의 결함은 「다시 실행」으로 가려지지 않고 그대로 오류로 난다

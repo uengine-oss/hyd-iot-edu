@@ -141,6 +141,21 @@ def test_중계_설정이_없으면_장부에_적기_전에_거절한다(course,
     assert calls_on_ledger(course.dsn) == 0 and relay.requests == []
 
 
+def test_강의_중계에_연결하지_못하면_relay_failed_로_거절하고_그_까닭을_process_로그에_남긴다(course, caplog):
+    """오류를 조용히 삼키지 않는다 — 학생에게는 종류의 문장, 까닭(예외 종류 · 글)은 process 로그(2026-11-17 작업자 AB: 옛 관문은 버렸다).
+    인증서 확인 실패(relay_untrusted)는 test_relay_probe 가 강의 중계 확인과 함께 잰다."""
+    import socket
+    with socket.socket() as held:                           # 잠깐 잡았다 놓은 포트 — 아무도 듣지 않는다
+        held.bind(('127.0.0.1', 0))
+        port = held.getsockname()[1]
+    client = gateway(course, LLM_RELAY_URL=f'http://127.0.0.1:{port}')
+    token = permit(client, claimed(course)).json()['token']
+    with caplog.at_level('WARNING', logger='procsvc.course_model'):
+        response = call(client, token)
+    assert (code_of(response), response.headers['x-should-retry']) == ('relay_failed', 'true')
+    assert any('ConnectError' in r.getMessage() for r in caplog.records if r.name == 'procsvc.course_model')
+
+
 @pytest.mark.parametrize('body', [{'model': 'claude-opus-4'}, {'max_tokens': None}, {'messages': []}],
                          ids=['수업 밖 모델', '출력 상한 없음', '빈 메시지'])
 def test_수업_모델이_아니거나_한도가_없는_요청은_보내지도_적지도_않는다(course, relay, body):

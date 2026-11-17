@@ -89,14 +89,22 @@ def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
 
 
 def evidence_status(causes: list[dict]) -> dict:
-    """An unknown alternative cannot be silently ranked below a known candidate."""
-    unknown = sorted({e['id'] for c in causes for e in c.get('evidence', [])
-                      if e.get('passed') is None or e.get('status') == 'UNKNOWN'})
+    """An unknown alternative cannot be silently ranked below a known candidate. When every unknown is a window whose record
+    is arriving now but does not yet reach back over the whole window (coverage.ready_in_s — mcp_tsdb.observation_coverage),
+    the reason says so and when to reassess, so the person does not read a just-started stack as a sensor fault."""
+    rows = {e['id']: e for c in causes for e in c.get('evidence', []) if e.get('passed') is None or e.get('status') == 'UNKNOWN'}
+    unknown = sorted(rows)
     supported = any(e.get('passed') is True for c in causes for e in c.get('evidence', []))
     status = 'UNKNOWN' if unknown else 'SUPPORTED' if supported else 'UNSUPPORTED'
-    return dict(status=status, unknown=unknown, withheld=status != 'SUPPORTED',
-                reason='근거 조회가 불완전하여 원인 순위와 조치를 보류합니다.' if unknown else
-                '현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.' if not supported else None)
+    reason = ('근거 조회가 불완전하여 원인 순위와 조치를 보류합니다.' if unknown else
+              '현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.' if not supported else None)
+    filling = [e['coverage'] for e in rows.values() if e.get('reason') == 'OBSERVATION_GAP' and isinstance(e.get('coverage'), dict)
+               and all(isinstance(e['coverage'].get(k), (int, float)) for k in ('ready_in_s', 'window_s'))]
+    if unknown and len(filling) == len(rows):
+        reason += (f" 설비 기록이 이어진 지 얼마 되지 않아(시스템을 막 켰거나 수집이 잠시 끊겼다 다시 이어진 경우) 판단에 쓰는 최근 "
+                   f"{max(float(c['window_s']) for c in filling):g}초 기록이 아직 다 차지 않았습니다. 지금 값은 들어오고 있으니 약 "
+                   f"{math.ceil(max(c['ready_in_s'] for c in filling))}초 뒤 다시 평가하세요.")
+    return dict(status=status, unknown=unknown, withheld=status != 'SUPPORTED', reason=reason)
 
 
 def _skills_for(cause_id: str, t2_by_cause: dict[str, list[dict]]) -> list[dict]:
