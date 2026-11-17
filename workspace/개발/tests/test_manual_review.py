@@ -76,25 +76,16 @@ def test_다른_문서_판본의_인용은_섞지_않는다(archive):
         manual_review.validate(archive, 'hyd', b)
 
 
-def test_번호_붙은_매뉴얼은_줄_구조로_절과_SOP_단계를_읽는다(archive):
+def test_문서_등록_응답은_원문_요약만_싣고_절과_절차를_싣지_않는다(archive):
+    """절 · 절차는 AI 추출 결과만 싣는다 — 번호 붙은 줄 모양을 읽어 추출 전에 결과처럼 보이던 길은 없다(2026-11-13 삭제)."""
     raw = '# 매뉴얼\n## HM-9.1 펌프 점검\n펌프 점검의 기준.\n### SOP-PMP-11 씰 점검\n1. 펌프를 멈춘다.\n2. 씰을 본다.\n'.encode()
     source = archive.save('hyd', 'pump.md', raw)
-    out = manual_review.proposal(source, failure_modes=[{'id': 'fm:pump-seal', 'name': '펌프 씰 누설'}])
-    assert [s['ref'] for s in out['sections']] == ['HM-9.1'] and out['sections'][0]['excerpt'] == '펌프 점검의 기준.'
-    [sop] = out['procedures']
-    assert (sop['id'], [s['text'] for s in sop['steps']], sop['suggestedFailureMode']) == ('SOP-PMP-11', ['펌프를 멈춘다.', '씰을 본다.'], 'fm:pump-seal')
-    assert sop['steps'][0]['anchor']['quote'] == '1. 펌프를 멈춘다.'
-
-
-@pytest.mark.parametrize('text, warns', [
-    ('1. 절 제목 없는 단계\n', '절 제목 없는 단계'),
-    ('### SOP-A-1 절 없는 절차\n', '먼저 원문 절'),
-    ('## A-1 절\n1. 하나\n3. 셋\n', '순서를 검토'),
-    ('그냥 글입니다\n', '구조화된 SOP를 찾지 못했습니다'),
-])
-def test_줄_구조로_읽을_수_없는_곳은_자동으로_적재하지_않고_경고한다(archive, text, warns):
-    source = archive.save('hyd', 'x.md', ('# 제목\n' + text).encode())
-    assert any(warns in w for w in manual_review.proposal(source)['warnings'])
+    out = manual_review.registered(source)
+    assert (out['source_id'], out['document_id'], out['filename'], out['status']) == (source['source_id'], source['document_id'], 'pump.md', source['status'])
+    assert out['chars'] == sum(len(p['text']) for p in source['pages']) and out['pages'] == len(source['pages'])
+    assert out['warnings'] == source['warnings'] and out['previous_batch'] is None
+    assert 'sections' not in out and 'procedures' not in out and 'validation' not in out
+    assert out['batch'] != manual_review.registered(source)['batch']      # 등록 응답마다 새 배치 번호
 
 
 def test_문서_그래프_열쇠는_교육_공간마다_다르다():

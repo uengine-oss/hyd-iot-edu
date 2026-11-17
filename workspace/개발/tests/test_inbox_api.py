@@ -1,6 +1,4 @@
 """작업함 · 알림 API(procsvc/inbox_api.py) — 사람 사용자만(아니면 404), 알림 id 형식 검사, 읽음 표시 뒤 안 읽은 수. 실제 process 앱(world.api)."""
-import uuid
-
 import pytest
 
 from conftest import OPERATOR
@@ -34,8 +32,3 @@ def test_알림을_읽음으로_표시하면_안_읽은_수가_줄어든다(worl
 def test_알림_id_형식이_아니면_400이다(world):
     status, body = world.api('POST', '/api/inbox/notifications/read', {'user_id': OPERATOR['by'], 'ids': ['not-a-uuid']})
     assert status == 400 and '알림 id' in body['detail']
-
-
-def test_없는_작업의_배정_이력은_404다(world):
-    status, _ = world.api('GET', f'/api/todolist/{uuid.uuid4()}/assignments')
-    assert status == 404

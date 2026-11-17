@@ -6,8 +6,12 @@
   · 묻는 길: 기본 GET <주소>/v1/models(키가 받아들여지고 수업 모델이 목록에 있는가), --call 이면 POST <주소>/v1/messages(관문이 부르는 길).
     머리글 x-api-key 는 관문과 같다.
   · 401 · 403 · 404 · 429 는 바로 판정(학생이 할 일이 다르다), 네트워크 · 5xx 는 세 번까지 다시 묻고 「닿지 않음」.
+  · 묻는 클라이언트는 관문의 것(course_model.relay_client)이다 — 믿는 인증서 · 프록시 설정이 같아, 실제 AI 호출이 실패하는 망에서는
+    확인도 실패한다(2026-11-17 클라우드 VM: urllib 로 재던 확인은 컨테이너 환경의 인증서를 믿어 통과, 실제 AI 호출은 모두 relay_failed).
+    인증서 확인 실패는 다시 묻지 않고, 관문과 같은 코드(relay_untrusted — course_model.transport_refusal)와 같은 문장(course_ledger.REASONS).
   · 키 없음은 묻지 않는다. 키는 출력에 나오지 않는다.
-강의 중계(LiteLLM)는 바깥이라 conftest 의 FakeRelay(로컬 포트)로 대신한다(유료 중계를 부르지 않는다).
+강의 중계(LiteLLM)는 바깥이라 conftest 의 FakeRelay(로컬 포트)로 대신한다(유료 중계를 부르지 않는다). 다시 서명하는 망은 시험이 만든
+인증 기관으로 서명한 인증서를 내는 HTTPS FakeRelay 로 대신한다.
 """
 import json
 
@@ -15,12 +19,15 @@ import pytest
 
 import relay_probe
 from conftest import FakeRelay
+from procsvc.course_ledger import REASONS
+from test_course_model import call, claimed, code_of, gateway, permit
 
 KEY = 'sk-test-key'
 
 
 @pytest.fixture
-def relay():
+def asked():
+    """(plan, call, model) → 확인 결과. 이름이 relay 가 아닌 것은 conftest 의 실제 묶음(관문)이 쓰는 session relay 를 가리지 않으려고."""
     fake = FakeRelay()
 
     def run(plan, *, call=False, model='coding'):
@@ -44,24 +51,24 @@ MODELS = {'data': [{'id': 'coding'}, {'id': 'other'}]}
     ([(502, {}), (502, {}), (200, MODELS)], True, 'listed', '연결됨'),       # 중계가 쉬다 깨어날 때 — 세 번째에 닿는다
     ([(500, {}), (500, {}), (500, {})], False, 'unreachable', '닿지 않습니다'),
 ])
-def test_중계_답에_따라_학생이_할_일을_말한다(relay, plan, ok, code, words):
-    out = relay(plan)
+def test_중계_답에_따라_학생이_할_일을_말한다(asked, plan, ok, code, words):
+    out = asked(plan)
     assert (out['ok'], out['code']) == (ok, code) and words in out['message']
     assert KEY not in json.dumps(out, ensure_ascii=False)
 
 
-def test_관문과_같은_길_같은_머리글로_묻는다(relay):
-    relay([(200, MODELS)])
-    assert relay.seen() == [('GET', '/v1/models', KEY)]
+def test_관문과_같은_길_같은_머리글로_묻는다(asked):
+    asked([(200, MODELS)])
+    assert asked.seen() == [('GET', '/v1/models', KEY)]
 
 
 @pytest.mark.parametrize('body, ok', [
     ({'content': [{'type': 'text', 'text': 'OK'}]}, True),
     ({'content': []}, False),
 ])
-def test_실제로_한_번_묻기는_관문이_부르는_메시지_길로_간다(relay, body, ok):
-    out = relay([(200, body)], call=True)
-    assert out['ok'] is ok and relay.seen()[-1][:2] == ('POST', '/v1/messages')
+def test_실제로_한_번_묻기는_관문이_부르는_메시지_길로_간다(asked, body, ok):
+    out = asked([(200, body)], call=True)
+    assert out['ok'] is ok and asked.seen()[-1][:2] == ('POST', '/v1/messages')
 
 
 def test_관문이_받지_않는_주소는_묻지_않고_실패한다():
@@ -78,3 +85,93 @@ def test_키나_주소가_틀리면_중계를_부르지_않고_1로_끝난다(ca
     assert relay_probe.main(['relay_probe.py'], environ=environ) == 1
     out = json.loads(capsys.readouterr().out)
     assert out['code'] == code and not out['ok']
+
+
+# ---------------------------------------------------------------- 관문과 같은 클라이언트: 실제 AI 호출과 같은 결과
+def certificates(folder):
+    """시험용 인증 기관 하나와 그 기관이 127.0.0.1 에 서명한 서버 인증서 — (기관 인증서 파일, 서버 인증서 파일, 서버 키 파일).
+    학교 · 회사 보안 장비가 바깥 HTTPS 를 다시 서명할 때 PC가 받는 인증서 자리다."""
+    import ipaddress
+    from datetime import datetime, timedelta, timezone
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+
+    now = datetime.now(timezone.utc)
+    def build(subject, issuer, public, signer, *extensions):
+        builder = (x509.CertificateBuilder().subject_name(subject).issuer_name(issuer).public_key(public)
+                   .serial_number(x509.random_serial_number()).not_valid_before(now - timedelta(minutes=5)).not_valid_after(now + timedelta(days=1))
+                   .add_extension(x509.SubjectKeyIdentifier.from_public_key(public), critical=False))
+        for extension, critical in extensions:
+            builder = builder.add_extension(extension, critical=critical)
+        return builder.sign(signer, hashes.SHA256())
+    usage = dict(content_commitment=False, data_encipherment=False, key_agreement=False, encipher_only=False, decipher_only=False)
+    ca_key, server_key = ec.generate_private_key(ec.SECP256R1()), ec.generate_private_key(ec.SECP256R1())
+    ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'hyd test re-signing CA')])
+    ca = build(ca_name, ca_name, ca_key.public_key(), ca_key, (x509.BasicConstraints(ca=True, path_length=0), True),
+               (x509.KeyUsage(digital_signature=False, key_encipherment=False, key_cert_sign=True, crl_sign=True, **usage), True))
+    server = build(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, '127.0.0.1')]), ca_name, server_key.public_key(), ca_key,
+                   (x509.BasicConstraints(ca=False, path_length=None), True),
+                   (x509.KeyUsage(digital_signature=True, key_encipherment=False, key_cert_sign=False, crl_sign=False, **usage), True),
+                   (x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), False),
+                   (x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), False),
+                   (x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address('127.0.0.1'))]), False))
+    paths = folder / 'ca.pem', folder / 'server.pem', folder / 'server.key'
+    paths[0].write_bytes(ca.public_bytes(serialization.Encoding.PEM))
+    paths[1].write_bytes(server.public_bytes(serialization.Encoding.PEM))
+    paths[2].write_bytes(server_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+    return tuple(str(p) for p in paths)
+
+
+@pytest.fixture
+def resigned_relay(tmp_path):
+    """시험 인증 기관이 서명한 인증서로 HTTPS 를 받는 강의 중계 대역 — (기관 인증서 파일, 대역)."""
+    ca, cert, key = certificates(tmp_path)
+    fake = FakeRelay(tls=(cert, key))
+    yield ca, fake
+    fake.server.shutdown()
+
+
+def probe_in_own_process(url, ca, trusted_by):
+    """강의 중계 확인을 실제처럼 따로 뜬 파이썬 프로세스에서 돌린다(컨테이너 안의 `python -`). 환경의 SSL_CERT_FILE 은 프로세스가 처음
+    인증서를 읽을 때 정해지므로(이미 돈 시험 프로세스에서 바꾸면 OpenSSL 이 따르지 않는다) 새 프로세스로 잰다."""
+    import os
+    import subprocess
+    import sys
+    env = {k: v for k, v in os.environ.items() if k not in ('SSL_CERT_FILE', 'SSL_CERT_DIR')}
+    env['PYTHONPATH'] = os.pathsep.join(p for p in sys.path if p)
+    trust = ''
+    if trusted_by == 'environment':
+        env['SSL_CERT_FILE'] = ca
+    else:
+        trust = f'import certifi; certifi.where = lambda: {ca!r}\n'
+    code = (trust + 'import json, relay_probe\n'
+            f'print(json.dumps(relay_probe.ask({url!r}, {KEY!r}, "coding", call=True, sleep=lambda s: None, timeout=5)))')
+    done = subprocess.run([sys.executable, '-c', code], env=env, capture_output=True, text=True, timeout=120)
+    assert done.returncode == 0, done.stderr[-2000:]
+    return json.loads(done.stdout.strip().splitlines()[-1])
+
+
+@pytest.mark.parametrize('trusted_by, works', [
+    ('environment', False),     # 컨테이너 환경(SSL_CERT_FILE)만 그 기관을 믿는다 — 이 VM 이 그랬다. 관문은 믿지 않는다
+    ('gateway', True),          # 관문이 믿는 인증서 묶음(certifi)에 그 기관이 있다 — 환경은 믿지 않는다
+], ids=['환경만_믿음', '관문이_믿음'])
+def test_강의_중계_확인은_관문과_같은_인증서를_믿어_실제_AI_호출과_같은_결과를_낸다(course, resigned_relay, monkeypatch, trusted_by, works):
+    import certifi
+    ca, fake = resigned_relay
+    monkeypatch.delenv('SSL_CERT_DIR', raising=False)
+    if trusted_by == 'environment':
+        monkeypatch.setenv('SSL_CERT_FILE', ca)
+    else:
+        monkeypatch.delenv('SSL_CERT_FILE', raising=False)
+        monkeypatch.setattr(certifi, 'where', lambda: ca)
+    client = gateway(course, LLM_RELAY_URL=fake.url)
+    real = call(client, permit(client, claimed(course)).json()['token'])              # 실제 AI 호출(관문 → 강의 중계)
+    out = probe_in_own_process(fake.url, ca, trusted_by)
+    assert (real.status_code == 200) is works and out['ok'] is works
+    if not works:                       # 둘 다 「닿지 않음 · 잠시 뒤 다시」가 아니라 그 까닭 · 할 일 — 같은 코드, 같은 문장(사유 표 한 곳)
+        said = REASONS['relay_untrusted'].text
+        assert (code_of(real), real.headers['x-should-retry']) == ('relay_untrusted', 'false') and real.json()['error']['message'].endswith(said)
+        assert out['code'] == 'relay_untrusted' and out['message'].startswith(said)

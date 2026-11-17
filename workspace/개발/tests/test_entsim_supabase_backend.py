@@ -84,8 +84,10 @@ def _refusals():
         (purchase(qty=0), '발주 수량'),
         (purchase(amount=1), '승인한 금액'),
         (dict(purchase(), params={'supplier': 'sup:b'}), '품목(part 또는 part_no)'),             # 옛 판은 「쿨러 코어」로 채웠다
-        ({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'params': {'ref': 'PR-없음', 'inspection': '불합격'}},
-         '검수 불합격'),
+        ({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'params': {'ref': 'PR-없음', 'inspection': '합격'}},
+         '부르는 쪽이 정하지 않습니다'),
+        ({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'params': {'ref': 'PR-없음', 'lot': 'LOT-임의'}},
+         '부르는 쪽이 정하지 않습니다'),
         ({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'params': {'ref': 'PR-없음', 'basis': long_basis}},
          '300자'),
     ]
@@ -95,7 +97,7 @@ REFUSALS = _refusals()
 
 
 @pytest.mark.parametrize('body, reason', REFUSALS, ids=[
-    '지운_거래', '설비_없음', '없는_설비', '작업_없음', '정비_시점_없음', '공급사_없음', 'AVL_밖', '수량_0', '금액_다름', '품목_없음', '검수_불합격', '근거_301자'])
+    '지운_거래', '설비_없음', '없는_설비', '작업_없음', '정비_시점_없음', '공급사_없음', 'AVL_밖', '수량_0', '금액_다름', '품목_없음', '검수_결과를_정해_보냄', '로트를_정해_보냄', '근거_301자'])
 def test_계약_입력이_없거나_틀린_거래는_기본값으로_채우지_않고_한국어_까닭으로_거절한다(ent, body, reason):
     with pytest.raises(psycopg.Error) as err:
         ent.execute(body)
@@ -132,15 +134,53 @@ def test_정비_완료는_표준_부품을_실물에서_소모하고_실물이_�
 
 
 def test_입고는_시간_근거를_입고_기록과_발주에_남기고_거래_설명에_붙인다(ent, ent_dsn):
-    """H-11: 수업 흐름은 리드타임을 기다리지 않고 입고한다 — 그 근거가 업무 기록에 없으면 ERP 화면이 「예정보다 일찍 입고」로 읽힌다."""
+    """H-11: 처리 엔진은 리드타임 대기를 줄여 입고한다 — 그 근거가 업무 기록에 없으면 ERP 화면이 「예정보다 일찍 입고」로 읽힌다."""
     sql(ent_dsn, "UPDATE ent.spare_stock SET on_order=0 WHERE part_no='P-PMP-SEAL'")
     pr = ent.execute(purchase())
-    basis = '수업 즉시 입고 — 리드타임 5일을 기다리지 않고'
+    basis = '업무 시간 리드타임 5일을 실제 60초로 줄여 기다린 뒤 입고했습니다'
     gr = ent.execute({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'by': 'user:jung-buy',
                       'params': {'ref': pr['ref'], 'basis': basis}})
     assert gr['detail'].endswith(' — ' + basis)
     assert sql(ent_dsn, 'SELECT g.basis, r.receipt_basis, r.status FROM ent.goods_receipts g JOIN ent.purchase_requests r ON r.id = g.pr_id '
                         'WHERE g.id=%s', gr['ref']) == [(basis, basis, '입고 완료')]
+
+
+@pytest.mark.parametrize('supplier, qty, accepted, rejected, status, inspection', [
+    ('sup:b', 6, 6, 0, '입고 완료', '합격'),                       # 불량률 2 % × 6개 = 0.12개 → 0개
+    ('sup:a', 6, 5, 1, '부분 입고', '1개 불합격 · 반품'),            # 불량률 12 % × 6개 = 0.72개 → 1개
+    ('sup:a', 4, 4, 0, '입고 완료', '합격'),                       # 12 % × 4개 = 0.48개 → 0개 — 같은 공급사도 수량이 적으면 걸러질 것이 없다
+    ('sup:a', 13, 11, 2, '부분 입고', '2개 불합격 · 반품'),          # 12 % × 13개 = 1.56개 → 2개
+], ids=['순정 6개', '대체 6개', '대체 4개', '대체 13개'])
+def test_입고_검수는_발주_수량과_공급사_불량률로_정해지고_같은_발주면_늘_같은_결과다(ent, ent_dsn, supplier, qty, accepted, rejected, status, inspection):
+    """전에는 어느 공급사든 입고 검사가 늘 「합격」이었다. 모의 공급사 규칙(migration 074): 불합격 수량 = 발주 수량 × 견적 불량률을 반올림.
+    무작위가 없다 — 같은 발주를 두 번 내면 두 번 다 같은 결과다. 합격분만 실물 재고에 오르고 입고 예정은 발주 수량만큼 닫힌다."""
+    sql(ent_dsn, "UPDATE ent.spare_stock SET on_hand=3, reserved=2, on_order=0 WHERE part_no='P-PMP-SEAL'")
+    seen = []
+    for n in (1, 2):
+        pr = ent.execute(purchase(supplier=supplier, qty=qty))
+        gr = ent.execute({'decision': pr['decision'], 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'by': 'user:me', 'params': {'ref': pr['ref']}})
+        after = gr['after']
+        seen.append((after['qty'], after['rejected_qty'], after['ordered_qty'], after['inspection']))
+        assert after['lot'] == 'LOT-' + pr['ref'], '로트 번호는 발주 번호에서 만든다'
+        assert sql(ent_dsn, 'SELECT status FROM ent.purchase_requests WHERE id=%s', pr['ref']) == [(status,)]
+        assert sql(ent_dsn, "SELECT on_hand, on_order FROM ent.spare_stock WHERE part_no='P-PMP-SEAL'") == [(3 + accepted * n, 0)]
+        if rejected:
+            assert f'{qty}개 중 {accepted}개 입고 · {rejected}개 검수 불합격 반품' in gr['detail'] and f'× {qty}개 = 기대 불량' in gr['detail'], gr['detail']
+        else:
+            assert f'{qty}개 입고 · 검수 합격' in gr['detail'], gr['detail']
+    assert seen == [(accepted, rejected, qty, inspection)] * 2, seen
+
+
+def test_공급사_견적이_사라진_발주는_검수_결과를_지어내지_않고_입고를_거절한다(ent, ent_dsn):
+    pr = ent.execute(purchase(part_no='P-FAN-BRG', supplier='sup:a', qty=2))
+    kept = sql(ent_dsn, "DELETE FROM ent.part_quotes WHERE part_no='P-FAN-BRG' AND supplier_id='sup:a' RETURNING price, fail_rate, lead_d")
+    try:
+        with pytest.raises(psycopg.Error) as err:
+            ent.execute({'decision': pr['decision'], 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'by': 'user:me', 'params': {'ref': pr['ref']}})
+        assert err.value.sqlstate == '22023' and '견적(불량률)이 없어 입고 검사 결과를 정할 수 없습니다' in str(err.value)
+    finally:
+        sql(ent_dsn, "INSERT INTO ent.part_quotes (part_no, supplier_id, price, fail_rate, lead_d) VALUES ('P-FAN-BRG', 'sup:a', %s, %s, %s)", *kept[0])
+        ent.execute({'decision': pr['decision'], 'skill': 'skill:cancel-purchase-request', 'by': 'user:me', 'params': {'ref': pr['ref']}, 'compensates': pr['id']})
 
 
 # ---------------------------------------------------------------- 되돌리기

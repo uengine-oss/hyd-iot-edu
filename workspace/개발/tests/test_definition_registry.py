@@ -150,7 +150,7 @@ def test_긴_직선_흐름도_재귀_한도_없이_검사한다():
     """P1-16: 전에는 1,600단계에서 RecursionError(사유 없는 500)였다. 한도 안(500단계)은 등록되고, 넘으면 쉬운 말로 거절한다."""
     longest = definition_registry.MAX_NODES - 1                 # 연결은 단계보다 하나 많다
     assert len(validate_definition(_line(longest)).activities) == longest
-    with pytest.raises(ValueError, match=r'단계이\(가\) 501개로 한도 500개'):
+    with pytest.raises(ValueError, match=r'단계가 501개로 한도 500개'):
         validate_definition(_line(definition_registry.MAX_NODES + 1))
 
 
@@ -197,3 +197,24 @@ def test_제공_정의는_모두_등록_검사를_통과한다(name):
     raw = json.loads((DEFINITIONS / name).read_text(encoding='utf8'))
     assert validate_definition(raw).id == raw['processDefinitionId']
     assert len(json.dumps(raw, ensure_ascii=False)) < definition_registry.MAX_DEFINITION_CHARS / 10
+
+
+def test_낸_흐름_정의는_내용을_바꾸면_판본_번호도_올린다():
+    """등록한 정의 판본은 바꿀 수 없다(procdb.register_definition: 같은 번호 · 다른 원문이면 거절) — 이미 쓰던 DB 에서는 process 가 시작하지 못한다.
+    2026-11-13: shift_handover 의 담당 자리를 고치고 번호를 1.2 로 둔 채 낼 뻔했다. 낸 판본의 내용 지문을 definition_versions.lock.json 에 두고 대조한다.
+    정의를 고쳤으면 version 을 올리고 그 판본의 지문을 잠금 파일에 더한다(옛 판본 줄은 지우지 않는다)."""
+    import hashlib, json
+    from pathlib import Path
+    here = Path(__file__).resolve()
+    lock = json.loads((here.parent / 'definition_versions.lock.json').read_text(encoding='utf-8'))
+    checked = 0
+    for path in sorted((here.parents[3] / 'it' / 'process' / 'definitions').glob('*.json')):
+        raw = json.loads(path.read_text(encoding='utf-8'))
+        if 'processDefinitionId' not in raw:
+            continue
+        key = f"{raw['processDefinitionId']}@{raw['version']}"
+        digest = hashlib.sha256(json.dumps(raw, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+        assert key in lock, f'{path.name}: {key} 의 지문이 잠금 파일에 없습니다 — 새 판본이면 지문 {digest} 을 더하세요'
+        assert lock[key] == digest, f'{path.name}: {key} 는 이미 낸 판본인데 내용이 달라졌습니다 — version 을 올리세요'
+        checked += 1
+    assert checked >= 4

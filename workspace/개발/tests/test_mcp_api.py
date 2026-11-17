@@ -7,6 +7,7 @@ import pytest
 from procsvc import mcp_check
 
 TENANT = 'hyd'
+ME = 'user:me'                     # 이 PC의 담당자 — 포털은 써 보기에 늘 이 id 를 싣는다
 
 
 def servers(world):
@@ -46,10 +47,19 @@ def test_지식_그래프_도구_목록은_목록_시간_한도_안에_온다(wo
 
 @pytest.mark.parametrize('tool, status', [('inputs', 200), ('submit_decision', 403), ('nope', 404)], ids=['읽기 도구', '쓰기 도구', '없는 도구'])
 def test_써_보기는_읽기_도구만_부른다(world, tool, status):
-    got, body = world.api('POST', f'/api/mcp/servers/hyd-dmn/tools/{tool}/call', {'arguments': {}})
+    got, body = world.api('POST', f'/api/mcp/servers/hyd-dmn/tools/{tool}/call', {'arguments': {}, 'by': ME})
     assert got == status, body
     if status == 403:
         assert body['detail'] == '서버가 이 도구를 쓰기 도구로 표시했습니다 — 포털 써 보기에서는 쓰기 도구를 부르지 않습니다'
+
+
+@pytest.mark.parametrize('body', [None, {'arguments': {}}, {'arguments': {}, 'by': ' '}], ids=['본문 없음', '칸 없음', '빈 칸'])
+def test_써_보기는_담당자_없이_오면_도구를_부르기_전에_400_으로_거절한다(world, body):
+    """없는 도구(nope)는 서버에 물어본 뒤에야 404 가 난다 — 그 전에 400 이면 서버를 부르기 전에 거절한 것이다. 써 보기 기록도 남지 않는다."""
+    tried = [e for e in world.main.audit_log if e['event'] == 'MCP_TOOL_TRIED']
+    got, out = world.api('POST', '/api/mcp/servers/hyd-dmn/tools/nope/call', body)
+    assert got == 400 and '담당자 정보 없이 온 요청' in out['detail'], out
+    assert [e for e in world.main.audit_log if e['event'] == 'MCP_TOOL_TRIED'] == tried
 
 
 def test_포털_연결_자리가_다_차면_목록_요청은_503과_까닭을_받는다(world):

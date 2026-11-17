@@ -1,6 +1,8 @@
 """조치 카드 판단의 순수 계산(it/agent/agentsvc/cards.py) — 정비 시점 · 생산 영향 · 읽을 판단 변수 · 설명 문장.
 
 카드 모양은 지식 그래프 t3_skills 행 그대로(수업 지식 HM-8 의 SOP-COOL-11~14, PM-02 의 SOP-PM-12)."""
+import re
+
 import pytest
 
 from agentsvc import cards
@@ -98,7 +100,21 @@ def test_설명_문장은_이어_붙인_사유의_마침표를_겹치지_않고_
     out = [dict(rec, id='b', name='미루기', feasible=False, violations=[{'annotation': '2,200 h를 넘으면 미루지 않는다.'}]),
            dict(rec, id='c', name='묶어 시행', feasible=False, violations=[{'annotation': '씰 키트가 2개 이상 있어야 한다.'}])]
     text = cards.explain([rec, *out], rec, {'failure_mode_name': '주 펌프 체적 효율 저하'})
-    assert '.;' not in text and '..' not in text and '예측 유온 48.0 ℃.' in text and '(점수 1.54)' in text
+    assert '.;' not in text and '..' not in text and '예측 유온은 48.0 ℃입니다.' in text and '(점수 1.54)' in text
+
+
+def test_설명_문장은_같은_제외_까닭을_한_번만_적고_권장하는_조치를_첫_문장에서_말한다():
+    """규칙 판단 · 처리 건 · 시험 비교의 설명문이 「… 후보 4장 중 'SOP-COOL-14 쿨러 핀 세척'을 권한다」였고, 같은 규칙이 세 후보를 막으면
+    그 까닭 문장(「PLC 운전 모드가 …가 아니면 원격 조치 …을 쓰지 않는다」)이 한 문단에 세 번 되풀이됐다."""
+    why = '운전 모드가 원격 자동이 아니면 원격 조치를 쓰지 않는다.'
+    rec = {'id': 'd', 'sopId': 'SOP-COOL-14', 'name': '쿨러 핀 세척', 'score': 2.16, 'feasible': True, 'gains': [], 'losses': [], 'forecast': [],
+           'precedent': None, 'scoreParts': {}, 'production': 'stop'}
+    out = [dict(rec, id=i, name=name, feasible=False, violations=[{'annotation': why}]) for i, name in (('a', '팬 최대 운전'), ('b', '부하 70 %'), ('c', '부하 70 %와 야간 핀 세척'))]
+    text = cards.explain([rec, *out], rec, {'failure_mode_name': '쿨러 냉각 성능 상실'})
+    assert text.startswith("쿨러 냉각 성능 상실 — 조치 후보 4개 가운데 'SOP-COOL-14 쿨러 핀 세척'을 권장합니다(점수 2.16)."), text
+    assert text.count(why.rstrip('.')) == 1 and all(name in text for _, name in (('a', '팬 최대 운전'), ('b', '부하 70 %'), ('c', '부하 70 %와 야간 핀 세척'))), text
+    none = cards.explain(out, None, {'failure_mode_name': '쿨러 냉각 성능 상실'})
+    assert none.startswith('쿨러 냉각 성능 상실 — 조치 후보 3개 모두 규정상 제외됐습니다:') and none.count(why.rstrip('.')) == 1, none
 
 
 def test_구매_카드_설명은_점수가_아니라_비교_총비용으로_말한다():
@@ -107,3 +123,31 @@ def test_구매_카드_설명은_점수가_아니라_비교_총비용으로_말�
                                                                        'total_cost': 420, 'supplier': 'sup:b', 'quantity': 6}}
     text = cards.explain([rec], rec, {'purchase_part': 'part:seal', 'purchase_part_name': '펌프 축 씰 키트'})
     assert '(비교 총비용 420만 원)' in text and '점수 -420' not in text
+
+
+@pytest.mark.parametrize('windows, feasible', [(WINDOWS, True), ({}, False)], ids=['다음 예정된 정비 시간을 앎', '모름'])
+def test_작업지시를_언제_할지_모르는_카드는_승인_전에_그_까닭으로_실행_후보에서_빠진다(windows, feasible):
+    """완화 조치 뒤 다음 예정된 정비 시간에 작업하는 카드(SOP-COOL-13)인데 정비 시스템에 그 시간이 없으면 카드에 정비 시점이 실리지 않는다.
+    그대로 승인되면 작업지시는 「즉시」로 등록되고 정비 단계는 「언제 할지 모른다」로 멈췄다 — 사람이 승인 전에 보고 다른 카드를 고르게 한다.
+    지금 정지하고 시행하는 카드(SOP-COOL-14)와 작업지시가 없는 카드(SOP-COOL-11)는 그 시간과 무관하다."""
+    facts = {'pattern': 'COOLER_DEGRADATION', 'cause': 'cause:cooler-fin-fouling', 'plc_mode': 'REMOTE_AUTO', 'order_due_h': 6.0,
+             'windows_by_variable': windows}
+    out = {o['id']: o for o in cards.evaluate(DMN, COOL, facts, {}, [], [], {})['options']}
+    card = out['skill:sop-cool-13']
+    assert card['feasible'] is feasible and ('window' in card) is feasible
+    said = [v['annotation'] for v in card['violations'] if v['rule'] == 'execution:maintenance-window']
+    assert said == ([] if feasible else [cards.NO_MAINTENANCE_WINDOW]) and '예정된 정비 시간' in cards.NO_MAINTENANCE_WINDOW
+    assert out['skill:sop-cool-14']['feasible'] and out['skill:sop-cool-14']['window'] == cards.IMMEDIATE
+    assert out['skill:sop-cool-11']['feasible'] and 'window' not in out['skill:sop-cool-11']
+
+
+def test_순위_근거의_점수_계산_방법_한_줄은_화면이_쓰는_말로_쓴_문장이다():
+    """V 8절 2(2026-11-16): 조치 후보 근거의 「점수 계산 방법」 줄에 「명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 …」가 그대로 나왔다(rankingEvidence.conditionMode —
+    화면은 서버 문장을 그대로 적는다). 실제 판단(cards.evaluate)이 낸 카드의 그 칸을 본다: 조건 판정은 화면 말(적용 · 미적용 · 미확인)이고 안쪽 값(TRUE · FALSE · UNKNOWN)이 없다."""
+    facts = {'pattern': 'COOLER_DEGRADATION', 'cause': 'cause:fin', 'windows_by_variable': WINDOWS}
+    options = cards.evaluate(DMN, COOL, facts, {}, [], [], {})['options']
+    modes = {o['rankingEvidence']['conditionMode'] for o in options}
+    assert modes == {cards.CONDITION_MODES['tradeoff']}, modes
+    for text in cards.CONDITION_MODES.values():
+        assert not re.search(r'TRUE|FALSE|UNKNOWN|;', text) and text.endswith('니다.'), text
+    assert all(word in cards.CONDITION_MODES['tradeoff'] for word in ('적용', '미적용', '미확인'))

@@ -29,7 +29,7 @@ def test_값을_읽지_못한_측정은_지어내지_않고_값_없음으로_보
 def test_정비_오더_공지_메일은_도구의_중복_방지_여부와_상관없이_보냄으로만_적는다(idempotent):
     """P4-20: 전에는 idempotent=False(도구가 중복 방지 키를 받지 않음)를 「재전송 아님」으로 거꾸로 읽어 적었다."""
     rows = ep.report_values({'work_order': {'ref': 'WO-1', 'after': {'window_label': '오늘 밤'}, 'notice': {'idempotent': idempotent}}})
-    assert rows == [{'name': '정비 오더', 'value': 'WO-1'}, {'name': '정비 시점', 'value': '오늘 밤'}, {'name': '공지 메일', 'value': '보냄', 'ok': True}]
+    assert rows == [{'name': '정비 요청', 'value': 'WO-1'}, {'name': '정비 시점', 'value': '오늘 밤'}, {'name': '공지 메일', 'value': '보냄', 'ok': True}]
 
 
 @pytest.mark.parametrize('criteria, readings, passed', [
@@ -109,8 +109,8 @@ def test_발주_금액은_견적_단가_곱하기_수량이고_모르면_승인�
     ({'id': 'T', 'tool': ep.TEST_RUN_TOOL, 'service': {'criteria': {'PS1': ['=>', 165]}}, 'outputData': ['test_run', 'passed']}, '시운전 기준'),
     ({'id': 'T', 'tool': ep.REPORT_TOOL, 'service': {'outcome': '좋음'}, 'outputData': ['result_report']}, '결과\\(outcome\\)'),
     ({'id': 'T', 'tool': ep.MCP_TOOL, 'service': {'server': 'hyd-effects', 'tool': 'send_mail'}, 'outputData': ['x']}, 'outputData 는'),
-    ({'id': 'T', 'tool': ep.GR_TOOL, 'service': {'immediate': 'yes'}, 'outputData': ['goods_receipt', 'received']}, 'immediate 는 true/false'),
-], ids=['시간 대기 정상', '기간과 시각 둘 다', '설정 칸 오타', '시운전 연산 오타', '모르는 결과', 'MCP 출력 이름', '즉시 입고 값'])
+    ({'id': 'T', 'tool': ep.GR_TOOL, 'service': {'immediate': True}, 'outputData': ['goods_receipt', 'received']}, '모르는 설정 칸 immediate'),
+], ids=['시간 대기 정상', '기간과 시각 둘 다', '설정 칸 오타', '시운전 연산 오타', '모르는 결과', 'MCP 출력 이름', '지운 즉시 입고 설정'])
 def test_부품_설정은_오타나_빠진_칸을_조용히_넘기지_않는다(activity, error):
     if error is None:
         ep.validate(activity)
@@ -122,8 +122,8 @@ def test_부품_설정은_오타나_빠진_칸을_조용히_넘기지_않는다(
 @pytest.mark.parametrize('condition, problems', [
     ('accepted == True', []),
     ('accepted > 3', ["accepted(Boolean)에는 '>' 비교를 쓸 수 없습니다"]),
-    ("count == '예'", ["count(Number)을(를) '예' 와 비교합니다 — 자료형이 다릅니다"]),
-    ('status', ['status(Text)은(는) 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다']),
+    ("count == '예'", ["count(Number)을 '예' 와 비교합니다 — 자료형이 다릅니다"]),
+    ('status', ['status(Text)는 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다']),
 ], ids=['맞는 비교', '참거짓을 크기 비교', '수를 글과 비교', '글을 그대로 조건'])
 def test_분기_조건은_꺼낸_값의_자료형대로_써야_한다(condition, problems):
     assert ep.condition_type_problems(condition, {'accepted': 'Boolean', 'count': 'Number', 'status': 'Text'}) == problems

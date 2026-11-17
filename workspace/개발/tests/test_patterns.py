@@ -70,6 +70,18 @@ def test_기울기_창은_보고_주기_두_번을_배속으로_담아야_한다
             compile_catalog([COOLER], profile, scale)          # 60 설비 초 창 < 2 × 1 s × 40
 
 
+def test_틀린_패턴_하나는_그것만_빠지고_나머지는_감지에_남는다():
+    """학생이 패턴 하나를 잘못 쓰면 수업 패턴까지 감지가 모두 멈추던 것(2026-11-14). 까닭은 뺀 목록에 남는다."""
+    broken = dict(PUMP, holdSeconds=-1)
+    rejected = []
+    assert set(compile_catalog([COOLER, broken], 'lite', 20, rejected)) == {'COOLER_DEGRADATION'}
+    assert [(r['code'], bool(r['reason'])) for r in rejected] == [('PUMP_LEAKAGE', True)]
+    with pytest.raises(DefinitionError):
+        compile_catalog([COOLER, broken], 'lite', 20)            # 뺀 목록을 받지 않는 호출은 예전처럼 첫 오류에서 멈춘다
+    with pytest.raises(DefinitionError, match='no valid pattern'):
+        compile_catalog([broken], 'lite', 20, [])                # 맞는 패턴이 하나도 없으면 적용하지 않는다
+
+
 @pytest.mark.parametrize('rows', [[], [COOLER, COOLER], [COOLER] * 65])
 def test_목록은_1_64개이고_겹치면_안_된다(rows):
     with pytest.raises(DefinitionError):

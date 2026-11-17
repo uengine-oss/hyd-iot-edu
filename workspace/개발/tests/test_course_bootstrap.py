@@ -94,3 +94,27 @@ def test_같은_내용인지는_정의에_남긴_그림_지문과_연결로_본�
 def test_설치_흔적이_없는_정의는_다른_내용으로_본다():
     _, xml, mapping = cb.FLOWS['c3_cooling']
     assert not cb.same_content({}, xml, mapping) and not cb.same_content(None, xml, mapping)
+
+
+# ---------------------------------------------------------------- 흐름 그림(사람이 배치한 그림 정보)이 화면이 읽는 길로 나온다
+def test_기본_제공_흐름의_그림은_가져온_흐름과_같은_길로_배치_정보와_함께_나온다(world):
+    """화면은 판본마다 GET /api/flows/{id}/versions/{v}/bpmn 하나로 그림을 읽는다. 수업 흐름은 설치 때 등록한 원문(course_flows.json 의 그림),
+    기준 흐름 · 교대 인수인계는 정의 옆의 그림 파일이 기동 때 그 판본에 붙은 것이다. 그림을 두지 않은 흐름은 204, 없는 판본은 404."""
+    for did, head in flows(world).items():
+        status, xml = world.api('GET', f"/api/flows/{did}/versions/{head['version']}/bpmn")
+        assert status == 200 and xml == cb.FLOWS[did][1], did
+        assert 'BPMNDiagram' in xml and xml.count('<bpmn:lane ') == 3, did
+    status, rows = world.api('GET', '/api/process/definitions')
+    assert status == 200
+    latest = {r['id']: r['version'] for r in rows}
+    for did in ('anomaly_response', 'shift_handover'):
+        status, xml = world.api('GET', f"/api/flows/{did}/versions/{latest[did]}/bpmn")
+        assert status == 200 and 'BPMNDiagram' in xml and '<bpmn:lane ' in xml, did
+        status, definition = world.api('GET', f"/api/process/definitions/{did}?version={latest[did]}")
+        from procsvc.bpmn_store import xid
+        assert all(f'id="{xid(a["id"])}"' in xml for a in definition['activities']), '그림의 요소는 화면이 정의의 id 에서 만드는 id 로 찾는다'
+    status, body = world.api('GET', f"/api/flows/alert_triage/versions/{latest['alert_triage']}/bpmn")
+    assert (status, body) == (204, ''), '그림이 없는 판본은 오류가 아니다 — 화면이 정의에서 그린다'
+    status, body = world.api('GET', '/api/flows/anomaly_response/versions/0.0/bpmn')
+    assert status == 404 and '없습니다' in str(body)
+

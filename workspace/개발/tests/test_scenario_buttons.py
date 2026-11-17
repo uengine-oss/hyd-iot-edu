@@ -1,4 +1,4 @@
-"""수업 버튼(procsvc/scenario_buttons.py) — [정기 점검] · [재고 보충]의 경보 · 거절, 진행 중 [초기화] 거절, 시나리오 시각 기준점을 붙잡는 처리 건.
+"""수업 버튼(procsvc/scenario_buttons.py) — [정기 정비 시작] · [예비품 구매 시작]의 경보 · 거절, 진행 중 [업무 데이터 초기화] 거절, 시나리오 시각 기준점을 붙잡는 처리 건.
 
 실제 업무 DB(enterprise-sim) · 실제 엔진으로 버튼과 같은 함수를 부른다. 처리 건은 에이전트 단계에서 멈춘 채(진행 중) 둔다.
 """
@@ -7,11 +7,13 @@ from datetime import datetime, timezone
 
 import pytest
 
+from fastapi import HTTPException
+
 from conftest import definition_version
 from hydcommon import topics
 from procsvc import scenario_buttons as sb
 
-PERSON = {'by': '정구매', 'user_id': 'user:jung-buy', 'roles': ['role:purchasing']}
+PERSON = {'by': '담당자', 'user_id': 'user:me', 'roles': ['role:purchasing']}
 START = {'asset': 'HYD-01', 'shift_label': '야간 → 주간', 'as_of': '2026-10-30T06:00:00+09:00', 'work_notes': '메모'}
 
 
@@ -25,12 +27,19 @@ def _press(world, key):
 
 
 @pytest.mark.parametrize('body, expected', [
-    (None, {'by': '나 미선택', 'user_id': None, 'roles': []}),
-    ({'by': '정구매', 'user_id': 'user:jung-buy', 'role': 'role:purchasing'}, {'by': '정구매', 'user_id': 'user:jung-buy', 'roles': ['role:purchasing']}),
+    ({'by': '담당자', 'user_id': 'user:me', 'role': 'role:purchasing'}, PERSON),
     ({'by': '가' * 100, 'roles': ['r'] * 9}, {'by': '가' * 80, 'user_id': None, 'roles': ['r'] * 5}),
-], ids=['나 미선택', '고른 나', '긴 값은 자름'])
-def test_누른_사람은_포털이_보낸_나_그대로이고_없으면_지어내지_않는다(body, expected):
+], ids=['담당자', '긴 값은 자름'])
+def test_누른_사람은_포털이_보낸_담당자_그대로다(body, expected):
     assert sb.who(body) == expected
+
+
+@pytest.mark.parametrize('body', [None, {}, {'by': '  ', 'user_id': 'user:me'}], ids=['본문 없음', '칸 없음', '빈 칸'])
+def test_누른_사람이_비면_자리표를_지어내지_않고_400_으로_거절한다(body):
+    """옛 판은 빈 칸을 「나 미선택」으로 채워 경보 근거와 처리 기록에 사람처럼 남겼다."""
+    with pytest.raises(HTTPException) as refused:
+        sb.who(body)
+    assert refused.value.status_code == 400 and '담당자 정보 없이 온 요청' in refused.value.detail
 
 
 def test_버튼_경보는_업무_감시와_같은_계약이고_누른_사람과_시각을_근거에_싣는다():
@@ -38,14 +47,21 @@ def test_버튼_경보는_업무_감시와_같은_계약이고_누른_사람과_
     now = datetime(2026, 10, 30, 6, 0, 1, tzinfo=timezone.utc)
     alert = sb.build_alert('C', row, now, PERSON)
     assert alert['alertId'] == 'ERP-SPARE_BELOW_MIN-P-PMP-SEAL-20261030060001' and alert['source'] == 'erp' and alert['state'] == 'RAISE'
-    assert alert['evidence']['spare_below_min'] is True and alert['evidence']['requested_user'] == 'user:jung-buy'
+    assert alert['evidence']['spare_below_min'] is True and alert['evidence']['requested_user'] == 'user:me'
     assert alert['evidence']['requested_at'] == '2026-10-30T06:00:01+00:00' and alert['asset'] == 'HYD-03'
 
 
 def test_같은_시나리오_처리_건이_진행_중이면_다시_누름을_거절한다(world):
-    _press(world, 'C')
-    with pytest.raises(sb.Refused, match='이미 진행 중입니다'):
+    started = _press(world, 'C')
+    with pytest.raises(sb.Refused, match='이미 진행 중입니다') as caught:
         sb.refusal('C', world.instance_mode.enterprise_read, world.rt, world.main._scenario_route)
+    # 어느 건인지 말하고(시작한 때), 화면에 없는 「카드의 '처리 중' 표시」가 아니라 있는 단추를 가리킨다
+    assert '시작)' in str(caught.value) and '[처리 건에서 보기]' in str(caught.value) and "'처리 중' 표시" not in str(caught.value), str(caught.value)
+    # 시작 단추의 거절 응답(409)이 그 건을 칸으로 싣는다
+    status, refused = world.api('POST', '/api/scenario/C/start', {'by': '담당자', 'user_id': 'user:me', 'roles': ['role:purchasing']}, source_loop=True)
+    assert status == 409 and refused['detail'] == str(caught.value), refused
+    assert refused['instance'] == caught.value.instance and refused['started_at'], refused
+    assert started is None or refused['instance'] == started, (refused, started)
 
 
 def test_시나리오_처리_건이_진행_중이면_초기화를_거절한다(world):
@@ -53,7 +69,7 @@ def test_시나리오_처리_건이_진행_중이면_초기화를_거절한다(w
     _press(world, 'C')
     with pytest.raises(sb.Refused, match='아직 진행 중이라 초기화하지 않았습니다') as caught:
         sb.reset_refusal(world.rt, 'C')
-    assert '조치 카드를 승인하거나 거절해 끝낸 뒤 [초기화]를 누르세요' in str(caught.value), '아직 멈춘 단계가 없는 처리 건'
+    assert '조치 후보를 승인하거나 반려해 끝낸 뒤 [업무 데이터 초기화]를 누르세요' in str(caught.value), '아직 멈춘 단계가 없는 처리 건'
 
 
 def test_시나리오_처리_건이_없으면_초기화를_받는다(world):
@@ -75,9 +91,36 @@ def test_경보로_연_대응_처리_건이_진행_중이면_기준점을_붙잡
     assert sb.may_reanchor(world.rt) is False
 
 
+def test_공급사_납기_지연은_열린_발주가_없으면_까닭과_함께_거절하고_상태가_그_까닭을_싣는다(world):
+    """[공급사 납기 지연]은 진행 중인 예비품 구매 처리 건이 낸 열린 발주에만 걸린다. 발주 전(승인 대기)이면 누를 수 없고 화면이 읽는 상태가 까닭을 말한다.
+    발주 뒤의 길(지연 통보 → 납기 초과 → 지연 결과 보고)은 test_instances 가 흐름 끝까지 잰다."""
+    _press(world, 'C')
+    with pytest.raises(sb.Refused, match='아직 발주 전입니다 — 처리 건에서 발주안을 승인하면 발주가 열립니다'):
+        sb.delay_target(world.rt, world.instance_mode.enterprise_read, 'C')
+    [event] = sb.status(world.instance_mode.enterprise_read, world.rt)['scenarios']['C']['events']
+    assert (event['act'], event['button'], event['path'], event['enabled']) == ('delay', '공급사 납기 지연', '/api/scenario/C/delay', False)
+    assert '아직 발주 전입니다' in event['why']
+    assert sb.status(world.instance_mode.enterprise_read, world.rt)['scenarios']['B']['events'] == [], '정기 정비에는 바깥 사건 단추가 없다'
+
+
 def test_시나리오_상태는_진행_중_처리_건과_마지막_처리_건을_보인다(world):
     pid = _press(world, 'C')
     status = sb.status(world.instance_mode.enterprise_read, world.rt)
     c = status['scenarios']['C']
     assert c['running']['instance'] == pid and c['last']['instance'] == pid and c['alert'] is True
     assert status['scenarios']['B']['running'] is None
+    # 화면 단추의 이름은 서버가 준 이 값 하나다 — 처리 건의 시작 기록(「…의 [단추]를 눌러 열었습니다」)과 거절 문장이 같은 이름을 쓴다
+    # (전에는 화면 단추가 [예비품 구매 시작]인데 기록은 [재고 보충]을 눌렀다고 했다)
+    assert (c['button'], status['scenarios']['B']['button'], status['reset_button']) == ('예비품 구매 시작', '정기 정비 시작', '업무 데이터 초기화')
+    row = {'part_no': 'P-PMP-SEAL', 'available': 1, 'reorder_point': 2, 'need_qty': 6, 'below_since': 'x', 'reserved_for': 'HYD-03'}
+    assert sb.build_alert('C', row, datetime(2026, 10, 30, 6, 0, 1, tzinfo=timezone.utc), PERSON)['evidence']['trigger'] == f"결함 시뮬레이션의 [{c['button']}]"
+    assert sb.press_event(pid, c['button'], 'HYD-03', PERSON, 'x')['data']['name'] == f"결함 시뮬레이션의 [{c['button']}]"
+
+
+def test_시나리오_상태는_설비_결함_주입이_지원하는_설비와_결함과_단추를_말한다():
+    """전수검사 10-G12: 설비 결함 주입은 가상 설비 한 대의 결함 한 종류인데 서버가 그 범위를 내지 않아 화면이 설비 · 결함을 손으로 적었다."""
+    status = sb.status(lambda name, params: {'records': []})
+    assert status['fault'] == {'asset': 'HYD-01', 'fault': 'cooler_degradation', 'severity': 'moderate',
+                               'buttons': {'degrade': '쿨러 열화 주입', 'restore': '쿨러 복구'}}
+    said = sb.unknown_act('pump_leakage')
+    assert 'HYD-01' in said and '[쿨러 열화 주입](degrade)' in said and '[쿨러 복구](restore)' in said and "'pump_leakage'" in said

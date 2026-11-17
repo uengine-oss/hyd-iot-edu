@@ -1,4 +1,4 @@
-"""포털 nginx(it/portal/nginx.conf) — 화면이 서비스를 부르는 같은 출처 길 /svc/<서비스>/ (결정 1).
+"""포털 nginx(it/portal/nginx.conf) — 화면이 서비스를 부르는 같은 출처 길 /svc/<서비스>/.
 compose 와 같은 이미지(nginx:1.27-alpine)에 이 conf · 화면 파일을 실어 버릴 망에 띄우고, 서비스 자리에는 받은 요청을 그대로 돌려주는 작은 대역
 (compose 서비스 이름 process · plant-sim 으로)을 붙인다. 화면이 실제로 보내는 꼴의 요청으로 넘김 · 크기 한도 · 꺼진 서비스 · 화면 파일을 잰다.
 docker 가 없으면 까닭을 내고 실패한다. 끝나면 컨테이너 · 망을 지운다."""

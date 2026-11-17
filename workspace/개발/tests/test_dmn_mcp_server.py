@@ -1,5 +1,5 @@
 """판단 엔진 MCP 서버(it/dmn-mcp/dmn_mcp/server.py) — conftest stack 이 Dockerfile 실행 명령 그대로 띄운 dmn-mcp 하나가 hyd-dmn(/mcp)과
-수업 neo4j 조회 도구(/neo4j/mcp)를 함께 낸다(결정 3 · H-4). 그래프는 kg-seed 와 같은 시드(seeded_graph), 부르는 쪽은 MCP 클라이언트(fastmcp).
+수업 neo4j 조회 도구(/neo4j/mcp)를 함께 낸다(H-4). 그래프는 kg-seed 와 같은 시드(seeded_graph), 부르는 쪽은 MCP 클라이언트(fastmcp).
 """
 import asyncio
 import json

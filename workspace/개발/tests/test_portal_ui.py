@@ -4,7 +4,8 @@
 메뉴마다 새 탭에서(앞 메뉴가 남긴 화면 상태 위에서 판정하지 않는다): 콘솔 오류 0 · 실패한 요청 0 · 14초 뒤에도 남은 「…하는 중」 로딩 문구 없음 ·
 내부어(설정 이름 · 영문 경보 코드 · 표 이름 · 사람 원래 id · 번역 안 된 명칭 키) 없음 · 가로 넘침 없음 · 「눌리는데 거절」 없음 — 서버 수업 경계
 (GET /api/course-access)가 막은 행동 키를 단 요소는 꺼져 있고 서버 까닭을 보인다 · 서비스 요청은 모두 포털과 같은 출처(/svc/<서비스>/ — nginx 프록시)다.
-메뉴 목록은 index.html 의 주 메뉴(.rail nav button[data-tab])에서 읽는다. 메뉴 잠금은 없다(모든 메뉴가 열린다).
+화면 목록은 index.html 의 주 메뉴 표(메뉴 정의 button[data-menu] 의 data-tabs — 메뉴 여덟, 메뉴마다 딸린 화면)에서 읽는다. 화면은 학생이 여는 길로 연다:
+왼쪽 메뉴 줄에서 메뉴를 누르고, 화면이 여럿인 메뉴면 그 메뉴 아래에 펼쳐진 화면 이름을 누른다(conftest.open_screen — 위쪽 탭 줄은 없다). 메뉴 잠금은 없다(모든 메뉴가 열린다).
 서버가 꺼져 있거나 이 판과 다르면 그 사실이 실패 문장에 그대로 나온다(조용히 건너뛰지 않는다).
 """
 import os
@@ -14,21 +15,23 @@ from html.parser import HTMLParser
 
 import pytest
 
-from conftest import ROOT
+from conftest import ROOT, open_screen
 INDEX = ROOT / 'it' / 'portal' / 'www' / 'index.html'
 SIZES = [(1366, 768), (1920, 1080)]
 LOADING_LIMIT_S = 14
 # 로딩 자리 표시: 「…중…」(말줄임표로 끝나는 진행 표시)와 말줄임표 없는 몇 가지. 「승인을 기다리는 중입니다」 같은 진행 상태 문장은 로딩이 아니다
 LOADING = re.compile(r'([가-힣]+ 중…|불러오는 중|연결 확인 중|조회 중)')
-JARGON = re.compile(r'(AI_MODE|AGENT_BRIDGE|PROCESS_MODE|LLM_API_KEY|RunFailed|Traceback|\.env\b|tenants\.mcp|tenant_\w+|is_agent|users 표|'
-                    r'Claude Code|Inbucket|provenance|API 키|undefined|NaN|\[object Object\]|\bnull\b|'
-                    r'COOLER_DEGRADATION|PUMP_LEAKAGE|FAN_VIBRATION|OIL_ANALYSIS|PM_DUE|SPARE_BELOW_MIN|HTTP \d{3}|status \d{3}|설비 시간 배율|'
-                    r'\buser:[a-z]|\b(?:sys|inst|td|proc|nav|trace|inc|dec|kn|plant|main)\.[A-Za-z가-힣]|워커|폴링|기동 시드|프로세스 id|흐름 id|인스턴스|CANCELLED)')
+from student_words import JARGON, WORKER_TALK      # 내부어 · 작업자 말 목록은 한 곳(student_words.py) — 서버 응답을 훑는 시험과 같은 표
+# 작업자 말 가운데 화면이 고칠 수 없는 것: 강사 서명 묶음의 문서 원문(HM-8 「PLC 운전 모드가 REMOTE_AUTO인지 확인한다」)이 그대로 보이는 화면.
+# 문서를 고치고 다시 서명해야 없어진다(사용자가 정할 일 — 기록.md 「사용자만 정할 수 있는 것」). 그 밖의 화면에서는 이 말도 결함이다
+DOCUMENT_WORDS = {'REMOTE_AUTO': {'skills', 'instances', 'knowledge', 'decision'}}
 # 수업 단계에서 그 메뉴에 반드시 있어야 하는 행동 키(막힌 단추가 꺼진 채 보이는지 볼 자리)
 EXPECTED_ACTIONS = {'mcp': ['tool_servers.register'], 'admin': ['config.import']}
 
 
 class _Menus(HTMLParser):
+    """주 메뉴 표: menus = [(메뉴, [그 메뉴에 딸린 화면 …])]."""
+
     def __init__(self):
         super().__init__()
         self.depth, self.menus = 0, []
@@ -37,8 +40,8 @@ class _Menus(HTMLParser):
         a = dict(attrs)
         if tag == 'nav' and a.get('aria-label') == '주 메뉴':
             self.depth = 1
-        elif tag == 'button' and self.depth and 'data-tab' in a:
-            self.menus.append(a['data-tab'])
+        elif tag == 'button' and self.depth and 'data-menu' in a:
+            self.menus.append((a['data-menu'], a['data-tabs'].split()))
 
     def handle_endtag(self, tag):
         if tag == 'nav':
@@ -51,7 +54,8 @@ def _menus():
     return p.menus
 
 
-MENUS = _menus()
+MENU = _menus()                                        # [(메뉴, [화면 …])]
+MENUS = [tab for _, tabs in MENU for tab in tabs]      # 순회할 화면(메뉴 차례 → 탭 차례)
 
 
 @pytest.fixture(scope='session')
@@ -81,7 +85,7 @@ class Tour:
         self.ctx = browser.new_context(viewport={'width': size[0], 'height': size[1]}, locale='ko-KR')
         self.page = self.ctx.new_page()
         self.events = []
-        # 결정 1: 포털 화면(주 프레임)의 데이터 요청(fetch · XHR · SSE)은 포털과 같은 출처로만 — 다른 출처는 바깥 도구(Grafana · Neo4j · FUXA …)의
+        # 포털 화면(주 프레임)의 데이터 요청(fetch · XHR · SSE)은 포털과 같은 출처로만 — 다른 출처는 바깥 도구(Grafana · Neo4j · FUXA …)의
         # 켜짐 확인(layers.js 의 그 주소)뿐. 화면에 끼운 바깥 도구(추세 메뉴의 Grafana iframe)가 자기 출처로 내는 요청은 그 도구의 것이라 세지 않는다
         # (2026-11-01 — 주 프레임을 가리지 않아 Grafana 의 자기 요청을 포털 위반으로 셌다).
         origin = re.match(r'^https?://[^/]+', url).group(0)
@@ -102,7 +106,7 @@ class Tour:
 
     def open(self, tab):
         self.events.clear()
-        self.page.click(f'.rail nav button[data-tab="{tab}"]')
+        open_screen(self.page, tab)
         try:
             self.page.wait_for_load_state('networkidle', timeout=10000)
         except Exception:  # noqa: BLE001 — 실시간 연결(SSE)이 있는 화면은 조용해지지 않는다; 아래 조건 대기가 판정한다
@@ -133,7 +137,11 @@ class Tour:
           for (const el of document.querySelectorAll('main .view.active *')) {
             const cs = getComputedStyle(el);
             if (!el.offsetParent || ['auto', 'scroll', 'hidden', 'clip'].includes(cs.overflowX) || cs.textOverflow === 'ellipsis') continue;
-            if (el.children.length === 0 && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2)
+            // 도움말(data-tooltip)이 달린 요소는 뜨는 도움말 조각(::before)의 폭이 scrollWidth 에 더해진다 — 그런 요소는 제 글자의 폭을 직접 재서 칸을 넘는지 본다
+            // (접힌 접기 안에 있어 그려지지 않은 요소는 글자 폭이 0 이다)
+            const text = () => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; };
+            if (!el.textContent.trim()) continue;      // 글자가 없는 것(상태 점 등)은 잘릴 글자가 없다 — 꾸밈 조각(::after 고리)의 폭을 글자 잘림으로 세지 않는다
+            if (el.children.length === 0 && el.clientWidth > 0 && (el.hasAttribute('data-tooltip') ? text() > el.clientWidth + 2 : el.scrollWidth > el.clientWidth + 2))
               out.push((el.tagName + '.' + (typeof el.className === 'string' ? el.className : '')).slice(0, 60) + ': ' + (el.innerText || '').slice(0, 40));
             if (out.length >= 8) break;
           }
@@ -167,21 +175,61 @@ def _id(case):
     return f'{w}x{h}-{tab}'
 
 
-def test_주_메뉴는_23개이고_하나도_잠겨_있지_않다(tours):
+def test_주_메뉴는_여덟이고_화면_22개가_빠짐없이_딸려_있으며_하나도_잠겨_있지_않다(tours):
     page = tours(SIZES[0]).page
-    menus = page.eval_on_selector_all('.rail nav button[data-tab]', 'bs => bs.map(b => ({ tab: b.dataset.tab, disabled: b.disabled }))')
-    assert len(menus) == 23 and [m['tab'] for m in menus] == MENUS
-    assert [m['tab'] for m in menus if m['disabled']] == []
+    menus = page.evaluate('() => hydMenu.list.map(m => ({ menu: m.id, tabs: m.tabs }))')      # 화면이 index.html 의 메뉴 정의에서 읽은 표
+    assert len(menus) == 8 and [(m['menu'], m['tabs']) for m in menus] == MENU
+    # 메뉴 줄에는 화면마다 줄이 하나씩 있고(링크라 잠기지 않는다) 꺼진 것이 없다
+    assert page.eval_on_selector_all('#menuList a[data-tab]', "ls => ls.filter(a => a.getAttribute('aria-disabled') !== 'true').map(a => a.dataset.tab)") == MENUS
+    views = page.eval_on_selector_all('main .view', "vs => vs.map(v => v.id.replace(/^view-/, ''))")
+    assert len(MENUS) == 22 and sorted(views) == sorted(MENUS), '화면 구역(view-…)과 주 메뉴 표가 다르다'
+    # 화면이 여럿인 메뉴는 펼쳐진 메뉴 안에 그 화면들이 차례대로 나온다(화면 제목 = 메뉴 줄의 이름 판정은 스택 없이 도는 test_www_shell 한 곳에 있다)
+    for menu, tabs in MENU:
+        for tab in tabs:
+            open_screen(page, tab)
+            shown = page.eval_on_selector_all('#menuList details[open] ul a[data-tab]', 'ls => ls.map(a => a.dataset.tab)')
+            assert shown == (tabs if len(tabs) > 1 else []), (menu, tab, shown)
+            assert page.eval_on_selector(f"#menuList [data-menu='{menu}']", "n => n.matches('a[aria-current=page], summary[data-active=true]')")
 
 
 def test_상단에_지금_단계가_한_줄로_보인다(tours):
     t = tours(SIZES[0])
     assert t.access is not None, f'수업 단계 정보(GET /api/course-access)를 읽지 못했다: {t.access_error}'
     line = t.page.inner_text('#courseStatus')
-    expected = f"지금 단계: {t.access['label']}"
+    expected = '제한 없이 쓰는 단계 (PBL)' if t.access['phase'] == 'pbl' else '제공된 문서 · 흐름 · 모델만 쓰는 단계'      # 화면은 단계를 무엇이 정해져 있는지로 말한다(courseAccess.js banner)
     assert line.startswith(expected), line
     if t.access.get('expired'):
         assert 'PBL 기한 지남' in line
+
+
+def test_도구_연결의_내_도구_서버가_잠긴_까닭은_넓은_화면에서_한_줄이고_서버가_준_까닭의_첫_문장이다(tours):
+    """인수 조건 2: 범위 · 까닭을 말하는 문장은 한 화면에 한 번, 한 줄까지. 서버의 까닭은 두 문장이라 1440 폭에서도 두 줄로 꺾였다.
+    줄에는 첫 문장(무엇이 어느 단계에서 열리는가)만 적고, 실제 브라우저에서 그 글의 높이가 한 줄인지 잰다. 만들 수 있는 단계(PBL)에는 그 줄이 없다."""
+    t = tours(SIZES[1])
+    assert t.access is not None, t.access_error
+    t.open('mcp')
+    t.page.wait_for_selector('#mcpOperator', timeout=15000)
+    reason = t.page.evaluate("() => window.hydCourseAccess.blocked('tool_servers.register') || ''")
+    if not reason:
+        assert t.page.locator('[data-mcp-why]').count() == 0
+        return
+    t.page.wait_for_selector('[data-mcp-why] p', timeout=15000)
+    got = t.page.evaluate("() => { const p = document.querySelector('[data-mcp-why] p'), cs = getComputedStyle(p); return { text: p.innerText.trim(), lines: Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight)) }; }")
+    assert got['lines'] == 1 and reason.startswith(got['text']) and got['text'].endswith('.') and len(got['text']) < len(reason), (got, reason)
+
+
+def test_흐름의_읽기_전용_갈림_표는_조건_글이_줄마다_같은_세로선에서_시작한다(tours):
+    """갈림 이름 칸이 여러 줄에 걸쳐(rowspan) 둘째 줄부터는 「조건」 칸이 그 줄의 첫 칸이 되고, 「표의 첫 칸은 옆 여백을 뺀다」에 걸려 첫 줄의 조건보다 왼쪽으로 나왔다.
+    실제 브라우저에서 조건 글의 왼쪽 자리를 줄마다 잰다(고정 px 가 아니라 서로 같은지)."""
+    t = tours(SIZES[1])
+    t.open('flows')
+    t.page.wait_for_selector('.flow-editor', state='attached', timeout=20000)
+    t.page.evaluate("() => { const d = document.querySelector('.flow-editor').closest('details'); if (d) d.open = true; }")
+    t.page.wait_for_selector('.flow-forks tbody tr', timeout=10000)
+    lefts = t.page.evaluate("""() => [...document.querySelectorAll('.flow-forks tbody tr')].map(tr => { const td = tr.querySelector('td:not([rowspan])'), r = document.createRange();
+      r.selectNodeContents(td); return [!!tr.querySelector('td[rowspan]'), Math.round(r.getBoundingClientRect().left)]; })""")
+    assert {first for first, _ in lefts} == {True, False}, lefts      # 갈림의 첫 줄과 그 뒤 줄이 모두 있다
+    assert len({left for _, left in lefts}) == 1, lefts
 
 
 def test_수업_단계_정보를_못_읽으면_잠그지_않고_다시_시도를_보인다(browser, portal_url):
@@ -193,9 +241,9 @@ def test_수업_단계_정보를_못_읽으면_잠그지_않고_다시_시도를
         page.goto(portal_url, wait_until='domcontentloaded')
         page.wait_for_function("() => window.hydCourseAccess && window.hydCourseAccess.error", timeout=30000)
         assert page.inner_text('#courseStatus [data-course-retry]') == '다시 시도'
-        assert page.get_attribute('#courseStatus', 'title').startswith('수업 단계 정보를 읽지 못했습니다')
-        assert page.eval_on_selector_all('.rail nav button[data-tab]', 'bs => bs.filter(b => b.disabled).length') == 0
-        page.click('.rail nav button[data-tab="mcp"]')
+        assert page.get_attribute('#courseStatus', 'title').startswith('지금 단계를 읽지 못했습니다')
+        assert page.locator('#menuList a[data-tab]').count() == 22 and page.locator("#menuList [aria-disabled='true'], #menuList :disabled").count() == 0
+        open_screen(page, 'mcp')
         page.wait_for_selector('#mcpAdd', state='attached')       # 접어 둔 운영자 칸 안에 있다
         assert page.eval_on_selector('#mcpAdd', 'b => b.disabled') is False      # 모를 때는 막지 않는다 — 서버가 판정
         # 자동 재시도(3초 · 10초 · 30초 뒤)와 구별한다: 첫 자동 재시도가 지나간 직후에 누르면 다음 자동 재시도(10초 뒤)보다 먼저 요청이 나가야 한다
@@ -222,6 +270,9 @@ def test_메뉴를_열면_오류_로딩_내부어_넘침_눌리는데_거절이_
     jargon = sorted(set(m.group(0) for m in JARGON.finditer(t.words())))
     if jargon:
         problems.append(f'내부어: {", ".join(jargon)}')
+    talk = sorted(w for w in set(m.group(0) for m in WORKER_TALK.finditer(t.words())) if tab not in DOCUMENT_WORDS.get(w, ()))
+    if talk:
+        problems.append(f'작업자 말: {", ".join(talk)}')
     ov = t.overflow()
     if ov['pageScroll']:
         problems.append('페이지 가로 스크롤')

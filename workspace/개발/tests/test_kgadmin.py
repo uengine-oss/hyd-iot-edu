@@ -99,8 +99,3 @@ def test_관리_화면의_조치_방법_고치기도_같은_영향_규칙을_쓴
 @pytest.mark.parametrize('sop, skill', [('SOP-FAN-05', 'skill:sop-fan-05'), ('SOP-PM-2-9', 'skill:sop-pm-2-9')])
 def test_조치_방법_id는_SOP_번호에서_만든다(sop, skill):
     assert kgadmin.skill_id(sop) == skill
-
-
-@pytest.mark.parametrize('line, ok', [('### SOP-COOL-11 팬 최대 운전', True), ('## HM-8.1 쿨러 팬 벨트 점검', False), ('SOP-cool-1 소문자', False)])
-def test_절차_제목_줄은_대문자_SOP_번호와_이름이다(line, ok):
-    assert bool(kgadmin.SOP_RE.match(line)) is ok

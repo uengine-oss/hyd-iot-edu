@@ -1,4 +1,4 @@
-"""서비스 뼈대(common/hydcommon/service.py) — /healthz 의 ok 가 거짓이면 503, 다른 출처에 CORS 를 답하지 않고 다른 사이트의 쓰기는 403(결정 1 · W2-10 · 넘김 FA2 → FO)."""
+"""서비스 뼈대(common/hydcommon/service.py) — /healthz 의 ok 가 거짓이면 503, 다른 출처에 CORS 를 답하지 않고 다른 사이트의 쓰기는 403(W2-10 · 넘김 FA2 → FO)."""
 import pytest
 from fastapi.testclient import TestClient
 
@@ -74,3 +74,51 @@ def test_Sec_Fetch_Site_를_보내지_않는_브라우저의_쓰기는_Origin_�
         return {'ok': True}
     r = TestClient(app).request(method, '/w', headers=headers)
     assert r.status_code == status and bool(ran) == (status == 200)
+
+
+def _ended(coro):
+    import asyncio
+
+    async def go():
+        task = asyncio.ensure_future(coro)
+        await asyncio.wait([task])
+        return task
+    return asyncio.run(go())
+
+
+def test_소비_루프가_예외로_끝나면_까닭을_남기고_프로세스를_내린다(monkeypatch):
+    """2026-11-13 전수 검사: 루프가 끝나도 프로세스가 살아 있어 compose 가 다시 켜지 않았다(감지 · 적재가 멈춘 채 서비스 12/13)."""
+    import logging
+    from hydcommon import service
+    stopped = []
+    monkeypatch.setattr(service, '_stop_process', lambda: stopped.append(True))
+
+    async def boom():
+        raise RuntimeError('broker gone')
+    state = {}
+    service.stop_after_loop_end(_ended(boom()), state, logging.getLogger('t'))
+    assert stopped == [True]
+    assert state['consumer_dead'] is True and 'broker gone' in state['consumer_error']
+
+
+def test_소비_루프가_말없이_끝나도_프로세스를_내리고_끄는_중의_취소는_내리지_않는다(monkeypatch):
+    import asyncio, logging
+    from hydcommon import service
+    stopped = []
+    monkeypatch.setattr(service, '_stop_process', lambda: stopped.append(True))
+
+    async def quiet():
+        return None
+    state = {}
+    service.stop_after_loop_end(_ended(quiet()), state, logging.getLogger('t'))
+    assert stopped == [True] and state['consumer_error'] == 'exited'
+
+    async def cancelled():
+        task = asyncio.ensure_future(asyncio.sleep(60))
+        await asyncio.sleep(0)
+        task.cancel()
+        await asyncio.wait([task])
+        return task
+    stopped.clear(); state = {}
+    service.stop_after_loop_end(asyncio.run(cancelled()), state, logging.getLogger('t'))
+    assert stopped == [] and state == {}

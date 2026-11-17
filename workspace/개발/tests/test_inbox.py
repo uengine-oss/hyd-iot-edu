@@ -1,6 +1,6 @@
-"""업무분장 · 승인자 · 내 작업함(procsvc/inbox.py) — 역할을 사람으로 해석하고(한 명이면 그 사람, 여럿이면 역할 공용, 없으면 역할 그대로),
+"""업무분장 · 승인자 · 내 작업함(procsvc/inbox.py) — 역할에 묶인 단계는 역할 그대로 두고(구성원이 한 명이어도 사람으로 바꿔 적지 않는다),
 승인은 포털의 「나」(사람 사용자)이고 그 역할 구성원일 때만(P2-17 — 이름만 적은 승인은 받지 않음), 작업함은 열린 일을 자르지 않는다(P2-18).
-실제 process(world)의 저장소 · 시드 사람(김운전 user:kim-op = 운전원 등)으로 판정한다."""
+실제 process(world)의 저장소 · 시드 사람(담당자 user:me 한 명 — 모든 역할의 구성원)으로 판정한다."""
 import uuid
 
 import pytest
@@ -14,21 +14,20 @@ def repo(world):
     return world.rt.repo
 
 
-def test_역할에_사람이_한_명이면_그_사람에게_바로_배정한다(repo):
-    members = inbox.members_of(repo, 'hyd', 'role:operator')
-    got = inbox.resolve(repo, 'hyd', 'role:operator')
-    if len(members) == 1:
-        assert got == {'kind': 'person', 'user_id': members[0], 'members': members}
-    else:
-        assert got['kind'] == 'role' and got['user_id'] == 'role:operator' and got['members'] == members
+def test_역할에_사람이_한_명이어도_단계는_역할_그대로_두고_그_구성원이_처리한다(repo):
+    """2026-11-13: 구성원이 한 명이면 그 사람(user:*)으로 바꿔 적던 규칙을 없앴다 — 화면과 기록이 「어느 역할의 일인가」를 보여야 한다."""
+    members = inbox.members_of(repo, 'hyd', OPERATOR['role'])
+    assert members == [OPERATOR['by']], '시드의 운전원 역할 구성원은 담당자 한 명'
+    assert inbox.resolve(repo, 'hyd', OPERATOR['role']) == {'kind': 'role', 'user_id': OPERATOR['role'], 'members': members}
+    assert inbox.notification_targets(repo, 'hyd', OPERATOR['role']) == members, '알림은 역할의 구성원에게 간다'
 
 
-@pytest.mark.parametrize('endpoint, kind', [('user:kim-op', 'person'), ('role:nobody-here', 'none'), (None, 'none'), ('sys:agent', 'none')])
+@pytest.mark.parametrize('endpoint, kind', [(OPERATOR['by'], 'person'), ('role:nobody-here', 'none'), (None, 'none'), ('sys:agent', 'none')])
 def test_사람_역할_없는_역할_시스템은_정해진_대로_해석한다(repo, endpoint, kind):
     assert inbox.resolve(repo, 'hyd', endpoint)['kind'] == kind
 
 
-@pytest.mark.parametrize('by', ['김운전', '승인자', '', None, 'role:operator'], ids=['이름만', '자유 글', '빈 값', '없음', '역할 id'])
+@pytest.mark.parametrize('by', ['담당자', '승인자', '', None, 'role:operator'], ids=['이름만', '자유 글', '빈 값', '없음', '역할 id'])
 def test_사람_사용자가_아닌_승인자는_받지_않는다(repo, by):
     """P2-17: 옛 「자유 입력 승인자」 갈래는 아무 확인 없이 그 글자를 승인자로 썼다."""
     with pytest.raises(PermissionError) as refused:
@@ -40,12 +39,14 @@ def test_사람_사용자가_아닌_승인자는_받지_않는다(repo, by):
 
 def test_역할_구성원인_사람은_그_역할로_승인하고_이름이_보고에_실린다(repo):
     assert inbox.check_actor(repo, 'hyd', OPERATOR['by'], OPERATOR['role']) == OPERATOR['by']
-    assert inbox.person_name(repo, 'hyd', OPERATOR['by']) == '김운전'
+    assert inbox.person_name(repo, 'hyd', OPERATOR['by']) == '담당자'
 
 
 def test_그_역할이_아닌_사람은_내_역할을_보여_주며_거절한다(repo):
-    with pytest.raises(PermissionError, match='역할이 아니어서'):
-        inbox.check_actor(repo, 'hyd', OPERATOR['by'], 'role:purchasing-mgr')
+    """담당자는 시드의 모든 역할의 구성원이다 — 구성원이 아닌 역할은 업무분장에 없는 역할로 잰다."""
+    with pytest.raises(PermissionError, match='역할이 아니어서') as refused:
+        inbox.check_actor(repo, 'hyd', OPERATOR['by'], 'role:nobody-here')
+    assert '내 역할: ' in str(refused.value) and '내 역할: 없음' not in str(refused.value)
 
 
 def test_없는_사람_사용자는_거절한다(repo):

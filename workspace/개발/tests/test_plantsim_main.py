@@ -40,6 +40,9 @@ def test_현장_패널은_현장_제어_모드에서도_쓰고_한국어_사유�
     ({'asset': 'HYD-01', 'type': 'meteor'}, 400),
     ({'asset': 'HYD-07', 'type': 'pump_leakage'}, 404),
     ({'asset': 'HYD-01', 'type': 'cooler_degradation', 'origin': {'id': ' '}}, 400),
+    ({'type': 'pump_leakage'}, 422),              # 설비 없음 — HYD-01 로 대신 넣지 않는다(가짜 · 해피패스 조사 8)
+    ({'asset': 'HYD-02'}, 422),                   # 결함 종류 없음 — 쿨러 열화로 대신 넣지 않는다
+    ({}, 422),
 ])
 def test_결함_주입은_범위_밖이면_까닭과_함께_거절한다(api, body, code):
     main, client = api

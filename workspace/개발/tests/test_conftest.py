@@ -8,6 +8,7 @@ import sys
 import threading
 
 import psycopg
+import pytest
 
 from conftest import ROOT, ComposeContainer, GraphServer, TimescaleServer, container_name, take_slot, until
 
@@ -69,23 +70,37 @@ def _holder(directory):
     return proc
 
 
-def test_칸이_다_찬_넷째_묶음은_기다리고_칸을_잡은_묶음이_죽으면_그_칸을_받는다(tmp_path):
+@pytest.mark.parametrize('dying', [0, 1, 2])
+def test_칸이_다_찬_넷째_묶음은_기다리고_칸을_잡은_묶음이_죽으면_그_칸을_받는다(tmp_path, dying):
+    """세 묶음은 온 차례로 0 · 1 · 2번 칸을 쥔다. 어느 칸의 묶음이 죽든 넷째는 그 칸을 받는다(2026-11-16: 넷째가 pid 로 정한 칸 하나만
+    기다려, 다른 칸이 풀리면 끝없이 기다렸다). 받은 뒤 나머지 칸이 풀리면 넷째가 그 칸을 쥐고 있지 않는다."""
     holders = [_holder(tmp_path) for _ in range(3)]
+    others = [i for i in range(3) if i != dying]
     got, said = {}, []
     try:
+        assert not any(take_slot_free(tmp_path, i) for i in range(3))
         waiter = threading.Thread(target=lambda: got.update(handle=take_slot(tmp_path, slots=3, say=said.append)), daemon=True)
         waiter.start()
         until(lambda: said, '넷째 묶음이 기다린다고 알리지 않았다', 30)
         assert 'handle' not in got and '칸 3개' in said[0]
-        holders[1].kill()                                  # 칸을 잡은 묶음이 죽는다(창 닫기 · 강제 종료)
-        holders[1].wait(10)
+        holders[dying].kill()                              # 칸을 잡은 묶음이 죽는다(창 닫기 · 강제 종료)
+        holders[dying].wait(10)
         waiter.join(60)
-        assert 'handle' in got, '죽은 묶음의 칸이 풀리지 않았다'
+        assert 'handle' in got, f'죽은 묶음의 칸({dying}번)이 풀렸는데 기다리던 묶음이 받지 못했다'
+        assert not take_slot_free(tmp_path, dying), '받았다는 칸이 실제로 잠겨 있지 않다'
+        for i in others:
+            holders[i].kill()
+            holders[i].wait(10)
+        until(lambda: all(take_slot_free(tmp_path, i) for i in others), '넷째 묶음이 받지 않은 칸을 쥐고 있다', 30)
+        assert not take_slot_free(tmp_path, dying)
         got['handle'].close()
+        assert all(take_slot_free(tmp_path, i) for i in range(3))
     finally:
         for proc in holders:
             proc.kill()
             proc.wait(10)
+        if 'handle' in got:
+            got['handle'].close()
 
 
 def test_멈춘_서비스는_그동안_답하지_않고_풀면_다시_답한다(stack):

@@ -113,7 +113,7 @@ def test_업무_시스템이_오류로_답하면_상태와_까닭을_실은_Sour
     with pytest.raises(ent.SourceUnavailable) as failed:
         ent.fetch('/mes/orders?asset={asset}', 'HYD-01')
     assert failed.value.status == status
-    assert str(failed.value) == f'업무 시스템 /mes/orders을(를) 읽지 못했습니다(HTTP {status}){says}.' + (' 잠시 뒤 다시 시도하세요.' if retry else '')
+    assert str(failed.value) == f'업무 시스템 /mes/orders를 읽지 못했습니다(HTTP {status}){says}.' + (' 잠시 뒤 다시 시도하세요.' if retry else '')
 
 
 def test_긴_오류_까닭은_300자로_자른다(upstream, ent):
@@ -154,7 +154,7 @@ def test_업무_시스템이_한도_안에_답하지_않으면_기다린_시간�
     with pytest.raises(ent.SourceUnavailable) as failed:
         ent.fetch('/qms/lots?asset={asset}', 'HYD-01', timeout=0.5)
     assert time.monotonic() - started < 5
-    assert str(failed.value) == '업무 시스템 /qms/lots이(가) 0.5초 안에 답하지 않았습니다 — 업무 시스템 · 업무 DB 연결을 확인하고 잠시 뒤 다시 시도하세요.'
+    assert str(failed.value) == '업무 시스템 /qms/lots가 0.5초 안에 답하지 않았습니다 — 업무 시스템 · 업무 DB 연결을 확인하고 잠시 뒤 다시 시도하세요.'
     assert failed.value.status is None
 
 

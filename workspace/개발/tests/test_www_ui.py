@@ -88,10 +88,10 @@ def test_경보_패턴_이름은_그래프_목록에서_읽고_화면_사본이_
 
 
 @pytest.mark.parametrize('me, html_has, html_not', [
-    ({'id': 'user:kim-op', 'name': '김운전', 'roles': []}, ['value="user:kim-op"', '김운전'], ['<input data-x value']),
-    (None, ['value=""', '나를 고르세요'], ['<input data-x value']),      # 「나」가 없으면 자유 글 칸이 아니라 안내(서버는 등록된 「나」만 받는다, W1-08)
+    ({'id': 'user:me', 'name': '담당자', 'roles': []}, ['type="hidden"', 'value="user:me"'], ['<input data-x value', '<span', '담당자']),      # 담당자 id 를 숨은 값으로만 싣는다 — 화면에 칸을 그리지 않는다
+    (None, ['type="hidden"', 'value=""', '담당자 정보를 읽지 못했습니다'], ['<input data-x value']),      # 못 읽었으면 자유 글 칸이 아니라 까닭 한 줄(서버는 등록된 사용자만 받는다, W1-08)
 ])
-def test_담당자_칸은_나만_받고_자유_글_칸을_그리지_않는다(me, html_has, html_not):
+def test_담당자_값은_숨은_칸으로만_싣고_자유_글_칸을_그리지_않는다(me, html_has, html_not):
     got = run(FILES, "window.hydInbox = { me: () => DATA }; out(UI.actorInput('data-x', 'OP-17'))", me)
     assert all(h in got for h in html_has) and not any(n in got for n in html_not), got
 
@@ -103,3 +103,22 @@ def test_담당자_칸은_나만_받고_자유_글_칸을_그리지_않는다(me
 def test_스킬_이름은_한국어_이름이_없으면_등록된_이름을_그대로_보인다(skill, expected):
     """06 촬영 검토(2026-11-03): 처리 과정에 「스킬의 한국어 표시 이름 기록 없음」이 학생 화면에 보였다."""
     assert run(FILES, "out(UI.skillLabel(DATA).label)", skill) == expected
+
+
+def test_기다리는_시스템_단계는_진행_중이고_일을_받기를_기다리는_것은_AI_단계뿐이다():
+    """입고를 기다리는 시스템 단계(작업 행의 agent_orch 가 hyd-process, 상태 제출됨, 시작 기록 없음)를 「워커가 가져가기를 기다리는 AI 단계」로 읽어 진행 중이
+    아니라고 판정했고, 단계 기록이 기다리는 내내 「결과 기록이 없습니다 — 단계 상태: 제출됨」이라고 했다. 일을 받기를 기다리는 것은 AI 에이전트 단계뿐이다."""
+    rows = [{'id': 'gr', 'status': 'SUBMITTED', 'agent_orch': 'hyd-process'}, {'id': 'ai', 'status': 'IN_PROGRESS', 'agent_orch': 'cliagents'}, {'id': 'me', 'status': 'IN_PROGRESS'}]
+    got = run(FILES, "out(DATA.map(w => { const x = UI.taskExecution(w, [], { status: 'RUNNING' }); return [x.live, x.awaiting]; }))", rows)
+    assert got == [[True, False], [False, True], [True, False]]
+    started = [{'todo_id': 'ai', 'event_type': 'task_started', 'job_id': 'j', 'timestamp': T}]
+    assert run(FILES, "const x = UI.taskExecution(DATA.w, DATA.e, { status: 'RUNNING' }); out([x.live, x.awaiting])", {'w': rows[1], 'e': started}) == [True, False]
+    assert run(FILES, "const x = UI.taskExecution(DATA, [], { status: 'COMPLETED' }); out([x.live, x.awaiting])", rows[0]) == [False, False]      # 끝난 처리 건의 줄은 진행 중이 아니다
+
+
+def test_서버가_준_글의_작업지시와_PLC_명령_발행은_어느_화면에서나_정본_말로_읽히고_경계_타이머는_그대로다():
+    """「작업지시 → 정비 요청」 · 「PLC 명령 발행 → 설비에 명령」 바꾸기가 에이전트 화면 안에만 있어(agents.js) 같은 서버 글이 다른 화면에서는 옛 말로 보였다.
+    공용 UI.words 가 바꾼다(처리 건 · 흐름 · 기록이 모두 이 함수를 거친다 — idText 도). 「타이머」는 「경계 타이머」처럼 그대로 쓰는 말이 있어 공용으로 바꾸지 않는다."""
+    got = run(FILES, "out([UI.words(DATA[0]), UI.idText(DATA[1]), UI.words(DATA[2])])",
+              ['PLC 명령 발행 (Incident 경로)만 발행 · 작업지시 등록', 'enterprise 시스템 (작업지시)', '경계 타이머가 붙은 단계'])
+    assert got == ['설비에 명령만 발행 · 정비 요청 등록', 'enterprise 시스템 (정비 요청)', '경계 타이머가 붙은 단계']

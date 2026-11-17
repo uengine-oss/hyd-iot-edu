@@ -1,5 +1,7 @@
 """에이전트 시험 비교(procsvc/agent_trials.py) — 같은 입력 스냅숏으로 두 에이전트를 시험해 나란히 비교한다. 처리 건 · 명령을 만들지 않는다.
 설정 읽기 · 저장소는 실제 DB, 시험 실행은 실제 agent 서비스(stack)."""
+import re
+
 import pytest
 
 from procsvc import agent_trials, procdb
@@ -92,3 +94,30 @@ def test_고정_시나리오가_아니면_까닭과_함께_거절한다(world):
     with pytest.raises(ValueError) as refused:
         agent_trials.TrialService(world.rt).run({'scenario': 'boiler', 'a': {'agent': 'sys:agent'}})
     assert '고정 시나리오가 아닙니다' in str(refused.value)
+
+
+def test_시험_비교가_적은_진행_기록에_입력_고정_A_B_비교가_차례로_남는다(world):
+    """시험 비교는 두 에이전트의 판단이 모두 끝나야 결과를 준다 — 그동안 화면이 읽는 진행 기록에 실제 단계와 결과가 남는지(포털과 같은 라우트)."""
+    import uuid
+    rid = str(uuid.uuid4())
+    status, out = world.api('POST', '/api/agent-trials/run', {'request_id': rid, 'scenario': 'cooler', 'a': {'agent': 'sys:agent'},
+                                                              'b': {'agent': 'sys:agent', 'variant': {'without_tools': ['enterprise']}}})
+    assert status == 200, out
+    seen = world.api('GET', f'/api/progress/{rid}')[1]
+    assert seen['state'] == 'done' and seen['kind'] == 'agent_trial'
+    steps = {s['key']: s for s in seen['steps']}
+    assert list(steps) == ['input', 'side:0', 'side:1', 'compare'] and all(s['state'] == 'ok' for s in steps.values())
+    assert steps['input']['note'].startswith('새 입력 스냅숏을 만듦')                 # 지난 입력을 다시 쓰라고 하지 않았다
+    fixed = [int(re.search(r'이번에 고정한 입력 값 (\d+)개$', steps[k]['note']).group(1)) for k in ('side:0', 'side:1')]
+    assert sum(fixed) == out['snapshot']['entries'] and fixed[0] > 0                 # 입력은 A 가 원천을 읽을 때 고정되고 B 는 그것을 다시 쓴다
+    assert steps['side:0']['note'].startswith(agent_trials.said(out['a'])) and f"도구 호출 {len(out['a']['result']['calls'])}회" in steps['side:0']['note']
+    assert steps['compare']['note'] == ('두 결과가 같음' if out['diff']['same_result'] else '두 결과가 다름')
+
+
+def test_한_에이전트만_시험하면_진행_기록에_B와_비교_단계가_없다(world):
+    import uuid
+    from procsvc import progress
+    rid = str(uuid.uuid4())
+    work = progress.tracked(rid, 'agent_trial', lambda p: agent_trials.TrialService(world.rt).run({'scenario': 'cooler', 'a': {'agent': 'sys:agent'}}, p))
+    work()
+    assert [(s['key'], s['state']) for s in progress.read(rid)['steps']] == [('input', 'ok'), ('side:0', 'ok')]

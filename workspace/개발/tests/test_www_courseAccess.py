@@ -56,7 +56,12 @@ def test_수업_단계의_막힌_까닭은_서버_문장_그대로다(page):
         assert got == {'assign': reasons['assign'], 'start': reasons['start'], 'importing': reasons['import_flow'], 'document': reasons['document'],
                        'golden': cp.Policy.ACTIONS['documents.golden'], 'open': '', 'question': cp.question_max_chars(),
                        'editable': {'flow_name': True, 'agent_tasks': list(cp.HANDOVER_AGENT_TASKS)}}
-        assert '지금 단계: 수업' in page.inner_text('#courseStatus')
+        # 메뉴 줄 아래 한 줄: 무엇이 정해져 있는지를 말하고, 누르면(키보드 · 터치도) 지금 막힌 행동의 까닭이 서버 문장 그대로 펼쳐진다
+        assert page.inner_text('#courseStatus summary').strip() == '제공된 문서 · 흐름 · 모델만 쓰는 단계'
+        assert page.get_attribute('#courseStatus', 'title') is None and not page.is_visible('#courseStatus .course-why')
+        page.focus('#courseStatus summary')
+        page.keyboard.press('Enter')
+        assert page.eval_on_selector_all('#courseStatus .course-why li', 'ns => ns.map(n => n.textContent)') == list(cp.Policy.ACTIONS.values())
     finally:
         served.close()
 
@@ -66,7 +71,7 @@ def test_켜_둔_화면도_PBL_기한이_지나면_다시_읽어_수업_단계�
     served = portal(cp.Phase('pbl', note='1기 PBL', expires=until.isoformat()))
     try:
         opened(page, served)
-        assert page.evaluate('hydCourseAccess.access.phase') == 'pbl' and 'PBL' in page.inner_text('#courseStatus')
+        assert page.evaluate('hydCourseAccess.access.phase') == 'pbl' and page.inner_text('#courseStatus').strip().startswith('제한 없이 쓰는 단계 (PBL)')
         page.wait_for_function("hydCourseAccess.access && hydCourseAccess.access.phase === 'course'", timeout=15000)
         assert 'PBL 기한 지남' in page.inner_text('#courseStatus')
         assert page.evaluate("hydCourseAccess.assignBlocked('c3_cooling')") == cp.Policy.REASONS['assign']
@@ -80,7 +85,7 @@ def test_표를_못_읽으면_잠그지_않고_수업_단계_정보_읽기_실�
         page.route('**/svc/process/api/course-access', lambda route: route.abort('connectionrefused'))
         opened(page, served)
         text = page.inner_text('#courseStatus')
-        assert '수업 단계 정보 읽기 실패' in text and '다시 시도' in text and '범위' not in text
+        assert '단계 정보 읽기 실패' in text and '다시 시도' in text and '범위' not in text and '수업' not in text
         assert page.evaluate("hydCourseAccess.assignBlocked('c3_cooling')") == ''        # 모르면 막지 않는다(서버가 판정)
     finally:
         served.close()

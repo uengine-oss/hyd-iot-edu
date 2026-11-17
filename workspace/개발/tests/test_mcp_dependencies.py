@@ -36,3 +36,16 @@ def test_도구_호출_단계마다_저장된_검사로_무엇을_해야_하는�
 def test_도구_호출이_아닌_단계는_진단하지_않는다():
     out = mcp_dependencies.diagnose(PARSED, {'tasks': {'T1': {'part': 'svc:notify'}}}, {}, {})
     assert (out['items'], out['attention_count']) == ([], 0)
+
+
+@pytest.mark.parametrize('task, as_mapping, called', [
+    ({'part': 'svc:mcp-call', 'config': {'server': 'my-rows', 'tool': 'save'}}, True, ('my-rows', 'save')),
+    ({'tool': 'mcp:call', 'service': {'server': 'my-rows', 'tool': 'save'}}, False, ('my-rows', 'save')),
+    ({'part': 'svc:mcp-call', 'config': {}}, True, ('', '')),                               # 아직 적지 않은 칸
+    ({'part': 'svc:report', 'config': {'server': 'my-rows'}}, True, None),                  # 다른 부품의 같은 이름 칸
+    ({'tool': 'formHandler:approve', 'service': {'server': 'my-rows'}}, False, None),
+    ({'tool': 'mcp:call', 'service': {'server': 'my-rows', 'tool': 'save'}}, True, None),   # 등록된 정의의 모양을 초안으로 읽지 않는다
+], ids=['초안의 호출 단계', '등록된 정의의 호출 단계', '빈 설정', '다른 부품', '사람 승인', '모양이 다른 쪽'])
+def test_흐름_단계가_부르는_서버와_도구는_초안과_등록된_정의_두_모양에서_같은_판정으로_읽는다(task, as_mapping, called):
+    """흐름 검사(diagnose)와 도구 서버 지우기 전 확인(steps_using)이 이 한 함수를 쓴다 — 「승인 뒤 MCP 호출」 단계만 서버를 부른다."""
+    assert mcp_dependencies.call_of(task, mapping=as_mapping) == called

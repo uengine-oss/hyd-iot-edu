@@ -114,7 +114,7 @@ def test_판단_규칙은_결정표마다_검사_출력_근거와_순위_정책�
     assert {r['decision']: r['hitPolicy'] for r in rules.values()} == {'dec:compliance': 'COLLECT', 'dec:rank-actions': 'UNIQUE'}
     hard = rules['rule:ts1-hard']
     assert (hard['effect'], hard['when'], hard['tests'], hard['sources']) == (
-        'EXCLUDE', 'forecast_ts1 >= 65', [{'input': 'in:forecast-ts1', 'variable': 'forecast_ts1', 'operator': '>=', 'value': 65, 'unit': '℃'}], ['SR-04'])
+        'EXCLUDE', 'forecast_ts1 >= 65', [{'input': 'in:forecast-ts1', 'variable': 'forecast_ts1', 'name': '조치 후 예측 유온', 'operator': '>=', 'value': 65, 'unit': '℃'}], ['SR-04'])
     assert rules['rule:rank-value']['rankingPolicy'] and rules['rule:rank-value']['tests'] == []
 
 

@@ -10,7 +10,7 @@ import pytest
 from procsvc.course_policy import HANDOVER, TEXT_MAX
 
 FLOW = 'ShiftHandover'
-ME = 'user:kim-op'                 # 포털에서 「나」로 고른 사람(시드 사용자 표) — 누른 사람 칸은 이 user id 만 받는다
+ME = 'user:me'                     # 이 PC의 담당자(시드 사용자 표의 사람 한 명) — 누른 사람 칸은 이 user id 만 받는다
 
 
 @pytest.fixture
@@ -77,9 +77,9 @@ def test_수업에서_바꿀_수_없는_칸을_바꾸면_검사에서_등록_불
 
 
 @pytest.mark.parametrize('body, status, words', [
-    ({'mapping': HANDOVER['mapping']}, 400, '누가 했는지 모릅니다'),            # 누른 사람이 없다
-    ({'mapping': HANDOVER['mapping'], 'by': '  '}, 400, '누가 했는지 모릅니다'),
-    ({'mapping': HANDOVER['mapping'], 'by': '수강생 김'}, 403, "'나'(사람 사용자)를 고른 뒤"),   # 이름만 적은 자유 입력
+    ({'mapping': HANDOVER['mapping']}, 400, '담당자 정보 없이 온 요청'),            # 누른 사람이 없다
+    ({'mapping': HANDOVER['mapping'], 'by': '  '}, 400, '담당자 정보 없이 온 요청'),
+    ({'mapping': HANDOVER['mapping'], 'by': '수강생 김'}, 403, '담당자 정보 없이 온 요청'),   # 이름만 적은 자유 입력
     ({'mapping': HANDOVER['mapping'], 'by': 'user:nobody'}, 403, '없는 사람 사용자입니다: user:nobody'),
 ], ids=['없음', '빈 칸', '자유 입력', '없는 사람'])
 def test_판본_등록은_누른_사람이_없으면_등록하지_않는다(world, handover, body, status, words):
@@ -105,13 +105,13 @@ def test_흐름_목록은_강사가_설치한_수업_흐름을_따로_표시한�
 
 def test_수업_흐름은_지우지_않고_까닭을_말한다(world):
     status, out = world.api('DELETE', f'/api/flows/c3_cooling?by={ME}')
-    assert status == 409 and '수업 흐름이라 지울 수 없습니다' in out['detail']['reason']
+    assert status == 409 and '기본 제공 흐름이라 지울 수 없습니다' in out['detail']['reason']
     assert 'c3_cooling' in {h['id'] for h in world.rt.repo.deployed_heads('hyd')}
 
 
 @pytest.mark.parametrize('path, code, words', [
-    (f'/api/flows/{FLOW}', 400, '누가 했는지 모릅니다'), (f'/api/flows/{FLOW}?by=', 400, '누가 했는지 모릅니다'),
-    (f'/api/flows/{FLOW}?by=%20', 400, '누가 했는지 모릅니다'), (f'/api/flows/{FLOW}?by=user:nobody', 403, '없는 사람 사용자입니다'),
+    (f'/api/flows/{FLOW}', 400, '담당자 정보 없이 온 요청'), (f'/api/flows/{FLOW}?by=', 400, '담당자 정보 없이 온 요청'),
+    (f'/api/flows/{FLOW}?by=%20', 400, '담당자 정보 없이 온 요청'), (f'/api/flows/{FLOW}?by=user:nobody', 403, '없는 사람 사용자입니다'),
 ], ids=['없음', '빈 칸', '공백', '없는 사람'])
 def test_흐름_지우기는_등록된_사람이_아니면_지우지_않는다(world, handover, path, code, words):
     status, out = world.api('DELETE', path)
@@ -137,8 +137,8 @@ def test_매핑이_한도와_같은_길이면_저장한다(world, handover):
 
 
 @pytest.mark.parametrize('body, code, words', [
-    (None, 400, '누가 했는지 모릅니다'), ({}, 400, '누가 했는지 모릅니다'), ({'by': ''}, 400, '누가 했는지 모릅니다'),
-    ({'by': '수강생 김'}, 403, "'나'(사람 사용자)를 고른 뒤"), ({'by': 'user:nobody'}, 403, '없는 사람 사용자입니다'),
+    (None, 400, '담당자 정보 없이 온 요청'), ({}, 400, '담당자 정보 없이 온 요청'), ({'by': ''}, 400, '담당자 정보 없이 온 요청'),
+    ({'by': '수강생 김'}, 403, '담당자 정보 없이 온 요청'), ({'by': 'user:nobody'}, 403, '없는 사람 사용자입니다'),
 ], ids=['본문 없음', '칸 없음', '빈 칸', '자유 입력', '없는 사람'])
 def test_기준으로_되돌리기는_등록된_사람이_아니면_아무것도_지우지_않는다(world, handover, body, code, words):
     status, out = world.api('POST', '/api/flows/reset', body)

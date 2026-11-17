@@ -31,15 +31,26 @@ def test_조치값_변경안은_명시_범위_안의_팬_부하만이고_원문�
 
 
 @pytest.mark.parametrize('parameters, needle', [
-    ({'valve_pct': 10}, '팬·부하 설정만'),
-    ({'load_pct': 50}, '변경 가능한 조치와 명시 범위가 없습니다'),
+    ({'valve_pct': 10}, 'valve_pct: 이 SOP에 변경 가능한 조치와 명시 범위가 없습니다'),
+    ({'load_pct': 50}, 'load_pct: 이 SOP에 변경 가능한 조치와 명시 범위가 없습니다'),
     ({'fan_pct': 101}, 'fan_pct'),
-    ('fan=100', '팬·부하 설정만'),
-], ids=['다른 설정', '이 SOP 에 없는 설정', '범위 밖', '형식 아님'])
+    ('fan=100', '{설정 이름: 값} 꼴'),
+], ids=['이 SOP 에 없는 다른 설정', '이 SOP 에 없는 설정', '범위 밖', '형식 아님'])
 def test_범위_밖이거나_SOP_에_없는_조치값_변경은_거절한다(parameters, needle):
     with pytest.raises(ValueError) as e:
         approval._parameterized(SKILL, parameters)
     assert needle in str(e.value)
+
+
+def test_팬_부하가_아닌_설정도_SOP_가_범위와_함께_밝혔으면_바꿀_수_있다():
+    """설정 이름을 코드가 정하지 않는다 — 절차(SOP)의 명령 조치가 범위를 밝힌 값이면 받는다(수업 냉각 SOP 밖의 절차)."""
+    skill = {'name': '밸브 개도 조정', 'sopId': 'SOP-VLV-01',
+             'actions': [{'kind': 'command', 'param': 'valve_pct', 'value': 40, 'min': 20, 'max': 60}]}
+    effective, normalized = approval._parameterized(skill, {'valve_pct': 55})
+    assert normalized == {'valve_pct': 55} and effective['actions'][0]['value'] == 55 and 'valve_pct 55%' in effective['name']
+    with pytest.raises(ValueError) as e:
+        approval._parameterized(skill, {'valve_pct': 61})
+    assert 'valve_pct' in str(e.value)
 
 
 def test_판단_근거가_빠진_판단으로는_현재_조건을_다시_계산하지_않는다():
@@ -51,7 +62,7 @@ def test_판단_근거가_빠진_판단으로는_현재_조건을_다시_계산�
 def test_원래_카드에_없는_선택은_검사하지_않는다():
     with pytest.raises(ValueError) as e:
         approval.assess(None, None, {'id': 'DEC-1', 'options': []}, 'SOP-COOL-12', 'role:operator')
-    assert '원래 카드가 없습니다' in str(e.value)
+    assert '원래 조치 후보가 없습니다' in str(e.value)
 
 
 # ---------------------------------------------------------------- 실제 처리 건의 판단으로
@@ -124,7 +135,7 @@ def test_사람이_본_예측이_검토_기한보다_오래됐으면_거절하�
                           {'decision': seen, 'option': card['id'], 'role': card['approver']['id'],
                            'consented_at': datetime.now(timezone.utc).isoformat()})          # 40분 전 예측을 지금 동의했다
     assert status == 200 and report['allowed'] is False and report['needs_new_preview'] is True, report.get('reasons')
-    assert any('새 카드 검토가 필요합니다' in r for r in report['reasons'])
+    assert any('새 조치 후보 검토가 필요합니다' in r for r in report['reasons'])
 
 
 def test_승인_검사도_지금_세우는_카드를_정지한_설비로_다시_예측한다(decided):
@@ -138,3 +149,13 @@ def test_승인_검사도_지금_세우는_카드를_정지한_설비로_다시_
     ts1 = next(x['value'] for x in report['current_option']['forecast'] if x['variable'] == 'sv:ts1')
     assert ts1 < 55, f'승인 검사의 예측이 정지한 설비의 것이 아니다: {ts1}'
 
+
+
+def test_조치값을_바꾼_안의_설명은_화면_말로_어디서_실제_값을_보는지_말한다():
+    """V 8절 2(2026-11-16): 미리 보기 카드의 설명이 「실제 적용값은 아래 원자 조치를 확인하세요」였다 — 화면은 그 목록을 「세부 동작」이라 부른다(UIUX_PLAN 4절).
+    값을 바꾸지 않은 안에는 이 설명을 붙이지 않는다(원문 설명 그대로)."""
+    effective, _ = approval._parameterized(dict(SKILL, description='원문 설명'), {'fan_pct': 100})
+    text = effective['description']
+    assert '세부 동작' in text and '원자 조치' not in text and 'SOP' not in text and text.endswith('확인하세요.'), text
+    same, changed = approval._parameterized(dict(SKILL, description='원문 설명'), {})
+    assert changed == {} and same['description'] == '원문 설명'

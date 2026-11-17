@@ -72,7 +72,9 @@ def test_제공_옛_설비_DB_파일을_잇고_되돌리면_원래_상태다(wor
         [(i['table'], i['column'], i['state'], i.get('reason')) for i in legacy]
     status, sample = world.api('GET', '/api/fabric/sources/hyd-legacy/tables/T_EQP00/sample?limit=20')
     assert status == 200 and sample['row_count'] == 4, sample                                  # 파일의 T_EQP00 INSERT 4행
-    status, cleared = world.api('DELETE', f"/api/kg/ingests/{out['batch']}")
+    status, refused = world.api('DELETE', f"/api/kg/ingests/{out['batch']}")              # 「누가」 없이 온 되돌리기는 지우지 않는다
+    assert status == 400 and '담당자 정보 없이 온 요청' in refused['detail'] and out['batch'] in state()[0], refused
+    status, cleared = world.api('DELETE', f"/api/kg/ingests/{out['batch']}?by=user:me")    # 화면이 보내는 꼴(hitl.js — 이 PC의 담당자 id)
     assert status == 200, cleared
     batches, inputs = state()
     assert batches == batches0 and sorted(i['id'] for i in inputs) == sorted(i['id'] for i in inputs0)

@@ -47,7 +47,7 @@ def test_값이_없는_참조로_부르면_도구_연결_화면에_넣으라고_
     with pytest.raises(SecretError) as refused:
         mcp_secrets.runtime_spec(repo, TENANT, 'my-drive', entry)
     assert refused.value.status == 422
-    assert refused.value.reason == "MCP 서버 'my-drive' 에 필요한 비밀 값 MISSING_TOKEN 이(가) 없습니다 — 도구 연결 화면의 '비밀 값'에 넣은 뒤 다시 하세요"
+    assert refused.value.reason == "도구 서버 'my-drive'에 필요한 비밀 값 MISSING_TOKEN이 없습니다 — [도구 연결] 화면의 '비밀 값'에 넣은 뒤 다시 하세요"
 
 
 def test_부르기_직전에만_참조를_채우고_채운_값을_돌려준다(repo):

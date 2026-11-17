@@ -251,3 +251,17 @@ def test_써_보기_거부_사유는_도구_연결_화면의_학생_문장이라
     assert allowed is ok
     if not ok:
         assert all(w in reason for w in words) and not re.search(r'[A-Za-z]+Hint', reason), reason
+
+
+# ---------------------------------------------------------------- 승인 뒤 쓰기 호출: 쓰기 요청을 서버에 보냈는가
+@pytest.mark.parametrize('url, tool, arguments, status, sent', [
+    (None, 'save_row', {'text': 'x'}, 'ok', True),
+    (None, 'no_such_tool', {}, 'refused', False),
+    (None, 'save_row', {'text': 3}, 'refused', False),
+    ('http://127.0.0.1:9/mcp', 'save_row', {'text': 'x'}, 'failed', False),
+], ids=['정상', '없는 도구', '맞지 않는 입력', '꺼진 서버'])
+def test_승인_뒤_쓰기_호출은_쓰기_요청을_서버에_보냈는지_알려_준다(student_server, url, tool, arguments, status, sent):
+    """process 는 이 표시로 「아무것도 보내지 않은 실패」(다시 시도해도 된다)와 「보낸 뒤 결과를 모르는 실패」(외부 결과를 확인해야 한다)를 가른다 —
+    전에는 꺼진 서버 · 등록 없는 서버도 「앞선 외부 쓰기가 됐는지 확인되지 않아」로 멈췄다."""
+    out = mcp_check.call_effect(dict(student_server, url=url) if url else student_server, tool, arguments, timeout=8)
+    assert (out['status'], out['sent']) == (status, sent), out

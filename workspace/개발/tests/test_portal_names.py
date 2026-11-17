@@ -75,4 +75,4 @@ def test_쉬운_말_표가_맞으면_표의_id_는_그_이름_나머지는_낱�
     names = {**{i: 'x' for i in portal_names.PLAIN}, 'r': '정비 작업지시 · high 1 · medium 0.6 · low 0.3', 'w': '정비 작업지시 발행'}
     out = portal_names.display_names(names)
     assert out['sys:cep'] == '센서 경보 감지기'
-    assert out['r'] == '정비 오더 · 높음 1 · 중간 0.6 · 낮음 0.3' and out['w'] == '정비 오더 발행'
+    assert out['r'] == '정비 요청 · 높음 1 · 중간 0.6 · 낮음 0.3' and out['w'] == '정비 요청 발행'

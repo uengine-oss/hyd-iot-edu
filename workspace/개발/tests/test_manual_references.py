@@ -1,6 +1,6 @@
 """참고 절차 · 이미 있는 조치 방법 다시 가리키기(procsvc/manual_references.py) — 실행 후보가 아닌 원문 절차는 실행 연결을 갖지 않고, 다른 문서의
 조치 방법을 가리킬 때는 원문 번호 · 전체 단계 · 대조한 실행 계약 지문이 그대로여야 한다. 대상 조치 방법은 그래프가 돌려주는 계약 모양(dict)이다 —
-그래프에서 그 계약을 읽는 길(contracts · check_plan)은 test_manual_graph 의 교대 문서(HI-01, 참고 절차) 적재가 본다."""
+그래프에서 그 계약을 읽는 길(contracts · check_plan)은 test_manual_graph 의 교대 인계 문서(HI-01) 시험 둘 — 참고 절차 적재 · 다시 가리키기 — 이 본다."""
 import pytest
 
 from procsvc import manual_references as mr

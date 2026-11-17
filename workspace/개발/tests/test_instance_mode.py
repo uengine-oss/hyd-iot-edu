@@ -5,9 +5,10 @@ import uuid
 import psycopg
 import pytest
 
+from hydcommon.words import particle
 from procsvc import instance_mode, instances
 
-from conftest import COOLING
+from conftest import COOLING, OPERATOR
 
 
 @contextlib.contextmanager
@@ -142,12 +143,21 @@ def test_판본_배포와_되돌리기는_등록된_사람만_하고_거절은_�
     assert (status, body['detail']) == (403, NOT_A_PERSON), body
     status, body = world.api('POST', f'/api/process/definitions/{did}/rollback', {'by': '아무개', 'reason': '시험'})
     assert (status, body['detail']) == (403, NOT_A_PERSON), body
-    world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': version, 'by': 'user:kim-op', 'reason': '시험'})   # 아직이면 운영 판본으로
+    world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': version, 'by': OPERATOR['by'], 'reason': '시험'})   # 아직이면 운영 판본으로
     try:
-        status, body = world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': version, 'by': 'user:kim-op', 'reason': '시험'})
-        assert status == 409 and body['detail'] == f'「{name}」의 판본 {version}은(는) 이미 운영 판본입니다', body
-        status, body = world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': '999', 'by': 'user:kim-op', 'reason': '시험'})
-        assert status == 404 and body['detail'] == f'「{name}」에 판본 999이(가) 등록돼 있지 않습니다', body
+        status, body = world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': version, 'by': OPERATOR['by'], 'reason': '시험'})
+        assert status == 409 and body['detail'] == f'「{name}」의 판본 {version}{particle(version, "은")} 이미 운영 판본입니다', body
+        status, body = world.api('POST', f'/api/process/definitions/{did}/deploy', {'version': '999', 'by': OPERATOR['by'], 'reason': '시험'})
+        assert status == 404 and body['detail'] == f'「{name}」에 판본 999가 등록돼 있지 않습니다', body
     finally:
         # 이 시험이 배포한 것은 이 시험이 내린다 — 남기면 뒤 시험(test_flows_api)의 흐름 지우기가 「경보 경로에 배포된 흐름」 409 로 멈췄다
-        world.rt.repo.clear_deployment(did, 'hyd', actor='user:kim-op', reason='시험 정리')
+        world.rt.repo.clear_deployment(did, 'hyd', actor=OPERATOR['by'], reason='시험 정리')
+
+
+def test_에이전트_질문_답변에_담당자가_없으면_400_담당자_정보_없음으로_거절한다(world):
+    """전수 검사 01 지적 5: 기본값 「담당자」가 「누가」를 지어 넣는 모양이었고(지금은 기본값이 없다), 빈 요청은 사유 없는 422 나 「배정된 담당자만」
+    403 으로 나갔다 — 다른 사람 행동과 같은 사유 한 문장으로."""
+    from procsvc.inbox import NOT_A_PERSON
+    for body in ({'job_id': 'j', 'answer': '예'}, {'job_id': 'j', 'answer': '예', 'by': '  '}, {'job_id': 'j', 'answer': '예', 'by': None}):
+        status, out = world.api('POST', f'/api/todolist/{uuid.uuid4()}/human-response', body)
+        assert (status, out['detail']) == (400, NOT_A_PERSON), (body, out)

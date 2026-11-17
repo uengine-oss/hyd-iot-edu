@@ -89,10 +89,10 @@ def test_실패한_질문은_AI_일꾼이_적은_학생_문장만_보이고_원�
     [row] = course.rt.repo.fetch_pending_task('cliagents', 'test-worker:' + uuid.uuid4().hex, tenant_id='hyd')
     course.rt.repo.update_task_error(row['id'], expected_consumer=row['consumer'])
     course.rt.repo.record_events([{'job_id': 'TASK_ERROR', 'todo_id': task['id'], 'proc_inst_id': view['id'], 'crew_type': 'agent',
-                                   'event_type': 'error', 'data': {'name': '연결 확인 필요', 'friendly': 'AI 일꾼의 실행기 인증 파일을 읽지 못했습니다.',
+                                   'event_type': 'error', 'data': {'name': '연결 확인 필요', 'friendly': 'AI 에이전트의 실행기 인증 파일을 읽지 못했습니다.',
                                                                    'raw_error': 'RuntimeConnectionError: key file /run/hyd-credentials/runtime.key'}}])
     after = ask.view(course.rt, view['id'])
-    assert (after['state'], after['message']) == ('failed', 'AI 일꾼의 실행기 인증 파일을 읽지 못했습니다.')
+    assert (after['state'], after['message']) == ('failed', 'AI 에이전트의 실행기 인증 파일을 읽지 못했습니다.')
 
 
 @pytest.mark.parametrize('reachable, expected', [(False, ask.NOT_PICKED), (True, ask.BUSY)], ids=['일꾼 꺼짐', '일꾼 바쁨'])
@@ -105,6 +105,43 @@ def test_아무도_맡지_않은_질문은_그_시간과_AI_일꾼_상태로_까
     assert not INTERNAL.search(after['message'])
 
 
+def test_일꾼_상태를_확인하는_동안_에이전트가_질문을_맡으면_확인_뒤의_상태로_답한다(course):
+    """화면 쪽 실측(2026-11-14): 처리 과정에는 이미 에이전트의 조회가 흘러나오는데 질문 상태는 뒤늦게 「대기 — 아직 질문을 맡지 않았습니다」로
+    왔다. 상태를 읽은 뒤에 일꾼 연결을 확인하는데(바쁜 일꾼은 몇 초 뒤에 답한다), 그 확인 전에 읽은 상태를 그대로 돌려줬기 때문이다.
+    확인하는 동안 일꾼이 질문을 집으면(실제 점유 — claim_process_workitems) 확인 뒤에 다시 읽은 상태로 답한다."""
+    view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
+    started = parse_iso(task_of(course.rt, view['id'])['start_date'])
+    later = started + timedelta(seconds=ask.WAIT_PROBE_AFTER_S + 5)
+
+    def slow_probe():
+        [claimed] = course.rt.repo.fetch_pending_task('cliagents', 'agent-worker:test', tenant_id=course.rt.tenant_id, proc_inst_id=view['id'])
+        assert claimed['draft_status'] == 'STARTED'
+        return {'reachable': True}
+    after = ask.view(course.rt, view['id'], worker_probe=slow_probe, now=later)
+    assert (after['state'], after['message']) == ('running', '에이전트가 조회하는 중')
+    assert '_waited_s' not in after and '_waited_s' not in ask.view(course.rt, view['id'])
+
+
 def test_맡기_전_질문의_상태_문장에는_내부어가_없다(course):
     view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
-    assert (view['state'], view['message']) == ('waiting', '답할 AI 일꾼이 아직 질문을 맡지 않았습니다')
+    assert (view['state'], view['message']) == ('waiting', '답할 AI 에이전트가 아직 질문을 맡지 않았습니다')
+
+
+def test_재생_모드에서_저장된_답이_없는_질문은_실패로_남고_끝난_기록_지우기가_그_처리_건을_닫아_지운다(course, worker):
+    """화면은 「실패」인데 그 질문의 처리 건은 진행 중으로 남아 [끝난 기록 지우기]를 눌러도 목록에 그대로였다(눌러도 아무 일이 없음) — 처리 건
+    목록에도 끝나지 않은 질문으로 남았다. 실제 재생 워커가 낸 실패를, 실제 지우기 경로(POST /api/ask/reset)로 지운다. 아직 도는 질문은 남는다."""
+    from student_words import JARGON, WORKER_TALK
+    failed = ask_question(course.rt, '저장된 답이 없는 질문 하나')
+    assert worker('replay').poll_once() == 1
+    said = ask.view(course.rt, failed['id'])
+    assert said['state'] == 'failed' and said['message'].startswith('AI 키가 없을 때 쓰는 재생 모드에서는'), said
+    assert not WORKER_TALK.search(said['message']) and not JARGON.search(said['message']), said['message']
+    assert course.rt.repo.get_instance(failed['id'])['status'] == 'RUNNING'           # 실패는 자동으로 닫지 않는다(다시 시도할 수 있다)
+    waiting = ask_question(course.rt, '아직 아무도 맡지 않은 질문')
+    status, out = course.world.api('POST', '/api/ask/reset')
+    assert status == 200 and (out['closed_stopped'], out['kept_running']) == (1, 1), out
+    assert course.rt.repo.get_instance(failed['id'])['status'] != 'RUNNING'
+    status, left = course.world.api('GET', '/api/ask')
+    assert status == 200 and [q['id'] for q in left] == [waiting['id']], left
+    closed = [e for e in course.rt.repo.list_events(proc_inst_id=failed['id']) if e['job_id'] == 'TASK_CLOSED']
+    assert closed and closed[-1]['data']['by'] == 'user:me' and closed[-1]['data']['reason'] == ask.STOPPED_CLOSE_REASON, closed

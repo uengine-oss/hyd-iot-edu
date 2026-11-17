@@ -21,8 +21,8 @@ def test_시작이_설치한_수업_흐름은_수업_표시와_함께_경보를_
 
 
 @pytest.mark.parametrize('body', [
-    {'by': 'user:kim-op'},
-    {'by': 'user:kim-op', 'include_class': True},     # 예전 강사 명령의 표시 — 지금은 보내는 쪽이 없고, 학생이 보내도 수업 흐름을 내리지 않는다
+    {'by': 'user:me'},
+    {'by': 'user:me', 'include_class': True},     # 예전 강사 명령의 표시 — 지금은 보내는 쪽이 없고, 학생이 보내도 수업 흐름을 내리지 않는다
 ])
 def test_API_로_기준_흐름으로_되돌려도_수업_흐름은_남는다(world, body):
     status, out = world.api('POST', '/api/flows/deploy-reset', body)
@@ -32,7 +32,7 @@ def test_API_로_기준_흐름으로_되돌려도_수업_흐름은_남는다(wor
 
 
 def test_출발본_불러오기의_되돌리기만_수업_흐름까지_내린다(world):
-    out = flow_deploy.deploy_reset(world.rt, 'user:kim-op', '출발본 불러오기', include_class=True)
+    out = flow_deploy.deploy_reset(world.rt, 'user:me', '출발본 불러오기', include_class=True)
     try:
         assert out['kept'] == [] and not (_class_heads(world) & CLASS_FLOWS)
     finally:
@@ -47,10 +47,10 @@ def student_deployed(world):
     def_id = 'my_reset_' + uuid.uuid4().hex[:8]
     raw.update(processDefinitionId=def_id, version='1')
     world.rt.register_definition(raw)
-    world.rt.deploy_definition(def_id, '1', 'user:kim-op', '되돌리기 거절 확인')
+    world.rt.deploy_definition(def_id, '1', 'user:me', '되돌리기 거절 확인')
     yield def_id
     if def_id in {h['id'] for h in world.rt.repo.deployed_heads('hyd')}:
-        world.rt.repo.clear_deployment(def_id, 'hyd', actor='user:kim-op', reason='테스트 끝')
+        world.rt.repo.clear_deployment(def_id, 'hyd', actor='user:me', reason='테스트 끝')
 
 
 def _heads(world):
@@ -58,9 +58,9 @@ def _heads(world):
 
 
 @pytest.mark.parametrize('body, status, words', [
-    ({'by': ' '}, 400, '누가 되돌렸는지 모릅니다'),                    # 사람 칸은 있으나 비었다
-    ({}, 400, '누가 되돌렸는지 모릅니다'),                             # 사람 칸이 없다
-    ({'by': '수강생 김'}, 403, "'나'(사람 사용자)를 고른 뒤"),         # 이름만 적은 자유 입력 — 배포 이력에 지어낸 이름이 남던 것(FW2)
+    ({'by': ' '}, 400, '담당자 정보 없이 온 요청'),                    # 사람 칸은 있으나 비었다
+    ({}, 400, '담당자 정보 없이 온 요청'),                             # 사람 칸이 없다
+    ({'by': '수강생 김'}, 403, '담당자 정보 없이 온 요청'),         # 이름만 적은 자유 입력 — 배포 이력에 지어낸 이름이 남던 것(FW2)
     ({'by': 'user:nobody'}, 403, '없는 사람 사용자입니다: user:nobody'),
 ], ids=['빈 칸', '칸 없음', '자유 입력', '없는 사람'])
 def test_되돌린_사람이_등록된_사람이_아니면_되돌리지_않는다(world, student_deployed, body, status, words):
@@ -69,8 +69,8 @@ def test_되돌린_사람이_등록된_사람이_아니면_되돌리지_않는�
     assert student_deployed in _heads(world) and _class_heads(world) >= CLASS_FLOWS
 
 
-def test_고른_사람이면_되돌리고_학생_흐름을_내린다(world, student_deployed):
-    status, out = world.api('POST', '/api/flows/deploy-reset', {'by': 'user:kim-op', 'reason': '수업 끝'})
+def test_담당자면_되돌리고_학생_흐름을_내린다(world, student_deployed):
+    status, out = world.api('POST', '/api/flows/deploy-reset', {'by': 'user:me', 'reason': '수업 끝'})
     assert status == 200, out
     assert student_deployed not in _heads(world) and _class_heads(world) >= CLASS_FLOWS
 
@@ -83,9 +83,9 @@ def student_cooling(world):
     def_id = 'my_cooling_' + uuid.uuid4().hex[:8]
     raw.update(processDefinitionId=def_id, version='1')             # 내용은 수업 흐름 그대로 — 비교하면 같아야 한다
     world.rt.register_definition(raw)
-    world.rt.deploy_definition(def_id, '1', 'user:kim-op', '비교 기준 확인')
+    world.rt.deploy_definition(def_id, '1', 'user:me', '비교 기준 확인')
     yield def_id
-    world.rt.repo.clear_deployment(def_id, 'hyd', actor='user:kim-op', reason='테스트 끝')
+    world.rt.repo.clear_deployment(def_id, 'hyd', actor='user:me', reason='테스트 끝')
 
 
 def test_기준과_비교의_기준은_흐름마다_그_경보를_원래_여는_흐름이다(world, student_cooling):

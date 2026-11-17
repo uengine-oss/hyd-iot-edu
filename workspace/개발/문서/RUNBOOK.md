@@ -15,7 +15,7 @@
 | 1 Docker 확인 | 꺼져 있으면 켜고 최대 3분 기다린다. 그래도 응답이 없으면 멈춤 |
 | 2 `.env` · 이 PC 값 | `.env`가 없으면 `.env.example`을 복사. 키가 있으면 `AI_MODE=live`, 없으면 `replay`(강사가 저장한 응답 `it/agent-worker/replay/` 재생). process 호출 값 · 명령 지문 키를 정한다. 프로젝트 이름 · 포트는 이 PC 값(`.hyd-runtime/project.json` · `ports.json`, 업무 DB는 `it/supabase/.env`) — 같은 폴더면 이어받고, 다른 프로그램이 쓰는 포트는 피한다. compose가 정하는 옛 `.env` 줄은 꺼 두고 알린다. **git이 추적하는 파일은 고치지 않는다** |
 | 3 업무 DB | `supabase start` 뒤 새 마이그레이션 적용(`migration up --local`) |
-| 4 빌드 · 기동 | `docker compose up -d --build` — 처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있다. 지운 옛 볼륨(`<이름>_enterprise-data`)은 기동 뒤 스스로 지운다 |
+| 4 빌드 · 기동 | `docker compose up -d --build --remove-orphans` — 처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있다. 새 판에 없는 서비스의 옛 컨테이너(예: 공장 브로커를 mosquitto `ot-broker`로 바꾸기 전의 `emqx`)는 이때 지운다 — 남으면 계속 돌며 바깥 포트 1883 · 8083을 쥐어 새 공장 브로커가 뜨지 못한다(그 컨테이너의 이미지가 만든 익명 볼륨은 남는다, `emqx`는 약 260 KB). 그다음 `docker compose restart ot-broker dmz-broker ot-bridge` — 세 브로커는 붙여 쓰는 설정 폴더를 켤 때 한 번 읽는데 compose 는 그 파일 내용이 바뀐 것을 보지 않아, 떠 있는 스택에 설정만 바뀐 새 판을 받으면 옛 설정으로 계속 돈다(그래서 시작마다 다시 켠다). 지운 옛 볼륨(`<이름>_enterprise-data`)은 기동 뒤 스스로 지운다 |
 | 5 서비스 확인 | 최대 3분, 포털 응답까지 |
 | 6 수업 흐름 A · B · C | `scripts/c3_flows.py ensure` — 배포된 수업 흐름이 정본(`it/process/procsvc/course_flows.json`)과 같으면 그대로, 다르면 새 판본 등록 · 배포 |
 | 7 수업용 기본 지식 | `scripts/class_knowledge.py ensure` — 강사 서명 묶음(`it/process/procsvc/course_extractions.json`)의 HM-8 · PM-02 · PR-07 검토본을 AI 없이 넣는다. 옛 시작 판은 다음 시작 때 묶음 판으로 바꿔 넣고, 학생이 다시 넣은 판은 그대로 둔다 |
@@ -29,14 +29,16 @@
 
 서비스 응답 → 쿨러 사건 한 바퀴(경보 → 처리 건 → AI 판단 · 제안 → 승인 → 냉각 명령 → 재관측 → 작업지시 → 결과 보고) → 점검이 연 처리 건 닫기 · 설비 되돌리기 → 강의 중계(키 있는 PC만). 약 2분(이 PC 실측, 키 없음).
 
-떠 있어야 하는 것: compose 서비스 24개 = 계속 떠 있는 21개(전부 healthy) + 한 번 돌고 끝나는 3개(`fuxa-init` · `topic-init` · `kg-seed`, Exited 0이 정상) + Supabase 컨테이너 3개(`supabase_db` · `supabase_inbucket` · `supabase_kong`, 이름 끝에 `_<프로젝트 이름>`). 선택 프로필 `monitor`(prometheus) · `tools`(redpanda-console)는 기본으로 뜨지 않는다.
+떠 있어야 하는 것: compose 서비스 26개 = 계속 떠 있는 23개(전부 healthy) + 한 번 돌고 끝나는 3개(`fuxa-init` · `topic-init` · `kg-seed`, Exited 0이 정상) + Supabase 컨테이너 3개(`supabase_db` · `supabase_inbucket` · `supabase_kong`, 이름 끝에 `_<프로젝트 이름>`). 선택 프로필 `monitor`(prometheus) · `tools`(redpanda-console)는 기본으로 뜨지 않는다.
 
 ```bash
 docker compose ps -a
 cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다른 프로그램과 겹쳐 옮긴 포트 포함)
 ```
 
-화면 주소(기본 포트, 옮겼으면 `ports.json`의 값): 포털 8088 · Neo4j Browser 7474 · Grafana 3000 · FUXA 1881 · EMQX 18083. MQTT 바깥 입구는 호스트 1883(MQTT) · 8083(WebSocket), 계정 `student`/`student` — 구독만 된다(발행하면 연결이 끊긴다). 설비 명령 토픽은 관문(cmd-gateway)만 보낸다.
+화면 주소(기본 포트, 옮겼으면 `ports.json`의 값): 포털 8088 · Neo4j Browser 7474 · Grafana 3000 · FUXA 1881. MQTT 브로커 셋(공장 브로커 `ot-broker` · 공장 쪽 브리지 `ot-bridge` · DMZ 브로커 `dmz-broker`)은 모두 mosquitto 2.0.22이고 관리 화면 · 관리 API가 없다 — 토픽 규칙을 거치지 않고 메시지를 낼 길이 없다. 공장 브로커의 입구 · 계정 · 토픽 규칙은 `ot/broker/`(`mosquitto.conf` · `acl` · `passwd`) 한 곳이다. 로그는 `docker compose logs ot-broker`, 지나가는 값은 `docker compose exec ot-broker mosquitto_sub -h 127.0.0.1 -u fuxa -t 'plant/#' -v`로 본다. MQTT 바깥 입구는 호스트 1883(MQTT) · 8083(WebSocket), 계정 `student`/`student` — 구독만 된다(발행은 버려지고, MQTT 5 클라이언트에는 PUBACK 「Not authorized」로 거절이 온다). mosquitto 2.0.22는 시작할 때 `acl` · `passwd`가 누구나 읽을 수 있는 파일이라는 경고(「Future versions will refuse to load this file」)를 남긴다 — 저장소에서 읽기 전용으로 붙인 공개 파일이라 그대로 두지만, 이미지 판을 올릴 때는 이 경고가 거절로 바뀌었는지 확인한다.
+
+공장과 DMZ 사이의 연결은 공장 쪽이 먼저 연다. 공장 브로커(`ot-broker`)는 OT 망에만 붙어 DMZ · IT 의 컨테이너가 닿지 못하고, 공장 쪽 브리지(`ot-bridge`, mosquitto, 설정 `ot/bridge/mosquitto.conf`)가 공장 브로커와 DMZ 브로커(`dmz-broker`, mosquitto, 설정 `dmz/broker/`) 양쪽에 스스로 접속해 값을 내보내고 명령 · 경보판을 가져온다. 수집 중계와 명령 관문은 DMZ 브로커에만 붙는다. 설비 명령 토픽은 DMZ 브로커에서는 명령 관문(cmd-gateway)만, 공장 브로커에서는 브리지만 낼 수 있다(`dmz/broker/acl` · `ot/broker/acl`). 브리지의 두 다리 상태는 `curl -s localhost:8093/healthz`의 `ot_bridge_legs`(`broker` = 공장 브로커 쪽, `dmz` = DMZ 브로커 쪽)로 본다 — 하나라도 끊기면 수집 중계 · 명령 관문의 `/healthz`가 503이고, 그동안 승인된 명령은 「설비 통신이 끊겨 보내지 못했습니다」로 거절된다. 브리지는 끊긴 동안의 값 · 명령을 쌓아 두지 않는다. DMZ 브로커에 올라온 것은 `docker compose exec ot-bridge mosquitto_sub -h dmz-broker -u connect-ingest -t 'bridge/ot/+' -t 'plant/+/status' -C 5 -v`로 본다. 이 구조의 판정은 `workspace/개발/tests/test_zones.py`(망 · 실제 연결 시도) · `test_ot_broker.py`(공장 브로커의 입구 · 계정 · 토픽 규칙) · `test_ot_bridge.py`(값 · 명령 · 끊김)다.
 
 ## 3. 끄기 — `scripts/stop_all.sh`
 
@@ -79,6 +81,7 @@ cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다�
 |---|---|
 | 시작이 4~5단계에서 「서비스 이름」을 대며 멈춤 | `docker compose logs <그 서비스>`. 지운 모듈을 다른 서비스가 아직 가져오는 경우는 테스트 `test_service_images.py`가 먼저 잡는다 |
 | process `/healthz`가 503 | 본문의 `stopped_loops`(멈춘 반복 이름 · 까닭) · `errors`를 보고 `docker compose restart process` |
+| AI 판단 · 승인 검사가 「설비 상태가 … 새로 들어오지 않았습니다」로 멈춘다 | process `/healthz`의 `plant_status.<설비>.age_s`(process가 든 설비 최신 상태의 나이, 평소 1초 안)를 본다. 크면 설비 · 수집 · Kafka 쪽이 멈춘 것이다(plant-sim → connect-ingest → redpanda 순으로 `/healthz`). 작은데 경보 접수 · 명령 응답이 늦으면 `kafka.receiving`(원천 접수 반복이 지금 기다리는 단계와 시작 시각)과 process 로그의 `source receipt step … took …s` 줄로 어느 단계(정책 조회 · 접수 · offset 커밋)가 느린지 본다 |
 | 호스트 파이썬이 psycopg를 못 올린다(libpq DLL 차단) | `. workspace/개발/scripts/host_libpq.sh`를 먼저 source(서명된 libpq 사용 — 없으면 그 자리에서 알린다). Smart App Control은 끄지 않는다 |
 | process가 에러 없이 다시 켜졌다(RestartCount 증가) | 커널 OOM 의심: `wsl -d docker-desktop -e sh -c "dmesg \| grep -i oom"` |
 | 그래프 반영이 멈췄다 | `GET /api/graph-projections`의 `pending`(사건 · 판단) · `execution.rows` · `execution.conflicts`가 줄지 않음(충돌은 다시 보내지 않는다). 조회: `docker compose exec process python -m procsvc.projection_repair inspect --kind Incident --id <사건 id> --file /tmp/<이름>.json` → 비교를 확인한 뒤 같은 모듈의 `apply`(`--by --reason --request-id`)로 다시 반영 |
@@ -89,7 +92,7 @@ cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다�
 | 포털 도구 연결이 서버를 거절한다 | HTTP 주소 서버만 받는다(명령형 stdio는 「명령형(stdio) 서버는 포털에 등록하지 않습니다 …」로 거절 — 명령형 실습은 모두 VS Code에서 연결하고 포털에 등록하지 않는다). 학생 서버 주소는 host.docker.internal · 사설 · 공인 주소를 받고, 루프백(localhost · 127.0.0.1 · ::1 — process 컨테이너 자신)과 링크로컬 · 미지정 · 멀티캐스트는 어떤 표기(10진 · 8진 숫자 IP 포함)로 적어도 거절한다(`mcp_check.address_problem`) |
 | 포털 화면을 고치며 바로 보기 | 포털은 이미지로 굽는다(실행 중 손댄 파일이 옛 판 서비스 앞에 보이지 않게). 고치며 볼 때만 `compose.override.yaml`에 `services: { portal: { volumes: ["./it/portal/www:/usr/share/nginx/html:ro", "./it/portal/nginx.conf:/etc/nginx/templates/default.conf.template:ro"] } }` |
 | 포털 → 서비스 길 | 화면은 같은 출처 `/svc/<서비스>/`만 부른다(nginx `it/portal/nginx.conf` — 크기 · 시간 한도, 꺼진 서비스는 JSON 502). 개발 도구는 서비스 포트를 그대로 써도 된다 |
-| 배속(`TIME_SCALE`, 기본 20)을 바꾼다 | `compose.override.yaml`에 plant-sim · detector · process의 `TIME_SCALE`을 함께 적고, 감지기는 `DETECTOR_STATE_PATH: /data/detector-scale<N>.sqlite3`도(저장 상태의 배속이 다르면 감지기가 켜지기를 거절한다). agent · dmn-mcp는 process `GET /api/time-scale`에서 읽는다. 수업 압축 `PROCESS_WAIT_COMPRESSION`(기본 60)은 process에 적는다 |
+| 배속(`TIME_SCALE`, 기본 20)을 바꾼다 | `compose.override.yaml`에 plant-sim · detector · process의 `TIME_SCALE`을 함께 적고, 감지기는 `DETECTOR_STATE_PATH: /data/detector-scale<N>.sqlite3`도(저장 상태의 배속이 다르면 감지기가 켜지기를 거절한다). agent · dmn-mcp는 process `GET /api/time-scale`에서 읽는다. 수업 압축 `PROCESS_WAIT_COMPRESSION`(기본 360 — 배속 20과 곱해 7200배, 업무 시간 하루가 12초 · 납기 5일이 1분)은 process에 적는다 |
 
 ## 7. 확인하지 못한 것 · 아직 정하지 않은 것
 
@@ -106,12 +109,22 @@ cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다�
 - 지운 것 — 로그인 연결: process `mcp_oauth.py`(외부 계정 로그인 OAuth · 접속키 · 간편 연결 API `/api/mcp/connections*`) · `mcp_worker_relay.py` · `oauth_access_log.py` · `worker_credentials`의 중계 승인, 포털 `mcpConnections.js · .css`와 도구 연결 화면의 「서비스 연결」 자리, compose `HYD_MCP_OAUTH_*`, 워커 `runtime_credentials.py`. 까닭: 암호화 키 파일을 만드는 곳이 없어 모든 PC에서 503이었고 실라버스 · 교재 · 랩에 쓰는 곳이 0, 토큰이 필요한 서버는 `${SECRET:이름}` + 비밀 값 표로 된다. 되살리려면 main `04efb988^`에서 그 파일들을 가져오고 키 파일을 process 시작 때 만드는 곳을 새로 둔다.
 - Supabase Studio · REST · 로그인(업무 DB의 쓰지 않는 컨테이너)은 꺼 두었다. 개발 PC에서 켜려면 `it/supabase/config.toml`의 해당 칸(켜면 그 파일 머리의 문제가 그 PC에서 되살아난다).
 - 경계 타이머의 시계: 그 타이머가 감싼 일의 시계(사람 일 = 벽시계, 설비 · 대기 = 배속). 되돌리려면 `procsvc.engine.timer_scale` 한 곳.
+- 학생의 선택이 결과로 돌아오게 한 것(2026-11-14):
+  - 정비 수행(`svc:maintenance`)은 흐름이 부품을 적지 않으면 승인한 조치 방법(SOP)이 지식 지도에서 다루는 원인의 외란 변수 · 구성 요소만 가상 설비에서 되돌린다(`service_parts.maintenance_scope`, 지식 id → 가상 설비 변수의 표는 `ot/plant-sim` `plantsim.plant.COMPONENTS` 한 곳). 조치가 설비의 실제 결함을 다루지 않으면 결함이 남아 효과 확인에서 「미달」이 된다. 수업 흐름 A의 `T_fix`에서 `component: cooler`를 뺐다.
+  - 예비품 구매(흐름 C)는 승인 → 발주 → 공급사 리드타임만큼 대기(하루가 12초) → 입고 · 검수다. 검수는 업무 DB가 정한다(마이그레이션 074): 불합격 수량 = 발주 수량 × 그 공급사 견적 불량률을 반올림, 불합격분은 반품, 합격분만 재고에 오른다. 전량 합격이면 「입고 완료」, 반품이 있으면 「미달」(부분 입고)이다. 로트 번호는 발주 번호에서 만든다.
+  - [공급사 납기 지연](`POST /api/scenario/C/delay`, 업무 거래 `skill:delay-delivery`, 5일)은 진행 중인 예비품 구매 처리 건의 열린 발주에만 걸린다. 입고 단계가 입고 예정 때 그 통보를 읽어 더 기다리고, 그 사이 납기 초과 타이머 `B_late`(발주 뒤 6일 = 72초)가 울려 「지연」 결과 보고(구매팀장에게도)로 끝난다. 발주는 열린 채 남는다 — 결함 시뮬레이션의 [초기화]가 닫는다. 화면은 `GET /api/scenario/status`의 `scenarios.C.events`로 단추를 그린다.
+  - 대기 압축을 60에서 360으로 올렸다(`compose.yaml` 한 곳). 되돌리려면 그 값 하나. 올리면 시간 단위 대기(예정된 정비 시간까지 9시간)가 27초에서 4.5초로 함께 줄어든다.
+- 학생이 자기 시스템을 연결하는 길(2026-11-14 — 끝까지 밟는 시험은 `workspace/개발/tests/test_student_system_link.py`):
+  - 내 도구 서버는 만들 수 있는 단계에서만 지운다. 지우기(`DELETE /api/mcp/servers/{이름}`)와 도구 서버 되돌리기(`POST /api/mcp/reset`)는 등록과 같은 문(`course_policy`의 `tool_servers.register`)이고, 전체 [기준으로 되돌리기]도 그 문이 닫힌 단계에서는 내 서버와 비밀 값을 남기고 그렇게 말한다. 저장된 서버의 연결 검사와 읽기 도구 써 보기는 어느 단계에서나 된다.
+  - 서버를 지우기 전에 그 서버를 쓰는 에이전트와 흐름 단계(「승인 뒤 MCP 호출」 — 최신 판본과, 옛 판본으로 진행 중인 처리 건의 판본)를 함께 본다(`mcp_dependencies.steps_using`). 쓰는 것이 있으면 409, `force=true`면 지우고 그 단계는 실행될 때 「도구 서버 '…'가 등록되어 있지 않습니다 — [도구 연결]에서 같은 이름으로 등록한 뒤 이 단계를 다시 수행하세요」로 멈춘다.
+  - 「승인 뒤 MCP 호출」의 실패는 둘로 가른다. 쓰기 요청을 서버에 보내지 않은 것이 확실한 실패(등록 없는 서버 · 꺼진 서버 · 없는 도구 · 맞지 않는 입력 — `mcp_check.call_effect`의 `sent: false`)는 정해진 횟수만큼 다시 시도하고 그 까닭으로 멈춘다. 보낸 뒤의 실패는 서버가 같은 호출을 알아볼 열쇠(`idempotency_key` 입력)를 받지 않으면 다시 보내지 않고 「외부 결과를 확인」하라고 멈춘다.
+  - 역할의 정본은 업무 DB(`users`의 `role:*` 행과 `role_members`)다. 지식 그래프의 Role 노드는 process가 그 목록으로 맞춘다(`agent_authoring.project_roles` — 역할을 만들고 지울 때와 1분마다). 그래프가 아는 것은 등급(level)과 소속 부서뿐이고, 포털에서 만든 역할의 등급은 종류에서 정한다(operator 1 · manager 2). 조치 방법이 승인 역할로 쓰는 역할은 지우지 않는다.
+  - [기준으로 되돌리기](`POST /api/config/reset`)는 지식도 되돌린다: 포털의 검토 화면으로 적재한 문서 판(기본 제공 판이 맨 위가 될 때까지), 화면에서 만든 조치 방법(`DELETE /api/kg/skills/{id}` — `skill_graph.remove`), 업무 DB 표 정의 묶음. 이미 있는 묶음별 되돌리기를 차례로 부르며(`config_bundle.knowledge_reset`), 어느 하나가 되돌려지지 않으면 구성을 지우기 전에 멈추고 무엇이 왜인지 말한다. 응답의 `removed` · `kept`가 실제로 지운 것과 남긴 것이다. 처리 건 기록, 모의 업무 시스템과 가상 설비의 상태는 건드리지 않는다(결함 시뮬레이션의 [초기화]).
 
 **사용자 결정 대기(선택지 · 지금 상태)**
 - 교대 인수인계 정의가 두 벌이다(학생이 가져오는 `ShiftHandover`, 제공 정의 `shift_handover` — 같은 녹화 자리). 제공 정의를 지우면 관리할 곳이 줄지만 녹화 도구 · 교재 참조를 함께 고쳐야 한다.
 - 학생 도구 서버가 컨테이너 망 안 서비스 이름(process · supabase · enterprise-mcp 등)을 가리키는 것을 막을지 — 지금: 막지 않음(기준 서버와 같은 이름 자리라 PBL에서 학생이 기준 서버를 직접 등록해 보는 길). 막으려면 `mcp_check.address_problem`에 compose 서비스 이름 거절을 더한다.
 - 「그다음 예정된 정비 시간」을 월간 창으로 볼지 — 바꾸면 교재 값 1,950 / 1,959 / 2,230 h가 바뀐다(덱 `제작도구/온라인/decks/integrated/day10/통합반_10일차.md` 781 · 788줄 등, 결정이 나면 다시 잰 값으로). PR-7.2 문장과 표 중 어느 쪽이 목표 재고 정의인지, 정기 정비 부품 예약에 입고 예정을 셀지.
-- C 구매의 납기 지연 가지(`skill:delay-delivery`): 업무 거래와 process 입고 대기 가지(`service_parts` 「지연 n일」)는 있으나 부르는 버튼이 없어 수업에서 밟을 수 없다. 선택지: 포털 버튼으로 다시 연결(비해피 가지가 생김 — 포털 · process 시나리오 · 교재) / 거래와 가지를 지움. 지금: 그대로 둠.
 - XG5000(LS 산전 PLC 편집 프로그램, 394 MB): README · `scripts/install_windows.ps1`이 설치를 안내하지만 이 과정 실라버스 · 실습에 쓰는 곳이 0이다(「직접 설치」 결정은 선행 SCADA 교육 때문일 수 있음). 선택지: 그대로 / 두 줄을 지움.
 - 수업 데이터 보관 기간: 처리 건 · 처리 기록 · 알림 · 사건 스냅숏을 지금은 지우지 않는다(데이터 비우기는 §3). 선택지: 그대로 / 기간을 정해 지움.
 - 순위의 선례 몫: 미리 넣은 예시 사례(seeded)만 세는데 수업 그래프에는 그런 사례가 없어 늘 0이다(교재 03회차 「해당 선례가 반영되지 않으면 그 성분도 영」과 같음). 선택지: (가) 지금대로 (나) 승인으로 쌓인 사례를 셈 — `templates/t3_precedents.cypher`의 `seeded = true` 한 줄, 같은 처리 건을 다시 하면 순위가 바뀌어 녹화 재생 · 교재 수치가 흔들린다 (다) 수업 지식 id로 예시 사례를 서명 묶음과 함께 넣음 (라) 선례 성분을 정책 · 화면 · 교재에서 지움. 지금: (가).

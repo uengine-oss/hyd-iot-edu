@@ -7,11 +7,18 @@
   · AI 단계: 워커가 .env 의 AI_MODE 로 켜져야 한다. 키 없음(replay)은 저장된 응답이 있으면 「해당 없음」(강의 중계를 부르지 않는다 —
     옛 점검은 「건너뜀」을 「통과」로 표시), 없으면 실패. 키 있음은 process 안의 중계 확인 결과 그대로.
   · 쿨러 한 바퀴의 승인은 추천 카드의 승인 역할을 가진 사람으로 한다(포털에서 「나」를 그 사람으로 고르고 [승인]).
-Docker · 처리 엔진 응답은 바깥이라, docker compose ps 와 process API 의 실제 모양(이 PC 스택에서 읽음)으로 만든 값을 넣는다. 시계 · 잠은 주입.
+  · AI 판단 단계가 멈추면(보류 · 실패) 서버가 판정한 멈춤(처리 건 보기의 attention — 포털 「사람 조치 필요」 알림과 같은 것)과 그 까닭을
+    그대로 말한다. 점검이 까닭을 짐작하지 않는다(옛 점검: 보류면 늘 「기본 지식이 없는 것 같다」 — 실제 AI 는 시작 직후 「관측 공백」으로
+    보류했다. 실패는 서버에 없는 상태 값을 보아 7분 뒤 「닿지 않았다」).
+  · 키 있는 PC 는 결함을 넣기 전에 AI가 판단에 쓰는 기간만큼 설비 기록이 쌓이기를 기다린다 — 판단 실험(에이전트 서비스)의 관측 범위로
+    재고, 그 기간 + 여유가 지나도 비면 기록이 끊기는 것이라 실패, 잴 수 없으면 까닭을 알리고 기다리지 않는다.
+Docker · 처리 엔진 · 에이전트 서비스 응답은 바깥이라, docker compose ps 와 각 API 의 실제 모양(이 PC 스택에서 읽음)으로 만든 값을 넣는다.
+처리 건 보기의 멈춤 판정(attention)은 서버 함수 그대로 계산한다. 시계 · 잠은 주입.
 """
 import pytest
 
 import check_stack as cs
+from procsvc.instances import attention
 
 PASS, FAIL, NA = cs.PASS, cs.FAIL, cs.NA
 
@@ -131,7 +138,7 @@ def test_process_안에서_중계_확인을_돌리지_못하면_실패로_까닭
 
 
 @pytest.mark.parametrize('results, code', [
-    ([('서비스', PASS, ''), ('강의 중계', NA, '키 없는 수업')], 0),
+    ([('서비스', PASS, ''), ('강의 중계', NA, 'AI 키 없음')], 0),
     ([('서비스', PASS, ''), ('승인 뒤 실행', FAIL, '미달')], 1),
 ])
 def test_해당_없음은_실패로_세지_않고_실패가_있으면_1로_끝난다(capsys, results, code):
@@ -141,24 +148,65 @@ def test_해당_없음은_실패로_세지_않고_실패가_있으면_1로_끝�
 
 
 # ---------------------------------------------------------------- 쿨러 사건 한 바퀴(처리 엔진 응답의 실제 모양으로)
-def view(*rows, status='RUNNING', events=(), variables=None):
-    return {'instance': {'status': status, 'variables_data': [{'key': k, 'value': v} for k, v in (variables or {}).items()]},
-            'workitems': [dict(activity_id=a, status=s, id=f'w-{a}', **extra) for a, s, extra in rows], 'events': list(events)}
+def view(*rows, status='RUNNING', events=(), variables=None, **instance):
+    """GET /api/instances/{id} 의 모양 — attention 은 서버(procsvc.instances.attention)가 계산하는 그대로. instance: 처리 건 칸(end_label 등)."""
+    inst = {'status': status, 'variables_data': [{'key': k, 'value': v} for k, v in (variables or {}).items()], **instance}
+    items = [{'activity_id': a, 'status': s, 'id': f'w-{a}', 'tool': f'tool:{a}', **extra} for a, s, extra in rows]
+    return {'instance': inst, 'workitems': items, 'events': list(events), 'attention': attention(inst, items, [], list(events))}
+
+
+AI = {'agent_orch': 'cliagents', 'agent_mode': 'COMPLETE'}
+GAP = '팬 진동과 캐비닛 온도 기록에 관측 공백이 있어 원인을 확정하고 냉각 조치를 비교할 근거가 부족합니다. 센서 기록의 연속성을 확인한 뒤 다시 평가해 주세요.'
+
+
+def deferred(reason, *, event=True):
+    """AI 가 판단을 보류한 처리 건(procsvc/task_deferral.defer 가 남기는 모양): 단계는 PENDING + draft._deferral, 기록에 [DEFERRED] 까닭,
+    사건 task_deferred 의 message = 까닭(2026-11-17 실제 AI 점검의 업무 DB 에서 읽은 까닭)."""
+    row = ('T_agent', 'PENDING', dict(AI, draft={'_deferral': {'id': 'run-1', 'reason': reason}}, log=f'[DEFERRED] {reason}; ' if reason else ''))
+    events = [{'todo_id': 'w-T_agent', 'event_type': 'task_deferred', 'data': {'message': reason, 'receipt': {'reason': reason}}}] if event else []
+    return view(row, events=events)
+
+
+def failed(friendly):
+    """AI 실행이 실패한 처리 건(procdb: 단계는 IN_PROGRESS + draft_status FAILED, 사건 error 의 friendly = 학생 문장)."""
+    return view(('T_agent', 'IN_PROGRESS', dict(AI, draft_status='FAILED', log='run failed; ')),
+                events=[{'todo_id': 'w-T_agent', 'event_type': 'error', 'data': {'friendly': friendly}}])
 
 
 @pytest.mark.parametrize('v, expected', [
-    (view(('T_agent', 'DONE', {}), ('T_approve', 'IN_PROGRESS', {})), 'approval'),
-    (view(('T_agent', 'IN_PROGRESS', {})), None),
-    (view(('T_agent', 'PENDING', {}), events=[{'event_type': 'task_deferred'}]), cs.CheckError),
-    (view(('T_agent', 'FAILED', {'log': '수업 권한 확인 필요'})), cs.CheckError),
-], ids=['approval', 'thinking', 'deferred', 'failed'])
-def test_AI_판단_단계가_어디까지_왔는지_가른다(v, expected):
-    if expected is cs.CheckError:
-        with pytest.raises(cs.CheckError):
-            cs.agent_outcome(v, 'replay')
-    else:
-        out = cs.agent_outcome(v, 'replay')
-        assert (out[0] if out else None) == expected
+    (view(('T_agent', 'DONE', dict(AI)), ('T_approve', 'IN_PROGRESS', {})), 'approval'),
+    (view(('T_agent', 'IN_PROGRESS', dict(AI, draft_status='STARTED'))), None),
+], ids=['approval', 'thinking'])
+def test_AI_판단_단계가_승인에_닿았는지_아직인지_가른다(v, expected):
+    out = cs.agent_outcome(v, 'replay')
+    assert (out[0] if out else None) == expected
+
+
+@pytest.mark.parametrize('v, ai_mode, said, not_said', [
+    (deferred(GAP), 'live', GAP, '기본 지식'),                                          # 보류 — AI 가 남긴 까닭 그대로
+    (deferred('', event=False), 'live', '까닭을 남기지 않았습니다', '기본 지식'),            # 까닭이 없으면 없다고
+    (failed('이 AI 단계는 수업에서 허용한 흐름이 아니라 실행하지 않았습니다'), 'live', '수업에서 허용한 흐름이 아니라', 'README'),
+    (failed('준비된 AI 응답 가운데 이 요청에 맞는 것이 없습니다'), 'replay', '새 판 받기', 'LLM_API_KEY'),
+], ids=['보류_까닭', '보류_까닭없음', '실패_키', '실패_재생'])
+def test_AI_판단_단계가_멈추면_서버가_판정한_멈춤의_까닭을_그대로_말한다(v, ai_mode, said, not_said):
+    with pytest.raises(cs.CheckError) as caught:
+        cs.agent_outcome(v, ai_mode)
+    assert said in str(caught.value) and not_said not in str(caught.value)
+
+
+@pytest.mark.parametrize('v, said', [
+    (view(('T_agent', 'DONE', dict(AI, activity_name='AI 판단 · 제안', end_date='2026-11-17T05:00:00+00:00')),
+          ('T_decide', 'DONE', dict(activity_name='조치 필요 확인', end_date='2026-11-17T05:00:04+00:00')),
+          status='COMPLETED', end_event='incident-ended-before-action', end_label='조치 전 해소'), ('조치 전 해소', '조치 필요 확인')),
+    (view(('T_agent', 'CANCELLED', dict(AI, activity_name='AI 판단 · 제안', end_date='2026-11-17T05:00:00+00:00')), status='CANCELLED',
+          end_label='취소'), ('취소', 'AI 판단 · 제안')),
+    (view(('T_agent', 'DONE', dict(AI, activity_name='AI 판단 · 제안', end_date='2026-11-17T05:00:00+00:00')), status='COMPLETED'), ('끝남',)),
+], ids=['조치_전_해소', '취소', '끝_이름_없음'])
+def test_처리_건이_승인에_닿기_전에_끝나면_기다리지_않고_어디서_끝났는지_말한다(v, said):
+    """옛 점검은 끝난 처리 건을 「아직」으로 보아 AI 판단 한도 7분을 다 기다린 뒤 「닿지 않았다」고만 했다."""
+    with pytest.raises(cs.CheckError) as caught:
+        cs.agent_outcome(v, 'live')
+    assert '승인 단계에 닿기 전에 끝났습니다' in str(caught.value) and all(w in str(caught.value) for w in said)
 
 
 def test_추천_카드는_그_승인_역할을_가진_사람으로_승인한다():
@@ -178,9 +226,9 @@ def test_추천_카드나_승인할_사람이_없으면_까닭을_보이고_멈�
 
 
 @pytest.mark.parametrize('rows, ok, words', [
-    ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('T_wo', 'DONE'), ('R_ok', 'DONE')], True, '작업지시'),
+    ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('T_wo', 'DONE'), ('R_ok', 'DONE')], True, '정비 요청'),
     ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('R_fail', 'DONE')], False, '미달'),
-    ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_wo_only', 'DONE')], True, '정비 수행 → 재관측(정상)'),
+    ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_wo_only', 'DONE')], True, '정비 수행 → 효과 확인(정상)'),
     ([('T_wo_only', 'DONE'), ('R_wo_only', 'DONE')], False, '닿지 않았습니다'),          # 정비 · 재관측 없이 정상 보고 — 회복 확인 없는 종결은 통과가 아니다
     ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_fail', 'DONE')], False, '정비 뒤'),
     ([('R_kind', 'DONE')], False, '실행하지 않았습니다'),
@@ -224,6 +272,127 @@ def test_응답_모양이_다르면_기다리지_않고_바로_드러난다():
     with pytest.raises(KeyError):
         cs.wait_for(420, lambda: {}['patterns'], '경보', sleep=clock.sleep, clock=clock)
     assert clock.now == 0
+
+
+# ---------------------------------------------------------------- 점검 정리: 서버가 멈췄다고 판정한 단계를 닫는다
+@pytest.fixture
+def services():
+    """process · 설비 대역(바깥): POST 는 200 {} 로 받고 남기며, GET /api/inbox/users 는 업무 DB 의 사람 목록 모양으로 답하는 실제 HTTP 서버."""
+    import http.server
+    import json as _json
+    import threading
+    posts = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def _send(self, answer):
+            data = _json.dumps(answer, ensure_ascii=False).encode()
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
+
+        def do_GET(self):
+            self._send([{'id': 'user:kim-op', 'roles': ['role:operator']}] if self.path == '/api/inbox/users' else {})
+
+        def do_POST(self):
+            posts.append((self.path, _json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')))
+            self._send({})
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f'http://127.0.0.1:{server.server_address[1]}', posts
+    server.shutdown()
+
+
+@pytest.mark.parametrize('stopped', [
+    ('T_agent', 'IN_PROGRESS', dict(AI, draft_status='FAILED')),          # AI 실행 실패
+    ('T_agent', 'IN_PROGRESS', dict(AI, draft_status='CANCELLED')),       # 실행 취소
+    ('T_agent', 'PENDING', dict(AI, draft={'_deferral': {'id': 'run-1', 'reason': GAP}})),            # 보류
+], ids=['실행_실패', '실행_취소', '보류'])
+def test_점검_정리는_서버가_멈췄다고_판정한_AI_단계를_닫고_처리_건이_끝나면_통과다(services, monkeypatch, stopped):
+    url, posts = services
+    clock, results = Clock(), []
+    monkeypatch.setattr(cs, 'wait_for', __import__('functools').partial(cs.wait_for, sleep=clock.sleep, clock=clock))
+    closed = lambda: any(path == '/api/todolist/w-T_agent/close' for path, _ in posts)
+    current = lambda pid: view(stopped, status='COMPLETED' if closed() else 'RUNNING')       # 닫으면 처리 건이 「사람이 닫음」으로 끝난다
+    cs.cleanup(url, url, 'c3_cooling.x', None, current, lambda *row: results.append(row))
+    assert ('/api/todolist/w-T_agent/close', {'by': 'user:kim-op', 'reason': '시스템 점검이 연 처리 건 정리'}) in posts
+    assert results == [('점검 정리', PASS, '쿨러 · 설비를 되돌리고 점검이 연 처리 건을 닫았습니다')]
+
+
+# ---------------------------------------------------------------- 키 있는 PC: 결함 전에 AI가 판단에 쓰는 설비 기록이 쌓이기를 기다린다
+@pytest.fixture
+def agent_api():
+    """에이전트 서비스 대역(바깥): POST /api/agent/decide 에 정한 답을 차례로 내는(마지막 것은 계속) 실제 HTTP 서버. 받은 몸을 남긴다."""
+    import http.server
+    import json as _json
+    import threading
+    plan, seen = [], []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            seen.append((self.path, _json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')))
+            code, answer = plan.pop(0) if len(plan) > 1 else plan[0]
+            data = _json.dumps(answer, ensure_ascii=False).encode()
+            self.send_response(code); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f'http://127.0.0.1:{server.server_address[1]}', plan, seen
+    server.shutdown()
+
+
+def evidence(tag, window, max_gap, limit):
+    """판단 실험 응답의 근거 한 줄(agentsvc card.rank_causes 가 mcp_tsdb.evaluate 결과를 옮긴 모양 — 2026-11-17 이 스택에서 읽음)."""
+    covered = max_gap <= limit
+    return {'id': f'evd:{tag.lower()}-{window}', 'name': f'최근 {window}초 {tag}', 'tag': tag, 'passed': True if covered else None,
+            'status': 'PASS' if covered else 'UNKNOWN', **({} if covered else {'reason': 'OBSERVATION_GAP'}),
+            'coverage': {'samples': 96, 'max_gap_s': max_gap, 'limit_s': limit, 'covered': covered, 'tag': tag, 'window_s': float(window)}}
+
+
+def withheld(*rows):        # 근거가 덜 모여 판단 보류 — 409 detail 에 근거 목록
+    return 409, {'detail': {'reason': '근거 조회가 불완전하여 원인 순위와 조치를 보류합니다.', 'causes': [{'id': 'cause:cooler-fin-fouling', 'evidence': list(rows)}]}}
+
+
+def judged(*rows):          # 근거가 다 모여 판단함 — 200 본문에 근거 목록
+    return 200, {'status': 'EVALUATED', 'causes': [{'id': 'cause:cooler-fin-fouling', 'evidence': list(rows)}]}
+
+
+START_GAP = evidence('VS1', 120, 24.55, 3.0), evidence('CE', 30, 1.0, 3.0)            # 시작 직후: 창 앞부분 24초가 기록 전
+FILLED = evidence('VS1', 120, 1.0, 3.0), evidence('CE', 30, 1.0, 3.0)
+
+
+def test_시작_직후면_AI가_판단에_쓰는_기간만큼_기록이_쌓일_때까지_기다리고_결함을_넣는다(agent_api):
+    url, plan, seen = agent_api
+    plan[:] = [withheld(*START_GAP), withheld(*START_GAP), judged(*FILLED)]
+    clock, said = Clock(), []
+    cs.wait_for_record(url, say=said.append, sleep=clock.sleep, clock=clock)
+    assert [p for p, _ in seen] == ['/api/agent/decide'] * 3 and seen[0][1] == {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}
+    assert clock.now == 10 and len(said) == 1 and '최근 120초' in said[0] and f'최대 {120 + cs.RECORD_SPARE}초' in said[0]
+
+
+def test_그_기간과_여유가_지나도_비면_기록이_끊기는_것이라_실패하고_빈_곳을_말한다(agent_api):
+    url, plan, _ = agent_api
+    plan[:] = [withheld(*START_GAP)]
+    clock = Clock()
+    with pytest.raises(cs.CheckError) as caught:
+        cs.wait_for_record(url, say=lambda s: None, sleep=clock.sleep, clock=clock)
+    assert clock.now >= 120 + cs.RECORD_SPARE
+    assert 'VS1' in str(caught.value) and '24.55초 동안 값 없음' in str(caught.value) and 'CE' not in str(caught.value)
+
+
+@pytest.mark.parametrize('answer, said', [
+    (judged(*FILLED), None),                                                            # 이미 다 쌓였다(오래 켜 둔 PC)
+    ((404, {'detail': "'쿨러 성능 저하'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 매뉴얼을 적재한 뒤 다시 실행하세요"}), '원인 지식이 아직 없습니다'),
+], ids=['이미_쌓임', '잴_수_없음'])
+def test_기록이_이미_있거나_잴_수_없으면_기다리지_않는다(agent_api, answer, said):
+    url, plan, seen = agent_api
+    plan[:] = [answer]
+    clock, lines = Clock(), []
+    cs.wait_for_record(url, say=lines.append, sleep=clock.sleep, clock=clock)
+    assert clock.now == 0 and len(seen) == 1
+    assert (lines == []) if said is None else (len(lines) == 1 and said in lines[0])
 
 
 # ---------------------------------------------------------------- 포털: 화면과 같은 출처 길(/svc/…)

@@ -20,7 +20,7 @@ def _context(at, ts1=50.0):
 def test_검토한_카드의_신선도는_벽시계로_30분이다(waited_s, stale):
     """#2: 전에는 1800 시뮬레이션 초 = 20배속 90초라, 학생이 카드를 1분 남짓 읽으면 승인이 「오래된 예측」으로 거절됐다."""
     reasons = forecasting.consent_changes(_context(T0), _context(T0 + timedelta(seconds=waited_s)), time_scale=20)
-    assert any('새 카드 검토' in r and '분 전 예측' in r for r in reasons) is stale
+    assert any('새 조치 후보 검토' in r and '분 전 예측' in r for r in reasons) is stale
 
 
 def test_신선도는_사람이_동의한_시각까지만_잰다():

@@ -3,10 +3,13 @@
 실제 엔진 · 실제 agent(승인 현재 조건 검사) · 실제 업무 시스템으로 흐름 A(냉각)를 돌린다. 「다시 보내지 않았다」는 승인 행의 시도 수 ·
 기록(attempts · history)으로 판정한다(대체물의 호출 수를 세지 않는다).
 """
+import re
+
 import pytest
 
 from conftest import OPERATOR
 from procsvc import approval_delivery
+from procsvc.inbox import NOT_A_PERSON
 
 
 def test_전달_뒤_흐름_진행이_실패해도_승인을_다시_전달하지_않고_실패를_기록한다(world):
@@ -43,9 +46,21 @@ def test_전달_자체가_저장소에서_연달아_실패하면_세_번째에_�
         attempts = approval['attempts']
         world.poll(2)
         assert world.rt.repo.get_approval(approve['id'], 'hyd')['attempts'] == attempts, '멈춘 승인을 폴링이 다시 보내지 않는다'
+    # 전수 검사 01 지적 4: 다시 전달 · 폐기는 「누가」가 비어 있지 않은지만 봐서 자유 글 이름이 승인 기록에 남았다 — 등록된 사람 사용자이고
+    # 내세운 역할의 구성원이어야 한다(승인 · 거절과 같은 규칙)
+    for call in (world.rt.retry_approval, world.rt.preview_approval_discard,
+                 lambda wid, by, role: world.rt.discard_approval(wid, by, role, '시험 폐기', 'req-1')):
+        for by, role, words in (('강사', OPERATOR['role'], re.escape(NOT_A_PERSON)), ('user:nobody', OPERATOR['role'], '없는 사람 사용자'),
+                                (OPERATOR['by'], 'role:nobody', '역할이 아니어서')):
+            with pytest.raises(PermissionError, match=words):
+                call(approve['id'], by, role)
+    after = world.rt.repo.get_approval(approve['id'], 'hyd')
+    assert (after['status'], len(after['history'])) == ('FAILED', len(approval['history'])), '거절된 요청은 승인 기록을 바꾸지 않는다'
     with world.reporting('HYD-01'):
         world.rt.retry_approval(approve['id'], OPERATOR['by'], OPERATOR['role'])
-    assert world.rt.repo.get_approval(approve['id'], 'hyd')['status'] == 'DELIVERED', '사람이 다시 전달하면 전달된다'
+    after = world.rt.repo.get_approval(approve['id'], 'hyd')
+    assert after['status'] == 'DELIVERED', '사람이 다시 전달하면 전달된다'
+    assert [(h.get('by'), h.get('role')) for h in after['history'] if h.get('reason') == 'manual retry'] == [(OPERATOR['by'], OPERATOR['role'])]
 
 
 def test_전달_때_현재_조건이_승인을_받지_않으면_실패로_남고_같은_동의를_다시_보내지_않는다(world):

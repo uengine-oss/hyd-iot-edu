@@ -27,7 +27,7 @@ def test_IT_경보_알람_문구는_특정_패턴이나_개발자_말을_박지_
 
 
 def test_MQTT_장치는_브로커가_허락한_fuxa_계정으로_붙는다():
-    assert fuxa.build_project()['devices']['emqx']['property']['username'] == 'fuxa'
+    assert fuxa.build_project()['devices']['ot-broker']['property']['username'] == 'fuxa'
 
 
 def test_저장소의_FUXA_프로젝트는_생성기_결과와_같다():

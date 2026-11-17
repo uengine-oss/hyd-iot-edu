@@ -75,4 +75,4 @@ def test_저장소_프로젝트의_요약은_화면_하나와_MQTT_장치_하나
         views, devices = init(server).summary(json.loads(PROJECT.read_text(encoding='utf-8')))
     finally:
         server.shutdown()
-    assert views == ['설비 현황'] and devices == [('emqx', 'mqtt://emqx:1883')]
+    assert views == ['설비 현황'] and devices == [('ot-broker', 'mqtt://ot-broker:1883')]

@@ -25,7 +25,7 @@ def test_다음_판본_번호는_쓰인_숫자_판본의_가장_큰_것_다음�
 
 @pytest.fixture
 def store(world):
-    status, out = world.api('DELETE', f'/api/flows/{FLOW}?by=user:kim-op')
+    status, out = world.api('DELETE', f'/api/flows/{FLOW}?by=user:me')
     assert status in (200, 404), out
     return FlowStore(world.rt.repo, world.rt.tenant_id)
 
@@ -33,7 +33,7 @@ def store(world):
 def _register(world):
     status, out = world.api('POST', '/api/flows/import', {'xml': HANDOVER['xml'], 'file_name': 'shift-handover.bpmn'})
     assert status == 200, out
-    status, out = world.api('POST', f'/api/flows/{FLOW}/register', {'mapping': HANDOVER['mapping'], 'by': 'user:kim-op'})
+    status, out = world.api('POST', f'/api/flows/{FLOW}/register', {'mapping': HANDOVER['mapping'], 'by': 'user:me'})
     assert status == 201, out
     return out['version']
 
@@ -48,8 +48,8 @@ def test_등록할_때마다_새_판본이고_앞_판본은_그대로_남는다(
 
 def test_배포했다가_내리고_지운_흐름을_다시_등록해도_옛_번호를_다시_쓰지_않는다(world, store):
     old = _register(world)
-    world.rt.deploy_definition(FLOW, old, 'user:kim-op', '번호 확인')
-    world.rt.repo.clear_deployment(FLOW, 'hyd', actor='user:kim-op', reason='번호 확인')
+    world.rt.deploy_definition(FLOW, old, 'user:me', '번호 확인')
+    world.rt.repo.clear_deployment(FLOW, 'hyd', actor='user:me', reason='번호 확인')
     out = store.reset(FLOW)
     assert out['versions'] >= 1 and store.versions(FLOW) == []
     again = _register(world)

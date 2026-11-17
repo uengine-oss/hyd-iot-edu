@@ -8,8 +8,12 @@ from www_node import page_dom, run
 FILES = ['ui.js', 'layers.js', 'courseAccess.js', 'definitionRegistry.js', 'definitionDeploy.js']
 
 
+# 배포 패널(definitionDeploy.js)은 흐름 화면에 들어올 때 읽는다(app.js 의 탭 진입 표 hydTabs) — 여기서는 화면을 옮기지 않으므로 표만 대역으로 둔다
+TABS = "globalThis.hydTabs = { onShow() {} };"
+
+
 def js(script, data=None):
-    return run(FILES, script, data, prelude=page_dom())
+    return run(FILES, script, data, prelude=page_dom() + TABS)
 
 
 @pytest.mark.parametrize('text, want', [
@@ -66,8 +70,8 @@ out({ during, after: buttons.map(b => b.disabled), busy: t.busy, afterCalls, sec
     ([False, True, False], None, {'textContent': '', 'className': ''}),
     ([True], None, {'textContent': '', 'className': ''}),
     ([], None, {'textContent': '', 'className': ''}),
-    # 실패는 패널 알림 줄에 그 문장 그대로, 알림 줄 모양(form-msg)은 그대로
-    ([False, True], '서버가 거절했습니다', {'textContent': '서버가 거절했습니다', 'className': 'form-msg neg'}),
+    # 실패는 패널 알림 줄에 그 문장 그대로, 실패라는 상태(data-tone=danger)와 함께
+    ([False, True], '서버가 거절했습니다', {'textContent': '서버가 거절했습니다', 'className': '', 'dataset': {'tone': 'danger'}}),
 ])
 def test_패널_일은_도는_동안_단추를_모두_끄고_끝나면_그_전_상태로_되돌린다(before, fail, note):
     got = js(TASK, {'before': before, 'fail': fail})
@@ -81,7 +85,7 @@ if (DATA.option) { const o = document.createElement('option'); o.value = JSON.st
 FETCHED.length = 0;   // 실릴 때 ui.js 가 이름 사전(names.json)을 읽는 것은 빼고, 단추를 누른 뒤의 요청만 본다
 await $(DATA.click).fire('click');
 const msg = $('definitionMessage');
-out({ text: msg.textContent, cls: msg.className, disabled: $('definitionEditor').querySelectorAll('button').map(b => [b.id, b.disabled]).filter(([, d]) => d), fetched: FETCHED });
+out({ text: msg.textContent, tone: msg.dataset.tone, disabled: $('definitionEditor').querySelectorAll('button').map(b => [b.id, b.disabled]).filter(([, d]) => d), fetched: FETCHED });
 """
 
 
@@ -99,4 +103,47 @@ out({ text: msg.textContent, cls: msg.className, disabled: $('definitionEditor')
 ])
 def test_등록_실행_단추는_서버를_부르기_전에_틀린_입력을_학생_말로_멈추고_단추를_되살린다(click, values, option, text):
     got = js(PANEL, {'click': click, 'values': values, 'option': option})
-    assert got == {'text': text, 'cls': 'form-msg neg', 'disabled': [], 'fetched': []}
+    assert got == {'text': text, 'tone': 'danger', 'disabled': [], 'fetched': []}
+
+
+def test_정의_목록의_다시_읽기는_읽은_판본_수를_알림_줄에_말한다():
+    """눌러 보기(2026-11-16): 「흐름 정의 JSON 직접 등록」의 [다시 읽기]는 목록이 같으면 눌러도 화면에 아무 일이 없었다. 누르면 서버를 다시 읽고,
+    읽은 판본 수(고르기 칸의 판본 줄 수와 같은 수)를 그 패널의 알림 줄에 말한다. 실제 브라우저에서 서버 응답만 이 시험이 준다."""
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from playwright.sync_api import sync_playwright
+
+    from conftest import WWW, Served, open_screen
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    defs = [{'id': 'c3_pm', 'name': '정기 정비', 'version': '1'}, {'id': 'c3_spare', 'name': '예비품 구매', 'version': '1'}]
+    reads = []
+
+    def answer(route):
+        path = route.request.url.split('?')[0]
+        if path.endswith('/api/process/definitions'):
+            reads.append(1)
+            return route.fulfill(json=list(defs))
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'admin')
+            page.locator('#definitionEditor > summary').click()
+            page.wait_for_function("document.querySelector('#definitionChoice').options.length === 3", timeout=15000)
+            assert page.inner_text('#definitionMessage').strip() == ''
+            n = len(reads)
+            defs.append({'id': 'shift_handover', 'name': '교대 인수인계', 'version': '1.5'})
+            page.click('#definitionRefresh')
+            page.wait_for_function("document.querySelector('#definitionMessage').innerText.trim() !== ''", timeout=8000)
+            rows = page.evaluate("[...document.querySelector('#definitionChoice').options].filter(o => o.value).length")
+            said = page.inner_text('#definitionMessage')
+            assert len(reads) == n + 1 and rows == 3 and f'{rows}개' in said, (said, rows, len(reads))
+            assert page.locator('#definitionRefresh').is_enabled()
+            b.close()
+    finally:
+        served.close()

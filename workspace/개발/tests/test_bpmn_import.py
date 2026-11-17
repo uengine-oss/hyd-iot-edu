@@ -33,6 +33,26 @@ def test_제공_그림_그대로는_검사를_통과하고_정의가_된다(worl
     assert {a['id'] for a in result['definition']['activities']} >= {'task_draft', 'task_sender', 'task_receiver'}
 
 
+@pytest.mark.parametrize('agent, says', [
+    (None, '맡길 에이전트를 고르세요 — 비어 있습니다'), ('', '맡길 에이전트를 고르세요 — 비어 있습니다'),
+    ('agent:no-such', '이 PC에 없는 에이전트입니다'), ('agent:handover', None),
+], ids=['칸 없음', '빈 칸', '없는 에이전트', '고른 에이전트'])
+def test_에이전트를_비운_단계는_첫_에이전트로_채우지_않고_비었다고_말한다(world, agent, says):
+    """전수 대조(2026-11-14): 에이전트 칸을 비운 「에이전트 task」를 서버가 목록의 첫 에이전트로 채워 「검사 통과」가 됐다 — 사람이 고르지 않은
+    수행자가 정의에 들어갔다(설정 불러오기 · API 길에서는 아무 말 없이). 비었으면 검사가 그 단계를 짚어 말한다."""
+    mapping = copy.deepcopy(HANDOVER['mapping'])
+    task = {'part': 'agent', 'instruction': '교대 인계안을 쓴다', 'outputs': [{'key': 'note', 'text': '인계안'}]}
+    if agent is not None:
+        task['agent'] = agent
+    mapping['tasks']['task_draft'] = task
+    result = _check(world, HANDOVER['xml'], mapping)
+    found = [p for p in result['problems'] if p['field'] == 'agent' and p['where']['id'] == 'task_draft']
+    if says is None:
+        assert found == [], found
+    else:
+        assert not result['ok'] and len(found) == 1 and says in found[0]['reason'], result['problems']
+
+
 def _renamed(xml):
     return xml.replace('name="인계자 검토"', 'name="보내는 사람 검토"').replace('name="인수자 확인"', 'name="받는 사람 확인"')
 
@@ -57,10 +77,10 @@ def test_이름이나_배치만_바꾼_그림도_같은_흐름으로_통과하�
 
 def _chained_gateway(xml):
     """인계자 승인 뒤에 분기를 하나 더 — 조건 선만 있고 「그 밖의 경우」가 없다(#16)."""
-    xml = xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="검토 결정" />',
-                      '<bpmn:exclusiveGateway id="gw_sender" name="검토 결정" /><bpmn:exclusiveGateway id="gw_extra" name="긴급 분기" />')
-    xml = xml.replace("<bpmn:sequenceFlow id=\"seq_3\" sourceRef=\"gw_sender\" targetRef=\"task_receiver\" name=\"sender_decision == 'approve'\" />",
-                      "<bpmn:sequenceFlow id=\"seq_3\" sourceRef=\"gw_sender\" targetRef=\"gw_extra\" name=\"sender_decision == 'approve'\" />"
+    xml = xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="인계자 결정" />',
+                      '<bpmn:exclusiveGateway id="gw_sender" name="인계자 결정" /><bpmn:exclusiveGateway id="gw_extra" name="긴급 분기" />')
+    xml = xml.replace('<bpmn:sequenceFlow id="seq_3" name="전달" sourceRef="gw_sender" targetRef="task_receiver" />',
+                      '<bpmn:sequenceFlow id="seq_3" name="전달" sourceRef="gw_sender" targetRef="gw_extra" />'
                       "<bpmn:sequenceFlow id=\"seq_extra\" sourceRef=\"gw_extra\" targetRef=\"task_receiver\" name=\"sender_notes == '긴급'\" />"
                       "<bpmn:sequenceFlow id=\"seq_extra2\" sourceRef=\"gw_extra\" targetRef=\"ev_followup\" name=\"sender_notes == '보통'\" />")
     mapping = copy.deepcopy(HANDOVER['mapping'])
@@ -70,18 +90,18 @@ def _chained_gateway(xml):
 
 
 def _cut_receiver(xml):
-    return xml.replace("<bpmn:sequenceFlow id=\"seq_3\" sourceRef=\"gw_sender\" targetRef=\"task_receiver\" name=\"sender_decision == 'approve'\" />", ''), None
+    return xml.replace('<bpmn:sequenceFlow id="seq_3" name="전달" sourceRef="gw_sender" targetRef="task_receiver" />', ''), None
 
 
 def _parallel_sender(xml):
     """P5-11: 인계자 검토 뒤 배타 분기를 병렬 분기로 — 매핑의 세 선 조건(승인 · 보완 · 거절)이 그대로 남아 있다."""
-    return xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="검토 결정" />', '<bpmn:parallelGateway id="gw_sender" name="검토 결정" />'), None
+    return xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="인계자 결정" />', '<bpmn:parallelGateway id="gw_sender" name="인계자 결정" />'), None
 
 
 def _broken_condition(xml):
     """P5-19: 그림의 조건식이 틀렸고 매핑에는 그 선의 조건이 없다."""
-    xml = xml.replace("<bpmn:sequenceFlow id=\"seq_5\" sourceRef=\"gw_sender\" targetRef=\"ev_rejected\" name=\"sender_decision == 'reject'\" />",
-                      "<bpmn:sequenceFlow id=\"seq_5\" sourceRef=\"gw_sender\" targetRef=\"ev_rejected\" name=\"sender_decision == 'reject'\">"
+    xml = xml.replace('<bpmn:sequenceFlow id="seq_5" name="반려" sourceRef="gw_sender" targetRef="ev_rejected" />',
+                      '<bpmn:sequenceFlow id="seq_5" name="반려" sourceRef="gw_sender" targetRef="ev_rejected">'
                       "<bpmn:conditionExpression>sender_decision ==== 'reject'</bpmn:conditionExpression></bpmn:sequenceFlow>")
     mapping = copy.deepcopy(HANDOVER['mapping'])
     del mapping['flows']['seq_5']
@@ -92,7 +112,7 @@ def _broken_condition(xml):
     (_cut_receiver, '시작에서 닿지 않습니다'),             # 인수자 확인으로 가는 선을 끊음
     (_chained_gateway, '그 밖의 경우'),                    # #16: 분기 뒤 분기에 기본 선 없음
     (_parallel_sender, '병렬 분기'),                        # P5-11: 병렬 분기에 조건 — 조건이 조용히 버려지지 않는다
-    (_broken_condition, "조건식 'sender_decision ==== 'reject''을(를) 읽을 수 없습니다"),   # P5-19: 「조건이 없습니다」가 아니라
+    (_broken_condition, "조건식 'sender_decision ==== 'reject''를 읽을 수 없습니다"),   # P5-19: 「조건이 없습니다」가 아니라
 ])
 def test_구조를_바꾼_그림은_학생이_읽을_사유와_함께_검사에서_멈춘다(world, change, words):
     xml, mapping = change(HANDOVER['xml'])
@@ -168,3 +188,58 @@ def test_글자_한도와_같은_길이의_그림은_한도_때문에_거절되�
     xml = head + '<!--' + 'x' * (TEXT_MAX - len(head) - len(tail) - 7) + '-->' + tail
     assert len(xml) == TEXT_MAX
     assert bpmn_import.parse_bpmn(xml)['process']['id'] == 'p'
+
+
+# ---------------------------------------------------------------- 부품 목록: 기준 흐름의 승인 단계 · 승인 뒤 실행 부품
+def _base(name='anomaly_response_v22.json'):
+    import json
+    from conftest import DEFINITIONS
+    return json.loads((DEFINITIONS / name).read_text(encoding='utf8'))
+
+
+def test_조치_카드_승인_거절_부품은_기준_흐름의_승인_단계_계약_그대로다():
+    """기준 흐름 2.4 부터 승인 단계가 거절 값을 낸다 — 부품 목록이 거절 칸을 한 번 더 붙이면(2.3 까지의 방식) 폼에 같은 칸이 둘이 된다."""
+    from procsvc import approval_part
+    base = _base()
+    parts = {p['key']: p for p in bpmn_import.catalog(base, [])['parts']}
+    select = next(a for a in base['activities'] if a['id'] == 'task:select')
+    part = parts[bpmn_import.REJECTABLE_SELECT_PART]
+    assert part['outputs'] == select['outputData'] == ['chosen_skill', 'chosen_skill_kind', *approval_part.OUTPUTS]
+    assert part['form'] == base['forms']['select_card'] and [f['key'] for f in part['form']['fields_json']] == part['outputs']
+    assert part['contract']['outputData'] == part['outputs'] and part['contract']['instruction'] == select['instruction']
+    assert parts[bpmn_import.SELECT_PART]['outputs'] == part['outputs'], '거절 값 없는 조치 카드 승인 부품은 더는 없다'
+
+
+def test_기준_흐름이_쓰는_결과_보고는_설정을_고르는_일반_부품_하나로만_실린다():
+    """기준 흐름의 단계는 모두 「시나리오 부품」으로 실리는데, 결과 보고(승인 뒤 실행 부품)는 결과 · 글을 고르는 일반 부품이 따로 있다 —
+    기준 흐름의 고정된 보고 셋(거절 · 발주만 등록 · 조치 종류 확인 필요)이 학생의 부품 목록에 끼지 않는다."""
+    from procsvc import effect_parts
+    base = _base()
+    reports = [a['id'] for a in base['activities'] if a.get('tool') == effect_parts.REPORT_TOOL]
+    assert len(reports) == 3
+    cat = bpmn_import.catalog(base, [])
+    assert not set(reports) & {p['key'] for p in cat['parts']}
+    assert [p['key'] for p in cat['parts'] if p.get('tool') == effect_parts.REPORT_TOOL] == ['svc:report']
+
+
+def test_기준_흐름의_승인_단계가_거절_값을_내지_않으면_거절_값을_지어_붙이지_않고_까닭을_말한다():
+    """옛 기준 흐름(2.3 — 낸 그대로의 원문)을 부품 원천으로 주면: 거절 칸을 붙여 부품을 만들어 내지 않는다."""
+    import json
+    from pathlib import Path
+    old = json.loads((Path(__file__).resolve().parent / 'data' / 'definitions' / 'anomaly_response_2.3.json').read_text(encoding='utf8'))
+    with pytest.raises(ValueError, match='거절 값\\(approval, approval_reason\\)을 내지 않습니다'):
+        bpmn_import.catalog(old, [])
+
+
+def test_회복_기준이_없는_경보_패턴으로_시작하려_하면_까닭과_고를_수_있는_경보와_그_경보가_가는_곳을_말한다(world):
+    """전수검사 10-G9: 지식 지도에 새로 그린 경보 패턴(회복 기준 없음)을 흐름의 시작으로 고르면 「경보 정책에 없습니다」 한마디뿐이었다 — 무엇이
+    정책이고 무엇을 고를 수 있는지, 그 경보가 감지되면 어떻게 되는지 알 수 없었다."""
+    mapping = copy.deepcopy(HANDOVER['mapping'])
+    mapping['start'] = {'kind': 'alert', 'patterns': ['PRESSURE_DROP']}
+    said = next(p['reason'] for p in _check(world, HANDOVER['xml'], mapping)['problems'] if p.get('field') == 'start.patterns')
+    assert '경보 패턴 PRESSURE_DROP로는 이 흐름을 시작할 수 없습니다' in said and '회복 기준' in said
+    for offered in ('COOLER_DEGRADATION', 'PUMP_LEAKAGE', 'FAN_VIBRATION', 'OIL_ANALYSIS', 'SPARE_BELOW_MIN', 'PM_DUE'):
+        assert offered in said, (offered, said)
+    assert '「미지원 경보 → 현장 검토」' in said and '경보 정책에 없습니다' not in said
+    mapping['start'] = {'kind': 'alert', 'patterns': ['PUMP_LEAKAGE']}
+    assert not [p for p in _check(world, HANDOVER['xml'], mapping)['problems'] if p.get('field') == 'start.patterns']

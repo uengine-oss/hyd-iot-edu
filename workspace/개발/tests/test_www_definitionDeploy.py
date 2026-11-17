@@ -1,4 +1,4 @@
-"""관리 › 흐름 판본 배포(it/portal/www/definitionDeploy.js) — 「기준과 비교」 단추를 다는 판정, 배포 · 되돌리기 결과 한 줄.
+"""흐름 화면의 「판본 · 배포」와 「경보별 운영 흐름」(it/portal/www/definitionDeploy.js — 패널은 index.html 의 view-flows 안에 있다) — 「기준과 비교」 단추를 다는 판정, 배포 · 되돌리기 결과 한 줄.
 node 에 실제 화면 파일을 index.html 차례로 싣는다(브라우저 쪽만 대역 — www_node.page_dom). 서버 응답 모양은 서버 코드 그대로:
 versions 의 compare_base = flow_deploy.compare_base, 배포 응답 = instances.InstanceRuntime.deploy_definition."""
 import re
@@ -15,8 +15,12 @@ PATTERNS = {code: name for name, code in re.findall(r"\['pattern:[^']+','([^']+)
 FILES = ['ui.js', 'layers.js', 'courseAccess.js', 'definitionRegistry.js', 'definitionDeploy.js']
 
 
+# 배포 패널은 흐름 화면에 들어올 때 읽는다(app.js 의 탭 진입 표 hydTabs) — 여기서는 화면을 옮기지 않으므로 표만 대역으로 둔다
+TABS = "globalThis.hydTabs = { shown: [], onShow(fn) { this.shown.push(fn); } };"
+
+
 def js(script, data=None):
-    return run(FILES, script, data, prelude=page_dom())
+    return run(FILES, script, data, prelude=page_dom() + TABS)
 
 
 REF = {'definition': 'anomaly_response', 'version': '2.2', 'name': '설비 이상 조치', 'why': '기준 흐름의 기준 판본'}
@@ -63,18 +67,18 @@ for (const [id, v] of Object.entries(DATA.values)) $(id).value = v;
 window.hydInbox = { me: () => DATA.me };   // 「나」는 inbox.js 가 쥔다 — 여기서는 고른 사람만 대역
 UI.confirm = async () => false;            // 확인 창에서 [취소] — 서버를 부르기 직전에 멈춘다
 FETCHED.length = 0;   // 실릴 때 읽는 이름 사전(names.json)은 빼고
-await $('definitionDeployPanel').fire('click', { target: $('deployResetRef') || Object.assign(document.createElement('button'), { id: 'deployResetRef' }) });
-const msg = $('deployMessage');
-out({ text: msg.textContent, cls: msg.className, fetched: FETCHED, by: $('deployBy').value, readOnly: $('deployBy').readOnly });
+await $('deployRollback').fire('click', { target: $('deployRollback') });   // 고른 흐름의 [이전 배포 판본으로 되돌리기] — 담당자가 없으면 묻기 전에 멈춘다
+const msg = $('deployMessage'), box = msg.parentElement;   // 그 자리의 알림 판(alert) — 실패면 destructive 로 바뀌고 보인다
+out({ text: msg.textContent, failed: box.dataset.variant === 'destructive', hidden: box.hidden, fetched: FETCHED, by: $('deployBy').value, readOnly: $('deployBy').readOnly });
 """
 
 
-def test_기준_흐름으로_되돌리기는_나를_고르지_않았으면_서버를_부르지_않고_멈춘다():
+def test_이전_배포_판본으로_되돌리기는_담당자를_못_읽었으면_서버를_부르지_않고_멈춘다():
     """담당자 칸에 적은 글은 쓰지 않는다 — 자유 입력이 배포 이력에 지어낸 이름으로 남던 것(FW2 → FA2)."""
     got = js(PANEL, {'values': {'deployBy': '아무 이름'}, 'me': None})
-    assert got == {'text': "담당자는 '나'입니다 — 내 작업함에서 나를 먼저 고르세요", 'cls': 'form-msg neg', 'fetched': [], 'by': '', 'readOnly': True}
+    assert got == {'text': '담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요', 'failed': True, 'hidden': False, 'fetched': [], 'by': '', 'readOnly': True}
 
 
 def test_담당자_칸은_고른_나의_이름을_읽기만으로_보인다():
     got = js(PANEL, {'values': {'deployBy': '아무 이름'}, 'me': {'id': 'user:kim-op', 'name': '김운영', 'roles': []}})
-    assert got['by'] == '김운영 (나)' and got['readOnly'] is True and got['fetched'] == []
+    assert got['by'] == '김운영' and got['readOnly'] is True and got['fetched'] == []

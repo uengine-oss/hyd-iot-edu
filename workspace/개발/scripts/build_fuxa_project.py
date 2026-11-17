@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_grafana_dashboard import ts1_limits  # noqa: E402 — 유온 경고 · 정지선 정본 읽기는 한 곳
 
 ASSETS = ["HYD-01", "HYD-02", "HYD-03"]
-DEV = "emqx"
+DEV = "ot-broker"                                   # FUXA 장치 이름 = 공장 브로커의 compose 서비스 이름
 OUT = Path(__file__).resolve().parents[3] / "ot" / "fuxa" / "project.json"   # 저장소의 FUXA 화면(fuxa-init 이 올린다)
 
 W, H = 1180, 720
@@ -254,7 +254,7 @@ def build_project():
         "name": "hyd-iot-edu",
         "server": {"id": "0", "name": "FUXA Server", "type": "FuxaServer", "property": {}},
         "devices": {DEV: {"id": DEV, "name": DEV, "type": "MQTTclient", "enabled": True,
-                          "property": {"address": "mqtt://emqx:1883", "clientId": "fuxa-ot", "timeout": 10000, "username": "fuxa"},
+                          "property": {"address": f"mqtt://{DEV}:1883", "clientId": "fuxa-ot", "timeout": 10000, "username": "fuxa"},
                           "tags": build_tags()}},
         "hmi": {"views": [view],
                 "layout": {"start": view["id"], "zoom": "disabled",

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from conftest import DEFINITIONS, TENANT, start_handover
+from conftest import DEFINITIONS, OPERATOR, TENANT, start_handover
 from procsvc import mcp_secrets, procdb
 from worker import bridge, context
 from worker.context import FREEFORM_FIELDS
@@ -66,20 +66,26 @@ def test_작업_행이_다른_테넌트이거나_고정_판_정의를_가리키�
 @pytest.mark.parametrize('tool, form_id, from_table', [
     (f'formHandler:{SEED_FORM}', SEED_FORM, True),
     (SEED_FORM, SEED_FORM, True),
-    ('formHandler:fgb_no_such_form', 'fgb_no_such_form', False),
     ('', 'freeform', False),
-], ids=['폼 도구', '폼 이름만', '없는 폼', '도구 없음'])
+], ids=['폼 도구', '폼 이름만', '도구 없음'])
 def test_정의_없는_작업은_옛_폼_표의_폼을_쓰고_없으면_자유형식_한_칸이다(repo, pg_dsn, tool, form_id, from_table):
     ctx = context.prepare(repo, {'id': 'w1', 'tenant_id': TENANT, 'tool': tool}, TENANT)
     assert ctx.form_id == form_id and ctx.definition is None
     assert ctx.form_fields == (seed_form_fields(pg_dsn, SEED_FORM) if from_table else FREEFORM_FIELDS)
 
 
+def test_없는_폼을_가리키는_작업은_자유형식으로_돌지_않고_폼_이름과_함께_멈춘다(repo):
+    """결과 계약이 없는 채로 AI 가 아무 글이나 내고 성공하던 조용한 폴백(2026-11-14 전수 검사)."""
+    with pytest.raises(LookupError) as e:
+        context.prepare(repo, {'id': 'w1', 'tenant_id': TENANT, 'tool': 'formHandler:fgb_no_such_form'}, TENANT)
+    assert 'fgb_no_such_form' in str(e.value)
+
+
 @pytest.mark.parametrize('user_id, agents, users, profile', [
     ('agent:cooling, role:operator ,sys:scada', ['agent:cooling', 'sys:scada'], ['role:operator'], 'agent:cooling'),
     ('sys:scada,agent:pm-plan', ['agent:pm-plan', 'sys:scada'], [], 'agent:pm-plan'),
     ('sys:scada', ['sys:scada'], [], None),
-    ('user:kim-op', [], ['user:kim-op'], None),
+    (OPERATOR['by'], [], [OPERATOR['by']], None),
     ('', [], [], None),
     ('fgb:nobody', [], [], None),
 ], ids=['에이전트 · 사람 · 시스템', '시스템이 앞에 적힘', '시스템만', '사람만', '배정 없음', '없는 id'])

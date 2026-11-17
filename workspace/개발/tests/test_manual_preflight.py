@@ -9,7 +9,7 @@ import pytest
 import class_knowledge
 from procsvc import manual_knowledge, manual_preflight
 
-DOCS = {i['doc']: i for i in class_knowledge.reviewed()}
+DOCS = {i['doc']: i for i in class_knowledge.reviewed(order=class_knowledge.ORDER + ('HI-01',))}     # 서명 묶음의 문서 넷(HI-01 = 참고 절차)
 
 
 @pytest.fixture
@@ -31,13 +31,32 @@ def codes(result):
     return {i['code'] for i in result['issues']}
 
 
-def test_냉각_검토본의_남은_빈틈은_벨트_교체를_후보로_낼_규칙이_없는_것_하나다(catalog):
-    """강사 서명 묶음의 HM-8 은 SOP-FAN-12(벨트 교체)를 결과로 둔 후보 규칙이 없고, 그 고장 유형(fm:cooler-cooling-loss)으로 합류할 시드 후보
-    규칙도 없다 — 판단이 벨트 교체를 후보로 내지 못한다. 묶음은 강사 재검토 · 재서명 대상이다(FB_고침.md 「사용자만 정할 수 있는 것」).
-    그 밖의 기술 검사는 지난다. 검사는 알릴 뿐 적재를 막지 않는다."""
+@pytest.mark.parametrize('doc', sorted(DOCS))
+def test_강사가_서명한_묶음에는_후보_규칙이_없다는_검토_필요가_없다(catalog, doc):
+    """서명한 묶음에서 이 항목이 「검토 필요」로 늘 뜨면 학생이 맞는 추출을 고칠 곳으로 읽는다(사용자 2026-11-14). 정비 묶음이 부르는 절차
+    (PM-02 의 SOP-PM-21~23)는 알리지 않고, 같은 원인의 다른 절차가 후보로 나오는 절차는 참고로만 알린다."""
+    result = manual_preflight.validate(proposal(doc), catalog)
+    assert [i for i in result['issues'] if i['code'] == 'CANDIDATE_RULE_MISSING'] == [], result['issues']
+
+
+def test_점검_뒤에_이어지는_교체는_검토_필요가_아니라_참고로_알린다(catalog):
+    """HM-8: 벨트 교체(SOP-FAN-12)는 점검(SOP-FAN-11)이 후보로 나오는 원인을 함께 맡는다(문서: 「기준을 벗어나면 교체한다」). 이어지는 절차인지
+    빠뜨린 대안인지는 검사기가 가를 수 없다 — 지우지 않고 참고로 남겨 사람이 정한다."""
     result = manual_preflight.validate(proposal('HM-8'), catalog)
-    assert [(i['code'], i['sop']) for i in result['issues']] == [('CANDIDATE_RULE_MISSING', 'SOP-FAN-12')], result['issues']
-    assert (result['needs_human_review'], result['can_commit']) == (True, False)
+    notes = [(n['code'], n['sop'], n['siblings']) for n in result['notices']]
+    assert notes == [('CANDIDATE_NOT_DIRECT', 'SOP-FAN-12', ['SOP-FAN-11'])], result['notices']
+
+
+def test_같은_원인의_어느_절차도_후보로_나오지_않으면_검토_필요로_알린다(catalog):
+    """PBL 문서에서 원인 하나의 조치가 통째로 후보에서 빠지면 판단이 보류된다(2026-10-23 리허설) — 참고로 낮추지 않는다."""
+    p = proposal('HM-8')
+    gone = {'SOP-FAN-11', 'SOP-FAN-12'}
+    for r in p['knowledge']['rules']:
+        if r.get('table') == 'dt:action-candidates':
+            r['outputs'] = [o for o in r.get('outputs') or [] if o not in gone]
+    result = manual_preflight.validate(p, catalog)
+    found = {i['sop'] for i in result['issues'] if i['code'] == 'CANDIDATE_RULE_MISSING'}
+    assert gone <= found and not [n for n in result['notices'] if n['sop'] in gone], (result['issues'], result['notices'])
 
 
 def test_지금_지식에_없는_고장_유형을_가리키면_칸_이름과_함께_알린다(catalog):
@@ -98,3 +117,17 @@ def test_검사는_제안을_고치지_않는다(catalog):
     before = deepcopy(p)
     manual_preflight.validate(p, catalog)
     assert p == before
+
+
+def test_다른_분야_문서가_지금_지식에_없는_구성_요소와_증상을_가리키면_새로_만들_수_없다는_것과_할_일을_말한다(catalog):
+    """전수검사 10-G7: 유압 밸브 블록 매뉴얼처럼 지금 지식에 없는 구성 요소 · 증상을 쓰는 문서는 적재가 막히는데, 「지금 지식에 없습니다」만으로는
+    문서를 고칠지 지식에 먼저 넣을지 알 수 없었다. 문서가 만들 수 있는 것(고장 유형)과 고를 수만 있는 것(구성 요소 · 증상)을 갈라 말한다."""
+    p = proposal('HM-8')
+    mode = p['knowledge']['failure_modes'][0]
+    mode['component'], mode['symptoms'] = 'comp:valve-block', ['sym:valve-response-lag']
+    p['procedures'][0]['link']['failureMode'] = 'fm:no-such-mode'
+    said = {i['field']: i['message'] for i in manual_preflight.validate(p, catalog)['issues'] if i['code'] == 'REFERENCE_NOT_FOUND'}
+    assert '구성 요소 칸에 적은 comp:valve-block가 지금 지식에 없습니다 — 문서 적재는 구성 요소를 새로 만들지 않습니다' in said['component']
+    assert '지금 지식에 있는 구성 요소 가운데' in said['component'] and '적재할 수 없습니다' in said['component']
+    assert '문서 적재는 증상을 새로 만들지 않습니다' in said['symptoms']
+    assert '이 문서의 고장 유형 목록에 넣거나' in said['link.failureMode'] and '새로 만들지 않습니다' not in said['link.failureMode']

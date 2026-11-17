@@ -49,6 +49,37 @@ def test_복구는_외란을_건강값으로_되돌리고_운전점은_원할_�
         plant.inject('HYD-01', 'cooler_degradation', operating_point=True)
 
 
+@pytest.mark.parametrize('targets, restored, not_modeled', [
+    (['sv:fouling'], {'cooler_health': 1.0}, []),                       # 쿨러 핀 오염도(지식의 외란 변수) → 쿨러만
+    (['comp:pump-a'], {'leak': 0.0}, []),                               # 구성 요소 id → 그 구성 요소의 외란만
+    (['sv:bearing-wear', 'sv:fouling'], {'cooler_health': 1.0, 'bearing_wear': 0.0}, []),
+    ([], {}, []),                                                       # 다루는 것이 없는 조치 — 아무것도 되돌리지 않는다
+    (['comp:tank', 'sv:ts1'], {}, ['comp:tank', 'sv:ts1']),             # 가상 설비가 모형으로 갖지 않은 대상 — 오류가 아니라 「모형에 없음」
+], ids=['외란 변수', '구성 요소', '둘', '빈 목록', '모형에 없는 대상'])
+def test_정비_복구는_지식_id로_받은_대상의_외란만_되돌리고_나머지_결함은_남긴다(targets, restored, not_modeled):
+    """처리 엔진의 정비 수행은 승인한 조치 방법이 지식에서 다루는 것(sv:* · comp:*)만 되돌려 달라고 한다. 전에는 대상을 흐름이 적은 부품 하나로
+    받거나 전부 되돌렸다 — 조치가 다루지 않는 결함까지 사라졌다."""
+    plant = Plant(time_scale=20)
+    for kind in ('cooler_degradation', 'pump_leakage', 'fan_vibration'):
+        plant.inject('HYD-01', kind, ramp_sim_s=1)
+    plant.tick(1)
+    out = plant.inject('HYD-01', 'restore', targets=targets, ramp_sim_s=1)
+    assert out['targets'] == restored and out['not_modeled'] == not_modeled
+    plant.tick(1)
+    state = plant.units['HYD-01'].state
+    left = {a: getattr(state, a) for a in ('cooler_health', 'leak', 'bearing_wear')}
+    healthy = {'cooler_health': 1.0, 'leak': 0.0, 'bearing_wear': 0.0}
+    assert {a for a in left if left[a] == healthy[a]} == set(restored), left
+
+
+def test_복구_대상_목록은_복구에만_쓰고_부품_하나와_함께_받지_않는다():
+    plant = Plant(time_scale=20)
+    with pytest.raises(ValueError, match='targets goes with restore only'):
+        plant.inject('HYD-01', 'cooler_degradation', targets=['sv:fouling'])
+    with pytest.raises(ValueError, match='not together with component'):
+        plant.inject('HYD-01', 'restore', component='cooler', targets=['sv:fouling'])
+
+
 def test_상태의_시각은_부른_쪽이_준_틱_시각이다():
     plant = Plant(time_scale=20)
     assert plant.status('HYD-01', '2026-10-30T05:00:00.000Z')['t'] == '2026-10-30T05:00:00.000Z'
