@@ -15,7 +15,7 @@
 | 1 Docker 확인 | 꺼져 있으면 켜고 최대 3분 기다린다. 그래도 응답이 없으면 멈춤 |
 | 2 `.env` · 이 PC 값 | `.env`가 없으면 `.env.example`을 복사. 키가 있으면 `AI_MODE=live`, 없으면 `replay`(강사가 저장한 응답 `it/agent-worker/replay/` 재생). process 호출 값 · 명령 지문 키를 정한다. 프로젝트 이름 · 포트는 이 PC 값(`.hyd-runtime/project.json` · `ports.json`, 업무 DB는 `it/supabase/.env`) — 같은 폴더면 이어받고, 다른 프로그램이 쓰는 포트는 피한다. compose가 정하는 옛 `.env` 줄은 꺼 두고 알린다. **git이 추적하는 파일은 고치지 않는다** |
 | 3 업무 DB | `supabase start` 뒤 새 마이그레이션 적용(`migration up --local`) |
-| 4 빌드 · 기동 | `docker compose up -d --build --remove-orphans` — 처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있다. 새 판에 없는 서비스의 옛 컨테이너(예: 공장 브로커를 mosquitto `ot-broker`로 바꾸기 전의 `emqx`)는 이때 지운다 — 남으면 계속 돌며 바깥 포트 1883 · 8083을 쥐어 새 공장 브로커가 뜨지 못한다(그 컨테이너의 이미지가 만든 익명 볼륨은 남는다, `emqx`는 약 260 KB). 지운 옛 볼륨(`<이름>_enterprise-data`)은 기동 뒤 스스로 지운다 |
+| 4 빌드 · 기동 | `docker compose up -d --build --remove-orphans` — 처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있다. 새 판에 없는 서비스의 옛 컨테이너(예: 공장 브로커를 mosquitto `ot-broker`로 바꾸기 전의 `emqx`)는 이때 지운다 — 남으면 계속 돌며 바깥 포트 1883 · 8083을 쥐어 새 공장 브로커가 뜨지 못한다(그 컨테이너의 이미지가 만든 익명 볼륨은 남는다, `emqx`는 약 260 KB). 그다음 `docker compose restart ot-broker dmz-broker ot-bridge` — 세 브로커는 붙여 쓰는 설정 폴더를 켤 때 한 번 읽는데 compose 는 그 파일 내용이 바뀐 것을 보지 않아, 떠 있는 스택에 설정만 바뀐 새 판을 받으면 옛 설정으로 계속 돈다(그래서 시작마다 다시 켠다). 지운 옛 볼륨(`<이름>_enterprise-data`)은 기동 뒤 스스로 지운다 |
 | 5 서비스 확인 | 최대 3분, 포털 응답까지 |
 | 6 수업 흐름 A · B · C | `scripts/c3_flows.py ensure` — 배포된 수업 흐름이 정본(`it/process/procsvc/course_flows.json`)과 같으면 그대로, 다르면 새 판본 등록 · 배포 |
 | 7 수업용 기본 지식 | `scripts/class_knowledge.py ensure` — 강사 서명 묶음(`it/process/procsvc/course_extractions.json`)의 HM-8 · PM-02 · PR-07 검토본을 AI 없이 넣는다. 옛 시작 판은 다음 시작 때 묶음 판으로 바꿔 넣고, 학생이 다시 넣은 판은 그대로 둔다 |

@@ -143,7 +143,7 @@ Docker Desktop에서 **Engine running**을 확인하고 `setup` 폴더의 **Wind
 | 1. Docker 확인 | 엔진 응답과 Compose 확인(꺼져 있으면 켜고 기다린다) |
 | 2. `.env` · 이 PC 값 준비 | 키가 있으면 AI 단계를 실제 AI, 없으면 강사가 저장한 응답 재생으로 정하고, 이 폴더의 프로젝트 이름 · 포트를 정한다(다른 프로그램과 겹치면 옮긴다). 이 PC 값은 git이 추적하지 않는 파일(`.env` · `.hyd-runtime/` · `it/supabase/.env`)에만 쓴다 |
 | 3. 업무 DB | `it/supabase`에서 Supabase 켜기 + 새 판의 업무 DB 구조 적용 |
-| 4. 시스템 기동 | `docker compose up -d --build --remove-orphans`(AI 워커 · 에이전트용 도구 서버 포함. 새 판에 없는 서비스의 옛 컨테이너는 지운다) |
+| 4. 시스템 기동 | `docker compose up -d --build --remove-orphans`(AI 워커 · 에이전트용 도구 서버 포함. 새 판에 없는 서비스의 옛 컨테이너는 지운다) 뒤 MQTT 브로커 셋을 다시 켜 지금 판의 설정을 읽게 한다 |
 | 5. 서비스 확인 | 모든 서비스가 떴는지(멈춘 것 · 계속 다시 시작하는 것은 실패), 포털 응답 |
 | 6. 수업 흐름 | 업무 흐름 A(냉각) · B(정기 정비) · C(예비품 구매) 배포(있으면 건너뜀) |
 | 7. 기본 지식 | 수업 문서 셋(HM-8 · PM-02 · PR-07)의 검토한 지식 넣기(있으면 건너뜀, AI 없음) |

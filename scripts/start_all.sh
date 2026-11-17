@@ -92,6 +92,10 @@ if ! docker compose up -d --build --remove-orphans; then
   fi
   die "시스템을 켜지 못했습니다. 위 오류가 무엇인지에 따라: 이미지 받기 · 빌드 중 네트워크 오류(pull · pip · timeout · TLS)면 인터넷 연결을 확인하고 다시 실행하세요(받은 데까지는 이어집니다). 'port is already allocated'면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 어떤 서비스가 unhealthy · exited 로 나오면 'docker compose logs <그 서비스 이름>'의 마지막 줄이 까닭입니다."
 fi
+# MQTT 브로커 셋은 붙여 쓰는 설정 폴더(ot/broker · dmz/broker · ot/bridge)를 켤 때 한 번만 읽는다. compose 는 그 파일의 내용이 바뀐 것을 보지 않아,
+# 스택이 떠 있는 채로 설정만 바뀐 새 판을 받으면 컨테이너를 다시 만들지 않고 옛 설정으로 계속 돌린다(2026-11-17 실측: 브리지가 지운 emqx 를 찾느라
+# 공장 쪽 다리가 끊긴 채 남았다). 그래서 시작마다 다시 켠다 — 몇 초 걸리고, 거기 붙는 서비스들은 스스로 다시 붙는다
+docker compose restart ot-broker dmz-broker ot-bridge || die "MQTT 브로커(ot-broker · dmz-broker · ot-bridge)를 다시 켜지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요."
 # 새 판이 compose 에서 뺀 볼륨은 down -v 도 지우지 않는다 — 옛 컨테이너가 새 판으로 바뀐 지금 지운다(지울 이름은 prepare_ports.py 의 표 하나)
 "${PYTHON[@]}" scripts/prepare_ports.py retire || die "지금 판이 쓰지 않는 옛 볼륨을 정리하지 못했습니다. 도움을 요청할 때 바로 위의 까닭을 그대로 전해 주세요."
 

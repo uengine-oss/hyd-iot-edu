@@ -23,6 +23,7 @@ case "$*" in
   info*) exit 0;;
   "compose version") exit 0;;
   "compose up -d --build --remove-orphans") printf '%s\n' "${FAKE_UP_OUTPUT:-}" >&2; exit "${FAKE_UP_EXIT:-0}";;
+  "compose restart ot-broker dmz-broker ot-bridge") exit 0;;
   compose\ logs*kg-seed) printf '%s\n' "${FAKE_SEED_LOG:-}";;
   "compose config --format json") echo '{"name": "hyd-fake"}';;
   volume\ ls*neo4j-data*) echo hyd-fake_neo4j-data;;
