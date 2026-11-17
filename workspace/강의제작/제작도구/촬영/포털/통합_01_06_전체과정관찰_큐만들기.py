@@ -1,218 +1,240 @@
-# 통합 1회차 06 전체과정관찰(다시 찍을 판)의 큐 JSON을 확정 대본에서 만든다.
-#   python3 통합_01_06_전체과정관찰_큐만들기.py <확정 대본.md>  → 같은 폴더의 전체과정관찰_다시찍기_큐.json
-# 대본 「## 2. 새 대본 전문」의 「### N.」 단계를 ▸ · ‖ · [기다림]에서 잘라 큐로 만든다. 글은 대본 그대로, 조작은 아래 표(OPS), 쉼(gap)은 영상 V-14.
-import re,json,sys
+# 1회차 실습 06 전체과정관찰(두 과정 공통, 2026-11 새 포털 판)의 큐 JSON을 확정 대본에서 만든다. 손으로 고치지 않는다.
+#   python3 통합_01_06_전체과정관찰_큐만들기.py [<대본.md>]  → 같은 폴더의 통합_01_06_전체과정관찰_큐.json
+#   대본을 주지 않으면 산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md(실전반 파일과 제목 줄만 다르다)를 읽는다.
+# 대본 「## 절」 하나가 구간 하나이고, 표의 한 줄(| vNNNN | 발화 | 조작 |)이 큐 하나다. 글은 발화 칸 그대로, 조작은 아래 표(OPS), 쉼(gap, 초)은 영상 V-14.
+# 조작 형식은 촬영도구/segs/map.mjs 머리말: [조작, 대상, 시점]. 시점은 {'at': '대사 속 구절'}(그 구절이 시작하는 글자 비율 — map.mjs가 큐 시작 + 길이 × 비율 − 300ms에 한다)
+#   이거나 생략(앞 조작이 끝나면 바로). wait · settle은 시점이 없다. 대상은 길뚫기(2026-11-17, main f805fd43 포털 DOM)로 찾았다.
+# 녹화 모듈은 촬영도구/segs/one06.mjs(→ map.mjs). 영상 V-13: 추천안 이름 · 후보 비교 4번 줄 · 펼친 가지 않은 단계 이름 · 효과 확인의 설비 시간 괄호는
+#   대본과 같은지 wait(정확한 글)로 확인한다 — 다르면 리허설 · 녹화가 그 큐에서 멈추고, 그때는 대본의 그 큐 말을 바꾼다.
+import json, re, sys
 from pathlib import Path
-SRC=sys.argv[1]
-OUT=Path(__file__).resolve().parent/'전체과정관찰_다시찍기_큐.json'
-src=open(SRC,encoding='utf-8').read()
-body=src[src.index('## 2. 새 대본 전문'):src.index('# 촬영 본문 끝')]
-st=re.split(r'\n### (\d+)\. [^\n]*\n',body)[1:]
-raw=[]
-for i in range(0,len(st),2):
-    s=int(st[i]);txt=st[i+1].strip().replace('\n',' ')
-    toks=re.split(r'\s*(▸|‖|\[기다림\])\s*',txt);n=0;cur=''
-    for t in toks:
-        if t in('▸','‖','[기다림]'):
-            if cur.strip():n+=1;raw.append({'stage':s,'n':n,'text':cur.strip(),'after':t})
-            else: raw[-1]['after']+='+'+t
-            cur=''
-        else: cur+=t
-    if cur.strip():n+=1;raw.append({'stage':s,'n':n,'text':cur.strip(),'after':'끝'})
-SEG={1:1,2:1,3:1,4:2,5:3,6:4,7:4,8:5,9:5,10:6,11:6,12:7,13:7,14:7,15:7}
-H='#units [data-asset="HYD-01"]'
-def t(css,anchor='after',**k): return dict(css=css,anchor=anchor,**k)
-def tx(text,**k): k.setdefault('anchor','after'); return dict(text=text,**k)
-A=lambda s:{'at':s}
-def P(tg,at=None): return ['point',tg]+([A(at)] if at else [0])
-def mid(tg):
-    # 누르는 조작은 대상 안쪽을 누른다(글 끝 오른쪽 · 아래 여백을 누르면 맨 위 요소가 대상이 아니다).
-    if isinstance(tg,dict) and tg.get('anchor') in ('after','below','margin','right'): tg={**tg,'anchor':'center'}
-    return tg
-def C(tg,at=None): return ['click',mid(tg)]+([A(at)] if at else [0])
-def PH(s,at=None): return ['phrase',s]+([A(at)] if at else [0])
-MAP=lambda s:{'text':s,'tag':'text','anchor':'below'}
-REC=lambda n,part,anchor='after':t(f'#instRecord [data-cr-steps] > li:nth-child({n}) {part}',anchor)
-mproc=lambda sop:f'.mproc:has([data-rel="{sop}"]) > details:first-of-type'
-ev=lambda g:f'.mknow .msec:has([data-know-drop="{g}"])'
-OPS={
- '01-01':[P(MAP('관제 · 데이터'),'이 그림')],
- '01-02':[P(MAP('현장 설비'))],
- '01-03':[P(MAP('지식 지도 · 에이전트 조치'))],
- '01-04':[P(MAP('승인된 조치 → 검증 → 설비'))],
- '02-01':[C('tab:knowledge','지식 관리 누르'),['waitjs',"[...(document.querySelector('#manualDocumentId')?.options||[])].some(o=>o.textContent.includes('HM-8_cooler-fan-manual.md'))",30]],
- '02-02':[P(t('#manualUpload label.file-picker .btn')),P(t('#providedDocs a[href*="HM-8_cooler-fan"]','below'),'여기 제공 문서'),['download',t('#providedDocs a[href*="HM-8_cooler-fan"]','center'),'HM-8_cooler-fan-manual.md',A('이름을 누르')]],
- '02-03':[P(t('#manualUpload label.file-picker .btn'),'파일 선택 누르'),['file',t('#manualUpload label.file-picker .btn','center'),'HM-8_cooler-fan-manual.md',A('받은 파일 고르')]],
- '02-04':[P(t('#manualFilename','below'))],
- '02-05':[P(t('#manualBy','below'))],
- '02-06':[P(t('#manualHistory h2.sec'))],
- '02-07':[P(t('#manualHistory .manual-doc .card-title a',contains='HM-8'))],
- '02-08':[P(t('#manualDocumentId','center'),'오른쪽 등록할'),['selectwith',t('#manualDocumentId','center'),['HM-8_cooler-fan-manual.md','문서 개정'],A('골라 주세요')]],
- '02-10':[C(t('#manualPreview','center'),'미리보기 누르'),['wait',t('#manualFullSource'),30]],
- '03-01':[['textin',t('.mprev > div.muted','left'),'절 8개 · 절차 7개',A('맨 위 줄에')]],
- '03-03':[P(t('.mprev section.card .chip',contains='수정할 항목'))],
- '03-04':[P(t('.mprev section.card .card-body > ul > li','margin',nth=0),'절차마다')],
- '03-05':[P(t('.mprev section.card .card-body > ul > li','margin',nth=7),'이 절차를')],
- '03-06':[P(t('.mprev section.card .card-body > ul > li:nth-child(8) > details > summary'),'접힌 칸')],
- '04-01':[C(t('#manualFullSource','center'),'추출 원문 전체 보기 누르'),['wait',t('#manualSourceText details > summary'),15]],
- '04-02':[C(t('#manualSourceText details > summary','left'),'펼쳐')],
- '04-03':[PH('## HM-8.1'),PH('## HM-8.2','갈아 끼우는')],
- '04-04':[PH('1. 설비를 정지하고 현장 패널에서 LOCAL로 전환한다.'),PH('1. LOCAL 전환과 잠금','현장 제어는')],
- '04-05':[PH('## HM-8.3')],
- '04-06':[PH('| 유온 TS1','하나는 기름'),PH('55 ℃ 초과이면서 상승 중','기준은 오십오'),PH('| 냉각 효율 CE','또 하나는'),PH('80 % 이상 | 70 % 미만','기준은 칠십')],
- '04-07':[PH('유온이 55 ℃를 넘고','유온이 오십오 도를 넘고')],
- '04-08':[PH('## HM-8.4')],
- '04-09':[PH('- 쿨러 핀 오염','첫째는')],
- '04-10':[PH('(사전 확률 0.6)')],
- '04-11':[PH('- 주변 온도 상승')],
- '04-12':[PH('- 팬 구동 불량')],
- '04-13':[PH('최근 2분 팬 진동 VS1 평균이 0.9 mm/s 미만','핀 오염이면'),PH('VS1 평균이 0.9 mm/s 이상','팬 구동 불량이면')],
- '04-14':[PH('## HM-8.5')],
- '04-15':[PH('원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만','원격 자동일 때만')],
- '04-16':[PH('승인: 운전원. 생산은 그대로 유지된다.')],
- '04-17':[PH('## HM-8.6')],
- '04-18':[PH('조치 뒤 15분 동안 TS1이 55 ℃ 미만','유온이 오십오')],
- '04-19':[PH('## HM-8.7')],
- '04-20':[PH('### SOP-COOL-14 쿨러 핀 세척','급한 불은')],
- '04-21':[PH('## HM-8.8')],
- '05-01':[C(t('#manualAgentExtract','center'),'추출 제안 준비 누르'),['waittext','진행 · 결과 확인을 누르세요',60]],
- '05-02':[P(t('#manualAgentStatus')),['clickuntil',t('#manualAgentResult','center'),"document.querySelectorAll('.mproc').length>0",A('결과 확인 누르')]],
- '05-03':[P(tx('등록할 조치 방법',tag='h3'))],
- '05-04':[P(t('.mprev > details:first-of-type > summary'))],
- '05-05':[['open',t('.mprev > details:first-of-type > summary','left'),0]],
- '05-06':[P(t('.mprev > details:first-of-type li','margin',nth=0),'하나는')],
- '05-07':[P(t('.mprev > details:first-of-type li','margin',nth=1))],
- '05-08':[P(t('.mprev > details:first-of-type li','margin',nth=2))],
- '05-09':[P(t('.mprev section.card .card-body > ul > li','margin',contains='벨트 교체'),'검사 칸을')],
- '06-01':[P(tx('매뉴얼 절',tag='h3'),'아래 왼쪽은'),P(tx('등록할 조치 방법',tag='h3'),'오른쪽 등록할')],
- '06-02':[P(t('[data-manual-name="SOP-FAN-11"]','right')),P(t('[data-manual-name="SOP-FAN-12"]','right'),'벨트 교체')],
- '06-03':[P(t('[data-rel="SOP-FAN-11"]','below'),'관계는'),P(t('[data-kind="SOP-FAN-11"]','below'),'종류는'),P(t('[data-rel="SOP-FAN-12"]','below'),'이 두 개는'),P(t('[data-kind="SOP-FAN-12"]','below'),'종류가 정비 요청')],
- '06-04':[P(t('[data-manual-name="SOP-COOL-11"]','right'))],
- '06-05':[P(t('[data-fm="SOP-COOL-11"]','below'))],
- '06-06':[P(t('[data-rel="SOP-COOL-11"]','below')),P(t('[data-kind="SOP-COOL-11"]','below'),'종류는')],
- '06-07':[['open',t(mproc('SOP-COOL-11')+' > summary','left'),A('원문 인용 눌러')]],
- '06-08':[P(t(mproc('SOP-COOL-11')+' pre','left')),P(t('[data-manual-step="SOP-COOL-11"][data-order="1"]','right'),'밑의 작업 순서')],
- '06-10':[P(t('[data-rel="SOP-COOL-12"]','below')),P(t('[data-rel="SOP-COOL-13"]','below'),'즉시 완화로')],
- '06-11':[P(t('[data-manual-name="SOP-COOL-14"]','right'))],
- '06-12':[P(t('[data-rel="SOP-COOL-14"]','below')),P(t('[data-kind="SOP-COOL-14"]','below'),'종류가')],
- '06-13':[P(t('[data-manual-step="SOP-COOL-14"][data-order="1"]','right'))],
- '06-14':[P(t('[data-rel="SOP-COOL-15"]','below'),'환기 보강')],
- '07-01':[P(tx('추출한 지식 후보',tag='h3'))],
- '07-02':[P(t('.mknow h4',contains='고장 유형'))],
- '07-03':[P(t('.mknow h4',contains='원인'))],
- '07-04':[['open',t(ev('causes')+' > details > summary','left',nth=0),A('원문 인용을 눌러')]],
- '07-05':[P(t(ev('causes')+' > details pre','left',nth=0)),['textin',t(ev('causes')+' > details pre','left',nth=0),'70 % 미만이고',A('칠십 밑')],['textin',t(ev('causes')+' > details pre','left',nth=0),'0.9 mm/s 미만',A('영 점 구 밑')]],
- '07-06':[P(t('.mknow h4',contains='확인 증거'))],
- '07-07':[P(t(ev('evidence')+' > div.muted',nth=0))],
- '07-08':[['textin',t(ev('evidence')+' > div.muted','left',nth=1),'< 0.9',0],['textin',t(ev('evidence')+' > b','left',nth=1),'최근 2분',A('줄 앞에 삼십 초')],['textin',t(ev('evidence')+' > div.muted','left',nth=1),'< 0.9',A('미만이 이상으로')],['textin',t(ev('evidence')+' > div.muted','left',nth=1),'120초',A('시간이 원문과')]],
- '07-09':[P(t(ev('evidence')+' > div.muted',nth=3),'두 줄도')],
- '07-10':[P(t('.mknow h4',contains='규칙')),['textin',t(ev('rules')+' > div.muted','left',nth=0),'쿨러 성능 저하 경보',A('여기 쿨러 성능 저하')]],
- '07-11':[P(t(ev('rules')+' > b',nth=0))],
- '07-12':[P(t(ev('rules')+' > b',nth=1))],
- '07-13':[P(t(ev('rules')+' > b',nth=3),'원인마다'),P(t(ev('rules')+' > b',nth=5),'원격 자동이 아니면')],
- '07-14':[P(t(ev('rules')+' label.check',nth=0),'제외 칸은')],
- '08-01':[C(t('#manualReviewed','center'),'체크하세요')],
- '08-02':[C(t('#manualCommit','center'),'적재 누르'),['waitjs',"/적재 완료/.test(document.querySelector('#manualMsg')?.textContent||'')",90]],
- '08-03':[P(t('#manualMsg','below'))],
- '08-05':[P(t('#manualHistory .manual-doc .card-title a',nth=0),'맨 위에도'),P(t('#manualHistory .manual-doc .card-chips .chip',nth=0),'현재 판본으로')],
- '09-01':[C('tab:ontology','지식 지도 누르'),['wait',t('#ontoSearch'),30]],
- '09-02':[C(t('#ontoSearch','center'),'검색 칸에'),['type','쿨러',A('쿨러라고')]],
- '09-03':[['wait',t('[data-id="fm:cooler-cooling-loss"]','center'),15],C(t('[data-id="fm:cooler-cooling-loss"]','center'),'쿨러 냉각 성능 상실 누르')],
- '09-04':[P(t('#ontoNode h3'))],
- '09-05':[P(t('#ontoNode h4',nth=1),'아래 들어오는 쪽부터')],
- '09-06':[P(t('#ontoNode a[data-go]',contains='핀 오염')),P(t('#ontoNode a[data-go]',contains='팬 구동 불량'),'팬 구동 불량이')],
- '09-07':[P(t('#ontoNode a[data-go]',contains='유온 상승')),P(t('#ontoNode a[data-go]',contains='냉각 효율 저하'),'냉각 효율 저하가')],
- '09-08':[P(t('#ontoNode h4',nth=0)),P(tx('팬 최대 운전',tag='a',within='#ontoNode'),'팬 최대 운전,'),P(tx('쿨러 핀 세척',tag='a',within='#ontoNode'),'쿨러 핀 세척 같은'),P(t('#ontoNode a[data-go]',contains='오일 쿨러'),'오일 쿨러도')],
- '09-09':[P(t('#ontoNode a[data-go]',contains='유온 상승'),'증상에서 출발'),P(t('#ontoNode h3'),'이 고장을 찾고'),P(t('#ontoNode a[data-go]',contains='핀 오염'),'원인을 찾고'),P(tx('팬 최대 운전',tag='a',within='#ontoNode'),'조치를 꺼내')],
- '10-01':[C('tab:scenario','결함 시뮬레이션 누르'),['wait',t(H),20]],
- '10-02':[P(t(H+' header strong'),'첫 번째 설비'),P(t(H+' .big.num'),'유온은')],
- '10-03':[P(t(H+' .kv em.ce'))],
- '10-04':[P(t(H+' .kv em.vs1'))],
- '10-05':[P(t(H+' header .mode','below'))],
- '10-06':[C(t(H+' button[data-act="degrade"]','center'),'쿨러 열화 주입을'),['scroll',t(H+' header','left',top=96),A('눌러 주세요')]],
- '10-07':[P(t(H+' .kv em.health'))],
- '10-08':[P(t(H+' .kv em.ce'),'위의 냉각 효율'),['waitjs',f"parseFloat(document.querySelector('{H} .kv em.ce')?.textContent)<70",60]],
- '10-10':[P(t(H+' .kv em.vs1'))],
- '10-11':[P(t(H+' .big.num'),'맨 위 유온')],
- '10-12':[P(t(H+' .bar','below'))],
- '10-13':[P(t(H+' .kv em.phase'),'아래 경보 칸'),['waitjs',f"/이상 징후|경보 발생/.test(document.querySelector('{H} .kv em.phase')?.textContent||'')",180]],
- '10-14':[['waitjs',f"(document.querySelector('{H} .kv em.phase')?.textContent||'').includes('경보 발생')",60]],
- '11-01':[C('tab:instances','처리 건 누르'),['wait',t('#todoList .item strong',nth=0),60],['wait',t('#instDetail .td-now'),60],['settle',None,10]],
- '11-02':[P(t('#todoList .item strong',nth=0))],
- '11-03':[P(t('#todoPanel h3',nth=0))],
- '11-04':[P(t('#instList [data-inst^="c3_cooling."] strong',nth=0)),P(t('#instList [data-inst] strong',nth=1),'그 밑의 건은')],
- '11-05':[P(t('#instDetail .td-now'))],
- '11-06':[P(MAP('쿨러 과열 경보'))],
- '11-07':[P(dict(text='원인 진단',tag='text',within='#instDetail',anchor='below'),'원인 진단'),P(dict(text='냉각 조치 제안',tag='text',within='#instDetail',anchor='below'),'냉각 조치 제안이')],
- '11-08':[P(dict(text='운전원 승인',tag='text',within='#instDetail',anchor='below',nth=0),'운전원 승인에서'),P(t('#instDetail .td-now'),'위에도')],
- '12-01':[P(t('#todoPanel h3',nth=0))],
- '12-02':[P(t('#todoPanel [data-approval-until]'),'지연 알림')],
- '12-03':[P(t('#todoPanel .ap-title'),'맨 위에')],
- '12-04':[P(t('#todoPanel .ap-reasons li',nth=0))],
- '12-05':[P(t('#todoPanel .ap-reasons li',nth=1),'좋아지는 건'),P(t('#todoPanel .ap-reasons li',nth=2),'감수할 건')],
- '12-06':[P(t('#todoPanel .ap-do .ap-label'))],
- '12-07':[P(t('#todoPanel .ap-evidence .ap-row .ap-label',nth=1))],
- '12-08':[['open',t('#todoPanel .ap-card > details:has(.ap-lost-list) > summary','left'),A('펼쳐 보면')]],
- '12-09':[P(t('#todoPanel .ap-lost-head b',nth=0)),P(t('#todoPanel .ap-lost-head b',nth=1),'생산이 줄어서')],
- '12-10':[P(t('#todoPanel .ap-lost',nth=2,anchor='margin'))],
- '12-11':[P(t('#todoPanel .ap-switch',nth=0),'이 안으로 바꾸기')],
- '12-12':[P(t('#tdGo','center'),'승인 버튼')],
- '12-13':[P(t('#todoPanel .field-hint',contains='먼저 나를')),C('tab:inbox','내 작업함 누르')],
- '12-14':[['select',t('select[data-inbox-me]','right'),'user:choi-op',A('최운전')]],
- '12-15':[['wait',t('[data-inbox-link]',nth=0),60],P(t('[data-inbox-link]',nth=0)),C('tab:instances','처리 건으로')],
- '12-16':[['wait',t('#todoPanel .field.ro .ro-value',contains='최운전'),60],P(t('#todoPanel .field.ro .ro-value',contains='최운전'))],
- '12-17':[P(t('#tdGo','center')),P(t('#todoPanel textarea','left'),'사유는'),C(t('#tdGo','center'),'승인 누르'),['waitjs',"!/운전원 승인/.test(document.querySelector('#instDetail .td-now')?.textContent||'운전원 승인')",60],['settle',None,10]],
- '13-01':[['stepmark','운전원 승인',A('아래 처리 과정')]],
- '13-02':[['stepmark','운전원 승인',0],['stepmark','승인 지연',A('지연 알림은')]],
- '13-03':[['stepmark','냉각 명령',0]],
- '13-04':[['stepmark','재관측',0]],
- '13-05':[P(t('#instDetail .td-now'),'남은 시간이'),['waitjs',"(document.querySelector('#instDetail .td-now')?.textContent||'').trim()==='끝'",240]],
- '13-06':[P(t('#instDetail .td-now'))],
- '14-01':[C(t('[data-inst-tab=record]','center'),'처리 기록 탭 누르'),['wait',REC(1,'.cr-title'),30]],
- '14-03':[P(REC(1,'.cr-title'))],
- '14-04':[P(t('#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip','below',nth=0)),P(t('#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip','below',contains='냉각 효율'),'냉각 효율은'),P(t('#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip','below',contains='유온'),'유온은')],
- '14-05':[P(REC(2,'.cr-title'))],
- '14-06':[P(REC(2,'.cr-sentence','margin')),C(tx('모두 펼치기',tag='button',within='#instRecord',anchor='center'),'모두 펼치기 누르')],
- '14-07':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='지식 경로'),'지식 경로를')],
- '14-09':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='원인 후보와 증거')),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td','after',contains='쿨러 핀 오염'),'핀 오염 줄은'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=0),'두 줄 다'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=1),'맞음으로')],
- '14-10':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=2)),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=3),'아님')],
- '14-12':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='추천안에 이른 길'))],
- '14-14':[P(REC(3,'.cr-title'))],
- '14-15':[P(REC(3,'.cr-sentence','margin'))],
- '14-16':[P(REC(3,'.cr-sec-body > ul.cr-list > li','margin')|{'contains':'쿨러 팬 속도'})],
- '14-17':[P(REC(4,'.cr-title'))],
- '14-18':[P(REC(4,'.cr-sentence','margin'))],
- '14-19':[P(REC(5,'.cr-title'))],
- '14-20':[P(REC(5,'.cr-sentence','margin'))],
- '14-21':[P(REC(6,'.cr-title'))],
- '14-22':[P(REC(6,'.cr-sentence','margin'))],
- '14-23':[P(REC(7,'.cr-title'))],
- '14-24':[P(REC(7,'.cr-sentence','margin')),P('top:알림','알림 종')],
- '14-08':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=0),'경보에서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=1),'증상에서 고장'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=2),'고장으로 가서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=3),'원인을 찾았')],
- '14-11':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td.num','after',contains='< 0.9'),'미만'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td.num','after',contains='≥ 0.9'),'이상까지')],
- '14-13':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node','below',nth=0),'원인에서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node','below',nth=1),'고장에서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node','below',nth=2),'팬 최대 운전')],
- '15-01':[P(t('[data-inst-tab="result"]','below')),C(t('[data-inst-tab="result"]','center'),'결과 탭을 누르'),['wait',t('[data-open-record]'),30]],
- '15-02':[P(t('#instDetail .rr-badge')),P(t('#instDetail .rr-val',nth=0),'유온이'),P(t('#instDetail .rr-val',nth=1),'경보 해제')],
- '15-03':[P(t('#instDetail .rr-who .ap-label')),P(t('#instDetail .rr-steps-wrap .ap-label'),'시스템이 한 일')],
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[4]
+SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'workspace/강의제작/산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md'
+OUT = HERE / '통합_01_06_전체과정관찰_큐.json'
+VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
+ORDER = [f'v06{n:02d}' for n in range(1, 36)] + ['v0656'] + [f'v06{n:02d}' for n in range(38, 54)] + ['v0657', 'v0654', 'v0655']
+GAP_JOIN, GAP_CUE, GAP_RESULT, GAP_SEG = 0.6, 1.3, 2.0, 2.3      # 영상 V-14 실습 값(잇기 · 큐 사이 · 조작 결과가 뜬 뒤 · 구간이 바뀌는 곳)
+
+
+def T(css, **k): return dict(css=css, **k)
+def at(s): return [{'at': s}] if s else []
+def P(t, s=None): return ['point', t, *at(s)]
+def C(t, s=None): return ['click', t, *at(s)]
+def SEL(t, label, s=None): return ['select', t, label, *at(s)]
+def SC(t, s=None): return ['scroll', t, *at(s)]
+def W(t, secs=15): return ['wait', t, secs]
+def LONG(t, secs): return ['wait', {**t, 'long': True}, secs]      # 일부러 기다리는 자리(6초 넘어도 리허설 실패가 아니다)
+def SETTLE(secs=10): return ['settle', None, secs]
+def CY(i): return {'cy': i}
+def BELOW(css, **k): return T(css, anchor='center', dy=22, **k)       # 누르지 않는 단추는 바로 밑 빈자리를 짚는다(촬영준비 길 4 — 마우스 올림 색)
+
+
+STAGE = lambda n: T('#mainStages a.stat', nth=n - 1)
+LABEL = lambda n: T(f'#mainStages a.stat:nth-child({n}) .stat-label')
+HERO = '#mainHero'
+ITEM = lambda key: f'#manualItems [data-item="{key}"]'
+FM = ITEM('know:failure_modes:fm:cooler-cooling-loss')
+VS_OK = ITEM('know:evidence:evd:cooler-fouling-vs1-normal')
+VS_HI = ITEM('know:evidence:evd:fan-drive-vibration-high')
+PANE = lambda key: f'#manualPanes [data-pane="{key}"]'
+U = lambda n: f'#units [data-asset="HYD-0{n}"]'
+RISE = '#labFollow li[data-step="rise"] .lv-note'
+SHEET = 'dialog[open] [data-cr-sheet-body]'
+OPT = lambda n: f'{SHEET} table.opts tbody tr:nth-child({n})'
+STEP = lambda name: T('#instRecord [data-cr-steps] .step-title', exact=name)
+SUB = lambda has, **k: T('#instRecord [data-cr-steps] .step-sub', contains=has, **k)
+SKIP = '#instRecord details.cr-skipped .fold-body p'
+
+OPS = {
+ # 포털 홈 — 시작 상태 확인(처리 건 0건). 화살표는 위 막대 「홈」 오른쪽 빈자리(one06.mjs의 rest)
+ 'v0601': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='0건 처리 완료'), 20), W(T('#mainStages a.stat:nth-child(3) .stat-value', contains='0건 진행 중'), 5)],
+ # 홈에서 보는 목표와 방향
+ 'v0603': [P(T('#healthDots', anchor='center', dy=14), '왼쪽 아래를')],
+ 'v0604': [P(T('#view-main .page-head p'), '맨 위 한 줄에는')],
+ 'v0605': [P(T(f'{HERO} svg.m-hero-svg', anchor='center'), '아래 그림은'), P(T(f'{HERO} text.m-zone', exact='OT · 현장 설비'), '설비에서 나온'),
+           P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '가운데를'), P(T(f'{HERO} g.m-agent text.m-agent-s'), '오른쪽 AI')],
+ 'v0606': [P(T(f'{HERO} g.m-node text', exact='증상 · 유온 상승'), 'AI 둘레의'), P(T(f'{HERO} g.m-node text', exact='고장 유형 · 냉각 상실'), '점들은'),
+           P(T(f'{HERO} g.m-node text', exact='원인 · 쿨러 핀 오염'), 'AI가 아는')],
+ 'v0607': [P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '설비로 내려가는'), P(T(f'{HERO} path.m-loop', pathAt=0.97), '위쪽 점선'),
+           P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '사람이 승인한'), P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '이론에서 본'),
+           P(T(f'{HERO} path.m-loop', pathAt=0.3), '그 두 길')],
+ 'v0608': [SC(T('#mainStages', bottom=12), '아래 네 칸은'), P(LABEL(1), '지식을 넣어'), P(LABEL(2), '설비에 고장이'), P(LABEL(3), 'AI의 판단과'), P(LABEL(4), '결과가 남는'),
+           P(T('#menuList summary[data-menu="knowledge"] > span'), '지식,'), P(T('#menuList summary[data-menu="plant"] > span'), '유압 설비,'),
+           P(T('#menuList a[data-menu="instances"] > span', exact='처리 건'), '처리 건이')],
+ # 매뉴얼을 지식으로 넣기 — 문서 등록
+ 'v0609': [P(T('#mainStages a.stat[data-go-tab="knowledge"] .go'), '첫 칸 아래'), C(T('#mainStages a.stat[data-go-tab="knowledge"] .go'), '누르시면'),
+           W(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"]'))],
+ 'v0610': [P(T('#manualSteps .phase', exact='올리기'), '올리기,'), P(T('#manualSteps .phase', exact='AI 추출'), 'AI 추출,'), P(T('#manualSteps .phase', exact='검토'), '검토,'),
+           P(T('#manualSteps .phase', exact='적재'), '적재가')],
+ 'v0611': [P(BELOW('#manualPick button[data-pick-mode="file"]'), '여기 내 파일'), P(BELOW('#manualPick button[data-pick-mode="provided"]'), '아래 제공 문서'),
+           P(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"] .row-title'), '쿨러 팬 정비'),
+           C(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"]'), '누르면'), W(T('#manualAgentExtract'))],
+ 'v0612': [P(T('#manualResult .result-label', exact='이미 적재된 문서'), '이미 적재된'), P(T('#manualResult .result-main', contains='HM-8_cooler-fan-manual.md'), '제공 문서는'),
+           C(T('#manualAgentExtract', anchor='center'), '누를게요'), W(T('#manualReview'), 20)],
+ 'v0613': [P(T('#manualReview .result-main'), 'AI가 매뉴얼에서'), P(T('#manualAgentStatus'), '제공 문서는')],
+ 'v0615': [SC(T('#manualReview .doc-review .doc-review-bar', top=70), '밑으로 내려'), P(T(ITEM('proc:SOP-FAN-11') + ' .row-title'), '처음 보이는'),
+           P(T(ITEM('proc:SOP-FAN-11') + ' .row-meta', phrase='쿨러 냉각 성능 상실'), '줄마다'),
+           P(T('#manualReview button[data-review-kind="know"]'), '지식 후보를'), C(T('#manualReview button[data-review-kind="know"]', anchor='center'), '누르면'),
+           W(T(FM))],
+ 'v0616': [P(T(FM + ' .row-title'), '맨 위 줄을'), P(T(FM + ' .row-meta', phrase='유온 상승, 냉각 효율 저하'), '밑에 작은'),
+           P(T(FM + ' .row-title'), '맨 위의 쿨러'), P(T(FM + ' .row-meta', phrase='고장 유형'), '이론에서 본')],
+ 'v0617': [P(T(ITEM('know:causes:cause:cooler-fin-fouling') + ' .row-title'), '아래 세 줄은'), P(T(ITEM('know:causes:cause:ambient-temperature-rise') + ' .row-title'), '일으킬 수'),
+           P(T(ITEM('know:causes:cause:fan-drive-fault') + ' .row-title'), '원인입니다')],
+ 'v0618': [P(T(PANE('know:failure_modes:fm:cooler-cooling-loss') + ' blockquote'), '그 원문이')],
+ 'v0619': [SC(T(VS_OK, top=330), '조금 내리면'), P(T(VS_OK + ' .row-title'), '팬 진동 줄이'), P(T(VS_HI + ' .row-title'), '둘 있는데'),
+           P(T(VS_OK + ' .row-title'), '위쪽의'), C(T(VS_OK, anchor='center'), '누르시면'),
+           W(T(PANE('know:evidence:evd:cooler-fouling-vs1-normal') + ' blockquote', contains='(팬은 정상)이면 핀 오염으로 판정한다'), 5)],
+ 'v0620': [P(T(VS_OK + ' .row-meta', phrase='진동 평균 120초 < 0.9 → 쿨러 핀 오염'), '이 줄은'),
+           P(T(PANE('know:evidence:evd:cooler-fouling-vs1-normal') + ' blockquote', phrase='팬은 정상'), '오른쪽 원문에도'),
+           P(T(PANE('know:evidence:evd:cooler-fouling-vs1-normal') + ' blockquote', phrase='핀 오염으로 판정한다'), '같은 말이')],
+ 'v0621': [P(T(PANE('know:evidence:evd:cooler-fouling-vs1-normal') + ' label.doc-check', anchor='margin'), '여기 적재에서')],
+ 'v0622': [P(T('#manualReview .doc-confirm label.doc-check', anchor='margin'), '맨 아래'), C(T('#manualReviewed', anchor='center'), '체크하고'),
+           C(T('#manualCommit', anchor='center'), '누를게요'), W(T('#manualCommitSteps li[data-step="commit"] b'), 10)],
+ # 적재가 끝나 「지식 지도에 적재했습니다」가 뜬 뒤에 다음 말(v0624)을 시작한다 — 세 단계가 약 6초 흐른다
+ 'v0623': [P(T('#manualCommitSteps li[data-step="commit"] b')), LONG(T('#manualCommitTitle', exact='지식 지도에 적재했습니다'), 60)],
+ 'v0624': [P(T('#manualCommitTitle'), '지식 지도에 적재했다고')],
+ # 지식 지도에서 이어진 길 보기
+ 'v0625': [P(T('#manualDone a.go[data-go-tab="ontology"]'), '밑의 지식 지도에서'), C(T('#manualDone a.go[data-go-tab="ontology"]'), '눌러'),
+           W(T('#ontoFocus')), W(CY('@node'), 30), SETTLE(8)],
+ 'v0626': [P(CY('@node'), '점 하나가'), P(CY('@edge'), '선은')],
+ 'v0627': [P(T('#ontoFocus'), '위의 이 칸에서는'), SEL(T('#ontoFocus'), '쿨러 성능 저하', '고르시면'),
+           W(T('#ontoHint', contains='「쿨러 성능 저하」 경보에서'), 10), SETTLE(5)],
+ 'v0628': [P(CY('head:B:이상 패턴'), '왼쪽부터'), P(CY('pattern:cooler-degradation'), '쿨러 성능 저하는'), P(CY('sym:ce-drop'), '냉각 효율 저하와'),
+           P(CY('sym:ts1-rise'), '유온 상승이고'), P(CY('fm:cooler-cooling-loss'), '쿨러 냉각 성능 상실입니다'), P(CY('head:R:원인'), '원인 셋과'),
+           P(CY('head:R:조치 방법'), '조치들이')],
+ 'v0629': [P(CY('fm:cooler-cooling-loss'), '그 떠올리는 길이'), P(CY('cause:cooler-fin-fouling'), '원인도'), P(CY('skill:sop-fan-11'), '조치도')],
+ # 결함 시뮬레이션에서 고장 내기
+ 'v0630': [C(T('#menuList summary[data-menu="plant"]'), '펼쳐서'), C(T('#menuList a[data-tab="scenario"]'), '열게요'),
+           W(T(U(1) + ' button[data-act="degrade"]'))],
+ 'v0631': [P(T('#view-scenario .page-head p'), '결함 시뮬레이션은'), P(T(U(1) + ' h3'), '설비 세 대는'), P(T(U(2) + ' h3'), '컴퓨터 안에서'),
+           P(T(U(3) + ' h3'), '가상 설비예요'), P(T('#view-scenario p.scope span'), '이 화면의 단추는')],
+ 'v0632': [W(T(U(1) + ' [data-f="fact"]', exact='유온 48.0 ℃ · 쿨러 성능 100 %'), 5), P(T(U(1) + ' [data-f="state"] .tag', exact='운전 중'), '첫 번째 설비는'),
+           P(T(U(1) + ' [data-f="fact"]'), '유온 사십팔'), P(T(U(2) + ' .lab-what > span', exact='업무 사건 · 정기 정비'), '옆의 두 대는'),
+           P(T(U(3) + ' .lab-what > span', exact='업무 사건 · 예비품 구매'), '예비품 구매'), P(T(U(2) + ' .biz-alert .tag'), '빨간 표시가'),
+           P(T(U(3) + ' .biz-alert .tag'), '붙어 있어도'), P(T(U(1) + ' h3'), '첫 번째만')],
+ 'v0633': [P(T(U(1) + ' button[data-act="degrade"]', anchor='center'), '여기 쿨러'), C(T(U(1) + ' button[data-act="degrade"]', anchor='center'), '누르시면'),
+           W(T('#labFollow li[data-step="inject"].ok')), SC(T('#labFollowPanel', bottom=6))],
+ 'v0634': [W(T(RISE, contains='지금 유온'), 10), P(T(RISE, phrase='지금 유온'), '유온이 조금씩')],
+ # 말이 끝나면 「처리 건이 열렸습니다」까지(주입 뒤 약 44초) 말 없이 기다린다 — 합성 뒤 cut.py로 가운데를 줄인다
+ 'v0635': [P(T(RISE, phrase='경보 조건 55 ℃'), '오십오 도를'), LONG(T('#labFollow li[data-step="case"].ok'), 180)],
+ 'v0656': [P(T('#labFollow li[data-step="alert"] .line-text b'), '경보가 나고'), P(T('#labFollow li[data-step="case"] .line-text b'), '처리 건이 열렸다고'),
+           P(T(U(1) + ' [data-f="state"] .tag', exact='경보 발생'), '경보 한 건이'), W(T('#navTodo', exact='1'), 30), P(T('#navTodo'), '숫자가 붙었는데'),
+           C(T('#labFollow [data-lv-go="case"]'), '눌러'), W(T('#todoPanel .turn-head h3'), 60), SETTLE(8)],
+ # 처리 건에서 AI 판단 읽기 — 추천안이 대본과 같은지 확인(영상 V-13)
+ 'v0638': [W(T('#todoPanel .turn-head h3', exact='팬 최대 운전을 승인할까요?'), 5), P(T('#instList button.row[data-todo-task] .row-title'), '왼쪽 내 차례에'),
+           P(T('#instDetail .case-title > span', exact='냉각 긴급 대응 HYD-01'), '오른쪽에 그 내용이'), P(T('#todoPanel .turn-eyebrow', phrase='내가 할 일 · 승인'), '맨 위 카드가')],
+ 'v0639': [P(T('#todoPanel .turn-head h3'), '카드 제목에'), P(T('#todoPanel .turn-ai p b', exact='AI 판단'), '밑의 AI 판단'),
+           P(T('#todoPanel .turn-ai p', phrase='쿨러 핀 오염'), '원인을 쿨러'), P(T('#todoPanel [data-open-tab="judge"]'), '판단 근거 보기를'),
+           C(T('#todoPanel [data-open-tab="judge"]', anchor='center'), '누르면'), W(T('dialog[open] [data-cr-tab="judge"][aria-selected="true"]'), 10),
+           W(T(f'{SHEET} ul.evid'), 10)],
+ 'v0640': [P(T(f'{SHEET} h4.cr-h', exact='근거'), '결론 밑의'), P(T(f'{SHEET} ul.evid > li', nth=0, anchor='margin'), '첫 줄은'),
+           P(T(f'{SHEET} ul.evid > li', nth=1), '팬 진동은'), P(T(f'{SHEET} ul.evid > li', nth=2), '냉각 효율은')],
+ 'v0641': [P(T(f'{SHEET} ul.evid > li', nth=1, anchor='margin'), '아까 원문과')],
+ 'v0642': [W(T(OPT(1) + ' .opts-name b', exact='팬 최대 운전'), 5), W(T(OPT(4) + ' .opts-name b', exact='쿨러 핀 세척'), 5),
+           W(T(OPT(4) + ' .opts-why', contains='정비하는 동안 설비 정지'), 5),
+           P(T(f'{SHEET} h4.cr-h', contains='후보 비교'), '밑의 후보 비교는'), P(T(OPT(1) + ' .opts-name b'), '팬 최대 운전을 추천'),
+           P(T(OPT(4) + ' .opts-name b'), '쿨러 핀 세척은'), P(T(OPT(4) + ' .opts-why', phrase='정비하는 동안 설비 정지'), '정비하는 동안'),
+           P(T(OPT(4) + ' .opts-why', phrase='납기에서 뒤짐'), '납기 손해가')],
+ # 승인하고 결과 따라가기
+ 'v0643': [C(T('dialog[open] [data-cr-sheet-close]', anchor='center'), '닫을게요'), P(T('#todoPanel .turn-foot .who'), '카드 오른쪽 아래에는')],
+ 'v0644': [P(BELOW('#tdRejectOpen'), '옆의 반려는'), P(BELOW('#tdMore'), '다른 안 고르기로는'), C(T('#tdGo', anchor='center'), '승인해 보겠습니다'),
+           W(STEP('냉각 명령'), 30), SETTLE(8)],
+ # 설비가 실행 완료로 답한 뒤에 다음 말(v0646)을 시작한다
+ 'v0645': [P(STEP('운전원 승인'), '사람이 할 일은'), P(STEP('냉각 명령'), '여기서부터는'), LONG(SUB('설비가 실행 완료로 답했습니다'), 60)],
+ 'v0646': [P(STEP('냉각 명령'), '냉각 명령 줄을'), P(SUB('설비가 실행 완료로 답했습니다', phrase='설비가 실행 완료로 답했습니다'), '설비가 실행했다고')],
+ 'v0647': [P(SUB('(안전 연동 통과)', phrase='(안전 연동 통과)'), '괄호 안의 안전')],
+ # 말이 끝나면 효과 확인이 끝날 때까지(승인 뒤 약 66초) 말 없이 기다린다 — 처리 건이 끝나며 맨 위에 결과 칸이 끼어드니 화면이 멈춘 뒤 다음 말
+ 'v0648': [P(STEP('효과 확인'), '지금은 효과 확인'), W(SUB('(설비 시간 15분)', phrase='(설비 시간 15분)'), 30),
+           P(SUB('(설비 시간 15분)', phrase='(설비 시간 15분)'), '괄호 안의 설비'), P(T('#railScale'), '왼쪽 아래 이십'),
+           LONG(SUB('회복으로 판정했습니다'), 180), W(T('#caseTop .case-result'), 20), SETTLE(10)],
+ 'v0649': [P(SUB('회복으로 판정했습니다'), '효과 확인이 끝나면서'), P(STEP('정비 요청 등록'), '정비 요청 등록과'), P(STEP('결과 보고: 정상'), '결과 보고까지')],
+ 'v0650': [P(T('#caseTop .case-result header .tag', exact='정상'), '맨 위로'), P(T('#caseTop .case-result .result-main', phrase='유온 정상 · 경보 해제'), '유온이 기준')],
+ 'v0651': [P(T('#caseTop .case-result .result-main'), '첫 줄 끝에는')],
+ 'v0652': [P(T('#instDetail .case-progress > header h3', exact='진행 상황'), '진행 상황을'), P(STEP('원인 진단 · 냉각 조치 제안'), 'AI의 추천은'),
+           P(STEP('운전원 승인'), '사람의 승인은'), P(STEP('냉각 명령'), '설비로 간 명령은'),
+           P(SUB('추천안 그대로 승인했습니다', phrase='추천안 그대로 승인했습니다'), '승인 줄에는')],
+ 'v0653': [P(STEP('가지 않은 단계'), '맨 아래 가지 않은'), C(T('#instRecord details.cr-skipped > summary'), '펼치면'), W(T(SKIP), 5),
+           P(T(SKIP, phrase='결과 보고: 반려'), '반려 단추로'), P(T(SKIP, phrase='결과 보고: 미달'), '미달로'), P(T(SKIP, phrase='정비 수행'), '정비를 마친')],
+ # 홈에서 마무리
+ 'v0657': [C(T('#menuList a[data-tab="main"]'), '홈으로'), W(T('#mainStages a.stat')), P(T('#view-main .page-head p'), '맨 위 한 줄을')],
+ 'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='1건 처리 완료'), 10), P(T('#mainStages a.stat:nth-child(4) .stat-value'), '아래 결과 보기')],
+ 'v0655': [P(T('#mainStages a.stat[data-go-tab="scenario"] .go'), '결함 시뮬레이션에서')],
 }
-# 앞 큐 끝 표시에 따른 쉼(사용자 2026-11-12 「이어지는 말 0.6초, 큐 사이 1.3초, 결과 뒤 2.0초, 구간 사이 2.3」 — 영상 V-14의 값)
-def gap(prev,cur_seg):
-    if prev is None or prev['seg']!=cur_seg: return 2300
-    a=prev['after']
-    if '[기다림]' in a or ('▸' in a and '‖' in a): return 2000
-    if '‖' in a or a=='끝': return 1300
-    return 600
-cues=[];used=set();prev=None
-for c in raw:
-    k=f"{c['stage']:02d}-{c['n']:02d}";used.add(k)
-    ops=OPS.get(k,[])
-    for o in ops:
-        v=o[-1]
-        if isinstance(v,dict) and 'at' in v and v['at'] not in c['text']: sys.exit(f'{k}: 대사에 없는 구절 {v["at"]}')
-    cues.append({'id':'o'+k.replace('-',''),'segment':SEG[c['stage']],'gap':gap(prev,SEG[c['stage']]),'mark':c['after'],'text':c['text'],'ops':ops})
-    prev={**c,'seg':SEG[c['stage']]}
-bad=set(OPS)-used
-if bad: sys.exit('없는 큐: '+str(sorted(bad)))
-d={'note':'1회차 실습 06 전체과정관찰 다시 찍는 판. 글은 확정 대본(06_전체과정관찰_다시찍을판.md, 커밋 c382d773) §2를 ▸ · ‖ · [기다림]에서 자른 것 그대로다. 조작 형식은 촬영도구/segs/one06.mjs 머리말. gap은 앞 큐와의 쉼(ms, 영상 V-14 1회차 값), mark는 대본의 끝 표시.','voice_id':'1PdAOcPlPTz12RwMyFVp','model_id':'eleven_v4','cues':cues}
-open(OUT,'w',encoding='utf-8').write(json.dumps(d,ensure_ascii=False,indent=1)+'\n')
-print(len(cues),'큐 · 구간별',{s:sum(1 for c in cues if c['segment']==s) for s in range(1,8)},'· 글자',sum(len(c['text']) for c in cues))
+
+
+def rows(md):
+    """대본 본문(# 촬영 본문 끝 앞)의 절과 큐 줄 → [(구간 번호, 절 이름, 큐 id, 발화)]."""
+    body, out, seg, name = md.split('# 촬영 본문 끝', 1)[0], [], 0, ''
+    for line in body.splitlines():
+        if line.startswith('## '):
+            seg, name = seg + 1, line[3:].strip()
+            continue
+        m = re.match(r'\| (v\d{4}) \| (.+?) \| (.+?) \|$', line)
+        if m:
+            out.append((seg, name, m.group(1), m.group(2).strip()))
+    return out
+
+
+def result_last(ops):
+    """앞 큐가 조작 결과를 띄우며 끝났나: 끝에서부터 기다림 · 굴리기를 건너 처음 만나는 것이 누르기 · 고르기이거나, 일부러 기다린 자리(long)면 그렇다."""
+    for o in reversed(ops):
+        if o[0] == 'wait' and o[1].get('long'):
+            return True
+        if o[0] in ('wait', 'settle', 'scroll'):
+            continue
+        return o[0] in ('click', 'select')
+    return False
+
+
+def build(md):
+    rs, cues = rows(md), []
+    ids = [r[2] for r in rs]
+    if ids != ORDER:
+        sys.exit(f'대본의 큐 차례가 다르다 — 대본 {ids}')
+    if set(OPS) - set(ids):
+        sys.exit(f'대본에 없는 큐의 조작: {sorted(set(OPS) - set(ids))}')
+    for seg, name, cid, text in rs:
+        ops, last = OPS.get(cid, []), -1.0
+        for o in ops:
+            v = o[-1]
+            if isinstance(v, dict) and 'at' in v:
+                if v['at'] not in text:
+                    sys.exit(f'{cid}: 대사에 없는 구절 「{v["at"]}」')
+                f = text.index(v['at']) / len(text)
+                if f < last:
+                    sys.exit(f'{cid}: 조작 시점이 거꾸로 — 「{v["at"]}」')
+                last = f
+        prev = cues[-1] if cues else None
+        if prev is None or prev['segment'] != seg:
+            gap = GAP_SEG
+        elif not re.search(r'[.?!]["」』]?$', prev['text']):
+            gap = GAP_JOIN      # 한 문장이 두 큐로 나뉜 자리(영상 V-14 「잇기」)
+        elif result_last(prev['ops']):
+            gap = GAP_RESULT
+        else:
+            gap = GAP_CUE
+        cues.append({'id': cid, 'segment': seg, 'section': name, 'text': text, 'gap': gap, 'ops': ops})
+    return cues
+
+
+def main():
+    cues = build(SRC.read_text(encoding='utf-8'))
+    doc = {'voice_id': VOICE, 'model_id': MODEL,
+           'note': f'1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main f805fd43). {SRC.name}에서 {Path(__file__).name}로 만든다 — 손으로 고치지 않는다. '
+                   '모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).',
+           'cues': cues}
+    with open(OUT, 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(doc, f, ensure_ascii=False, indent=1)
+        f.write('\n')
+    by = {}
+    for c in cues:
+        by.setdefault((c['segment'], c['section']), []).append(c)
+    for (n, name), cs in by.items():
+        print(f'구간 {n} {name}: 큐 {len(cs)} · 조작 {sum(len(c["ops"]) for c in cs)} · 글자 {sum(len(c["text"]) for c in cs)}')
+    print(f'모두 큐 {len(cues)} · 글자 {sum(len(c["text"]) for c in cues)} → {OUT.name}')
+
+
+if __name__ == '__main__':
+    main()

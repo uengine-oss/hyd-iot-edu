@@ -2,19 +2,24 @@
 // 화살표는 take.mjs의 가상 포인터로 바꿨다(페이지에 그리지 않고 이동만 기록 → encode.py가 그림). take.sh에 이 모듈 이름(map.mjs)을 그대로 준다.
 // 큐: {id, segment, text, gap(이 큐 앞 쉼 초, 없으면 1.3), ops:[[조작, 대상, 시점], …]}. 시점은 0~1 비율이거나 {at:'대사 속 구절'}(그 구절이 시작하는 글자 비율).
 //   큐 시작 + 길이 × 비율 − 300ms에 조작을 시작한다. 시점이 없는 조작은 앞 조작이 끝나면 한다. wait의 셋째 값은 기다릴 초.
-// 조작: point · click · chip(칸 단추 체크 끄기, 대상은 칸 제목 글) · select(대상, 값) · type(글) · clear(입력칸 전체 고르기) · key(키) · scroll(대상을 위 top px 자리로) · wait(대상이 하나 이상 나타날 때까지).
-// 대상: {css, contains, exact, nth, anchor, dx, dy} — 보이는 요소가 정확히 하나여야 한다(아니면 멈춘다). 가리키는 자리는 글을 가리지 않게 aim()이 고른다.
-// 화면 밖 대상: 안쪽 스크롤 영역(지도 #ontoMap)부터 바깥(본문 main#content)까지 페이지 안 애니메이션으로 굴린다. 굴리기는 화살표를 움직이지 않으므로 이동 기록에 넣지 않는다.
-// 리허설(take.sh rehearse)이면 조작마다 ① 대상이 하나로 찾아지는가 ② 화살표가 덮는 글자 ③ 입력 시간(2.5초 이하) ④ 결과를 기다린 시간(6초 이하)을 <take>/dry-<구간>.json에 남기고, 하나라도 어기면 멈춘다.
-// 구간 1은 녹화 밖에서 포털 홈을 새로 열고 「나」를 비운다(위 막대 서비스 13/13 · 나 선택 안 함 확인). 다음 구간은 앞 구간 끝 화면 그대로 — 브라우저(browser.mjs)가 상태를 쥐고 있다.
+// 조작: point · click · chip(칸 단추 체크 끄기, 대상은 칸 제목 글) · select(대상, 값) · type(글) · clear(입력칸 전체 고르기) · key(키) · scroll(대상 위끝을 창 위 top px 자리로, 대상에 bottom을 주면 대상 아래끝을 창 아래에서 bottom px 자리로)
+//   · wait(대상이 하나 이상 나타날 때까지) · settle(문서 높이 · 굴린 자리가 1.2초 그대로일 때까지, 셋째 값은 최대 초 — 처리 건이 끝나며 위에 결과 칸이 끼어드는 화면).
+// 대상: {css, contains, exact, nth, anchor, dx, dy} — 보이는 요소가 정확히 하나여야 한다(아니면 멈춘다). 가리키는 자리는 글을 가리지 않게 aim()이 고른다. after는 글 마지막 줄의 끝 바로 뒤다.
+//   phrase: 그 요소 안 구절 하나(한 번만 나와야 한다)를 기준으로 anchor를 잡는다 — after(구절 끝 바로 뒤) · below(구절 밑) · center.
+//   pathAt: SVG 선(path) 위의 길이 비율 자리. cy: 지식 지도 캔버스(Cytoscape, window.hydEnt.kg.cy)의 항목 id — 이름표가 보이면 이름표 끝, 아니면 점 오른쪽.
+//     '@node' · '@edge'는 캔버스 가운데에 가장 가까운 항목 · 선이다. long: wait에서 6초 넘는 기다림을 실패로 치지 않는다(주입 뒤 경보 · 효과 확인처럼 일부러 기다리는 자리).
+// 화면 밖 대상: 안쪽 스크롤 영역(지도 #ontoMap)부터 바깥(본문 main#content, 본문이 굴러가지 않는 판은 문서 자체)까지 페이지 안 애니메이션으로 굴린다. 굴리기는 화살표를 움직이지 않으므로 이동 기록에 넣지 않는다.
+// 리허설(take.sh rehearse)이면 조작마다 ① 대상이 하나로 찾아지는가 ② 화살표가 덮는 글자 ③ 입력 시간(2.5초 이하) ④ 결과를 기다린 시간(6초 이하, long 제외)을 <take>/dry-<구간>.json에 남기고, 하나라도 어기면 멈춘다.
+// 구간 1은 녹화 밖에서 포털 홈을 새로 열고 브라우저 저장값을 비운다(「서비스 N/N」의 앞뒤 숫자가 같고, 「나」 칸이 있는 판이면 「선택 안 함」인지 확인). 쉬는 화살표 자리는 ctx.rest(대상)가 있으면 그 대상, 없으면 REST다.
+// 다음 구간은 앞 구간 끝 화면 그대로 — 브라우저(browser.mjs)가 상태를 쥐고 있다. 포털 주소는 ../config.json의 portal이다.
 import fs from 'node:fs/promises';
 
-const PORTAL = 'http://127.0.0.1:8088/';
+const PORTAL = JSON.parse(await fs.readFile(new URL('../config.json', import.meta.url), 'utf8')).portal;
 const LEAD = 300, CSS_W = 1280, CSS_H = 720;
 const REST = {x: 760, y: 84};
 
 export function fracOf(q, o) {
- if (o[0] === 'wait') return null;
+ if (o[0] === 'wait' || o[0] === 'settle') return null;
  const v = o.at(-1);
  if (typeof v === 'number') return v;
  if (v && typeof v === 'object' && v.at != null) {
@@ -42,23 +47,59 @@ function aim(t, kind) {
 function locateInPage(t) {
  const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && e.checkVisibility({checkVisibilityCSS: true}); };
  const norm = (e) => e.textContent.trim().replace(/\s+/g, ' ');
- let es = [...document.querySelectorAll(t.css)].filter(vis);
- if (t.contains) es = es.filter((e) => e.textContent.includes(t.contains));
- if (t.exact) es = es.filter((e) => norm(e) === t.exact);
- if (t.nth !== undefined) es = es.slice(t.nth, t.nth + 1);
- if (es.length !== 1 && !(t.any && es.length)) return {error: `대상 ${JSON.stringify({css: t.css, contains: t.contains, exact: t.exact})} — 보이는 요소 ${es.length}개`};
- const e = es[0], b = e.getBoundingClientRect();
- let x = b.x + b.width / 2, y = b.y + b.height / 2;
- if (t.anchor === 'right') { const r1 = e.getClientRects()[0] || b; x = r1.right - Math.min(r1.width / 2, 20); y = r1.top + r1.height / 2; }
- else if (t.anchor === 'left') { x = b.x + Math.min(b.width / 2, 28); }
- else if (t.anchor === 'margin') { const row = e.closest('li, tr') || e; x = Math.max(4, row.getBoundingClientRect().x - 24); y = b.y + Math.min(b.height / 2, 14); }
- else if (t.anchor === 'value') { const td = e.closest('tr')?.querySelector('td') || e; const g = document.createRange(); g.selectNodeContents(td); const r = g.getClientRects(); const last = r[r.length - 1] || td.getBoundingClientRect(); x = last.right + 8; y = last.top + last.height / 2; }
- else if (t.anchor === 'after') { const g = document.createRange(); g.selectNodeContents(e); const r = g.getBoundingClientRect(); x = (r.width ? r.right : b.right) + 12; }
- else if (t.anchor === 'below') { x = b.x + Math.min(b.width / 2, 30); y = b.bottom + 6; }
+ let e, x, y, b;
+ if (t.cy) {
+  // 지식 지도 캔버스: 항목은 DOM이 아니라 Cytoscape가 그린다. 좌표는 캔버스 안 렌더 좌표 + 캔버스 상자 자리
+  const cy = window.hydEnt?.kg?.cy;
+  if (!cy || !cy.nodes().length) return {error: '지식 지도 캔버스가 아직 그려지지 않음'};
+  e = cy.container(); b = e.getBoundingClientRect();
+  const W = cy.width(), H = cy.height(), live = (n) => n.visible() && !n.hasClass('dim') && !n.hasClass('gtitle');
+  const near = (els, at) => els.reduce((m, el) => { const p = at(el), d = Math.hypot(p.x - W / 2, p.y - H / 2); return !m || d < m.d ? {el, d, p} : m; }, null);
+  let p;
+  if (t.cy === '@edge') { const m = near(cy.edges().filter((ed) => ed.visible() && !ed.hasClass('dim')), (ed) => ed.renderedMidpoint()); if (!m) return {error: '보이는 선 없음'}; p = m.p; }
+  else {
+   const n = t.cy === '@node' ? near(cy.nodes().filter(live), (nd) => nd.renderedPosition())?.el : cy.getElementById(t.cy);
+   if (!n || !n.length || !n.visible()) return {error: `지식 지도 항목 없음 · 안 보임: ${t.cy}`};
+   const lb = n.renderedBoundingBox({includeNodes: false, includeEdges: false, includeLabels: true}), q = n.renderedPosition();
+   p = lb.w > 2 && n.style('label') ? {x: lb.x2 + 6, y: (lb.y1 + lb.y2) / 2} : {x: q.x + n.renderedWidth() / 2 + 4, y: q.y};
+  }
+  if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) return {error: `지식 지도 항목이 캔버스 밖: ${t.cy}`};
+  x = b.left + p.x; y = b.top + p.y;
+ } else {
+  let es = [...document.querySelectorAll(t.css)].filter(vis);
+  if (t.contains) es = es.filter((el) => el.textContent.includes(t.contains));
+  if (t.exact) es = es.filter((el) => norm(el) === t.exact);
+  if (t.nth !== undefined) es = es.slice(t.nth, t.nth + 1);
+  if (es.length !== 1 && !(t.any && es.length)) return {error: `대상 ${JSON.stringify({css: t.css, contains: t.contains, exact: t.exact})} — 보이는 요소 ${es.length}개`};
+  e = es[0]; b = e.getBoundingClientRect();
+  let r = b, rs = null;
+  if (t.phrase) {
+   // 구절 하나의 글자 상자를 기준으로 삼는다(줄이 꺾이면 마지막 줄 조각)
+   const hits = [], w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+   for (let n; (n = w.nextNode());) { for (let i = n.data.indexOf(t.phrase); i >= 0; i = n.data.indexOf(t.phrase, i + 1)) hits.push([n, i]); }
+   if (hits.length !== 1) return {error: `구절 「${t.phrase}」이 ${hits.length}번: ${t.css}`};
+   const g = document.createRange(); g.setStart(hits[0][0], hits[0][1]); g.setEnd(hits[0][0], hits[0][1] + t.phrase.length);
+   rs = [...g.getClientRects()].filter((q) => q.width > 0); r = rs.at(-1) || g.getBoundingClientRect();
+  }
+  x = r.x + r.width / 2; y = r.y + r.height / 2;
+  if (t.pathAt != null) { const L = e.getTotalLength(), q = e.getPointAtLength(L * t.pathAt), m = e.getScreenCTM(); x = m.a * q.x + m.c * q.y + m.e; y = m.b * q.x + m.d * q.y + m.f; }
+  else if (t.anchor === 'right') { const r1 = e.getClientRects()[0] || b; x = r1.right - Math.min(r1.width / 2, 20); y = r1.top + r1.height / 2; }
+  else if (t.anchor === 'left') { x = r.x + Math.min(r.width / 2, 28); }
+  else if (t.anchor === 'margin') { const row = e.closest('li, tr') || e; x = Math.max(4, row.getBoundingClientRect().x - 24); y = r.y + Math.min(r.height / 2, 14); }
+  else if (t.anchor === 'value') { const td = e.closest('tr')?.querySelector('td') || e; const g = document.createRange(); g.selectNodeContents(td); const q = g.getClientRects(); const last = q[q.length - 1] || td.getBoundingClientRect(); x = last.right + 8; y = last.top + last.height / 2; }
+  else if (t.anchor === 'after') {
+   let last = r;
+   if (!rs) { const g = document.createRange(); g.selectNodeContents(e); rs = [...g.getClientRects()].filter((q) => q.width > 0); last = rs.at(-1) || b; }
+   x = last.right + (t.phrase ? 4 : 12); y = last.top + last.height / 2;
+  }
+  else if (t.anchor === 'below') { x = r.x + Math.min(r.width / 2, 30); y = r.bottom + 6; }
+ }
  x += t.dx || 0; y += t.dy || 0;
  const sc = [];
+ let pinned = false;      // 고정 · 붙박이 칸(메뉴 줄 · 위 막대 · 열린 대화 상자) 안의 대상은 문서를 굴려도 움직이지 않는다
  for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) {
   const cs = getComputedStyle(a);
+  if (cs.position === 'fixed' || cs.position === 'sticky' || a.matches('dialog[open]')) pinned = true;
   const yv = /(auto|scroll)/.test(cs.overflowY) && a.scrollHeight > a.clientHeight + 2, xv = /(auto|scroll)/.test(cs.overflowX) && a.scrollWidth > a.clientWidth + 2;
   if (!yv && !xv) continue;
   // id 없는 스크롤 영역(에이전트 목록 div.list 등)은 보이지 않는 이름표를 달아 같은 길로 굴린다
@@ -66,8 +107,14 @@ function locateInPage(t) {
   const r = a.getBoundingClientRect();
   sc.push({sel: a.id ? '#' + a.id : `[data-hyd-scroll="${a.dataset.hydScroll}"]`, top: Math.max(0, r.top), bottom: Math.min(innerHeight, r.top + a.clientHeight), left: r.left, right: r.left + a.clientWidth, xv, yv});
  }
+ // 본문 칸이 아니라 문서가 굴러가는 판(위 막대가 sticky): 문서 자체를 마지막 스크롤 영역으로 둔다. 위 막대 아래부터가 보이는 자리다
+ const de = document.scrollingElement;
+ if (!pinned && de && de.scrollHeight > innerHeight + 2) {
+  const bar = document.querySelector('header.topbar'), barB = bar && getComputedStyle(bar).position === 'sticky' ? bar.getBoundingClientRect().bottom : 0;
+  sc.push({sel: 'html', top: Math.max(0, barB), bottom: innerHeight, left: 0, right: innerWidth, xv: false, yv: true});
+ }
  const top = document.elementFromPoint(x, y);
- return {x, y, top: b.top, bl: b.left, br: b.right, sc, hit: !!top && (top === e || e.contains(top)), h: innerHeight, w: innerWidth};
+ return {x, y, top: b.top, bt: b.bottom, bl: b.left, br: b.right, sc, hit: !!top && (top === e || e.contains(top)), h: innerHeight, w: innerWidth};
 }
 
 function coverInPage({x, y, css, contains, exact}) {
@@ -116,6 +163,14 @@ function layer(ctx, report) {
   await move(cl(a.x, s.left + 40, s.right - 40), cl(a.y, s.top + 60, s.bottom - 60));
  }
  async function glide(sel, dx, dy) {
+  // 굴릴 수 있는 만큼만 굴린다(끝에 닿은 뒤에도 애니메이션이 도는 동안 화면이 멈춰 보이지 않게)
+  [dx, dy] = await q1(() => p.evaluate(({sel, dx, dy}) => {
+   const el = document.querySelector(sel); if (!el) return [dx, dy];
+   const cw = sel === 'html' ? innerWidth : el.clientWidth, ch = sel === 'html' ? innerHeight : el.clientHeight;
+   const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+   return [cl(dx, -el.scrollLeft, el.scrollWidth - cw - el.scrollLeft), cl(dy, -el.scrollTop, el.scrollHeight - ch - el.scrollTop)];
+  }, {sel, dx, dy}));
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
   const ms = Math.round(Math.max(350, Math.min(1400, 220 + Math.hypot(dx, dy) * 0.55)));
   const ok = await q1(() => p.evaluate(({sel, dx, dy, ms}) => {
    const el = document.querySelector(sel); if (!el) return false;
@@ -151,7 +206,8 @@ function layer(ctx, report) {
  const L = {};
  L.point = async (t) => {
   const a = aim(t, 'point'), r = await settled(a); await move(r.x, r.y);
-  if (report) { const cover = await q1(() => p.evaluate(coverInPage, {x: r.x, y: r.y, css: t.css, contains: t.contains, exact: t.exact}));
+  if (report && t.cy) rep({op: 'point', target: 'cy:' + t.cy, scrolled: r.scrolled || 0});      // 캔버스 글자는 DOM 글자가 아니라 덮음 검사를 하지 않는다
+  else if (report) { const cover = await q1(() => p.evaluate(coverInPage, {x: r.x, y: r.y, css: t.css, contains: t.contains, exact: t.exact}));
    rep({op: 'point', target: name(t), scrolled: r.scrolled || 0, covered: cover, fail: cover.length > 0, why: cover.length ? '화살표가 글을 덮음: ' + cover.join(' | ') : undefined}); }
  };
  L.click = async (t) => {
@@ -175,7 +231,7 @@ function layer(ctx, report) {
  L.scrollTop = async (t, top = 96) => {
   const r = await find(t); const s = r.sc.find((s) => s.yv);
   if (!s) throw Error('세로 스크롤 영역 없음: ' + JSON.stringify(t));
-  const dy = Math.round(r.top - top); if (Math.abs(dy) <= 4) return;
+  const dy = Math.round(t.bottom != null ? r.bt - (r.h - t.bottom) : r.top - top); if (Math.abs(dy) <= 4) return;
   await over(s); await glide(s.sel, 0, dy);
  };
  // 고르기 칸: 헤드리스 녹화에는 운영체제 목록 창이 찍히지 않는다. 칸을 누른 뒤 값을 고르고 change를 보낸다(포털 ui.mjs select와 같다).
@@ -201,8 +257,26 @@ function layer(ctx, report) {
  };
  L.key = async (k) => { await gate(); await q1(() => p.keyboard.press(k)); await sleep(200); };
  L.wait = async (t, secs) => {
-  const a = Date.now(), limit = (secs || 30) * 1000;
-  for (;;) { try { const r = await find({...t, any: true}); const ms = Date.now() - a; rep({op: 'wait', target: name(t), ms, fail: ms > 6000, why: ms > 6000 ? `기다림 ${ms}ms > 6000` : undefined}); return r; } catch (e) { if (Date.now() - a > limit) throw Error(`나타나지 않음(${secs}초): ${JSON.stringify(t)} — ${e.message}`); await sleep(150); } }
+  const a = Date.now(), limit = (secs || 30) * 1000, label = t.cy ? 'cy:' + t.cy : name(t);
+  for (;;) {
+   try { const r = await find({...t, any: true}); const ms = Date.now() - a, bad = ms > 6000 && !t.long;
+    rep({op: 'wait', target: label, ms, long: !!t.long, fail: bad, why: bad ? `기다림 ${ms}ms > 6000` : undefined});
+    if (ms > 500) ctx.recordWait?.({label: 'wait ' + label, start: a, end: Date.now()});
+    return r; }
+   catch (e) { if (Date.now() - a > limit) throw Error(`나타나지 않음(${secs}초): ${JSON.stringify(t)} — ${e.message}`); await sleep(150); }
+  }
+ };
+ // 화면이 다 그려질 때까지: 문서 높이 · 굴린 자리가 1.2초 동안 그대로면 끝(최대 secs초). 처리 건이 끝나며 맨 위에 결과 칸이 끼어들어 아래 줄이 밀리는 동안 짚지 않으려고 둔다
+ L.settle = async (secs = 10) => {
+  const a = Date.now(); let last = null, since = a;
+  for (;;) {
+   const v = await q1(() => p.evaluate(() => { const d = document.scrollingElement, m = document.querySelector('main#content'); return [d.scrollTop, d.scrollHeight, m?.scrollTop, m?.scrollHeight].join('|'); }));
+   if (v !== last) { last = v; since = Date.now(); } else if (Date.now() - since >= 1200) break;
+   if (Date.now() - a > secs * 1000) break;
+   await sleep(150);
+  }
+  rep({op: 'settle', ms: Date.now() - a});
+  if (Date.now() - a > 1500) ctx.recordWait?.({label: 'settle', start: a, end: Date.now()});
  };
  L.op = async (o) => {
   const [k, a, b] = o;
@@ -216,25 +290,32 @@ function layer(ctx, report) {
    case 'clear': return L.clear();
    case 'key': return L.key(a);
    case 'wait': return L.wait(a, typeof b === 'number' ? b : undefined);
+   case 'settle': return L.settle(typeof b === 'number' ? b : undefined);
   }
   throw Error('모르는 조작 ' + k);
  };
  L.fresh = async () => {
   if (!(await q1(() => p.url())).startsWith(PORTAL)) await q1(() => p.goto(PORTAL, {waitUntil: 'domcontentloaded', timeout: 30000}));
-  await q1(() => p.evaluate(() => { localStorage.removeItem('hyd.me'); sessionStorage.clear(); }));
+  // 학생의 첫 화면처럼 이 브라우저가 기억하는 값(「나」 · 메뉴 줄 접기 · 고른 보기 …)을 모두 비운다
+  await q1(() => p.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }));
   await q1(() => p.goto('about:blank')); await q1(() => p.goto(PORTAL, {waitUntil: 'domcontentloaded', timeout: 30000}));
   const a = Date.now();
-  while (!(await q1(() => p.evaluate(() => /서비스 13\/13/.test(document.body.innerText) && /선택 안 함/.test(document.body.innerText) && !!document.querySelector('button[data-tab=ontology]'))))) {
-   if (Date.now() - a > 60000) throw Error('포털 위 막대가 서비스 13/13 · 나 선택 안 함이 아님 — 스택 확인 뒤 다시');
+  // 서비스 수는 판마다 다르다(옛 판 13, 2026-11 판 16) — 앞뒤 숫자가 같은지만 본다. 「나」 칸(#shellMe)은 그 칸이 있는 옛 판에서만 본다
+  const ready = () => { const m = /서비스\s*(\d+)\/(\d+)/.exec(document.body.innerText), me = document.querySelector('#shellMe');
+   return !!m && m[1] === m[2] && (!me || /선택 안 함/.test(me.textContent)) && !!document.querySelector('[data-tab=ontology]'); };
+  while (!(await q1(() => p.evaluate(ready)))) {
+   if (Date.now() - a > 60000) throw Error('포털의 「서비스 N/N」 앞뒤 숫자가 다르거나 「나」가 선택 안 함이 아님 — 스택 확인 뒤 다시');
    await sleep(300);
   }
   await sleep(2500);
-  await q1(() => p.evaluate(() => { for (const e of document.querySelectorAll('.rail, main#content')) e.scrollTop = 0; }));
-  await ctx.installPointer(REST); pos = ctx.virtualPointer = REST;
+  await q1(() => p.evaluate(() => { for (const e of document.querySelectorAll('.rail, main#content')) e.scrollTop = 0; window.scrollTo(0, 0); }));
+  const rest = ctx.rest ? await find(aim(ctx.rest, 'point')).then((r) => ({x: r.x, y: r.y})) : REST;
+  await ctx.installPointer(rest); pos = ctx.virtualPointer = rest;
   await sleep(500);
  };
  L.view = () => q1(() => p.evaluate(() => ({
-  tab: document.querySelector('.rail nav button.active')?.dataset.tab, main: document.querySelector('main#content')?.scrollTop,
+  tab: (document.querySelector('.rail nav button.active') || document.querySelector('#menuList a[aria-current=page]'))?.dataset.tab,
+  main: document.querySelector('main#content')?.scrollTop, page: document.scrollingElement?.scrollTop,
   mapL: document.querySelector('#ontoMap')?.scrollLeft, mapT: document.querySelector('#ontoMap')?.scrollTop,
   search: document.querySelector('#ontoSearch')?.value, asset: document.querySelector('#ontoAsset')?.value,
   detail: document.querySelector('#ontoNode h3')?.textContent ?? null,

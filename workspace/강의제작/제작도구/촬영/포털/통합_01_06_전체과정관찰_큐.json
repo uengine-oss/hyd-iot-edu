@@ -1,0 +1,2263 @@
+{
+ "voice_id": "tlxL9ilynpbOVf9sZXKh",
+ "model_id": "eleven_v4",
+ "note": "1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main f805fd43). 06_실습_전체과정관찰.md에서 통합_01_06_전체과정관찰_큐만들기.py로 만든다 — 손으로 고치지 않는다. 모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).",
+ "cues": [
+  {
+   "id": "v0601",
+   "segment": 1,
+   "section": "포털 홈",
+   "text": "여기가 바로 여러분이 강의 내내 직접 실습해 볼 곳이에요. 이름은 HYD 포털입니다. 설비에 고장을 내 보는 것부터 AI가 판단하는 걸 보고 사람이 승인하는 것까지, 전부 이 화면에서 하게 됩니다. 이번에는 그중에서 설비 고장 한 건이 처음부터 끝까지 어떻게 처리되는지 따라가 볼게요. 설비에 이상이 생겼을 때 AI는 무엇을 하고 사람은 무엇을 하는지, 직접 눌러 보면서 겪어 보는 거죠.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-value",
+      "contains": "0건 처리 완료"
+     },
+     20
+    ],
+    [
+     "wait",
+     {
+      "css": "#mainStages a.stat:nth-child(3) .stat-value",
+      "contains": "0건 진행 중"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "v0602",
+   "segment": 1,
+   "section": "포털 홈",
+   "text": "시작하기 전에 하나만 말씀드릴게요. 설비 값이 바뀌고 경보가 나고, 승인한 명령이 설비로 가는 건 전부 이 시스템이 실제로 합니다. 다만 AI가 그 자리에서 답을 만들려면 API 키가 있어야 해요. AI 회사에서 AI를 빌려 쓸 때 받는 이용권 같은 건데, 온라인 수업에서는 이 키를 나눠 드리지 않습니다. 그래서 AI가 답하는 순간에는 미리 받아 둔 답이 지금 생긴 일에 맞춰 나오게 됩니다.",
+   "gap": 1.3,
+   "ops": []
+  },
+  {
+   "id": "v0603",
+   "segment": 2,
+   "section": "홈에서 보는 목표와 방향",
+   "text": "먼저 왼쪽 아래를 보시면 서비스가 몇 개 켜져 있는지 나옵니다. 앞뒤 숫자가 같으면 다 켜진 거라, 포털을 열면 늘 이것부터 보시면 돼요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#healthDots",
+      "anchor": "center",
+      "dy": 14
+     },
+     {
+      "at": "왼쪽 아래를"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0604",
+   "segment": 2,
+   "section": "홈에서 보는 목표와 방향",
+   "text": "맨 위 한 줄에는 이 포털이 하려는 일이 적혀 있죠. 설비에 문제가 생기면 회사가 넣어 둔 지식으로 AI가 판단하고, 그 판단대로 설비를 실제로 움직일지는 사람이 정한다는 겁니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#view-main .page-head p"
+     },
+     {
+      "at": "맨 위 한 줄에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0605",
+   "segment": 2,
+   "section": "홈에서 보는 목표와 방향",
+   "text": "아래 그림은 이론에서 본 구조를 화면에 그대로 옮긴 거예요. 설비에서 나온 값은 가운데를 지나 오른쪽 AI 쪽으로 올라가죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#mainHero svg.m-hero-svg",
+      "anchor": "center"
+     },
+     {
+      "at": "아래 그림은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.m-zone",
+      "exact": "OT · 현장 설비"
+     },
+     {
+      "at": "설비에서 나온"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.m-zone",
+      "exact": "값이 지나는 길"
+     },
+     {
+      "at": "가운데를"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero g.m-agent text.m-agent-s"
+     },
+     {
+      "at": "오른쪽 AI"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0606",
+   "segment": 2,
+   "section": "홈에서 보는 목표와 방향",
+   "text": "AI 둘레의 점들은 AI가 아는 지식이에요. AI는 올라온 값을 이 지식에 비춰 판단합니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#mainHero g.m-node text",
+      "exact": "증상 · 유온 상승"
+     },
+     {
+      "at": "AI 둘레의"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero g.m-node text",
+      "exact": "고장 유형 · 냉각 상실"
+     },
+     {
+      "at": "점들은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero g.m-node text",
+      "exact": "원인 · 쿨러 핀 오염"
+     },
+     {
+      "at": "AI가 아는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0607",
+   "segment": 2,
+   "section": "홈에서 보는 목표와 방향",
+   "text": "설비로 내려가는 건 위쪽 점선 하나, 사람이 승인한 조치뿐이죠. 이론에서 본 그 두 길입니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#mainHero text.m-loop-t",
+      "exact": "사람이 승인한 조치"
+     },
+     {
+      "at": "설비로 내려가는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero path.m-loop",
+      "pathAt": 0.97
+     },
+     {
+      "at": "위쪽 점선"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.m-loop-t",
+      "exact": "사람이 승인한 조치"
+     },
+     {
+      "at": "사람이 승인한"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.m-zone",
+      "exact": "값이 지나는 길"
+     },
+     {
+      "at": "이론에서 본"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero path.m-loop",
+      "pathAt": 0.3
+     },
+     {
+      "at": "그 두 길"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0608",
+   "segment": 2,
+   "section": "홈에서 보는 목표와 방향",
+   "text": "아래 네 칸은 이 흐름을 일 단위로 나눠 놓은 겁니다. 지식을 넣어 두고, 설비에 고장이 나면, AI의 판단과 사람의 승인을 거쳐 결과가 남는 순서죠. 왼쪽 메뉴도 위에서부터 같은 순서로 지식, 유압 설비, 처리 건이 놓여 있어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#mainStages",
+      "bottom": 12
+     },
+     {
+      "at": "아래 네 칸은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(1) .stat-label"
+     },
+     {
+      "at": "지식을 넣어"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(2) .stat-label"
+     },
+     {
+      "at": "설비에 고장이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(3) .stat-label"
+     },
+     {
+      "at": "AI의 판단과"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-label"
+     },
+     {
+      "at": "결과가 남는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#menuList summary[data-menu=\"knowledge\"] > span"
+     },
+     {
+      "at": "지식,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#menuList summary[data-menu=\"plant\"] > span"
+     },
+     {
+      "at": "유압 설비,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#menuList a[data-menu=\"instances\"] > span",
+      "exact": "처리 건"
+     },
+     {
+      "at": "처리 건이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0609",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "AI가 고장을 판단하려면, 먼저 이 설비가 어떻게 고장 나고 어떻게 고치는지 알고 있어야겠죠. 이런 지식은 원래 숙련자의 머리와 매뉴얼에 흩어져 있어서, 한데 모아 누구나 꺼내 쓰게 둔다고 했습니다. 그 가운데 매뉴얼을 AI의 지식으로 넣는 것부터 해 보겠습니다. 첫 칸 아래 문서 등록을 누르시면 돼요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat[data-go-tab=\"knowledge\"] .go"
+     },
+     {
+      "at": "첫 칸 아래"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#mainStages a.stat[data-go-tab=\"knowledge\"] .go"
+     },
+     {
+      "at": "누르시면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#providedDocs button.row[data-provided=\"HM-8_cooler-fan-manual.md\"]"
+     },
+     15
+    ]
+   ]
+  },
+  {
+   "id": "v0610",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "위에 올리기, AI 추출, 검토, 적재가 차례로 있죠. 문서를 올리면 AI가 필요한 내용을 뽑아 오고, 사람이 그걸 검토한 다음, AI가 판단할 때 쓰는 지식으로 넣습니다. 이렇게 넣는 걸 적재라고 해요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "올리기"
+     },
+     {
+      "at": "올리기,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "AI 추출"
+     },
+     {
+      "at": "AI 추출,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "검토"
+     },
+     {
+      "at": "검토,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "적재"
+     },
+     {
+      "at": "적재가"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0611",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "문서는 여기 내 파일 올리기로 직접 올릴 수도 있고, 수업에서 쓰는 매뉴얼은 아래 제공 문서에 미리 들어 있어요. 이따 고장을 내 볼 곳이 쿨러라서, 쿨러 팬 정비 매뉴얼로 해 보겠습니다. 이 줄을 누르면 올라갑니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualPick button[data-pick-mode=\"file\"]",
+      "anchor": "center",
+      "dy": 22
+     },
+     {
+      "at": "여기 내 파일"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualPick button[data-pick-mode=\"provided\"]",
+      "anchor": "center",
+      "dy": 22
+     },
+     {
+      "at": "아래 제공 문서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#providedDocs button.row[data-provided=\"HM-8_cooler-fan-manual.md\"] .row-title"
+     },
+     {
+      "at": "쿨러 팬 정비"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#providedDocs button.row[data-provided=\"HM-8_cooler-fan-manual.md\"]"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#manualAgentExtract"
+     },
+     15
+    ]
+   ]
+  },
+  {
+   "id": "v0612",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "이미 적재된 문서라고 나오죠. 제공 문서는 처음부터 지식으로 넣어 둔 거라 그렇습니다. 오늘은 이 매뉴얼이 어떻게 지식이 되는지, 그 과정을 한 번 따라가 보겠습니다. AI 추출 시작을 누를게요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualResult .result-label",
+      "exact": "이미 적재된 문서"
+     },
+     {
+      "at": "이미 적재된"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualResult .result-main",
+      "contains": "HM-8_cooler-fan-manual.md"
+     },
+     {
+      "at": "제공 문서는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#manualAgentExtract",
+      "anchor": "center"
+     },
+     {
+      "at": "누를게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#manualReview"
+     },
+     20
+    ]
+   ]
+  },
+  {
+   "id": "v0613",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "AI가 매뉴얼에서 조치와 고장, 원인 같은 것들을 뽑아 왔다고 나옵니다. 제공 문서는 AI가 미리 읽고 정리해 둔 결과가 있어서, 다시 읽지 않고 그걸 꺼내 온 거예요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualReview .result-main"
+     },
+     {
+      "at": "AI가 매뉴얼에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualAgentStatus"
+     },
+     {
+      "at": "제공 문서는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0614",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "고장과 원인, 조치를 이렇게 따로따로 뽑는 데는 까닭이 있습니다. 고장이 나면 무슨 고장인지 짚고, 그 고장의 원인을 찾고, 원인에 맞는 조치를 고르는 식으로 이어서 찾아가야 하잖아요. 매뉴얼 문장 속에 섞여 있으면 그렇게 따라가기 어려우니까, 하나씩 뽑아서 서로 이어 두는 겁니다.",
+   "gap": 1.3,
+   "ops": []
+  },
+  {
+   "id": "v0615",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "밑으로 내려 보면 처음 보이는 게 AI가 뽑은 조치들이에요. 줄마다 어느 고장에 쓰는 조치인지가 붙어 있죠. 고장과 원인은 목록 위 칸들 가운데 지식 후보를 누르면 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#manualReview .doc-review .doc-review-bar",
+      "top": 70
+     },
+     {
+      "at": "밑으로 내려"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"proc:SOP-FAN-11\"] .row-title"
+     },
+     {
+      "at": "처음 보이는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"proc:SOP-FAN-11\"] .row-meta",
+      "phrase": "쿨러 냉각 성능 상실"
+     },
+     {
+      "at": "줄마다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualReview button[data-review-kind=\"know\"]"
+     },
+     {
+      "at": "지식 후보를"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#manualReview button[data-review-kind=\"know\"]",
+      "anchor": "center"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+     },
+     15
+    ]
+   ]
+  },
+  {
+   "id": "v0616",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "맨 위 줄을 볼게요. 밑에 작은 글씨로 유온 상승, 냉각 효율 저하가 적혀 있죠. 이게 이 고장일 때 눈에 보이는 이상, 증상입니다. 센서로 재 보면 기름 온도가 오르고, 냉각 효율, 그러니까 쿨러가 얼마나 잘 식히는지가 떨어져 있는 거예요. 이런 증상을 보고 쿨러가 열을 내보내는 기능을 잃었다고 이름을 붙인 게 맨 위의 쿨러 냉각 성능 상실이고요. 이론에서 본 고장 유형이죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title"
+     },
+     {
+      "at": "맨 위 줄을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-meta",
+      "phrase": "유온 상승, 냉각 효율 저하"
+     },
+     {
+      "at": "밑에 작은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title"
+     },
+     {
+      "at": "맨 위의 쿨러"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-meta",
+      "phrase": "고장 유형"
+     },
+     {
+      "at": "이론에서 본"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0617",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "아래 세 줄은 이 고장을 일으킬 수 있는 원인입니다. 온도가 오르는 건 같아도 까닭은 여럿일 수 있어서, 원인도 여럿 뽑혀요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"] .row-title"
+     },
+     {
+      "at": "아래 세 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:causes:cause:ambient-temperature-rise\"] .row-title"
+     },
+     {
+      "at": "일으킬 수"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:causes:cause:fan-drive-fault\"] .row-title"
+     },
+     {
+      "at": "원인입니다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0618",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "오른쪽에는 지금 고른 줄이 매뉴얼의 어느 문장에서 나왔는지, 그 원문이 붙어 있어요. 검토는 줄마다 이 원문 한 문장과 맞는지 보는 겁니다. 맞으면 넘어가고 다른 것만 빼면 되니까, 매뉴얼을 처음부터 다 읽을 필요는 없어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualPanes [data-pane=\"know:failure_modes:fm:cooler-cooling-loss\"] blockquote"
+     },
+     {
+      "at": "그 원문이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0619",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "원문과 맞춰 보는 걸 한 줄로 해 볼게요. 조금 내리면 팬 진동 줄이 둘 있는데, 위쪽의 팬 진동 평균 정상 범위를 누르시면 됩니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"]",
+      "top": 330
+     },
+     {
+      "at": "조금 내리면"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title"
+     },
+     {
+      "at": "팬 진동 줄이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:fan-drive-vibration-high\"] .row-title"
+     },
+     {
+      "at": "둘 있는데"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title"
+     },
+     {
+      "at": "위쪽의"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"]",
+      "anchor": "center"
+     },
+     {
+      "at": "누르시면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] blockquote",
+      "contains": "(팬은 정상)이면 핀 오염으로 판정한다"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "v0620",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "이 줄은 쿨러 핀 오염이 원인인지 가려낼 때 보는 값이에요. 원인 후보마다 정해 두는 확인할 값이죠. 팬 진동이 정상 범위인데 냉각 효율이 떨어져 있으면 쿨러 핀 오염으로 봅니다. 쿨러 핀은 열을 내보내는 얇은 판인데, 여기에 먼지가 끼면 팬은 멀쩡히 돌아도 열이 잘 빠지지 않거든요. 오른쪽 원문에도 같은 말이 적혀 있으니, 이 줄은 맞게 뽑힌 겁니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-meta",
+      "phrase": "진동 평균 120초 < 0.9 → 쿨러 핀 오염"
+     },
+     {
+      "at": "이 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] blockquote",
+      "phrase": "팬은 정상"
+     },
+     {
+      "at": "오른쪽 원문에도"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] blockquote",
+      "phrase": "핀 오염으로 판정한다"
+     },
+     {
+      "at": "같은 말이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0621",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "이렇게 맞춰 보는 건 AI가 틀린 말도 그럴듯하게 할 수 있어서예요. 만약 AI가 이 줄을 거꾸로, 진동이 높을 때로 뽑았다면 나중에 고장이 났을 때 엉뚱한 원인을 짚게 되겠죠. 그런 줄이 보이면 여기 적재에서 제외에 체크해서, 그 줄만 빼고 나머지를 적재해요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] label.doc-check",
+      "anchor": "margin"
+     },
+     {
+      "at": "여기 적재에서"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0622",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "이 결과는 미리 원문과 맞춰 봐 둔 거라 뺄 줄이 없어요. 직접 문서를 넣을 때는 체크하기 전에 줄마다 이렇게 원문을 보시면 됩니다. 맨 아래 검토했다는 칸에 체크하고, 검토한 내용 적재를 누를게요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualReview .doc-confirm label.doc-check",
+      "anchor": "margin"
+     },
+     {
+      "at": "맨 아래"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#manualReviewed",
+      "anchor": "center"
+     },
+     {
+      "at": "체크하고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#manualCommit",
+      "anchor": "center"
+     },
+     {
+      "at": "누를게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#manualCommitSteps li[data-step=\"commit\"] b"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "v0623",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "검토한 내용을 지식으로 넣고 있습니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualCommitSteps li[data-step=\"commit\"] b"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#manualCommitTitle",
+      "exact": "지식 지도에 적재했습니다",
+      "long": true
+     },
+     60
+    ]
+   ]
+  },
+  {
+   "id": "v0624",
+   "segment": 3,
+   "section": "매뉴얼을 지식으로 넣기 — 문서 등록",
+   "text": "지식 지도에 적재했다고 나왔죠. 올리고, 뽑고, 검토해서 넣기까지, 매뉴얼이 지식이 되는 과정을 다 밟아 봤습니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualCommitTitle"
+     },
+     {
+      "at": "지식 지도에 적재했다고"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0625",
+   "segment": 4,
+   "section": "지식 지도에서 이어진 길 보기",
+   "text": "아까 하나씩 뽑아서 서로 이어 둔다고 했죠. 정말 어떻게 이어졌는지, 밑의 지식 지도에서 보기를 눌러 확인해 볼게요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#manualDone a.go[data-go-tab=\"ontology\"]"
+     },
+     {
+      "at": "밑의 지식 지도에서"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#manualDone a.go[data-go-tab=\"ontology\"]"
+     },
+     {
+      "at": "눌러"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoFocus"
+     },
+     15
+    ],
+    [
+     "wait",
+     {
+      "cy": "@node"
+     },
+     30
+    ],
+    [
+     "settle",
+     null,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "v0626",
+   "segment": 4,
+   "section": "지식 지도에서 이어진 길 보기",
+   "text": "AI가 쓰는 지식은 이렇게 지식 지도에 모여 있습니다. 점 하나가 지식 하나고, 선은 둘이 이어져 있다는 표시예요. 점과 선이 이렇게 많으니 처음 보면 막막하죠. 이 지도를 어떻게 짜고 읽는지는 뒤에서 다 다루니까, 지금은 지식이 어떻게 이어지는지 흐름만 보시면 됩니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "cy": "@node"
+     },
+     {
+      "at": "점 하나가"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "@edge"
+     },
+     {
+      "at": "선은"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0627",
+   "segment": 4,
+   "section": "지식 지도에서 이어진 길 보기",
+   "text": "위의 이 칸에서는 이상 패턴, 그러니까 경보의 종류를 고를 수 있어요. 쿨러 성능 저하를 고르시면 그 경보에서 출발하는 길만 밝게 남습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoFocus"
+     },
+     {
+      "at": "위의 이 칸에서는"
+     }
+    ],
+    [
+     "select",
+     {
+      "css": "#ontoFocus"
+     },
+     "쿨러 성능 저하",
+     {
+      "at": "고르시면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoHint",
+      "contains": "「쿨러 성능 저하」 경보에서"
+     },
+     10
+    ],
+    [
+     "settle",
+     null,
+     5
+    ]
+   ]
+  },
+  {
+   "id": "v0628",
+   "segment": 4,
+   "section": "지식 지도에서 이어진 길 보기",
+   "text": "왼쪽부터 읽어 볼게요. 쿨러 성능 저하는 경보의 이름이에요. 그 경보일 때 눈에 보이는 증상이 냉각 효율 저하와 유온 상승이고, 이 증상들이 가리키는 고장 유형이 앞에서 본 쿨러 냉각 성능 상실입니다. 그 고장 유형에 원인 셋과 조치들이 붙어 있죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "cy": "head:B:이상 패턴"
+     },
+     {
+      "at": "왼쪽부터"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "pattern:cooler-degradation"
+     },
+     {
+      "at": "쿨러 성능 저하는"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "sym:ce-drop"
+     },
+     {
+      "at": "냉각 효율 저하와"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "sym:ts1-rise"
+     },
+     {
+      "at": "유온 상승이고"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "fm:cooler-cooling-loss"
+     },
+     {
+      "at": "쿨러 냉각 성능 상실입니다"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "head:R:원인"
+     },
+     {
+      "at": "원인 셋과"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "head:R:조치 방법"
+     },
+     {
+      "at": "조치들이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0629",
+   "segment": 4,
+   "section": "지식 지도에서 이어진 길 보기",
+   "text": "숙련자라면 경보를 보고, 이건 이런 고장이니까 여기부터 봐야지 하고 머릿속으로 떠올리죠. 그 떠올리는 길이 이렇게 지도에 그려져 있는 거예요. 고장 하나에 원인도 조치도 여럿 붙어 있으니, 경보가 오면 AI는 이 길을 따라가서 그 가운데 지금 상황에 맞는 원인과 조치를 골라야 합니다. 어떻게 고르는지는 실제로 고장이 나 봐야 볼 수 있어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "cy": "fm:cooler-cooling-loss"
+     },
+     {
+      "at": "그 떠올리는 길이"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "cause:cooler-fin-fouling"
+     },
+     {
+      "at": "원인도"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "skill:sop-fan-11"
+     },
+     {
+      "at": "조치도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0630",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "왼쪽 메뉴의 유압 설비를 펼쳐서 결함 시뮬레이션을 열게요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList summary[data-menu=\"plant\"]"
+     },
+     {
+      "at": "펼쳐서"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"scenario\"]"
+     },
+     {
+      "at": "열게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] button[data-act=\"degrade\"]"
+     },
+     15
+    ]
+   ]
+  },
+  {
+   "id": "v0631",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "결함 시뮬레이션은 설비에 일부러 고장을 내 보는 곳입니다. 여기 설비 세 대는 컴퓨터 안에서 도는 가상 설비예요. 고장은 원래 누가 승인해서 나는 게 아니니까, 이 화면의 단추는 승인 길을 거치지 않고 설비에 들어갑니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#view-scenario .page-head p"
+     },
+     {
+      "at": "결함 시뮬레이션은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] h3"
+     },
+     {
+      "at": "설비 세 대는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-02\"] h3"
+     },
+     {
+      "at": "컴퓨터 안에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-03\"] h3"
+     },
+     {
+      "at": "가상 설비예요"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#view-scenario p.scope span"
+     },
+     {
+      "at": "이 화면의 단추는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0632",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "첫 번째 설비는 지금 유온 사십팔 도, 쿨러 성능 백 퍼센트로 잘 돌고 있죠. 옆의 두 대는 정기 정비나 예비품 구매 같은 회사 일을 일으켜 보는 칸이에요. 빨간 표시가 붙어 있어도 여기서는 상관없으니, 첫 번째만 쓰겠습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"fact\"]",
+      "exact": "유온 48.0 ℃ · 쿨러 성능 100 %"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"state\"] .tag",
+      "exact": "운전 중"
+     },
+     {
+      "at": "첫 번째 설비는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"fact\"]"
+     },
+     {
+      "at": "유온 사십팔"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-02\"] .lab-what > span",
+      "exact": "업무 사건 · 정기 정비"
+     },
+     {
+      "at": "옆의 두 대는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-03\"] .lab-what > span",
+      "exact": "업무 사건 · 예비품 구매"
+     },
+     {
+      "at": "예비품 구매"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-02\"] .biz-alert .tag"
+     },
+     {
+      "at": "빨간 표시가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-03\"] .biz-alert .tag"
+     },
+     {
+      "at": "붙어 있어도"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] h3"
+     },
+     {
+      "at": "첫 번째만"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0633",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "여기 쿨러 열화 주입을 누르시면, 쿨러가 점점 나빠지는 고장이 들어갑니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] button[data-act=\"degrade\"]",
+      "anchor": "center"
+     },
+     {
+      "at": "여기 쿨러"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] button[data-act=\"degrade\"]",
+      "anchor": "center"
+     },
+     {
+      "at": "누르시면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#labFollow li[data-step=\"inject\"].ok"
+     },
+     15
+    ],
+    [
+     "scroll",
+     {
+      "css": "#labFollowPanel",
+      "bottom": 6
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0634",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "쿨러가 기름을 덜 식히니까 유온이 조금씩 올라가죠. 지도에서 본 증상, 유온 상승이 지금 일어나는 거예요. 수업 맨 처음에 떠올려 본 장면이 지금 눈앞에 있는 셈입니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#labFollow li[data-step=\"rise\"] .lv-note",
+      "contains": "지금 유온"
+     },
+     10
+    ],
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"rise\"] .lv-note",
+      "phrase": "지금 유온"
+     },
+     {
+      "at": "유온이 조금씩"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0635",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "경보는 유온이 오십오 도를 넘는 것만 보고 내지 않습니다. 쿨러가 식히는 힘이 떨어졌는지, 온도가 계속 오르는 중인지까지 함께 보고, 그 상태가 이어져야 경보를 내요. 값이 잠깐 튄 걸로 울리면 헛울림이 쌓이니까요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"rise\"] .lv-note",
+      "phrase": "경보 조건 55 ℃"
+     },
+     {
+      "at": "오십오 도를"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#labFollow li[data-step=\"case\"].ok",
+      "long": true
+     },
+     180
+    ]
+   ]
+  },
+  {
+   "id": "v0656",
+   "segment": 5,
+   "section": "결함 시뮬레이션에서 고장 내기",
+   "text": "경보가 나고 처리 건이 열렸다고 나왔습니다. 이론에서 경보 한 건이 들어오면 사건 한 건이 열리고, 그 안에서 모든 단계가 이어진다고 했죠. 포털에서는 그 한 건을 처리 건이라고 부릅니다. 왼쪽 메뉴 처리 건 옆에도 숫자가 붙었는데, 여기 처리 건에서 보기를 눌러 들어가 볼게요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"alert\"] .line-text b"
+     },
+     {
+      "at": "경보가 나고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"case\"] .line-text b"
+     },
+     {
+      "at": "처리 건이 열렸다고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"state\"] .tag",
+      "exact": "경보 발생"
+     },
+     {
+      "at": "경보 한 건이"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#navTodo",
+      "exact": "1"
+     },
+     30
+    ],
+    [
+     "point",
+     {
+      "css": "#navTodo"
+     },
+     {
+      "at": "숫자가 붙었는데"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#labFollow [data-lv-go=\"case\"]"
+     },
+     {
+      "at": "눌러"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#todoPanel .turn-head h3"
+     },
+     60
+    ],
+    [
+     "settle",
+     null,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "v0638",
+   "segment": 6,
+   "section": "처리 건에서 AI 판단 읽기",
+   "text": "왼쪽 내 차례에, 방금 생긴 처리 건이 냉각 긴급 대응이라는 이름으로 올라와 있어요. 오른쪽에 그 내용이 펼쳐져 있고, 맨 위 카드가 지금 내가 할 일입니다. AI 에이전트가 경보를 받자마자 원인을 진단하고 조치까지 골라서, 이제 사람의 승인을 기다리고 있는 거죠.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#todoPanel .turn-head h3",
+      "exact": "팬 최대 운전을 승인할까요?"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#instList button.row[data-todo-task] .row-title"
+     },
+     {
+      "at": "왼쪽 내 차례에"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instDetail .case-title > span",
+      "exact": "냉각 긴급 대응 HYD-01"
+     },
+     {
+      "at": "오른쪽에 그 내용이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#todoPanel .turn-eyebrow",
+      "phrase": "내가 할 일 · 승인"
+     },
+     {
+      "at": "맨 위 카드가"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0639",
+   "segment": 6,
+   "section": "처리 건에서 AI 판단 읽기",
+   "text": "카드 제목에 그 조치가 있죠. 팬 최대 운전을 승인할지 묻고 있어요. 쿨러 팬을 가장 세게 돌려서 기름을 식히는 조치입니다. 밑의 AI 판단 줄에는 왜 뜨거워졌는지, 원인을 쿨러 핀 오염으로 봤다고 적혀 있고요. 매뉴얼에서 본 그 원인이에요. 그렇게 본 근거는 판단 근거 보기를 누르면 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#todoPanel .turn-head h3"
+     },
+     {
+      "at": "카드 제목에"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#todoPanel .turn-ai p b",
+      "exact": "AI 판단"
+     },
+     {
+      "at": "밑의 AI 판단"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#todoPanel .turn-ai p",
+      "phrase": "쿨러 핀 오염"
+     },
+     {
+      "at": "원인을 쿨러"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#todoPanel [data-open-tab=\"judge\"]"
+     },
+     {
+      "at": "판단 근거 보기를"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#todoPanel [data-open-tab=\"judge\"]",
+      "anchor": "center"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "dialog[open] [data-cr-tab=\"judge\"][aria-selected=\"true\"]"
+     },
+     10
+    ],
+    [
+     "wait",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "v0640",
+   "segment": 6,
+   "section": "처리 건에서 AI 판단 읽기",
+   "text": "결론 밑의 근거를 볼게요. 첫 줄은 지식 지도에 있던 원인 후보 셋 가운데 쿨러 핀 오염이 지금 값과 맞는다는 뜻입니다. 그 밑 두 줄이 왜 맞는지예요. 팬 진동은 기준과 견줘 정상 범위라 맞고, 냉각 효율은 기준보다 떨어져 있어서 맞다고 적혀 있죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] h4.cr-h",
+      "exact": "근거"
+     },
+     {
+      "at": "결론 밑의"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 0,
+      "anchor": "margin"
+     },
+     {
+      "at": "첫 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 1
+     },
+     {
+      "at": "팬 진동은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 2
+     },
+     {
+      "at": "냉각 효율은"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0641",
+   "segment": 6,
+   "section": "처리 건에서 AI 판단 읽기",
+   "text": "아까 원문과 맞춰 본 그 팬 진동 줄이 여기 근거로 다시 나온 거예요. 매뉴얼에서 뽑아 넣은 확인할 값이 AI 판단에 이렇게 쓰였습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 1,
+      "anchor": "margin"
+     },
+     {
+      "at": "아까 원문과"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0642",
+   "segment": 6,
+   "section": "처리 건에서 AI 판단 읽기",
+   "text": "밑의 후보 비교는 지도에 있던 조치 가운데 지금 쓸 수 있는 넷을 견준 겁니다. 온도를 얼마나 내리는지, 납기에 손해는 없는지 같은 걸 따져서 점수가 가장 높은 팬 최대 운전을 추천했어요. 원인이 핀 오염이면 핀을 닦는 게 먼저일 것 같은데, 쿨러 핀 세척은 맨 아래에 있죠. 핀을 닦으려면 정비하는 동안 설비를 세워야 해서, 납기 손해가 커 뒤로 밀린 거예요. 이렇게 다른 선택지와 밀린 까닭까지 함께 보여 줘야 사람이 보고 판단할 수 있습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(1) .opts-name b",
+      "exact": "팬 최대 운전"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-name b",
+      "exact": "쿨러 핀 세척"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-why",
+      "contains": "정비하는 동안 설비 정지"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] h4.cr-h",
+      "contains": "후보 비교"
+     },
+     {
+      "at": "밑의 후보 비교는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(1) .opts-name b"
+     },
+     {
+      "at": "팬 최대 운전을 추천"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-name b"
+     },
+     {
+      "at": "쿨러 핀 세척은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-why",
+      "phrase": "정비하는 동안 설비 정지"
+     },
+     {
+      "at": "정비하는 동안"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-why",
+      "phrase": "납기에서 뒤짐"
+     },
+     {
+      "at": "납기 손해가"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0643",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "근거는 닫을게요. 카드 오른쪽 아래에는 운전원 역할로 기록된다고 나오죠. 승인할 사람은 조치마다 정해져 있는데, 팬을 돌리는 건 운전을 바꾸는 일이라 운전원 몫입니다. 지금은 우리가 그 운전원이에요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "dialog[open] [data-cr-sheet-close]",
+      "anchor": "center"
+     },
+     {
+      "at": "닫을게요"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#todoPanel .turn-foot .who"
+     },
+     {
+      "at": "카드 오른쪽 아래에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0644",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "옆의 반려는 승인하지 않고 돌려보내는 단추고, 다른 안 고르기로는 표의 다른 조치를 고를 수 있어요. 우리는 추천대로 승인해 보겠습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#tdRejectOpen",
+      "anchor": "center",
+      "dy": 22
+     },
+     {
+      "at": "옆의 반려는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#tdMore",
+      "anchor": "center",
+      "dy": 22
+     },
+     {
+      "at": "다른 안 고르기로는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#tdGo",
+      "anchor": "center"
+     },
+     {
+      "at": "승인해 보겠습니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "냉각 명령"
+     },
+     30
+    ],
+    [
+     "settle",
+     null,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "v0645",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "사람이 할 일은 여기까지예요. 여기서부터는 시스템이 정해 둔 순서대로 단계를 이어 갑니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "운전원 승인"
+     },
+     {
+      "at": "사람이 할 일은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "냉각 명령"
+     },
+     {
+      "at": "여기서부터는"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "설비가 실행 완료로 답했습니다",
+      "long": true
+     },
+     60
+    ]
+   ]
+  },
+  {
+   "id": "v0646",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "냉각 명령 줄을 보면, 승인한 조치가 명령이 되어 설비로 갔고 설비가 실행했다고 답했습니다. 이 답이 확인 응답, 리모컨의 삑 소리죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "냉각 명령"
+     },
+     {
+      "at": "냉각 명령 줄을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "설비가 실행 완료로 답했습니다",
+      "phrase": "설비가 실행 완료로 답했습니다"
+     },
+     {
+      "at": "설비가 실행했다고"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0647",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "괄호 안의 안전 연동 통과는, 설비 곁 PLC가 지금 설비 상태를 보고 이 명령을 받아들였다는 뜻입니다. 인터록을 걸 만큼 위험한 상태가 아니었던 거죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "(안전 연동 통과)",
+      "phrase": "(안전 연동 통과)"
+     },
+     {
+      "at": "괄호 안의 안전"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0648",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "지금은 효과 확인 단계예요. 명령 뒤에 기름이 정말 식는지 다시 재 보는 건데, 재관측이라고 배운 단계죠. 괄호 안의 설비 시간은 이 가상 설비가 쓰는 시계입니다. 이 시계가 실제보다 스무 배 빨리 가서, 효과 확인은 일 분쯤이면 끝나요. 왼쪽 아래 이십 배속이 그 뜻입니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "효과 확인"
+     },
+     {
+      "at": "지금은 효과 확인"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "(설비 시간 15분)",
+      "phrase": "(설비 시간 15분)"
+     },
+     30
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "(설비 시간 15분)",
+      "phrase": "(설비 시간 15분)"
+     },
+     {
+      "at": "괄호 안의 설비"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#railScale"
+     },
+     {
+      "at": "왼쪽 아래 이십"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "회복으로 판정했습니다",
+      "long": true
+     },
+     180
+    ],
+    [
+     "wait",
+     {
+      "css": "#caseTop .case-result"
+     },
+     20
+    ],
+    [
+     "settle",
+     null,
+     10
+    ]
+   ]
+  },
+  {
+   "id": "v0649",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "효과 확인이 끝나면서 회복으로 판정했습니다. 유온이 기준 안으로 돌아왔다고 본 거죠. 이어서 정비 요청 등록과 결과 보고까지 붙고, 이 처리 건이 끝났어요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "회복으로 판정했습니다"
+     },
+     {
+      "at": "효과 확인이 끝나면서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "정비 요청 등록"
+     },
+     {
+      "at": "정비 요청 등록과"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "결과 보고: 정상"
+     },
+     {
+      "at": "결과 보고까지"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0650",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "맨 위로 결과가 올라왔죠. 정상, 유온이 기준 아래로 내려오고 경보도 풀렸다고 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#caseTop .case-result header .tag",
+      "exact": "정상"
+     },
+     {
+      "at": "맨 위로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#caseTop .case-result .result-main",
+      "phrase": "유온 정상 · 경보 해제"
+     },
+     {
+      "at": "유온이 기준"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0651",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "첫 줄 끝에는 정비 요청도 하나 붙어 있어요. 팬으로 온도는 잡았지만 쿨러는 아직 손보지 않았으니, 사람이 가서 점검하도록 정비 쪽에 맡겨 둔 겁니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#caseTop .case-result .result-main"
+     },
+     {
+      "at": "첫 줄 끝에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0652",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "진행 상황을 위에서부터 보면, AI의 추천은 원인 진단 줄에, 사람의 승인은 운전원 승인 줄에, 설비로 간 명령은 냉각 명령 줄에 따로 남아 있습니다. 승인 줄에는 추천안을 바꾸지 않고 승인했다고 적혀 있고요. 그래서 나중에 누가 어디서 무엇을 정했는지 처음부터 따라가 볼 수 있죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instDetail .case-progress > header h3",
+      "exact": "진행 상황"
+     },
+     {
+      "at": "진행 상황을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "원인 진단 · 냉각 조치 제안"
+     },
+     {
+      "at": "AI의 추천은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "운전원 승인"
+     },
+     {
+      "at": "사람의 승인은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "냉각 명령"
+     },
+     {
+      "at": "설비로 간 명령은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "contains": "추천안 그대로 승인했습니다",
+      "phrase": "추천안 그대로 승인했습니다"
+     },
+     {
+      "at": "승인 줄에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0653",
+   "segment": 7,
+   "section": "승인하고 결과 따라가기",
+   "text": "맨 아래 가지 않은 단계를 펼치면, 이 처리 건이 지나가지 않은 길의 단계들이 나옵니다. 반려 단추로 돌려보냈으면 설비로는 아무것도 가지 않고 끝났을 거고, 명령 뒤에도 온도가 내려가지 않았으면 미달로 보고하고 끝났을 거예요. 쿨러 핀 세척처럼 정비를 맡기는 조치를 골랐다면, 정비를 마친 다음 다시 재 보는 길로 갔을 거고요. 결과마다 갈 길이 미리 그려져 있는 거죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "가지 않은 단계"
+     },
+     {
+      "at": "맨 아래 가지 않은"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#instRecord details.cr-skipped > summary"
+     },
+     {
+      "at": "펼치면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#instRecord details.cr-skipped .fold-body p"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord details.cr-skipped .fold-body p",
+      "phrase": "결과 보고: 반려"
+     },
+     {
+      "at": "반려 단추로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord details.cr-skipped .fold-body p",
+      "phrase": "결과 보고: 미달"
+     },
+     {
+      "at": "미달로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord details.cr-skipped .fold-body p",
+      "phrase": "정비 수행"
+     },
+     {
+      "at": "정비를 마친"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0657",
+   "segment": 8,
+   "section": "홈에서 마무리",
+   "text": "홈으로 돌아와서 맨 위 한 줄을 다시 보면, 회사가 넣어 둔 지식으로 AI가 판단하고 설비를 움직일지는 사람이 정한다고 했죠. 오늘 그 한 바퀴를 처음부터 끝까지 직접 돌아 본 겁니다.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"main\"]"
+     },
+     {
+      "at": "홈으로"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#mainStages a.stat"
+     },
+     15
+    ],
+    [
+     "point",
+     {
+      "css": "#view-main .page-head p"
+     },
+     {
+      "at": "맨 위 한 줄을"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0654",
+   "segment": 8,
+   "section": "홈에서 마무리",
+   "text": "아래 결과 보기 칸에도 방금 끝난 처리 건이 하나 세어져 있어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-value",
+      "contains": "1건 처리 완료"
+     },
+     10
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-value"
+     },
+     {
+      "at": "아래 결과 보기"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "v0655",
+   "segment": 8,
+   "section": "홈에서 마무리",
+   "text": "한 번 더 해 보고 싶으면, 결함 시뮬레이션에서 쿨러 복구를 누르고 설비가 운전 중으로 돌아온 다음 다시 주입하시면 됩니다. 쿨러는 아직 손보지 않았으니, 쿨러 복구가 정비를 마친 셈이 되는 거죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat[data-go-tab=\"scenario\"] .go"
+     },
+     {
+      "at": "결함 시뮬레이션에서"
+     }
+    ]
+   ]
+  }
+ ]
+}
