@@ -301,8 +301,13 @@ def main(argv=None):
         new = sha256(candidate)
         old = sha256(archive) if archive.exists() else None
         if new == old:
-            print(f'{archive.name}: 바이트가 같다. 바꾼 것 없음.')
-            return 0
+            # 생성기가 ZIP을 이미 제자리에 묶었으면 바이트는 같아도 목록이 옛 해시를 갖고 있을 수 있다 — 그때는 목록만 맞춘다.
+            if item is None or item['sha256'] == new:
+                print(f'{archive.name}: 바이트가 같다. 바꾼 것 없음.')
+                return 0
+            if not args.version:
+                print(f'{archive.name}: ZIP은 이미 새 바이트({new[:12]})인데 package-index는 {item["sha256"][:12]}다. --version <새 판>을 준다(지금 {item["version"]}).')
+                return 1
         if item is not None and not args.version:
             print(f'{archive.name}: 바이트가 바뀐다({(old or "없음")[:12]} → {new[:12]}). --version <새 판>을 준다(지금 {item["version"]}).')
             return 1

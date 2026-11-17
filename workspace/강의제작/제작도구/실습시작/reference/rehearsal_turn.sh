@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# 언제: 코딩 랩 학생 경로 리허설(코딩랩.md 길 7)에서 학생 역 AI(Codex + 학생처럼 ChatGPT 계정으로 로그인 + config.toml의 모델)에게 한 턴을 보낼 때.
+# 언제: 코딩 랩 학생 경로 리허설(코딩랩.md 길 7)에서 학생 역 AI(Codex + 학생처럼 ChatGPT 계정으로 로그인 + 그 계정의 모델)에게 한 턴을 보낼 때.
 # 쓰는 법: rehearsal_turn.sh <실습 폴더> <프롬프트 파일> [new|resume]   — 첫 턴 new, 이후 resume
 # 필요한 환경 변수: CODEX_BIN(Codex CLI 실행 파일 — 예: npm i --prefix <폴더> @openai/codex@0.166.0 뒤 <폴더>/node_modules/.bin/codex)
-#                  CODEX_HOME(사용자가 `codex login`해 둔 시험용 폴더 — 이 PC는 D:/HYD-Practice/_codex_luna. 플러그인 · 컴퓨터 제어가 켜진 기본 ~/.codex는 쓰지 않는다)
+#                  CODEX_HOME(사용자가 `codex login`해 둔 시험용 폴더 — 이 PC의 값은 코딩랩.md 길 6 한 곳에 있다. 플러그인 · 컴퓨터 제어가 켜진 기본 ~/.codex는 쓰지 않는다)
 #                  CODEX_MODEL · CODEX_REASONING(선택 — 지정하면 새 턴/재개 모두 명시하고 실제 실행 머리와 대조)
 # resume --last는 실습 폴더(cwd)별로 이어지므로 여러 리허설이 같은 CODEX_HOME을 써도 섞이지 않는다.
 # 기록은 실습 폴더 옆 luna_log/turnNN.{prompt.txt,log,last.txt}. 실습 폴더는 저장소 밖 · Temp 밖에 둔다(코딩랩.md 「함정」).

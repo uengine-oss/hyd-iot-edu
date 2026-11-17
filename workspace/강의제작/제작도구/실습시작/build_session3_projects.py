@@ -31,7 +31,7 @@ from lab_package import ROOT, entry, pack, register, student_files, write_zip
 from project_layout import errors, write_metadata
 
 CR = BJ.CR
-VERSION = 'v2-project'   # 2026-11-11: 독립 검토 고침 + 공용 고침
+VERSION = 'v4-project'   # 2026-11-17: 독립 검토 고칠목록(가이드 · AGENTS · 기록 틀 문장, 요령 까닭은 lab_frame 한 곳) — 작업 2026-11-17_코딩랩-원리중심-학생결정자. 그 앞: v3 학생은 AI로 파악하고 추천안을 따져 결정(코딩랩 K-3)
 WORK = ROOT/'작업/검사/session3-projects'
 KEYS = {'criteria': 'integrated-03-criteria', 'judge': 'integrated-03-judge', 'conditions': 'practical-02-conditions', 'review': 'practical-03-review'}
 PROJECT = {   # 프로젝트 폴더 = 실라버스 행 제목의 뜻(한 회차 랩 폴더 안에서 겹치지 않게)
@@ -258,11 +258,22 @@ OUTSIDE = {
 }
 
 
+OWN_POINT = {   # 선택지에서 고르지 않고 학생이 자기 말로 쓰는 정할 지점 — AI는 받아 적기만 한다
+    '비교 기준 문장': ('「비교 기준 문장」은 학생이 말한 문장을 다듬지 않고 받아 적는 자리다. 문장을 지어 주거나 고친 안을 내지 않고, 학생이 물으면 '
+                  '`data/metrics/metric_definitions.md` 「포털의 성과 지표 점수」 절의 근거 줄과 그 절에 맞지 않는 곳만 짚는다.'),
+}
+
+
 def agent_rules(key, L):
     """랩별 작업 경계 — 채울 파일 · 정할 지점의 이름(답 없음) · 범위 밖."""
-    points = ' · '.join(f'「{name}」' for name, _ in L['decide'])
-    return (EXTRA_RULES[key] + f'\n- 정할 지점: {points}. `app/features/decisions.csv`의 지점 칸에 이 이름을 그대로 쓴다. 이 지점은 학생에게 근거와 선택을 먼저 묻고, '
-            '다 해 달라는 요청에도 대신 정하지 않는다. 학생이 근거와 선택을 말하기 전에는 그 지점에 걸린 결과를 만들지 않는다.'
+    names = [name for name, _ in L['decide']]
+    choose = [n for n in names if n not in OWN_POINT]
+    whom = '학생이 이 지점을 물으면' if len(choose) == len(names) else ' · '.join(f'「{n}」' for n in choose) + '은 학생이 물으면'
+    return (EXTRA_RULES[key] + '\n- 정할 지점: ' + ' · '.join(f'「{n}」' for n in names) + f'. `app/features/decisions.csv`의 지점 칸에 이 이름을 그대로 쓴다. {whom} 선택지와 각 선택으로 바뀌는 답, 근거 줄을 보이고 추천안도 낼 수 있다. '
+            '학생이 고르고 이유를 말하기 전에는 그 지점의 `decisions.csv` 줄과 그 지점에 걸린 결과를 만들지 않고, 다 해 달라는 요청에도 대신 정하지 않는다.'
+            + ''.join('\n- ' + OWN_POINT[n] for n in names if n in OWN_POINT)
+            + '\n- `decisions.csv`의 고른 것 · 근거 · 바뀌는 답과 `expected.csv`의 기대 판정에는 학생이 대화에서 정한 것만 적는다. 학생이 보고 받아들인 근거 줄과 기대 판정 후보도 학생이 정한 것이다. '
+            '기대 판정 후보는 원자료에서 찾아 근거 줄과 함께 내고, `python run.py`가 낸 결과를 기대 판정으로 옮기지 않는다.'
             f'\n- 이번 범위 밖: {OUTSIDE[key]}.')
 
 

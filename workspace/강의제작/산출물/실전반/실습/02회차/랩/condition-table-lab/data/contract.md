@@ -29,7 +29,7 @@ R0,SOP-COOL-00,1,AND,forecast_ts1,>=,0,℃,예,WARN,,이유 문장,문서 절
 ## 고른 것 (`app/features/decisions.csv`) · 기대 판정 (`app/features/expected.csv`)
 
 - `app/features/decisions.csv` — 열 `지점,고른_것,근거,바뀌는_답`. 칸마다 뜻은 그 파일 첫머리 `#` 줄에 있다. 같은 종류의 지점이 여럿이면 지점마다 한 줄.
-- `app/features/expected.csv` — 열 `사례,후보,기대_판정,근거`. `사례`는 `data/check_cases.csv`의 사례 ID(사건 메모의 경보도 그 ID). 제공 코드를 돌리기 전에 원자료 · 조건표 · 원문으로 손으로 구한 기대. `기대_판정`은 `유지` · `제외` · `보류`(뜻은 `data/work_standard.md` 4절), `근거`는 `파일:줄`.
+- `app/features/expected.csv` — 열 `사례,후보,기대_판정,근거`. `사례`는 `data/check_cases.csv`의 사례 ID(사건 메모의 경보도 그 ID). 제공 코드를 돌리기 전에 원자료 · 조건표 · 원문에서 찾아 정한 기대(제공 코드가 낸 결과를 옮기지 않는다). `기대_판정`은 `유지` · `제외` · `보류`(뜻은 `data/work_standard.md` 4절), `근거`는 `파일:줄`.
 
 ## 확인 사례 (`data/check_cases.csv`, 읽기만)
 

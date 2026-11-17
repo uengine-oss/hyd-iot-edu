@@ -1,4 +1,11 @@
-"""새 그래프 랩의 실제 별도 DB 실행·갈래·재실행 검증. AI 호출과 촬영을 하지 않는다."""
+"""통합02 그래프 랩(실습 랩 규모)의 강사 참조 시험 — 실제 별도 랩 DB에서 적재 · 조회 · 수정본 갈래 · 재실행을 판정한다. AI 호출과 촬영을 하지 않는다.
+
+판정: 제공 모델이 생성 정답 구조와 같다. 적재한 그래프가 모델 파일과 같고 다시 적재해도 같다. 조회 셋의 답이 기대 답(제공 모델과 원자료에서)과 같다.
+수정본 갈래 남김 · 삭제마다 이름이 바뀐 설비가 같은 식별자로 남고, 불용 설비가 그 갈래대로 남거나 그 설비에만 딸린 대상과 함께 사라지며(남은 설비의 대상 수는 그대로),
+한 번 더 반영해도 바뀌지 않는다. 두 갈래의 사용 설비 조회 답이 실제로 다르다. 빈 결정이면 수정본 반영이 그 줄을 짚고 멈춘다.
+이 시험이 만든 랩 DB 컨테이너는 라벨을 다시 확인한 뒤 지운다.
+사용: python reference/session2_graph_trials.py <graph-lab 폴더>
+"""
 from contextlib import contextmanager
 from pathlib import Path
 import argparse
@@ -20,26 +27,32 @@ from lab_package import ROOT
 from reference.session2_project_trials import command, put
 
 
-def fill(folder, change='남김', running=False):
+def fill(folder, change='남김'):
     graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
-    choices = B.graph_chosen('통합반')
     put(folder, {'결과/load.cypher': A.load_answer(graph),
-                 '결과/update.cypher': A.UPDATE_INTEGRATED[change],
-                 '결과/query.cypher': A.query_text([A.QUERY_INTEGRATED[1], A.QUERY_INTEGRATED[2], A.QUERY_PART_USAGE['빠짐' if running else '상태와 함께']]),
-                 '결과/정한_것.csv': B.chosen_text([choices['가동 설비만' if running else '상태와 함께'], choices['수정본 지움' if change == '삭제' else '수정본 남김']])}, True)
-    expectation(folder, graph, running)
+                 '결과/update.cypher': A.update_integrated(change),
+                 '결과/query.cypher': A.query_text([A.QUERY_INTEGRATED[n] for n in (1, 2, 3)]),
+                 '결과/정한_것.csv': B.chosen_text([B.graph_chosen('통합반')[change]])}, True)
+    expectation(folder)
 
 
-def expectation(folder, graph, running, changed=False, deleted=False):
+def expectation(folder, after=None):
+    """기대 답 표. after = 수정본을 반영한 갈래(남김 · 삭제)면 불용 설비가 걸린 줄을 수정본 줄에서 다시 정한다(제공 모델이 아니라 D.changes에서)."""
+    graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
     rows = B.graph_expect_rows('통합반', graph)
-    for row in rows:
-        if row[0:2] == ['3', 'RF-10'] and changed:   # 수정본 구성요소_변경.csv 3줄: HYD-03 리턴 필터가 P-RTN-FLT-25로 바뀜
-            row[3] = ' · '.join(x for x in row[3].split(' · ') if x != 'HYD-03')
-        if row[0:2] == ['3', 'P-RTN-FLT-25'] and changed:
-            row[3] = 'HYD-03'
-        if row[0:2] == ['3', 'RF-10'] and (running or (changed and deleted)):
-            row[3] = ' · '.join(x for x in row[3].split(' · ') if x != 'HYD-07')
-            row[4] += ' · ' + ('입력/자료_변경분/2026-10-20_수정본/설비_대장_변경.csv:3' if changed else '입력/자료/설비_대장.csv:9')
+    if after:
+        retired, status = D.LAB_RETIRED
+        where = B.retired_change_line()
+        for row in rows:
+            if row[0] != '3' or row[2] not in ('status', 'asset'):
+                continue
+            parts = V.code_to_parts(row[1])           # 물은 품번 · 표기가 가리키는 사내 품번 — 그 부품을 쓰는 설비는 정답 구조(TRUTH)에서 센다
+            assets = sorted(a for a, t in D.TRUTH['assets'].items() if set(parts) & set(t['components'].values()))
+            if retired not in assets:
+                continue                               # 불용 결정 설비가 쓰지 않는 부품의 줄은 수정본으로 바뀌지 않는다
+            kept = [a for a in assets if not (after == '삭제' and a == retired)]
+            row[3] = ' · '.join((status if a == retired else '가동') for a in kept) if row[2] == 'status' else ' · '.join(kept)
+            row[4] += ' · ' + where
     put(folder, {'결과/기대_답.csv': B.graph_expect_text(rows, '통합반')}, True)
 
 
@@ -78,21 +91,39 @@ def result(folder, action):
 def equal_answers(blocks):
     compare = [b for b in blocks if b['kind'] == 'compare']
     assert compare and all(r['state'] == '같음' for b in compare for r in b['rows']), compare
+    return {r['key']: r['cells'][0][1] for b in compare for r in b['rows']}
 
 
 def normalized(graph):
     return sorted(json.dumps(item, ensure_ascii=False, sort_keys=True) for item in graph['nodes']), sorted(json.dumps(item, ensure_ascii=False, sort_keys=True) for item in graph['rels'])
 
 
+def per_asset(graph):
+    """설비마다 딸린 구성 요소 · 센서 · 실물 수(수정본 반영 뒤 원자료와 다시 세는 값)."""
+    label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
+    owner = {r['b']: r['a'] for r in graph['rels'] if r['type'] == 'HAS_COMPONENT'}
+    out = {a: {'Component': 0, 'Sensor': 0, 'Unit': 0} for a, l in label.items() if l == 'Asset'}
+    for c, a in owner.items():
+        out[a]['Component'] += 1
+    for r in graph['rels']:
+        if r['type'] in ('MONITORED_BY', 'INSTALLED_UNIT') and r['a'] in owner:
+            out[owner[r['a']]][label[r['b']]] += 1
+    return out
+
+
 def trials(starter, work):
-    records = []
+    records, usage = [], {}
+    (renamed, new_name), (retired, status) = D.LAB_RENAMED, D.LAB_RETIRED
+    truth = D.TRUTH['assets']
+    counted = {a: {'Component': len(t['components']), 'Sensor': len(t['sensors']), 'Unit': sum(1 for (x, _) in D.SERIALS if x == a) + (D.REMOVED_PUMP[0] == a)}
+               for a, t in truth.items()}      # 생성 정답 구조에서 센 설비별 대상 수
     for change in ('남김', '삭제'):
         folder = work / change / starter.name
         shutil.copytree(starter, folder, ignore=shutil.ignore_patterns('__pycache__', 'output', '.lab_connection.json'))
         graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
-        branch = B.GRAPH_LAB_INPUT['통합반']     # 제공 모델 = 설계 랩 강사 참조 그 갈래(실물 · 확인 필요 후보 · 붙은 자리까지 물리량)
-        assert V.answers_from_graph('통합반', branch, graph) == V.expected('통합반', branch)
-        assert not V.diff(V.answers_from_graph('통합반', branch, graph), V.answers_from_graph('통합반', branch, B.reference_model(False, branch)[1]))
+        branch = B.GRAPH_LAB_INPUT['통합반']     # 제공 모델 = 설계 랩 강사 참조 그 갈래(실물을 나눔 · 붙은 자리까지 물리량)
+        assert not V.diff(V.expected('통합반', branch), V.answers_from_graph('통합반', branch, graph))
+        assert per_asset(graph) == counted, (per_asset(graph), counted)
         command(folder, 'run.py', '--no-open')
         # 빈 기능을 이미 실행된 결과처럼 보이지 않는다.
         empty = command(folder, 'run.py', 'load', '--no-open', ok=False)
@@ -108,43 +139,35 @@ def trials(starter, work):
             assert normalized(initial) == normalized(json.loads((folder / 'output/graph.json').read_text(encoding='utf-8')))
             equal_answers(result(folder, 'sensors'))
             equal_answers(result(folder, 'parts'))
-            # 빈 결정이면 멈춤: 정한_것.csv 지점 줄이 비어 있으면 그 결정을 쓰는 기능(사용 설비 조회 · 수정본 반영)이 그 줄을 짚고 멈춘다
+            before = equal_answers(result(folder, 'usage'))
+            # 빈 결정이면 멈춤: 정한_것.csv 지점 줄이 비어 있으면 그 결정을 쓰는 기능(수정본 반영)이 그 줄을 짚고 멈춘다
             decisions = folder / 'app/features/decisions.csv'
             filled = decisions.read_bytes()
             decisions.write_text(P.convert(B.decision_template(B.GRAPH_POINTS['통합반'])), encoding='utf-8', newline='\n')
-            for action, point in (('usage', '시점과 상태'), ('update', '불용 결정 설비')):
-                out = command(folder, 'run.py', action, '--no-open', ok=False)
-                assert 'decisions.csv:' in out and point in out, out[-500:]
-                records.append({'empty_decision': action, 'stopped_on': point})
+            out = command(folder, 'run.py', 'update', '--no-open', ok=False)
+            assert 'decisions.csv:' in out and '불용 결정 설비' in out, out[-500:]
+            records.append({'empty_decision': 'update', 'stopped_on': '불용 결정 설비'})
             decisions.write_bytes(filled)
-            for running in (False, True):
-                fill(folder, change, running)
-                equal_answers(result(folder, 'usage'))
             update = result(folder, 'update')
             assert any(b['kind'] == 'note' and '더 바뀐 것 없음' in b['text'] for b in update)
             after = json.loads((folder / 'output/after_update.json').read_text(encoding='utf-8'))
             props = {n['props']['id']: n['props'] for n in after['nodes']}
-            assert props['HYD-02']['name'] == 'HYD-02 2라인 2호 파워팩'
-            assert props['HYD-06:I_MOTOR']['normal'] == 18.5
-            assert props['HYD-03:VS1']['unit'] == 'mm/s'
-            assert 'HYD-01:TS1' in props
-            # 수정본의 교체부품 확인 줄: 그 자리의 확인 필요 후보가 사라지고 확인된 품번 하나로만 이어진다
-            pump = [(r['type'], r['b']) for r in after['rels'] if r['a'] == 'HYD-03:pump-a' and r['type'] in ('USES_PART', 'CANDIDATE_PART')]
-            assert pump == [('USES_PART', 'P-PMP-SEAL')], pump
-            rtn = [(r['type'], r['b']) for r in after['rels'] if r['a'] == 'HYD-03:rtn-filter' and r['type'] == 'USES_PART']
-            assert rtn == [('USES_PART', 'P-RTN-FLT-25')], rtn   # 잇는 부품이 바뀐 수정 — 옛 관계는 지워지고 새 관계 하나
+            assert props[renamed]['name'] == new_name                      # 이름이 바뀐 설비는 같은 식별자로 남는다
+            kinds = lambda g, label: sorted(n['props']['id'] for n in g['nodes'] if n['labels'] == [label])
+            assert kinds(after, 'Part') == kinds(graph, 'Part') and kinds(after, 'Quantity') == kinds(graph, 'Quantity')   # 공용 대상은 어느 갈래에서도 남는다
             if change == '남김':
-                assert props['HYD-07']['status'] == '불용(매각 예정)'
+                assert props[retired]['status'] == status
+                assert per_asset(after) == counted
                 assert len(after['nodes']) == len(graph['nodes']) and len(after['rels']) == len(graph['rels'])
             else:
-                units = sum(1 for (aid, _), _s in D.SERIALS.items() if aid == 'HYD-07')   # 그 설비 자리에 달린 실물도 함께 지운다
-                gone = 1 + len(D.TRUTH['assets']['HYD-07']['components']) + len(D.TRUTH['assets']['HYD-07']['sensors']) + units
-                assert 'HYD-07' not in props and len(graph['nodes']) - len(after['nodes']) == gone
-            for running in (False, True):
-                fill(folder, change, running)
-                expectation(folder, graph, running, changed=True, deleted=change == '삭제')
-                equal_answers(result(folder, 'usage'))
-                records.append({'change': change, 'running_only': running, 'initial_nodes': len(initial['nodes']), 'after_nodes': len(after['nodes']), 'after_rels': len(after['rels']), 'answers': 'pass'})
+                assert retired not in props
+                assert per_asset(after) == {a: c for a, c in counted.items() if a != retired}      # 남은 설비의 대상은 하나도 사라지지 않는다
+                assert len(graph['nodes']) - len(after['nodes']) == 1 + sum(counted[retired].values())
+            expectation(folder, after=change)
+            usage[change] = equal_answers(result(folder, 'usage'))
+            assert usage[change] != before, (change, '수정본을 반영해도 사용 설비 조회의 답이 그대로')
+            records.append({'change': change, 'initial_nodes': len(initial['nodes']), 'after_nodes': len(after['nodes']), 'after_rels': len(after['rels']),
+                            'per_asset_after': per_asset(after), 'usage_before': before, 'usage_after': usage[change]})
             result(folder, 'compare')
             result(folder, 'export')
             result(folder, 'check')
@@ -176,6 +199,8 @@ def trials(starter, work):
                     state_path.write_bytes(original)
                 records.append({'restart_preserves_graph': True, 'wrong_owner_rejected': True, 'empty_feature_rejected': True})
         print(change + ' 실행·정리 통과', flush=True)
+    assert usage['남김'] != usage['삭제'], '불용 결정 설비의 두 갈래가 같은 답을 냄'
+    records.append({'decision': '불용 결정 설비', 'changed_answers': {k: [usage['남김'].get(k), usage['삭제'].get(k)] for k in usage['남김'] if usage['남김'][k] != usage['삭제'].get(k)}})
     return records
 
 
@@ -184,7 +209,8 @@ def main():
     parser.add_argument('folder', type=Path)
     args = parser.parse_args()
     base = ROOT / '작업/검사/session2-projects'
-    with tempfile.TemporaryDirectory(prefix='graph-trials-', dir=base) as temp:
+    base.mkdir(parents=True, exist_ok=True)
+    with D.for_course('통합반'), tempfile.TemporaryDirectory(prefix='graph-trials-', dir=base) as temp:
         work = Path(temp).resolve()
         assert work.is_relative_to(base.resolve()) and work != base.resolve()
         records = trials(args.folder.resolve(), work)

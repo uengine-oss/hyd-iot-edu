@@ -70,7 +70,7 @@ def need_decided(points):
         line, r = rows[point]
         if not (r.get('고른_것') or '').strip() or r['고른_것'].strip() == '미결' or not (r.get('근거') or '').strip():
             raise R.Stop(f'app/features/decisions.csv:{line}: 「{point}」의 고른_것 · 근거가 아직 비어 있습니다(미결 포함). 이 기능은 이 결정대로 결과를 냅니다 — '
-                         '원자료를 보고 고른 것과 근거 줄을 적은 뒤 다시 실행합니다. AI가 대신 고르지 않습니다.')
+                         '선택지와 그 결과를 따져 보고 내가 고른 것과 근거를 적은 뒤 다시 실행합니다.')
 
 
 def run_check():
@@ -83,7 +83,7 @@ from app.utils import cypher as C
 
 TITLE = '설계한 온톨로지를 그래프 DB에 구현하고 검증하기'
 CHANGE = True
-DECIDE = {'3': ['시점과 상태'], 'update': ['불용 결정 설비']}   # 기능마다 쓰는 결정 지점(질문 번호 · update)
+DECIDE = {'update': ['불용 결정 설비']}   # 기능마다 쓰는 결정 지점(질문 번호 · update)
 
 
 def db(fn, *a):
@@ -116,7 +116,7 @@ def start(previous):
 
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '볼_열', '기대_답', '근거'], ['질문', '물을_값'])
-    return [R.table('내가 원자료에서 먼저 적은 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows)]
+    return [R.table('내가 정한 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows)]
 
 
 def load_once():

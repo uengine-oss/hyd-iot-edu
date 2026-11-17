@@ -77,7 +77,7 @@ def need_decided(points):
         line, r = rows[point]
         if not (r.get('고른_것') or '').strip() or r['고른_것'].strip() == '미결' or not (r.get('근거') or '').strip():
             raise R.Stop(f'결과/정한_것.csv:{{line}}: 「{{point}}」의 고른_것 · 근거가 아직 비어 있습니다(미결 포함). 이 기능은 이 결정대로 결과를 냅니다 — '
-                         '원자료를 보고 고른 것과 근거 줄을 적은 뒤 다시 실행합니다. AI가 대신 고르지 않습니다.')
+                         '선택지와 그 결과를 따져 보고 내가 고른 것과 근거를 적은 뒤 다시 실행합니다.')
 
 
 def run_check():
@@ -86,7 +86,7 @@ def run_check():
     return [R.note('python check.py\\n' + text)] if p.returncode == 0 else [R.error('python check.py — 구조 확인 필요', text)]
 '''
 
-DESIGN_INTEGRATED = '''"""{title} — 결과 화면의 단계(START.md 「진행 단계」와 같은 번호 · 이름). 제공 파일 — 바꾸지 않는다."""
+DESIGN_INTEGRATED = '''"""{title} — 기능마다 실제 결과를 블록으로 돌려준다. 제공 파일 — 바꾸지 않는다."""
 ''' + COMMON + '''
 import model_tool as M
 
@@ -112,26 +112,26 @@ def sources(previous):
         cap = {{n['id']: (n.get('caption') or '') + (' (' + ' · '.join(n.get('labels', [])) + ')' if n.get('labels') else '') for n in g.get('nodes', [])}}
         out.append(R.table('출발 그림(자료/관계그림.json)의 연결 — 시작 → 끝', ['시작', '관계', '끝'],
                            [(cap.get(r['fromId'], r['fromId']), r.get('type', ''), cap.get(r['toId'], r['toId'])) for r in g.get('relationships', [])]))
-    out.append(R.note('이번 질문에 쓰는 것은 설비 대장 · 구성 요소 · 센서 · 예비품 · 품번 교차표입니다. 줄은 VS Code에서 열어 보고, 결과 화면은 단계마다 다시 씁니다.'))
+    out.append(R.note('원자료는 설비 대장 · 구성 요소 · 센서 · 예비품 · 품번 교차표와 현장 메모입니다. 결과 화면은 단계마다 다시 씁니다.'))
     return out
 
 
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답', '근거'], KEY)
-    return [R.table('내가 원자료에서 먼저 적은 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows)]
+    return [R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows)]
 
 
 def design(previous):
     ids, links, prev = guarded(M.preview_ids)
-    out = [R.table('종류와 ID 만드는 법(결과/설계.csv)', ['대상', 'ID_만드는_법'], [(k, v) for k, v in ids.items()],
+    out = [R.table('종류와 식별자 만드는 법(결과/설계.csv)', ['대상', 'ID_만드는_법'], [(k, v) for k, v in ids.items()],
                    note=('실물 행이 있어 구성 요소(자리)와 일련번호가 붙은 실물을 따로 둡니다.' if '실물' in ids else
                          '실물 행이 없어 일련번호는 구성 요소의 속성으로 둡니다.')),
            R.table('관계와 방향 · 카디널리티(결과/관계.csv)', ['연결', '관계 이름', '시작 → 끝', '카디널리티'], [(k, v[0], f'{{v[1]}} → {{v[2]}}', v[3]) for k, v in links.items()],
                    note='카디널리티는 시작 쪽 수:끝 쪽 수이고 1은 많아야 하나입니다. 만든 연결이 적은 수를 넘으면 그 단계에서 멈추고 관계.csv 줄과 원자료 줄을 짚습니다.')]
-    out.append(R.counts('원자료 행마다 내 ID를 지으면 — 서로 다른 ID 수', [(k, v['개수']) for k, v in prev.items()]))
+    out.append(R.counts('원자료 행마다 내 식별자를 지으면 — 서로 다른 식별자 수', [(k, v['개수']) for k, v in prev.items()]))
     clash = [(k, i, ', '.join(f"{{v['파일']}}:{{n}}" for n in lines)) for k, v in prev.items() for i, lines in v['겹침'].items()]
-    out.append(R.table('ID가 겹치는 원자료 행(이름 묶기 전)', ['대상', 'ID', '행'], clash,
-                       note='겹친 ID 하나는 대상 하나가 됩니다. 같은 대상의 겹침인지, 다른 대상을 한 ID로 짓는 것인지는 원자료 줄을 열어 봅니다.'))
+    out.append(R.table('식별자가 겹치는 원자료 행(이름 묶기 전)', ['대상', '식별자', '행'], clash,
+                       note='겹친 식별자 하나는 대상 하나가 됩니다. 같은 대상의 겹침인지, 다른 대상을 한 식별자로 짓는 것인지는 그 원자료 줄로 봅니다.'))
     return out
 
 
@@ -140,61 +140,44 @@ def names(previous):
     rows = [(code, made_from, made) for code, (made_from, made) in info['구성 요소'].items()]
     n = info['이름']
     out = [R.table('내 규칙(same_device · group_name)으로 묶인 이름', ['이름', '행 수', '원자료 이름(설비)'], n['묶음'],
-                   note='묶음마다 원자료 이름과 설비를 보고, 같은 장치가 아닌 것이 섞였는지 원자료 줄로 봅니다.'),
-           R.table('결과/이름.csv로 바꾼 이름', ['이름표 행', '원자료 이름', '모델', '규칙대로면', '바꾼 이름'], n['이름표']),
-           R.table('다른 이름과 묶이지 않은 원자료 이름(그대로 씀)', ['원자료 행', '설비', '계통', '원자료 이름'], n['그대로'],
-                   note='같은 장치인데 규칙이 묶지 못한 이름이면 결과/이름.csv에 근거와 함께 한 줄을 적습니다.'),
+                   note='묶음마다 원자료 이름과 설비를 보고, 같은 장치가 아닌 것이 섞였는지 봅니다.'),
+           R.table('다른 행과 묶이지 않은 원자료 이름(그대로 씀)', ['원자료 행', '설비', '계통', '원자료 이름'], n['그대로'],
+                   note='같은 장치인데 규칙이 묶지 못한 이름이 여기 있으면 결과/name_rules.py의 기준을 고칩니다.'),
            R.table('설비별 구성 요소 — 원자료 행 수와 만든 대상 수', ['설비', '원자료 행', '만든 구성 요소'], rows)]
     if info['실물'] is not None:
-        out.append(R.table('구성 요소 자리마다 실물(일련번호)', ['구성 요소 ID', '일련번호', '지금 · 지난', '원자료 행'], info['실물'],
+        out.append(R.table('구성 요소 자리마다 실물(일련번호)', ['구성 요소 식별자', '일련번호', '지금 · 지난', '원자료 행'], info['실물'],
                            note='일련번호가 적힌 구성 요소 행마다 실물 하나입니다. 지난 실물은 결과/행_처리.csv의 「지난 실물」 행이고, 이 모델에서 그 실물의 자리와 이력을 물을 수 있습니다.'))
     else:
-        out.append(R.note('실물을 따로 두지 않았습니다. 일련번호는 구성 요소의 속성(지금 달린 것 하나)이고, 결과/행_처리.csv에서 뺀 행의 실물(철거된 장치 등)은 이 모델에서 물을 수 없습니다.'))
-    out.append(R.table('결과/행_처리.csv · 결과/이름.csv에 적었지만 쓰이지 않은 행', ['파일', '행'], info['unused'] + [(x, '') for x in n['안_쓴_이름표']]))
+        out.append(R.note('실물을 따로 두지 않았습니다. 일련번호는 구성 요소의 속성(지금 달린 것 하나)이고, 결과/행_처리.csv에서 뺀 행의 실물(철거된 장치)은 이 모델에서 물을 수 없습니다.'))
+    out.append(R.table('결과/행_처리.csv에 적었지만 쓰이지 않은 행', ['파일', '행'], info['unused']))
     return out
 
 
 def sensors(previous):
     info, _ = guarded(M.build, '센서')
     groups = {{}}
-    for sid, code, tag, q, kind in info['센서']:
+    for sid, code, tag, q in info['센서']:
         groups.setdefault(q, []).append(f'{{code}}:{{tag}}')
-    kinds = {{}}
-    for *_, kind in info['센서']:
-        kinds[kind] = kinds.get(kind, 0) + 1
-    q = info['물리량']
-    return [R.counts('센서 수와 종류(kind_of)', [('센서', len(info['센서'])), *sorted(kinds.items())]),
-            R.table('물리량마다 묶인 센서(same_quantity · quantity_name)', ['물리량', '센서 수', '설비:태그'], [(k, len(v), ' · '.join(sorted(v))) for k, v in sorted(groups.items())]),
-            R.table('결과/물리량.csv로 바꾼 센서', ['이름표 행', '원자료 행', '설비:태그', '재는것', '규칙대로면', '바꾼 것'], q['이름표']),
-            R.table('결과/물리량.csv에 적었지만 쓰이지 않은 행', ['행'], [(x,) for x in q['안_쓴_이름표']])]
-
-
-def units(previous):
-    info, _ = guarded(M.build, '단위')
-    u = info['단위']
-    return [R.table('물리량마다 기준 단위(base_unit)', ['물리량', '원자료에 적힌 단위', '기준 단위', '정한 곳'], u['기준']),
-            R.table('단위를 바꾸거나 빈 칸을 채운 센서 행(blank_unit)', ['원자료 행', '센서 ID', '원래 단위', '쓴 단위', '모델의 단위', '원래 정상값 / 한계', '바꾼 정상값 / 한계'], info['변환']),
-            R.table('값 칸에 숫자 말고 글이 섞인 행(제공 코드는 앞의 숫자만 읽음)', ['원자료 행', '센서 ID', '칸', '원래 글', '읽은 숫자', '단위 칸'], info['섞인 값'],
-                    note='섞인 글이 단위 칸과 같은 단위인지 원자료 줄로 봅니다. 다르면 그 행의 단위를 결과/단위.csv로 정합니다.'),
-            R.table('결과/단위.csv에 적었지만 쓰이지 않은 행', ['행'], [(x,) for x in u['안_쓴_이름표']])]
+    base = {{q: unit for q, _, unit in info['단위']}}
+    return [R.counts('센서와 물리량', [('센서', len(info['센서'])), ('물리량', len(groups))]),
+            R.table('물리량마다 묶인 센서(same_quantity · quantity_name)', ['물리량', '센서 수', '설비:태그', '기준 단위'], [(k, len(v), ' · '.join(sorted(v)), base[k]) for k, v in sorted(groups.items())]),
+            R.table('물리량마다 원자료에 적힌 단위와 기준 단위(제공 코드)', ['물리량', '원자료에 적힌 단위', '기준 단위'], info['단위'],
+                    note='기준 단위는 그 물리량의 센서 행이 가장 많이 쓴 단위입니다. 단위가 다른 값을 그대로 견주면 어긋나므로 제공 코드가 기준 단위로 바꿉니다.'),
+            R.table('단위를 기준 단위로 바꾼 센서 행(제공 코드)', ['원자료 행', '센서 식별자', '물리량', '원래 단위', '모델의 단위', '원래 정상값 / 한계', '바꾼 정상값 / 한계'], info['변환'],
+                    note='원래 값과 바꾼 값을 그 원자료 줄로 견줍니다. 값이 없는 칸은 0이 아니라 「없음」입니다.')]
 
 
 def parts(previous):
     info, _ = guarded(M.build, '부품')
     usage = {{}}
-    for code, cname, pid, how in info['이은_부품']:
+    for _, code, cname, cell, pid, how in info['이은_부품']:
         usage.setdefault(pid, set()).add(code)
-    linked = [x for x in info['물은_행'] if x[4] not in ('잇지 않음', '확인 필요')]
-    left = [x for x in info['물은_행'] if x[4] == '잇지 않음']
-    return [R.table('부품마다 쓰는 설비(확인 필요는 빼고)', ['사내 품번', '설비 수', '설비'], [(p, len(v), ' · '.join(sorted(v))) for p, v in sorted(usage.items())]),
-            R.table('내 판단 함수(find_part)가 이은 행', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '이은 품번'], linked),
-            R.counts('내 판단 함수(find_part)가 정한 것', [('확인 필요로 남긴 행', len(info['확인_필요'])), ('잇지 않은 빈칸 행', sum(1 for x in left if x[3] == '(빈칸)')),
-                                                    ('잇지 않은 글 있는 행', sum(1 for x in left if x[3] != '(빈칸)'))]),
-            R.table('확인 필요로 남긴 행', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '후보 품번'], info['확인_필요'],
-                    note='확인 필요는 「없음」과 다릅니다. 후보를 그래프에 따로 남겨 누가 무엇을 확인할지 보이게 합니다.'),
-            R.table('잇지 않은 행', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '정한 것'], left,
-                    note='교체부품 칸에 글이 있는데 잇지 않은 행은 그 글과 예비품 목록을 함께 열어 까닭을 봅니다.'),
-            R.table('같은 제조사 품번으로 등록된 사내 품번(same_item)', ['제조사 품번', '사내 품번', '한 물품으로'], [(c, ' · '.join(m), '예' if v else '아니오') for c, m, v in info['같은_규격']]),
+    return [R.table('부품의 식별자(사내 품번)와 다른 표기', ['사내 품번', '품명', '다른 표기'], info['다른_표기'],
+                    note='식별자는 사내 품번 하나이고, 예전 품번 · 줄여 쓴 표기 · 제조사 품번은 그 부품을 찾는 다른 이름으로 남깁니다.'),
+            R.table('교체부품 칸마다 찾은 사내 품번', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '사내 품번', '찾은 법'], info['이은_부품']),
+            R.table('사내 품번을 찾지 못한 교체부품 칸(잇지 않음)', ['원자료 행', '설비', '구성 요소', '교체부품 칸'], info['못_찾은_칸'],
+                    note='품번 교차표에 없는 표기는 짐작해 잇지 않습니다. 여기 줄이 있으면 그 칸의 글을 품번 교차표와 견줍니다.'),
+            R.table('부품마다 쓰는 설비', ['사내 품번', '설비 수', '설비'], [(p, len(v), ' · '.join(sorted(v))) for p, v in sorted(usage.items())]),
             R.table('관계마다 적은 카디널리티와 만든 연결', ['연결', '관계', '적은 것', '시작 하나에 이어진 끝(최대)', '끝 하나에 이어진 시작(최대)', '견줌'], info['카디널리티']),
             R.note('결과/schema.json · 결과/graph.json을 새로 썼습니다.')]
 
@@ -212,8 +195,7 @@ def ask(previous):
     exact = lambda e, a: [x.strip() for x in str(e).split('·')] == [x.strip() for x in str(a).split('·')]
     note = (f'기대 답에 적은 항목만 견줍니다(모델이 더 돌려준 {{len(got) - len(keep)}}줄은 표에 넣지 않음). '
             '「실제 없음」은 기대 답의 항목 이름이 모델의 이름과 다르거나 모델에 없는 것입니다. 「기대 밖」은 모델이 더 돌려준 항목입니다. '
-            '모델의 답 「없음」은 물은 품번 · 표기 · 설비 · 물리량이 모델에 없다는 뜻이고, 「쓰는 설비 없음」은 부품은 모델에 있지만 그 부품에 이은 구성 요소가 없다는 뜻입니다. '
-            '「(확인 필요)」 항목은 확인이 필요한 후보로만 이은 설비입니다.')
+            '모델의 답 「없음」은 물은 품번 · 표기 · 설비 · 물리량이 모델에 없다는 뜻이고, 「쓰는 설비 없음」은 부품은 모델에 있지만 그 부품에 이은 구성 요소가 없다는 뜻입니다. ' + SAME_NOTE)
     out = [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', [{{'짝': key(r), '답': r['기대_답']}} for r in rows if not value(r)],
                      [{{'짝': key(r), '답': r['답']}} for r in keep if not value(r)], ['답'], same=same, note=note)]
     if any(value(r) for r in rows):
@@ -225,21 +207,6 @@ def ask(previous):
 
 def check(previous):
     return run_check()
-
-
-STEPS = [
-    dict(no=1, name={s1!r}, slots=[], run=sources),
-    dict(no=2, name={s2!r}, slots=[], run=None),
-    dict(no=3, name={s3!r}, slots=['결과/기대_답.csv'], run=expected),
-    dict(no=4, name={s4!r}, slots=['결과/설계.csv', '결과/관계.csv'], run=design),
-    dict(no=5, name={s5!r}, slots=['결과/name_rules.py', '결과/행_처리.csv'], run=names),
-    dict(no=6, name={s6!r}, slots=['결과/quantity_rules.py'], run=sensors),
-    dict(no=7, name={s7!r}, slots=['결과/unit_rules.py'], run=units),
-    dict(no=8, name={s8!r}, slots=['결과/part_rules.py'], run=parts),
-    dict(no=9, name={s9!r}, slots=[], run=ask),
-    dict(no=10, name={s10!r}, slots=[], run=check),
-    dict(no=11, name={s11!r}, slots=[], run=None),
-]
 '''
 
 DESIGN_PRACTICAL = '''"""{title} — 결과 화면의 단계(START.md 「진행 단계」와 같은 번호 · 이름). 제공 파일 — 바꾸지 않는다."""
@@ -376,7 +343,7 @@ def start(previous):
 
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '볼_열', '기대_답', '근거'], ['질문', '물을_값'])
-    return [R.table('내가 원자료에서 먼저 적은 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows)]
+    return [R.table('내가 정한 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows)]
 
 
 def load_once():
@@ -483,20 +450,6 @@ def portal(previous):
 STEPS = {steps}
 '''
 
-GRAPH_STEPS_INTEGRATED = '''[
-    dict(no=1, name={s1!r}, slots=[], run=start),
-    dict(no=2, name={s2!r}, slots=[], run=None),
-    dict(no=3, name={s3!r}, slots=['결과/기대_답.csv'], run=expected),
-    dict(no=4, name={s4!r}, slots=['결과/load.cypher'], run=load),
-    dict(no=5, name={s5!r}, slots=[], run=again),
-    dict(no=6, name={s6!r}, slots=['결과/query.cypher'], run=q1),
-    dict(no=7, name={s7!r}, slots=['결과/query.cypher'], run=q2),
-    dict(no=8, name={s8!r}, slots=['결과/query.cypher'], run=q3),
-    dict(no=9, name={s9!r}, slots=['결과/update.cypher'], run=change),
-    dict(no=10, name={s10!r}, slots=[], run=portal),
-    dict(no=11, name={s11!r}, slots=[], run=None),
-]'''
-
 GRAPH_STEPS_PRACTICAL = '''[
     dict(no=1, name={s1!r}, slots=[], run=start),
     dict(no=2, name={s2!r}, slots=[], run=None),
@@ -509,13 +462,14 @@ GRAPH_STEPS_PRACTICAL = '''[
 
 
 def render(kind, title, names, change=False):
-    """kind = design_integrated · design_practical · graph_integrated · graph_practical, names = 단계 이름(START 「진행 단계」 순서)."""
+    """kind = design_integrated · design_practical · graph_integrated · graph_practical. names = 실전반 랩의 옛 단계 이름(STEPS 표를 채운다 — 새 프로젝트 구조는
+    STEPS 앞까지만 쓴다, session2_project.actions_source). 통합반 랩은 단계 표를 두지 않는다 — 단계는 가이드 원고(session2_project_guides)가 갖는다."""
     s = {f's{i}': n for i, n in enumerate(names, 1)}
     if kind == 'design_integrated':
-        return DESIGN_INTEGRATED.format(title=title, **s)
+        return DESIGN_INTEGRATED.format(title=title)
     if kind == 'design_practical':
         import session2_answers as ANS
         return DESIGN_PRACTICAL.format(title=title, quote_point=ANS.QUOTE_POINT, **s)
-    steps = (GRAPH_STEPS_INTEGRATED if kind == 'graph_integrated' else GRAPH_STEPS_PRACTICAL).format(**s)
-    decide = {'3': ['시점과 상태'], 'update': ['불용 결정 설비']} if kind == 'graph_integrated' else {'1': ['쓰는 사람에 따라 갈리는 답']}
-    return GRAPH.format(title=title, change=change, steps=steps, decide=decide)
+    if kind == 'graph_integrated':
+        return GRAPH.format(title=title, change=change, steps='[]', decide={'update': ['불용 결정 설비']})
+    return GRAPH.format(title=title, change=change, steps=GRAPH_STEPS_PRACTICAL.format(**s), decide={'1': ['쓰는 사람에 따라 갈리는 답']})
