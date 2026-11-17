@@ -1,8 +1,9 @@
 # 3차 작업자 보고 AB — 점검의 흠 두 곳(강의 중계 길 · AI 보류 까닭)
 
 ## 지금 단계 · 남은 일
-- 지금: 이어서 고치는 중(감독 의뢰 2차) — 7절의 셋(관문 연결 실패 까닭 · 점검 정리 · 승인 전 끝남)을 고치고, 시작 직후 보류 문장(관측 공백 구분)을 판정한다. 1차 판은 portal-ux `8b8f34f9`
-- 남은 일: ① 관문 인증서 실패 까닭 · 문장 한 곳 · 로그 → ② cleanup 을 attention 으로 → ③ 승인 전 끝남 바로 알림 → ④ 관측 공백 구분 판정(재생 · 서명 묶음 · 정답표 · 교재 숫자에 닿는지) → 시험 · 되돌림 → 커밋 → process(바뀌면 다른 서비스도) 다시 짓기 → 재생 check_all → 9절 쓰기
+- 지금: 끝(2차 포함) — 1차 portal-ux `8b8f34f9`, 2차 `073f033d`(push 안 함). 2차는 7절에 남겼던 셋을 고치고 시작 직후 보류 문장을 판정해 고쳤다(9절). /home/user/main 을 073f033d 로 옮겨 process · agent-worker · agent · dmn-mcp 를 하나씩 다시 짓고, 재생 점검 모두 통과. 스택은 재생 모드, 모두 healthy
+- 남은 일(감독): 키 검사 뒤 push. 실제 AI 로 확인할 것 — 시작 직후 포털에서 결함을 넣었을 때 AI 의 보류 까닭이 「기록이 덜 참 · 약 N초 뒤 다시 평가」로 읽히는지(9-4, AI 가 쓰는 글이라 여기서는 판단 도구가 주는 문장까지만 확인)
+- 업무 DB 포트: 감독이 다시 띄운 뒤 이 VM 은 64322(54322 아님) — 2차 시험은 64322 의 hyd_test_chk 로 돌리고 지움
 - 고친 곳: `/home/user/portal-ux`(브랜치 portal-ux, 시작 머리 31a98098 → 커밋 8b8f34f9). `/home/user/main` 은 8b8f34f9 에 detach, process 만 다시 지음
 
 ## 1. 가려낸 원인(실측 근거)
@@ -74,3 +75,44 @@
 
 ## 8. 커밋
 - `portal-ux` `8b8f34f9`(push 안 함): course_model.py · relay_probe.py · check_stack.py · tests/conftest.py · test_relay_probe.py · test_check_stack.py. 이 보고 파일은 커밋하지 않음.
+
+## 9. 이어서 고친 것(2차, 커밋 073f033d)
+
+### 9-1. 관문이 연결 실패의 까닭을 버리던 것
+- `it/process/procsvc/course_model.py` 79줄 `transport_refusal(exc)` — 원인 사슬에 `ssl.SSLCertVerificationError` 가 있으면 `relay_untrusted`, 아니면 `relay_failed`. 관문 forward(315 · 316줄)가 이것으로 거절 코드를 고르고, 예외 종류 · 글을 `procsvc.course_model` 로거 WARNING 으로 남긴다. 스트리밍 답 읽기 실패(341줄)도 로그에 남긴다(학생 문장은 그대로 relay_failed).
+- 학생 문장은 한 곳: `it/process/procsvc/course_ledger.py` 72줄 `REASONS['relay_untrusted']`(502, 다시 보내지 않음 — x-should-retry false). 강의 중계 확인(`scripts/relay_probe.py` 79 · 80줄)은 `transport_refusal` 과 이 문장을 가져다 쓰고 코드도 `relay_untrusted` 로 같게 했다(1차의 자체 문장 `UNTRUSTED` · 함수 `certificate_refused` 는 지움). 워커는 같은 표를 코드로 찾아 처리 기록의 학생 문장으로 남긴다(`worker/runner.py` `reason_in` — 고칠 것 없음, 워커 이미지가 procsvc 를 복사하므로 agent-worker 도 다시 지음).
+- 문장: 「AI 중계 서버의 보안 인증서를 확인하지 못해 연결하지 않았습니다 — 이 PC의 인터넷(학교 · 회사망 등)이 암호화 연결을 중간에서 다시 서명하는 것 같습니다. 이 인터넷에서는 AI 단계가 실제로 돌지 않습니다. 다른 인터넷(예: 휴대폰 핫스팟)에 연결한 뒤 다시 실행하거나 시스템 관리자에게 알려 주세요.」(사유 표의 다른 문장처럼 「시스템 관리자」 — 확인은 끝에 「그동안 포털의 AI 단계만 막히고 …」를 붙임)
+- 시험: `test_relay_probe.py` 의 관문 · 확인 같은 결과 시험이 이제 환경만 믿는 경우 둘 다 `relay_untrusted` · 같은 문장 · 관문 x-should-retry false 까지 본다. `test_course_model.py` 144줄 — 아무도 듣지 않는 포트로 relay_failed(다시 보내도 됨) + 로그에 `ConnectError`.
+  - 되돌림: 관문이 늘 relay_failed 를 내고 로그를 남기지 않게 하면 두 시험 모두 실패.
+- 실제 이미지: 새 process 이미지의 한 번 쓰는 컨테이너(환경만 VM 인증서를 믿음)에서 확인 → `relay_untrusted` + 위 문장. 떠 있는 process(덮어쓰기) → 닿음(가짜 키 401). process 는 root 처리기가 stderr 로 INFO 부터 내므로 이 경고는 `docker compose logs process` 에 나온다(확인함).
+
+### 9-2. 점검 정리가 실패 · 취소한 AI 단계를 닫지 못하던 것
+- `scripts/check_stack.py` 425줄: 닫을 단계를 서버 attention 에서 「할 수 있는 일」에 닫기(close)가 있는 단계로 고른다 — 보류 · 실행 실패 · 실행 취소 · 한도 넘은 재시도(사람 단계는 서버가 닫기를 주지 않음).
+- 시험: `test_check_stack.py` 311줄 — 실제 HTTP 대역(process · 설비)과 서버 함수로 계산한 attention 으로 실행 실패 · 실행 취소 · 보류 세 경우, 닫기 POST(사람 user:kim-op) 뒤 처리 건이 끝나 「점검 정리 통과」.
+  - 되돌림: 옛 판(PENDING 만)으로 → 실행 실패 · 실행 취소 둘이 실패(180초 기다린 뒤 「정리 실패」 — 시계 주입이라 바로 끝남), 보류는 옛 판도 닫았으므로 통과.
+
+### 9-3. 처리 건이 승인 전에 끝나면 7분 기다리던 것
+- `scripts/check_stack.py` 228줄: `agent_outcome` 이 처리 건 상태가 RUNNING 이 아니면 바로 「처리 건이 승인 단계에 닿기 전에 끝났습니다(끝: 「끝 이름」 · 마지막으로 끝난 단계: 「단계 이름」) — 포털 「처리 건」에서 이 건의 결과와 기록을 확인하세요」. 끝 이름은 서버의 `end_label`(예: 조치 전 해소), 없으면 상태를 학생 말로(246줄 `ENDED`: 끝남 · 취소).
+- 시험: `test_check_stack.py` `test_처리_건이_승인에_닿기_전에_끝나면_기다리지_않고_어디서_끝났는지_말한다` — 조치 전 해소 · 취소 · 끝 이름 없음.
+  - 되돌림: 그 갈래를 빼면 셋 모두 실패.
+
+### 9-4. 시작 직후 「관측 공백 … 센서 기록의 연속성을 확인」(판정 → 고침)
+- **판정 — 닿는 곳 없음, 작게 고쳐짐:**
+  - 재생 모드: 녹화된 읽기 결과를 이 PC 에서 다시 불러 견주는 것은 표 모양(columns + rows) 결과뿐이다(`worker/ai_replay.py` 「읽기 조회 견주기」 `read_gap`). 진단 결과(원인 · 근거 · 관측 범위)는 표가 아니라 견주지 않고, 녹화는 저장된 결과를 그대로 낸다. 같은 요청 저장의 열쇠에도 도구 결과는 없다. 강사 녹화는 보류로 끝난 실행을 남기지 않는다.
+  - 서명 묶음(`course_extractions.json`)은 근거 정의(태그 · 기간 · 임계)를 담고 관측 범위 결과는 담지 않는다. 정답표(판단 채점)는 판정(통과 · 불통과 · 모름)과 순위를 보는데 이 고침은 판정을 바꾸지 않는다. `test_eval_api` 의 보류 문장 확인(「근거 조회가 불완전」으로 시작)도 그대로.
+  - 교재: 05회차 이론 대본 [SLIDE 36] 보충이 관측 범위의 「표본 30개」를 말하고, 사실표 378줄 · 실전반 5회차 · 통합반 7회차 랩이 `coverage.covered` 를 쓴다 — 칸을 하나 더할 뿐 기존 칸 · 숫자는 그대로다. 코딩 랩은 랩 폴더의 고정 입력 파일(센서_입력.json)을 읽어 실제 시스템 출력과 무관하다.
+- **고침:**
+  - `it/agent/agentsvc/tools/mcp_tsdb.py` 43~52줄: `observation_coverage` 결과에 `ready_in_s` — 덮였으면 0, 덮이지 않았는데 지금 값이 들어오고 있으면(마지막 표본이 한도 안) 지금까지 끊김 없이 이어진 기록의 시작이 창 시작보다 몇 초 뒤인지(= 그만큼 기다리면 덮임), 지금 값이 오지 않으면 없음(None).
+  - `it/agent/agentsvc/card.py` 101~106줄: 모르는 근거가 모두 「곧 찰 기록」이면 근거 판정 문장 끝에 「설비 기록이 이어진 지 얼마 되지 않아(시스템을 막 켰거나 수집이 잠시 끊겼다 다시 이어진 경우) 판단에 쓰는 최근 120초 기록이 아직 다 차지 않았습니다. 지금 값은 들어오고 있으니 약 N초 뒤 다시 평가하세요.」를 덧붙인다. 다른 까닭이 섞이거나 지금 값이 오지 않으면 덧붙이지 않는다(기본 문장 그대로). 이 문장은 진단 도구(dmn-mcp `diagnose` 의 reason)가 AI 에게, 판단 실험(409)과 단계 상세(`taskDetail.js` — 보류일 때 근거 판정 문장)가 화면에 그대로 준다. agent · dmn-mcp 이미지를 다시 지음.
+  - 「기록 시작 전」과 「끊겼다 다시 이어짐」은 창 안의 표본만으로는 가를 수 없어(창 앞의 기록 유무를 따로 읽어야 함) 한 문장으로 둘 다 말하고, 실제로 가르는 것은 「기다리면 찬다(지금 값이 옴)」와 「지금 끊김(기다려도 안 참)」이다 — 학생이 할 일이 갈리는 곳이 거기다.
+- 시험: `test_mcp_tsdb.py` 320줄(덮임 · 창 앞이 기록 시작 전 12초 · 끊겼다 20초부터 이어짐 · 지금 끊김 · 값 없음), `test_card.py` 82줄(기록이 덜 참 · 가장 긴 기다림 25초 · 지금 끊김은 말하지 않음 · 다른 까닭이 섞임).
+  - 되돌림: 남은 초 계산을 빼면 기다리면 차는 두 경우 실패, 문장 덧붙이기를 빼면 앞의 두 경우 실패.
+- 실제 스택(재생 모드 · 키 없음 — 판단 실험 `POST /api/agent/decide` 로 같은 근거 계산을 부름, ot-bridge 를 8초 멈춤): 멈추기 전 200 → 멈춘 동안 409 「근거 조회가 불완전하여 …」만(남은 초 None — 지금 값이 안 옴) → 다리를 다시 켠 뒤 409 「… 약 115초 뒤 다시 평가하세요」 → 60초 뒤 「약 55초 뒤」. AI 가 쓰는 보류 글은 이 문장을 받아 쓰는 것이라 실제 AI 로는 감독 확인이 필요하다.
+
+### 9-5. 함께 돌린 시험 · 스택
+- `test_relay_probe` · `test_check_stack` · `test_course_model` · `test_card` · `test_mcp_tsdb` · `test_course_ledger` · `test_course_access` · `test_runner` · `test_eval_api` · `test_dmn_mcp_tools` 349개 통과(업무 DB 64322, `hyd_test_chk` 지움).
+- /home/user/main 을 073f033d 로, `COMPOSE_PARALLEL_LIMIT=1` 로 process → agent-worker → agent → dmn-mcp 하나씩 다시 지음(모두 healthy · 재시작 0, 새 코드 든 것 확인). 재생 `check_all.sh` 모두 통과(AI 판단 · 제안 팬 최대 운전 · 승인 뒤 실행 정상 · 점검 정리 통과 · 강의 중계 해당 없음). ot-bridge 실측 뒤 서비스 점검 통과.
+
+### 9-6. 범위 밖으로 본 것(고치지 않음)
+- `test_mcp_tsdb.py` 의 순수 함수 시험(옛 `test_창의_모든_순간이…` 와 이번 남은 초 시험)은 그 파일만 `-k` 로 골라 돌리면 `DAQ_PROFILE` 이 없어 실패한다 — 모듈 가져오기가 다른 시험의 준비(tsdb 대역)가 넣는 환경 변수에 기대는 순서 의존이다. 파일 전체로 돌리면 통과. 이번 고침 전부터 있던 것.
+- 7절의 「처리 건이 승인 전에 끝남」 · 「점검 정리」 · 「관문 까닭」은 9절로 고쳤다. 7절에 남은 것은 README(지시대로 그대로)뿐이다.
