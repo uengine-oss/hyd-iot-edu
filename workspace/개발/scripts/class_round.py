@@ -44,7 +44,7 @@ from procsvc import engine as process_engine  # noqa: E402 — 경계 타이머 
 from procsvc.handover import AREAS as HANDOVER_AREAS, START_INPUTS as HANDOVER_START  # noqa: E402 — 교대 계약 정본
 from procsvc.mcp_registry import BASE_SERVERS  # noqa: E402 — 에이전트가 쓰는 기본 도구 서버 정본
 
-# 실라버스 엑셀은 workspace 브랜치의 파일이다. 그 브랜치가 없는 체크아웃(브랜치 portal-ux 의 worktree 등)에서는 HYD_SYLLABUS 로 그 파일의 자리를 알려 준다
+# 실라버스 엑셀은 workspace 브랜치의 파일이다. 그 브랜치가 없는 체크아웃(클라우드의 `../main` worktree 등)에서는 HYD_SYLLABUS 로 그 파일의 자리를 알려 준다
 SYLLABUS = Path(os.environ.get("HYD_SYLLABUS") or ROOT / "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx")
 SYLLABUS_SHEETS = {"통합": "통합반 온라인", "실전": "실전반 온라인"}        # 시트 이름 앞부분(시간 표기는 바뀔 수 있다)
 SAMPLES = ROOT / "it/portal/www/samples"
