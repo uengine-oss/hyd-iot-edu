@@ -7,9 +7,10 @@
 판정 대상은 손으로 적은 목록이 아니라 compose 가 아는 서비스 전부다(`docker compose config --services`). 계속 도는 서비스는
 running + healthy(건강 확인이 없는 선택 도구는 running), 한 번 도는 준비 작업(재시작 정책 no)은 종료 코드 0 이어야 하고, 확인하는 동안
 다시 시작한 서비스가 있으면 「재시작 반복」으로 실패다.
-쿨러 사건 한 바퀴는 포털 버튼이 부르는 것과 같은 API 로: 설비 초기화 → 쿨러 열화 → 경보 → 처리 건(수업 흐름 c3_cooling) → AI 판단 · 제안 →
-추천 카드를 그 승인 역할의 사람으로 승인 → 냉각 명령 → 재관측 → 작업지시 → 결과 보고(정상). 끝에 쿨러를 되돌리고, 점검이 연 처리 건이
-열린 채 남으면 거절 · 닫기로 정리한다(데이터는 지우지 않는다).
+쿨러 사건 한 바퀴는 포털 버튼이 부르는 것과 같은 API 로: 설비 초기화 → (키 있는 PC: AI가 판단에 쓰는 기간만큼 설비 기록이 쌓이기를 기다림)
+→ 쿨러 열화 → 경보 → 처리 건(수업 흐름 c3_cooling) → AI 판단 · 제안 → 추천 카드를 그 승인 역할의 사람으로 승인 → 냉각 명령 → 재관측 →
+작업지시 → 결과 보고(정상). AI 판단 단계가 멈추면(보류 · 실패) 서버가 판정한 멈춤과 그 까닭(포털 처리 건 맨 위 알림과 같은 것)을 그대로
+말한다. 끝에 쿨러를 되돌리고, 점검이 연 처리 건이 열린 채 남으면 거절 · 닫기로 정리한다(데이터는 지우지 않는다).
 결과는 통과 · 실패 · 해당 없음(키 없는 PC의 강의 중계처럼 그 PC에서 하지 않는 확인)으로만 쓴다.
 """
 from __future__ import annotations
@@ -39,9 +40,10 @@ class CheckError(RuntimeError):
 
 
 class ApiError(CheckError):
-    """서비스가 오류로 답했다. reason_code = 응답 detail 의 기계용 칸 code(있으면 — 예: 승인의 review_required)."""
-    def __init__(self, code, detail, reason_code=None):
-        self.code, self.detail, self.reason_code = code, detail, reason_code
+    """서비스가 오류로 답했다. reason_code = 응답 detail 의 기계용 칸 code(있으면 — 예: 승인의 review_required),
+    body = 응답 detail 원래 모양(구조화된 거절이면 dict — 예: 판단 실험의 근거 보류)."""
+    def __init__(self, code, detail, reason_code=None, body=None):
+        self.code, self.detail, self.reason_code, self.body = code, detail, reason_code, body
         super().__init__(f'응답 {code}: {detail}')
 
 
@@ -58,9 +60,10 @@ def http(method: str, url: str, body=None, timeout: float = 15):
             text = json.loads(text).get('detail', text)
         except (ValueError, AttributeError):
             pass
+        body = text
         if isinstance(text, dict):                      # 구조화된 거절 {"code": …, "reason": 학생 문장}
             reason_code, text = text.get('code'), text.get('reason') or json.dumps(text, ensure_ascii=False)
-        raise ApiError(exc.code, str(text)[:300], reason_code) from None
+        raise ApiError(exc.code, str(text)[:300], reason_code, body) from None
 
 
 def docker(*args, stdin: bytes | None = None) -> str:
@@ -214,18 +217,65 @@ def variables(view: dict) -> dict:
 
 
 def agent_outcome(view: dict, ai_mode: str):
-    """AI 판단 · 제안 단계가 어디까지 왔나: ('approval', 승인 단계) · 실패면 CheckError · 아직이면 None."""
-    rows = rows_of(view)
-    agent, approve = rows.get('T_agent') or {}, rows.get('T_approve') or {}
+    """AI 판단 · 제안 단계가 어디까지 왔나: ('approval', 승인 단계) · 멈췄으면 CheckError · 아직이면 None.
+    멈춤은 서버의 판정(처리 건 보기의 attention — 포털 처리 건 맨 위 「사람 조치 필요」 알림과 같은 것)을 그대로 읽고, 그 까닭(AI가 남긴
+    보류 까닭 · 실패 기록)을 그대로 말한다. 점검이 까닭을 짐작하지 않는다(전에는 보류면 까닭과 상관없이 「기본 지식이 없는 것 같다」고
+    했고 — 실제 AI 는 시작 직후 「관측 공백」으로 보류했다 — 실패는 서버에 없는 상태 값을 보아 7분을 기다린 뒤 「닿지 않았다」고 했다)."""
+    approve = rows_of(view).get('T_approve') or {}
     if approve.get('status') == 'IN_PROGRESS':
         return 'approval', approve
-    if agent.get('status') == 'PENDING' and any(e.get('event_type') == 'task_deferred' for e in view.get('events') or []):
-        raise CheckError('AI 판단이 보류됐습니다 — 기본 지식(쿨러 · 정기 정비 · 구매 매뉴얼)이 없는 것 같습니다. 시작 파일을 다시 실행하세요(7단계가 기본 지식을 넣습니다).')
-    if agent.get('status') in ('FAILED', 'ERROR', 'CANCELLED'):
-        hint = ('README 「새 판 받기」대로 준비된 AI 응답이 든 새 판을 받았는지 확인하세요' if ai_mode == 'replay'
-                else '.env 의 LLM_API_KEY 와 인터넷 연결을 확인하세요(점검 끝의 「강의 중계」 줄에 까닭이 나옵니다)')
-        raise CheckError(f'AI 워커가 판단하지 못했습니다({agent["status"]}): {str(agent.get("log") or "").strip()[:200]} — {hint}')
-    return None
+    step = next((s for s in (view.get('attention') or {}).get('steps') or [] if s.get('activity') == 'T_agent'), None)
+    if step is None:
+        return None
+    reason = ' '.join(str(step.get('reason') or '').split())
+    said = f'「{reason[:300]}{"…" if len(reason) > 300 else ""}」' if reason else '없음(AI가 까닭을 남기지 않았습니다)'
+    if step.get('kind') == 'deferred':
+        raise CheckError(f'AI가 판단을 보류했습니다. AI가 남긴 까닭: {said} — 까닭에 적힌 것을 확인하거나 고친 뒤 다시 점검하세요.')
+    hint = ('README 「새 판 받기」대로 준비된 AI 응답이 든 새 판을 받았는지 확인하세요' if ai_mode == 'replay'
+            else '.env 의 LLM_API_KEY 와 인터넷 연결을 확인하세요(점검 끝의 「강의 중계」 줄에 까닭이 나옵니다)')
+    raise CheckError(f'AI 판단 단계가 멈췄습니다({step.get("label") or step.get("kind")}). 기록된 까닭: {said} — {hint}.')
+
+
+ASSET, PATTERN = 'HYD-01', 'COOLER_DEGRADATION'     # 점검이 넣는 결함(쿨러 열화)의 설비 · 이상 패턴
+RECORD_SPARE = 30                                   # 설비 기록 기다리기: AI가 판단에 쓰는 가장 긴 기간에 더해 기다리는 초
+
+
+def record_gaps(agent: str) -> list[dict]:
+    """AI가 쿨러 열화를 판단할 때 읽는 근거 가운데, 그 근거의 기간(지식의 windowSeconds)만큼 설비 기록이 아직 쌓이지 않은 것.
+    판단 실험(에이전트 서비스 POST /api/agent/decide — 처리 건의 AI 판단과 같은 지식 · 같은 근거 계산 · 같은 관측 범위 판정, 읽기만)에
+    묻는다. 판단이 잴 수 없다고 답하면(지식 없음 · 시계열 DB 못 읽음 등) 그 응답 그대로 ApiError."""
+    try:
+        answer = http('POST', f'{agent}/api/agent/decide', {'asset': ASSET, 'pattern': PATTERN}, timeout=60)
+    except ApiError as exc:
+        if exc.code != 409 or not isinstance(exc.body, dict):  # 409 = 근거가 덜 모여 판단을 보류함(그 근거 목록이 함께 온다)
+            raise
+        answer = exc.body
+    return [e for c in answer.get('causes') or [] for e in c.get('evidence') or [] if e.get('reason') == 'OBSERVATION_GAP']
+
+
+def wait_for_record(agent: str, say=print, sleep=time.sleep, clock=time.monotonic, every: float = 5, spare: float = RECORD_SPARE) -> None:
+    """키 있는 PC: 결함을 넣기 전에 AI가 판단에 쓰는 기간만큼 설비 기록이 쌓이기를 기다린다. 시작 직후에는 그 기간의 앞부분에 기록이
+    없어 실제 AI 가 「관측 공백」으로 판단을 보류한다(2026-11-17 실측 — 기록은 수집 중계가 켜진 뒤부터 쌓인다). 기다리는 한도는 비어 있는
+    근거의 가장 긴 기간 + spare 초 — 그래도 비면 기록이 중간에 끊기는 것이라 실패다. 미리 잴 수 없으면 그 까닭을 알리고 그대로 간다
+    (AI 판단이 같은 까닭을 만나면 쿨러 사건 줄이 그 까닭을 말한다)."""
+    try:
+        gaps = record_gaps(agent)
+    except (ApiError, urllib.error.URLError, OSError) as exc:
+        say(f'      AI가 판단에 쓰는 설비 기록을 미리 재지 못했습니다({exc}) — 기다리지 않고 결함을 넣습니다.')
+        return
+    if not gaps:
+        return
+    window = max(float(e['coverage']['window_s']) for e in gaps)
+    say(f'      AI가 판단에 쓰는 설비 기록(최근 {window:g}초)이 아직 다 쌓이지 않아, 결함을 넣기 전에 최대 {window + spare:g}초 기다립니다.')
+    started = clock()
+    while gaps and clock() - started < window + spare:
+        sleep(every)
+        gaps = record_gaps(agent)
+    if gaps:
+        holes = ' · '.join(f'{e.get("name") or e["id"]}({ASSET} {e["coverage"]["tag"]} 최근 {float(e["coverage"]["window_s"]):g}초 가운데 '
+                           f'{float(e["coverage"]["max_gap_s"]):g}초 동안 값 없음)' for e in gaps)
+        raise CheckError(f'결함을 넣기 전에 AI가 판단에 쓰는 설비 기록을 {clock() - started:.0f}초 기다렸지만 아직 빈 곳이 있습니다: {holes} — '
+                         '설비 값이 기록되는 길이 중간에 끊기는 것 같습니다. 「docker compose ps」로 멈추거나 다시 시작하는 서비스가 없는지 보고 시작 파일을 다시 실행하세요.')
 
 
 def pick_approval(decision: dict, people: list[dict]) -> tuple[str, str, str]:
@@ -295,13 +345,13 @@ def approve(process: str, task_id: str, body: dict) -> None:
 
 def cooler_phase(state: dict) -> str:
     """감지기 상태의 HYD-01 쿨러 성능 저하 패턴 단계(IDLE · RAISED …) — 설비마다 패턴이 여럿이라 패턴별 칸(patterns)을 본다."""
-    return state['patterns']['COOLER_DEGRADATION']['phase']
+    return state['patterns'][PATTERN]['phase']
 
 
 def cooler_round(root: Path, record) -> None:
-    process, plant, detector = (f'{H}:{port(root, p)}' for p in (8080, 8000, 8092))
+    process, plant, detector, agent = (f'{H}:{port(root, p)}' for p in (8080, 8000, 8092, 8091))
     ai_mode = hyd_env.read(root / '.env').get('AI_MODE', '')
-    hyd01 = lambda: http('GET', f'{detector}/api/detector/state')['assets']['HYD-01']
+    hyd01 = lambda: http('GET', f'{detector}/api/detector/state')['assets'][ASSET]
     view = lambda pid: http('GET', f'{process}/api/instances/{pid}')
     pid = None
     approval = None
@@ -309,6 +359,8 @@ def cooler_round(root: Path, record) -> None:
         http('POST', f'{plant}/api/reset', {})
         wait_for(120, lambda: (lambda s: s if cooler_phase(s) != 'RAISED' else None)(hyd01()),
                  'HYD-01 경보가 2분이 지나도 풀리지 않습니다. 포털에서 열린 처리 건을 먼저 끝내세요.')
+        if ai_mode == 'live':                            # 재생은 준비된 응답이라 지금 기록을 읽지 않는다
+            wait_for_record(agent)
         before = {i['proc_inst_id'] for i in http('GET', f'{process}/api/instances?limit=20')}
         http('POST', f'{process}/api/scenario/A/degrade', WHO)
         raised = wait_for(240, lambda: (lambda s: s if cooler_phase(s) == 'RAISED' else None)(hyd01()),
@@ -405,11 +457,13 @@ def main(argv: list[str], root: Path = ROOT) -> int:
         if args == ['all']:
             results: list[tuple[str, str, str]] = []
             record = lambda name, outcome, note: results.append((name, outcome, note))
-            print('\n== 시스템 점검 (키 없는 PC 실측 약 2분 · 키 있는 PC는 AI 판단이 실제로 돌아 더 걸린다)\n[1/3] 서비스 응답')
+            print('\n== 시스템 점검 (키 없는 PC 실측 약 2분 · 키 있는 PC는 AI 판단이 실제로 돌고, 시작 직후면 AI가 판단에 쓰는 설비 기록이 '
+                  '쌓이기를 먼저 기다려 더 걸린다)\n[1/3] 서비스 응답')
             outcome, note = check_services(root, 60)
             record('서비스 · 포털', outcome, note)
             if outcome == PASS:
-                print('[2/3] 쿨러 사건 한 바퀴 (기다리는 한도: 경보 4분 · 처리 건 1분 · AI 판단 7분 · 승인 뒤 실행 5분)')
+                print(f'[2/3] 쿨러 사건 한 바퀴 (기다리는 한도: 키 있는 PC의 설비 기록 — AI가 판단에 쓰는 기간 + {RECORD_SPARE}초 · 경보 4분 · '
+                      '처리 건 1분 · AI 판단 7분 · 승인 뒤 실행 5분)')
                 cooler_round(root, record)
             print('[3/3] 강의 중계')
             record('강의 중계', *check_ai(root, call=True))

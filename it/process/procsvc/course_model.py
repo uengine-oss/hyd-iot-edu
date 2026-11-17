@@ -63,6 +63,15 @@ def relay_url(url: str) -> str:
     return url.rstrip('/')
 
 
+def relay_client(timeout: float):
+    """강의 중계로 나가는 HTTP 클라이언트 — 관문(forward)과 강의 중계 확인(scripts/relay_probe.py — 시작 8단계 · 점검)이 이 한 곳을 쓴다.
+    그래서 확인은 실제 AI 호출과 같은 인증서 · 프록시 · 넘겨주기 설정으로 잰다(따로 urllib 로 재던 확인은 컨테이너 환경의 SSL_CERT_FILE 을
+    믿어 통과했는데, 이 클라이언트는 그 인증서를 믿지 않아 실제 AI 호출은 모두 relay_failed 였다 — 2026-11-17 클라우드 VM 실측).
+    trust_env=False: 환경의 HTTPS_PROXY · SSL_CERT_FILE · .netrc 를 따르지 않고 certifi 인증서 묶음만 믿는다."""
+    import httpx
+    return httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False)
+
+
 def classify_relay(status: int, body: bytes) -> str:
     """강의 중계가 200이 아닌 응답을 줬을 때의 종류(원문은 분류에만 쓴다)."""
     text = body[:8192].decode('utf8', 'replace').lower()
@@ -210,7 +219,6 @@ def stream_verdict(head: bytes) -> str | None:
 
 def mount(app, *, policy, runtime_factory, settings):
     """policy: course_policy.Policy(수업 경계), settings: 환경(LLM_API_KEY · LLM_RELAY_URL · HYD_WORKER_RUNTIME_KEY_FILE)."""
-    import httpx
     from fastapi import Request
     from fastapi.responses import StreamingResponse
 
@@ -280,7 +288,7 @@ def mount(app, *, policy, runtime_factory, settings):
         if request.headers.get('anthropic-beta'):
             headers['anthropic-beta'] = request.headers['anthropic-beta']
         path = '/v1/messages/count_tokens' if count_only else '/v1/messages'
-        client = httpx.AsyncClient(timeout=remaining, follow_redirects=False, trust_env=False)
+        client = relay_client(remaining)
         deadline = asyncio.get_running_loop().time() + remaining
         try:
             response = await asyncio.wait_for(client.send(client.build_request('POST', upstream['url'] + path, content=raw, headers=headers),

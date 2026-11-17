@@ -1158,11 +1158,12 @@ class ServiceProcess:
 class FakeRelay:
     """강의 중계 자리(묶음의 것은 PORTS['relay'] — process 가 받은 LLM_RELAY_URL). 받은 요청(method · path · 소문자 머리글 · 본문)을 남기고,
     정한 응답을 차례로 준다(마지막 것은 계속). 기본은 짧은 Anthropic 메시지 200. 응답은 (상태, 본문) 또는 (상태, 본문, content-type) —
-    스트리밍(SSE) 답은 bytes 본문과 'text/event-stream'."""
+    스트리밍(SSE) 답은 bytes 본문과 'text/event-stream'. tls=(인증서 파일, 키 파일)을 주면 그 인증서로 HTTPS 를 받는다(클라이언트가
+    어떤 인증서를 믿는지 잴 때 — 믿지 않으면 요청이 남지 않는다)."""
     OK = {'id': 'msg_test', 'type': 'message', 'role': 'assistant', 'model': 'coding', 'content': [{'type': 'text', 'text': 'ok'}],
           'stop_reason': 'end_turn', 'usage': {'input_tokens': 1, 'output_tokens': 1}}
 
-    def __init__(self, port=0):
+    def __init__(self, port=0, tls=None):
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
         relay = self
         self.requests, self.replies = [], [(200, self.OK)]
@@ -1197,7 +1198,12 @@ class FakeRelay:
             def log_message(self, *a):
                 pass
         self.server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
-        self.url = f'http://127.0.0.1:{self.server.server_address[1]}'
+        if tls:
+            import ssl
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(*tls)
+            self.server.socket = context.wrap_socket(self.server.socket, server_side=True)
+        self.url = f'{"https" if tls else "http"}://127.0.0.1:{self.server.server_address[1]}'
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
     def answer(self, status, body, content_type=None):
