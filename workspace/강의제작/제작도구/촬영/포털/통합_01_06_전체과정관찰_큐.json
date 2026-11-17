@@ -132,8 +132,9 @@
     [
      "point",
      {
-      "css": "#mainHero g.m-node text",
-      "exact": "증상 · 유온 상승"
+      "css": "#mainHero g.m-node",
+      "contains": "증상 · 유온 상승",
+      "anchor": "left"
      },
      {
       "at": "AI 둘레의"
@@ -212,7 +213,7 @@
      "point",
      {
       "css": "#mainHero path.m-loop",
-      "pathAt": 0.3
+      "pathAt": 0.4
      },
      {
       "at": "그 두 길"
@@ -398,7 +399,7 @@
      {
       "css": "#manualPick button[data-pick-mode=\"file\"]",
       "anchor": "center",
-      "dy": 22
+      "dy": -18
      },
      {
       "at": "여기 내 파일"
@@ -407,9 +408,8 @@
     [
      "point",
      {
-      "css": "#manualPick button[data-pick-mode=\"provided\"]",
-      "anchor": "center",
-      "dy": 22
+      "css": "#providedDocs .doc-prov",
+      "anchor": "margin"
      },
      {
       "at": "아래 제공 문서"
@@ -453,7 +453,8 @@
      "point",
      {
       "css": "#manualResult .result-label",
-      "exact": "이미 적재된 문서"
+      "exact": "이미 적재된 문서",
+      "anchor": "margin"
      },
      {
       "at": "이미 적재된"
@@ -462,8 +463,8 @@
     [
      "point",
      {
-      "css": "#manualResult .result-main",
-      "contains": "HM-8_cooler-fan-manual.md"
+      "css": "#manualStageNote",
+      "anchor": "margin"
      },
      {
       "at": "제공 문서는"
@@ -1265,7 +1266,9 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-02\"] .biz-alert .tag"
+      "css": "#units [data-asset=\"HYD-02\"] .biz-alert .tag",
+      "anchor": "center",
+      "dy": -15
      },
      {
       "at": "빨간 표시가"
@@ -1274,7 +1277,9 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-03\"] .biz-alert .tag"
+      "css": "#units [data-asset=\"HYD-03\"] .biz-alert .tag",
+      "anchor": "center",
+      "dy": -15
      },
      {
       "at": "붙어 있어도"
@@ -2136,7 +2141,7 @@
     [
      "click",
      {
-      "css": "#instRecord details.cr-skipped > summary"
+      "css": "#instRecord details.cr-skipped:not([open]) > summary"
      },
      {
       "at": "펼치면"
@@ -2219,14 +2224,14 @@
    "id": "v0654",
    "segment": 8,
    "section": "홈에서 마무리",
-   "text": "아래 결과 보기 칸에도 방금 끝난 처리 건이 하나 세어져 있어요.",
+   "text": "아래 결과 보기 칸에도 오늘 끝낸 일이 처리 완료로 세어져 있어요.",
    "gap": 1.3,
    "ops": [
     [
      "wait",
      {
       "css": "#mainStages a.stat:nth-child(4) .stat-value",
-      "contains": "1건 처리 완료"
+      "contains": "2건 처리 완료"
      },
      10
     ],

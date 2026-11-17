@@ -172,14 +172,24 @@ function layer(ctx, report) {
   }, {sel, dx, dy}));
   if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
   const ms = Math.round(Math.max(350, Math.min(1400, 220 + Math.hypot(dx, dy) * 0.55)));
-  const ok = await q1(() => p.evaluate(({sel, dx, dy, ms}) => {
-   const el = document.querySelector(sel); if (!el) return false;
+  const g = await q1(() => p.evaluate(({sel, dx, dy, ms}) => {
+   const el = document.querySelector(sel); if (!el) return null;
+   const id = (window.__hydGlide = (window.__hydGlide || 0) + 1);      // 새 굴리기가 시작되면 앞 굴리기는 멈춘다(둘이 서로 다른 자리로 당기지 않게)
+   // 2026-11 판 포털은 html에 scroll-behavior: smooth가 있어, 프레임마다 넣는 자리를 브라우저가 다시 부드럽게 늦춰 굴리기가 덜 끝났다 — 굴리는 동안만 끈다
+   if (el.dataset.hydSb === undefined) el.dataset.hydSb = el.style.scrollBehavior;
+   el.style.scrollBehavior = 'auto';
    const fx = el.scrollLeft, fy = el.scrollTop, s0 = performance.now();
-   const step = (now) => { const u = Math.min(1, (now - s0) / ms), k = u * u * (3 - 2 * u); el.scrollLeft = fx + dx * k; el.scrollTop = fy + dy * k; if (u < 1) requestAnimationFrame(step); };
-   requestAnimationFrame(step); return true;
+   const step = (now) => { if (window.__hydGlide !== id) return; const u = Math.min(1, (now - s0) / ms), k = u * u * (3 - 2 * u); el.scrollLeft = fx + dx * k; el.scrollTop = fy + dy * k; if (u < 1) requestAnimationFrame(step); };
+   requestAnimationFrame(step); return {id, x: fx + dx, y: fy + dy};
   }, {sel, dx, dy, ms}));
-  if (!ok) throw Error('굴릴 영역 없음: ' + sel);
+  if (!g) throw Error('굴릴 영역 없음: ' + sel);
   await sleep(ms + 120);
+  // 리허설은 화면을 받지 않아 그리기(rAF)가 드물어 굴리기가 덜 끝난 채 다음 판정을 했다(06 v0653) — 끝 자리에 닿게 한다. 녹화에서는 이미 닿아 있어 바뀌는 것이 없다
+  await q1(() => p.evaluate(({sel, g}) => {
+   const el = document.querySelector(sel); if (!el || window.__hydGlide !== g.id) return;
+   window.__hydGlide++; el.scrollLeft = g.x; el.scrollTop = g.y;
+   el.style.scrollBehavior = el.dataset.hydSb || ''; delete el.dataset.hydSb;
+  }, {sel, g}));
  }
  async function inView(t) {
   for (let i = 0; i < 8; i++) {
@@ -205,10 +215,17 @@ function layer(ctx, report) {
  const gate = async () => { const w = G.lastMoveEnd + 150 - Date.now(); if (w > 0) await sleep(w); ctx.committed ??= Date.now(); };
  const L = {};
  L.point = async (t) => {
-  const a = aim(t, 'point'), r = await settled(a); await move(r.x, r.y);
-  if (report && t.cy) rep({op: 'point', target: 'cy:' + t.cy, scrolled: r.scrolled || 0});      // 캔버스 글자는 DOM 글자가 아니라 덮음 검사를 하지 않는다
-  else if (report) { const cover = await q1(() => p.evaluate(coverInPage, {x: r.x, y: r.y, css: t.css, contains: t.contains, exact: t.exact}));
-   rep({op: 'point', target: name(t), scrolled: r.scrolled || 0, covered: cover, fail: cover.length > 0, why: cover.length ? '화살표가 글을 덮음: ' + cover.join(' | ') : undefined}); }
+  const a = aim(t, 'point');
+  if (t.cy) { const r = await settled(a); await move(r.x, r.y); rep({op: 'point', target: 'cy:' + t.cy, scrolled: r.scrolled || 0}); return; }      // 캔버스 글자는 DOM 글자가 아니라 덮음 검사를 하지 않는다
+  const coverAt = (r) => q1(() => p.evaluate(coverInPage, {x: r.x, y: r.y, css: t.css, contains: t.contains, exact: t.exact}));
+  let r = await settled(a), cover = await coverAt(r);
+  // 기본 자리(글 끝 오른쪽)가 다른 글을 덮으면(아랫줄이 붙은 칸) 그 줄 왼쪽 여백을 짚는다. 녹화와 리허설이 같은 자리를 고르도록 늘 같은 차례로 본다
+  if (cover.length && !t.anchor && a.anchor === 'after') {
+   const r2 = await settled({...a, anchor: 'margin'}), c2 = await coverAt(r2);
+   if (!c2.length) { r = r2; cover = c2; }
+  }
+  await move(r.x, r.y);
+  rep({op: 'point', target: name(t), scrolled: r.scrolled || 0, covered: cover, fail: cover.length > 0, why: cover.length ? '화살표가 글을 덮음: ' + cover.join(' | ') : undefined});
  };
  L.click = async (t) => {
   const a = aim(t, 'click');
@@ -343,6 +360,8 @@ export async function seg(ctx, n) {
      const f = fracOf(q, o);
      if (f != null) { const w = t0 + Math.round(dur * f) - Date.now(); if (w > 0) await ctx.sleep(w); }
      ctx.commitAt = 0; await L.op(o);
+     // 리허설은 어긴 조작에서 바로 멈춘다 — 같은 큐 뒤쪽의 되돌릴 수 없는 누르기(올리기 · 적재 · 주입 · 승인)를 하기 전에
+     if (report?.some((r) => r.fail)) throw Error('DRY FAIL ' + JSON.stringify(report.filter((r) => r.fail)));
     }
    } : null;
    ctx.cueId = q.id;

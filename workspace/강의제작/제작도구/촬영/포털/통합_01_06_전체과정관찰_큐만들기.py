@@ -1,5 +1,8 @@
 # 1회차 실습 06 전체과정관찰(두 과정 공통, 2026-11 새 포털 판)의 큐 JSON을 확정 대본에서 만든다. 손으로 고치지 않는다.
 #   python3 통합_01_06_전체과정관찰_큐만들기.py [<대본.md>]  → 같은 폴더의 통합_01_06_전체과정관찰_큐.json
+#   python3 통합_01_06_전체과정관찰_큐만들기.py --고르기 <처음 큐>-<끝 큐> <출력.json>  → 그 범위(차례 기준)의 큐만 담은 사본(git 밖에 둔다)
+#     대표 구간(영상 길 14)처럼 구간 일부만 찍을 때 쓴다. take.mjs는 고른 구간의 모든 큐에 음성이 있어야 녹화하므로, 산 큐만 담은 사본을 준다.
+#     조작이 같아서 전체 큐로 통과한 리허설 표시가 그대로 맞는다.
 #   대본을 주지 않으면 산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md(실전반 파일과 제목 줄만 다르다)를 읽는다.
 # 대본 「## 절」 하나가 구간 하나이고, 표의 한 줄(| vNNNN | 발화 | 조작 |)이 큐 하나다. 글은 발화 칸 그대로, 조작은 아래 표(OPS), 쉼(gap, 초)은 영상 V-14.
 # 조작 형식은 촬영도구/segs/map.mjs 머리말: [조작, 대상, 시점]. 시점은 {'at': '대사 속 구절'}(그 구절이 시작하는 글자 비율 — map.mjs가 큐 시작 + 길이 × 비율 − 300ms에 한다)
@@ -11,7 +14,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'workspace/강의제작/산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md'
+PICK = sys.argv[2:4] if sys.argv[1:2] == ['--고르기'] else None
+SRC = Path(sys.argv[1]) if len(sys.argv) > 1 and not PICK else ROOT / 'workspace/강의제작/산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md'
 OUT = HERE / '통합_01_06_전체과정관찰_큐.json'
 VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
 ORDER = [f'v06{n:02d}' for n in range(1, 36)] + ['v0656'] + [f'v06{n:02d}' for n in range(38, 54)] + ['v0657', 'v0654', 'v0655']
@@ -29,6 +33,7 @@ def LONG(t, secs): return ['wait', {**t, 'long': True}, secs]      # 일부러 �
 def SETTLE(secs=10): return ['settle', None, secs]
 def CY(i): return {'cy': i}
 def BELOW(css, **k): return T(css, anchor='center', dy=22, **k)       # 누르지 않는 단추는 바로 밑 빈자리를 짚는다(촬영준비 길 4 — 마우스 올림 색)
+def ABOVE(css, **k): return T(css, anchor='center', dy=-18, **k)      # 밑에 다른 글이 붙은 단추는 바로 위 끝을 짚는다(화살표 몸통은 그 단추 위에 놓인다)
 
 
 STAGE = lambda n: T('#mainStages a.stat', nth=n - 1)
@@ -55,11 +60,12 @@ OPS = {
  'v0604': [P(T('#view-main .page-head p'), '맨 위 한 줄에는')],
  'v0605': [P(T(f'{HERO} svg.m-hero-svg', anchor='center'), '아래 그림은'), P(T(f'{HERO} text.m-zone', exact='OT · 현장 설비'), '설비에서 나온'),
            P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '가운데를'), P(T(f'{HERO} g.m-agent text.m-agent-s'), '오른쪽 AI')],
- 'v0606': [P(T(f'{HERO} g.m-node text', exact='증상 · 유온 상승'), 'AI 둘레의'), P(T(f'{HERO} g.m-node text', exact='고장 유형 · 냉각 상실'), '점들은'),
+ 'v0606': [P(T(f'{HERO} g.m-node', contains='증상 · 유온 상승', anchor='left'), 'AI 둘레의'),      # 증상 점은 글 끝 오른쪽이 아래 「원인 · 쿨러 핀 오염」을 덮어 점 왼쪽을 짚는다
+           P(T(f'{HERO} g.m-node text', exact='고장 유형 · 냉각 상실'), '점들은'),
            P(T(f'{HERO} g.m-node text', exact='원인 · 쿨러 핀 오염'), 'AI가 아는')],
  'v0607': [P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '설비로 내려가는'), P(T(f'{HERO} path.m-loop', pathAt=0.97), '위쪽 점선'),
            P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '사람이 승인한'), P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '이론에서 본'),
-           P(T(f'{HERO} path.m-loop', pathAt=0.3), '그 두 길')],
+           P(T(f'{HERO} path.m-loop', pathAt=0.4), '그 두 길')],
  'v0608': [SC(T('#mainStages', bottom=12), '아래 네 칸은'), P(LABEL(1), '지식을 넣어'), P(LABEL(2), '설비에 고장이'), P(LABEL(3), 'AI의 판단과'), P(LABEL(4), '결과가 남는'),
            P(T('#menuList summary[data-menu="knowledge"] > span'), '지식,'), P(T('#menuList summary[data-menu="plant"] > span'), '유압 설비,'),
            P(T('#menuList a[data-menu="instances"] > span', exact='처리 건'), '처리 건이')],
@@ -68,10 +74,10 @@ OPS = {
            W(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"]'))],
  'v0610': [P(T('#manualSteps .phase', exact='올리기'), '올리기,'), P(T('#manualSteps .phase', exact='AI 추출'), 'AI 추출,'), P(T('#manualSteps .phase', exact='검토'), '검토,'),
            P(T('#manualSteps .phase', exact='적재'), '적재가')],
- 'v0611': [P(BELOW('#manualPick button[data-pick-mode="file"]'), '여기 내 파일'), P(BELOW('#manualPick button[data-pick-mode="provided"]'), '아래 제공 문서'),
+ 'v0611': [P(ABOVE('#manualPick button[data-pick-mode="file"]'), '여기 내 파일'), P(T('#providedDocs .doc-prov', anchor='margin'), '아래 제공 문서'),
            P(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"] .row-title'), '쿨러 팬 정비'),
            C(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"]'), '누르면'), W(T('#manualAgentExtract'))],
- 'v0612': [P(T('#manualResult .result-label', exact='이미 적재된 문서'), '이미 적재된'), P(T('#manualResult .result-main', contains='HM-8_cooler-fan-manual.md'), '제공 문서는'),
+ 'v0612': [P(T('#manualResult .result-label', exact='이미 적재된 문서', anchor='margin'), '이미 적재된'), P(T('#manualStageNote', anchor='margin'), '제공 문서는'),
            C(T('#manualAgentExtract', anchor='center'), '누를게요'), W(T('#manualReview'), 20)],
  'v0613': [P(T('#manualReview .result-main'), 'AI가 매뉴얼에서'), P(T('#manualAgentStatus'), '제공 문서는')],
  'v0615': [SC(T('#manualReview .doc-review .doc-review-bar', top=70), '밑으로 내려'), P(T(ITEM('proc:SOP-FAN-11') + ' .row-title'), '처음 보이는'),
@@ -112,8 +118,8 @@ OPS = {
            P(T(U(3) + ' h3'), '가상 설비예요'), P(T('#view-scenario p.scope span'), '이 화면의 단추는')],
  'v0632': [W(T(U(1) + ' [data-f="fact"]', exact='유온 48.0 ℃ · 쿨러 성능 100 %'), 5), P(T(U(1) + ' [data-f="state"] .tag', exact='운전 중'), '첫 번째 설비는'),
            P(T(U(1) + ' [data-f="fact"]'), '유온 사십팔'), P(T(U(2) + ' .lab-what > span', exact='업무 사건 · 정기 정비'), '옆의 두 대는'),
-           P(T(U(3) + ' .lab-what > span', exact='업무 사건 · 예비품 구매'), '예비품 구매'), P(T(U(2) + ' .biz-alert .tag'), '빨간 표시가'),
-           P(T(U(3) + ' .biz-alert .tag'), '붙어 있어도'), P(T(U(1) + ' h3'), '첫 번째만')],
+           P(T(U(3) + ' .lab-what > span', exact='업무 사건 · 예비품 구매'), '예비품 구매'), P(T(U(2) + ' .biz-alert .tag', anchor='center', dy=-15), '빨간 표시가'),
+           P(T(U(3) + ' .biz-alert .tag', anchor='center', dy=-15), '붙어 있어도'), P(T(U(1) + ' h3'), '첫 번째만')],
  'v0633': [P(T(U(1) + ' button[data-act="degrade"]', anchor='center'), '여기 쿨러'), C(T(U(1) + ' button[data-act="degrade"]', anchor='center'), '누르시면'),
            W(T('#labFollow li[data-step="inject"].ok')), SC(T('#labFollowPanel', bottom=6))],
  'v0634': [W(T(RISE, contains='지금 유온'), 10), P(T(RISE, phrase='지금 유온'), '유온이 조금씩')],
@@ -155,11 +161,12 @@ OPS = {
  'v0652': [P(T('#instDetail .case-progress > header h3', exact='진행 상황'), '진행 상황을'), P(STEP('원인 진단 · 냉각 조치 제안'), 'AI의 추천은'),
            P(STEP('운전원 승인'), '사람의 승인은'), P(STEP('냉각 명령'), '설비로 간 명령은'),
            P(SUB('추천안 그대로 승인했습니다', phrase='추천안 그대로 승인했습니다'), '승인 줄에는')],
- 'v0653': [P(STEP('가지 않은 단계'), '맨 아래 가지 않은'), C(T('#instRecord details.cr-skipped > summary'), '펼치면'), W(T(SKIP), 5),
+ 'v0653': [P(STEP('가지 않은 단계'), '맨 아래 가지 않은'), C(T('#instRecord details.cr-skipped:not([open]) > summary'), '펼치면'), W(T(SKIP), 5),
            P(T(SKIP, phrase='결과 보고: 반려'), '반려 단추로'), P(T(SKIP, phrase='결과 보고: 미달'), '미달로'), P(T(SKIP, phrase='정비 수행'), '정비를 마친')],
  # 홈에서 마무리
  'v0657': [C(T('#menuList a[data-tab="main"]'), '홈으로'), W(T('#mainStages a.stat')), P(T('#view-main .page-head p'), '맨 위 한 줄을')],
- 'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='1건 처리 완료'), 10), P(T('#mainStages a.stat:nth-child(4) .stat-value'), '아래 결과 보기')],
+ # 「2건」: 쿨러 처리 건과 함께 v0612의 AI 추출도 처리 건 하나(「… 추출 제안」, 흐름 manual_source_extraction)로 끝나 세어진다 — 대본 v0654 「하나 세어져」와 어긋남(보고)
+ 'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='2건 처리 완료'), 10), P(T('#mainStages a.stat:nth-child(4) .stat-value'), '아래 결과 보기')],
  'v0655': [P(T('#mainStages a.stat[data-go-tab="scenario"] .go'), '결함 시뮬레이션에서')],
 }
 
@@ -221,6 +228,17 @@ def build(md):
 
 def main():
     cues = build(SRC.read_text(encoding='utf-8'))
+    if PICK:
+        a, z = PICK[0].split('-')
+        if a not in ORDER or z not in ORDER or ORDER.index(a) > ORDER.index(z):
+            sys.exit(f'--고르기 범위가 큐 차례에 없다: {PICK[0]}')
+        part = cues[ORDER.index(a):ORDER.index(z) + 1]
+        doc = {'voice_id': VOICE, 'model_id': MODEL, 'note': f'{OUT.name}의 {PICK[0]} 사본(--고르기)', 'cues': part}
+        with open(PICK[1], 'w', encoding='utf-8', newline='\n') as f:
+            json.dump(doc, f, ensure_ascii=False, indent=1)
+            f.write('\n')
+        print(f'{PICK[0]}: 큐 {len(part)} · 구간 {sorted({c["segment"] for c in part})} · 글자 {sum(len(c["text"]) for c in part)} → {PICK[1]}')
+        return
     doc = {'voice_id': VOICE, 'model_id': MODEL,
            'note': f'1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main f805fd43). {SRC.name}에서 {Path(__file__).name}로 만든다 — 손으로 고치지 않는다. '
                    '모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).',
