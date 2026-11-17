@@ -5,6 +5,9 @@
 - 품번·공급·재고 기준값: it/enterprise-sim/entsim/data.py (_PART_QUOTES·_SUPPLIERS·SPARE_BASE), PR-07
 - 실라버스 고정 대상: P-PMP-SEAL → HYD-01·02·03, 유효 공급 조건 3행(A정밀 35/0.12/2, B-OEM 55/0.02/5, C트레이딩 비승인 20/0.30/1)
 
+규모는 둘이다(코딩랩 K-3 · K-10). 「공장 규모」는 이 파일의 기본값이고 실전반 2회차가 쓴다. 「실습 랩 규모」(아래 LAB — 설비 3대)는 통합반 2회차가 쓴다.
+통합반 것을 만들거나 검증하는 코드는 `with for_course('통합반'):` 안에서 돌고, 그 밖에서는 공장 규모다. 규모를 바꾸면 TRUTH도 그 규모로 다시 선다.
+
 이 파일은 두 가지를 낸다.
 1. write_sources(): 학생이 읽는 원자료 CSV·현장 메모(사람이 만든 기록처럼 표기가 섞여 있음). 실전반은 구매 기준서 발췌를 더한다
 2. TRUTH: 생성에 쓴 정답 구조(강사 참조의 독립 대조용). 학생 폴더에는 들어가지 않는다.
@@ -95,6 +98,9 @@ SERIALS = {('HYD-01', 'pump-a'): 'KP-1904-221', ('HYD-02', 'pump-a'): 'KP-2603-1
            ('HYD-05', 'pump'): 'DWP-2101-12', ('HYD-06', 'pump'): 'DWP-2101-13', ('HYD-07', 'pump'): 'GP-1709-004'}
 REMOVED_PUMP = ('HYD-02', 'pump-a', 'KP-1902-551', '2026-03-11 펌프 교체로 철거(구 일련번호)')
 COMP_COLS = ['설비코드', '계통', '구성요소', '교체부품', '일련번호', '작성자', '비고']
+# 설비 하나가 모델의 기본 교체 부품(MODEL_COMPONENTS)과 다른 부품을 쓰는 자리 {(설비, 구성 요소 키): 사내 품번} — 정답 구조(truth)가 읽는다.
+# 공장 규모에는 없다(HYD-03 리턴 필터의 등급 변경은 기준일 뒤 수정본에 있다). 실습 랩 규모는 아래 LAB.
+ASSET_PARTS = {}
 
 # ───────────── 예비품·품번 ─────────────
 PARTS = [
@@ -291,7 +297,8 @@ def _num(v):
 
 def asset_rows():
     rows = [list(a) for a in ASSETS]
-    rows.insert(1, list(LEGACY_ASSET))   # 구 코드 행은 HYD-01 바로 아래에 이관 기록으로 남아 있다
+    if LEGACY_ASSET:
+        rows.insert(1, list(LEGACY_ASSET))   # 구 코드 행은 HYD-01 바로 아래에 이관 기록으로 남아 있다
     return rows
 
 
@@ -330,7 +337,20 @@ def dpu_instrument(code, tag):
     return f'{pre}-{LOOP[code]}{order.index(tag) + 1:02d}'
 
 
+def lab_sensor_rows():
+    """실습 랩 규모 센서 목록 — 태그는 세 대가 같고, 재는것 이름은 적은 사람마다 다르며, 한 줄은 단위가 다르다(LAB_SENSOR_QUIRKS)."""
+    rows = []
+    for code, *_ in ASSETS:
+        for tag, _, name, comp, what, q, unit, _, _, normal, limit, direc, _ in HPP_TAGS:
+            row = [code, tag, name, _place(code, comp), LAB_WHAT.get(code, {}).get(what, what), unit, _num(normal), '' if limit is None else _num(limit), direc, '']
+            row[5:8] = LAB_SENSOR_QUIRKS.get((code, tag), row[5:8])
+            rows.append(row)
+    return rows
+
+
 def sensor_rows():
+    if SCALE == LAB_SCALE:
+        return lab_sensor_rows()
     rows = []
     for code in ['HYD-01', 'HYD-02', 'HYD-03', 'HYD-04']:
         model = model_of(code)
@@ -413,7 +433,45 @@ def receipts():
     return rows
 
 
+def lab_memo():
+    return f'''# 설비 자료 정리 메모
+
+작성: 설비보전팀 2라인 기계 담당 · {REF_DATE}
+받는 사람: 설비 지식 정리 담당
+
+창원1공장 2라인 유압 파워팩 세 대(HYD-01 · 02 · 03)의 자료를 시스템별로 내려받아 보냅니다. 대장과 점검표, SCADA 태그 목록, ERP 화면에서 각자 내보낸 것이라 줄마다 적는 방식이 다릅니다. 기준일은 {REF_DATE}입니다.
+
+## 1. 보낸 파일
+
+| 파일 | 어디서 왔나 | 내용 |
+|---|---|---|
+| `설비_대장.csv` | CMMS 설비 대장 | 유압 파워팩 세 대 |
+| `구성요소_목록.csv` | 설비별 담당자 작성 | 설비마다 정비하는 품목을 한 줄씩. HYD-01은 저, HYD-02는 2라인 정비 담당, HYD-03은 전기계장 담당 |
+| `센서_목록.csv` | SCADA 태그 목록 | 설비마다 태그를 한 줄씩 |
+| `예비품_목록.csv` | ERP 자재 | 관리하는 예비품 |
+| `품번_교차표.csv` | 구매팀 | 사내 품번과 예전 품번, 손으로 쓴 표기, 제조사 품번 |
+
+## 2. 설비에 대해
+- HYD-01, HYD-02, HYD-03은 같은 모델(HPP-45A)입니다. 펌프는 주 펌프 (A)와 예비 펌프 (B)가 있는데, 이번 목록에는 정비 주기를 두고 관리하는 품목 여섯 가지만 넣었습니다.
+- 구성 요소 목록의 일련번호는 그 구성 요소에 달린 장치(펌프)의 번호입니다. HYD-02 주 펌프는 2026-03-11에 교체했습니다.
+
+## 3. 이름과 표기에 대해
+- 같은 장치인데 적은 사람에 따라 이름이 다릅니다. 현장에서 실제로 섞어 쓰는 말이라 어느 것도 틀린 말은 아닙니다. 재는 값의 이름도 마찬가지입니다.
+- 태그 이름(TS1, PS1 …)은 세 대가 모두 같은 이름을 씁니다.
+- 「한계」 칸은 인터록이 걸리는 값이고 「한계구분」은 위로 넘을 때(상한)인지 아래로 떨어질 때(하한)인지입니다.
+- 사내 품번은 2024년 3월에 바뀌었습니다. 점검표에는 예전 품번이나 줄여 쓴 표기가 남아 있습니다.
+
+## 4. 이 정리로 알고 싶은 것
+보전팀에서 자주 받는 물음입니다.
+- 어느 설비의 어느 구성 요소에 어떤 센서가 붙어 있는가.
+- 같은 것을 재는 센서를 설비끼리 모아 정상값과 한계를 견줄 수 있는가.
+- 어느 부품을 어느 설비가 함께 쓰는가. 예전 품번이나 다른 표기로 물어도 찾을 수 있는가.
+'''
+
+
 def memo(practical=False):
+    if SCALE == LAB_SCALE:
+        return lab_memo()
     pr07_row = f'\n| `{PR07_FILE}` | 구매팀(구매 기준서 PR-07) | 7.2 ~ 7.4절 발췌(재고 · 승인 공급사 · 공급사 비교) |' if practical else ''
     return f'''# 설비 자료 정리 메모
 
@@ -522,6 +580,12 @@ def source_texts(practical=False):
         '센서_목록.csv': _csv(SENSOR_COLS, sensor_rows()),
         '예비품_목록.csv': _csv(PART_COLS, part_rows()),
         '품번_교차표.csv': _csv(CROSS_COLS, CROSS),
+    }
+    if SCALE == LAB_SCALE:     # 실습 랩 규모에는 공급 · 입고 자료가 없다
+        if practical:
+            raise ValueError('data_session2.source_texts: 실습 랩 규모에는 실전반 공급 자료가 없습니다 — 실전반은 공장 규모로 만듭니다.')
+        return files | {'현장_메모.md': memo()}
+    files |= {
         QUOTE_FILE: _csv(QUOTE_COLS, QUOTES),
         AVL_FILE: _csv(AVL_COLS, AVL),
         '입고_이력.csv': _csv(RECEIPT_COLS, receipts()),
@@ -550,6 +614,11 @@ CHANGE_COLS = {'설비_대장_변경.csv': ['변경', *ASSET_COLS], '구성요�
 def changes():
     """기준일 뒤 들어온 수정본. 원 행 전체를 다시 적고 맨 앞에 변경 종류를 적는다."""
     a = {r[0]: list(r) for r in ASSETS}
+    if SCALE == LAB_SCALE:     # 설비 하나는 이름이 바뀌고(같은 식별자로 남는가), 하나는 불용이 된다(상태로 남길지 지울지)
+        renamed, retired = a[LAB_RENAMED[0]][:], a[LAB_RETIRED[0]][:]
+        renamed[1], renamed[9] = LAB_RENAMED[1], f'설비명 표준화({CHANGE_DATE})'
+        retired[8], retired[9] = LAB_RETIRED[1], f'{CHANGE_DATE} 불용 결정(2라인 재편)'
+        return {'설비_대장_변경.csv': [['수정', *renamed], ['수정', *retired]]}
     hyd02 = a['HYD-02'][:]; hyd02[1] = 'HYD-02 2라인 2호 파워팩'; hyd02[9] = '설비명 표준화(2026-10-20)'
     hyd07 = a['HYD-07'][:]; hyd07[8] = '불용(매각 예정)'; hyd07[9] = '2026-10-20 불용 결정'
     out = {'설비_대장_변경.csv': [['수정', *hyd02], ['수정', *hyd07]],
@@ -578,7 +647,7 @@ def truth():
     t = {'assets': {}, 'parts': {p[0]: p[1] for p in PARTS}, 'quantities': QUANTITIES}
     for code, *_ in ASSETS:
         model = model_of(code)
-        comps = {k: part for k, _, _, part in MODEL_COMPONENTS[model]}
+        comps = {k: ASSET_PARTS.get((code, k), part) for k, _, _, part in MODEL_COMPONENTS[model]}
         sensors = {}
         if model in ('HPP-45A', 'HPP-45B'):
             for tag, pre, name, comp, what, q, unit, hz, how, normal, limit, direc, kind in HPP_TAGS:
@@ -639,7 +708,77 @@ def _supply(live, mode):
     return valid
 
 
+# ───────────── 실습 랩 규모(통합반 2회차) ─────────────
+# 같은 모델 세 대, 정비 품목 여섯 가지, 센서 다섯 가지. 남긴 현실감: 설비마다 다른 이름, 품번 표기 변형(구 품번 · 줄여 쓴 표기 · 제조사 품번),
+# 철거된 펌프 한 줄, 단위가 다른 센서 한 줄, 리턴 필터 엘리먼트 등급이 다른 설비 하나(HYD-03은 25µm — 그래서 부품마다 쓰는 설비가 다 같지는 않다).
+# 결정 지점은 둘(구성 요소 자리와 그 실물 · 같은 물리량의 범위)이고, 교체부품 칸은 모두 품번 · 교차표로 풀린다.
+FACTORY_SCALE, LAB_SCALE = '공장 규모', '실습 랩 규모'
+COURSE_SCALE = {'통합반': LAB_SCALE, '실전반': FACTORY_SCALE}
+LAB_TAGS = [t for t in HPP_TAGS if t[0] in ('TS1', 'TS2', 'TS3', 'PS1', 'VS1')]
+LAB_WHAT = {'HYD-02': {'유온': '오일 온도', '탱크 유온': '탱크 온도', '토출 압력': '펌프 압력', '팬 진동': '진동'}}      # 적은 사람마다 다른 재는것 이름
+LAB_SENSOR_QUIRKS = {('HYD-03', 'PS1'): ['MPa', '18.2', '13']}                                                      # 단위가 다른 한 줄(182 bar · 130 bar)
+LAB_RENAMED = ('HYD-02', 'HYD-02 2라인 2호 파워팩')
+LAB_RETIRED = ('HYD-03', '불용(매각 예정)')
+LAB = dict(
+    ASSETS=[(*a[:9], '') for a in ASSETS[:3]], LEGACY_ASSET=None,
+    MODEL_COMPONENTS={'HPP-45A': [c for c in MODEL_COMPONENTS['HPP-45A'] if c[0] in ('cooler', 'fan', 'pump-a', 'coupling', 'tank', 'rtn-filter')]},
+    WRITER={k: WRITER[k] for k in ('HYD-01', 'HYD-02', 'HYD-03')},
+    NAMES={'HYD-02': {'cooler': '쿨러', 'fan': '팬', 'pump-a': '유압 펌프', 'coupling': '커플링', 'tank': '탱크', 'rtn-filter': '리턴 필터'},
+           'HYD-03': {'cooler': '열교환기', 'fan': '송풍기', 'pump-a': '주 펌프 A', 'coupling': '축 커플링', 'tank': '리저버', 'rtn-filter': '리턴 필터'}},
+    PART_TEXT={'HYD-01': {'cooler': '쿨러 코어 (P-CLR-CORE)', 'fan': '팬 베어링 (P-FAN-BRG)', 'pump-a': '펌프 축 씰 키트 (P-PMP-SEAL)', 'coupling': '커플링 탄성체 (P-CPL-ELM)',
+                          'tank': '작동유 VG46 (P-HYD-OIL)', 'rtn-filter': '리턴 필터 엘리먼트 (P-RTN-FLT)'},
+               'HYD-02': {'cooler': 'P-CLR-CORE', 'fan': 'FB-6205', 'pump-a': 'PMP-SEAL', 'coupling': 'P-CPL-ELM', 'tank': 'P-HYD-OIL', 'rtn-filter': 'RF-10'},
+               'HYD-03': {'cooler': 'HI-CC-45A', 'fan': 'P-FAN-BRG', 'pump-a': 'PS-4510', 'coupling': 'ROTEX-24-98A', 'tank': 'P-HYD-OIL', 'rtn-filter': 'P-RTN-FLT-25'}},
+    COMP_NOTE={}, SERIALS={k: v for k, v in SERIALS.items() if k[0] in ('HYD-01', 'HYD-02', 'HYD-03')},
+    ASSET_PARTS={('HYD-03', 'rtn-filter'): 'P-RTN-FLT-25'},
+    PARTS=[(pid, name, where, 'HPP-45A', '') for pid, name, where, *_ in PARTS if pid in ('P-PMP-SEAL', 'P-FAN-BRG', 'P-CLR-CORE', 'P-RTN-FLT', 'P-RTN-FLT-25', 'P-CPL-ELM', 'P-HYD-OIL')],
+    CROSS=[('P-PMP-SEAL', 'PS-4510', '구 사내 품번', '구 CMMS · 점검표', '2024-03 품번 체계 변경 전'),
+           ('P-PMP-SEAL', 'PMP-SEAL', '표기 변형', '점검표 수기', ''),
+           ('P-PMP-SEAL', 'HI-SK-45A', '제조사 품번', '한일유압 부품표', ''),
+           ('P-FAN-BRG', 'FB-6205', '구 사내 품번', '구 CMMS · 점검표', '2024-03 품번 체계 변경 전'),
+           ('P-CLR-CORE', 'HI-CC-45A', '제조사 품번', '한일유압 부품표', ''),
+           ('P-RTN-FLT', 'RF-10', '표기 변형', '점검표 수기', ''),
+           ('P-CPL-ELM', 'ROTEX-24-98A', '제조사 품번', '커플링 규격', '')],
+    HPP_TAGS=LAB_TAGS,
+    QUANTITIES={q: QUANTITIES[q] for q in (t[5] for t in LAB_TAGS)},
+    # 결정 지점 「같은 물리량의 범위」의 갈래 「재는 값의 종류」: 세 온도는 작동유 온도 하나, 나머지는 그대로
+    QUANTITY_KINDS={t[5]: QUANTITY_KINDS[t[5]] if t[0].startswith('TS') else (t[5], *QUANTITIES[t[5]]) for t in LAB_TAGS},
+    SENSOR_COLS=['설비코드', '태그', '센서명', '붙은곳', '재는것', '단위', '정상값', '한계', '한계구분', '비고'],
+    QUOTES=[], AVL=[],
+    CHANGE_COLS={'설비_대장_변경.csv': ['변경', *ASSET_COLS]},
+)
+FACTORY = {k: globals()[k] for k in LAB}
+SCALE = FACTORY_SCALE
 TRUTH = truth()
+
+
+def use(scale):
+    """이 모듈의 원자료 정의를 그 규모로 바꾼다(TRUTH도 다시 선다). 생성기와 시험은 for_course로 부른다."""
+    global SCALE, TRUTH
+    globals().update({FACTORY_SCALE: FACTORY, LAB_SCALE: LAB}[scale])
+    SCALE = scale
+    TRUTH = truth()
+
+
+class for_course:
+    """`with for_course('통합반'):` — 그 과정의 규모로 바꿨다가 나올 때 되돌린다."""
+
+    def __init__(self, course):
+        self.scale = COURSE_SCALE[course]
+
+    def __enter__(self):
+        self.before = SCALE
+        use(self.scale)
+
+    def __exit__(self, *exc):
+        use(self.before)
+
+
+def require(course):
+    """그 과정의 규모가 아니면 멈춘다 — 규모를 바꾸지 않고 부른 생성 · 검증이 다른 과정의 자료로 조용히 돌지 않게 한다."""
+    if SCALE != COURSE_SCALE[course]:
+        raise RuntimeError(f'data_session2: 지금 규모는 「{SCALE}」입니다 — {course} 것은 `with data_session2.for_course({course!r}):` 안에서 만듭니다.')
+
 
 if __name__ == '__main__':
     import argparse

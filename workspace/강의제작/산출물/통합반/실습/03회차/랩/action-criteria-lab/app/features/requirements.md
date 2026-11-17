@@ -12,7 +12,7 @@
 
 ## 정한 것 · 기대 판정
 
-고른 것 · 근거(파일:줄) · 바뀌는 답은 `app/features/decisions.csv`, 실행 전에 손으로 구한 기대 판정은 `app/features/expected.csv`에 적습니다.
+고른 것 · 근거(파일:줄) · 바뀌는 답은 `app/features/decisions.csv`, 실행 전에 정한 기대 판정은 `app/features/expected.csv`에 적습니다.
 
 ## 저장 기록
 

@@ -63,7 +63,7 @@ def against_expected(title, judged):
     exp = expected_rows()
     keys = {e['사례 / 후보'] for e in exp}
     act = [{'사례 / 후보': f'{c} / {s}', '판정': v} for (c, s), v in judged.items() if f'{c} / {s}' in keys]
-    return compare(title, '사례 / 후보', exp, act, ['판정'], '기대는 실행 전에 손으로 적은 값입니다. 다른 줄은 기대 · 조건표 · 원문 가운데 어느 쪽이 원문과 다른지 찾아 고칩니다.')
+    return compare(title, '사례 / 후보', exp, act, ['판정'], '기대는 실행 전에 정한 값입니다. 다른 줄은 기대 · 조건표 · 원문 가운데 어느 쪽이 원문과 다른지 찾아 고칩니다.')
 
 
 def run_check(previous):

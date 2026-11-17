@@ -12,8 +12,7 @@
         "maker": "string",
         "serial": "string",
         "functional_location": "string",
-        "installed": "string",
-        "legacy_codes": "list"
+        "installed": "string"
       }
     },
     "Component": {
@@ -29,17 +28,11 @@
       }
     },
     "Sensor": {
-      "meaning": "설비별 계측 채널. 실측·계산값·설정값을 kind로 구별",
+      "meaning": "설비별 계측 채널",
       "required": {
         "id": "string",
         "tag": "string",
-        "unit": "string",
-        "kind": [
-          "measured",
-          "derived",
-          "setpoint"
-        ],
-        "derived": "boolean"
+        "unit": "string"
       },
       "optional": {
         "normal": "number",
@@ -48,9 +41,6 @@
           "upper",
           "lower"
         ],
-        "instrument_tag": "string",
-        "sample_hz": "number",
-        "collection": "string",
         "source_unit": "string"
       }
     },
@@ -80,13 +70,9 @@
       "cardinality": "1:N"
     },
     "MONITORED_BY": {
-      "from": [
-        "Component",
-        "Asset"
-      ],
+      "from": "Component",
       "to": "Sensor",
-      "cardinality": "1:N",
-      "note": "설비 전체에 붙은 계산값(SE)은 Asset에서"
+      "cardinality": "1:N"
     },
     "OBSERVES": {
       "from": "Sensor",
@@ -106,7 +92,7 @@
   "branch": "A",
   "constraints": [
     "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번",
-    "옛 코드 줄(같은 기능위치 · 일련번호)·점검표 중복 행은 대상을 새로 만들지 않는다. 철거 실물 행도 대상을 새로 만들지 않는다",
+    "철거 실물 행은 대상을 새로 만들지 않는다",
     "limit 생략은 0과 다르다. normal 생략은 미확인",
     "단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다"
   ]

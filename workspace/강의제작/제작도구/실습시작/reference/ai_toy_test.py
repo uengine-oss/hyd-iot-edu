@@ -16,8 +16,8 @@
               키는 원본 기록에서 가린다. 주지 않으면 키 없는 폴더 시험이다.
 
 두 도구
-  codex  = 학생 AI. 학생처럼 ChatGPT 계정으로 로그인한 Codex(--codex-home <로그인해 둔 CODEX_HOME> — 그 폴더의 config.toml이
-           모델을 정한다, 이 PC는 `D:/HYD-Practice/_codex_luna` · gpt-6-luna). --codex-home이 없으면 강의 중계 LiteLLM의 `coding`
+  codex  = 학생 AI. 학생처럼 ChatGPT 계정으로 로그인한 Codex(--codex-home <로그인해 둔 CODEX_HOME> — 이 PC의 값은
+           코딩랩.md 길 6 한 곳에 있다, 모델은 gpt-6-luna). --codex-home이 없으면 강의 중계 LiteLLM의 `coding`
            모델로 돌고, 키 LLM_API_KEY와 주소 OPENAI_BASE_URL을 환경 변수나 --env-file에서 읽는다. 키 값은 화면 · 파일 어디에도
            쓰지 않는다(원본 기록에 섞이면 가린다).
   claude = 더 센 AI. Claude Code + Sonnet. env -i처럼 PATH · 새 HOME · 프록시 · 인증서 변수 · ANTHROPIC_BASE_URL만 넘긴다.

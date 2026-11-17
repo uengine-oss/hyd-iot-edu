@@ -19,10 +19,12 @@ ROOT = HERE.parents[3]
 LAB = ROOT / 'workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab'
 LEGACY = LAB.parent / '05일차_실습2_원인추론과점검계획'
 REF = HERE / 'reference/session5_root'
-VERSION = '2026-11-10-agent-root-guide-fixes'
+VERSION = '2026-11-17-agent-decider2'   # 독립 검토 고칠목록(가이드 · 기록 틀 문장, 요령 까닭은 lab_frame 한 곳). 그 앞: 2026-11-17-agent-decider 학생은 AI로 파악하고 추천안을 따져 결정(코딩랩 K-3)
 DEFAULT_REQUEST = 'ALT-hyd03-0289-060b'
 LEAD = '앞에서 배운 지식·현재값·출처 확인을 바탕으로, 제공된 4회차의 원인 후보와 문서 조건을 이번 사건의 관측값과 연결하는 원인·점검 계획 에이전트를 만듭니다.'
 TITLE = '원인 후보와 다음 점검 계획'
+# AI를 쓰는 요령 — 5회차 랩은 요령을 처음 쓰는 랩이 아니라 까닭 없이 한 마디로 되짚는다(코딩랩 K-3, 까닭 문장은 lab_frame 한 곳)
+WHY = frame.tip_why(False)
 
 
 def policy_text(branch):
@@ -99,7 +101,7 @@ def deliver(request, assessment, choices):
 
 def paragraph(text): return '<p>' + frame.inline(text) + '</p>'
 def command(text): return frame.command_block(text)
-def answer(text, reason='앞에서 파악한 자료와 내가 적은 선택을 전제로, 지금 기능만 요청합니다.'):
+def answer(text, reason='앞에서 파악한 자료와 내가 대화에서 정한 선택을 전제로, 지금 기능만 요청합니다.'):
     return frame.answer_html(frame.A(reason, frame.ask_ai(text)))
 
 
@@ -115,22 +117,22 @@ def guide_sections(L):
     identity=L['request']; run='python run.py'; collect=f'{run} --collect --request {identity}'
     source=f'{run} --source data/documents/hm_8_1_1.md --start 25 --end 43'
     sections=[]
-    body=paragraph('온톨로지에서 찾은 원인 후보는 이번 사건의 확정 원인이 아닙니다. 문서 조건과 현재 관측을 따로 찾는 **에이전트 단계**에서, 정비 담당자가 검토할 후보·다음 점검·추가 자료가 필요한 질문을 만듭니다. 자료 파악 → 내 요구와 기대 → 계획 → 기능별 구현·실행 → 원문과 견주기 → 다른 입력 확인 → 저장 순서로 진행합니다.')
+    body=paragraph('온톨로지에서 찾은 원인 후보는 이번 사건의 확정 원인이 아닙니다. 문서 조건과 현재 관측을 따로 찾는 **에이전트 단계**에서, 정비 담당자가 검토할 후보·다음 점검·추가 자료가 필요한 질문을 만듭니다. 가이드는 자료 파악 → 내 요구와 기대 → 계획 → 기능별 구현·실행 → 원문과 견주기 → 다른 입력 확인 → 저장 차례로 안내합니다.')
     body+=paragraph('클래스룸 **🧪 05회차 실습 자료**에서 ZIP을 내려받아 **압축 풀기**를 합니다. VS Code의 **파일 → 폴더 열기**에서 `root-cause-lab` 폴더만 엽니다. 가이드는 옆의 `root-cause-lab_guide.html`을 브라우저로 엽니다. 위 폴더까지 열면 Codex가 답이 든 가이드를 읽을 수 있습니다. 직접 받은 폴더인지 확인한 뒤 신뢰 창에서 신뢰합니다.')
     body+=frame.block('tree','root-cause-lab/\n├ README.md\n├ AGENTS.md\n├ data/\n├ app/\n│  ├ features/\n│  ├ ui/\n│  └ utils/\n└ run.py')
     body+=paragraph('탐색기에서 `README.md`로 목적과 첫 명령을 봅니다. `AGENTS.md`는 Codex가 지킬 공통 작업 원칙입니다. VS Code의 Codex 채팅을 열고 로그인이 필요한 경우 개인 GPT 계정으로 로그인합니다. **터미널 → 새 터미널**에서 현재 위치가 `root-cause-lab`인지 봅니다. 명령과 글은 오타로 다른 파일을 다루지 않도록 **복사** 단추로 가져옵니다.')
     body+=command(run+' --inspect')
-    body+=paragraph('터미널에는 제공 지식의 노드·관계 수, 요청 수와 읽기 도구가 나옵니다. `data/requests.csv`에서 기본 요청의 설비와 기준시각을 찾고, `data/source_manifest.json`과 `data/field_notes.md`에서 문서 판본·수집 범위를 연결합니다. 10초 자료는 개별 관측 표본이며 평균이 아닙니다. 질문에 필요한 값이 어느 출처에 있는지 알아야 다음에 기대 답을 정할 수 있습니다.')
-    body+=paragraph('Codex에게 기본 요청의 질문을 받는 역할과 문서·그래프·관측의 위치를 물어봅니다. 파일을 바꾸지 말고 근거를 찾게 한 뒤, 답에 나온 문서의 판본과 줄을 직접 열어 확인합니다. 찾지 못한 항목은 모르는 것으로 남깁니다.')
+    body+=paragraph('터미널에는 제공 지식의 노드·관계 수, 요청 수와 읽기 도구가 나옵니다. 기본 요청의 설비와 기준시각은 `data/requests.csv`에, 문서 판본·수집 범위는 `data/source_manifest.json`과 `data/field_notes.md`에 있습니다. 10초 자료는 개별 관측 표본이며 평균이 아닙니다. 질문에 필요한 값이 어느 출처에 있는지 알아야 다음에 기대 답을 정할 수 있습니다.')
+    body+=paragraph(frame.REQUEST_FIRST + '그렇지 않으면 ' + frame.TIP_RECALL + '자료를 처음부터 다 읽지 않고 Codex에게 물어 먼저 파악합니다. 파일을 바꾸지 말고, 기본 요청의 질문을 받는 역할과 문서·그래프·관측이 각각 무엇을 담는지, 판본·기간이 서로 다르거나 수집이 빈 곳이 어디인지를 실제 예 줄(파일:줄)과 개수로 정리해 달라고 합니다. ' + WHY(frame.TIP_DATA) + '답에 나온 줄 가운데 한두 곳을 열어 보고, 찾지 못한 항목은 모르는 것으로 남깁니다.')
     sections.append((L['steps'][0]['name'],body))
 
-    body=paragraph('누가 이 결과로 무엇을 할지 먼저 정합니다. `app/features/requirements.md`에 받을 역할·질문·지킬 조건을 내 말로 적고, `choices.csv`에 선택·원문 근거·그 선택으로 달라질 다음 행동을 적습니다. **증거 대조**는 원인 후보의 조건과 현재 관측을 비교해 충족·해당 없음·보류를 구분하는 일입니다.')
-    body+=paragraph('하나는 **근거 묶음**입니다. 숫자 한 줄로 충분한지, 표머리·적용 조건·인접절이나 같은 운전 조건의 다른 기간이 필요한지 정합니다. 다른 하나는 **점검 전달**입니다. 근거가 일부 비었을 때 확인한 범위부터 나눠 보낼지, 요청 전체의 근거를 모아 전달할지 대상과 받을 역할에 맞춰 정합니다. 문서의 안전 조건을 바꾸는 선택은 아닙니다. AI가 권장안을 붙이면 원문을 열어 내 선택과 이유를 다시 말합니다.')
+    body=paragraph('누가 이 결과로 무엇을 할지 먼저 정합니다. 받을 역할·질문·지킬 조건을 내 말로 정해 `app/features/requirements.md`에 남기고, `choices.csv`에는 내 선택, 내 이유와 열어 본 원문 줄, 그 선택으로 달라질 다음 행동을 남깁니다. 채팅에서 말한 것을 Codex가 받아 적어도 되고 직접 적어도 됩니다. **증거 대조**는 원인 후보의 조건과 현재 관측을 비교해 충족·해당 없음·보류를 구분하는 일입니다.')
+    body+=paragraph('하나는 **근거 묶음**입니다. 숫자 한 줄로 충분한지, 표머리·적용 조건·인접절이나 같은 운전 조건의 다른 기간이 필요한지 정합니다. 다른 하나는 **점검 전달**입니다. 근거가 일부 비었을 때 확인한 범위부터 나눠 보낼지, 요청 전체의 근거를 모아 전달할지 대상과 받을 역할에 맞춰 정합니다. 문서의 안전 조건을 바꾸는 선택은 아닙니다. 두 선택 모두 Codex에게 선택지마다 달라지는 조회 범위와 다음 역할의 행동, 근거 줄을 묻고 추천안도 받아 봅니다. 추천안은 그대로 골라도 되고 고쳐도 됩니다. 고르는 것과 그 이유는 내가 말합니다. ' + WHY(frame.TIP_CHOOSE) + '선택을 가르는 원문 줄 한두 곳은 아래 명령으로 열어 확인합니다.')
     body+=command(source)
-    body+=paragraph('원문 도구는 줄 번호와 글을 그대로 보여 줍니다. 목록의 원래 파일 이름은 `source_manifest.json`의 `catalog_file`에서 실제 `file`로 연결합니다. `expected.csv`에는 세 후보의 적용 조건, 관측을 쓸 수 있는 기준, 작업 전제 등 이번 요청에서 확인할 질문과 기대·출처를 먼저 적습니다. 관측을 아직 조회하지 않았다면 수치나 상태를 짐작하지 말고 미확인으로 둡니다. 그래야 이후 실제 반환을 원문과 견줄 수 있습니다.')
-    body+=paragraph('내가 찾은 원문과 수집 조건을 Codex에게 설명하고, 선택에 따라 달라질 조회 범위와 다음 행동을 함께 짚습니다. `data/field_notes.md`의 업무 범위에는 수신 역할이 아직 정하지 않은 전달 요구가 있습니다. 문서 조건과 사람의 업무 선택을 구분하고 내 요구와 이유를 말합니다. choices.csv의 decision에는 적용 기능인 query 또는 deliver를, 나머지 칸에는 내 선택·출처·달라질 행동을 적습니다. 전달 요구가 비어 있으면 수집·판정은 볼 수 있어도 다음 점검을 정한 것으로 보지 않습니다.')
-    body+=answer('우리가 파일을 바꾸지 않고 파악한 요청과 원문을 바탕으로 내가 적은 app/features/requirements.md, choices.csv, expected.csv를 읽어줘. 선택이 미정이면 내게 근거와 선택을 물어봐. 선택을 대신하지 말고, 선택한 근거 범위와 전달 방침이 다음 역할의 행동을 어떻게 바꾸는지 확인해줘. 기대값을 AI 답으로 채우지 말고 내가 제시한 원문 줄에서 확인되는 조건과 아직 모르는 관측을 나눠줘. 지금은 판단 코드를 만들지 마.')
-    body+=command(run+' --show')+paragraph('`output/result.html`을 탐색기에서 **파일 탐색기에 표시**한 뒤 두 번 클릭해 브라우저로 엽니다. 내가 실제 작성한 요구·선택·기대만 보입니다. 이후 명령을 실행한 뒤에는 이 화면을 새로고침합니다.')
+    body+=paragraph('원문 도구는 줄 번호와 글을 그대로 보여 줍니다. 목록의 원래 파일 이름은 `source_manifest.json`의 `catalog_file`에서 실제 `file`로 연결합니다. `expected.csv`에는 세 후보의 적용 조건, 관측을 쓸 수 있는 기준, 작업 전제 등 이번 요청에서 확인할 질문과 기대·출처를 결과를 보기 전에 남깁니다. Codex에게 부탁할 때는 목적·볼 자료·지킬 조건·확인할 사례를 함께 말합니다. ' + WHY(frame.TIP_REQUEST) + 'Codex가 원문에서 찾아 준 기대 후보와 출처 줄을 몇 줄 열어 본 뒤 받아들이거나 고칩니다. 관측을 아직 조회하지 않았다면 수치나 상태를 짐작하지 말고 미확인으로 둡니다. 그래야 이후 실제 반환을 원문과 견줄 수 있습니다.')
+    body+=paragraph('`data/field_notes.md`의 업무 범위에는 수신 역할이 아직 정하지 않은 전달 요구가 있습니다. 문서 조건과 사람의 업무 선택을 구분하고 내 요구와 이유를 말합니다. choices.csv의 decision에는 적용 기능인 query 또는 deliver가, 나머지 칸에는 내 선택·내 이유와 원문 줄·달라질 행동이 들어갑니다. 전달 요구가 비어 있으면 수집·판정은 볼 수 있어도 다음 점검을 정한 것으로 보지 않습니다.')
+    body+=answer('우리가 파일을 바꾸지 않고 파악한 요청과 원문을 바탕으로, 지금 대화에서 내가 정한 요구를 app/features/requirements.md에, 근거 묶음과 점검 전달 선택을 choices.csv에, 내가 받아들인 기대를 출처 줄과 함께 expected.csv에 적어줘. 내가 아직 고르지 않은 선택은 대신 정하지 말고 선택지와 달라지는 행동을 다시 보여줘. 기대는 원문 줄에서 확인되는 조건만 쓰고 아직 조회하지 않은 관측은 미확인으로 둬. 지금은 판단 코드를 만들지 마.')
+    body+=command(run+' --show')+paragraph('`output/result.html`을 탐색기에서 **파일 탐색기에 표시**한 뒤 두 번 클릭해 브라우저로 엽니다. 내가 정한 요구·선택·기대만 보입니다. 이후 명령을 실행한 뒤에는 이 화면을 새로고침합니다.')
     sections.append((L['steps'][1]['name'],body))
 
     body=paragraph('한 번에 전체 결과를 만들면 어느 선택이 잘못됐는지 찾기 어렵습니다. `app/features/plan.md`에서 조회 범위 → 증거 대조 → 점검 전달로 기능을 나눕니다. 각 기능의 입력과 확인할 출력, 다른 문서 판본·기간·공백이 섞일 때 확인할 근거를 검토합니다. 파일 읽기·모델 호출·계약 조립·화면은 제공됩니다.')
@@ -139,41 +141,41 @@ def guide_sections(L):
     body+=paragraph('조회 전략이 기준 방법보다 복잡해졌다면 필요한 근거를 더 잘 보존하는지 따져 봅니다. 단순한 방법이 충분하면 유지합니다. 문서 전체를 다시 지식화하거나 뒤 회차의 Skill·명세 도구를 만들지는 않습니다.')
     sections.append((L['steps'][2]['name'],body))
 
-    body=paragraph('계획의 기능 하나씩 Codex에 요청하고 실행 결과를 봅니다. 첫 기능이 실제 근거를 모으면, 그 반환을 그대로 다음 두 기능에 사용합니다. 판단이나 전달만 고칠 때는 모델을 다시 부르지 않습니다.')
+    body=paragraph('계획의 기능 하나씩 Codex에 요청하고 실행 결과를 봅니다. ' + WHY(frame.TIP_ONE) + '첫 기능이 실제 근거를 모으면, 그 반환을 그대로 다음 두 기능에 사용합니다. 판단이나 전달만 고칠 때는 모델을 다시 부르지 않습니다.')
     body+='<h3>조회 범위를 구현하고 실제 근거 보기</h3>'
     body+=paragraph('query.py의 두 함수가 무엇을 받는지 Codex에게 먼저 설명받습니다. 내 질문에 필요한 근거를 모델이 고르도록 지침을 만들고, 내가 선택한 원문·설비·기간 기준을 실제 인수에 반영하게 요청합니다. 실행 뒤 모델 인수와 반영 뒤 인수, 반환된 원문 범위를 나란히 봅니다.')
-    body+=answer('앞에서 검토한 plan.md와 내가 고른 근거 묶음을 적용해 app/features/query.py의 instructions와 prepare_query만 구현해줘. 실제 도구의 인수 계약을 읽고, 어떤 문서 판본·설비·기간을 요청할지 모델이 반환을 보고 선택하게 해줘. 내가 확인한 적용 조건과 주변 원문을 잃지 않도록 범위를 반영하되 조회 결과나 값을 지어내지 마. assess.py와 deliver.py는 바꾸지 마. 실행 명령과 변경 파일을 알려줘.')
+    body+=answer('앞에서 검토한 plan.md와 내가 고른 근거 묶음을 적용해 app/features/query.py의 instructions와 prepare_query만 구현해줘. 실제 도구의 인수 계약을 읽고, 어떤 문서 판본·설비·기간을 요청할지 모델이 반환을 보고 선택하게 해줘. 내가 정한 적용 조건과 주변 원문을 잃지 않도록 범위를 반영하되 조회 결과나 값을 지어내지 마. assess.py와 deliver.py는 바꾸지 마. 실행 명령과 변경 파일을 알려줘.')
     body+=paragraph('모델 접속 세 줄을 받았다면 `.env.example`을 복사해 `.env`로 이름을 바꾸고 받은 세 줄 그대로 저장합니다. 키를 채팅이나 공유 파일에 넣지 않습니다. 개인 GPT 로그인은 API 키와 별개입니다. 세 줄이 없으면 아래 채팅 경로를 사용합니다.')
     body+=command(collect)
     body+=paragraph('API 키가 없으면 터미널에 `output/model_requests/`의 요청 글과 붙여넣기 명령이 나옵니다. 이 폴더를 모르는 별도 Codex 채팅에 요청 글을 보내 JSON 답을 받습니다. 터미널에 나온 `python run.py --paste … --model …`을 그대로 실행해 답을 붙여 넣고, 새 줄에서 **Ctrl+Z → Enter**로 끝냅니다. 같은 수집 명령을 다시 실행하면 그 반환부터 이어집니다. 필요한 조회가 남으면 이 동선을 반복합니다. 모델이 독립 조회를 묶으면 한 답에서 여러 도구가 실행됩니다.')
     body+=paragraph('결과 화면의 **조회 근거**에서 실제 도구·출처·시각을 보고 **입력·반환 원문 펼치기**로 모델 인수와 실제 인수·반환을 견줍니다. 수집이 끝나면 **모델이 쓴 요약**도 보입니다. 그 요약은 검토 대상입니다. 도구 오류가 있으면 실제 오류와 빠진 근거를 확인합니다. 필요한 근거가 없으면 조회 기능을 고쳐 수집하며, 기준이나 자료가 바뀌면 이전 반환은 이전판으로 구분됩니다.')
     body+='<h3>같은 반환으로 후보 판정 보기</h3>'
     body+=paragraph('수집 기록에서 내 기대를 검증할 반환을 Codex와 찾습니다. 적용 조건·창·품질·표본·시각이 충분한 경우에만 수치를 대조하도록 assess.py를 구현합니다. 값 없음·0·조건 불충족을 구분하고, 실제로 받은 출처만 후보의 상태·이유·근거에 연결합니다.')
-    body+=answer('방금 수집한 실제 원 반환과 내가 먼저 작성한 expected.csv를 읽고 app/features/assess.py만 구현해줘. 원문의 적용 조건이 현재 관측에 맞는지 확인한 뒤 수치를 대조하고, 채택 지식에서 실제 원문으로 연결된 반환을 근거에 붙여줘. 값 없음이나 조건 미확인을 False 또는 0으로 바꾸지 마. 다른 요청에도 같은 근거 판정이 작동하게 하고 모르는 것은 추가 확인으로 남겨줘. 반환 계약에 맞춰 후보·미확인·안전 근거를 돌려주되 전달 방침은 구현하지 마.')
+    body+=answer('방금 수집한 실제 원 반환과 내가 먼저 정한 expected.csv를 읽고 app/features/assess.py만 구현해줘. 원문의 적용 조건이 현재 관측에 맞는지 확인한 뒤 수치를 대조하고, 채택 지식에서 실제 원문으로 연결된 반환을 근거에 붙여줘. 값 없음이나 조건 미확인을 False 또는 0으로 바꾸지 마. 다른 요청에도 같은 근거 판정이 작동하게 하고 모르는 것은 추가 확인으로 남겨줘. 반환 계약에 맞춰 후보·미확인·안전 근거를 돌려주되 전달 방침은 구현하지 마.')
     body+=command(f'{run} --assess --request {identity}')
-    body+=paragraph('화면의 **원인 후보의 증거 대조**를 보고, 추가 자료가 필요한 질문은 **추가 확인할 근거**에서 찾습니다. 후보 근거 링크를 눌러 실제 원문·판본·시각으로 따라갑니다. 이 명령은 저장된 원 반환을 계산하므로 모델 응답을 새로 받지 않습니다. 잘못된 후보가 있으면 원문 기대와 실제 반환을 전해 판정 기능만 고칩니다.')
+    body+=paragraph('화면의 **원인 후보의 증거 대조**를 보고, 추가 자료가 필요한 질문은 **추가 확인할 근거**에서 찾습니다. 후보 근거 링크를 눌러 실제 원문·판본·시각으로 따라갑니다. 이 명령은 저장된 원 반환을 계산하므로 모델 응답을 새로 받지 않습니다. 잘못된 후보가 있으면 Codex에게 실제 반환·내 기대·실제 판정을 함께 보여 주고 원인부터 묻습니다. ' + WHY(frame.TIP_DIFF) + '원인을 확인한 뒤 판정 기능만 고칩니다.')
     body+='<h3>후보 판정으로 다음 점검 보기</h3>'
-    body+=paragraph('현재 후보와 미확인을 읽고 내가 choices.csv에서 고른 방침을 Codex에게 다시 말합니다. deliver.py는 제공 코드가 읽어 준 deliver 행을 실제 입력으로 받습니다. 그 요구를 후보 상태에 적용해 받을 역할·할 일·작업 전제·근거를 만들고, 일부 근거가 없을 때 역할과 확인 순서가 어떻게 달라지는지 봅니다. 문서상의 전제를 실제 현장 확인이나 승인으로 바꾸지 않습니다.')
+    body+=paragraph('현재 후보와 미확인을 Codex에게 정리하게 하고, 내가 고른 전달 방침을 다시 말합니다. deliver.py는 제공 코드가 읽어 준 deliver 행을 실제 입력으로 받습니다. 그 요구를 후보 상태에 적용해 받을 역할·할 일·작업 전제·근거를 만들고, 일부 근거가 없을 때 역할과 확인 순서가 어떻게 달라지는지 봅니다. 문서상의 전제를 실제 현장 확인이나 승인으로 바꾸지 않습니다.')
     body+=answer('현재 assessment.json과 내 choices.csv의 점검 전달 선택을 사용해 app/features/deliver.py만 구현해줘. 확인한 범위를 먼저 나누어 보낼지 요청 전체를 묶을지는 내가 고른 방침을 그대로 적용해줘. 어떤 근거가 비었는지에 따라 다음 역할이 할 일이 실제로 달라져야 해. 안전 원문을 실제 현장 확인·승인으로 바꾸지 말고, 기존 후보 판정을 이 함수에서 다시 만들지 마. run.py의 전달 명령으로 결과를 확인할 수 있게 해줘.')
     body+=command(f'{run} --deliver --request {identity}')
     body+=paragraph('**다음 점검**과 **점검 전달에 사용한 요구**에서 실제 입력·출처·후속 행동을 함께 봅니다. **전달 요구 확인 필요**는 업무 입력이 미정이라는 뜻이며 점검 계획이 아닙니다. 선택을 바꾸면 옛 전달 결과는 현재 화면에서 빠집니다. 바뀐 요구에 맞춰 전달 기능을 고쳐 같은 명령으로 실행하며 수집·판정은 반복하지 않습니다. 출처만 정정해도 전달 명령으로 입력판을 다시 연결합니다.')
     sections.append((L['steps'][3]['name'],body))
 
-    body=paragraph('화면이 나왔다고 뜻까지 맞은 것은 아닙니다. `app/features/review.csv`에 미리 적은 기대, 실제 결과, 견준 원문과 일치·불일치·미확인을 적습니다. 세 후보마다 적용 조건·문서 상태·관측 창·통계량·단위·표본·공백·최신 시각을 확인하고, 근거 연결에서 실제로 받은 지식과 원문이 이어지는지 봅니다.')
+    body=paragraph('화면이 나왔다고 뜻까지 맞은 것은 아닙니다. `app/features/review.csv`에 미리 정한 기대, 실제 결과, 견준 원문과 일치·불일치·미확인을 남깁니다. 세 후보마다 적용 조건·문서 상태·관측 창·통계량·단위·표본·공백·최신 시각이 기대와 맞는지는 Codex에게 실제 반환과 원문 줄을 나란히 놓고 정리하게 하고, 일치·불일치의 판정은 내가 합니다. 판정을 가르는 줄 한두 곳은 아래 명령으로 열어 봅니다.')
     body+=paragraph('압축 관측의 근거 행은 **조회 근거** 상세에 있습니다. 다음 명령의 파일과 시작·끝 줄을 실제 반환이 가리킨 것으로 바꿉니다. 첫값·평균·마지막값을 구분합니다. 모델이 쓴 요약도 원문과 견주고, 틀린 문장을 원 응답에서 지우지 말고 review.csv에 정정합니다.')
     body+=command(run+' --source <실제 반환의 data/observations/파일.csv.gz> --start <시작 줄> --end <끝 줄>')
-    body+=paragraph('원문으로 먼저 적은 expected.csv와 실제 반환·모델 요약·점검 계획을 함께 펼칩니다. 부하·판본·표본·시각·안전 전제가 일치하는지 확인하고 review.csv에 기대·실제·근거·판정을 남깁니다. 실제 출력에 맞춰 기대를 고치지 않습니다.')
-    body+=answer('내 expected.csv와 실제 결과를 원문과 견준 내용을 기준으로 review.csv의 빠진 비교를 짚어줘. 후보 상태뿐 아니라 모델 요약의 첫값·평균·마지막값 표현, 뒤에 성공한 조회의 반영, 지식에서 원문까지의 실제 근거 연결을 따로 봐줘. 원 응답을 수정하지 말고 틀린 표현은 내 검토 기록에만 구별해 적도록 도와줘. 내가 직접 확인하지 않은 줄이나 결과는 확인했다고 쓰지 마.')
+    body+=paragraph('부하·판본·표본·시각·안전 전제가 일치하는지 본 뒤 review.csv에 기대·실제·근거·판정을 남깁니다(내가 말한 판정을 Codex가 받아 적어도 됩니다). 실제 출력에 맞춰 기대를 고치지 않습니다.')
+    body+=answer('내 expected.csv의 기대와 실제 결과, 그 근거 원문 줄을 질문마다 나란히 보여주고 review.csv의 빠진 비교를 짚어줘. 일치·불일치는 내가 말한 대로만 적어줘. 후보 상태뿐 아니라 모델 요약의 첫값·평균·마지막값 표현, 뒤에 성공한 조회의 반영, 지식에서 원문까지의 실제 근거 연결을 따로 봐줘. 원 응답을 수정하지 말고 틀린 표현은 내 검토 기록에만 구별해 적도록 도와줘. 실행하거나 열어 보지 않은 줄이나 결과는 확인했다고 쓰지 마.')
     body+=command(f'{run} --check --request {identity}')
     body+=paragraph('구조 검사는 필수 칸·중복·없는 근거 참조를 확인합니다. 오류가 0개여도 업무 의미는 원문과 견주어 판단합니다. 실제 오류가 있으면 실행 명령·오류 전문·해당 화면과 기대 근거를 Codex에 보내 그 기능만 고칩니다.')
     sections.append((L['steps'][4]['name'],body))
 
-    body=paragraph('기본 요청에만 맞춘 코드인지 확인할 차례입니다. `data/requests.csv`에서 다른 설비나 날짜의 요청 하나를 직접 고릅니다. 운전 조건이 다르거나 수집 공백이 있는지 원문 이력과 자료 범위를 먼저 보고, expected.csv에 새 요청의 기대와 아직 모르는 항목을 적습니다. 기존 요청 ID를 억지로 바꾸거나 관측값을 채우지 않습니다.')
+    body=paragraph('기본 요청에만 맞춘 코드인지 확인할 차례입니다. Codex에게 `data/requests.csv`에서 기본 요청과 설비·날짜·운전 조건이 다르거나 수집 공백이 있는 요청을 까닭과 함께 몇 개 찾게 하고, 그 가운데 하나를 내가 고릅니다. 실행하기 전에 expected.csv에 새 요청의 기대와 아직 모르는 항목을 남깁니다. 기존 요청 ID를 억지로 바꾸거나 관측값을 채우지 않습니다.')
     body+=command(run+' --collect --request <내가 고른 다른 요청 식별자>')
     body+=paragraph('새 요청은 새 수집이 필요합니다. 조회 결과가 기존 기대와 다르면 이유가 자료인지 코드인지 구분합니다. 수집된 근거가 충분하면 아래 두 기능을 실행합니다. 후보 판정이나 전달만 고쳤다면 수집을 반복하지 않습니다. 조회 범위·자료를 바꿨다면 새 수집을 해야 하며, 완료되지 않은 새 판에서 이전 계획은 현재 결과로 표시되지 않습니다.')
     body+=command(run+' --assess --request <같은 요청 식별자>')+command(run+' --deliver --request <같은 요청 식별자>')
     body+=paragraph('새 요청에서 먼저 적은 기대와 실제 원 반환을 Codex에게 보여 줍니다. 근거가 없을 때 보류되는지, 내 전달 방침에 맞춰 다음 역할과 확인 순서가 달라지는지 봅니다. 근거가 충분해 두 방침의 행동이 같다면 그대로 기록합니다. 차이를 만들려고 관측을 바꾸거나 근거를 빼지 않습니다. 이미 맞은 코드에는 오류를 넣지 않고 review.csv에 원문과 견준 근거를 남깁니다.')
-    body+=answer('내가 새 요청에서 먼저 확인한 기대·원문과 실제 결과를 비교해줘. 다르면 원인을 query.py의 조회 범위, assess.py의 근거 판정, deliver.py의 전달 가운데 해당 기능으로 좁혀 그 파일만 고쳐줘. 후처리만 바뀌면 저장된 원 반환으로 판정·전달만 다시 실행하고, 조회 기준이나 자료가 바뀌면 새 수집이 필요한 이유를 말해줘. 이미 맞으면 고치지 말고 다른 입력에서 확인한 근거를 남기자.')
+    body+=answer('내가 새 요청에서 먼저 정한 기대·원문과 실제 결과를 비교해줘. 다르면 원인이 query.py의 조회 범위, assess.py의 근거 판정, deliver.py의 전달 가운데 어디인지 좁혀 설명해줘. 먼저 파일은 바꾸지 마. 원인을 확인하면 그 파일만 고치도록 요청할게. 후처리만 바뀌면 저장된 원 반환으로 판정·전달만 다시 실행하고, 조회 기준이나 자료가 바뀌면 새 수집이 필요한 이유를 말해줘. 이미 맞으면 고치지 말고 다른 입력에서 확인한 근거를 남기자.')
     body+=paragraph('자기 4회차 결과 사용은 선택입니다. 별도 폴더에 내보내기·확장 스키마·그래프 모양을 `graph.json`·`schema.json`·`shape.json`으로 복사합니다. 수집·판정·전달 명령 모두에 `--graph-folder "<별도 폴더 경로>"`를 더하고, 확인할 때도 아래처럼 같은 요청과 그래프를 함께 지정합니다. 뜻 대응과 출처 속성 계약을 검사하며 지원하지 않는 모양은 빠진 칸을 알리고 멈춥니다. 원본을 덮지 말고 계약을 맞추거나 기본 제공판으로 시작합니다.')
     body+=command(run+' --check --request <같은 요청 식별자> --graph-folder "<별도 폴더 경로>"\n'+run+' --show --request <같은 요청 식별자> --graph-folder "<별도 폴더 경로>"')
     body+=paragraph('검사는 이 요청과 그래프의 현재 결과를 확인하고, 화면은 그 결과만 보여 줍니다. 요청마다 다른 그래프를 썼다면 각 요청에 사용한 폴더 경로도 plan.md에 남깁니다. 다른 그래프를 지정했을 때 이전 결과로 구분되는 것은 새 입력의 결과로 볼 수 없기 때문입니다.')
@@ -208,9 +210,9 @@ def build(report, refresh_data=False, photos=None):
     frame.write(LAB/'app/utils/llm_client.py',(HERE/'lab_llm.py').read_text(encoding='utf-8'))
     frame.write(LAB/'run.py','from pathlib import Path\nfrom app.utils.workflow import main\n\nif __name__ == "__main__":\n    raise SystemExit(main(Path(__file__).resolve().parent))\n')
     frame.write(LAB/'.env.example','OPENAI_BASE_URL=\nLLM_API_KEY=\nLLM_MODEL=\n')
-    write_metadata(LAB,TITLE,LEAD,'python run.py --inspect', '조회·판정·전달은 각각 query.py·assess.py·deliver.py에서 구현한다. 요구·선택·기대·대조 기록도 app/features/에 둔다. field_notes.md에 정해지지 않았다고 적힌 전달 시점·확인 역할은 사람의 요구를 확인하고 choices.csv에 그 선택과 근거를 남긴 뒤 구현한다. 선택·근거를 AI가 만들어 채우지 않는다. 출력 계약의 조립과 모델 호출은 제공 기능을 사용한다.')
+    write_metadata(LAB,TITLE,LEAD,'python run.py --inspect', '조회·판정·전달은 각각 query.py·assess.py·deliver.py에서 구현한다. 요구·선택·기대·대조 기록도 app/features/에 둔다. 근거를 읽을 범위와 field_notes.md에 정해지지 않았다고 적힌 전달 시점·확인 역할은 사람이 정한다. 사람이 물으면 선택지와 각 선택으로 달라지는 조회 범위·다음 행동, 근거 줄을 보이고 추천안도 낼 수 있다. 사람이 고르고 이유를 말하기 전에는 choices.csv의 그 줄과 그 선택에 걸린 기능을 만들지 않고, 다 해 달라는 요청에도 대신 정하지 않는다. choices.csv와 expected.csv에는 사람이 대화에서 정한 것만 적는다. 사람이 보고 받아들인 근거 줄과 기대 후보도 사람이 정한 것이다. 기대 후보는 원문에서 찾아 줄 번호와 함께 내고, 실행 결과나 모델 요약을 기대로 옮기지 않는다. 출력 계약의 조립과 모델 호출은 제공 기능을 사용한다.')
     for name,text in FEATURES.items(): frame.write(LAB/'app/features'/name,text)
-    fields={'choices.csv':(['decision','choice','source','changed_action'],'decision=적용 기능 query/deliver, choice=내가 정한 기준 또는 전달 요구, source=원문 위치와 사람이 확인한 업무 근거, changed_action=달라지는 조회 또는 다음 행동'),
+    fields={'choices.csv':(['decision','choice','source','changed_action'],'decision=적용 기능 query/deliver, choice=내가 정한 기준 또는 전달 요구, source=그렇게 고른 내 이유와 그 결정을 좌우해 열어 본 원문 줄(파일:줄), changed_action=달라지는 조회 또는 다음 행동'),
             'expected.csv':(['request_id','question','expected','source'],'request_id=요청 식별자, question=확인할 질문, expected=원문으로 먼저 정한 기대 또는 미확인, source=원문 파일:줄'),
             'review.csv':(['request_id','question','expected','actual','source','judgment'],'request_id=요청 식별자, question=질문, expected=미리 적은 기대, actual=실행에서 본 내용, source=대조 근거, judgment=일치/불일치/미확인')}
     for name,(columns,note) in fields.items(): frame.write(LAB/'app/features'/name,frame.blank_csv(columns,note))

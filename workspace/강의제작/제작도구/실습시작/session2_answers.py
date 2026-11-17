@@ -1,7 +1,7 @@
-"""2회차 네 랩 가이드의 「정답 보기」 내용 — 강사 참조(build_labs.reference_model 갈래 · data_session2 원자료)에서 만든다. 학생 폴더에는 들어가지 않는다.
+"""2회차 네 랩의 빈 틀과 강사 참조 답 — 강사 참조(build_labs.reference_model 갈래 · data_session2 원자료)에서 만든다. 답은 학생 폴더에 들어가지 않는다.
 
-정할 자리 파일의 정답 내용(apply)과 기대 답 표를 돌려준다. verify_reference.py의 토글 재생이 이 내용을 새 랩 사본에 써 넣고
-`python show_result.py`를 돌려 강사 참조와 같은 답이 나오는지 본다(DoD 11).
+빈 틀(학생 폴더의 `app/features/`)과 그 갈래별 정답 내용 · 기대 답 표를 돌려준다. 강사 참조 시험(reference/session2_project_trials.py ·
+session2_graph_trials.py · practical2_project_trials.py)이 이 내용을 새 랩 사본에 써 넣고 실행해 갈래마다 답을 확인한다.
 """
 import csv
 import io
@@ -21,78 +21,53 @@ def csv_text(explain, columns, rows):
     return f'# {F.MARK} — {explain}\n' + buf.getvalue()
 
 
-# ───────────── 통합 02-3 ─────────────
+# ───────────── 통합 02-3(실습 랩 규모) ─────────────
+DESIGN_REASON = ' · 근거 = 그 줄을 그렇게 정한 내 이유(정할 때 열어 본 원문 줄이 있으면 파일:줄을 함께)'   # 세 틀의 근거 칸 뜻(코딩랩 함정 「칸 뜻」)
 DESIGN_EXPLAIN = {
-    '설계.csv': '대상(설비 · 구성 요소 · 센서 · 물리량 · 부품, 구성 요소 자리와 그 실물을 나눌 때만 실물)마다 ID를 무엇으로 지을지 — {열 이름}과 글자를 이은 꼴. 쓸 수 있는 열: 설비 = 설비코드 · 모델 · 기능위치 · 일련번호 / 구성 요소 = 설비코드 · 구성요소(5단계에서 정한 이름) · 계통 / 센서 = 설비코드 · 태그 · 계장태그 / 물리량 = 물리량(6단계에서 정한 이름) / 부품 = 품번 / 실물 = 설비코드 · 구성요소 · 일련번호',
-    '관계.csv': '연결(설비-구성 요소 · 구성 요소-센서 · 설비-센서(붙은곳이 설비 전체인 센서만) · 센서-물리량 · 구성 요소-부품, 쓸 때만 부품-부품 · 구성 요소-실물 · 구성 요소-부품 후보)마다 관계 이름(영어 대문자) · 시작(그 연결의 두 대상 가운데 하나) · 카디널리티(1:1 · 1:N · N:1 · N:M — 시작 쪽 수:끝 쪽 수, 1은 많아야 하나). 부품-부품은 같은 규격을 한 물품으로 이을 때, 구성 요소-실물은 구성 요소 자리와 그 실물을 나눌 때, 구성 요소-부품 후보는 확인 필요로 남길 때',
-    '이름.csv': '내 규칙(name_rules.py)으로 정해지지 않는 원자료 구성 요소 이름(붙은곳 · 쓰는곳 포함)만 — 내가 정한 이름. 적지 않은 이름은 규칙대로, 규칙에도 묶이지 않으면 원자료 이름 그대로 — 모델이 비면 모든 모델',
-    '행_처리.csv': '겹치거나 기준일에 살아 있지 않은 원자료 행을 어떻게 할지 — 파일(설비_대장.csv · 구성요소_목록.csv · 센서_목록.csv) · 행(편집기 줄 번호) · 처리(빼기 · 하나로:<남길 행> · 옛 코드:<설비코드> · 지난 실물:<지금 실물 행> — 지난 실물은 구성 요소 자리와 그 실물을 나눌 때 구성요소_목록.csv만)',
-    '물리량.csv': '내 규칙(quantity_rules.py)으로 정해지지 않는 것만 — 대상(재는것 글자, 또는 센서 행 하나 센서_목록.csv:<행>) · 묶을 물리량 이름 · 종류(실측 · 계산값 · 설정값). 센서 행으로 적은 것이 재는것 글자보다 먼저. 적지 않은 것은 규칙대로',
-    '단위.csv': '내 규칙(unit_rules.py)으로 정해지지 않는 것만 — 물리량의 기준 단위, 또는 단위 칸이 빈 센서 행(센서_목록.csv:<행>)의 단위나 미확인. 적지 않은 것은 규칙대로',
+    '설계.csv': '대상(설비 · 구성 요소 · 센서 · 물리량 · 부품, 구성 요소 자리와 그 실물을 나눌 때만 실물)마다 식별자를 무엇으로 지을지 — {열 이름}과 글자를 이은 꼴. 쓸 수 있는 열: 설비 = 설비코드 · 모델 · 기능위치 · 일련번호 / 구성 요소 = 설비코드 · 구성요소(같은 장치끼리 묶어 정한 이름) · 계통 / 센서 = 설비코드 · 태그 / 물리량 = 물리량(같은 물리량끼리 묶어 정한 이름) / 부품 = 품번 / 실물 = 설비코드 · 구성요소 · 일련번호' + DESIGN_REASON,
+    '관계.csv': '연결(설비-구성 요소 · 구성 요소-센서 · 센서-물리량 · 구성 요소-부품, 구성 요소 자리와 그 실물을 나눌 때만 구성 요소-실물)마다 관계 이름(영어 대문자) · 시작(그 연결의 두 대상 가운데 하나) · 카디널리티(1:1 · 1:N · N:1 · N:M — 시작 쪽 수:끝 쪽 수, 1은 많아야 하나)' + DESIGN_REASON,
+    '행_처리.csv': '기준일에 달려 있지 않거나 겹친 원자료 행을 어떻게 할지 — 파일(구성요소_목록.csv · 센서_목록.csv · 설비_대장.csv) · 행(편집기 줄 번호) · 처리(빼기 · 지난 실물:<지금 실물 행> — 지난 실물은 구성 요소 자리와 그 실물을 나눌 때 구성요소_목록.csv만)' + DESIGN_REASON,
 }
-DESIGN_COLUMNS = {'설계.csv': ['대상', 'ID_만드는_법', '근거'], '관계.csv': ['연결', '관계_이름', '시작', '카디널리티', '근거'],
-                  '이름.csv': ['원자료_이름', '모델', '구성요소_이름', '근거'], '행_처리.csv': ['파일', '행', '처리', '근거'],
-                  '물리량.csv': ['대상', '물리량', '종류', '근거'], '단위.csv': ['대상', '값', '근거']}
+DESIGN_COLUMNS = {'설계.csv': ['대상', 'ID_만드는_법', '근거'], '관계.csv': ['연결', '관계_이름', '시작', '카디널리티', '근거'], '행_처리.csv': ['파일', '행', '처리', '근거']}
 EXPECT_COLUMNS_DESIGN = ['질문', '물을_값', '항목', '기대_답', '근거']
 EXPECT_FORMAT = '여러 값은 「 · 」로 잇고, 값이 없으면(원자료에 없는 품번 · 빈 값) 「없음」'   # 2회차 네 랩 기대 답 표의 같은 꼴(결과 화면이 이 꼴로 견줌)
-# 기대 답 표의 칸 뜻 — 2회차 네 랩이 이 한 곳에서 빈 틀 첫 줄과 3단계 힌트 「지킬 것」을 가져간다(값은 넣지 않고 꼴과 뜻만 — K-4)
-EXPECT_EXPLAIN_DESIGN = ('한 줄 = (질문 · 물을_값 · 항목) 하나. 질문 = 1 · 2 · 3. 물을_값 = 질문 1은 설비 코드, 질문 2는 물리량 이름(6단계에서 정할 이름), 질문 3은 품번이나 표기. '
-                         '항목 = 질문 1은 구성 요소 이름(5단계에서 정한 이름), 질문 2는 비우거나(그 물리량을 재는 센서 목록) 설비코드:태그(그 센서의 값), 질문 3은 찾을 사내 품번(확인 필요로 남긴 설비는 「사내 품번(확인 필요)」 줄, 원자료에 없는 품번이면 비움). 질문 1의 센서에는 계산값 · 설정값도 듦. '
-                         '기대_답 = 질문 1은 센서 태그들, 질문 2는 설비코드:태그들 또는 「단위 · 정상값 · 한계 · 한계구분」 차례의 값, 질문 3은 쓰는 설비 코드들(원자료에 없는 품번은 「없음」). '
-                         '근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만 「data/파일.csv · data/파일.csv에 없음」). ' + EXPECT_FORMAT)
+# 기대 답 표의 칸 뜻 — 빈 틀 첫 줄에 싣는다(값은 넣지 않고 꼴과 뜻만 — K-4)
+EXPECT_EXPLAIN_DESIGN = ('한 줄 = (질문 · 물을_값 · 항목) 하나. 질문 = 1 · 2 · 3. 물을_값 = 질문 1은 설비 코드, 질문 2는 물리량 이름(내가 묶어 정한 이름), 질문 3은 품번이나 표기. '
+                         '항목 = 질문 1은 구성 요소 이름(내가 정한 이름) 또는 「구성 요소 이름 실물」(그 자리에 달린 장치), 질문 2는 비우거나(그 물리량을 재는 센서 목록) 설비코드:태그(그 센서의 값), '
+                         '질문 3은 찾을 사내 품번(원자료에 없는 품번이면 비움). '
+                         '기대_답 = 질문 1은 센서 태그들 또는 일련번호(실물을 따로 두는 모델이면 「일련번호(지금)」 · 「일련번호(지난)」 꼴), 질문 2는 설비코드:태그들 또는 「단위 · 정상값 · 한계 · 한계구분」 차례의 값(물리량의 기준 단위로 맞춘 값), '
+                         '질문 3은 쓰는 설비 코드들(원자료에 없는 품번은 「없음」). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만 「data/파일.csv · data/파일.csv에 없음」). ' + EXPECT_FORMAT)
 
-NAME_RULES_BLANK = f'''# {F.MARK} — 같은 장치를 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
+NAME_RULES_BLANK = f"""# {F.MARK} — 같은 장치를 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
 
 def same_device(a, b):
-    """원자료 구성 요소 행 두 개(a, b)를 같은 장치로 볼지. 제공 코드가 모든 짝에 부르고, True인 짝끼리 이어 한 묶음으로 만든다.
+    \"\"\"원자료 구성 요소 행 두 개(a, b)를 같은 장치로 볼지. 제공 코드가 모든 짝에 부르고, True인 짝끼리 이어 한 묶음으로 만든다.
     a, b = {{'설비코드', '모델', '계통', '이름'(원자료 이름), '태그'(그 자리에 붙은 센서 태그 목록),
-            '부품'(제공 코드가 괄호 속 품번 · 사내 품번 · 품번 교차표로 푼 사내 품번, 못 풀면 ''), '줄'(구성요소_목록.csv:<행>)}}.
-    돌려줄 것: True 또는 False."""
+            '부품'(제공 코드가 교체부품 칸을 괄호 속 품번 · 사내 품번 · 품번 교차표로 푼 사내 품번, 못 풀면 ''), '줄'(구성요소_목록.csv:<행>)}}.
+    돌려줄 것: True 또는 False.\"\"\"
     raise NotImplementedError
 
 
 def group_name(members):
-    """같은 장치로 묶인 행들(위와 같은 dict, 구성 요소 목록 차례)에 쓸 이름 하나. 돌려줄 것: 이름(str)."""
+    \"\"\"같은 장치로 묶인 행들(위와 같은 dict, 구성 요소 목록 차례)에 쓸 이름 하나. 돌려줄 것: 이름(str).\"\"\"
     raise NotImplementedError
-'''
+"""
 
-QUANTITY_RULES_BLANK = f'''# {F.MARK} — 같은 물리량과 센서 종류를 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
+QUANTITY_RULES_BLANK = f"""# {F.MARK} — 같은 물리량을 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
 
 def same_quantity(a, b):
-    """센서 행 두 개(a, b)를 같은 물리량을 재는 것으로 볼지. 제공 코드가 모든 짝에 부르고, True인 짝끼리 이어 한 묶음으로 만든다.
-    a, b = {{'설비코드', '모델', '제조사', '태그', '계장태그', '재는것', '단위', '수집방식', '비고',
-            '붙은곳'(5단계에서 정한 구성 요소 이름, 설비에 바로 붙었으면 '설비 전체'), '계통'(그 구성 요소의 계통),
-            '같은_계통_계장태그'(같은 설비 · 같은 계통에 붙은 다른 센서의 계장태그, 없으면 태그), '줄'(센서_목록.csv:<행>)}}.
-    돌려줄 것: True 또는 False."""
+    \"\"\"센서 행 두 개(a, b)를 같은 물리량을 재는 것으로 볼지. 제공 코드가 모든 짝에 부르고, True인 짝끼리 이어 한 묶음으로 만든다.
+    a, b = {{'설비코드', '태그', '센서명', '재는것', '단위', '붙은곳'(같은 장치끼리 묶어 정한 구성 요소 이름), '계통'(그 구성 요소의 계통), '줄'(센서_목록.csv:<행>)}}.
+    돌려줄 것: True 또는 False.\"\"\"
     raise NotImplementedError
 
 
 def quantity_name(members):
-    """한 묶음의 센서 행들(위와 같은 dict, 센서 목록 차례)에 쓸 물리량 이름 하나. 서로 다른 묶음에는 다른 이름을 줍니다. 돌려줄 것: 이름(str)."""
+    \"\"\"한 묶음의 센서 행들(위와 같은 dict, 센서 목록 차례)에 쓸 물리량 이름 하나. 서로 다른 묶음에는 다른 이름을 줍니다. 돌려줄 것: 이름(str).\"\"\"
     raise NotImplementedError
-
-
-def kind_of(row):
-    """센서 행 하나(위와 같은 dict)의 종류. 돌려줄 것: '실측' · '계산값' · '설정값' 가운데 하나."""
-    raise NotImplementedError
-'''
-
-UNIT_RULES_BLANK = f'''# {F.MARK} — 기준 단위와 빈 단위 칸을 정하는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def base_unit(quantity, units):
-    """물리량 하나(quantity = 6단계에서 정한 이름)의 기준 단위. units = 그 물리량 센서 행들의 단위 칸 글자(빈칸 뺌, 센서 목록 차례).
-    돌려줄 것: 단위(str). 다른 단위의 값은 제공 코드가 이 단위로 환산한다."""
-    raise NotImplementedError
-
-
-def blank_unit(row, candidates):
-    """단위 칸이 빈 센서 행(row)의 단위. row · candidates = {{'설비코드', '모델', '태그', '단위', '정상값', '한계', '한계구분', '물리량', '줄'}},
-    candidates = 같은 물리량에서 단위 칸이 찬 센서 행들. 돌려줄 것: 단위(str) 또는 '미확인'."""
-    raise NotImplementedError
-'''
+"""
 
 
 def memo_line(text):
@@ -104,297 +79,133 @@ def memo_line(text):
 
 
 def name_rules_answer():
-    return f'''# {F.MARK} — 같은 장치를 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
+    return f"""# {F.MARK} — 같은 장치를 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
 
 def same_device(a, b):
-    """근거: 현장 메모 {memo_line('같은 모델(HPP-45A)')}행(HYD-01 ~ 03은 같은 모델) · {memo_line('태그 이름(TS1')}행(한일유압 설비는 태그 이름이 같음) —
-    같은 모델에서 같은 태그가 붙은 자리는 같은 장치. 예비품 목록의 사내 품번 — 같은 교체 부품을 쓰는 자리는 같은 장치. 계통이 다르면 다른 장치."""
+    \"\"\"근거: 현장 메모 {memo_line('같은 모델(HPP-45A)')}행(세 대는 같은 모델) · {memo_line('태그 이름(TS1')}행(세 대는 태그 이름이 같음) —
+    같은 계통에서 이름이 같거나, 같은 모델에서 같은 태그가 붙은 자리는 같은 장치. 예비품 목록의 사내 품번 — 같은 교체 부품을 쓰는 자리는 같은 장치
+    (부품만 보면 엘리먼트 등급이 다른 HYD-03 리턴 필터가 따로 남는다). 계통이 다르면 다른 장치.\"\"\"
     if a['계통'] != b['계통']:
         return False
+    if a['이름'] == b['이름']:
+        return True
     if a['모델'] == b['모델'] and set(a['태그']) & set(b['태그']):
         return True
     return a['부품'] != '' and a['부품'] == b['부품']
 
 
 def group_name(members):
-    """근거: 구성 요소 목록에서 가장 앞선 행(HYD-01)의 이름을 묶음의 이름으로 쓴다."""
+    \"\"\"근거: 구성 요소 목록에서 가장 앞선 행(HYD-01, 대장을 쓴 담당의 이름)을 묶음의 이름으로 쓴다.\"\"\"
     return members[0]['이름']
-'''
+"""
 
 
 def quantity_rules_answer(scope='종류'):
-    """같은 물리량의 범위 — '종류'(재는 값의 종류: 무엇의 어떤 값, 자리는 붙은 구성 요소가 말함) · '자리'(같은 종류이면서 붙은 계통 · 측정 지점까지 같아야)."""
-    common = f'''# {F.MARK} — 같은 물리량과 센서 종류를 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-import re
+    """같은 물리량의 범위 — '종류'(재는 값의 종류: 세 온도가 작동유 온도 하나, 자리는 붙은 구성 요소가 말함) · '자리'(붙은 자리까지 같아야 — 태그가 같은 센서끼리)."""
+    head = f'# {F.MARK} — 같은 물리량을 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.\n'
+    common = '''
 
-NAMES = {{'T': '작동유 온도', 'T:제어반': '제어반 온도', 'P': '작동유 압력', 'PD': '차압', 'F': '작동유 유량', 'F:냉각수': '냉각수 유량',
-         'V': '진동', 'J': '모터 출력', 'I': '모터 전류', 'L': '레벨'}}
-
-
-def value_kind(tag, row=None):
-    """재는 값의 종류: 계장태그 앞 글자(ISA-5.1 첫 글자 = 재는 변수, PDT = 차압)와 매체. 계장태그가 없으면 TI-1 같은 현장 지시계 태그로 본다.
-    계기 없는 계산값 · 설정값은 None(현장 메모 {memo_line('계장 도면에는')}행)."""
-    m = re.match(r'([A-Z]+)-\\d', tag or '')
-    if not m:
-        return None
-    letters = m.group(1)
-    v = 'PD' if letters.startswith('PD') else letters[0]
-    if row is not None and '냉각수' in row['재는것']:
-        return v + ':냉각수'
-    if row is not None and v == 'T' and row['계통'] == '제어':
-        return 'T:제어반'
-    return v
-
-
-def kind(row):
-    return value_kind(row['계장태그'] or row['태그'], row)
-
-
-def loop(tag):
-    """계장태그 「TT-231」 → ('TT', '1'): 기능 글자와 루프 번호에서 앞 두 자리(설비)를 뺀 나머지. 3라인 도면은 끝자리를 맞추지 않았다(현장 메모 {memo_line('3라인 도면은')}행)."""
-    m = re.fullmatch(r'([A-Z]+)-\\d\\d(\\d+)', tag)
-    return m.groups() if m else None
-
-
-def same_label(a, b):
-    """재는것이 같거나, 한일유압 설비끼리 태그가 같거나, 같은 라인 도면의 루프가 같다(현장 메모 {memo_line('태그 이름(TS1')}행)."""
-    return (a['재는것'] == b['재는것'] or (a['제조사'] == b['제조사'] and a['태그'] == b['태그'])
-            or (loop(a['계장태그']) is not None and loop(a['계장태그']) == loop(b['계장태그'])))
-
-
-def kind_of(row):
-    """근거: 센서_목록.csv 비고 「계기 없음」은 계산값, 수집방식 「설정값」은 설정값, 나머지는 계기가 잰 실측."""
-    if '계기 없음' in row['비고']:
-        return '계산값'
-    if '설정값' in row['수집방식']:
-        return '설정값'
-    return '실측'
+def common_name(members):
+    """묶음에서 가장 많이 쓴 재는것(같은 수면 센서 목록에서 먼저 나온 것)."""
+    names = [m['재는것'] for m in members]
+    return max(names, key=lambda n: (names.count(n), -names.index(n)))
 '''
     if scope == '종류':
-        return common + '''
+        return head + common + f'''
 
-def same_quantity(a, b):
-    """근거: 재는 값의 종류가 같으면 같은 물리량 — 어디에 붙었는지는 센서가 붙은 구성 요소(붙은곳)가 따로 말한다. 계기 없는 값은 재는것 · 태그로 묶는다."""
-    if kind(a) is None or kind(b) is None:
-        return kind(a) is None and kind(b) is None and same_label(a, b)
-    return kind(a) == kind(b)
-
-
-def quantity_name(members):
-    """근거: 재는 값의 종류 이름. 계기 없는 값은 묶음에서 가장 많이 쓴 재는것(같은 수면 먼저 나온 것)."""
-    k = kind(members[0])
-    if k is not None:
-        return NAMES[k]
-    names = [m['재는것'] for m in members]
-    return max(names, key=lambda n: (names.count(n), -names.index(n)))
-'''
-    return common + '''
-
-def only_one(row):
-    """같은 설비 · 같은 계통에 이 종류 계기가 이것 하나뿐인가."""
-    return not any(value_kind(t) == kind(row) for t in row['같은_계통_계장태그'])
+def value_kind(row):
+    """재는 값의 종류: 작동유의 온도를 재는 센서(재는것에 「온도」나 「유온」)는 어디에 붙었든 작동유 온도. 그 밖에는 태그가 같은 센서끼리(현장 메모 {memo_line('태그 이름(TS1')}행)."""
+    return '작동유 온도' if ('온도' in row['재는것'] or '유온' in row['재는것']) else row['태그']
 
 
 def same_quantity(a, b):
-    """근거: 재는 값의 종류가 같고 붙은 계통도 같아야 같은 물리량. 그 계통에 같은 종류 계기가 둘 이상이면(쿨러 입구 · 출구 유온) 재는것 · 태그 · 루프로 지점을 가르고,
-    하나뿐이면 같은 지점이다(탱크에 붙은 유온계 하나 = 탱크 유온)."""
-    if kind(a) != kind(b) or a['계통'] != b['계통']:
-        return False
-    if kind(a) is None:
-        return same_label(a, b)
-    return same_label(a, b) or (only_one(a) and only_one(b))
+    """근거: 재는 값의 종류가 같으면 같은 물리량 — 어디에 붙었는지는 센서가 붙은 구성 요소(붙은곳)가 따로 말한다."""
+    return value_kind(a) == value_kind(b)
 
 
 def quantity_name(members):
-    """근거: 묶음에서 가장 많이 쓴 재는것(같은 수면 먼저 나온 것) — 지점을 가리키는 이름."""
-    names = [m['재는것'] for m in members]
-    return max(names, key=lambda n: (names.count(n), -names.index(n)))
+    """근거: 온도 묶음은 「작동유 온도」, 그 밖에는 묶음에서 가장 많이 쓴 재는것."""
+    kind = value_kind(members[0])
+    return kind if kind == '작동유 온도' else common_name(members)
+'''
+    return head + common + f'''
+
+def same_quantity(a, b):
+    """근거: 붙은 자리까지 같아야 같은 물리량 — 세 대는 같은 자리의 센서에 같은 태그를 쓴다(현장 메모 {memo_line('태그 이름(TS1')}행)."""
+    return a['태그'] == b['태그']
+
+
+def quantity_name(members):
+    """근거: 묶음에서 가장 많이 쓴 재는것 — 붙은 자리를 가리키는 이름(유온 · 쿨러 출구 유온 · 탱크 유온)."""
+    return common_name(members)
 '''
 
 
-def unit_rules_answer():
-    return f'''# {F.MARK} — 기준 단위와 빈 단위 칸을 정하는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def base_unit(quantity, units):
-    """근거: 그 물리량에서 원자료가 가장 많이 쓴 단위(같은 수면 센서 목록에서 먼저 나온 것)."""
-    return max(units, key=lambda u: (units.count(u), -units.index(u)))
-
-
-def blank_unit(row, candidates):
-    """근거: 같은 모델 · 같은 태그 · 같은 정상값 · 한계 · 한계구분의 줄이 단위 하나를 말할 때만 그 단위, 아니면 미확인(짐작하지 않음)."""
-    key = ('모델', '태그', '정상값', '한계', '한계구분')
-    same = {{c['단위'] for c in candidates if all(c[k] == row[k] for k in key)}}
-    return same.pop() if len(same) == 1 else '미확인'
-'''
-
-PART_RULES_BLANK = f'''# {F.MARK} — 교체 부품을 잇는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def find_part(cell, asset, component, spares, cross, same_component, same_model):
-    """구성요소_목록.csv의 교체부품 칸을 제공 코드가 바로 풀지 못한 행(빈칸 · 품명 · 짧은 표기)에서 부른다.
-    cell = 교체부품 칸 글자(빈칸이면 ''), asset = {{'설비코드', '모델'}}, component = 내가 정한 구성 요소 이름,
-    spares = 예비품_목록.csv 행들(dict), cross = 품번_교차표.csv 행들(dict),
-    same_component(원자료 이름) = 그 이름이 이 구성 요소와 같은 것인지(5단계에서 정한 이름 기준 — 그 모델의 구성 요소에 없는 이름은 원자료 이름 그대로 견줌) True · False,
-    same_model = 같은 모델의 다른 설비에서 같은 구성 요소의 교체부품 칸이 품번으로 풀린 것 [{{'설비코드', '품번'}}, ...](없으면 빈 목록).
-    돌려줄 것: 이을 사내 품번(str), None(잇지 않음), 또는 확인이 필요한 후보 사내 품번 목록(list — 「확인 필요」로 남김)."""
-    raise NotImplementedError
-
-
-def same_item(maker_code, internal_codes):
-    """같은 제조사 품번(maker_code)으로 등록된 사내 품번이 둘 이상일 때 부른다(internal_codes = 그 사내 품번들).
-    돌려줄 것: True(한 물품으로 잇는다) 또는 False(따로 둔다)."""
-    raise NotImplementedError
-'''
-
-
-def part_rules_answer(same, mode='이음'):
-    """part_rules.py — 같은 규격(same: True = 한 물품)과 품번이 적히지 않은 칸의 갈래(mode: 이음 · 확인 · 안 이음 — build_labs.LINK_MODE)."""
-    if mode == '이음':
-        find = """    hits = sorted(s['품번'] for s in spares if applies(asset['모델'], s['적용모델']) and same_component(s['쓰는곳']))
-    if len(hits) == 1:
-        return hits[0]
-    used = sorted({m['품번'] for m in same_model if m['품번'] in hits})
-    return used[0] if len(used) == 1 else None"""
-        why = ('근거: 예비품_목록.csv의 적용모델 · 쓰는곳 — 같은 모델의 같은 구성 요소에 쓰는 예비품이 하나면 그것. '
-               '둘 이상이면 같은 모델의 다른 설비가 그 자리에 품번으로 적은 것이 그 가운데 하나를 가리킬 때만 그것(같은 모델은 같은 부품을 씀).')
-    elif mode == '확인':
-        find = """    hits = sorted(s['품번'] for s in spares if applies(asset['모델'], s['적용모델']) and same_component(s['쓰는곳']))
-    if not hits:
-        return None
-    if cell and len(hits) == 1:
-        return hits[0]
-    return hits"""
-        why = ('근거: 품명만 적혀 있고 같은 모델 · 같은 쓰는곳의 예비품이 하나면 그것. 칸이 비었거나(구성요소_목록.csv 비고 「교체부품 칸 확인 못 함」) '
-               '후보가 둘 이상이면 원자료가 품번을 정하지 않은 것이라 후보를 확인 필요로 남긴다.')
-    else:
-        find = """    return None"""
-        why = '근거: 칸에 품번이 없으면 원자료가 그 부품을 말하지 않은 것 — 예비품 목록으로 짐작해 잇지 않는다(작업 규칙 3).'
-
-    return f'''# {F.MARK} — 교체 부품을 잇는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def applies(model, text):
-    """예비품 목록 적용모델 칸 — 「전 모델」, 「HPP-45A」, 「HPP-45A·45B」 꼴."""
-    if text == '전 모델':
-        return True
-    head, *rest = text.split('·')
-    prefix = head.rsplit('-', 1)[0] + '-'
-    return model in [head, *[prefix + x for x in rest]]
-
-
-def find_part(cell, asset, component, spares, cross, same_component, same_model):
-    """구성요소_목록.csv의 교체부품 칸을 제공 코드가 바로 풀지 못한 행(빈칸 · 품명 · 짧은 표기)에서 부른다.
-    {why}"""
-{find}
-
-
-def same_item(maker_code, internal_codes):
-    """근거: 현장 메모 {memo_line('합칠지 검토')}행(3라인 자재는 따로 등록, 합칠지 검토 중), 공급_조건.csv의 두 품번 견적(공급사 · 단가가 다름), 품번_교차표.csv의 같은 제조사 품번 줄."""
-    return {same}
-'''
+def removed_rows():
+    """구성요소_목록.csv에서 철거된 실물 줄과 그 자리에 지금 달린 실물 줄 [(철거 줄, 지금 줄, 행)]."""
+    comps = B.numbered('구성요소_목록.csv')
+    return [(i, next(j for j, x in comps if (x['설비코드'], x['구성요소']) == (c['설비코드'], c['구성요소']) and '철거' not in x['비고']), c) for i, c in comps if '철거' in c['비고']]
 
 
 def integrated_design(branch='A'):
-    """통합 02-3 빈 틀의 정답 내용 {경로: 글}. 갈래는 build_labs.POLICY(A~E)."""
-    src = {n: B.rows(n) for n in ['설비_대장.csv', '구성요소_목록.csv', '센서_목록.csv', '예비품_목록.csv']}
-    same, mode, unit, scope = B.policy(branch)
+    """통합 02-3 빈 틀의 정답 내용 {경로: 글}. 갈래는 build_labs.POLICY(A · B · C · E)."""
+    D.require('통합반')
+    _, _, unit, scope = B.policy(branch)
     split = unit == '나눔'
-    files = {}
     memo = lambda text: f'자료/현장_메모.md:{memo_line(text)}'
-    comp_line = {(c['설비코드'], c['구성요소']): i for i, c in enumerate(src['구성요소_목록.csv'], 2) if '철거' not in c['비고']}
-    sensor_line = {(s['설비코드'], s['태그']): i for i, s in reversed(list(enumerate(src['센서_목록.csv'], 2)))}
-    spare_line = {p['품번']: i for i, p in enumerate(src['예비품_목록.csv'], 2)}
-    cl, sl, pl = (lambda code, name: f'자료/구성요소_목록.csv:{comp_line[(code, name)]}'), (lambda code, tag: f'자료/센서_목록.csv:{sensor_line[(code, tag)]}'), \
-        (lambda pid: f'자료/예비품_목록.csv:{spare_line[pid]}')
+    (gone, now, removed), = removed_rows()
+    files = {}
     files['결과/설계.csv'] = csv_text(DESIGN_EXPLAIN['설계.csv'], DESIGN_COLUMNS['설계.csv'], [
-        ['설비', '{설비코드}', f'{memo("설비코드 체계")} — 설비코드 체계가 바뀌어 옛 코드 줄이 있음(행_처리에서 정함)'],
-        ['구성 요소', '{설비코드}:{구성요소}', f'{memo("같은 모델(HPP-45A)")} — 같은 모델의 같은 품목이 여러 설비에 있으므로 설비코드를 붙임'],
-        ['센서', '{설비코드}:{태그}', f'{memo("태그 이름(TS1")} — 태그 이름은 같은 회사 설비가 모두 같은 이름을 씀'],
-        ['물리량', '{물리량}', f'{memo("재는 값의 이름도")} — 재는 값의 이름도 사람마다 다름'],
-        ['부품', '{품번}', '자료/예비품_목록.csv:1 품번 칸(사내 품번)'],
-        *([['실물', '{일련번호}', f'{memo("구성 요소 목록의 일련번호")} — 구성 요소의 일련번호는 거기 달린 장치 한 대']] if split else [])])
+        ['설비', '{설비코드}', '자료/설비_대장.csv:1 설비코드 칸 — 설비마다 하나'],
+        ['구성 요소', '{설비코드}:{구성요소}', f'{memo("같은 모델(HPP-45A)")} — 같은 모델의 같은 품목이 설비마다 있으므로 설비코드를 붙임'],
+        ['센서', '{설비코드}:{태그}', f'{memo("태그 이름(TS1")} — 태그 이름은 세 대가 같아 설비코드를 붙임'],
+        ['물리량', '{물리량}', f'{memo("재는 값의 이름도")} — 재는 값의 이름이 사람마다 달라 묶어 정한 이름 하나를 씀'],
+        ['부품', '{품번}', '자료/예비품_목록.csv:1 품번 칸(사내 품번) — 다른 표기는 식별자가 아니라 부품의 다른 이름'],
+        *([['실물', '{일련번호}', f'{memo("구성 요소 목록의 일련번호")} — 일련번호는 그 자리에 달린 장치 한 대']] if split else [])])
     files['결과/관계.csv'] = csv_text(DESIGN_EXPLAIN['관계.csv'], DESIGN_COLUMNS['관계.csv'], [
         ['설비-구성 요소', 'HAS_COMPONENT', '설비', '1:N', '자료/구성요소_목록.csv:1 — 설비마다 구성 요소 여러 줄, 한 줄은 설비 하나'],
         ['구성 요소-센서', 'MONITORED_BY', '구성 요소', '1:N', '자료/센서_목록.csv:1 붙은곳 칸 — 한 구성 요소에 센서 여럿, 센서 하나는 한 구성 요소'],
-        ['설비-센서', 'MONITORED_BY', '설비', '1:N', f'{sl("HYD-01", "SE")} — 붙은곳이 설비 전체'],
         ['센서-물리량', 'OBSERVES', '센서', 'N:1', '자료/센서_목록.csv:1 재는것 칸 — 센서 하나는 물리량 하나를 잰다'],
         ['구성 요소-부품', 'USES_PART', '구성 요소', 'N:1', '자료/구성요소_목록.csv:1 교체부품 칸 — 한 구성 요소에 칸 하나, 한 부품을 여러 구성 요소가 씀'],
-        *([['부품-부품', 'SAME_ITEM_AS', '부품', 'N:1', '자료/품번_교차표.csv:1 표기종류 「제조사 품번」']] if same == '한 물품' else []),
-        *([['구성 요소-실물', 'INSTALLED_UNIT', '구성 요소', '1:N', f'{memo("구성 요소 목록의 일련번호")} · {cl("HYD-02", "유압 펌프")} — 한 구성 요소 자리에 지금 실물과 지난 실물']] if split else []),
-        *([['구성 요소-부품 후보', 'CANDIDATE_PART', '구성 요소', 'N:M', f'{cl("HYD-03", "리턴 필터")} · {pl("P-RTN-FLT")} · {pl("P-RTN-FLT-25")} — 한 구성 요소에 후보 여럿']] if mode == '확인' else [])])
+        *([['구성 요소-실물', 'INSTALLED_UNIT', '구성 요소', '1:N', f'자료/구성요소_목록.csv:{gone} · {now} — 한 구성 요소 자리에 지금 실물과 지난 실물']] if split else [])])
     files['결과/name_rules.py'] = name_rules_answer()
-    rows = [  # 규칙(같은 모델의 같은 태그 · 같은 교체 부품)이 묶지 못한 이름 — 근거는 그 행과 견준 행
-        ['스탠바이 펌프', 'HPP-45A', '예비 펌프 (B)', f'{cl("HYD-02", "스탠바이 펌프")} · {cl("HYD-01", "예비 펌프 (B)")} — 같은 모델 · 동력 계통의 둘째 펌프(주 펌프 다음 줄)'],
-        ['축 커플링', 'HPP-45A', '커플링', f'{cl("HYD-03", "축 커플링")} 교체부품 「커플링 고무」 · {pl("P-CPL-ELM")} 쓰는곳 커플링'],
-        ['축압기', 'HPP-45A', '어큐뮬레이터', f'{cl("HYD-03", "축압기")} 교체부품 「블래더」 · {pl("P-ACC-BLD")} 어큐뮬레이터 블래더'],
-        ['오일 쿨러(공랭)', 'DPU-30', '오일 쿨러', f'{cl("HYD-05", "오일 쿨러(공랭)")} · {sl("HYD-05", "T_OIL")} 유온을 재는 자리(공랭식 오일 쿨러)'],
-        ['모터', 'HPP-22M', '구동 모터', f'{cl("HYD-07", "모터")} · {cl("HYD-01", "구동 모터")} — 동력 계통의 모터 한 대'],
-        ['펌프', 'HPP-22M', '메인 펌프', f'{cl("HYD-07", "펌프")} · {cl("HYD-05", "메인 펌프")} — 펌프가 한 대(주 · 예비 구분 없음)'],
-    ]
-    files['결과/이름.csv'] = csv_text(DESIGN_EXPLAIN['이름.csv'], DESIGN_COLUMNS['이름.csv'], rows)
-    handle = []
-    old = B.legacy_rows(src['설비_대장.csv'])
-    for i, a in enumerate(src['설비_대장.csv'], 2):
-        if a['설비코드'] in old:
-            now = next(j for j, x in enumerate(src['설비_대장.csv'], 2) if x['설비코드'] == old[a['설비코드']])
-            handle.append(['설비_대장.csv', i, f'옛 코드:{old[a["설비코드"]]}', f'자료/설비_대장.csv:{i} · {now} 같은 기능위치 · 일련번호 · 설치일, 상태 「{a["상태"]}」 · {memo("설비코드 체계")}'])
-    for i, c in enumerate(src['구성요소_목록.csv'], 2):
-        if '철거' in c['비고']:
-            now = comp_line[(c['설비코드'], c['구성요소'])]
-            handle.append(['구성요소_목록.csv', i, f'지난 실물:{now}' if split else '빼기',
-                           f'자료/구성요소_목록.csv:{i} 비고 「{c["비고"]}」 · {now}행 「교체 설치」' + (' — 그 자리의 지난 실물' if split else ' — 기준일에 달려 있지 않은 실물')])
-    seen = {}
-    for i, s in enumerate(src['센서_목록.csv'], 2):
-        k = (s['설비코드'], s['태그'])
-        if k in seen:
-            handle.append(['센서_목록.csv', i, f'하나로:{seen[k]}', f'자료/센서_목록.csv:{i} · {seen[k]} — 같은 설비 · 같은 태그 · 같은 계장태그(표본주기 · 수집방식이 빈 옮겨 적은 줄)'])
-        else:
-            seen[k] = i
-    files['결과/행_처리.csv'] = csv_text(DESIGN_EXPLAIN['행_처리.csv'], DESIGN_COLUMNS['행_처리.csv'], handle)
+    files['결과/행_처리.csv'] = csv_text(DESIGN_EXPLAIN['행_처리.csv'], DESIGN_COLUMNS['행_처리.csv'], [
+        ['구성요소_목록.csv', gone, f'지난 실물:{now}' if split else '빼기',
+         f'자료/구성요소_목록.csv:{gone} 비고 「{removed["비고"]}」 · {now}행 「교체 설치」' + (' — 그 자리의 지난 실물' if split else ' — 기준일에 달려 있지 않은 실물')]])
     files['결과/quantity_rules.py'] = quantity_rules_answer(scope)
-    files['결과/물리량.csv'] = csv_text(DESIGN_EXPLAIN['물리량.csv'], DESIGN_COLUMNS['물리량.csv'], [])   # 두 범위 모두 규칙으로 정해진다 — 예외 줄 없음
-    files['결과/unit_rules.py'] = unit_rules_answer()
-    files['결과/part_rules.py'] = part_rules_answer(same == '한 물품', mode)
     return files
 
 
 def integrated_chosen(branch='A'):
-    """결정 지점 넷의 정한_것.csv 행(빈 틀의 지점 줄과 같은 이름 · 차례). 갈래는 build_labs.POLICY."""
-    same_, mode, unit, scope = B.policy(branch)
-    comps = list(enumerate(B.rows('구성요소_목록.csv'), 2))
-    sensors = list(enumerate(B.rows('센서_목록.csv'), 2))
-    spares = {p['품번']: i for i, p in enumerate(B.rows('예비품_목록.csv'), 2)}
-    place = next(a['기능위치'] for a in B.rows('설비_대장.csv') if a['설비코드'] == 'HYD-03')
-    receipts = next(i for i, r in enumerate(B.rows('입고_이력.csv'), 2) if place in r['비고'] and r['품번'] == 'P-PMP-SEAL')
-    quotes = [i for i, q in enumerate(B.rows('공급_조건.csv'), 2) if q['품번'] in ('P-FAN-BRG', 'P-BRG-6205')]
-    cross = [i for i, c in enumerate(B.rows('품번_교차표.csv'), 2) if c['다른표기'] == '6205-2RS']
-    line = lambda code, name, note='': next(i for i, c in comps if c['설비코드'] == code and c['구성요소'] == name and note in c['비고'])
-    sline = lambda code, tag: next(i for i, s in sensors if s['설비코드'] == code and s['태그'] == tag)
+    """결정 지점 둘의 정한_것.csv 행(빈 틀의 지점 줄과 같은 이름 · 차례). 갈래는 build_labs.POLICY."""
+    D.require('통합반')
+    _, _, unit, scope = B.policy(branch)
+    (gone, now, removed), = removed_rows()
+    code, key, old_serial, _ = D.REMOVED_PUMP
+    new_serial = D.SERIALS[(code, key)]
+    sline = {(x['설비코드'], x['태그']): i for i, x in B.numbered('센서_목록.csv')}
+    temps = sorted(i for (c, tag), i in sline.items() if c == 'HYD-01' and tag.startswith('TS'))
+    t = D.TRUTH['assets']['HYD-01']['sensors']
+    # 근거 칸 = 내 이유와, 그 결정을 좌우해 열어 본 원문 줄(lab_frame.CHOSEN_TEMPLATE)
     place = [['구성 요소 자리와 그 실물', '나눔(일련번호가 붙은 실물을 따로 두고 철거된 실물을 남김)' if unit == '나눔' else '한 대상(일련번호는 구성 요소의 속성)',
-              f'자료/구성요소_목록.csv:{line("HYD-02", "유압 펌프", "철거")} · {line("HYD-02", "유압 펌프", "교체 설치")} · 자료/현장_메모.md:{memo_line("구성 요소 목록의 일련번호")}',
-              ('HYD-02 주 펌프 자리에 KP-2603-114(지금)와 KP-1902-551(지난)이 실물로 남음 — 보전팀은 철거해 수리 보낸 펌프가 예비로 돌아오면 그 실물의 이력을 이어 봄'
-               if unit == '나눔' else 'HYD-02 주 펌프 구성 요소에 지금 일련번호 KP-2603-114만 속성으로 남음 — 철거한 펌프는 그래프에서 물을 수 없어, 보전팀은 수리 이력을 CMMS에서 따로 찾음')]]
+              ('떼어 낸 펌프도 일련번호가 붙은 장치 한 대라 그 자리를 거쳐 간 장치를 물을 수 있게 하려고' if unit == '나눔' else
+               '보전팀이 묻는 것은 지금 달린 펌프라 모델을 단순하게 두려고')
+              + f' — 자료/구성요소_목록.csv:{gone} · {now} · 자료/현장_메모.md:{memo_line("구성 요소 목록의 일련번호")}',
+              (f'{code} 주 펌프 자리에 {new_serial}(지금)와 {old_serial}(지난)이 실물로 남음 — 보전팀은 떼어 낸 펌프가 수리를 마치고 돌아오면 그 실물의 이력을 이어 봄'
+               if unit == '나눔' else f'{code} 주 펌프 구성 요소에 지금 일련번호 {new_serial}만 속성으로 남음 — 떼어 낸 펌프는 이 모델에서 물을 수 없어, 보전팀은 그 이력을 CMMS에서 따로 찾음')]]
     quantity = [['같은 물리량의 범위', '붙은 자리까지 같아야 묶음' if scope == '자리' else '재는 값의 종류로 묶음(자리는 붙은 구성 요소로 봄)',
-                 f'자료/센서_목록.csv:{sline("HYD-07", "TI-1")} · {sline("HYD-01", "TS1")} · {sline("HYD-01", "TS2")} · {sline("HYD-01", "TS3")} · 자료/현장_메모.md:{memo_line("계장 도면에는")}',
-                 ('유온 · 쿨러 출구 유온 · 탱크 유온이 따로 묶이고 HYD-07 유온계는 탱크 유온에 듦 — 운전은 그 45 ℃를 탱크 유온 정상값 40 ℃와 바로 견줌'
-                  if scope == '자리' else
-                  '작동유 온도 하나에 쿨러 입구 · 출구 · 탱크 센서가 함께 듦 — 운전은 견줄 정상값을 고를 때 센서가 붙은 구성 요소(HYD-07 유온계는 탱크)를 함께 보고 탱크 쪽 정상값 40 ℃를 고름')]]
-    same = [['같은 규격의 다른 사내 품번', '한 물품' if same_ == '한 물품' else '따로',
-             '자료/품번_교차표.csv:' + ' · '.join(map(str, cross)) + f' · 자료/현장_메모.md:{memo_line("합칠지 검토")} · 자료/공급_조건.csv:' + ' · '.join(map(str, quotes)),
-             ('P-FAN-BRG · P-BRG-6205를 물으면 다섯 대(HYD-01~03 · 05 · 06) — 보전팀은 3라인 팬 베어링이 떨어지면 2라인 재고를 대체품으로 꺼내 쓰고, 구매팀은 두 품번 재고를 합쳐 셈'
-              if same_ == '한 물품' else
-              'P-FAN-BRG는 2라인 설비만, P-BRG-6205는 3라인 설비만 — 구매팀은 품번마다 계약 단가로 발주하고, 보전팀은 3라인 팬 베어링 재고가 떨어지면 대체품을 따로 확인 요청')]]
-    basis = (f'자료/구성요소_목록.csv:{line("HYD-03", "주 펌프 A")} · {line("HYD-03", "리턴 필터")} · '
-             f'자료/예비품_목록.csv:{spares["P-PMP-SEAL"]} · {spares["P-RTN-FLT"]} · {spares["P-RTN-FLT-25"]} · 자료/입고_이력.csv:{receipts}')
-    link = [['품번이 적히지 않은 교체부품 칸', {'이음': '예비품 목록으로 이음(후보가 여럿이면 같은 모델 설비가 적은 품번)', '안 이음': '잇지 않음',
-                                       '확인': '확인 필요로 남김(빈칸이거나 후보가 여럿이면)'}[mode], basis,
-             {'이음': 'P-PMP-SEAL · P-RTN-FLT의 사용 설비에 HYD-03이 듦 — 구매팀은 HYD-03까지 넣어 재고 소요를 셈',
-              '안 이음': 'HYD-03이 P-PMP-SEAL · P-RTN-FLT · P-FAN-BRG의 사용 설비에서 빠짐 — HYD-03 펌프 정비 때 예비품을 미리 준비하지 않음',
-              '확인': 'HYD-03은 P-PMP-SEAL · P-RTN-FLT의 「확인 필요」 줄에만 나옴 — 보전팀이 전기계장 담당에게 HYD-03 품번 확인을 요청하고, 구매팀은 확인 전까지 재고 소요에 넣지 않음'}[mode]]]
-    return place + quantity + same + link
-DECISION_POINTS = ['구성 요소 자리와 그 실물', '같은 물리량의 범위', '같은 규격의 다른 사내 품번', '품번이 적히지 않은 교체부품 칸']   # 정한_것.csv 빈 틀에 미리 두는 지점 줄(쓰는 단계 차례)
+                 ('운전 담당은 같은 자리의 값끼리 정상값과 견주므로' if scope == '자리' else
+                  '세 온도 모두 작동유의 온도라 한 번에 모아 보고 어디서 쟀는지는 붙은 구성 요소로 읽으려고')
+                 + ' — 자료/센서_목록.csv:' + ' · '.join(map(str, temps)) + f' · 자료/현장_메모.md:{memo_line("태그 이름(TS1")}',
+                 ('유온 · 쿨러 출구 유온 · 탱크 유온이 따로 묶여 묶음마다 센서 세 개 — 운전은 탱크 유온을 물으면 세 대의 탱크 값만 받아 '
+                  f'정상값 {t["TS3"]["normal"]:g} ℃와 바로 견줌' if scope == '자리' else
+                  '작동유 온도 하나에 세 대의 온도 센서 아홉 개가 함께 듦 — 운전은 작동유 온도를 한 번에 모아 보되, '
+                  f'견줄 정상값({t["TS1"]["normal"]:g} · {t["TS2"]["normal"]:g} · {t["TS3"]["normal"]:g} ℃)은 센서가 붙은 구성 요소를 함께 보고 고름')]]
+    return place + quantity
+
+
+DECISION_POINTS = ['구성 요소 자리와 그 실물', '같은 물리량의 범위']   # 정한_것.csv 빈 틀에 미리 두는 지점 줄(쓰는 단계 차례)
 
 
 # ───────────── 실전 02-3 ─────────────
@@ -526,30 +337,23 @@ def load_answer(graph):
 
 
 QUERY_INTEGRATED = {
-    1: ('// 질문 1 — 설비 하나의 구성 요소별 센서(설비에 바로 붙은 센서는 「(설비 전체)」)',
-        "MATCH (a:Asset {id: $asset})-[:HAS_COMPONENT*0..1]->(x)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(q:Quantity)\n"
-        "RETURN CASE WHEN x = a THEN '(설비 전체)' ELSE x.id END AS attached_to, s.id AS sensor, s.tag AS tag, s.kind AS kind,\n"
+    1: ('// 질문 1 — 설비 하나의 구성 요소별 센서',
+        "MATCH (a:Asset {id: $asset})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(q:Quantity)\n"
+        "RETURN c.id AS component, s.id AS sensor, s.tag AS tag,\n"
         "       q.name AS quantity, s.unit AS unit, s.normal AS normal, s.limit AS limit, s.limit_direction AS direction\n"
-        "ORDER BY attached_to, tag;"),
+        "ORDER BY component, tag;"),
     2: ('// 질문 2 — 설비 하나의 구성 요소마다 교체 부품(없으면 빈 칸으로 남김)',
         "MATCH (a:Asset {id: $asset})-[:HAS_COMPONENT]->(c:Component)\n"
         "OPTIONAL MATCH (c)-[:USES_PART]->(p:Part)\n"
         "RETURN c.id AS component, c.name AS component_name, p.id AS part, p.name AS part_name\n"
         "ORDER BY component;"),
+    3: ('// 질문 3 — 품번이나 다른 표기로 부품을 찾고 쓰는 설비 · 구성 요소와 설비 상태',
+        "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
+        "OPTIONAL MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p)\n"
+        "RETURN p.id AS part, a.id AS asset, a.status AS status, c.id AS component,\n"
+        "       CASE WHEN p IS NULL THEN '원자료에 없는 품번' WHEN a IS NULL THEN '쓰는 설비 없음' END AS note\n"
+        "ORDER BY part, asset, component;"),
 }
-QUERY_PART_USAGE = {
-    '상태와 함께': ('// 질문 3 — 품번이나 다른 표기로 부품을 찾고 쓰는 설비 · 구성 요소와 설비 상태(가동이 아닌 설비도 상태와 함께)',
-                 "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
-                 "OPTIONAL MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p)\n"
-                 "RETURN p.id AS part, a.id AS asset, a.status AS status, c.id AS component,\n"
-                 "       CASE WHEN p IS NULL THEN '원자료에 없는 품번' WHEN a IS NULL THEN '쓰는 설비 없음' END AS note\n"
-                 "ORDER BY part, asset, component;"),
-    '빠짐': ('// 질문 3 — 품번이나 다른 표기로 부품을 찾고 지금 가동하는 설비만',
-           "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
-           "OPTIONAL MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p) WHERE a.status = '가동'\n"
-           "RETURN p.id AS part, a.id AS asset, a.status AS status, c.id AS component,\n"
-           "       CASE WHEN p IS NULL THEN '원자료에 없는 품번' WHEN a IS NULL THEN '가동 설비에서는 쓰지 않음' END AS note\n"
-           "ORDER BY part, asset, component;")}
 QUERY_PRACTICAL = {
     1: {'ㄱ': ('// 질문 1 — 부품 하나의 사용 설비 · 구성 요소와 공급사마다 공급 조건(승인 상태 · 출처 포함)',
                "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
@@ -580,21 +384,18 @@ QUERY_PRACTICAL = {
 
 def query_text(blocks):
     return '\n\n'.join(f'{head}\n{body}' for head, body in blocks) + '\n'
-CONFIRM_PART = ("MATCH (c:Component {id: 'HYD-03:pump-a'}), (p:Part {id: 'P-PMP-SEAL'}) MERGE (c)-[u:USES_PART]->(p) SET u.source_text = 'P-PMP-SEAL';\n"
-                "MATCH (c:Component {id: 'HYD-03:rtn-filter'})-[u:USES_PART]->(p:Part) WHERE p.id <> 'P-RTN-FLT-25' DELETE u;\n"
-                "MATCH (c:Component {id: 'HYD-03:rtn-filter'}), (p:Part {id: 'P-RTN-FLT-25'}) MERGE (c)-[u:USES_PART]->(p) SET u.source_text = 'P-RTN-FLT-25';\n")
 
 
-UPDATE_INTEGRATED = {
-    '남김': ("// 수정본 반영 — 불용 결정 설비는 대장에 남기고 상태로 구별(설비_대장_변경.csv 3줄), 이름 표준화(2줄), 값 보완(센서_변경.csv 2 · 3줄),\n"
-            "// 교체부품 확인 · 변경(구성요소_변경.csv 2 · 3줄 — 3줄은 잇는 부품이 바뀌므로 옛 관계를 지우고 새로 잇는다). 센서_변경.csv 4줄 「삭제」는 같은 센서를 점검표에서 옮겨 적은 중복 행 정리라 그래프의 센서는 그대로 둔다.\n"
-            "MATCH (a:Asset {id: 'HYD-02'}) SET a.name = 'HYD-02 2라인 2호 파워팩';\n"
-            "MATCH (a:Asset {id: 'HYD-07'}) SET a.status = '불용(매각 예정)';\n"
-            "MATCH (s:Sensor {id: 'HYD-03:VS1'}) SET s.unit = 'mm/s', s.normal = 0.6;\n"
-            "MATCH (s:Sensor {id: 'HYD-06:I_MOTOR'}) SET s.unit = 'A', s.normal = 18.5;\n" + CONFIRM_PART),
-    '삭제': ("// 수정본 반영 — 불용 결정 설비는 그 설비에만 딸린 구성 요소 · 실물 · 센서와 함께 지운다(공용 부품 · 물리량은 남김). 나머지는 남김 갈래와 같다.\n"
-            "MATCH (a:Asset {id: 'HYD-02'}) SET a.name = 'HYD-02 2라인 2호 파워팩';\n"
-            "MATCH (a:Asset {id: 'HYD-07'}) OPTIONAL MATCH (a)-[:HAS_COMPONENT]->(c:Component) OPTIONAL MATCH (c)-[:MONITORED_BY]->(s:Sensor) OPTIONAL MATCH (a)-[:MONITORED_BY]->(s2:Sensor) OPTIONAL MATCH (c)-[:INSTALLED_UNIT]->(u:Unit)\n"
-            "WITH a, collect(DISTINCT c) + collect(DISTINCT s) + collect(DISTINCT s2) + collect(DISTINCT u) AS sub FOREACH (x IN sub | DETACH DELETE x) DETACH DELETE a;\n"
-            "MATCH (s:Sensor {id: 'HYD-03:VS1'}) SET s.unit = 'mm/s', s.normal = 0.6;\n"
-            "MATCH (s:Sensor {id: 'HYD-06:I_MOTOR'}) SET s.unit = 'A', s.normal = 18.5;\n" + CONFIRM_PART)}
+def update_integrated(change):
+    """통합반 수정본(D.changes — 이름이 바뀐 설비 하나 · 불용이 된 설비 하나)을 반영하는 수정 쿼리. change = 남김(불용 설비를 상태로 남김) · 삭제(그 설비에만 딸린 대상과 함께 지움)."""
+    D.require('통합반')
+    (renamed, name), (retired, status) = D.LAB_RENAMED, D.LAB_RETIRED
+    head = f"MATCH (a:Asset {{id: '{renamed}'}}) SET a.name = '{name}';\n"
+    if change == '남김':
+        return ('// 수정본 반영 — 이름이 바뀐 설비는 같은 식별자의 이름만 고치고, 불용 결정 설비는 그래프에 남겨 상태로 구별한다.\n' + head +
+                f"MATCH (a:Asset {{id: '{retired}'}}) SET a.status = '{status}';\n")
+    if change == '삭제':
+        return ('// 수정본 반영 — 이름이 바뀐 설비는 같은 식별자의 이름만 고치고, 불용 결정 설비는 그 설비에만 딸린 구성 요소 · 실물 · 센서와 함께 지운다(공용 부품 · 물리량은 남김).\n' + head +
+                f"MATCH (a:Asset {{id: '{retired}'}}) OPTIONAL MATCH (a)-[:HAS_COMPONENT]->(c:Component) OPTIONAL MATCH (c)-[:MONITORED_BY]->(s:Sensor) OPTIONAL MATCH (c)-[:INSTALLED_UNIT]->(u:Unit)\n"
+                'WITH a, collect(DISTINCT c) + collect(DISTINCT s) + collect(DISTINCT u) AS sub FOREACH (x IN sub | DETACH DELETE x) DETACH DELETE a;\n')
+    raise ValueError(f'수정본 갈래 {change!r} — 남김 · 삭제 가운데 하나입니다.')

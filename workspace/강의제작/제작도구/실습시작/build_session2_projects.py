@@ -22,7 +22,7 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
-VERSION = 'v28-practical'   # 2026-11-12: 판단 보강(카디널리티 · 자리와 실물 · 확인 필요 · 붙은 자리까지 물리량, 친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거, 질문 2 값 대조 · 질문 4) — 작업 판정/보강_20261112
+VERSION = 'v30-lab'   # 2026-11-17: 독립 검토(판정/검토_지침과_통합2회차.json) 고침 — 클래스 · 인스턴스를 이론 정의대로, HYD-03 리턴 필터를 25µm로 두어 부품마다 쓰는 설비가 갈리게, 실습 랩 규모에 없는 스키마 속성 걷기, 그래프 조회를 질문마다 한 단계로. 앞 판 v29-lab: 통합반 실습 랩 규모(설비 3대 · 정할 지점 둘, 그래프 랩은 하나) · 학생은 AI로 파악하고 추천안을 따져 결정 — 작업 2026-11-17_코딩랩-원리중심-학생결정자
 WORK = ROOT / '작업/검사/session2-projects'
 
 
@@ -42,14 +42,14 @@ def result_sources():
 
 
 # 장난감 시험(2026-11-12) — AI가 결정 · 기대 답을 스스로 채우고, 기능 파일 여럿을 한꺼번에 짰다. 작업 경계만 둔다(형식은 강제하지 않음, 코딩랩 K-6).
-DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 말한 것만 적는다. '
-                 '학생이 정하지 않았으면 적지 않고, 근거가 될 원자료 줄을 짚어 묻는다.\n'
+DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). '
+                 '학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.\n'
                  '- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.')
 
 
 # 리허설 07 막힘: Codex 샌드박스는 랩 DB(Docker)에 닿지 못해 AI가 실행을 시도하다 실패했다. 그래프 랩은 랩 DB 명령을 학생 터미널에 둔다.
-GRAPH_DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 말한 것만 적는다. '
-                       '학생이 정하지 않았으면 적지 않고, 근거가 될 원자료 줄을 짚어 묻는다.\n'
+GRAPH_DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). '
+                       '학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.\n'
                        '- 한 번에 요청받은 기능 파일 하나만 고친 뒤 멈춘다. 랩 DB를 쓰는 명령(`python run.py` 기능)은 학생이 자기 터미널에서 실행하고, '
                        'AI는 학생이 붙여 준 터미널 출력과 결과 화면으로 확인한다. AI가 그 명령을 직접 실행하지 않는다.')
 
@@ -73,8 +73,9 @@ def run_source():
     return text.replace(old, new)
 
 
+# 가이드가 채우라고 하는 절만 둔다 — 같은 대상의 다른 이름은 모델이 aliases · other_codes로 남기므로 따로 적는 절을 두지 않는다(검토 지적, 2026-11-17).
 REQUIREMENTS = ('# 요구사항\n\n## 목적과 답을 쓸 사람\n\n## 역량 질문과 기준일\n\n## 지킬 조건 · 범위 밖\n\n'
-                '## 용어(같은 대상의 다른 이름)\n\n## 대조 결과 · 고친 점\n\n## 저장 시점 · 확인하지 못한 점\n')
+                '## 대조 결과 · 고친 점\n\n## 저장 시점 · 확인하지 못한 점\n')
 
 
 def source_data(folder):
@@ -106,15 +107,14 @@ def checker(folder, L):
 
 
 def build_ontology(folder):
+    D.require('통합반')
     L = B.design_integrated()
     source_data(folder)
     drawing = Path(__file__).with_name('session2_relationships.json')
     write(folder / 'data/relationships.json', drawing.read_text(encoding='utf-8-sig'))
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
-            text = P.convert(text)
-            text = text.replace('5단계에서 정한 이름 기준', '정한 이름 기준')
-            write(folder / P.convert(name), text)
+            write(folder / P.convert(name), P.convert(text))
     write(folder / 'app/features/requirements.md', REQUIREMENTS)
     utilities, ui = result_sources()
     write(folder / 'app/utils/results.py', utilities)
@@ -122,9 +122,9 @@ def build_ontology(folder):
     write(folder / 'app/utils/model.py', P.model_source())
     actions = P.actions_source(L)
     commands = {'sources': ('원자료', 'sources'), 'expected': ('기대 답', 'expected'),
-                'design': ('식별자와 관계', 'design'), 'names': ('장치 이름', 'names'),
-                'quantities': ('물리량과 센서', 'sensors'), 'units': ('단위', 'units'),
-                'parts': ('공용 부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('구조 검사', 'check')}
+                'design': ('식별자와 관계', 'design'), 'names': ('같은 장치와 실물', 'names'),
+                'quantities': ('물리량과 센서', 'sensors'),
+                'parts': ('부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('구조 검사', 'check')}
     actions += '\nCOMMANDS = {\n' + ''.join(f'    {cmd!r}: ({label!r}, {fn}),\n' for cmd, (label, fn) in commands.items()) + '}\n'
     write(folder / 'app/utils/actions.py', actions)
     write(folder / 'run.py', run_source())
@@ -136,6 +136,7 @@ def build_ontology(folder):
 
 
 def build_graph(folder):
+    D.require('통합반')
     L = B.graph_lab('통합반')
     source_data(folder)
     schema, graph = B.reference_model(False, B.GRAPH_LAB_INPUT['통합반'])
@@ -211,10 +212,11 @@ def completed(starter, destination, work):
         title, initial = '온톨로지 설계', 'python run.py parts\npython run.py query'
         context, actions = nullcontext(), ('parts', 'check', 'query')
     else:
-        from reference.session2_graph_trials import fill, instance
+        from reference.session2_graph_trials import expectation, fill, instance
         fill(folder)
+        expectation(folder, after='남김')     # 완성본은 수정본까지 반영한 상태라 기대 답도 그 뒤의 답이다
         title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py load\npython run.py update\npython run.py usage'
-        context, actions = instance(folder), ('load', 'repeat', 'sensors', 'parts', 'usage', 'update', 'compare', 'export', 'check', 'usage')
+        context, actions = instance(folder), ('load', 'repeat', 'sensors', 'parts', 'update', 'usage', 'compare', 'export', 'check')
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial)
@@ -243,6 +245,11 @@ def main():
     args = parser.parse_args()
     build = build_ontology if args.lab == 'ontology' else build_graph
     WORK.mkdir(parents=True, exist_ok=True)
+    with D.for_course('통합반'):
+        generate(parser, args, build)
+
+
+def generate(parser, args, build):
     if args.dest:
         parent = args.dest.resolve()
         if not parent.is_relative_to((ROOT / '작업').resolve()):

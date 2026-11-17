@@ -1,8 +1,8 @@
-"""스키마와 지식 그래프를 만드는 제공 코드 — 원자료와 `결과/`의 정할 자리(내가 정한 표 · 함수)를 읽어 `결과/schema.json` · `결과/graph.json`을 쓴다.
+"""스키마와 지식 그래프를 만드는 제공 코드 — 원자료와 `결과/`의 빈 틀(내가 정한 표 · 함수)을 읽어 `결과/schema.json` · `결과/graph.json`을 쓴다.
 
-이 파일은 누가 해도 같은 일만 한다: 파일 읽기, 칸 공백 정리, 숫자와 단위 글자 나누기, 단위 환산, 교체부품 칸의 품번 찾기(괄호 속 품번 · 사내 품번 ·
-품번 교차표에 하나로 적힌 표기), 계약 꼴로 쓰기, 모델에 물어보기. 무엇을 하나로 보고 무엇을 따로 둘지, ID를 무엇으로 짓고 관계를 어느 쪽으로 둘지는
-`결과/`의 정할 자리가 정한다. 정할 자리에 없는 것은 짐작하지 않고 파일 · 행과 함께 멈춘다.
+이 파일은 누가 해도 같은 일만 한다: 파일 읽기, 칸 공백 정리, 숫자 읽기, 단위를 물리량의 기준 단위로 맞추기, 교체부품 칸의 품번 찾기(괄호 속 품번 · 사내 품번 ·
+품번 교차표에 하나로 적힌 표기), 계약 꼴로 쓰기, 모델에 물어보기. 무엇을 하나로 보고 무엇을 따로 둘지, 식별자를 무엇으로 짓고 관계를 어느 쪽으로 둘지는
+`결과/`의 빈 틀이 정한다. 빈 틀에 없는 것은 짐작하지 않고 파일 · 행과 함께 멈춘다.
 직접 실행하지 않는다 — `python show_result.py`가 단계마다 부른다.
 """
 from pathlib import Path
@@ -18,15 +18,14 @@ OUT = HERE / '결과'
 KINDS = ['설비', '구성 요소', '센서', '물리량', '부품']
 OPTIONAL_KINDS = ['실물']      # 자리(구성 요소)와 일련번호가 붙은 실물을 나눌 때만 결과/설계.csv에 적는다
 LABEL = {'설비': 'Asset', '구성 요소': 'Component', '센서': 'Sensor', '물리량': 'Quantity', '부품': 'Part', '실물': 'Unit'}
-LINKS = {'설비-구성 요소': ('설비', '구성 요소'), '구성 요소-센서': ('구성 요소', '센서'), '설비-센서': ('설비', '센서'),
-         '센서-물리량': ('센서', '물리량'), '구성 요소-부품': ('구성 요소', '부품'), '부품-부품': ('부품', '부품'),
-         '구성 요소-실물': ('구성 요소', '실물'), '구성 요소-부품 후보': ('구성 요소', '부품')}
-OPTIONAL_LINKS = ('부품-부품', '구성 요소-실물', '구성 요소-부품 후보')   # 쓸 때만 적는 연결(같은 물품 · 실물을 나눔 · 확인 필요 후보)
+LINKS = {'설비-구성 요소': ('설비', '구성 요소'), '구성 요소-센서': ('구성 요소', '센서'), '센서-물리량': ('센서', '물리량'),
+         '구성 요소-부품': ('구성 요소', '부품'), '구성 요소-실물': ('구성 요소', '실물')}
+OPTIONAL_LINKS = ('구성 요소-실물',)   # 구성 요소 자리와 그 실물을 나눌 때만 적는 연결
 FIELDS = {'설비': ['설비코드', '모델', '기능위치', '일련번호'], '구성 요소': ['설비코드', '구성요소', '계통'],
-          '센서': ['설비코드', '태그', '계장태그'], '물리량': ['물리량'], '부품': ['품번'], '실물': ['설비코드', '구성요소', '일련번호']}
+          '센서': ['설비코드', '태그'], '물리량': ['물리량'], '부품': ['품번'], '실물': ['설비코드', '구성요소', '일련번호']}
 CARDINALITY = ('1:1', '1:N', 'N:1', 'N:M')   # 시작 쪽 수:끝 쪽 수 — 「1」 쪽은 많아야 하나
 # 결정 지점(결과/정한_것.csv에 지점 이름이 미리 있는 줄)과 그것을 쓰는 단계. 그 단계를 실행할 때 고른_것 · 근거가 비었거나 미결이면 그 줄을 짚고 멈춘다.
-DECISIONS = {'이름': ['구성 요소 자리와 그 실물'], '센서': ['같은 물리량의 범위'], '부품': ['같은 규격의 다른 사내 품번', '품번이 적히지 않은 교체부품 칸']}
+DECISIONS = {'이름': ['구성 요소 자리와 그 실물'], '센서': ['같은 물리량의 범위'], '부품': []}
 # 단위 환산(일반 지식): (원래 단위, 기준 단위) → 곱할 값
 FACTOR = {('W', 'kW'): 0.001, ('kW', 'W'): 1000, ('kPa', 'bar'): 0.01, ('bar', 'kPa'): 100, ('MPa', 'bar'): 10, ('bar', 'MPa'): 0.1,
           ('l/min', 'L/min'): 1, ('L/min', 'l/min'): 1, ('lpm', 'L/min'): 1, ('°C', '℃'): 1, ('℃', '°C'): 1}
@@ -34,7 +33,7 @@ UNKNOWN = '미확인'
 
 
 class Stop(Exception):
-    """정할 자리에 없는 것 · 계약 어긋남. 글에 파일 · 행이 있다."""
+    """빈 틀에 없는 것 · 계약 어긋남. 글에 파일 · 행이 있다."""
 
 
 # ───────────── 읽기 ─────────────
@@ -80,7 +79,7 @@ def number(text):
     return float(m.group(1)) if m else None
 
 
-def rules(name='part_rules'):
+def rules(name):
     """결과/<name>.py(내가 쓴 판단 함수)를 불러온다."""
     path = OUT / f'{name}.py'
     spec = importlib.util.spec_from_file_location(name, path)
@@ -121,17 +120,17 @@ def grouped(items, same):
 def resolve_cell(cell, parts, cross):
     """교체부품 칸 → (사내 품번, 찾은 법)(일반 로직): 괄호 속 품번 · 사내 품번 · 품번 교차표에 하나로 적힌 표기. 못 풀면 (None, '')."""
     m = re.search(r'\((P-[A-Z0-9-]+)\)', cell)
-    if m:
+    if m and m.group(1) in parts:
         return m.group(1), '괄호 속 품번'
     if cell in parts:
         return cell, '사내 품번'
     hits = sorted({c['사내품번'] for c in cross if c['다른표기'] == cell})
-    if cell and len(hits) == 1:
-        return hits[0], '품번 교차표'
+    if cell and len(hits) == 1 and hits[0] in parts:
+        return hits[0], f'품번 교차표({next(c["표기종류"] for c in cross if c["다른표기"] == cell)})'
     return None, ''
 
 
-# ───────────── 정할 자리 ─────────────
+# ───────────── 빈 틀 ─────────────
 def decided(stage):
     """이 단계(와 그 앞 단계)가 쓰는 결정이 결과/정한_것.csv에 정해졌는가 — 고른 것이 맞는지는 보지 않는다(그것은 학생의 판단)."""
     order = list(DECISIONS)
@@ -143,11 +142,11 @@ def decided(stage):
         line, r = rows[point]
         if not r['고른_것'] or r['고른_것'] == '미결' or not r['근거']:
             raise Stop(f'결과/정한_것.csv:{line}: 「{point}」의 고른_것 · 근거가 아직 비어 있습니다(미결 포함). 이 단계는 이 결정대로 모델을 만듭니다 — '
-                       '원자료를 보고 고른 것과 근거 줄을 적은 뒤 다시 실행합니다. AI가 대신 고르지 않습니다.')
+                       '선택지와 그 결과를 따져 보고 내가 고른 것과 근거를 적은 뒤 다시 실행합니다.')
 
 
 def design():
-    """설계.csv → {대상: ID 틀}, 관계.csv → {연결: (관계 이름, 시작 대상, 끝 대상, 카디널리티, 줄)}."""
+    """설계.csv → {대상: 식별자 틀}, 관계.csv → {연결: (관계 이름, 시작 대상, 끝 대상, 카디널리티, 줄)}."""
     ids = {}
     for line, r in need(OUT / '설계.csv', ['대상', 'ID_만드는_법', '근거']):
         k = r['대상']
@@ -181,12 +180,10 @@ def design():
         raise Stop('결과/설계.csv · 결과/관계.csv: 구성 요소 자리와 그 실물을 나누려면 설계.csv에 「실물」 행과 관계.csv에 「구성 요소-실물」 행을 함께 적고, 나누지 않으면 둘 다 적지 않습니다.')
     by_name = {}
     for k, (name, start, end, card, line) in links.items():
-        by_name.setdefault(name, []).append((k, card, line))
+        by_name.setdefault(name, []).append((k, line))
     for name, items in by_name.items():
-        if len({c for _, c, _ in items}) > 1:
-            raise Stop(f'결과/관계.csv:{" · ".join(str(l) for *_, l in items)}: 같은 관계 이름 「{name}」에 카디널리티가 다릅니다 — 한 관계는 한 카디널리티입니다.')
-    if '구성 요소-부품 후보' in links and links['구성 요소-부품 후보'][0] == links['구성 요소-부품'][0]:
-        raise Stop(f'결과/관계.csv:{links["구성 요소-부품 후보"][4]}: 확인 필요 후보의 관계 이름이 확정된 교체 부품 연결과 같습니다 — 다른 이름을 씁니다.')
+        if len(items) > 1:
+            raise Stop(f'결과/관계.csv:{" · ".join(str(l) for _, l in items)}: 관계 이름 「{name}」을 연결 둘에 썼습니다 — 연결마다 다른 이름을 씁니다.')
     return ids, links
 
 
@@ -194,26 +191,12 @@ def make_id(template, kind, values, where):
     try:
         return template.format(**values)
     except KeyError as e:
-        raise Stop(f'{where}: {kind} ID에 쓸 {e} 칸이 비었습니다.')
-
-
-def names():
-    """이름.csv(규칙으로 정해지지 않는 이름만) → {(원자료 이름, 모델 또는 ''): (구성 요소 이름, 줄)}. 비어 있어도 된다."""
-    out = {}
-    for line, r in need(OUT / '이름.csv', ['원자료_이름', '모델', '구성요소_이름', '근거']):
-        if not r['원자료_이름'] or not r['구성요소_이름']:
-            raise Stop(f'결과/이름.csv:{line}: 원자료_이름과 구성요소_이름을 모두 적습니다.')
-        key = (r['원자료_이름'], r['모델'])
-        if key in out and out[key][0] != r['구성요소_이름']:
-            raise Stop(f'결과/이름.csv:{line}: 「{r["원자료_이름"]}」({r["모델"] or "모든 모델"})이 두 이름에 묶였습니다.')
-        out[key] = (r['구성요소_이름'], line)
-    return out
+        raise Stop(f'{where}: {kind} 식별자에 쓸 {e} 칸이 비었습니다.')
 
 
 def name_map(src, rows_done, model_of):
-    """5단계: 원자료 구성 요소 행마다 이름을 정한다. 내 규칙(결과/name_rules.py — same_device · group_name)으로 같은 장치끼리 묶어
-    묶음마다 이름 하나를 쓰고, 결과/이름.csv에 적은 원자료 이름은 그 이름으로 바꾼다. 어느 것에도 걸리지 않은 행은 원자료 이름 그대로다.
-    돌려주는 것: ({(원자료 이름, 모델): 이름}, 화면용 {묶음, 이름표로 바꾼 행, 다른 이름과 묶이지 않은 행, 안 쓴 이름표 행})."""
+    """원자료 구성 요소 행마다 이름을 정한다. 내 규칙(결과/name_rules.py — same_device · group_name)으로 같은 장치끼리 묶어 묶음마다 이름 하나를 쓴다.
+    어느 묶음에도 들지 않은 행은 원자료 이름 그대로다. 돌려주는 것: ({(원자료 이름, 모델): 이름}, 화면용 {묶음, 다른 이름과 묶이지 않은 행})."""
     mod = rules('name_rules')
     parts = {r['품번'] for _, r in src['예비품_목록.csv']}
     cross = [r for _, r in src['품번_교차표.csv']]
@@ -236,28 +219,17 @@ def name_map(src, rows_done, model_of):
             named[key] = name
         if len(members) > 1:
             by_rule.append((name, len(members), ' · '.join(sorted({f'{m["이름"]}({m["설비코드"]})' for m in members}))))
-    table_ = names()
-    fixed = []
-    for (raw, model), name in sorted(named.items()):
-        hit = table_.get((raw, model)) or table_.get((raw, ''))
-        if hit:
-            named[(raw, model)] = hit[0]
-            fixed.append((f'결과/이름.csv:{hit[1]}', raw, model, name, hit[0]))
-    unused = sorted(f'결과/이름.csv:{line}' for (raw, model), (_, line) in table_.items()
-                    if not any(r == raw and model in ('', m) for r, m in named))
-    fixed_keys = {(f[1], f[2]) for f in fixed}
-    alone = [(m['줄'], m['설비코드'], m['계통'], m['이름']) for members in groups if len(members) == 1 for m in members
-             if (m['이름'], m['모델']) not in fixed_keys and sum(1 for x in items if x['이름'] == m['이름']) == 1]
-    return named, {'묶음': sorted(by_rule), '이름표': fixed, '그대로': sorted(alone, key=lambda x: int(x[0].split(':')[1])), '안_쓴_이름표': unused}
+    alone = [(m['줄'], m['설비코드'], m['계통'], m['이름']) for members in groups if len(members) == 1 for m in members]
+    return named, {'묶음': sorted(by_rule), '그대로': sorted(alone, key=lambda x: int(x[0].split(':')[1]))}
 
 
 def name_of(named, raw, model):
-    """원자료 이름(붙은곳 · 쓰는곳)을 5단계에서 정한 이름으로. 그 모델의 구성 요소 행에 없는 이름은 원자료 이름 그대로 견준다."""
+    """원자료 이름(붙은곳)을 같은 장치끼리 묶어 정한 이름으로. 그 모델의 구성 요소 행에 없는 이름은 원자료 이름 그대로 견준다."""
     return named.get((raw, model), raw)
 
 
 def handling():
-    """행_처리.csv → ({(파일, 행): (처리, 대상)}, {(파일, 행): 행_처리.csv 줄}). 처리 = 빼기 · 하나로:<남길 행> · 옛 코드:<설비코드> · 지난 실물:<지금 행>."""
+    """행_처리.csv → ({(파일, 행): (처리, 대상)}, {(파일, 행): 행_처리.csv 줄}). 처리 = 빼기 · 지난 실물:<지금 행>."""
     out, where = {}, {}
     for line, r in need(OUT / '행_처리.csv', ['파일', '행', '처리', '근거']):
         if not r['행'].isdigit():
@@ -269,49 +241,24 @@ def handling():
         key = (r['파일'], int(r['행']))
         if how == '빼기':
             out[key] = ('빼기', '')
-        elif re.fullmatch(r'하나로:\d+', how):
-            out[key] = ('하나로', how.split(':', 1)[1])
-        elif re.fullmatch(r'옛 코드:\S+', how):
-            out[key] = ('옛 코드', how.split(':', 1)[1])
         elif re.fullmatch(r'지난 실물:\d+', how) and r['파일'] == '구성요소_목록.csv':
             out[key] = ('지난 실물', int(how.split(':', 1)[1]))
         else:
-            raise Stop(f'결과/행_처리.csv:{line}: 처리 「{how}」 — 빼기 · 하나로:<남길 행 번호> · 옛 코드:<그 설비코드> · 지난 실물:<지금 실물 행 번호>(구성요소_목록.csv만) 가운데 하나로 씁니다.')
+            raise Stop(f'결과/행_처리.csv:{line}: 처리 「{how}」 — 빼기 · 지난 실물:<지금 실물 행 번호>(구성요소_목록.csv만) 가운데 하나로 씁니다.')
         where[key] = line
     return out, where
 
 
-KIND_NAMES = ('실측', '계산값', '설정값')
-
-
-def quantities():
-    """물리량.csv(규칙으로 정해지지 않는 것만) → {대상: (물리량, 종류, 줄)}. 대상 = 재는것 글자, 또는 센서 행 하나(센서_목록.csv:<행>). 비어 있어도 된다."""
-    out = {}
-    for line, r in need(OUT / '물리량.csv', ['대상', '물리량', '종류', '근거']):
-        if r['종류'] not in KIND_NAMES:
-            raise Stop(f'결과/물리량.csv:{line}: 종류 「{r["종류"]}」 — 실측 · 계산값 · 설정값 가운데 하나입니다.')
-        if not r['대상'] or not r['물리량']:
-            raise Stop(f'결과/물리량.csv:{line}: 대상과 물리량을 모두 적습니다.')
-        out[r['대상'].removeprefix('자료/')] = (r['물리량'], r['종류'], line)
-    return out
-
-
-def quantity_map(src, rows_done, asset_rows, place_of):
-    """6단계: 센서 행마다 (물리량, 종류)를 정한다. 내 규칙(결과/quantity_rules.py — same_quantity · quantity_name · kind_of)으로 같은 물리량끼리 묶고,
-    결과/물리량.csv에 적은 대상(센서 행이 재는것 글자보다 먼저)은 그 물리량 · 종류로 바꾼다. place_of(센서 행) = (붙은 구성 요소 이름, 계통).
-    규칙이 서로 다른 묶음에 같은 물리량 이름을 붙이면 멈춘다(같은 이름이면 같은 물리량으로 합쳐지므로).
-    돌려주는 것: ({센서 줄: (물리량, 종류)}, 화면용 {이름표로 바꾼 행, 안 쓴 이름표 행})."""
+def quantity_map(src, rows_done, assets, place_of):
+    """센서 행마다 물리량을 정한다. 내 규칙(결과/quantity_rules.py — same_quantity · quantity_name)으로 같은 물리량끼리 묶는다. place_of(센서 행) = (붙은 구성 요소 이름, 계통).
+    규칙이 서로 다른 묶음에 같은 물리량 이름을 붙이면 멈춘다(같은 이름이면 같은 물리량으로 합쳐지므로). 돌려주는 것: {센서 줄: 물리량}."""
     mod = rules('quantity_rules')
     items = []
     for line, r in src['센서_목록.csv']:
-        if rows_done.get(('센서_목록.csv', line)) or r['설비코드'] not in asset_rows:
+        if rows_done.get(('센서_목록.csv', line)) or r['설비코드'] not in assets:
             continue
-        a = asset_rows[r['설비코드']]
         place, group = place_of(line, r)
-        items.append((line, {**{k: r[k] for k in ('설비코드', '태그', '계장태그', '재는것', '단위', '수집방식', '비고')},
-                             '붙은곳': place, '계통': group, '모델': a['모델'], '제조사': a['제조사'], '줄': f'센서_목록.csv:{line}'}))
-    for _, m in items:   # 같은 설비 · 같은 계통에 붙은 다른 센서의 계장태그(없으면 태그) — 그 자리에 같은 종류 계기가 몇 개인지 판단에 쓴다
-        m['같은_계통_계장태그'] = sorted(x['계장태그'] or x['태그'] for _, x in items if x is not m and x['설비코드'] == m['설비코드'] and x['계통'] == m['계통'] and m['계통'])
+        items.append((line, {**{k: r[k] for k in ('설비코드', '태그', '센서명', '재는것', '단위')}, '붙은곳': place, '계통': group, '줄': f'센서_목록.csv:{line}'}))
     out, named = {}, {}
     for members in grouped(items, lambda a, b: ask(mod, 'same_quantity', bool, dict(a[1]), dict(b[1]))):
         name = ask(mod, 'quantity_name', str, [dict(m) for _, m in members])
@@ -319,77 +266,24 @@ def quantity_map(src, rows_done, asset_rows, place_of):
             raise Stop(f'결과/quantity_rules.py: 서로 다른 묶음 둘에 같은 물리량 이름 「{name}」을 붙였습니다 — {named[name]} · {members[0][1]["줄"]}. '
                        '같은 물리량이면 same_quantity가 묶게 하고, 다른 물리량이면 이름을 달리합니다.')
         named[name] = members[0][1]['줄']
-        for line, m in members:
-            kind = ask(mod, 'kind_of', str, dict(m))
-            if kind not in KIND_NAMES:
-                raise Stop(f'결과/quantity_rules.py kind_of: {m["줄"]}에 「{kind}」를 돌려줬습니다 — 실측 · 계산값 · 설정값 가운데 하나입니다.')
-            out[line] = (name, kind)
-    table_ = quantities()
-    fixed, used = [], set()
-    for line, m in items:
-        key = m['줄'] if m['줄'] in table_ else m['재는것']
-        hit = table_.get(key)
-        if hit:
-            used.add(key)
-            fixed.append((f'결과/물리량.csv:{hit[2]}', m['줄'], f'{m["설비코드"]}:{m["태그"]}', m['재는것'], ' · '.join(out[line]), f'{hit[0]} · {hit[1]}'))
-            out[line] = hit[:2]
-    unused = sorted(f'결과/물리량.csv:{v[2]}' for k, v in table_.items() if k not in used)
-    return out, {'이름표': fixed, '안_쓴_이름표': unused}
+        for line, _ in members:
+            out[line] = name
+    return out
 
 
-def units():
-    """단위.csv(규칙으로 정해지지 않는 것만) → ({물리량: (기준 단위, 줄)}, {센서_목록.csv 행: (단위 또는 미확인, 줄)}). 비어 있어도 된다."""
-    base, rows = {}, {}
-    for line, r in need(OUT / '단위.csv', ['대상', '값', '근거']):
-        if not r['대상'] or not r['값']:
-            raise Stop(f'결과/단위.csv:{line}: 대상과 값을 모두 적습니다.')
-        m = re.fullmatch(r'센서_목록\.csv:(\d+)', r['대상'])
-        if m:
-            rows[int(m.group(1))] = (r['값'], line)
-        else:
-            base[r['대상']] = (r['값'], line)
-    return base, rows
-
-
-def unit_map(src, rows_done, asset_rows, qmap):
-    """7단계: 물리량마다 기준 단위와, 단위 칸이 빈 센서 행의 단위를 정한다. 내 규칙(결과/unit_rules.py — base_unit · blank_unit)으로 정하고,
-    결과/단위.csv에 적은 대상은 그 값으로 바꾼다. 돌려주는 것: ({물리량: 기준 단위}, {빈 단위 센서 줄: 단위 또는 미확인}, 화면용 {기준 표, 안 쓴 이름표 행})."""
-    mod = rules('unit_rules')
-    live = [(line, r) for line, r in src['센서_목록.csv'] if line in qmap]
-
-    def row_of(line, r):
-        return {**{k: r[k] for k in ('설비코드', '태그', '단위', '정상값', '한계', '한계구분')}, '모델': asset_rows[r['설비코드']]['모델'],
-                '물리량': qmap[line][0], '줄': f'센서_목록.csv:{line}'}
+def unit_map(src, qmap):
+    """물리량마다 기준 단위(일반 처리): 그 물리량의 센서 행이 가장 많이 쓴 단위(같은 수면 센서 목록에서 먼저 나온 것). 단위가 적힌 행이 없으면 미확인.
+    돌려주는 것: ({물리량: 기준 단위}, 화면용 [(물리량, 원자료에 적힌 단위, 기준 단위)])."""
     per_q = {}
-    for line, r in live:
-        per_q.setdefault(qmap[line][0], []).append(r)
-    table_base, table_rows = units()
+    for line, r in src['센서_목록.csv']:
+        if line in qmap:
+            per_q.setdefault(qmap[line], []).append(r['단위'])
     base, shown = {}, []
-    for q, members in sorted(per_q.items()):
-        written = [r['단위'] for r in members if r['단위']]
-        if q in table_base:
-            unit, how = table_base[q][0], f'결과/단위.csv:{table_base[q][1]}'
-        elif written:
-            unit, how = ask(mod, 'base_unit', str, q, list(written)), 'base_unit'
-        else:
-            raise Stop(f'물리량 「{q}」: 단위가 적힌 센서 행이 없습니다 — 결과/단위.csv에 이 물리량의 기준 단위나 {UNKNOWN}을 적습니다.')
-        base[q] = unit
-        counts = {}
-        for u in written:
-            counts[u] = counts.get(u, 0) + 1
-        shown.append((q, ' · '.join(f'{u} {n}행' for u, n in counts.items()), unit, how))
-    blank = {}
-    for line, r in live:
-        if r['단위']:
-            continue
-        if line in table_rows:
-            blank[line] = table_rows[line][0]
-            continue
-        cands = [row_of(n, x) for n, x in live if x['단위'] and qmap[n][0] == qmap[line][0]]
-        blank[line] = ask(mod, 'blank_unit', str, row_of(line, r), cands)
-    unused = sorted([f'결과/단위.csv:{v[1]}' for k, v in table_base.items() if k not in per_q] +
-                    [f'결과/단위.csv:{v[1]}' for k, v in table_rows.items() if k not in blank])
-    return base, blank, {'기준': shown, '안_쓴_이름표': unused}
+    for q, units in sorted(per_q.items()):
+        written = [u for u in units if u]
+        base[q] = max(written, key=lambda u: (written.count(u), -written.index(u))) if written else UNKNOWN
+        shown.append((q, ' · '.join(f'{u} {written.count(u)}행' for u in dict.fromkeys(written)) or '(적힌 단위 없음)', base[q]))
+    return base, shown
 
 
 # ───────────── 만들기(단계별) ─────────────
@@ -398,7 +292,7 @@ def raw():
 
 
 def preview_ids():
-    """4단계: 내 ID 틀로 원자료 행마다 ID를 지었을 때 겹치는 ID(이름은 아직 원자료 그대로). 실물은 일련번호가 적힌 구성 요소 행으로 짓는다."""
+    """내 식별자 틀로 원자료 행마다 식별자를 지었을 때 겹치는 것(이름은 아직 원자료 그대로). 실물은 일련번호가 적힌 구성 요소 행으로 짓는다."""
     ids, links = design()
     src = raw()
     out = {}
@@ -414,14 +308,11 @@ def preview_ids():
     return ids, links, out
 
 
-
 def check_cardinality(links, rels, where_of):
     """관계.csv에 적은 카디널리티를 지금까지 만든 연결과 견준다. 「1」 쪽에 둘 이상 이어진 대상이 있으면 그 관계.csv 줄과 원자료 줄을 짚고 멈춘다.
     돌려주는 것: 화면용 [(연결, 관계, 적은 것, 시작 하나에 이어진 끝 최대 수, 끝 하나에 이어진 시작 최대 수, 견줌)]."""
     shown = []
-    for name in dict.fromkeys(v[0] for v in links.values()):
-        here = [(k, v) for k, v in links.items() if v[0] == name]
-        card, line = here[0][1][3], here[0][1][4]
+    for link, (name, _, _, card, line) in links.items():
         out_n, in_n = {}, {}
         for i, r in enumerate(rels):
             if r['type'] == name:
@@ -440,14 +331,14 @@ def check_cardinality(links, rels, where_of):
                                f'({" · ".join(where_of[i] for i in v[:4])}). 원자료가 맞으면 카디널리티를, 연결이 잘못이면 그 판단을 고칩니다'
                                f'(이렇게 걸린 대상 {len(over)}개).')
         loose = (start_side != '1' and most_in == 1) or (end_side != '1' and most_out == 1)
-        shown.append((' · '.join(k for k, _ in here), name, card, most_out, most_in, '적은 것보다 실제 연결이 좁음(N 쪽에 하나뿐)' if loose else '맞음'))
+        shown.append((link, name, card, most_out, most_in, '적은 것보다 실제 연결이 좁음(N 쪽에 하나뿐)' if loose else '맞음'))
     return shown
 
 
 def build(stage):
-    """stage = '이름' · '센서' · '단위' · '부품'까지 만든다. 돌려주는 것: 화면용 값과 (부품 단계면) 쓴 모델."""
+    """stage = '이름' · '센서' · '부품'까지 만든다. 돌려주는 것: 화면용 값과 (부품 단계면) 쓴 모델."""
     ids, links = design()
-    decided(stage if stage in DECISIONS else ('센서' if stage == '단위' else stage))
+    decided(stage)
     split = '실물' in ids
     src = raw()
     rows_done, rule_line = handling()
@@ -462,7 +353,7 @@ def build(stage):
 
     def node(label, id_, where, **props):
         if id_ in index:
-            raise Stop(f'{where}: ID 「{id_}」가 이미 있습니다(겹친 행). 결과/행_처리.csv에 이 행을 어떻게 할지 정하거나 결과/설계.csv의 ID를 바꿉니다.')
+            raise Stop(f'{where}: 식별자 「{id_}」가 이미 있습니다(겹친 행). 결과/행_처리.csv에 이 행을 어떻게 할지 정하거나 결과/설계.csv의 식별자를 바꿉니다.')
         index[id_] = label
         nodes.append({'labels': [label], 'props': {'id': id_, **{k: v for k, v in props.items() if v not in (None, '', [])}}})
 
@@ -478,29 +369,16 @@ def build(stage):
             raise Stop(f'결과/행_처리.csv:{rule_line[(file, line)]}: 「지난 실물」은 구성 요소 자리와 그 실물을 나눌 때(결과/설계.csv에 실물 행)만 씁니다 — 나누지 않으면 「빼기」로 둡니다.')
 
     # 설비
-    assets, model_of, legacy = {}, {}, {}
+    assets, model_of = {}, {}
     for line, r in src['설비_대장.csv']:
-        h = handled('설비_대장.csv', line)
-        if h and h[0] == '옛 코드':
-            legacy.setdefault(h[1], []).append(r['설비코드'])
+        if handled('설비_대장.csv', line):
             continue
-        if h:
-            continue
-        aid = make_id(ids['설비'], '설비', r, f'자료/설비_대장.csv:{line}')
-        assets[r['설비코드']] = aid
+        assets[r['설비코드']] = make_id(ids['설비'], '설비', r, f'자료/설비_대장.csv:{line}')
         model_of[r['설비코드']] = r['모델']
-    for line, r in src['설비_대장.csv']:
-        code = r['설비코드']
-        if code in assets:
-            node('Asset', assets[code], f'자료/설비_대장.csv:{line}', name=r['설비명'], model=r['모델'], maker=r['제조사'], serial=r['일련번호'],
-                 functional_location=r['기능위치'], installed=r['설치일'], status=r['상태'], legacy_codes=legacy.get(code))
-    for target in legacy:
-        if target not in assets:
-            raise Stop(f'결과/행_처리.csv: 옛 코드를 남길 설비 「{target}」가 설비 대장에 없습니다.')
+        node('Asset', assets[r['설비코드']], f'자료/설비_대장.csv:{line}', name=r['설비명'], model=r['모델'], maker=r['제조사'], serial=r['일련번호'],
+             functional_location=r['기능위치'], installed=r['설치일'], status=r['상태'])
     # 구성 요소(자리)와, 나누기로 했으면 그 자리의 실물
-    comps = {}
-    per_asset = {}
-    comp_at_row = {}
+    comps, per_asset, comp_at_row = {}, {}, {}
     for line, r in src['구성요소_목록.csv']:
         if r['설비코드'] not in assets and not rows_done.get(('구성요소_목록.csv', line)):
             raise Stop(f'자료/구성요소_목록.csv:{line}: 설비코드 「{r["설비코드"]}」가 모델의 설비에 없습니다.')
@@ -528,10 +406,11 @@ def build(stage):
         per_asset[code][1] += 1
         if split and r['일련번호']:
             unit(cid, r, line, True)
+    by_line = dict(src['구성요소_목록.csv'])
     for (file, line), (how, target) in sorted(rows_done.items()):
         if how != '지난 실물':
             continue
-        r = dict(src['구성요소_목록.csv'])[line] if any(n == line for n, _ in src['구성요소_목록.csv']) else None
+        r = by_line.get(line)
         now = comp_at_row.get(target)
         if r is None or now is None or (r['설비코드'], name_of(named, r['구성요소'], model_of.get(r['설비코드'], ''))) != now[:2]:
             raise Stop(f'결과/행_처리.csv:{rule_line[(file, line)]}: 「지난 실물:{target}」 — 구성요소_목록.csv:{target}이 이 행(:{line})과 같은 설비 · 같은 자리의 살아 있는 행이어야 합니다.')
@@ -544,180 +423,104 @@ def build(stage):
         check_cardinality(links, rels, where_of)
         info.update(unused=[k for k in rows_done if k not in used_rows and k[0] in ('설비_대장.csv', '구성요소_목록.csv')])
         return info, None
-    # 센서
+    # 센서와 물리량 — 단위는 물리량의 기준 단위로 맞춘다(일반 처리)
     for line, r in src['센서_목록.csv']:
         if r['설비코드'] not in assets and not rows_done.get(('센서_목록.csv', line)):
             raise Stop(f'자료/센서_목록.csv:{line}: 설비코드 「{r["설비코드"]}」가 모델의 설비에 없습니다.')
-    asset_rows = {r['설비코드']: r for _, r in src['설비_대장.csv'] if r['설비코드'] in assets}
 
     def place_of(line, r):
-        if r['붙은곳'] == '설비 전체':
-            return '설비 전체', ''
         cname = name_of(named, r['붙은곳'], model_of[r['설비코드']])
-        hit = comps.get((r['설비코드'], cname))
-        return cname, hit[2]['계통'] if hit else ''
-    qmap, q_info = quantity_map(src, rows_done, asset_rows, place_of)
-    info['물리량'] = q_info
-    if stage in ('단위', '부품'):
-        base, blank_units, u_info = unit_map(src, rows_done, asset_rows, qmap)
-        info['단위'] = u_info
-    else:
-        base, blank_units = {}, {}
-    sensors, quants, convs, mixed = [], {}, [], []
+        if (r['설비코드'], cname) not in comps:
+            raise Stop(f'자료/센서_목록.csv:{line}: 붙은곳 「{r["붙은곳"]}」(→ {cname})이 {r["설비코드"]}의 구성 요소에 없습니다 — 같은 장치의 이름이 하나로 묶였는지 봅니다.')
+        return cname, comps[(r['설비코드'], cname)][2]['계통']
+    qmap = quantity_map(src, rows_done, assets, place_of)
+    base, base_shown = unit_map(src, qmap)
+    info['단위'] = base_shown
+    sensors, quants, convs = [], {}, []
     for line, r in src['센서_목록.csv']:
         if handled('센서_목록.csv', line):
             continue
-        code = r['설비코드']
-        qname, kind = qmap[line]
-        qid = make_id(ids['물리량'], '물리량', {'물리량': qname}, f'결과/물리량.csv ({r["재는것"]})')
+        code, qname = r['설비코드'], qmap[line]
+        qid = make_id(ids['물리량'], '물리량', {'물리량': qname}, f'자료/센서_목록.csv:{line}')
         sid = make_id(ids['센서'], '센서', r, f'자료/센서_목록.csv:{line}')
-        props = dict(tag=r['태그'], instrument_tag=r['계장태그'], kind={'실측': 'measured', '계산값': 'derived', '설정값': 'setpoint'}[kind],
-                     derived=kind == '계산값', limit_direction={'상한': 'upper', '하한': 'lower'}.get(r['한계구분']),
-                     sample_hz=number(r['표본주기']), collection=r['수집방식'])
         normal, limit = number(r['정상값']), number(r['한계'])
-        for col in ('정상값', '한계'):   # 값 칸에 숫자 말고 글(단위 등)이 섞인 행 — 숫자만 읽되 조용히 넘기지 않고 화면에 보인다
-            if r[col].strip() and not re.fullmatch(r'-?\d+(?:\.\d+)?', r[col].strip()):
-                mixed.append((f'센서_목록.csv:{line}', sid, col, r[col], '' if number(r[col]) is None else ('%g' % number(r[col])), r['단위'] or '(빈칸)'))
-        if stage in ('단위', '부품'):
-            unit_ = r['단위'] or blank_units[line]
-            if unit_ == UNKNOWN or base[qname] == UNKNOWN:
-                factor, out_unit = 1, None
-            elif unit_ == base[qname]:
-                factor, out_unit = 1, unit_
-            elif (unit_, base[qname]) in FACTOR:
-                factor, out_unit = FACTOR[(unit_, base[qname])], base[qname]
-            else:
-                raise Stop(f'자료/센서_목록.csv:{line}: 단위 「{unit_}」를 「{base[qname]}」로 바꾸는 법을 모릅니다(이 도구가 아는 환산: {", ".join(f"{a}→{b}" for a, b in FACTOR)}).')
-            if factor != 1 or (r['단위'] and r['단위'] != (out_unit or r['단위'])) or (not r['단위'] and unit_ != UNKNOWN):
-                convs.append((f'센서_목록.csv:{line}', sid, r['단위'] or '(빈칸)', unit_, out_unit or UNKNOWN,
-                              f'{r["정상값"]} / {r["한계"]}', f'{"" if normal is None else round(normal * factor, 6)} / {"" if limit is None else round(limit * factor, 6)}'))
-            props.update(unit=out_unit, source_unit=unit_ if (factor != 1 or not r['단위']) and unit_ != UNKNOWN else None,
-                         normal=None if normal is None else round(normal * factor, 6), limit=None if limit is None else round(limit * factor, 6))
+        for col in ('정상값', '한계'):
+            if r[col] and not re.fullmatch(r'-?\d+(?:\.\d+)?', r[col]):
+                raise Stop(f'자료/센서_목록.csv:{line}: {col} 칸 「{r[col]}」 — 숫자만 읽습니다. 글이 섞인 값은 이 도구가 바꾸지 못합니다.')
+        unit_ = r['단위'] or UNKNOWN
+        if unit_ == UNKNOWN or base[qname] == UNKNOWN:
+            factor, out_unit = 1, None
+        elif unit_ == base[qname]:
+            factor, out_unit = 1, unit_
+        elif (unit_, base[qname]) in FACTOR:
+            factor, out_unit = FACTOR[(unit_, base[qname])], base[qname]
         else:
-            props.update(normal=normal, limit=limit)
-        node('Sensor', sid, f'자료/센서_목록.csv:{line}', **props)
-        place = r['붙은곳']
-        if place == '설비 전체':
-            rel_('설비-센서', assets[code], sid, f'센서_목록.csv:{line}')
-        else:
-            cname = name_of(named, place, model_of[code])
-            if (code, cname) not in comps:
-                raise Stop(f'자료/센서_목록.csv:{line}: 붙은곳 「{place}」(→ {cname})이 {code}의 구성 요소에 없습니다.')
-            rel_('구성 요소-센서', comps[(code, cname)][0], sid, f'센서_목록.csv:{line}')
-        if qid not in quants:
-            quants[qid] = (qname, None if base.get(qname) == UNKNOWN else base.get(qname))
+            raise Stop(f'자료/센서_목록.csv:{line}: 단위 「{unit_}」를 물리량 「{qname}」의 기준 단위 「{base[qname]}」로 바꾸는 법을 모릅니다'
+                       f'(이 도구가 아는 환산: {", ".join(f"{a}→{b}" for a, b in FACTOR)}). 단위가 다른 것을 재는 센서가 한 물리량에 묶였는지 봅니다.')
+        if out_unit != unit_:
+            convs.append((f'센서_목록.csv:{line}', sid, qname, unit_, out_unit or UNKNOWN,
+                          f'{r["정상값"] or "없음"} / {r["한계"] or "없음"}', f'{"없음" if normal is None else "%g" % round(normal * factor, 6)} / {"없음" if limit is None else "%g" % round(limit * factor, 6)}'))
+        node('Sensor', sid, f'자료/센서_목록.csv:{line}', tag=r['태그'], name=r['센서명'], unit=out_unit, source_unit=unit_ if out_unit and out_unit != unit_ else None,
+             normal=None if normal is None else round(normal * factor, 6), limit=None if limit is None else round(limit * factor, 6),
+             limit_direction={'상한': 'upper', '하한': 'lower'}.get(r['한계구분']))
+        rel_('구성 요소-센서', comps[(code, place_of(line, r)[0])][0], sid, f'센서_목록.csv:{line}')
+        quants.setdefault(qid, (qname, None if base[qname] == UNKNOWN else base[qname]))
         rel_('센서-물리량', sid, qid, f'센서_목록.csv:{line}')
-        sensors.append((sid, code, r['태그'], qname, kind))
+        sensors.append((sid, code, r['태그'], qname))
     for qid, (qname, unit_) in quants.items():
-        node('Quantity', qid, f'결과/물리량.csv ({qname})', name=qname, unit=unit_)
+        node('Quantity', qid, f'결과/quantity_rules.py ({qname})', name=qname, unit=unit_)
     info['센서'] = sensors
     info['변환'] = convs
-    info['섞인 값'] = mixed
-    if stage in ('센서', '단위'):
+    if stage == '센서':
         check_cardinality(links, rels, where_of)
         info.update(unused=[k for k in rows_done if k not in used_rows])
         return info, None
-    # 부품
+    # 부품 — 식별자는 사내 품번, 다른 표기는 그 부품의 다른 이름(other_codes)
     parts = {r['품번']: (line, r) for line, r in src['예비품_목록.csv']}
     cross = [r for _, r in src['품번_교차표.csv']]
+    part_id, codes = {}, []
     for pid, (line, r) in parts.items():
-        node('Part', make_id(ids['부품'], '부품', r, f'자료/예비품_목록.csv:{line}'), f'자료/예비품_목록.csv:{line}', name=r['품명'],
-             other_codes=sorted({c['다른표기'] for c in cross if c['사내품번'] == pid}))
-    part_id = {pid: make_id(ids['부품'], '부품', r, '') for pid, (_, r) in parts.items()}
-    mod = rules()
-    spares = [dict(r) for _, r in src['예비품_목록.csv']]
-    written = {}      # 품번 · 교차표로 바로 풀리는 칸(일반 로직) — 같은 모델 다른 설비의 같은 자리가 쓰는 품번을 판단 함수에 건넨다
-    for (code, cname), (cid, line, r) in comps.items():
-        pid, _ = resolve_cell(r['교체부품'], parts, cross)
-        if pid:
-            written[(code, cname)] = pid
-    asked, linked, checks = [], [], []
+        part_id[pid] = make_id(ids['부품'], '부품', r, f'자료/예비품_목록.csv:{line}')
+        other = sorted({c['다른표기'] for c in cross if c['사내품번'] == pid})
+        node('Part', part_id[pid], f'자료/예비품_목록.csv:{line}', name=r['품명'], other_codes=other)
+        codes.append((part_id[pid], r['품명'], ' · '.join(other) or '없음'))
+    linked, lost = [], []
     for (code, cname), (cid, line, r) in comps.items():
         cell = r['교체부품']
         pid, how = resolve_cell(cell, parts, cross)
-        if pid is None:
-            def same_component(raw_name, model=model_of[code], cname=cname):
-                """원자료 이름이 이 구성 요소와 같은 것인가 — 5단계에서 정한 이름 기준(그 모델의 행에 없는 이름은 원자료 이름 그대로 견줌)."""
-                return name_of(named, raw_name, model) == cname
-            same_model = [{'설비코드': c, '품번': p} for (c, n), p in sorted(written.items()) if n == cname and c != code and model_of.get(c) == model_of[code]]
-            pid = mod.find_part(cell, {'설비코드': code, '모델': model_of[code]}, cname, spares, [dict(c) for c in cross], same_component, same_model)
-            how = '내 판단 함수'
-            if isinstance(pid, list):
-                bad = [p for p in pid if p not in parts]
-                if not pid or bad or len(set(pid)) != len(pid):
-                    raise Stop(f'결과/part_rules.py find_part: 자료/구성요소_목록.csv:{line}에 돌려준 확인 필요 후보 {pid!r} — 예비품 목록에 있는 사내 품번을 겹치지 않게 하나 이상 담습니다.')
-                if '구성 요소-부품 후보' not in links:
-                    raise Stop(f'결과/관계.csv: 자료/구성요소_목록.csv:{line}을 확인 필요로 남기려면 「구성 요소-부품 후보」 연결의 관계 이름이 있어야 합니다.')
-                for k in pid:
-                    rel_('구성 요소-부품 후보', cid, part_id[k], f'구성요소_목록.csv:{line}', source_text=cell or '(빈칸)')
-                checks.append((f'구성요소_목록.csv:{line}', code, cname, cell or '(빈칸)', ' · '.join(pid)))
-                asked.append((f'구성요소_목록.csv:{line}', code, cname, cell or '(빈칸)', '확인 필요'))
-                continue
-            asked.append((f'구성요소_목록.csv:{line}', code, cname, cell or '(빈칸)', pid if pid else '잇지 않음'))
-        if pid is not None:
-            if not isinstance(pid, str) or pid not in parts:
-                raise Stop(f'결과/part_rules.py find_part: 자료/구성요소_목록.csv:{line}에 돌려준 {pid!r}는 예비품 목록에 없는 사내 품번입니다(이을 품번 · None · 확인 필요 후보 목록 가운데 하나).')
-            rel_('구성 요소-부품', cid, part_id[pid], f'구성요소_목록.csv:{line}', source_text=cell or '(빈칸)')
-            linked.append((code, cname, pid, how))
-    groups = {}
-    for c in cross:
-        if c['표기종류'] == '제조사 품번':
-            groups.setdefault(c['다른표기'], set()).add(c['사내품번'])
-    same = []
-    for code, members in sorted(groups.items()):
-        if len(members) < 2:
+        if pid is None:      # 품번으로 풀리지 않는 칸은 짐작해 잇지 않고 화면에 보인다
+            lost.append((f'구성요소_목록.csv:{line}', code, cname, cell or '(빈칸)'))
             continue
-        verdict = mod.same_item(code, sorted(members))
-        if verdict not in (True, False):
-            raise Stop(f'결과/part_rules.py same_item: 「{code}」에 True 또는 False를 돌려줘야 합니다(돌려준 값 {verdict!r}).')
-        same.append((code, sorted(members), verdict))
-        if verdict:
-            if '부품-부품' not in links:
-                raise Stop('결과/관계.csv: 같은 물품으로 이을 「부품-부품」 연결의 관계 이름이 없습니다.')
-            first, *rest = sorted(members)
-            for other in rest:
-                rel_('부품-부품', part_id[other], part_id[first], f'품번_교차표.csv({code})', maker_part_no=code)
+        rel_('구성 요소-부품', cid, part_id[pid], f'구성요소_목록.csv:{line}', source_text=cell)
+        linked.append((f'구성요소_목록.csv:{line}', code, cname, cell, pid, how))
     info['카디널리티'] = check_cardinality(links, rels, where_of)
-    info.update(물은_행=asked, 이은_부품=linked, 확인_필요=checks, 같은_규격=same, unused=[k for k in rows_done if k not in used_rows])
-    model = write_model(ids, links, nodes, rels, bool([s for s in same if s[2]]), bool(checks))
-    return info, model
+    info.update(이은_부품=linked, 못_찾은_칸=lost, 다른_표기=codes, unused=[k for k in rows_done if k not in used_rows])
+    return info, write_model(ids, links, nodes, rels)
 
 
-def write_model(ids, links, nodes, rels, same_item, candidates):
+def write_model(ids, links, nodes, rels):
     split = '실물' in ids
     classes = {
         'Asset': {'meaning': '개별 설비', 'required': {'id': 'string', 'name': 'string', 'model': 'string', 'status': 'string'},
-                  'optional': {'maker': 'string', 'serial': 'string', 'functional_location': 'string', 'installed': 'string', 'legacy_codes': 'list'}},
+                  'optional': {'maker': 'string', 'serial': 'string', 'functional_location': 'string', 'installed': 'string'}},
         'Component': ({'meaning': '설비 안의 정비 가능 품목이 놓인 자리', 'required': {'id': 'string', 'name': 'string', 'group': 'string'},
                        'optional': {'aliases': 'list'}} if split else
                       {'meaning': '설비 안의 정비 가능 품목', 'required': {'id': 'string', 'name': 'string', 'group': 'string'},
                        'optional': {'serial': 'string', 'aliases': 'list'}}),
-        'Sensor': {'meaning': '설비별 계측 채널(실측 · 계산값 · 설정값)', 'required': {'id': 'string', 'tag': 'string', 'kind': ['measured', 'derived', 'setpoint'], 'derived': 'boolean'},
-                   'optional': {'unit': 'string', 'normal': 'number', 'limit': 'number', 'limit_direction': ['upper', 'lower'], 'instrument_tag': 'string',
-                                'sample_hz': 'number', 'collection': 'string', 'source_unit': 'string'}},
+        'Sensor': {'meaning': '설비별 계측 채널', 'required': {'id': 'string', 'tag': 'string'},
+                   'optional': {'name': 'string', 'unit': 'string', 'normal': 'number', 'limit': 'number', 'limit_direction': ['upper', 'lower'], 'source_unit': 'string'}},
         'Quantity': {'meaning': '재는 물리량과 기준 단위', 'required': {'id': 'string', 'name': 'string'}, 'optional': {'unit': 'string'}},
-        'Part': {'meaning': '사내 품번 하나로 관리하는 부품', 'required': {'id': 'string', 'name': 'string'}, 'optional': {'other_codes': 'list'}}}
+        'Part': {'meaning': '사내 품번 하나로 관리하는 부품. 다른 표기는 other_codes', 'required': {'id': 'string', 'name': 'string'}, 'optional': {'other_codes': 'list'}}}
     if split:
         classes['Unit'] = {'meaning': '일련번호가 붙은 실물 한 대', 'required': {'id': 'string', 'serial': 'string'}}
     relations, names = {}, {}
     for link, (name, start, end, card, _) in links.items():
-        if (link == '부품-부품' and not same_item) or (link == '구성 요소-부품 후보' and not candidates):
-            continue
-        spec = relations.setdefault(name, {'from': [], 'to': LABEL[end], 'cardinality': card})
-        if spec['to'] != LABEL[end]:
-            raise Stop(f'결과/관계.csv: 관계 이름 「{name}」을 끝이 다른 연결 둘에 썼습니다.')
-        spec['from'].append(LABEL[start])
-        if link in ('구성 요소-부품', '구성 요소-부품 후보'):
-            spec['properties'] = {'source_text': 'string'}
-        if link == '부품-부품':
-            spec['properties'] = {'maker_part_no': 'string'}
+        relations[name] = {'from': LABEL[start], 'to': LABEL[end], 'cardinality': card}
+        if link == '구성 요소-부품':
+            relations[name]['properties'] = {'source_text': 'string'}
         if link == '구성 요소-실물':
-            spec['properties'] = {'current': 'boolean'}
-        if link == '구성 요소-부품 후보':
-            spec['note'] = '확인 필요 — 원자료가 하나로 정하지 않은 교체 부품 후보'
+            relations[name]['properties'] = {'current': 'boolean'}
         names[link] = name
-    for spec in relations.values():
-        spec['from'] = spec['from'][0] if len(spec['from']) == 1 else spec['from']
     schema = {'classes': classes, 'relations': relations, 'identity': {LABEL[k]: v for k, v in ids.items()}, 'links': names}
     graph = {'nodes': nodes, 'rels': rels}
     OUT.mkdir(exist_ok=True)
@@ -733,7 +536,6 @@ def load_model():
     return schema, graph
 
 
-
 def value_text(p):
     """질문 2 센서 값 — 「단위 · 정상값 · 한계 · 한계구분」 차례. 값 없음은 「없음」, 단위를 정하지 못했으면 「미확인」."""
     def num(v):
@@ -743,39 +545,40 @@ def value_text(p):
 
 def answers(asks):
     """asks = [(질문, 물을 값)] → [{'질문','물을_값','항목','답'}].
-    질문 1 = 설비 코드 → 구성 요소마다 붙은 센서 태그. 질문 2 = 물리량 이름 → 그 물리량을 재는 센서(설비코드:태그, 항목 빈칸)와 센서마다 값(항목 = 설비코드:태그,
-    답 = 단위 · 정상값 · 한계 · 한계구분). 질문 3 = 품번 · 표기 → 그 부품마다 쓰는 설비(확인 필요 후보로 이어진 설비는 항목 「품번(확인 필요)」 줄).
-    없으면 답 「없음」."""
+    질문 1 = 설비 코드 → 구성 요소마다 붙은 센서 태그(항목 = 구성 요소 이름)와 그 자리에 달린 실물의 일련번호(항목 = 「구성 요소 이름 실물」 —
+    실물을 따로 둔 모델이면 「일련번호(지금)」 · 「일련번호(지난)」, 아니면 구성 요소의 일련번호 속성 하나).
+    질문 2 = 물리량 이름 → 그 물리량을 재는 센서(설비코드:태그, 항목 빈칸)와 센서마다 값(항목 = 설비코드:태그, 답 = 단위 · 정상값 · 한계 · 한계구분).
+    질문 3 = 품번 · 표기 → 그 부품을 쓰는 설비. 없으면 답 「없음」."""
     schema, graph = load_model()
-    links = schema.get('links', {})
+    unit_type = schema.get('links', {}).get('구성 요소-실물')
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
     props = {n['props']['id']: n['props'] for n in graph['nodes']}
     rel_by = {}
     for r in graph['rels']:
         rel_by.setdefault(r['a'], []).append(r)
         rel_by.setdefault(r['b'], []).append(r)
-    check_type = links.get('구성 요소-부품 후보')
 
-    def neighbours(i, want, types=None, skip=()):
-        return sorted({(r['b'] if r['a'] == i else r['a']) for r in rel_by.get(i, [])
-                       if label.get(r['b'] if r['a'] == i else r['a']) == want and (types is None or r['type'] in types) and r['type'] not in skip})
+    def neighbours(i, want):
+        return sorted({(r['b'] if r['a'] == i else r['a']) for r in rel_by.get(i, []) if label.get(r['b'] if r['a'] == i else r['a']) == want})
 
     out = []
     for q, value in asks:
         q = str(q).strip()
         if q == '1':
-            hit = [i for i, p in props.items() if label[i] == 'Asset' and (p.get('id') == value or value in p.get('legacy_codes', []))]
-            if not hit:
+            if label.get(value) != 'Asset' and not any(label[i] == 'Asset' and p.get('id') == value for i, p in props.items()):
                 out.append({'질문': q, '물을_값': value, '항목': '', '답': '없음'})
                 continue
-            a = hit[0]
-            for c in neighbours(a, 'Component'):
+            for c in neighbours(value, 'Component'):
                 tags = sorted(props[s]['tag'] for s in neighbours(c, 'Sensor'))
-                if tags:      # 센서가 없는 구성 요소는 질문 1의 답이 아니다
+                if tags:      # 센서가 없는 구성 요소는 센서 줄을 내지 않는다
                     out.append({'질문': q, '물을_값': value, '항목': props[c]['name'], '답': ' · '.join(tags)})
-            direct = neighbours(a, 'Sensor')
-            if direct:
-                out.append({'질문': q, '물을_값': value, '항목': '설비 전체', '답': ' · '.join(sorted(props[s]['tag'] for s in direct))})
+                if unit_type:
+                    held = sorted(((not r['props'].get('current'), props[r['b'] if r['a'] == c else r['a']]['serial']) for r in rel_by.get(c, []) if r['type'] == unit_type))
+                    serials = ' · '.join(f'{s}({"지난" if past else "지금"})' for past, s in held)
+                else:
+                    serials = props[c].get('serial', '')
+                if serials:
+                    out.append({'질문': q, '물을_값': value, '항목': props[c]['name'] + ' 실물', '답': serials})
         elif q == '2':
             hit = [i for i, p in props.items() if label[i] == 'Quantity' and p.get('name') == value]
             if not hit:
@@ -783,7 +586,7 @@ def answers(asks):
                 continue
             found = []
             for s in neighbours(hit[0], 'Sensor'):
-                asset = next((a for c in neighbours(s, 'Component') for a in neighbours(c, 'Asset')), None) or next(iter(neighbours(s, 'Asset')), '')
+                asset = next((a for c in neighbours(s, 'Component') for a in neighbours(c, 'Asset')), '')
                 key = f'{props[asset]["id"] if asset else "?"}:{props[s]["tag"]}'
                 found.append(key)
                 out.append({'질문': q, '물을_값': value, '항목': key, '답': value_text(props[s])})
@@ -794,13 +597,8 @@ def answers(asks):
                 out.append({'질문': q, '물을_값': value, '항목': '', '답': '없음'})
                 continue
             for pid in ids:
-                group = {pid} | set(neighbours(pid, 'Part'))
-                assets = sorted({a for p in group for c in neighbours(p, 'Component', skip=(check_type,)) for a in neighbours(c, 'Asset')})
+                assets = sorted({a for c in neighbours(pid, 'Component') for a in neighbours(c, 'Asset')})
                 out.append({'질문': q, '물을_값': value, '항목': pid, '답': ' · '.join(props[a]['id'] for a in assets) or '쓰는 설비 없음'})
-                if check_type:
-                    unsure = sorted({a for p in group for c in neighbours(p, 'Component', types=(check_type,)) for a in neighbours(c, 'Asset')})
-                    if unsure:
-                        out.append({'질문': q, '물을_값': value, '항목': pid + '(확인 필요)', '답': ' · '.join(props[a]['id'] for a in unsure)})
         else:
             raise Stop(f'결과/기대_답.csv: 질문 「{q}」 — 질문은 1 · 2 · 3입니다.')
     return out

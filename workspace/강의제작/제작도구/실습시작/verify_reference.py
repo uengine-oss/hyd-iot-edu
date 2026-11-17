@@ -6,12 +6,11 @@
    실습4 폴더 `입력/자료/`의 실제 CSV 줄에서 다시 읽어 값이 같은지 본다.
    실전반 실습4 조회 갈래 ㄱ · ㄴ은 실습4 입력 모델(갈래 ㄴ)에서 같은 답이 나오는지 함께 대조한다.
 2) Neo4j 실행(--offline이 없을 때): 이 스크립트가 만든 별도 교육용 컨테이너에 참조 그래프를 적재 → 질의 → 같은 적재 재실행
-   를 실습3 갈래마다, 실습4 입력 모델(통합 A · 실전 ㄴ) 위에서 통합반은 설비별 교체 부품 조회와 수정본 반영 → 재반영을 수정본 갈래마다,
-   실전반은 조회 갈래마다 실제로 하고 개수·답·출처를 확인한다. 통합반은 수정본 전에도 부품의 사용 설비를 설비 상태와 함께 조회한다
-   (10단계 「지금 가동하는 설비」). 끝나면 그 컨테이너와 이름 없는 볼륨만 지운다.
-갈래: 실습3 통합반 A · B · C, 실전반 A · B · ㄴ · ㄷ · ㄹ · ㅁ(build_labs.REFERENCE_BRANCHES, ㄹ · ㅁ은 ㄴ에 견적 갈래만 다름 — 대응은 reference/실전반/README.md).
-      실습4 통합반 수정본 갈래 남김 · 삭제(build_labs.LAB4_CHANGE_BRANCHES — 불용 설비를 상태로 남김 · 전용 하위 대상과 함께 지움),
-      실전반 조회 갈래 ㄱ · ㄴ(build_labs.LAB4_QUERY_BRANCHES — PR-07 7.4 정보를 빼고 · 함께 돌려줌).
+   를 실습3 갈래마다, 실전반은 실습4 입력 모델(ㄴ) 위에서 조회 갈래마다 실제로 하고 개수·답·출처를 확인한다. 끝나면 그 컨테이너와 이름 없는 볼륨만 지운다.
+   통합반 실습4(적재 · 조회 · 수정본 갈래 남김 · 삭제)의 실제 DB 실행은 학생 폴더로 도는 reference/session2_graph_trials.py 한 곳이 한다.
+과정마다 그 과정의 규모로 돈다(통합반 = 실습 랩 규모, 실전반 = 공장 규모 — data_session2.for_course).
+갈래: 실습3 통합반 A · B · C · E, 실전반 A · B · ㄴ · ㄷ · ㄹ · ㅁ(build_labs.REFERENCE_BRANCHES, ㄹ · ㅁ은 ㄴ에 견적 갈래만 다름 — 대응은 reference/실전반/README.md).
+      실습4 실전반 조회 갈래 ㄱ · ㄴ(build_labs.LAB4_QUERY_BRANCHES — PR-07 7.4 정보를 빼고 · 함께 돌려줌).
 사용: python verify_reference.py [--offline]
 """
 from pathlib import Path
@@ -32,8 +31,8 @@ import build_labs as B             # noqa: E402
 
 REPORT = HERE/'reference/session2_검증.json'
 EXPECT = {'통합반': HERE/'reference/통합반/기대답.json', '실전반': HERE/'reference/실전반/기대답.json'}
-# 6205-2RS: 두 사내 품번(P-FAN-BRG·P-BRG-6205)이 같은 제조사 품번을 가진다 → 후보 둘. 갈래 A는 후보마다 따로, 갈래 B는 같은 물품 묶음으로 답한다.
-PROBES = {'통합반': ['P-PMP-SEAL', 'P-FAN-BRG', 'P-BRG-6205', 'P-PMP-SEAL-HT', 'P-RTN-FLT', 'P-RTN-FLT-25', 'P-HYD-OIL', 'PMP-SEAL', 'RF-10', 'P-PMP-SEAL-X', '6205-2RS'],
+# 통합반(실습 랩 규모): 사내 품번 · 예전 품번 · 줄여 쓴 표기 · 제조사 품번 · 원자료에 없는 품번.
+PROBES = {'통합반': ['P-PMP-SEAL', 'P-FAN-BRG', 'P-CLR-CORE', 'P-RTN-FLT', 'P-RTN-FLT-25', 'P-CPL-ELM', 'P-HYD-OIL', 'PS-4510', 'PMP-SEAL', 'FB-6205', 'RF-10', 'HI-SK-45A', 'P-PMP-SEAL-X'],
           '실전반': ['P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-CLR-CORE', 'P-CLR-PLT', 'P-ACC-BLD', 'P-RTN-FLT', 'P-FAN-BRG', 'PS-4510', 'PMP-SEAL', 'P-PMP-SEAL-X']}
 
 
@@ -49,36 +48,11 @@ def supply_row(branch, supplier, approved, price, defect, lead, extra, pending):
     return row
 
 
-def written_code(aid, key):
-    """그 구성 요소의 교체부품 칸(생성 정답 D.PART_TEXT)이 품번을 말하는가 — 괄호 속 품번 · 사내 품번 · 교차표에 하나로 적힌 표기.
-    통합반 갈래 C(빈 칸 · 품명만 적힌 칸은 잇지 않음)의 기대 답에 쓴다. 교체로 다시 적은 HYD-02 주 펌프 줄은 사내 품번(P-PMP-SEAL)이다."""
-    if (aid, key) == D.REMOVED_PUMP[:2]:
-        return True
-    text = D.PART_TEXT[aid].get(key, '')
-    if re.search(r'\((P-[A-Z0-9-]+)\)', text) or text in D.TRUTH['parts']:
-        return True
-    return len({c[0] for c in D.CROSS if c[1] == text}) == 1
-
-
 def code_to_parts(code):
     """조회 표기 → 사내 품번 후보(정렬). 없으면 빈 목록, 같은 표기를 가진 품번이 여럿이면 여럿."""
     if code in D.TRUTH['parts']:
         return [code]
     return sorted({c[0] for c in D.CROSS if c[1] == code})
-
-
-def candidates(aid, key):
-    """확인 필요 갈래(D)의 후보: 그 설비 모델에 적용되고 쓰는곳이 같은 예비품(생성 정답 D.PARTS)."""
-    model = D.model_of(aid)
-    return sorted(p[0] for p in D.PARTS if B.model_match(model, p[3]) and B.spare_key({'쓰는곳': p[2]}) == key)
-
-
-def to_check(aid, key, branch):
-    """갈래 D에서 확인 필요로 남는 자리인가: 품번이 적히지 않았고 칸이 비었거나 후보가 둘 이상(build_labs.resolve_part의 '확인')."""
-    if B.LINK_MODE.get(branch) != '확인' or written_code(aid, key):
-        return []
-    cands = candidates(aid, key)
-    return cands if cands and (not D.PART_TEXT[aid].get(key, '') or len(cands) > 1) else []
 
 
 def expected(course, branch):
@@ -88,7 +62,7 @@ def expected(course, branch):
     quantity_members = defaultdict(set)
     sensor_props = {}
     usage = defaultdict(lambda: {'assets': set(), 'components': set()})
-    check = defaultdict(lambda: {'assets': set(), 'components': set()})
+    kinds = any(s['kind'] != 'measured' for a in t['assets'].values() for s in a['sensors'].values())   # 실측뿐인 자료(실습 랩 규모)의 모델은 kind를 두지 않는다
     for aid, a in t['assets'].items():
         per = defaultdict(list)
         for tag, s in a['sensors'].items():
@@ -96,36 +70,17 @@ def expected(course, branch):
             q = 'quantity:TS3' if (pol[3] == '자리' and s['quantity'] == 'quantity:TS1' and s['component'] == 'tank') else s['quantity']   # 붙은 자리까지: 탱크의 유온계는 탱크 유온
             q = D.QUANTITY_KINDS[q][0] if pol[3] == '종류' else q   # 재는 값의 종류
             quantity_members[q].add(f'{aid}:{tag}')
-            sensor_props[f'{aid}:{tag}'] = [q, s['unit'], s['normal'], s['limit'], s['direction'], s['kind']]
+            sensor_props[f'{aid}:{tag}'] = [q, s['unit'], s['normal'], s['limit'], s['direction'], s['kind'] if kinds else None]
         sensors_by_asset[aid] = {k: sorted(v) for k, v in sorted(per.items())}
         for key, part in a['components'].items():
-            for k in (to_check(aid, key, branch) if course == '통합반' else []):
-                check[k]['assets'].add(aid)
-                check[k]['components'].add(f'{aid}:{key}')
-            if course == '통합반' and to_check(aid, key, branch):
-                continue
-            if part and not (pol[1] == '안 이음' and not written_code(aid, key)):
+            if part:
                 usage[part]['assets'].add(aid)
                 usage[part]['components'].add(f'{aid}:{key}')
-    same = {}
-    if pol[0] == '한 물품':
-        by = defaultdict(set)
-        for pid, other, kind, *_ in D.CROSS:
-            if kind == '제조사 품번':
-                by[other].add(pid)
-        for ids in by.values():
-            for p in ids:
-                same.setdefault(p, set()).update(ids)
     probes = {}
     for code in PROBES[course]:
         found = []
         for pid in code_to_parts(code):
-            group = same.get(pid, {pid})
-            assets = sorted(set().union(*(usage[p]['assets'] for p in group)))
-            comps = sorted(set().union(*(usage[p]['components'] for p in group)))
-            entry = {'part': pid, 'assets': assets, 'components': comps}
-            if check.get(pid):
-                entry['to_check'] = {'assets': sorted(check[pid]['assets']), 'components': sorted(check[pid]['components'])}
+            entry = {'part': pid, 'assets': sorted(usage[pid]['assets']), 'components': sorted(usage[pid]['components'])}
             if course == '실전반':
                 entry['supply'] = sorted(supply_row(branch, s, v['approved_B' if branch == 'B' else 'approved_A'], v['price_manwon'], v['defect_rate'], v['lead_days'],
                                                     float(D.PR74_EXTRA_MANWON) if v['pr74'] else None, v['pr74'] and not v['condition'])
@@ -134,14 +89,12 @@ def expected(course, branch):
         probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
     out = {'sensors_by_asset': sensors_by_asset, 'quantity_members': {k: sorted(v) for k, v in sorted(quantity_members.items())},
            'sensor_props': dict(sorted(sensor_props.items())), 'probes': probes}
-    if course == '통합반':   # 자리마다 실물(지금 · 지난) — 갈래 D만 실물을 따로 둔다
+    if course == '통합반':   # 자리마다 실물(지금 · 지난) — 자리와 실물을 나눈 갈래만 실물을 따로 둔다
         units = {f'{aid}:{key}': [[s, True]] for (aid, key), s in sorted(D.SERIALS.items())}
         units[f'{D.REMOVED_PUMP[0]}:{D.REMOVED_PUMP[1]}'].append([D.REMOVED_PUMP[2], False])
         out['units'] = {k: sorted(v) for k, v in units.items()} if pol[2] == '나눔' else {}
     if course == '통합반':   # 실습4 「설비별 교체 부품 조회」: 설비 → 구성 요소 → 교체 부품(없으면 None)
-        out['parts_by_asset'] = {aid: {k: ({'확인 필요': to_check(aid, k, branch)} if to_check(aid, k, branch) else v if not (pol[1] == '안 이음' and not written_code(aid, k)) else None)
-                                         for k, v in sorted(a['components'].items())}
-                                 for aid, a in sorted(t['assets'].items())}
+        out['parts_by_asset'] = {aid: dict(sorted(a['components'].items())) for aid, a in sorted(t['assets'].items())}
     else:                    # 실습3 「값마다 출처 남기기」: 생성 순서에서 센 줄(CSV를 다시 읽지 않음)
         out['supply_sources'] = {f'{s}→{p}': [D.line_ref(D.QUOTE_FILE, v['quote_line']), D.line_ref(D.AVL_FILE, v['avl_line']) if 'avl_line' in v else None, D.REF_DATE]
                                  for (s, p), v in sorted(t['supply_modes'][B.supply_branch(branch)[1]].items())}
@@ -167,27 +120,17 @@ def answers_from_graph(course, branch, graph):
     for r in by_type['OBSERVES']:
         quantity_members[r['b']].add(r['a'])
         s = props[r['a']]
-        sensor_props[r['a']] = [r['b'], s['unit'], s.get('normal'), s.get('limit'), s.get('limit_direction'), s['kind']]
+        sensor_props[r['a']] = [r['b'], s['unit'], s.get('normal'), s.get('limit'), s.get('limit_direction'), s.get('kind')]   # kind가 없는 모델은 None — 기대 답(expected)도 실측뿐인 자료에서 None
     usage = defaultdict(lambda: {'assets': set(), 'components': set()})
     for r in by_type['USES_PART']:
         usage[r['b']]['assets'].add(owner[r['a']]); usage[r['b']]['components'].add(r['a'])
-    check = defaultdict(lambda: {'assets': set(), 'components': set()})
-    for r in by_type['CANDIDATE_PART']:
-        check[r['b']]['assets'].add(owner[r['a']]); check[r['b']]['components'].add(r['a'])
-    same = defaultdict(set)
-    for r in by_type['SAME_ITEM_AS']:
-        same[r['a']].update({r['a'], r['b']}); same[r['b']].update({r['a'], r['b']})
     probes = {}
     for code in PROBES[course]:
         hits = [i for i, p in props.items() if labels[i] == 'Part' and i == code] or \
                sorted(i for i, p in props.items() if labels[i] == 'Part' and code in p.get('other_codes', []))
         found = []
         for pid in hits:
-            group = same.get(pid) or {pid}
-            entry = {'part': pid, 'assets': sorted(set().union(*(usage[p]['assets'] for p in group))),
-                     'components': sorted(set().union(*(usage[p]['components'] for p in group)))}
-            if any(check.get(p) for p in group):
-                entry['to_check'] = {'assets': sorted(set().union(*(check[p]['assets'] for p in group))), 'components': sorted(set().union(*(check[p]['components'] for p in group)))}
+            entry = {'part': pid, 'assets': sorted(usage[pid]['assets']), 'components': sorted(usage[pid]['components'])}
             if course == '실전반':
                 entry['supply'] = sorted(supply_row(branch, r['a'].split(':', 1)[1], r['props']['approved'], r['props']['price_manwon'], r['props']['defect_rate'], r['props']['lead_days'],
                                                     r['props'].get('compare_extra_manwon'), 'pending_check' in r['props'])
@@ -199,8 +142,7 @@ def answers_from_graph(course, branch, graph):
     if course == '통합반':
         parts = defaultdict(dict)
         for r in by_type['HAS_COMPONENT']:
-            unsure = sorted(u['b'] for u in by_type['CANDIDATE_PART'] if u['a'] == r['b'])
-            parts[r['a']][r['b'].split(':', 1)[1]] = {'확인 필요': unsure} if unsure else next((u['b'] for u in by_type['USES_PART'] if u['a'] == r['b']), None)
+            parts[r['a']][r['b'].split(':', 1)[1]] = next((u['b'] for u in by_type['USES_PART'] if u['a'] == r['b']), None)
         out['parts_by_asset'] = {a: dict(sorted(d.items())) for a, d in sorted(parts.items())}
         units = defaultdict(list)
         for r in by_type['INSTALLED_UNIT']:
@@ -264,12 +206,13 @@ def offline():
     for course in ['통합반', '실전반']:
         report[course] = {}
         answers = {}
-        for branch in B.REFERENCE_BRANCHES[course]:
-            graph = B.reference_model(course == '실전반', branch)[1]
-            exp = expected(course, branch); got = answers_from_graph(course, branch, graph)
-            d = diff(exp, got)
-            report[course][branch] = {'nodes': len(graph['nodes']), 'rels': len(graph['rels']), 'mismatch': d}
-            answers[branch] = exp
+        with D.for_course(course):
+            for branch in B.REFERENCE_BRANCHES[course]:
+                graph = B.reference_model(course == '실전반', branch)[1]
+                exp = expected(course, branch); got = answers_from_graph(course, branch, graph)
+                d = diff(exp, got)
+                report[course][branch] = {'nodes': len(graph['nodes']), 'rels': len(graph['rels']), 'mismatch': d}
+                answers[branch] = exp
         EXPECT[course].write_text(json.dumps(answers, ensure_ascii=False, indent=1), encoding='utf-8', newline='\n')
     # 실전반 실습4 조회 갈래: 실습4 입력 모델(갈래 ㄴ) 하나에서 갈래마다 돌려줄 열만 달리해 같은 기대 답이 나오는지(ㄱ = 기대 답 A의 공급 조건 열, ㄴ = 기대 답 ㄴ)
     graph = B.reference_model(True, B.GRAPH_LAB_INPUT['실전반'])[1]
@@ -345,175 +288,82 @@ def counts(lab):
     return [lab.run('MATCH (n) RETURN count(n)')[0][0], lab.run('MATCH ()-[r]->() RETURN count(r)')[0][0]]
 
 
-def change_rows(course, name):
-    folder = B.OUT/course/'실습/02회차/랩'/B.LAB4/'입력/자료_변경분'/f'{D.CHANGE_DATE}_수정본'
-    if course == '통합반':
-        from session2_project import NAMES
-        folder = B.OUT/course/'실습/02회차/랩/graph-lab/data/changes'/D.CHANGE_DATE
-        name = NAMES[name]
-    path = folder/name
-    if not path.is_file():
-        return []
-    with path.open(encoding='utf-8-sig', newline='') as f:
-        return list(csv.DictReader(f))
-
-
-def apply_changes(lab, course, change):
-    """강사 참조의 수정본 반영(통합반 실습4 입력 모델 위): 필요한 대상만 SET/MERGE. 수정본 갈래 「삭제」는 불용 설비를 전용 하위 대상과 함께 지우고, 「남김」은 상태로 남긴다."""
-    done = []
-    for r in change_rows(course, '설비_대장_변경.csv'):
-        if change == '삭제' and r['상태'].startswith('불용'):
-            lab.run('MATCH (a:Asset {id:$id}) OPTIONAL MATCH (a)-[:HAS_COMPONENT]->(c) OPTIONAL MATCH (c)-[:MONITORED_BY]->(s) OPTIONAL MATCH (a)-[:MONITORED_BY]->(s2) '
-                    'OPTIONAL MATCH (c)-[:INSTALLED_UNIT]->(u) '
-                    'WITH a, collect(DISTINCT c)+collect(DISTINCT s)+collect(DISTINCT s2)+collect(DISTINCT u) AS sub FOREACH (x IN sub | DETACH DELETE x) DETACH DELETE a', id=r['설비코드'])
-            done.append(f'{r["설비코드"]} 하위 대상과 삭제')
-            continue
-        lab.run('MATCH (a:Asset {id:$id}) SET a.name=$name, a.status=$status', id=r['설비코드'], name=r['설비명'], status=r['상태'])
-        done.append(f'{r["설비코드"]} 이름·상태 수정')
-    for r in change_rows(course, '구성요소_변경.csv'):
-        cid = r['설비코드'] + ':' + B.comp_key(r['구성요소'], {k for k, *_ in D.MODEL_COMPONENTS[D.model_of(r['설비코드'])]})
-        lab.run('MATCH (c:Component {id:$c})-[k:CANDIDATE_PART]->(:Part) DELETE k', c=cid)     # 확인 필요 후보를 정리하고 확인된 품번으로 잇는다
-        lab.run('MATCH (c:Component {id:$c})-[u:USES_PART]->(p:Part) WHERE p.id <> $p DELETE u', c=cid, p=r['교체부품'])   # 잇는 부품이 바뀐 줄은 옛 관계를 지운다
-        lab.run('MATCH (c:Component {id:$c}),(p:Part {id:$p}) MERGE (c)-[u:USES_PART]->(p) SET u.source_text=$t', c=cid, p=r['교체부품'], t=r['교체부품'])
-        done.append(f'{cid} 교체부품 확인')
-    for r in change_rows(course, '센서_변경.csv'):
-        sid = r['설비코드'] + ':' + r['태그']
-        if r['변경'] == '삭제':
-            done.append(f'{sid} 중복 행 삭제(같은 센서의 다른 행이 남아 대상 유지)')
-            continue
-        unit, factor = B.UNIT.get(r['단위'], (r['단위'], 1))
-        lab.run('MATCH (s:Sensor {id:$id}) SET s.unit=$unit, s.normal=$normal', id=sid, unit=unit, normal=round(float(r['정상값']) * factor, 6))
-        done.append(f'{sid} 값 보완')
-    return done
-
-
 def neo4j_run(report):
     lab = Lab()
     try:
         for course in ['통합반', '실전반']:
             out = report.setdefault('neo4j', {}).setdefault(course, {'실습3': {}, '실습4': {}})
-            for branch in B.REFERENCE_BRANCHES[course]:
-                lab.run('MATCH (n) DETACH DELETE n')     # 강사 전용 컨테이너를 비우고 갈래마다 다시 시작(학생 랩 DB 아님)
-                graph = B.reference_model(course == '실전반', branch)[1]
-                load(lab, graph); first = counts(lab); load(lab, graph); second = counts(lab)
-                assert first == second == [len(graph['nodes']), len(graph['rels'])], (course, branch, first, second)
-                exp = expected(course, branch)
-                db_probes = {}
-                for code in PROBES[course]:
-                    rows = lab.run('OPTIONAL MATCH (exact:Part {id:$c}) WITH exact '
-                                   'MATCH (p:Part) WHERE (exact IS NOT NULL AND p = exact) OR (exact IS NULL AND $c IN coalesce(p.other_codes,[])) '
-                                   'OPTIONAL MATCH (p)-[:SAME_ITEM_AS*0..1]-(x:Part) WITH p, collect(DISTINCT x)+[p] AS grp UNWIND grp AS g '
-                                   'OPTIONAL MATCH (g)<-[:USES_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) '
-                                   'RETURN p.id, collect(DISTINCT a.id), collect(DISTINCT c.id) ORDER BY p.id', c=code)
-                    found = []
-                    for pid, assets, comps in rows:
-                        e = {'part': pid, 'assets': sorted(assets), 'components': sorted(comps)}
-                        unsure = lab.run('MATCH (p:Part {id:$p}) OPTIONAL MATCH (p)-[:SAME_ITEM_AS*0..1]-(x:Part) WITH p, collect(DISTINCT x)+[p] AS grp UNWIND grp AS g '
-                                         'MATCH (g)<-[:CANDIDATE_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) RETURN collect(DISTINCT a.id), collect(DISTINCT c.id)', p=pid)
-                        if unsure and unsure[0][0]:
-                            e['to_check'] = {'assets': sorted(unsure[0][0]), 'components': sorted(unsure[0][1])}
-                        if course == '실전반':
-                            e['supply'] = sorted(supply_row(branch, *row) for row in lab.run(
-                                'MATCH (s:Supplier)-[r:SUPPLIES]->(:Part {id:$p}) RETURN substring(s.id,9), r.approved, r.price_manwon, r.defect_rate, r.lead_days, '
-                                'r.compare_extra_manwon, r.pending_check IS NOT NULL', p=pid))
-                        found.append(e)
-                    db_probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
-                sensors = lab.run('MATCH (a:Asset)-[:HAS_COMPONENT]->(:Component)-[:MONITORED_BY]->(s:Sensor) RETURN a.id, count(s) ORDER BY a.id')
-                asset_level = lab.run('MATCH (a:Asset)-[:MONITORED_BY]->(s:Sensor) RETURN a.id, collect(s.tag) ORDER BY a.id')
-                qid = exp['sensor_props']['HYD-01:TS1'][0]      # HYD-01 쿨러 쪽 유온을 담은 물리량(갈래의 「같은 물리량의 범위」에 따라 다름)
-                same_qty = lab.run('MATCH (s:Sensor)-[:OBSERVES]->(q:Quantity {id:$q}) RETURN collect(s.id)', q=qid)[0][0]
-                entry = {'first': first, 'second': second, 'probe_mismatch': diff(exp['probes'], db_probes),
-                         'sensors_per_asset_via_component': sensors, 'asset_level_sensors': asset_level,
-                         'quantity_of_HYD-01_TS1': qid, 'quantity_members_match': sorted(same_qty) == exp['quantity_members'][qid]}
-                assert entry['quantity_members_match'], (course, branch, qid)
-                if course == '실전반':
-                    entry['P-PMP-SEAL'] = db_probes['P-PMP-SEAL']
-                    entry['source_mismatch'] = diff(exp['supply_sources'], {f'{s}→{p}': [q, a, d] for s, p, q, a, d in lab.run(
-                        'MATCH (s:Supplier)-[r:SUPPLIES]->(p:Part) RETURN substring(s.id,9), p.id, r.quote_source, r.approval_source, r.as_of')})
-                out['실습3'][branch] = entry
-            # 실습4는 실습4 입력/ 모델(앞 단계 완성) 위에서 돈다.
-            input_branch = B.GRAPH_LAB_INPUT[course]
-            graph = B.reference_model(course == '실전반', input_branch)[1]
-            if course == '실전반':
-                # 조회 갈래 ㄱ · ㄴ: 같은 적재 위에서 돌려줄 열만 다르다(ㄴ은 PR-07 7.4 비교 가산 비용을 함께).
-                lab.run('MATCH (n) DETACH DELETE n')
-                load(lab, graph); first = counts(lab); load(lab, graph); second = counts(lab)
-                assert first == second == [len(graph['nodes']), len(graph['rels'])], (course, 'lab4', first, second)
-                columns = {'ㄱ': '', 'ㄴ': ', r.compare_extra_manwon'}
-                for g, key in B.LAB4_QUERY_BRANCHES.items():
-                    exp = expected(course, key)
+            with D.for_course(course):
+                for branch in B.REFERENCE_BRANCHES[course]:
+                    lab.run('MATCH (n) DETACH DELETE n')     # 강사 전용 컨테이너를 비우고 갈래마다 다시 시작(학생 랩 DB 아님)
+                    graph = B.reference_model(course == '실전반', branch)[1]
+                    load(lab, graph); first = counts(lab); load(lab, graph); second = counts(lab)
+                    assert first == second == [len(graph['nodes']), len(graph['rels'])], (course, branch, first, second)
+                    exp = expected(course, branch)
                     db_probes = {}
                     for code in PROBES[course]:
+                        rows = lab.run('OPTIONAL MATCH (exact:Part {id:$c}) WITH exact '
+                                       'MATCH (p:Part) WHERE (exact IS NOT NULL AND p = exact) OR (exact IS NULL AND $c IN coalesce(p.other_codes,[])) '
+                                       'OPTIONAL MATCH (p)-[:SAME_ITEM_AS*0..1]-(x:Part) WITH p, collect(DISTINCT x)+[p] AS grp UNWIND grp AS g '
+                                       'OPTIONAL MATCH (g)<-[:USES_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) '
+                                       'RETURN p.id, collect(DISTINCT a.id), collect(DISTINCT c.id) ORDER BY p.id', c=code)
                         found = []
-                        for pid, assets, comps in lab.run('MATCH (p:Part) WHERE p.id = $c OR $c IN coalesce(p.other_codes,[]) '
-                                                          'OPTIONAL MATCH (p)<-[:USES_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) '
-                                                          'RETURN p.id, collect(DISTINCT a.id), collect(DISTINCT c.id) ORDER BY p.id', c=code):
-                            rows = lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(:Part {id:$p}) RETURN substring(s.id,9), r.approved, r.price_manwon, r.defect_rate, r.lead_days'
-                                           + columns[g], p=pid)
-                            found.append({'part': pid, 'assets': sorted(assets), 'components': sorted(comps),
-                                          'supply': sorted(supply_row(key, *row, False) if key == 'ㄴ' else supply_row(key, *row, None, False) for row in rows)})
+                        for pid, assets, comps in rows:
+                            e = {'part': pid, 'assets': sorted(assets), 'components': sorted(comps)}
+                            unsure = lab.run('MATCH (p:Part {id:$p}) OPTIONAL MATCH (p)-[:SAME_ITEM_AS*0..1]-(x:Part) WITH p, collect(DISTINCT x)+[p] AS grp UNWIND grp AS g '
+                                             'MATCH (g)<-[:CANDIDATE_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) RETURN collect(DISTINCT a.id), collect(DISTINCT c.id)', p=pid)
+                            if unsure and unsure[0][0]:
+                                e['to_check'] = {'assets': sorted(unsure[0][0]), 'components': sorted(unsure[0][1])}
+                            if course == '실전반':
+                                e['supply'] = sorted(supply_row(branch, *row) for row in lab.run(
+                                    'MATCH (s:Supplier)-[r:SUPPLIES]->(:Part {id:$p}) RETURN substring(s.id,9), r.approved, r.price_manwon, r.defect_rate, r.lead_days, '
+                                    'r.compare_extra_manwon, r.pending_check IS NOT NULL', p=pid))
+                            found.append(e)
                         db_probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
-                    out['실습4'][g] = {'input_branch': input_branch, 'expected_key': key, 'first': first, 'second': second,
-                                      'probe_mismatch': diff(exp['probes'], db_probes), 'P-PMP-SEAL': db_probes['P-PMP-SEAL']}
-                # 질문 1 「각 값은 어느 파일 · 어느 줄에서 왔는가」 — 조회만으로(원자료를 다시 읽지 않고) 출처 줄과 기준일이 나오는지
-                sources = lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(p:Part {id:"P-PMP-SEAL"}) '
-                                  'RETURN substring(s.id,9) AS sup, s.name, r.quote_source, r.quote_date, r.approval_source, r.as_of ORDER BY sup')
-                exp_sources = expected(course, B.GRAPH_LAB_INPUT[course])['supply_sources']
-                out['실습4']['출처 조회'] = {'P-PMP-SEAL': sources,
-                                         'mismatch': diff({k: v for k, v in exp_sources.items() if k.endswith('→P-PMP-SEAL')},
-                                                          {f'{s}→P-PMP-SEAL': [q, a, d] for s, _, q, _, a, d in sources})
-                                                     + [f'{s}: 이름 {n}' for s, n, *_ in sources if s != n]}
-                continue
-            # 통합반: 설비별 교체 부품 조회, 그다음 수정본 갈래 남김 · 삭제를 각각 새로 적재해 돌린다.
-            # 삭제 갈래가 지우는 것: HYD-07과 그 구성 요소 · 실물 · 센서, 그리고 그것들에 닿은 관계(입력 모델에서 센다)
-            owned = {'HYD-07'} | {r['b'] for r in graph['rels'] if r['a'] == 'HYD-07' and r['type'] in ('HAS_COMPONENT', 'MONITORED_BY')}
-            owned |= {r['b'] for r in graph['rels'] if r['a'] in owned and r['type'] in ('MONITORED_BY', 'INSTALLED_UNIT')}
-            gone_nodes = len(owned)
-            gone_rels = sum(1 for r in graph['rels'] if r['a'] in owned or r['b'] in owned)
-            owner_of = {r['b']: r['a'] for r in graph['rels'] if r['type'] == 'HAS_COMPONENT'}
-            rtn_users = sorted({owner_of[r['a']] for r in graph['rels'] if r['type'] == 'USES_PART' and r['b'] == 'P-RTN-FLT'})
-            rtn_running = [a for a in rtn_users if a != 'HYD-07']
-            moved = {D.model_of(r['설비코드']) and r['설비코드'] for r in change_rows(course, '구성요소_변경.csv') if r['교체부품'] != 'P-RTN-FLT' and B.comp_key(r['구성요소'], {k for k, *_ in D.MODEL_COMPONENTS[D.model_of(r['설비코드'])]}) == 'rtn-filter'}
-            rtn_after = [a for a in rtn_running if a not in moved]   # 수정본에서 리턴 필터 부품이 바뀐 설비는 수정 뒤 P-RTN-FLT 사용 설비에서 빠진다
-            lab.run('MATCH (n) DETACH DELETE n')
-            load(lab, graph)
-            parts = defaultdict(dict)
-            for aid, cid, pid, unsure in lab.run('MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component) OPTIONAL MATCH (c)-[:USES_PART]->(p:Part) OPTIONAL MATCH (c)-[:CANDIDATE_PART]->(k:Part) '
-                                                 'RETURN a.id, c.id, p.id, collect(k.id) ORDER BY a.id, c.id'):
-                parts[aid][cid.split(':', 1)[1]] = {'확인 필요': sorted(unsure)} if unsure else pid
-            out['실습4']['설비별 교체 부품'] = {'input_branch': input_branch,
-                                         'mismatch': diff(expected(course, input_branch)['parts_by_asset'], {a: dict(sorted(d.items())) for a, d in sorted(parts.items())}),
-                                         'HYD-01': dict(sorted(parts['HYD-01'].items()))}
-            # 10단계 「부품의 사용 설비」 — 수정본 전: 설비 대장의 상태(가동 · 예비)가 그래프에 있어 「정한 것」대로 빼거나 함께 보일 수 있다
-            with_status = lab.run('MATCH (:Part {id:"P-RTN-FLT"})<-[:USES_PART]-(:Component)<-[:HAS_COMPONENT]-(a:Asset) RETURN DISTINCT a.id, a.status ORDER BY a.id')
-            running = [r[0] for r in lab.run('MATCH (:Part {id:"P-RTN-FLT"})<-[:USES_PART]-(:Component)<-[:HAS_COMPONENT]-(a:Asset) '
-                                             'WHERE a.status = "가동" RETURN DISTINCT a.id ORDER BY a.id')]
-            assert ['HYD-07', '예비(보관)'] in with_status and running == rtn_running, (with_status, running, rtn_running)
-            out['실습4']['부품의 사용 설비(상태) 수정본 전'] = {'P-RTN-FLT 사용 설비(상태)': with_status, 'P-RTN-FLT 지금 가동 설비': running}
-            for change in B.LAB4_CHANGE_BRANCHES:
-                lab.run('MATCH (n) DETACH DELETE n')
-                load(lab, graph); first = counts(lab)
-                done = apply_changes(lab, course, change); after = counts(lab)
-                apply_changes(lab, course, change); after2 = counts(lab)
-                checks = {'HYD-02 name': lab.run('MATCH (a:Asset {id:"HYD-02"}) RETURN a.name')[0][0],
-                          'HYD-07': lab.run('MATCH (a:Asset {id:"HYD-07"}) RETURN a.status'),
-                          'HYD-01:TS1 남음': lab.run('MATCH (:Asset {id:"HYD-01"})-[:HAS_COMPONENT]->(:Component)-[:MONITORED_BY]->(s:Sensor {id:"HYD-01:TS1"}) RETURN count(s)')[0][0],
-                          'HYD-06:I_MOTOR normal': lab.run('MATCH (s:Sensor {id:"HYD-06:I_MOTOR"}) RETURN s.normal')[0][0],
-                          # 2-4 질문의 업무 맥락(지금 가동하는 설비의 예비품). 남김은 불용 설비를 상태로 구별, 삭제는 지운다.
-                          'P-RTN-FLT 사용 설비(상태)': lab.run('MATCH (:Part {id:"P-RTN-FLT"})<-[:USES_PART]-(:Component)<-[:HAS_COMPONENT]-(a:Asset) RETURN DISTINCT a.id, a.status ORDER BY a.id'),
-                          'P-RTN-FLT 지금 가동 설비': [r[0] for r in lab.run('MATCH (:Part {id:"P-RTN-FLT"})<-[:USES_PART]-(:Component)<-[:HAS_COMPONENT]-(a:Asset) '
-                                                                            'WHERE NOT coalesce(a.status,"") STARTS WITH "불용" RETURN DISTINCT a.id ORDER BY a.id')]}
-                expect_after = first if change == '남김' else [first[0] - gone_nodes, first[1] - gone_rels]
-                assert first == [len(graph['nodes']), len(graph['rels'])], (course, change, first)
-                assert after == after2 == expect_after, (course, change, after, after2, expect_after)
-                assert checks['HYD-02 name'] == 'HYD-02 2라인 2호 파워팩' and checks['HYD-06:I_MOTOR normal'] == 18.5 and checks['HYD-01:TS1 남음'] == 1
-                assert (checks['HYD-07'] == [['불용(매각 예정)']]) if change == '남김' else checks['HYD-07'] == []
-                assert checks['P-RTN-FLT 지금 가동 설비'] == rtn_after, (checks['P-RTN-FLT 지금 가동 설비'], rtn_after)
-                checks['HYD-03:pump-a 교체 부품'] = lab.run('MATCH (:Component {id:"HYD-03:pump-a"})-[r:USES_PART|CANDIDATE_PART]->(p:Part) RETURN type(r), p.id')
-                assert checks['HYD-03:pump-a 교체 부품'] == [['USES_PART', 'P-PMP-SEAL']], checks['HYD-03:pump-a 교체 부품']
-                assert ['HYD-07', '불용(매각 예정)'] in checks['P-RTN-FLT 사용 설비(상태)'] if change == '남김' else all(r[0] != 'HYD-07' for r in checks['P-RTN-FLT 사용 설비(상태)'])
-                out['실습4'][change] = {'input_branch': input_branch, 'first': first, 'changes_applied': done, 'after_changes': after,
-                                       'after_changes_again': after2, 'change_checks': checks}
+                    sensors = lab.run('MATCH (a:Asset)-[:HAS_COMPONENT]->(:Component)-[:MONITORED_BY]->(s:Sensor) RETURN a.id, count(s) ORDER BY a.id')
+                    asset_level = lab.run('MATCH (a:Asset)-[:MONITORED_BY]->(s:Sensor) RETURN a.id, collect(s.tag) ORDER BY a.id')
+                    qid = exp['sensor_props']['HYD-01:TS1'][0]      # HYD-01 쿨러 쪽 유온을 담은 물리량(갈래의 「같은 물리량의 범위」에 따라 다름)
+                    same_qty = lab.run('MATCH (s:Sensor)-[:OBSERVES]->(q:Quantity {id:$q}) RETURN collect(s.id)', q=qid)[0][0]
+                    entry = {'first': first, 'second': second, 'probe_mismatch': diff(exp['probes'], db_probes),
+                             'sensors_per_asset_via_component': sensors, 'asset_level_sensors': asset_level,
+                             'quantity_of_HYD-01_TS1': qid, 'quantity_members_match': sorted(same_qty) == exp['quantity_members'][qid]}
+                    assert entry['quantity_members_match'], (course, branch, qid)
+                    if course == '실전반':
+                        entry['P-PMP-SEAL'] = db_probes['P-PMP-SEAL']
+                        entry['source_mismatch'] = diff(exp['supply_sources'], {f'{s}→{p}': [q, a, d] for s, p, q, a, d in lab.run(
+                            'MATCH (s:Supplier)-[r:SUPPLIES]->(p:Part) RETURN substring(s.id,9), p.id, r.quote_source, r.approval_source, r.as_of')})
+                    out['실습3'][branch] = entry
+                if course == '실전반':   # 실습4는 실습4 입력/ 모델(앞 단계 완성) 위에서 돈다. 통합반 실습4는 reference/session2_graph_trials.py가 한다.
+                    input_branch = B.GRAPH_LAB_INPUT[course]
+                    graph = B.reference_model(True, input_branch)[1]
+                    # 조회 갈래 ㄱ · ㄴ: 같은 적재 위에서 돌려줄 열만 다르다(ㄴ은 PR-07 7.4 비교 가산 비용을 함께).
+                    lab.run('MATCH (n) DETACH DELETE n')
+                    load(lab, graph); first = counts(lab); load(lab, graph); second = counts(lab)
+                    assert first == second == [len(graph['nodes']), len(graph['rels'])], (course, 'lab4', first, second)
+                    columns = {'ㄱ': '', 'ㄴ': ', r.compare_extra_manwon'}
+                    for g, key in B.LAB4_QUERY_BRANCHES.items():
+                        exp = expected(course, key)
+                        db_probes = {}
+                        for code in PROBES[course]:
+                            found = []
+                            for pid, assets, comps in lab.run('MATCH (p:Part) WHERE p.id = $c OR $c IN coalesce(p.other_codes,[]) '
+                                                              'OPTIONAL MATCH (p)<-[:USES_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) '
+                                                              'RETURN p.id, collect(DISTINCT a.id), collect(DISTINCT c.id) ORDER BY p.id', c=code):
+                                rows = lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(:Part {id:$p}) RETURN substring(s.id,9), r.approved, r.price_manwon, r.defect_rate, r.lead_days'
+                                               + columns[g], p=pid)
+                                found.append({'part': pid, 'assets': sorted(assets), 'components': sorted(comps),
+                                              'supply': sorted(supply_row(key, *row, False) if key == 'ㄴ' else supply_row(key, *row, None, False) for row in rows)})
+                            db_probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
+                        out['실습4'][g] = {'input_branch': input_branch, 'expected_key': key, 'first': first, 'second': second,
+                                          'probe_mismatch': diff(exp['probes'], db_probes), 'P-PMP-SEAL': db_probes['P-PMP-SEAL']}
+                    # 질문 1 「각 값은 어느 파일 · 어느 줄에서 왔는가」 — 조회만으로(원자료를 다시 읽지 않고) 출처 줄과 기준일이 나오는지
+                    sources = lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(p:Part {id:"P-PMP-SEAL"}) '
+                                      'RETURN substring(s.id,9) AS sup, s.name, r.quote_source, r.quote_date, r.approval_source, r.as_of ORDER BY sup')
+                    exp_sources = expected(course, B.GRAPH_LAB_INPUT[course])['supply_sources']
+                    out['실습4']['출처 조회'] = {'P-PMP-SEAL': sources,
+                                             'mismatch': diff({k: v for k, v in exp_sources.items() if k.endswith('→P-PMP-SEAL')},
+                                                              {f'{s}→P-PMP-SEAL': [q, a, d] for s, _, q, _, a, d in sources})
+                                                         + [f'{s}: 이름 {n}' for s, n, *_ in sources if s != n]}
     finally:
         lab.close()
         report['neo4j_container_removed'] = lab.name not in docker('ps', '-a', '--format', '{{.Names}}').split()

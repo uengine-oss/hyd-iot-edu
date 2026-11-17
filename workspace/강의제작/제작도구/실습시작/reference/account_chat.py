@@ -4,7 +4,7 @@
 원문·응답·모델·추론·토큰을 보관하고, 그 응답 바이트를 학생 실행 진입점의 --paste에 넘긴다.
 인증 내용과 .env를 열지 않는다. 랩에 .env가 있으면 이 경로는 사용하지 않는다.
 python account_chat.py <랩 폴더> <요청 해시> --out <새 시험 기록 루트>
-    --codex-home D:/HYD-Practice/_codex_luna --codex-bin <절대 경로>
+    --codex-home <코딩랩.md 길 6의 학생 역 CODEX_HOME> --codex-bin <절대 경로>
     --model gpt-6-luna --reasoning medium --max-calls 24 --timeout 180
 """
 from pathlib import Path
