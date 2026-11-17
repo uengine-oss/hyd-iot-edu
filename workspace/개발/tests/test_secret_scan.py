@@ -59,7 +59,7 @@ def test_키가_든_줄은_파일_꼴과_상관없이_잡힌다(name, text, expe
     ('compose.yaml', f'      {NAME}: ${{{NAME}:-}}\n'),                 # compose 치환
     ('notes.md', f'{NAME}=your-key-here-please\n'),                      # 가짜 낱말
     ('notes.md', 'PROCESS_CALLER_TOKEN: RELAY_TOKEN_NAME\n'),            # 값이 아니라 이름
-    ('compose.yaml', 'EMQX_DASHBOARD__DEFAULT_PASSWORD: public123   # 로컬 공개 초기값 · 키검사: 허용\n'),
+    ('compose.yaml', 'GF_SECURITY_ADMIN_PASSWORD: admin123   # 로컬 공개 초기값 · 키검사: 허용\n'),
 ], ids=['코드_대입', '코드_테스트_값', 'SECRET_자리표시', '셸_기본값', '가린_값', '전각_가린_값', '빈_틀', 'compose_치환', '가짜_낱말', '변수_이름', '허용_표시'])
 def test_자리표시_가린_값_가짜_값은_키가_아니다(name, text):
     assert hits(name, text) == 0

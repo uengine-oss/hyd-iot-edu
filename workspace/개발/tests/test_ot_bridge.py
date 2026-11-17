@@ -1,6 +1,6 @@
 """공장 쪽 브리지(ot/bridge/mosquitto.conf)와 DMZ 브로커(dmz/broker/mosquitto.conf · acl) — 값은 공장이 내보내고, 승인된 명령은 공장이 가져간다.
 
-실제 세 컨테이너(conftest PlantMqtt — compose 의 emqx · dmz-broker · ot-bridge 그대로, 망도 compose 대로)에 실제 MQTT 클라이언트로 붙는다.
+실제 세 컨테이너(conftest PlantMqtt — compose 의 ot-broker · dmz-broker · ot-bridge 그대로, 망도 compose 대로)에 실제 MQTT 클라이언트로 붙는다.
 공장 안의 자리(plant-sim · fuxa)는 공장 브로커의 안쪽 입구에, DMZ 의 자리(명령 관문 · 수집 중계)는 DMZ 브로커에 붙는다 — 시험이 두 브로커를
 잇지 않으므로, 한쪽에 낸 것이 다른 쪽에 닿았다면 브리지가 옮긴 것이다.
   - 값(측정값 · 파형 · 설비 상태)은 공장 브로커 → DMZ 브로커로 올라간다.
@@ -132,7 +132,7 @@ def test_공장_브로커와_끊기면_어느_다리인지와_함께_드러난�
             until(lambda: link.health()['ot_bridge_legs'] == {'broker': False, 'dmz': True}, f'공장 브로커 쪽 다리가 끊긴 것을 안다({link.health()})', 30)
             assert not link.healthy() and link.health()['mqtt'] is True
         finally:
-            _docker('network', 'connect', '--alias', 'emqx', net, plant)
+            _docker('network', 'connect', '--alias', 'ot-broker', net, plant)
         plant_mqtt.wait_bridge(LEGS_UP)
         until(link.healthy, f'다시 이어지면 건강하다({link.health()})', 20)
     finally:

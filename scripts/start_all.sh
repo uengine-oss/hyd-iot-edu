@@ -77,7 +77,10 @@ SUPA=(npx -y "supabase@$SUPABASE_CLI")   # it/supabase/.env(2단계가 씀)의 �
 say "4/8 시스템 · AI 워커 빌드 · 기동 (처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있습니다)"
 # .env 의 AI_MODE · 포트를 쓴다. 이 창에 다른 값이 남아 있으면 그것이 이기므로 비운다
 unset COMPOSE_PROFILES AI_MODE
-if ! docker compose up -d --build; then
+# --remove-orphans: 새 판이 compose 에서 뺀 서비스의 옛 컨테이너(예: 2026-11-17 에 mosquitto ot-broker 로 바꾼 emqx)를 지운다. 남겨 두면 그 컨테이너가
+# 계속 돌며 메모리와 바깥 포트를 쥐어, 같은 포트를 여는 새 서비스가 「port is already allocated」로 뜨지 못한다(끄기도 compose 에 없는 그 컨테이너를
+# 멈추지 않는다). 지우는 것은 이 폴더 프로젝트의 compose 가 만든 컨테이너뿐이다 — 선택 도구(프로필) 서비스 · 이름 붙은 볼륨(실습 기록)은 그대로다
+if ! docker compose up -d --build --remove-orphans; then
   # 지식 지도 준비(kg-seed)가 내용 검사에서 멈췄으면 그 까닭과 되돌리는 길을 말한다 — AI 판단 서비스(agent · dmn-mcp)는 이 준비가 끝나야 켜진다.
   # 검사는 기본 제공 지식과 적재한 문서 지식이 서로 이어져 있는지를 본다: 지식 지도를 Neo4j Browser 등으로 직접 고치면(관계 · 항목 지우기) 걸린다
   seed_log=$(docker compose logs --no-log-prefix --tail 60 kg-seed 2>/dev/null || true)

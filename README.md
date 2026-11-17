@@ -10,8 +10,8 @@ HYD 제조 AI 교육과정(경남대학교 피지컬AI 사관학교)의 실습 �
 
 | 구성 | 역할 |
 |---|---|
-| EMQX / Redpanda | 설비 데이터와 사건 전달(EMQX는 설비망 안의 MQTT 브로커 — DMZ · 사무망의 서비스는 닿지 못하고, 이 PC에서는 구독만 되는 입구 1883 · 8083으로만 붙는다) |
-| `ot-bridge` · `dmz-broker` | 설비망과 사무망 사이의 연결을 설비망 쪽에서 먼저 여는 자리. 공장 쪽 브리지(`ot-bridge`)가 DMZ 브로커(`dmz-broker`)에 접속해 값을 내보내고, 검증을 통과한 명령을 가져간다 |
+| `ot-broker` / Redpanda | 설비 데이터와 사건 전달(`ot-broker`는 설비망 안의 MQTT 브로커 — DMZ · 사무망의 서비스는 닿지 못하고, 이 PC에서는 구독만 되는 입구 1883 · 8083으로만 붙는다) |
+| `ot-bridge` · `dmz-broker` | 설비망과 사무망 사이의 연결을 설비망 쪽에서 먼저 여는 자리. 공장 브로커 · 공장 쪽 브리지 · DMZ 브로커(`ot-broker` · `ot-bridge` · `dmz-broker`)는 모두 mosquitto로 돈다. 공장 쪽 브리지(`ot-bridge`)가 DMZ 브로커(`dmz-broker`)에 접속해 값을 내보내고, 검증을 통과한 명령을 가져간다 |
 | `connect-ingest` · `cmd-gateway` · `connect-sink` | DMZ 브로커에 올라온 값을 사무망으로 복제, 승인된 설비 명령만 검증해 DMZ 브로커에 놓는 통로, 시계열 적재 |
 | TimescaleDB / Supabase | 시계열 측정값과 업무 데이터 저장(Supabase는 업무 DB — 시작 파일이 따로 켠다) |
 | Neo4j | 설비·부품·업무 대상의 관계 저장 |
@@ -143,7 +143,7 @@ Docker Desktop에서 **Engine running**을 확인하고 `setup` 폴더의 **Wind
 | 1. Docker 확인 | 엔진 응답과 Compose 확인(꺼져 있으면 켜고 기다린다) |
 | 2. `.env` · 이 PC 값 준비 | 키가 있으면 AI 단계를 실제 AI, 없으면 강사가 저장한 응답 재생으로 정하고, 이 폴더의 프로젝트 이름 · 포트를 정한다(다른 프로그램과 겹치면 옮긴다). 이 PC 값은 git이 추적하지 않는 파일(`.env` · `.hyd-runtime/` · `it/supabase/.env`)에만 쓴다 |
 | 3. 업무 DB | `it/supabase`에서 Supabase 켜기 + 새 판의 업무 DB 구조 적용 |
-| 4. 시스템 기동 | `docker compose up -d --build`(AI 워커 · 에이전트용 도구 서버 포함) |
+| 4. 시스템 기동 | `docker compose up -d --build --remove-orphans`(AI 워커 · 에이전트용 도구 서버 포함. 새 판에 없는 서비스의 옛 컨테이너는 지운다) |
 | 5. 서비스 확인 | 모든 서비스가 떴는지(멈춘 것 · 계속 다시 시작하는 것은 실패), 포털 응답 |
 | 6. 수업 흐름 | 업무 흐름 A(냉각) · B(정기 정비) · C(예비품 구매) 배포(있으면 건너뜀) |
 | 7. 기본 지식 | 수업 문서 셋(HM-8 · PM-02 · PR-07)의 검토한 지식 넣기(있으면 건너뜀, AI 없음) |

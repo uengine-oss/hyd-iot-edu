@@ -1,12 +1,12 @@
 """paho-mqtt v2 — how every MQTT client of ours (plant-sim · cmd-gateway · connect-ingest) joins its broker, in one place.
 
-Who connects where (compose.yaml MQTT_HOST): plant-sim joins the plant broker (emqx, OT net only). The DMZ services
+Who connects where (compose.yaml MQTT_HOST): plant-sim joins the plant broker (ot-broker, OT net only). The DMZ services
 (cmd-gateway · connect-ingest) join the DMZ broker (dmz-broker) and never the plant broker — nothing outside the plant opens
 a connection into it. The plant-side bridge (ot-bridge, ot/bridge/mosquitto.conf) is the one that connects, from inside the
 plant, to both brokers: it pushes measurements and status out to the DMZ broker and fetches approved commands from it.
 
 Identity: the client connects with its service name as the username, no password (the brokers' listeners for services are
-not published to the host). Each broker's topic rules are written against that name (ot/emqx/acl.conf · dmz/broker/acl) —
+not published to the host). Each broker's topic rules are written against that name (ot/broker/acl · dmz/broker/acl) —
 on the DMZ broker only cmd-gateway may publish plant/+/cmd/auto, on the plant broker only the bridge that carries it down.
 
 Behind the bridge (`behind_bridge=True`, the DMZ services): being connected to the DMZ broker says nothing about the plant.
@@ -55,7 +55,7 @@ class Link:
         c.reconnect_delay_set(min_delay=1, max_delay=5)
         c.on_connect, c.on_disconnect, c.on_message = self._connected, self._disconnected, self._message
         self.client = c
-        c.connect_async(host or os.getenv("MQTT_HOST", "emqx"), port or int(os.getenv("MQTT_PORT", "1883")), keepalive=30)
+        c.connect_async(host or os.getenv("MQTT_HOST", "ot-broker"), port or int(os.getenv("MQTT_PORT", "1883")), keepalive=30)
 
     def _connected(self, client, userdata, flags, reason_code, properties=None):
         if reason_code.is_failure:

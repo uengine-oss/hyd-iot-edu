@@ -166,14 +166,14 @@ const SYS = {
   W: 1240, NW: 160, NH: 48, y0: 110, dy: 76,
   band: { ot: [116, 192, 'OT', '현장 · 실시간 제어', 'cv-red'], dmz: [320, 368, 'DMZ', '값은 중계하고 명령은 검증한다', 'cv-amber'], it: [700, 528, 'IT', '업무 · 분석 · 지식 · AI', 'cv-blue'] },
   col: { ot: 212, d1: 414, d2: 594, a: 792, b: 964, c: 1136 },
-  // 부품(layers.js 이름의 첫 낱말) → [화면 이름, 아이콘, 칸, 폭]
+  // 부품(layers.js 이름의 첫 낱말) → [화면 이름, 아이콘, 칸, 폭]. 상자의 아랫줄은 그 이름(제품이 따로 있는 부품은 layers.js 의 product)
   node: {
     process: ['흐름 엔진', 'workflow', 'a'], portal: ['포털', 'layout-grid', 'b'], 'enterprise-sim': ['업무 시스템', 'receipt-text', 'c'],
     'agent-worker': ['AI 에이전트', 'bot', 'b'], agent: ['판단 서비스', 'scale', 'c'], Neo4j: ['지식 그래프', 'network', 'c'],
     FUXA: ['관제 화면', 'gauge', 'ot'], Grafana: ['추이 화면', 'chart-line', 'b'], Prometheus: ['서비스 감시', 'signal', 'c'],
     TimescaleDB: ['시계열 저장소', 'database', 'b'], 'connect-sink': ['시계열 기록', 'download', 'c'], detector: ['이상 탐지', 'activity', 'b'],
     'ot-bridge': ['공장 쪽 브리지', 'plug', 'ot'], 'cmd-gateway': ['명령 관문', 'shield-check', 'd1'], 'connect-ingest': ['수집 중계', 'arrow-up-right', 'd2'], Redpanda: ['이벤트 저장', 'layers', 'a'],
-    EMQX: ['공장 브로커', 'radio', 'ot', 168], 'dmz-broker': ['DMZ 브로커', 'inbox', 'd2'], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 168],
+    'ot-broker': ['공장 브로커', 'radio', 'ot', 168], 'dmz-broker': ['DMZ 브로커', 'inbox', 'd2'], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 168],
   },
   ai: ['agent-worker', 'agent', 'Neo4j'],
   // 길의 종류와 범례의 말(그림 안 오른쪽 아래)
@@ -221,8 +221,8 @@ function renderStack() {
      세로로 긴 두 길(경보 · 사건이 올라가는 길, 승인된 명령이 내려가는 길)의 이름표는 그 길 위에, 서로 다른 계층 높이에 둔다 */
   const P = [
     // 값이 올라가는 길
-    ['data', [Tp('plant-sim', 34), Bp('EMQX', 34)]],
-    ['data', [Tp('EMQX', 34), Bp('ot-bridge', 34)]],
+    ['data', [Tp('plant-sim', 34), Bp('ot-broker', 34)]],
+    ['data', [Tp('ot-broker', 34), Bp('ot-bridge', 34)]],
     ['data', [Rp('ot-bridge', 12), [X_UP, br.y + 12], [X_UP, Y_UP], [dz.x + 34, Y_UP], Bp('dmz-broker', 34)], '연결은 공장 쪽이 엽니다', [(X_DOWN + dz.x - 34) / 2, Y_UP + 20], 'middle', 'plain'],      // 두 길(값 · 명령) 아래의 글 — 어느 한 길의 이름이 아니라 둘 다에 대한 말이라 길 색을 쓰지 않는다
     ['data', [Tp('dmz-broker', 20), Bp('connect-ingest', 20)]],
     ['data', [Rp('connect-ingest'), Lp('Redpanda')]],
@@ -236,14 +236,14 @@ function renderStack() {
     ['cmd', [Tp('Redpanda', -56), [bus.x - 56, at.detector.y], [gw.x, at.detector.y], Tp('cmd-gateway')], '검증할 명령', [(gw.x + bus.x - 56) / 2 - 40, at.detector.y - 11], 'middle'],
     ['cmd', [Bp('cmd-gateway'), [gw.x, dz.y], Lp('dmz-broker')], '검증을 통과한 명령', [dz.x - dz.w / 2 - 16, dz.y + 19], 'end'],
     ['cmd', [Bp('dmz-broker', -34), [dz.x - 34, Y_DOWN], [X_DOWN, Y_DOWN], [X_DOWN, br.y - 12], Rp('ot-bridge', -12)]],
-    ['cmd', [Bp('ot-bridge', -34), Tp('EMQX', -34)]],
-    ['cmd', [Bp('EMQX', -34), Tp('plant-sim', -34)]],
+    ['cmd', [Bp('ot-bridge', -34), Tp('ot-broker', -34)]],
+    ['cmd', [Bp('ot-broker', -34), Tp('plant-sim', -34)]],
     // AI 가 지식을 읽는 길
     ['ai', [Bp('process', 56), [at.process.x + 56, at['agent-worker'].y], Lp('agent-worker')]],
     ['ai', [Rp('agent-worker'), Lp('agent')]],
     ['ai', [Bp('agent'), Tp('Neo4j')]],
     // 그 밖의 연결
-    ['plain', [Lp('FUXA'), [X_HMI, at.FUXA.y], [X_HMI, br.y + GAP], [at.EMQX.x - 62, br.y + GAP], Tp('EMQX', -62)], '감시 · 수동 조작', [X_HMI + 8, rowY(5) - 9], 'start'],
+    ['plain', [Lp('FUXA'), [X_HMI, at.FUXA.y], [X_HMI, br.y + GAP], [at['ot-broker'].x - 62, br.y + GAP], Tp('ot-broker', -62)], '감시 · 수동 조작', [X_HMI + 8, rowY(5) - 9], 'start'],
     ['plain', [Lp('portal'), Rp('process')]],      // 사람은 포털에서 승인한다
     ['plain', [Tp('process', 34), [at.process.x + 34, at.process.y - NH / 2 - 14], [at['enterprise-sim'].x, at.process.y - NH / 2 - 14], Tp('enterprise-sim')], '정비 요청 · 구매', [at.portal.x, at.process.y - NH / 2 - 22], 'middle'],
     // 명령 길 밖: 흐름 엔진 · 포털 → 가상 설비 API(sim-net). 영역 띠 바깥(아래)으로 돌아 설비에 직접 닿는다 — 브로커와 명령 관문을 지나지 않는다
@@ -258,7 +258,7 @@ function renderStack() {
       <rect class="box" x="${x0}" y="${y0n}" width="${w}" height="${NH}" rx="12"/>
       <rect class="ib" x="${x0 + 10}" y="${y - 14}" width="28" height="28" rx="8"/>
       <svg class="ico" x="${x0 + 16}" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="vendor/lucide/icons.svg#${icon}"/></svg>
-      <text class="t" x="${x0 + 46}" y="${y - 3}">${esc(title)}</text><text class="s" x="${x0 + 46}" y="${y + 15}">${esc(c.key)}</text>
+      <text class="t" x="${x0 + 46}" y="${y - 3}">${esc(title)}</text><text class="s" x="${x0 + 46}" y="${y + 15}">${esc(c.product || c.key)}</text>
       <circle class="st" cx="${x0 + w - 12}" cy="${y0n + 11}" r="4"/></a>`;
   };
   // 계층 이름: 교재의 「Layer 9 · 프로세스 · 승인 · 앱」을 세 줄(번호 · 첫 낱말 · 나머지)로 — 왼쪽 칸을 좁혀 그림에 폭을 준다. 나머지가 길면 한 줄을 더 쓴다
@@ -306,7 +306,7 @@ function sysShow(key) {
   if (!c) { info.innerHTML = `<p class="sys-hint">${UI.icon('info')}부품에 올리면 하는 일과 상태가 보이고, 누르면 그 도구가 새 탭으로 열립니다. 점선 상자는 꺼 두어도 되는 선택 도구입니다.</p>`; return; }
   const [title, icon] = SYS.node[c.key], st = sysStatus(c);
   const nets = c.nets.map(id => `<span title="${esc((NETS.find(n => n.id === id) || {}).what || '')}">${esc(id)}</span>`).join(', ');
-  info.innerHTML = `<h3>${UI.icon(icon)}${esc(title)} <code class="mono">${esc(c.key)}</code><small>Layer ${LAYERS.length - c.row} · ${esc(c.zone.toUpperCase())}</small></h3>` +
+  info.innerHTML = `<h3>${UI.icon(icon)}${esc(title)} <code class="mono">${esc(c.key)}</code><small>${c.product ? `${esc(c.product)} · ` : ''}Layer ${LAYERS.length - c.row} · ${esc(c.zone.toUpperCase())}</small></h3>` +
     `<span class="state"><i class="dot"${st === 'ok' ? ' data-tone="ok"' : st === 'down' ? ' data-tone="danger"' : ''}></i>${esc(sysNote || sysStatusText(c))}</span>` +
     (c.url ? `<a class="btn-cv open" href="${esc(c.url)}" target="_blank" rel="noopener" data-sys-open="${esc(c.key)}">열기${UI.icon('external-link')}</a>` : '') +      // 여는 화면이 없는 부품은 [열기]를 두지 않는다
     `<p>${esc(c.role)}${c.real ? ` <b>· 현업에서는 ${esc(c.real)}</b>` : ''} <span class="sys-nets">· 망 ${nets}</span></p>${c.url ? '' : `<p>${esc(c.how || '여는 화면이 없습니다.')}</p>`}` +

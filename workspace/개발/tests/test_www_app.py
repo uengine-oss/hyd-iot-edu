@@ -186,7 +186,7 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
     assert all(drawn[c['key']] == 'none' for c in table if not c['health'])   # 상태를 재지 않는 부품은 점이 없다
     assert all(drawn[c['key']] == 'ok' for c in table if c['health'] and not c['optional'] and c['key'] != 'detector')
     # 올리면 정보 띠에 그 부품의 하는 일 · 현업 대응 · 계층 · 붙은 망(모두 부품 표의 글)과 상태가 보인다
-    for key in ('detector', 'cmd-gateway', 'agent-worker', 'EMQX', 'plant-sim', 'TimescaleDB'):
+    for key in ('detector', 'cmd-gateway', 'agent-worker', 'ot-broker', 'plant-sim', 'TimescaleDB'):
         c = next(x for x in table if x['key'] == key)
         page.hover(f"#stack .sys-nd[data-key='{key}']")
         info = page.inner_text('#sysInfo')
@@ -205,33 +205,35 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
 
 
 def test_여는_화면이_없는_브로커_둘과_브리지의_상태는_거기_붙는_서비스들이_말한_것으로_읽는다(world):
-    """공장 브로커의 관리 화면 · 관리 API(18083)는 꺼져 있고, DMZ 브로커와 공장 쪽 브리지에는 여는 화면도 상태 주소도 없다. 화면이 없는 주소의
+    """공장 브로커 · DMZ 브로커 · 공장 쪽 브리지는 셋 다 mosquitto 라 여는 화면(관리 화면)도 상태 주소도 없다. 화면이 없는 주소의
     상태를 읽으면 늘 「응답 없음」이 되어, 시작 창이 「서비스 상태 점이 초록이면 됩니다」라고 한 학생은 설치가 실패했다고 읽는다. 세 부품의 상태는
     거기 붙는 서비스의 /healthz 본문으로 읽는다(503 이어도 본문은 읽는다): 공장 브로커 = 가상 설비의 mqtt 와 브리지의 공장 브로커 쪽 다리,
-    DMZ 브로커 = 수집 중계 · 명령 관문의 mqtt, 브리지 = 그 둘이 들은 두 다리. 브리지가 끊기면 「응답 있음」인 채 값만 멈추지 않고 그 부품이 응답 없음이다."""
+    DMZ 브로커 = 수집 중계 · 명령 관문의 mqtt, 브리지 = 그 둘이 들은 두 다리. 브리지가 끊기면 「응답 있음」인 채 값만 멈추지 않고 그 부품이 응답 없음이다.
+    세 상자는 아랫줄에 같은 제품 이름(mosquitto)을 보이고, 올리면 정보 카드가 그 부품의 서비스 이름(docker compose 의 이름)을 보인다."""
     w, page = world, world.page
     page.goto(w.base + '/index.html#/home')
     state = lambda key: page.get_attribute(f"#stack .sys-nd[data-key='{key}']", 'data-st')
-    states = lambda: {key: state(key) for key in ('EMQX', 'ot-bridge', 'dmz-broker')}
+    states = lambda: {key: state(key) for key in ('ot-broker', 'ot-bridge', 'dmz-broker')}
     reach = lambda want: page.wait_for_function("want => Object.entries(want).every(([k, v]) => document.querySelector(`#stack .sys-nd[data-key='${k}']`).dataset.st === v)", arg=want, timeout=15000)
-    reach({'EMQX': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
+    reach({'ot-broker': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
     assert '16/16' in page.inner_text('#healthDots') and page.get_attribute('#healthDot', 'data-tone') == 'ok'
-    for key in ('EMQX', 'ot-bridge', 'dmz-broker'):
+    for key, title in (('ot-broker', '공장 브로커'), ('ot-bridge', '공장 쪽 브리지'), ('dmz-broker', 'DMZ 브로커')):
         assert page.get_attribute(f"#stack .sys-nd[data-key='{key}']", 'href') is None          # 누르면 열리는 화면이 없다
+        assert page.eval_on_selector_all(f"#stack .sys-nd[data-key='{key}'] text", 'ts => ts.map(t => t.textContent)') == [title, 'mosquitto']
         page.hover(f"#stack .sys-nd[data-key='{key}']")
-        assert '여는 화면이 없습니다' in page.inner_text('#sysInfo') and page.locator('#sysInfo [data-sys-open]').count() == 0
+        info = page.inner_text('#sysInfo')
+        assert '여는 화면이 없습니다' in info and key in info and page.locator('#sysInfo [data-sys-open]').count() == 0
     w.legs = {'broker': True, 'dmz': False}                                               # 브리지의 DMZ 쪽 다리가 끊겼다 — 두 서비스는 503 으로 그 사실을 말한다
-    reach({'EMQX': 'ok', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
+    reach({'ot-broker': 'ok', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
     assert page.inner_text('#sysSum') == '응답 없음 3 — ot-bridge, connect-ingest, cmd-gateway' and '13/16' in page.inner_text('#healthDots')
     w.legs = {'broker': False, 'dmz': True}                                               # 브리지가 공장 브로커와 끊겼다 — 가상 설비는 공장 브로커에 붙어 있다
-    reach({'EMQX': 'ok', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
+    reach({'ot-broker': 'ok', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
     w.broker = {'connect-ingest', 'cmd-gateway'}                                          # 가상 설비도 공장 브로커에 붙지 못했다 → 공장 브로커가 응답 없음
-    reach({'EMQX': 'down', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
+    reach({'ot-broker': 'down', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
     w.legs, w.broker = {'broker': True, 'dmz': True}, {'plant-sim', 'cmd-gateway'}        # 한 서비스만 붙어 있어도 DMZ 브로커는 살아 있다
-    reach({'EMQX': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
+    reach({'ot-broker': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
     w.broker = {'plant-sim'}                                                              # 둘 다 DMZ 브로커에 붙지 못했다 → DMZ 브로커는 응답 없음, 브리지는 볼 자리가 없어 모른다
-    reach({'EMQX': 'ok', 'ot-bridge': 'wait', 'dmz-broker': 'down'})
-    assert not [u for u in w.asked if ':18083' in u], '꺼 둔 관리 화면의 주소를 부른다'
+    reach({'ot-broker': 'ok', 'ot-bridge': 'wait', 'dmz-broker': 'down'})
 
 
 def test_감지기가_감지에서_뺀_이상_패턴은_서비스_점이_초록인_채로_묻히지_않는다(world):

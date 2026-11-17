@@ -1,7 +1,7 @@
 """MQTT 연결(common/hydcommon/mqtt.py) — 처리기 예외 하나로 네트워크 루프가 끝나지 않고, 세어 건강에 보인다(G3b-1 · 14).
 
 paho 메시지 객체는 바깥(라이브러리)이라 그 꼴(topic · payload)만 가진 객체로 넣고, 연결 사건은 paho 가 부르는 콜백 그대로 부른다.
-브로커 규칙(누가 무엇을 보낼 수 있나)은 실제 EMQX 로 test_emqx 가, 실제 브리지와의 맞물림은 test_ot_bridge 가 잰다.
+브로커 규칙(누가 무엇을 보낼 수 있나)은 실제 공장 브로커로 test_ot_broker 가, 실제 브리지와의 맞물림은 test_ot_bridge 가 잰다.
 
 브리지 뒤의 연결(behind_bridge — DMZ 의 수집 중계 · 명령 관문): DMZ 브로커에 붙은 것만으로는 건강하지 않다. 공장 쪽 브리지가 올린 다리 상태
 (bridge/ot/broker · bridge/ot/dmz)가 둘 다 「이어짐」일 때만 건강하고 발행을 받는다.

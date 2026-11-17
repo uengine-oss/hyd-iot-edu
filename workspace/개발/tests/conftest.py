@@ -5,7 +5,7 @@
 한꺼번에 HEAVY_SLOTS 칸까지 — 넘으면 차례를 기다리고, 칸을 잡으면 끊긴 묶음이 남긴 컨테이너부터 지운다). 없으면 그것이 필요한 테스트는 건너뛰지 않고 「무엇이 없어 못 돌았는지」를 적고 실패한다. 화면 순회 테스트만 떠 있는
 포털(HYD_TEST_PORTAL_URL)을 쓴다. 서비스 · 컨테이너는 그것을 요청한 테스트가 있을 때만 뜬다.
 테스트 파일 이름: 모듈 하나당 `test_<모듈>.py`. 모듈 이름이 겹치면(main · server · tools · state …) `test_<패키지>_<모듈>.py`(process 의
-main 만 `test_main.py`), 포털 화면 JS 는 `test_www_<파일>.py`, 코드 모듈이 아닌 대상(마이그레이션 · nginx · emqx 설정 · 시드 · 설치 파일)은
+main 만 `test_main.py`), 포털 화면 JS 는 `test_www_<파일>.py`, 코드 모듈이 아닌 대상(마이그레이션 · nginx · 브로커 설정 · 시드 · 설치 파일)은
 그 대상 이름.
 
 학생 PC 구성                       → 테스트에서(우리 코드 그대로)                                           픽스처
@@ -13,7 +13,7 @@ main 만 `test_main.py`), 포털 화면 JS 는 `test_www_<파일>.py`, 코드 �
   지식 그래프(neo4j + kg-seed)     → 이 테스트 자리의 neo4j 컨테이너 + kg-seed 와 같은 it/neo4j/seed.sh             neo4j_graph · seeded_graph
   시작이 넣는 수업 지식            → 시작과 같은 scripts/class_knowledge.ensure(이 묶음 process 의 지식 적재 API)                     course_graph
   시계열(TimescaleDB)              → 이 테스트 자리의 timescaledb 컨테이너 + 같은 init.sql · reader.sql              timescale
-  MQTT(emqx · dmz-broker · ot-bridge) → 이 테스트 자리의 그 세 컨테이너(compose 의 망 그대로 — 공장 브로커는 ot-net 에만)        plant_mqtt
+  MQTT(ot-broker · dmz-broker · ot-bridge) → 이 테스트 자리의 그 세 컨테이너(compose 의 망 그대로 — 공장 브로커는 ot-net 에만)   plant_mqtt
   Kafka(redpanda)                  → 이 테스트 자리의 redpanda 컨테이너 + topic-init 과 같은 topics.sh(MQTT 셋과 함께)     brokers
   설비 데이터 수집기(connect-ingest) → Dockerfile 실행 명령을 하위 프로세스로, 위 두 브로커에 붙는다(agent 신선도 확인이 읽음)  stack
   process                          → 실제 procsvc.main 앱(이 프로세스 안 · 이 PC 포트). 기동은 main.restore_and_build   world
@@ -133,7 +133,7 @@ def _pid_alive(pid):
 #: compose 서비스 이름(과 테스트 대체물) → 이 묶음이 쓰는 이 PC 포트. 서비스가 뜰 때 이 포트에 붙는다.
 PORTS = {name: _free_port() for name in (
     'process', 'agent', 'dmn-mcp', 'enterprise-mcp', 'enterprise-mcp-maint', 'enterprise-mcp-purchase', 'enterprise-sim',
-    'effects-mcp', 'neo4j', 'timescaledb', 'agent-worker', 'plant-sim', 'relay', 'emqx', 'redpanda', 'connect-ingest')}
+    'effects-mcp', 'neo4j', 'timescaledb', 'agent-worker', 'plant-sim', 'relay', 'ot-broker', 'redpanda', 'connect-ingest')}
 
 
 def _compose():
@@ -425,8 +425,8 @@ def _published_port(name, container_port):
 #: 이 PC 에서 한꺼번에 도는 무거운 묶음 수. 2026-10-30 실측: 묶음이 몰려 테스트 컨테이너 13~22개 · Docker 메모리 6.2/7.9 GB 뒤 엔진과
 #: 업무 DB(Supabase)가 두 번 멈췄다. 셈(메모리 한도 기준): Docker 7.9 GB − 강사 스택 약 3.9 GB = 4.0 GB. 한 묶음 = Neo4j 한도 1.5 GB(compose
 #: mem_limit — 시드를 연달아 다섯 번 넣고 읽을 때 최고 847 → 1047 MiB, 1 GB 한도에서는 종료 137) + 시계열 0.25 GB = 1.75 GB.
-#: 셋이면 5.25 GB 로 넘고 둘이면 3.5 GB 로 든다 → 둘. 서비스 스택(stack)을 쓰는 묶음은 MQTT · Kafka 브로커(emqx 320m · redpanda 448m)가
-#: 더해져 2.52 GB 라 칸 둘을 함께 잡는다(혼자 돈다 — 3.5 GB 안).
+#: 셋이면 5.25 GB 로 넘고 둘이면 3.5 GB 로 든다 → 둘. 서비스 스택(stack)을 쓰는 묶음은 MQTT 셋(ot-broker · dmz-broker · ot-bridge 각 24m) · Kafka
+#: 브로커(redpanda 448m)가 더해져 2.27 GB 라 칸 둘을 함께 잡는다(혼자 돈다 — 3.5 GB 안).
 HEAVY_SLOTS = 2
 
 
@@ -623,7 +623,7 @@ def heavy_slot(request, pytestconfig):
 
 
 #: 다시 쓰는 테스트 컨테이너(서비스, 컨테이너 포트) — pytest_configure 가 이 PC 포트를 기존 컨테이너의 것으로 맞춘다
-REUSED_CONTAINERS = (('neo4j', 7687), ('timescaledb', 5432), ('emqx', 1883), ('redpanda', 19092))      # dmz-broker 는 PORTS 에 없다 — ComposeContainer 가 기존 컨테이너의 포트를 읽는다
+REUSED_CONTAINERS = (('neo4j', 7687), ('timescaledb', 5432), ('ot-broker', 1883), ('redpanda', 19092))      # dmz-broker 는 PORTS 에 없다 — ComposeContainer 가 기존 컨테이너의 포트를 읽는다
 
 
 class ComposeContainer:
@@ -945,13 +945,14 @@ BROKER_BOOT_S = 300
 
 class MqttClient:
     """실제 MQTT 클라이언트 하나(paho, MQTT 5) — 이 PC 포트 port 의 브로커에 이름 user 로 붙어, 생긴 일(CONNACK · SUBACK · 끊김)과 받은
-    메시지를 남긴다. messages = 받은 토픽들, received = (토픽, 본문, 보존 여부)들."""
+    메시지를 남긴다. messages = 받은 토픽들, received = (토픽, 본문, 보존 여부)들, puback = {보낸 것의 mid: 브로커가 PUBACK 에 적은 이유
+    ('Success' · 'Not authorized' …)}."""
 
     def __init__(self, port, user=None, password=None, ws=False):
         import uuid
         import paho.mqtt.client as mqtt
         self.events = {'connect': None, 'disconnect': None, 'suback': None}
-        self.messages, self.received = [], []
+        self.messages, self.received, self.puback = [], [], {}
         self.c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='t-' + uuid.uuid4().hex[:8],
                              transport='websockets' if ws else 'tcp', protocol=mqtt.MQTTv5)
         if user is not None:
@@ -959,6 +960,7 @@ class MqttClient:
         self.c.on_connect = lambda c, u, f, rc, p=None: self.events.__setitem__('connect', str(rc))
         self.c.on_disconnect = lambda c, u, f, rc, p=None: self.events.__setitem__('disconnect', str(rc))
         self.c.on_subscribe = lambda c, u, mid, rcs, p=None: self.events.__setitem__('suback', [str(r) for r in rcs])
+        self.c.on_publish = lambda c, u, mid, rc, p=None: self.puback.__setitem__(mid, str(rc))
         self.c.on_message = self._got
         self.c.connect('127.0.0.1', port, 10)
         self.c.loop_start()
@@ -985,26 +987,34 @@ class MqttClient:
         self.c.disconnect()
 
 
+def _accepts(port, user=None, password=None, ws=False):
+    """그 입구가 이 이름 · 비밀번호의 연결을 받는가(CONNACK 성공). 연결이 아직 열리지 않으면 예외 — 기다리는 쪽(ComposeContainer.wait)이 다시 묻는다."""
+    probe = MqttClient(port, user, password, ws)
+    probe.close()
+    return probe.accepted
+
+
 class PlantMqtt:
-    """이 테스트 자리의 MQTT 셋(compose 서비스 그대로 — 같은 이미지 · 설정 파일 · 망): 공장 브로커 emqx(ot-net), DMZ 브로커 dmz-broker
-    (ot-dmz-net), 그 둘에 스스로 접속하는 공장 쪽 브리지 ot-bridge(두 망). 망은 compose 의 networks 대로 이 자리에 만든다(site_network) —
-    그래서 「경계 망에서 공장 브로커에 닿는가」를 실제 연결로 잴 수 있다(test_zones). emqx 의 입구들과 dmz-broker 의 입구는 이 PC 의 시험 ·
-    서비스가 붙는 자리라 이 PC 포트로도 연다(compose 에서는 망 안에만). plant = 공장 브로커 안쪽 입구, dmz = DMZ 브로커(이 PC 주소, 포트)."""
-    PLANT_PORTS = (1884, 8083, 18083)                  # 바깥 입구 · 웹소켓 · 관리 API 자리(꺼져 있어야 한다 — test_emqx)
+    """이 테스트 자리의 MQTT 셋(compose 서비스 그대로 — 같은 이미지 · 설정 파일 · 망, 셋 다 mosquitto): 공장 브로커 ot-broker(ot-net), DMZ 브로커
+    dmz-broker(ot-dmz-net), 그 둘에 스스로 접속하는 공장 쪽 브리지 ot-bridge(두 망). 망은 compose 의 networks 대로 이 자리에 만든다(site_network) —
+    그래서 「경계 망에서 공장 브로커에 닿는가」를 실제 연결로 잴 수 있다(test_zones). 두 브로커의 입구는 이 PC 의 시험 · 서비스가 붙는 자리라
+    이 PC 포트로도 연다(compose 는 공장 브로커의 바깥 입구 둘만 호스트에 연다). plant = 공장 브로커 안쪽 입구, dmz = DMZ 브로커(이 PC 주소, 포트)."""
+    PLANT_PORTS = (1884, 8083)                         # 공장 브로커의 바깥 입구 · 웹소켓(계정 student — test_ot_broker)
 
     def __init__(self):
-        self.plant_box = ComposeContainer('emqx', 1883, extra_ports=self.PLANT_PORTS, networked=True)
+        self.plant_box = ComposeContainer('ot-broker', 1883, extra_ports=self.PLANT_PORTS, networked=True)
         self.dmz_box = ComposeContainer('dmz-broker', 1883, networked=True)
         self.bridge_box = ComposeContainer('ot-bridge', networked=True)
         self.plant, self.dmz = ('127.0.0.1', self.plant_box.port), ('127.0.0.1', self.dmz_box.port)
-        self.plant_box.wait(lambda: 'is started' in _docker('exec', self.plant_box.name, 'emqx', 'ctl', 'status', timeout=30),
-                            'emqx ctl status', BROKER_BOOT_S)
         # 다시 쓰는 컨테이너에는 앞 묶음이 남긴 보존(retain) 메시지가 있다 — 붙자마자 그 메시지가 와서 뒤 테스트의 셈이 어긋났다
-        # (전체 테스트 1: test_gw_main 경보판 시험의 malformed 2). 처음 켠 브로커처럼 비우고 시작한다: emqx 는 보존 저장을 비우고,
-        # DMZ 브로커는 디스크에 남기지 않으므로(persistence false) 다시 켠다. 브리지는 두 브로커에 스스로 다시 붙는다.
-        _docker('exec', self.plant_box.name, 'emqx', 'ctl', 'retainer', 'clean', timeout=30)
-        if self.dmz_box.reused:
+        # (전체 테스트 1: test_gw_main 경보판 시험의 malformed 2). 처음 켠 브로커처럼 비우고 시작한다: 두 브로커는 디스크에 남기지 않으므로
+        # (persistence false) 다시 켠다. 공장 브로커를 다시 켰으면 DMZ 브로커도 다시 켠다 — 거기 남은 다리 상태(「이어짐」)는 공장 브로커를 다시 켜기
+        # 전의 것이라, 지운 뒤 브리지가 새로 올린 상태를 기다린다. 브리지는 두 브로커에 스스로 다시 붙는다.
+        if self.plant_box.reused:
+            _docker('restart', '-t', '2', self.plant_box.name)
+        if self.plant_box.reused or self.dmz_box.reused:
             _docker('restart', '-t', '2', self.dmz_box.name)
+        self.plant_box.wait(lambda: _accepts(self.plant[1], 'plant-sim'), '공장 브로커 안쪽 입구의 CONNACK', BROKER_BOOT_S)
         self.wait_bridge({'broker': True, 'dmz': True}, BROKER_BOOT_S)
 
     def bridge_legs(self):

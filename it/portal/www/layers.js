@@ -1,5 +1,6 @@
 // L9 → L1: 계층의 할 일과 이 시스템의 부품(교재 1회차 02 의 아홉 계층과 같은 이름 · 같은 차례 — 화면은 줄마다 「Layer 9」 … 「Layer 1」을 함께 적는다). 시스템 구성 화면(app.js renderStack)과 상태 확인(pollHealth)이 이 표 하나를 읽는다.
 // role = 하는 일, real = 현업에서 같은 자리에 있는 것(화면이 「현업에서는 …」으로 보인다), zone = 영역(ot · dmz · it),
+// product = 그 부품을 돌리는 제품 — 이름이 서비스 이름이고 제품이 따로 있는 부품(브로커 둘 · 공장 쪽 브리지 = mosquitto)에만 둔다. 구조 그림의 상자 아랫줄이 이름 대신 이것을 보인다,
 // nets = 그 서비스가 붙은 망(compose.yaml 의 networks 그대로 — 판정은 workspace/개발/tests/test_zones.py · test_www_app.py).
 // 서비스 주소는 이 파일 하나가 만든다.
 //  - API: 화면이 데이터를 읽고 쓰는 길 — 포털과 같은 출처의 /svc/<서비스 이름>(nginx.conf 가 그 서비스로 넘긴다).
@@ -7,10 +8,10 @@
 //  - P(port): 사람이 새 탭으로 여는 도구 화면(서비스 문서 · Grafana · FUXA · Neo4j Browser …)과 그 도구들의 켜짐 확인.
 //    이 PC에서 다른 프로그램과 겹쳐 옮긴 포트가 있으면 그 포트로 연다("8080=18080 3000=13000", nginx가 화면에 끼워 넣음).
 // health: 5초마다 확인하는 주소 — 우리 서비스는 같은 출처 /healthz(JSON), 바깥 도구는 그 포트에 닿는지만(opaque fetch).
-// healthOf: 사람이 여는 화면도 상태 주소도 없는 부품(MQTT 브로커 둘 · 공장 쪽 브리지 — 브로커의 관리 화면 · 관리 API 는 꺼 두었다)의 상태를 읽는 길.
+// healthOf: 사람이 여는 화면도 상태 주소도 없는 부품(MQTT 브로커 둘 · 공장 쪽 브리지 — 셋 다 관리 화면 · 관리 API 가 없는 mosquitto 다)의 상태를 읽는 길.
 //    그 부품에 붙는 우리 서비스들의 /healthz 본문(응답 코드가 503 이어도 본문은 읽는다)을 from 의 주소마다 read 로 읽는다:
 //    true = 이어져 있다고 한다, false = 끊겼다고 한다, 그 밖 = 그 서비스는 모른다. 하나라도 true 면 정상, true 없이 false 가 있으면 응답 없음, 아무도 모르면 확인 중.
-//    - 공장 브로커(EMQX): 가상 설비의 mqtt(그 브로커에 바로 붙는다)와, DMZ 의 두 서비스가 들은 브리지의 공장 브로커 쪽 다리(ot_bridge_legs.broker).
+//    - 공장 브로커(ot-broker): 가상 설비의 mqtt(그 브로커에 바로 붙는다)와, DMZ 의 두 서비스가 들은 브리지의 공장 브로커 쪽 다리(ot_bridge_legs.broker).
 //    - DMZ 브로커: 수집 중계 · 명령 관문의 mqtt. - 공장 쪽 브리지: 그 둘이 DMZ 브로커에서 들은 두 다리(하나라도 끊겼으면 끊김).
 const H = location.hostname || 'localhost';
 const PORT_MAP = Object.fromEntries(String(window.HYD_PORTS_RAW || '').split(/\s+/).filter(Boolean).map(kv => kv.split('=').map(Number)));
@@ -56,7 +57,7 @@ const LAYERS = [
     { name: 'detector', nets: ['it-net'], role: '1초 단위 특징 계산 · 경보 발생과 해제 판정', real: '스트림 처리 · CEP 엔진 — 현장(엣지) 쪽에서도 탐지합니다', zone: 'it', url: P(8092) + '/docs', health: API.detector + '/healthz' },
   ]},
   { name: '이벤트 백본', role: '데이터와 명령을 각 서비스로 전달', zone: 'mixed', comps: [
-    { name: 'ot-bridge', nets: ['ot-net', 'ot-dmz-net'], role: '공장 안에서 DMZ 브로커로 먼저 접속해 값을 내보내고, 검증을 통과한 명령을 가져옴 · 바깥에서 들어오는 입구 없음', real: '공장 쪽 엣지 게이트웨이 · 브로커 브리지(바깥으로 나가는 연결만 엽니다)', zone: 'ot', url: null,
+    { name: 'ot-bridge', product: 'mosquitto', nets: ['ot-net', 'ot-dmz-net'], role: '공장 안에서 DMZ 브로커로 먼저 접속해 값을 내보내고, 검증을 통과한 명령을 가져옴 · 바깥에서 들어오는 입구 없음', real: '공장 쪽 엣지 게이트웨이 · 브로커 브리지(바깥으로 나가는 연결만 엽니다)', zone: 'ot', url: null,
       how: '여는 화면이 없습니다. 공장 브로커와 DMZ 브로커 양쪽에 스스로 접속해 있고, 어느 쪽이든 끊기면 수집 중계와 명령 관문이 그 사실을 알립니다.',
       health: 'bridge:ot-bridge', healthOf: { from: DMZ_HEALTH, read: HEARD.bridge } },
     { name: 'connect-ingest', nets: ['ot-dmz-net', 'dmz-it-net'], role: 'DMZ 브로커에 올라온 현장 데이터를 분석망으로 전달 · 공장 안으로는 접속하지 않음', real: 'DMZ 중계 — Kafka Connect 같은 커넥터', zone: 'dmz', url: P(8093) + '/docs', health: SVC('connect-ingest') + '/healthz' },
@@ -64,10 +65,10 @@ const LAYERS = [
     { name: 'Redpanda', nets: ['it-net', 'dmz-it-net'], role: 'Kafka 호환 이벤트 저장 · 분배', real: '이벤트 로그 — Apache Kafka(같은 규약)', zone: 'it', url: P(8085) + '/topics', health: P(9644) + '/v1/status/ready', entryHealth: P(8085) },
   ]},
   { name: 'IoT 미들웨어 · MQTT', role: '현장 장치와 메시지를 주고받음', zone: 'mixed', comps: [
-    { name: 'EMQX', nets: ['ot-net'], role: '공장 안에서 센서값 · 상태 · 명령을 중계하는 MQTT 브로커 · OT 망에만 붙어 DMZ · IT의 부품은 닿지 못함', real: '공장 안의 MQTT 브로커(IoT 미들웨어)', zone: 'ot', url: null,
-      how: '여는 화면이 없습니다. 관리 화면 · 관리 API는 꺼 두었습니다(그 길의 명령은 토픽 규칙과 승인을 거치지 않습니다). 지나가는 값은 관제 화면에서 봅니다.',
-      health: 'mqtt:EMQX', healthOf: { from: [API.plant + '/healthz', ...DMZ_HEALTH], read: HEARD.plantBroker } },
-    { name: 'dmz-broker', nets: ['ot-dmz-net'], role: '공장이 내보낸 값과 검증을 통과한 명령이 놓이는 자리 · 스스로는 어디에도 접속하지 않고 기다림', real: 'DMZ의 MQTT 브로커(공장이 접속해 오는 쪽)', zone: 'dmz', url: null,
+    { name: 'ot-broker', product: 'mosquitto', nets: ['ot-net'], role: '공장 안에서 센서값 · 상태 · 명령을 중계하는 MQTT 브로커 · OT 망에만 붙어 DMZ · IT의 부품은 닿지 못함', real: '공장 안의 MQTT 브로커(IoT 미들웨어)', zone: 'ot', url: null,
+      how: '여는 화면이 없습니다. 지나가는 값은 관제 화면에서 봅니다.',
+      health: 'mqtt:ot-broker', healthOf: { from: [API.plant + '/healthz', ...DMZ_HEALTH], read: HEARD.plantBroker } },
+    { name: 'dmz-broker', product: 'mosquitto', nets: ['ot-dmz-net'], role: '공장이 내보낸 값과 검증을 통과한 명령이 놓이는 자리 · 스스로는 어디에도 접속하지 않고 기다림', real: 'DMZ의 MQTT 브로커(공장이 접속해 오는 쪽)', zone: 'dmz', url: null,
       how: '여는 화면이 없습니다. 공장 쪽 브리지 · 수집 중계 · 명령 관문만 붙고, 이 PC의 다른 프로그램에는 열려 있지 않습니다.',
       health: 'mqtt:dmz-broker', healthOf: { from: DMZ_HEALTH, read: HEARD.dmzBroker } },
   ]},

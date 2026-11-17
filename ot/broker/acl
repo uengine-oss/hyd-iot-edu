@@ -1,0 +1,30 @@
+# hyd-iot-edu 공장 브로커의 토픽 규칙 — 이름(username)마다 할 수 있는 것만 적는다. 적히지 않은 것은 거절된다(이름을 대지 않은 연결은 아무것도 못 한다).
+# 주체: 안쪽 입구의 서비스 이름(hydcommon.mqtt · FUXA 장치 설정 · 공장 쪽 브리지 ot/bridge/mosquitto.conf) · 바깥 입구의 student.
+# 공장 밖(DMZ · IT)의 서비스 이름은 여기에 없다 — 이 브로커에는 공장 안의 것만 붙는다. 명령 관문이 DMZ 브로커에 놓은 명령은 공장 쪽 브리지가 가져와 낸다.
+
+# 가상 설비: 측정값 · 파형 · 상태를 내고, 명령 · 모드를 받는다
+user plant-sim
+topic write plant/+/tag/+
+topic write plant/+/wave/+
+topic write plant/+/status
+topic read plant/+/cmd/manual
+topic read plant/+/cmd/auto
+topic read plant/+/mode
+
+# 공장 쪽 브리지: 설비 명령과 경보판을 내고(명령 관문이 검증해 DMZ 브로커에 놓은 것), 값 · 상태를 가져가 DMZ 브로커에 올린다
+user ot-bridge
+topic write plant/+/cmd/auto
+topic write plant/+/alert
+topic read plant/+/tag/+
+topic read plant/+/wave/+
+topic read plant/+/status
+
+# 관제 화면(FUXA): 수동 조작 · 운전 모드를 내고, 설비 토픽을 모두 읽는다
+user fuxa
+topic write plant/+/cmd/manual
+topic write plant/+/mode
+topic read plant/#
+
+# 학생(바깥 입구만 들어온다 — 계정 파일 passwd): 구독만 한다
+user student
+topic read #

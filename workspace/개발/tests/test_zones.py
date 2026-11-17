@@ -5,13 +5,13 @@ Docker 는 같은 망에 붙은 컨테이너끼리만 닿게 하므로, 「누�
 경계 망에만 붙으면 DMZ).
   - 모든 서비스는 한 영역에만 있다.
   - OT 와 IT 는 서로 닿지 않는다. 하나뿐인 예외는 가상 설비 API 망(sim-net)이고 그 구성원은 정해져 있다(실습 조작의 길 — 브로커는 없다).
-  - 공장 브로커(emqx)에는 OT 만 닿는다. 경계 망에 나와 있는 공장 쪽 부품은 공장 쪽 브리지(ot-bridge) 하나이고, IT 가 DMZ 경계 망에서 만나는 것은
+  - 공장 브로커(ot-broker)에는 OT 만 닿는다. 경계 망에 나와 있는 공장 쪽 부품은 공장 쪽 브리지(ot-bridge) 하나이고, IT 가 DMZ 경계 망에서 만나는 것은
     DMZ 와 IT 뿐이다.
   - 올라오는 길(설비 → 공장 브로커 → 브리지 → DMZ 브로커 → 수집 중계 → 이벤트 로그)과 내려가는 길(process → 이벤트 로그 → 명령 관문 →
     DMZ 브로커 → 브리지 → 공장 브로커 → 설비)이 이어져 있다.
   - 서비스가 환경 값 · 포털 길 표 · 감시 대상 · 브리지 설정으로 부르는 다른 서비스는 실제로 닿는 망에 있다(망을 나누다 길이 끊기지 않게).
-  - 브로커가 호스트에 여는 것은 공장 브로커의 구독만 되는 바깥 입구뿐이다(안쪽 입구 · 관리 API · DMZ 브로커 · 브리지는 열지 않는다 — 관리 API 가
-    꺼져 있는지는 test_emqx.py).
+  - 브로커가 호스트에 여는 것은 공장 브로커의 구독만 되는 바깥 입구뿐이다(안쪽 입구 · DMZ 브로커 · 브리지는 열지 않는다 — 공장 브로커가 듣는
+    입구가 그 셋뿐인지와 입구마다의 계정 · 토픽 규칙은 test_ot_broker.py).
   - 연결을 먼저 여는 쪽은 공장이다: DMZ 서비스와 같은 망에 붙인 실제 컨테이너에서 공장 쪽 컨테이너(공장 브로커 · 브리지)의 어느 입구로도 TCP 연결이
     열리지 않는다(이름으로도 주소로도). 같은 자리에서 DMZ 브로커로는 열린다(잰 것이 실제 연결임을 보인다). 값과 명령이 브리지로 실제로 오가는지는
     test_ot_bridge.py.
@@ -33,7 +33,7 @@ OT = {s for s, n in NETS.items() if OT_NET in n}
 IT = {s for s, n in NETS.items() if IT_NET in n}
 DMZ = {s for s, n in NETS.items() if n and n <= BOUNDARY}
 SIM_API = {'plant-sim': {'process', 'portal'}}          # 가상 설비 API(:8000)를 부르는 IT 서비스 — 결함 주입 · 정비 수행 모사 · 같은 출처 길
-PLANT_BROKER, PLANT_BRIDGE, DMZ_BROKER = 'emqx', 'ot-bridge', 'dmz-broker'
+PLANT_BROKER, PLANT_BRIDGE, DMZ_BROKER = 'ot-broker', 'ot-bridge', 'dmz-broker'
 
 
 def shared(a, b):
@@ -65,10 +65,10 @@ def test_공장_브로커에는_OT만_닿고_경계_망에_나온_공장_쪽_부
 
 
 @pytest.mark.parametrize('path', [
-    ['plant-sim', 'emqx', 'ot-bridge', 'dmz-broker', 'connect-ingest', 'redpanda', 'detector'],          # 값이 올라오는 길
-    ['plant-sim', 'emqx', 'ot-bridge', 'dmz-broker', 'connect-ingest', 'redpanda', 'connect-sink'],
-    ['process', 'redpanda', 'cmd-gateway', 'dmz-broker', 'ot-bridge', 'emqx', 'plant-sim'],              # 승인된 명령이 내려가는 길
-    ['fuxa', 'emqx', 'plant-sim'],                                                                       # 운전 화면의 감시 · 수동 조작(OT 안)
+    ['plant-sim', 'ot-broker', 'ot-bridge', 'dmz-broker', 'connect-ingest', 'redpanda', 'detector'],     # 값이 올라오는 길
+    ['plant-sim', 'ot-broker', 'ot-bridge', 'dmz-broker', 'connect-ingest', 'redpanda', 'connect-sink'],
+    ['process', 'redpanda', 'cmd-gateway', 'dmz-broker', 'ot-bridge', 'ot-broker', 'plant-sim'],         # 승인된 명령이 내려가는 길
+    ['fuxa', 'ot-broker', 'plant-sim'],                                                                  # 운전 화면의 감시 · 수동 조작(OT 안)
 ])
 def test_올라오는_길과_내려가는_길이_이어져_있다(path):
     assert [(a, b) for a, b in zip(path, path[1:]) if not shared(a, b)] == []
@@ -102,14 +102,14 @@ def test_서비스가_부르는_서비스는_닿는_망에_있다():
 
 
 def test_브로커가_호스트에_여는_것은_구독만_되는_바깥_입구뿐이다():
-    inside = {int(str(line).rsplit(':', 1)[1]) for line in SERVICES['emqx'].get('ports') or []}
-    assert inside == {1884, 8083}                          # ot/emqx/emqx.conf: 1884 · 8083 = 계정 student(구독만). 1883(서비스 이름만) · 18083(관리 API)은 열지 않는다
+    inside = {int(str(line).rsplit(':', 1)[1]) for line in SERVICES[PLANT_BROKER].get('ports') or []}
+    assert inside == {1884, 8083}                          # ot/broker/mosquitto.conf: 1884 · 8083 = 계정 student(구독만). 1883(서비스 이름만)은 열지 않는다
     assert {s: SERVICES[s].get('ports') for s in (PLANT_BRIDGE, DMZ_BROKER) if SERVICES[s].get('ports')} == {}      # 브리지 · DMZ 브로커는 호스트에 열지 않는다
 
 
 # ---------------------------------------------------------------- 연결을 먼저 여는 쪽은 공장이다(실제 연결)
 PROBE_IMAGE = SERVICES[DMZ_BROKER]['image']               # 이미 받은 이미지(busybox nc 가 들어 있다)
-PLANT_SIDE_PORTS = {PLANT_BROKER: (1883, 1884, 8083, 18083), PLANT_BRIDGE: (1883,)}      # 공장 쪽 컨테이너가 안에서 듣는 포트(emqx.conf 입구들 · 브리지의 상태 확인 입구)
+PLANT_SIDE_PORTS = {PLANT_BROKER: (1883, 1884, 8083), PLANT_BRIDGE: (1883,)}      # 공장 쪽 컨테이너가 안에서 듣는 포트(공장 브로커의 입구 셋 — 그 셋뿐인지는 test_ot_broker · 브리지의 상태 확인 입구)
 
 
 def _addresses(box):
@@ -133,7 +133,7 @@ def _opens_from(nets, targets):
 
 def test_DMZ_자리에서_공장_쪽_어느_입구로도_연결이_열리지_않는다(plant_mqtt):
     """DMZ 서비스(명령 관문)와 같은 망에 붙인 컨테이너에서 공장 브로커 · 브리지의 모든 입구로 연결을 열어 본다 — 이름으로, 그리고 그 컨테이너가 가진
-    모든 주소로. 공장 브로커가 경계 망에 붙어 있으면(고치기 전의 compose) 이름 emqx 로 1883 이 열린다."""
+    모든 주소로. 공장 브로커가 경계 망에 붙어 있으면 이름 ot-broker 로 1883 이 열린다."""
     dmz_nets = sorted(NETS['cmd-gateway'] & {'ot-dmz-net'}) or pytest.fail('명령 관문이 경계 망 ot-dmz-net 에 없다')
     boxes = {PLANT_BROKER: plant_mqtt.plant_box, PLANT_BRIDGE: plant_mqtt.bridge_box}
     hosts = {service: {service, *_addresses(box).values()} for service, box in boxes.items()}
@@ -145,7 +145,7 @@ def test_DMZ_자리에서_공장_쪽_어느_입구로도_연결이_열리지_않
 
 def test_공장_자리에서는_공장_브로커와_DMZ_브로커_양쪽으로_연결이_열린다(plant_mqtt):
     """브리지와 같은 망에 붙인 컨테이너에서는 두 브로커가 모두 열린다 — 여는 쪽이 공장이면 길이 있다."""
-    assert _opens_from(sorted(NETS[PLANT_BRIDGE]), [(PLANT_BROKER, 1883), (DMZ_BROKER, 1883)]) == {'emqx:1883', 'dmz-broker:1883'}
+    assert _opens_from(sorted(NETS[PLANT_BRIDGE]), [(PLANT_BROKER, 1883), (DMZ_BROKER, 1883)]) == {f'{PLANT_BROKER}:1883', f'{DMZ_BROKER}:1883'}
 
 
 # ---------------------------------------------------------------- 시스템 구성 화면의 표(layers.js) = compose

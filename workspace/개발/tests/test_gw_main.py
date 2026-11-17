@@ -27,7 +27,7 @@ def gw(monkeypatch):
 @pytest.fixture
 def live_gw(brokers, monkeypatch):
     """관문을 이 자리의 실제 DMZ 브로커(cmd-gateway 이름 — 토픽 규칙 dmz/broker/acl 그대로)에 붙인다. 그 브로커에는 실제 공장 쪽 브리지가
-    공장 브로커(emqx)와 이어 붙어 있다(conftest PlantMqtt) — 다리 둘이 이어졌다고 올라올 때까지 기다린다."""
+    공장 브로커(ot-broker)와 이어 붙어 있다(conftest PlantMqtt) — 다리 둘이 이어졌다고 올라올 때까지 기다린다."""
     from conftest import until
     monkeypatch.setenv('CMD_FINGERPRINT_KEY', KEY)
     monkeypatch.setenv('MQTT_HOST', brokers.mqtt[0])

@@ -2,7 +2,7 @@
 
 The gateway does not push into the plant. It puts a validated command on the DMZ broker (dmz/broker/acl: only this service
 may publish plant/+/cmd/auto there); the plant-side bridge (ot-bridge), which connects out of the plant, fetches it and is
-the only client that may publish that topic on the plant broker (ot/emqx/acl.conf). While the bridge is down the link
+the only client that may publish that topic on the plant broker (ot/broker/acl). While the bridge is down the link
 refuses the publish (hydcommon.mqtt) and the command is rejected as PUBLISH_CHECK — it is not left for a later delivery.
 
   Kafka action.cmd --validate (7 checks)--> MQTT plant/{a}/cmd/auto   (retain=false)
