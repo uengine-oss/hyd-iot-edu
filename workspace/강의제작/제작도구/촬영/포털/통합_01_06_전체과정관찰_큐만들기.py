@@ -70,16 +70,18 @@ OPS = {
            P(T('#menuList summary[data-menu="knowledge"] > span'), '지식,'), P(T('#menuList summary[data-menu="plant"] > span'), '유압 설비,'),
            P(T('#menuList a[data-menu="instances"] > span', exact='처리 건'), '처리 건이')],
  # 매뉴얼을 지식으로 넣기 — 문서 등록
- 'v0609': [P(T('#mainStages a.stat[data-go-tab="knowledge"] .go'), '첫 칸 아래'), C(T('#mainStages a.stat[data-go-tab="knowledge"] .go'), '누르시면'),
+ 'v0609': [P(LABEL(1), '이런 지식은'),      # 앞 구간이 왼쪽 메뉴 「처리 건」을 짚고 끝나, 그대로 두면 그 줄이 마우스 올림 색으로 20초쯤 남는다 — 지식을 모아 두는 첫 칸으로 옮긴다
+           P(T('#mainStages a.stat[data-go-tab="knowledge"] .go'), '첫 칸 아래'), C(T('#mainStages a.stat[data-go-tab="knowledge"] .go'), '누르시면'),
            W(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"]'))],
  'v0610': [P(T('#manualSteps .phase', exact='올리기'), '올리기,'), P(T('#manualSteps .phase', exact='AI 추출'), 'AI 추출,'), P(T('#manualSteps .phase', exact='검토'), '검토,'),
            P(T('#manualSteps .phase', exact='적재'), '적재가')],
  'v0611': [P(ABOVE('#manualPick button[data-pick-mode="file"]'), '여기 내 파일'), P(T('#providedDocs .doc-prov', anchor='margin'), '아래 제공 문서'),
            P(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"] .row-title'), '쿨러 팬 정비'),
-           C(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"]'), '누르면'), W(T('#manualAgentExtract'))],
+           C(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"] .row-title', anchor='after'), '누르면'), W(T('#manualAgentExtract'))],      # 누르기 기본 자리(요소 오른쪽 끝)는 줄 끝 「›」라 바로 옆 「원문 보기」를 누르는 것처럼 보인다 — 짚던 제목 끝에서 누른다
  'v0612': [P(T('#manualResult .result-label', exact='이미 적재된 문서', anchor='margin'), '이미 적재된'), P(T('#manualStageNote', anchor='margin'), '제공 문서는'),
            C(T('#manualAgentExtract', anchor='center'), '누를게요'), W(T('#manualReview'), 20)],
  'v0613': [P(T('#manualReview .result-main'), 'AI가 매뉴얼에서'), P(T('#manualAgentStatus'), '제공 문서는')],
+ 'v0614': [P(T('#manualReview .result-main'), '이렇게')],      # 대본: 커서는 결과 머리 줄에 둔다 — 앞 큐가 그 밑 줄에서 끝나므로 「이렇게」에서 머리 줄로 돌아온다
  'v0615': [SC(T('#manualReview .doc-review .doc-review-bar', top=70), '밑으로 내려'), P(T(ITEM('proc:SOP-FAN-11') + ' .row-title'), '처음 보이는'),
            P(T(ITEM('proc:SOP-FAN-11') + ' .row-meta', phrase='쿨러 냉각 성능 상실'), '줄마다'),
            P(T('#manualReview button[data-review-kind="know"]'), '지식 후보를'), C(T('#manualReview button[data-review-kind="know"]', anchor='center'), '누르면'),

@@ -1,0 +1,589 @@
+{
+ "output": "06-대표합성3_1080p.mp4",
+ "duration_s": 115.933,
+ "source": "1920x1080 JPEG screencast",
+ "output_fps": 30,
+ "pointer": [
+  "overlay"
+ ],
+ "segments": [
+  {
+   "segment": "06-대표3",
+   "tool": "포털",
+   "part": 3,
+   "from_ms": 0.0,
+   "used_ms": 115950.0,
+   "start_s": 0.0,
+   "frames": 3478,
+   "mode": "overlay",
+   "recorded_ms": 115950,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/knowledge",
+   "end_tab": null
+  }
+ ],
+ "speech_cues": 6,
+ "cue_timeline": [
+  {
+   "id": "v0609",
+   "speech": [
+    "00:00.646",
+    "00:22.806"
+   ],
+   "action": [
+    "00:00.646",
+    "00:22.386"
+   ],
+   "commit": "00:22.086",
+   "commit_before_speech_end_ms": 720,
+   "next_speech_after_action_ms": 2421
+  },
+  {
+   "id": "v0610",
+   "speech": [
+    "00:24.807",
+    "00:40.727"
+   ],
+   "action": [
+    "00:24.807",
+    "00:27.653"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 14375
+  },
+  {
+   "id": "v0611",
+   "speech": [
+    "00:42.028",
+    "00:57.068"
+   ],
+   "action": [
+    "00:42.030",
+    "00:56.939"
+   ],
+   "commit": "00:55.844",
+   "commit_before_speech_end_ms": 1224,
+   "next_speech_after_action_ms": 2129
+  },
+  {
+   "id": "v0612",
+   "speech": [
+    "00:59.068",
+    "01:13.148"
+   ],
+   "action": [
+    "00:59.069",
+    "01:19.043"
+   ],
+   "commit": "01:13.156",
+   "commit_before_speech_end_ms": -8,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "v0613",
+   "speech": [
+    "01:21.043",
+    "01:33.763"
+   ],
+   "action": [
+    "01:21.044",
+    "01:26.916"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 8146
+  },
+  {
+   "id": "v0614",
+   "speech": [
+    "01:35.062",
+    "01:55.542"
+   ],
+   "action": [
+    "01:35.064",
+    "01:37.116"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null
+  }
+ ],
+ "clicks": [
+  {
+   "segment": "06-대표3",
+   "x": 473.33333587646484,
+   "y": 677.0625,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "06-대표3",
+   "x": 532.8958740234375,
+   "y": 342.5208435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "06-대표3",
+   "x": 1183.3334159851074,
+   "y": 403.3020935058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  }
+ ],
+ "motion_summary": {
+  "count": 16,
+  "page_count": 0,
+  "max_gap_ms_max": null,
+  "start_delay_max_ms": null,
+  "over_100ms": []
+ },
+ "motions": [
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 7473,
+   "duration_ms": 384,
+   "planned_ms": 384,
+   "frames": 18,
+   "start_delay_ms": 12,
+   "max_gap_ms": 62
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 19816,
+   "duration_ms": 272,
+   "planned_ms": 272,
+   "frames": 11,
+   "start_delay_ms": 15,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 21647,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 2,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 25100,
+   "duration_ms": 384,
+   "planned_ms": 384,
+   "frames": 20,
+   "start_delay_ms": 4,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 25825,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 1,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 26810,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 22,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 27367,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 12,
+   "max_gap_ms": 22
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 42406,
+   "duration_ms": 290,
+   "planned_ms": 290,
+   "frames": 17,
+   "start_delay_ms": 8,
+   "max_gap_ms": 22
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 47250,
+   "duration_ms": 286,
+   "planned_ms": 286,
+   "frames": 15,
+   "start_delay_ms": 13,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 52372,
+   "duration_ms": 308,
+   "planned_ms": 308,
+   "frames": 15,
+   "start_delay_ms": 6,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 59331,
+   "duration_ms": 310,
+   "planned_ms": 310,
+   "frames": 15,
+   "start_delay_ms": 6,
+   "max_gap_ms": 53
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 61127,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 8,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 72417,
+   "duration_ms": 569,
+   "planned_ms": 569,
+   "frames": 26,
+   "start_delay_ms": 18,
+   "max_gap_ms": 63
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 81393,
+   "duration_ms": 569,
+   "planned_ms": 569,
+   "frames": 31,
+   "start_delay_ms": 9,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 86477,
+   "duration_ms": 415,
+   "planned_ms": 415,
+   "frames": 24,
+   "start_delay_ms": 7,
+   "max_gap_ms": 27
+  },
+  {
+   "segment": "06-대표3",
+   "mode": "overlay",
+   "start_ms": 96694,
+   "duration_ms": 415,
+   "planned_ms": 415,
+   "frames": 20,
+   "start_delay_ms": 20,
+   "max_gap_ms": 37
+  }
+ ],
+ "decode": "passed",
+ "stream_end_s": {
+  "v": 115.933,
+  "a": 115.933
+ },
+ "seams": [],
+ "voice": "config audio 캐시",
+ "revoiced": [],
+ "not_verified": [
+  "직접 청취",
+  "사용자 재생 확인"
+ ],
+ "이름": "06-대표합성3",
+ "도구": "포털",
+ "crf": 18,
+ "fps": 30,
+ "size": [
+  1920,
+  1080
+ ],
+ "origin": {
+  "명세": [
+   "06-대표3"
+  ]
+ },
+ "음성교체": [],
+ "조각": [
+  {
+   "키": "e904a2e11e748fcd210db3aa",
+   "도구": "포털",
+   "take": "06-대표3",
+   "from_ms": 0.0,
+   "to_ms": 115950.0,
+   "frames": 3478,
+   "mode": "overlay",
+   "part": 3,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 115950,
+   "end_url": "http://127.0.0.1:8088/#/knowledge",
+   "end_tab": null,
+   "edge_age": [
+    0,
+    33
+   ],
+   "cues": [
+    {
+     "id": "v0609",
+     "text": "AI가 고장을 판단하려면, 먼저 이 설비가 어떻게 고장 나고 어떻게 고치는지 알고 있어야겠죠. 이런 지식은 원래 숙련자의 머리와 매뉴얼에 흩어져 있어서, 한데 모아 누구나 꺼내 쓰게 둔다고 했습니다. 그 가운데 매뉴얼을 AI의 지식으로 넣는 것부터 해 보겠습니다. 첫 칸 아래 문서 등록을 누르시면 돼요.",
+     "time": 646,
+     "duration": 22160,
+     "actionStart": 646,
+     "actionEnd": 22386,
+     "commit": 22086,
+     "segment": 3
+    },
+    {
+     "id": "v0610",
+     "text": "위에 올리기, AI 추출, 검토, 적재가 차례로 있죠. 문서를 올리면 AI가 필요한 내용을 뽑아 오고, 사람이 그걸 검토한 다음, AI가 판단할 때 쓰는 지식으로 넣습니다. 이렇게 넣는 걸 적재라고 해요.",
+     "time": 24807,
+     "duration": 15920,
+     "actionStart": 24807,
+     "actionEnd": 27653,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "v0611",
+     "text": "문서는 여기 내 파일 올리기로 직접 올릴 수도 있고, 수업에서 쓰는 매뉴얼은 아래 제공 문서에 미리 들어 있어요. 이따 고장을 내 볼 곳이 쿨러라서, 쿨러 팬 정비 매뉴얼로 해 보겠습니다. 이 줄을 누르면 올라갑니다.",
+     "time": 42028,
+     "duration": 15040,
+     "actionStart": 42030,
+     "actionEnd": 56939,
+     "commit": 55844,
+     "segment": 3
+    },
+    {
+     "id": "v0612",
+     "text": "이미 적재된 문서라고 나오죠. 제공 문서는 처음부터 지식으로 넣어 둔 거라 그렇습니다. 오늘은 이 매뉴얼이 어떻게 지식이 되는지, 그 과정을 한 번 따라가 보겠습니다. AI 추출 시작을 누를게요.",
+     "time": 59068,
+     "duration": 14080,
+     "actionStart": 59069,
+     "actionEnd": 79043,
+     "commit": 73156,
+     "segment": 3
+    },
+    {
+     "id": "v0613",
+     "text": "AI가 매뉴얼에서 조치와 고장, 원인 같은 것들을 뽑아 왔다고 나옵니다. 제공 문서는 AI가 미리 읽고 정리해 둔 결과가 있어서, 다시 읽지 않고 그걸 꺼내 온 거예요.",
+     "time": 81043,
+     "duration": 12720,
+     "actionStart": 81044,
+     "actionEnd": 86916,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "v0614",
+     "text": "고장과 원인, 조치를 이렇게 따로따로 뽑는 데는 까닭이 있습니다. 고장이 나면 무슨 고장인지 짚고, 그 고장의 원인을 찾고, 원인에 맞는 조치를 고르는 식으로 이어서 찾아가야 하잖아요. 매뉴얼 문장 속에 섞여 있으면 그렇게 따라가기 어려우니까, 하나씩 뽑아서 서로 이어 두는 겁니다.",
+     "time": 95062,
+     "duration": 20480,
+     "actionStart": 95064,
+     "actionEnd": 97116,
+     "commit": null,
+     "segment": 3
+    }
+   ],
+   "motions": [
+    {
+     "start": 7473,
+     "end": 7857,
+     "glide": 7473,
+     "planned_ms": 384,
+     "start_delay_ms": 12,
+     "max_gap_ms": 62,
+     "frames": 18
+    },
+    {
+     "start": 19816,
+     "end": 20088,
+     "glide": 19816,
+     "planned_ms": 272,
+     "start_delay_ms": 15,
+     "max_gap_ms": 35,
+     "frames": 11
+    },
+    {
+     "start": 21647,
+     "end": 21907,
+     "glide": 21647,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 38,
+     "frames": 14
+    },
+    {
+     "start": 25100,
+     "end": 25484,
+     "glide": 25100,
+     "planned_ms": 384,
+     "start_delay_ms": 4,
+     "max_gap_ms": 46,
+     "frames": 20
+    },
+    {
+     "start": 25825,
+     "end": 26085,
+     "glide": 25825,
+     "planned_ms": 260,
+     "start_delay_ms": 1,
+     "max_gap_ms": 46,
+     "frames": 15
+    },
+    {
+     "start": 26810,
+     "end": 27070,
+     "glide": 26810,
+     "planned_ms": 260,
+     "start_delay_ms": 22,
+     "max_gap_ms": 35,
+     "frames": 14
+    },
+    {
+     "start": 27367,
+     "end": 27627,
+     "glide": 27367,
+     "planned_ms": 260,
+     "start_delay_ms": 12,
+     "max_gap_ms": 22,
+     "frames": 15
+    },
+    {
+     "start": 42406,
+     "end": 42696,
+     "glide": 42406,
+     "planned_ms": 290,
+     "start_delay_ms": 8,
+     "max_gap_ms": 22,
+     "frames": 17
+    },
+    {
+     "start": 47250,
+     "end": 47536,
+     "glide": 47250,
+     "planned_ms": 286,
+     "start_delay_ms": 13,
+     "max_gap_ms": 41,
+     "frames": 15
+    },
+    {
+     "start": 52372,
+     "end": 52680,
+     "glide": 52372,
+     "planned_ms": 308,
+     "start_delay_ms": 6,
+     "max_gap_ms": 36,
+     "frames": 15
+    },
+    {
+     "start": 59331,
+     "end": 59641,
+     "glide": 59331,
+     "planned_ms": 310,
+     "start_delay_ms": 6,
+     "max_gap_ms": 53,
+     "frames": 15
+    },
+    {
+     "start": 61127,
+     "end": 61387,
+     "glide": 61127,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 32,
+     "frames": 14
+    },
+    {
+     "start": 72417,
+     "end": 72986,
+     "glide": 72417,
+     "planned_ms": 569,
+     "start_delay_ms": 18,
+     "max_gap_ms": 63,
+     "frames": 26
+    },
+    {
+     "start": 81393,
+     "end": 81962,
+     "glide": 81393,
+     "planned_ms": 569,
+     "start_delay_ms": 9,
+     "max_gap_ms": 38,
+     "frames": 31
+    },
+    {
+     "start": 86477,
+     "end": 86892,
+     "glide": 86477,
+     "planned_ms": 415,
+     "start_delay_ms": 7,
+     "max_gap_ms": 27,
+     "frames": 24
+    },
+    {
+     "start": 96694,
+     "end": 97109,
+     "glide": 96694,
+     "planned_ms": 415,
+     "start_delay_ms": 20,
+     "max_gap_ms": 37,
+     "frames": 20
+    }
+   ],
+   "clicks": [
+    {
+     "x": 473.33333587646484,
+     "y": 677.0625,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 532.8958740234375,
+     "y": 342.5208435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1183.3334159851074,
+     "y": 403.3020935058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  }
+ ],
+ "mp4": {
+  "sha256": "5abf76adbd969c2d3ba27168288dc64d4ffad9cfca1ef561722c7f5f94c963ea",
+  "video_packets": 3478,
+  "bytes": 6295930
+ }
+}
