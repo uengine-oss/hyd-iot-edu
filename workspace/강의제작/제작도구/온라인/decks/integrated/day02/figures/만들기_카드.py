@@ -249,6 +249,54 @@ def note_doc(st: St):
     return o
 
 
+def motor_icon(st: St):
+    """구성 요소 · 구동 모터: 냉각 핀이 든 몸체, 끝 덮개, 축, 받침."""
+    o = [rect(-44, -28, 64, 56, 8, fill=st.fill, stroke=st.line)]
+    o += [line(x, -20, x, 20, stroke=GREY, sw=2.5) for x in (-34, -24, -14, -4, 6)]
+    o += [rect(20, -20, 12, 40, 4, fill=st.accent, stroke=st.line), line(32, 0, 52, 0, stroke=st.line, sw=7),
+          rect(-38, 28, 52, 9, 3, fill=st.soft, stroke=st.line, sw=3)]
+    return o
+
+
+def seal_icon(st: St):
+    """부품 · 축 씰: 고무 고리 두 겹."""
+    return [circle(0, 0, 40, fill=st.accent, stroke=st.line), circle(0, 0, 30, fill="none", stroke=st.line, sw=2.5),
+            circle(0, 0, 20, fill=WHITE, stroke=st.line)]
+
+
+def sheet_icon(st: St):
+    """정의 표: 머리 띠와 칸 줄이 있는 종이."""
+    o = [rect(-42, -50, 84, 100, 8, fill=st.fill, stroke=st.line), rect(-42, -50, 84, 22, 8, fill=st.accent, stroke=st.line)]
+    o += [line(-42, y, 42, y, stroke=st.line, sw=2) for y in (-6, 16, 34)]
+    o.append(line(-12, -28, -12, 50, stroke=st.line, sw=2))
+    return o
+
+
+def graph_icon(st: St):
+    """지식 그래프: 원 다섯과 잇는 선."""
+    pts = [(-30, -22), (32, -30), (4, 6), (-34, 30), (36, 28)]
+    o = [line(pts[a][0], pts[a][1], pts[b][0], pts[b][1], stroke=st.line) for a, b in ((0, 2), (1, 2), (2, 3), (2, 4), (0, 1))]
+    for i, (dx, dy) in enumerate(pts):
+        o.append(circle(dx, dy, 13 if i == 2 else 10, fill=st.accent if i == 2 else st.fill, stroke=st.line))
+    return o
+
+
+def tsdb_icon(st: St):
+    """시계열 저장소: 원통과 시계."""
+    return [path("M -42,-34 L -42,34 A 42 14 0 0 0 42,34 L 42,-34", fill=st.fill, stroke=st.line),
+            ellipse(0, -34, 42, 14, fill=st.accent, stroke=st.line),
+            path("M -42,-10 A 42 14 0 0 0 42,-10", stroke=st.line), path("M -42,12 A 42 14 0 0 0 42,12", stroke=st.line),
+            circle(36, 34, 17, fill=st.fill, stroke=st.line), path("M 36,24 L 36,34 L 44,38", stroke=st.line, sw=3)]
+
+
+def question_icon(st: St):
+    """역량 질문: 말풍선 안의 물음표."""
+    return [path("M -46,-36 Q -46,-46 -36,-46 L 36,-46 Q 46,-46 46,-36 L 46,20 Q 46,30 36,30 L -6,30 L -22,46 L -20,30 L -36,30 "
+                 "Q -46,30 -46,20 Z", fill=st.fill, stroke=st.line),
+            path("M -12,-20 Q -12,-34 0,-34 Q 13,-34 13,-22 Q 13,-12 0,-8 L 0,2", stroke=BLUE, sw=6),
+            circle(0, 15, 4.5, fill=BLUE, stroke=BLUE, sw=1)]
+
+
 def card_icon(kind, cx, cy, k=1.0, grey=False):
     """카드 안 큰 아이콘. (cx, cy)는 아이콘 가운데, k는 배율(1.0 = 높이 약 100)."""
     st = OFF if grey else ON
@@ -270,6 +318,18 @@ def card_icon(kind, cx, cy, k=1.0, grey=False):
         return g(cx, cy, 0.86 * k, bearing_icon(st))
     if kind == "gasket":
         return g(cx, cy, 0.86 * k, gasket_icon(st))
+    if kind == "motor":
+        return g(cx, cy, 0.86 * k, motor_icon(st))
+    if kind == "seal":
+        return g(cx, cy, 0.86 * k, seal_icon(st))
+    if kind == "sheet":
+        return g(cx, cy, 0.8 * k, sheet_icon(st))
+    if kind == "graph":
+        return g(cx, cy, 0.86 * k, graph_icon(st))
+    if kind == "tsdb":
+        return g(cx, cy, 0.8 * k, tsdb_icon(st))
+    if kind == "question":
+        return g(cx, cy, 0.86 * k, question_icon(st))
     if kind == "loc":
         return g(cx, cy, 0.9 * k, loc_icon(st))
     if kind == "supplier":
@@ -839,7 +899,274 @@ def f20():
     return f
 
 
-FIGS = [f05, f06, f07, f08, f09, f10, f11, f12, f13, f14, f16, f17, f18, f19, f20]
+# ───────────────────────── 2단원(21~34장) ─────────────────────────
+
+def check_badge(cx, cy, r=20):
+    """받아들여진 것: 하늘색 원과 체크."""
+    return [circle(cx, cy, r, fill=SKY, stroke=NAVY, sw=3.5),
+            path(f"M {cx - r * 0.45},{cy + 1} L {cx - r * 0.1},{cy + r * 0.38} L {cx + r * 0.5},{cy - r * 0.38}", stroke=NAVY, sw=5)]
+
+
+def cross_badge(cx, cy, r=20):
+    """걸린 것: 흰 원과 ✕(10 · 13장과 같은 꼴)."""
+    d = r * 0.42
+    return [circle(cx, cy, r, fill=WHITE, stroke=NAVY, sw=4),
+            line(cx - d, cy - d, cx + d, cy + d, stroke=NAVY, sw=5), line(cx + d, cy - d, cx - d, cy + d, stroke=NAVY, sw=5)]
+
+
+def f22():
+    """22장: 세 시스템이 클래스 · 관계 이름은 같게(오일 쿨러 → 쓴다 → 쿨러 코어) 적었지만, 같은 대상을 가리키는 값(품번 표기) ·
+    값의 꼴(교체 주기) · 빠진 값(품번 빈칸) · 관계 방향이 갈린다. 맨 아래 물음은 오일 쿨러 셋 가운데 하나만 찾는다."""
+    f = Fig("카드_의미불일치_세시스템.svg")
+    spec = [("설비 대장", "품번 CC-2040 / 교체 주기 12", "견줄 기준으로 둔 기록", False),
+            ("부품 목록", "품번 **cc2040** / 교체 주기 **1년**", "**같은 대상을 가리키는 값**과 / **값의 꼴**이 다르다", False),
+            ("정비 기록", "품번 **(빈칸)** / 교체 주기 12", "**관계 방향**이 반대이고 / 품번이 **빠졌다**", True)]
+    for i, (cx, (sysname, core, cap, rev)) in enumerate(zip((200, 600, 1000), spec)):
+        f.add([rect(cx - 188, 4, 376, 404, 22, fill=LIGHT, stroke="none", sw=0)])
+        hcard(f, cx, 44, 260, 64, "doc", name=sysname)
+        hcard(f, cx, 140, 280, 80, "cooler", name="오일 쿨러", desc=f"EQ-0{i + 1}-COOLER")
+        y0, y1 = 182, 236
+        f.add(arrow([(cx, y1), (cx, y0 + 4)] if rev else [(cx, y0), (cx, y1 - 4)], BLUE if rev else NAVY))
+        f.lab("쓴다", "", cx + 58, (y0 + y1) / 2 - 19, 90)
+        hcard(f, cx, 290, 280, 104, "core", name="쿨러 코어", desc=core)
+        f.lab("", cap, cx, 352, 350)
+    f.add([rect(3, 420, 1194, 86, 22, fill=WHITE, stroke=BLUE, sw=3)])
+    f.lab("물음 「CC-2040을 쓰는 구성 요소는」", "오일 쿨러 셋 가운데 품번과 방향이 맞게 적힌 하나만 나온다", 600, 463 - 30, 1100)
+    return f
+
+
+def f23():
+    """23장: 위 띠는 온톨로지 스키마(클래스 · 속성 · 관계 · 제약 네 칸, 인스턴스 없음), 아래 띠는 그 정의대로 세 시스템이 적은
+    인스턴스 데이터 — 22장의 세 시스템이 같은 스키마를 보고 적어 쿨러 코어가 같아졌다(품번 CC-2040 · 교체 주기 12 · 같은 방향의 쓴다).
+    오른쪽 칸은 22장의 물음에 오일 쿨러 셋이 다 나온다는 답. 맨 아래 줄은 스키마와 인스턴스 데이터의 실제 차이."""
+    f = Fig("카드_스키마_인스턴스데이터.svg")
+    f.add(band_rect(4, 124, PALE) + band_rect(134, 442, LIGHT))
+    f.lab("온톨로지 스키마", "Schema / 공통 정의", 130, 64 - 36, 230)
+    f.lab("인스턴스 데이터", "Instance Data / 지식 그래프를 / 이루는 기록", 130, 286 - 47, 230)
+    gx0, gx1 = 262, 1188
+    cw = (gx1 - gx0) / 2
+    for c, t in enumerate(("**클래스**   구성 요소 · 부품 / **관계**   쓴다, 방향과 개수까지",
+                           "**속성**   품번 · 교체 주기, 값의 꼴과 꼭 적을지 / **제약**   적어 넣는 지식이 지켜야 할 조건")):
+        x = gx0 + c * cw
+        f.add([rect(x + 4, 14, cw - 8, 100, 14, fill=WHITE, stroke=NAVY, sw=2.5)])
+        f.lab("", t, x + cw / 2, 64 - 24, cw - 30)
+    f.add(dash_arrow([(500, 116), (500, 146)], GREY, 4, 12, 7, 5))
+    rows = ((188, "설비 대장", "EQ-01-COOLER"), (286, "부품 목록", "EQ-02-COOLER"), (384, "정비 기록", "EQ-03-COOLER"))
+    for cy, sysname, code in rows:
+        f.lab("", sysname, 318, cy - 13, 104)
+        hcard(f, 500, cy, 256, 74, "cooler", name="오일 쿨러", desc=code)
+        harrow(f, 632, 704, cy, NAVY, label="쓴다" if sysname == "설비 대장" else None)
+        hcard(f, 840, cy, 260, 88, "core", name="쿨러 코어", desc="품번 CC-2040 / 교체 주기 12")
+    f.add([rect(982, 160, 206, 260, 20, fill=WHITE, stroke=BLUE, sw=4)])
+    f.lab("물음", "CC-2040을 쓰는 / 구성 요소는 / → 오일 쿨러 셋이 / 다 나온다", 1085, 190, 190)
+    f.add(check_badge(1085, 366, 24))
+    f.lab("온톨로지 스키마에는 인스턴스가 없고, 인스턴스 데이터는 그 정의대로 적은 실제 대상 · 속성값 · 연결이다", "",
+          600, 474 - 19, 1150)
+    return f
+
+
+def class_def_card(f: Fig, x0, top, w, h, name, meaning):
+    """24장 클래스 정의 카드: 빈 테두리 원 + 클래스 이름, 아래 띠에 의미 한 문장."""
+    B = top + h - 64
+    f.add(banded(x0, top, w, top + h, B, PALE, NAVY, 3))
+    f.add([circle(x0 + 16 + 36, (top + B) / 2, 36, fill=WHITE, stroke=NAVY, sw=3)])
+    tx0 = x0 + 16 + 72 + 10
+    f.lab(name, "", (tx0 + x0 + w) / 2, (top + B) / 2 - 19, x0 + w - tx0 - 10, strong=True)
+    f.lab("", f"**의미**   {meaning}", x0 + w / 2, B + 32 - 13, w - 30)
+
+
+def f24():
+    """24장: 클래스 정의 카드 둘(이름 + 의미 한 문장). 새 대상 둘(구동 모터 · 펌프 축 씰)이 의미 문장에 맞는 클래스로 들어간다."""
+    f = Fig("카드_클래스정의_의미.svg")
+    f.lab("", "**새 대상**", 190, 8, 160)
+    cards = [(125, "motor", "구동 모터", "구성 요소", "설비를 이루는 기계 하나하나"),
+             (375, "seal", "펌프 축 씰", "부품", "구성 요소 안에서 닳으면 갈아 끼우는 것")]
+    for cy, kind, nm, cls, meaning in cards:
+        hcard(f, 190, cy, 300, 100, kind, name=nm)
+        class_def_card(f, 635, cy - 80, 530, 160, cls, meaning)
+        f.add(arrow([(352, cy), (621, cy)], BLUE, sw=6, size=19))
+    f.lab("", "의미 문장에 맞춰 / 클래스를 고른다", 487, 250 - 24, 230)
+    return f
+
+
+def f25():
+    """25장: 교체 주기를 자료형 수(개월)로 정의하면 12는 6과 견줄 수 있고, 글자로 적은 「1년」은 견줄 수 없다."""
+    f = Fig("카드_자료형_수와글자.svg", dy=22)
+    f.add([rect(20, 16, 520, 116, 18, fill=PALE, stroke=BLUE, sw=4), rect(600, 16, 580, 116, 18, fill=WHITE, stroke=NAVY, sw=3)])
+    f.lab("교체 주기의 정의", "자료형 **수** · 단위 개월", 280, 74 - 30, 480)
+    f.lab("물음", "교체 주기가 6개월보다 긴 부품", 890, 74 - 30, 540)
+    for cy, val, ok, res in ((250, "교체 주기 12  (수)", True, "12 > 6, 견줄 수 있다"),
+                             (410, "교체 주기 「1년」  (글자)", False, "글자라 6과 견줄 수 없다")):
+        hcard(f, 280, cy, 420, 96, "core", name="쿨러 코어", desc=val)
+        f.add(arrow([(500, cy), (640, cy)], NAVY if ok else GREY, sw=5))
+        f.add(check_badge(680, cy, 24) if ok else cross_badge(680, cy, 24))
+        f.lab(res, "", 920, cy - 19, 420)
+    return f
+
+
+def f26():
+    """26장: 센서 클래스의 속성 셋(식별자 · 단위는 필수, 측정 범위는 선택). 단위가 빈 인스턴스는 넣기 전에 걸리고,
+    측정 범위가 빈 인스턴스는 들어간다."""
+    f = Fig("카드_필수선택_센서.svg")
+    x0, w, top = 30, 480, 14
+    bot = 470
+    f.add([rect(x0, top, w, bot - top, 22, fill=WHITE, stroke=NAVY, sw=3)])
+    f.add([circle(x0 + w / 2, top + 18 + 46, 46, fill=WHITE, stroke=NAVY, sw=3)])
+    f.lab("센서", "", x0 + w / 2, top + 18 + 92 + 14, w - 40, strong=True)
+    cells(f, x0 + 24, 210, w - 48, [("식별자", "필수"), ("단위", "필수"), ("측정 범위", "선택")], item_w=170, rh=60, gap=16, hot=(0, 1))
+    for cy, desc, ok, res in ((130, "식별자 EQ-03-TEMP / 단위 **(빈칸)**", False, "걸린다"),
+                              (360, "식별자 EQ-02-TEMP / 측정 범위 (빈칸)", True, "들어간다")):
+        f.add(dash_arrow([(x0 + w + 10, cy), (596, cy)], GREY, 3.5, 13, 8, 6))
+        hcard(f, 800, cy, 400, 104, "sensor", name="유온 센서", desc=desc)
+        f.add(check_badge(1060, cy - 8, 24) if ok else cross_badge(1060, cy - 8, 24))
+        f.lab(res, "", 1110, cy + 26, 170)
+    return f
+
+
+def f27():
+    """27장: 위는 클래스마다 식별자로 쓸 속성 · 값을 적는 규칙 · 필수. 아래는 부품 기록 둘 — 정한 규칙대로 적은 CC-2040은 들어가고,
+    규칙과 다른 cc2040은 넣기 전에 걸린다."""
+    f = Fig("카드_식별자_스키마에적기.svg", dy=20)
+    for cx, nm, desc in ((205, "설비", "식별자 **설비 코드** · 필수 / EQ-01처럼 적는다"),
+                         (600, "구성 요소", "식별자 **구성 요소 코드** · 필수 / EQ-01-COOLER처럼 적는다"),
+                         (995, "부품", "식별자 **품번** · 필수 / CC-2040처럼 적는다")):
+        f.add([rect(cx - 190, 14, 380, 150, 18, fill=PALE, stroke=NAVY, sw=3)])
+        f.lab(nm, desc, cx, 89 - 41, 360, strong=True)
+    for cy, sysname, val, ok in ((290, "설비 대장", "품번 CC-2040", True), (420, "부품 목록", "품번 cc2040", False)):
+        hcard(f, 250, cy, 380, 92, "doc", name=sysname, desc=val)
+        f.add(arrow([(450, cy), (530, cy)], NAVY if ok else GREY, sw=5))
+        f.add(check_badge(568, cy, 24) if ok else cross_badge(568, cy, 24))
+    f.add(arrow([(602, 290), (780, 290)], BLUE, sw=6, size=19))
+    hcard(f, 930, 290, 280, 112, "core", "부품", "쿨러 코어", desc="품번 CC-2040", hot=True)
+    f.lab("정한 규칙과 달라 넣기 전에 걸린다", "", 830, 420 - 19, 460)
+    return f
+
+
+def f28():
+    """28장: 설비 대장 · 시계열 저장소 · 생산 실적이 저마다의 칸에 같은 설비 코드 EQ-02를 적어, 따로 적은 기록이 설비 하나에 모인다.
+    셋 모두 설비 단위로 적는 기록이다(구성 요소의 일은 구성 요소 식별자로 적는다 — 8장)."""
+    f = Fig("카드_공통식별자_세시스템.svg")
+    rows = ((95, "doc", "설비 대장", "**EQ-02** · 2호기 · 유압 파워팩"),
+            (255, "tsdb", "시계열 저장소", "**EQ-02** · 유온 · 시각마다 값"),
+            (415, "doc", "생산 실적", "**EQ-02** · 가동 시간"))
+    for cy, kind, nm, desc in rows:
+        hcard(f, 310, cy, 460, 112, kind, name=nm, desc=desc)
+        f.add(arrow([(552, cy), (830, 255 + (cy - 255) * 0.25)], NAVY, sw=5))
+    hcard(f, 1000, 255, 300, 120, "equip", "설비", "2호기", desc="EQ-02", hot=True)
+    f.lab("", "설비 코드를 함께 쓴다", 1000, 330, 260)
+    return f
+
+
+def mini(f: Fig, cx, cy, kind, cls, nm, grey=False):
+    hcard(f, cx, cy, 250, 66, kind, cls, nm, small=True, grey=grey)
+
+
+def f29():
+    """29장: 위는 관계 가진다의 정의(시작 클래스 설비 · 종료 클래스 구성 요소 · 1:N, 구성 요소마다 설비 적어도 하나).
+    아래는 연결 셋 — 지킨 연결(✓), 오일 쿨러에서 2호기로 거꾸로 그은 연결(✕, 22장의 방향 갈림), 가진 설비가 없어 적어도를 못 채운 구성 요소(✕).
+    많아야를 넘는 연결은 13장이 보였으므로 여기서는 그리지 않는다."""
+    f = Fig("카드_관계정의_유효한연결.svg")
+    f.add([rect(120, 10, 960, 176, 20, fill=PALE, stroke=BLUE, sw=4)])
+    f.lab("가진다의 정의", "", 600, 22, 400, strong=True)
+    for cx, item, val in ((300, "시작 클래스", "**설비**"), (600, "종료 클래스", "**구성 요소**"),
+                          (900, "카디널리티", "**1:N** · 구성 요소마다 / 설비 적어도 하나")):
+        f.add([rect(cx - 140, 66, 280, 108, 14, fill=WHITE, stroke=NAVY, sw=2)])
+        f.lab(item, val, cx, 120 - 30 if "적어도" not in val else 120 - 41, 260)
+    cols = (200, 600, 1000)
+    for cx in cols:
+        f.add([rect(cx - 190, 206, 380, 300, 22, fill=LIGHT, stroke="none", sw=0)])
+    ty, by = 262, 386
+    # 지킨 연결
+    mini(f, 200, ty, "equip", "설비", "2호기"); mini(f, 200, by, "cooler", "구성 요소", "오일 쿨러")
+    f.add(arrow([(200, ty + 36), (200, by - 37)]))
+    f.lab("", "가진다", 250, (ty + by) / 2 - 13, 90)
+    f.add(check_badge(330, (ty + by) / 2, 20))
+    f.lab("유효한 연결", "", 200, 440, 340)
+    # 거꾸로 그은 연결(22장 정비 기록의 방향 갈림을 막는 자리)
+    mini(f, 600, ty, "equip", "설비", "2호기"); mini(f, 600, by, "cooler", "구성 요소", "오일 쿨러")
+    f.add(arrow([(600, by - 36), (600, ty + 37)], GREY))
+    f.lab("", "가진다", 650, (ty + by) / 2 - 13, 90)
+    f.add(cross_badge(730, (ty + by) / 2, 20))
+    f.lab("시작 · 종료 클래스가 거꾸로다", "", 600, 440, 360)
+    # 적어도를 못 채움
+    f.add(dash_rect(1000 - 125, ty - 33, 250, 66, GREY, 3, 9, 7))
+    mini(f, 1000, by, "cooler", "구성 요소", "오일 쿨러")
+    f.add(cross_badge(1000, (ty + by) / 2, 20))
+    f.lab("가진 설비가 없다", "", 1000, 440, 340)
+    return f
+
+
+def f30():
+    """30장: 역량 질문에서 시작해 필요한 것만 스키마에 정의하고, 정의대로 인스턴스 데이터를 적고, 다시 그 질문으로 확인하는 고리."""
+    f = Fig("카드_역량질문_고리.svg")
+    hcard(f, 250, 255, 440, 150, "question", name="역량 질문", desc="2호기 오일 쿨러에 갈아 끼울 / 부품의 품번은 무엇인가", hot=True)
+    hcard(f, 960, 105, 300, 110, "sheet", name="스키마 정의")
+    hcard(f, 960, 405, 300, 110, "graph", name="인스턴스 데이터")
+    f.add(arrow([(475, 210), (800, 120)], NAVY, sw=5))
+    f.add(arrow([(960, 166), (960, 344)], NAVY, sw=5))
+    f.add(arrow([(800, 390), (475, 300)], BLUE, sw=5))
+    f.lab("", "필요한 것만 정의한다", 600, 108, 240)
+    f.lab("", "정의대로 적는다", 1090, 243, 200)
+    f.lab("", "그 질문으로 확인한다", 600, 384, 240)
+    return f
+
+
+def f31():
+    """31장: 19장의 질문을 낱말 칩으로 나누고, 칩마다 그 낱말을 무엇으로 옮기는지(클래스 · 관계 · 속성) 아래에 단다.
+    「2호기 오일 쿨러」의 이어짐은 관계 가진다로 옮긴다."""
+    f = Fig("카드_질문낱말_가르기.svg")
+    f.lab("", "**역량 질문**", 600, 4, 300)
+    chips = [(140, 150, "2호기", "클래스", "설비", "c"), (360, 210, "오일 쿨러에", "클래스", "구성 요소", "c"),
+             (600, 200, "갈아 끼울", "관계", "쓴다", "r"), (830, 170, "부품의", "클래스", "부품", "c"),
+             (1050, 170, "품번은", "속성", "품번", "p")]
+    cy, ty = 76, 238
+    for x, w, word, kind, val, k in chips:
+        f.add([rect(x - w / 2, cy - 32, w, 64, 32, fill=WHITE, stroke=NAVY, sw=3)])
+        f.lab(word, "", x, cy - 19, w - 16)
+        f.add(arrow([(x, cy + 38), (x, ty - 48)], NAVY, sw=4, size=14))
+        fill, edge = {"c": (PALE, NAVY), "r": (WHITE, BLUE), "p": (LIGHT, GREY)}[k]
+        tw = max(w, 170)
+        f.add([rect(x - tw / 2, ty - 42, tw, 84, 16, fill=fill, stroke=edge, sw=3 if k != "r" else 4)])
+        f.lab(kind, f"**{val}**", x, ty - 30, tw - 16)
+    gx, gy = 250, 384
+    f.add(dash_line(140, ty + 46, 140, gy, GREY, 3, 8, 6) + dash_line(360, ty + 46, 360, gy, GREY, 3, 8, 6)
+          + dash_line(140, gy, 360, gy, GREY, 3, 8, 6))
+    f.add(arrow([(gx, gy), (gx, gy + 24)], GREY, sw=3, size=11))
+    f.add([rect(gx - 105, gy + 30, 210, 84, 16, fill=WHITE, stroke=BLUE, sw=4)])
+    f.lab("관계", "**가진다**", gx, gy + 42, 194)
+    f.lab("", "2호기의 오일 쿨러라는 이어짐", gx + 250, gy + 50, 270)
+    f.lab("", "클래스 셋 · 관계 둘 · 속성 하나를 정의하면 이 질문에 답한다", 905, 440, 500)
+    return f
+
+
+def f34():
+    """34장: 역량 질문의 갈래대로 클래스를 네 영역에 나눠 맡는다. 영역마다 물음의 갈래와 1단원 꼴의 클래스 카드(빈 원판)를 두고,
+    판단 · 성과는 회색으로 이름만 보인다. 진단 영역의 고장 유형 카드에서 설비 영역의 구성 요소 카드로 「일어난다」 하나가 영역을 건너
+    같은 스키마의 관계로 잇는다. 맨 아래는 21장 물음의 「어떻게」에 답하는 한 줄."""
+    f = Fig("카드_영역_넷.svg")
+    boxes = [((10, 6, 520, 222), "설비 영역", "무엇이 어디에 달렸나", False, [("설비", "구성 요소"), ("센서", "부품")]),
+             ((670, 6, 520, 222), "진단 영역", "왜 그렇게 됐나", False, [("고장 유형", "증상"), ("원인",)]),
+             ((10, 240, 520, 160), "판단 영역", "무엇을 할 것인가", True, [("조치", "판단 규칙")]),
+             ((670, 240, 520, 160), "성과 영역", "얼마나 나아졌나", True, [("전략 목표", "성과 지표")])]
+    pos = {}
+    for (x, y, w, h), nm, q, grey, grid in boxes:
+        f.add([rect(x, y, w, h, 22, fill=LIGHT if grey else PALE, stroke=GREY if grey else NAVY, sw=3)])
+        f.lab(nm, q, x + w / 2, y + 10, w - 40, strong=not grey)
+        for r, row in enumerate(grid):
+            for c, cls in enumerate(row):
+                cx, cy = x + 135 + c * 250, y + 108 + r * 70
+                hcard(f, cx, cy, 230, 60, "none", name=cls, ring=True, grey=grey)
+                pos[cls] = (cx, cy)
+    (gx, gy), (kx, ky) = pos["고장 유형"], pos["구성 요소"]
+    f.add(arrow([(gx - 119, gy), (kx + 119, ky)], BLUE, sw=6, size=19))
+    f.lab("일어난다", "", (gx + kx) / 2, gy - 46, 140, strong=True)
+    f.add([rect(3, 422, 1194, 84, 22, fill=WHITE, stroke=BLUE, sw=3)])
+    f.lab("역량 질문의 갈래로 나눠 맡아도, 같은 스키마 하나로 이어 같은 뜻으로 읽힌다", "", 600, 464 - 19, 1150)
+    return f
+
+
+FIGS = [f05, f06, f07, f08, f09, f10, f11, f12, f13, f14, f16, f17, f18, f19, f20,
+        f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f34]
 
 
 def fit_deck(md: Path, labels: dict[str, list[str]]) -> int:
@@ -873,7 +1200,7 @@ def main():
         f = fn()
         text = f.svg()
         assert "<text" not in text
-        (HERE / f.name).write_text(text, encoding="utf-8")
+        (HERE / f.name).write_bytes(text.encode("utf-8"))
         labels[f.name] = f.labels
         if show:
             print(f"### {f.name} ({len(f.labels)}개)")
