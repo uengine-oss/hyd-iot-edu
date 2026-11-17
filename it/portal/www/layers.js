@@ -64,7 +64,7 @@ const LAYERS = [
     { name: 'Redpanda', nets: ['it-net', 'dmz-it-net'], role: 'Kafka 호환 이벤트 저장 · 분배', real: '이벤트 로그 — Apache Kafka(같은 규약)', zone: 'it', url: P(8085) + '/topics', health: P(9644) + '/v1/status/ready', entryHealth: P(8085) },
   ]},
   { name: 'IoT 미들웨어 · MQTT', role: '현장 장치와 메시지를 주고받음', zone: 'mixed', comps: [
-    { name: 'EMQX', nets: ['ot-net'], role: '공장 안에서 센서값 · 상태 · 명령을 중계하는 MQTT 브로커 · OT 망에만 붙어 바깥에서는 닿지 못함', real: '공장 안의 MQTT 브로커(IoT 미들웨어)', zone: 'ot', url: null,
+    { name: 'EMQX', nets: ['ot-net'], role: '공장 안에서 센서값 · 상태 · 명령을 중계하는 MQTT 브로커 · OT 망에만 붙어 DMZ · IT의 부품은 닿지 못함', real: '공장 안의 MQTT 브로커(IoT 미들웨어)', zone: 'ot', url: null,
       how: '여는 화면이 없습니다. 관리 화면 · 관리 API는 꺼 두었습니다(그 길의 명령은 토픽 규칙과 승인을 거치지 않습니다). 지나가는 값은 관제 화면에서 봅니다.',
       health: 'mqtt:EMQX', healthOf: { from: [API.plant + '/healthz', ...DMZ_HEALTH], read: HEARD.plantBroker } },
     { name: 'dmz-broker', nets: ['ot-dmz-net'], role: '공장이 내보낸 값과 검증을 통과한 명령이 놓이는 자리 · 스스로는 어디에도 접속하지 않고 기다림', real: 'DMZ의 MQTT 브로커(공장이 접속해 오는 쪽)', zone: 'dmz', url: null,
@@ -87,7 +87,7 @@ const NETS = [
 // 이 구성이 현업 공장과 다른 곳 — 시스템 구성 화면이 그림 아래에 그대로 보인다(대상을 말하는 문장, 근거는 현업 구조 대조).
 const SYS_DIFFS = [
   { icon: 'route', name: '명령 길 밖의 조작', text: '결함 주입 · 현장 패널 조작 · 정비 수행은 가상 설비 API 망(sim-net)으로 설비에 직접 적용됩니다. 바깥에서 생긴 고장과 사람이 현장에서 하는 일을 대신하는 길이라 승인과 명령 관문을 거치지 않습니다.' },
-  { icon: 'shield-alert', name: '영역 경계', text: '영역은 망 다섯으로 나뉘고 DMZ의 부품은 경계 망에만 붙습니다. 공장과 DMZ 사이의 연결은 공장 쪽 브리지가 먼저 열고, 바깥에서 공장 브로커로는 닿는 길이 없습니다. 현업은 여기에 더해 영역 사이에 방화벽과 단방향 전송 장치를 둡니다.' },
+  { icon: 'shield-alert', name: '영역 경계', text: '영역은 망 다섯으로 나뉘고 DMZ의 부품은 경계 망에만 붙습니다. 공장과 DMZ 사이의 연결은 공장 쪽 브리지가 먼저 열고, DMZ · IT의 부품에서 공장 브로커로는 닿는 길이 없습니다. 이 PC의 프로그램은 공장 브로커를 구독만 하는 입구(1883 · 8083)로 값을 직접 볼 수 있습니다. 현업은 그런 입구를 두지 않고, 영역 사이에 방화벽과 단방향 전송 장치를 둡니다.' },
   { icon: 'lock', name: '인증 · 암호화', text: 'MQTT 브로커 · 관제 화면 · 추이 화면은 암호화(TLS)와 사용자 인증 없이 이 PC 안에서만 열립니다. 브로커에 붙는 서비스는 비밀번호 없이 이름만 대고, 브로커는 그 이름으로 토픽 규칙을 적용합니다. 현업은 암호화와 인증(인증서 · 비밀번호)을 켭니다.' },
   { icon: 'cpu', name: '설비 · PLC · 엣지', text: '가상 설비 3기와 PLC, 값을 내보내는 엣지가 한 프로그램(plant-sim)에서 돕니다. 현업은 따로 있는 장치이고 안전계장(SIS)을 제어와 따로 둡니다.' },
   { icon: 'activity', name: '이상 탐지', text: '탐지는 IT의 이상 탐지(detector) 한 곳에서 합니다. 현업은 현장(엣지) 쪽에서도 탐지합니다.' },
