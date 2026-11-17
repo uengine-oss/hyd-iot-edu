@@ -1,69 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440">
-<rect x="230" y="14" width="960" height="100" rx="14" ry="14" fill="#F3F6F9" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<g transform="translate(95 330) scale(1.0)">
-<rect x="-58" y="-46" width="116" height="76" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="2.98" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="0" y1="30" x2="0" y2="44" stroke="#13294B" stroke-width="4.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-26" y1="45" x2="26" y2="45" stroke="#13294B" stroke-width="4.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-40" y1="-30" x2="36" y2="-30" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-40" y1="-17" x2="14" y2="-17" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-40" y1="-4" x2="36" y2="-4" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-40" y1="9" x2="14" y2="9" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-40" y1="22" x2="36" y2="22" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 510" width="1200" height="510">
+<g transform="translate(0 36)">
+<rect x="3" y="6" width="407" height="88" rx="18" ry="18" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="475.0" y="6.0" width="230" height="88" rx="22" ry="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="521.0" cy="50" r="30.0" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(521.0 50.483870967741936) scale(0.34838709677419355)">
+<rect x="-58" y="-46" width="116" height="76" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="5.65" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="0" y1="30" x2="0" y2="44" stroke="#13294B" stroke-width="8.07" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-26" y1="45" x2="26" y2="45" stroke="#13294B" stroke-width="8.07" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="-30" x2="36" y2="-30" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="-17" x2="14" y2="-17" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="-4" x2="36" y2="-4" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="9" x2="14" y2="9" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-40" y1="22" x2="36" y2="22" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
-<path d="M 165.0,330.0 L 247.5,330.0" stroke="#1A6FC4" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="258.0,330.0 244.8,337.0 244.8,323.0" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 393.0,330.0 L 514.5,330.0" stroke="#1A6FC4" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="525.0,330.0 511.8,337.0 511.8,323.0" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 807.0,330.0 L 685.5,330.0" stroke="#1A6FC4" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="675.0,330.0 688.2,323.0 688.2,337.0" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 1047.0,330.0 L 947.5,330.0" stroke="#1A6FC4" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="937.0,330.0 950.2,323.0 950.2,337.0" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="330" cy="330" r="58" fill="#E7F3FD" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="313.3975" y="298.9907142857143" width="8.347857142857144" height="59.719285714285725" rx="4.173928571428572" ry="4.173928571428572" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="317.57142857142856" cy="354.8571428571429" r="9.632142857142858" fill="#E7F3FD" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="317.57142857142856" y1="351.00428571428574" x2="317.57142857142856" y2="314.0168571428572" stroke="#E7F3FD" stroke-width="3.2107142857142863" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 348.6,350.7 L 348.6,310.8" stroke="#1A6FC4" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="348.6,303.1 353.8,312.8 343.5,312.8" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="600" cy="330" r="66" fill="#5CB8F2" stroke="#13294B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<g transform="translate(600 330) scale(0.7071428571428572)">
-<rect x="-44" y="-34" width="88" height="68" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="4.21" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-34.0" y1="-24" x2="-34.0" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-24.285714285714285" y1="-24" x2="-24.285714285714285" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-14.571428571428573" y1="-24" x2="-14.571428571428573" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-4.857142857142861" y1="-24" x2="-4.857142857142861" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="4.857142857142854" y1="-24" x2="4.857142857142854" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="14.57142857142857" y1="-24" x2="14.57142857142857" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="24.285714285714278" y1="-24" x2="24.285714285714278" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="34.0" y1="-24" x2="34.0" y2="24" stroke="#D3D9E1" stroke-width="2.40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-52" y1="44" x2="52" y2="-44" stroke="#13294B" stroke-width="7.21" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="770" y="6" width="427" height="88" rx="18" ry="18" fill="#E7F3FD" stroke="#1A6FC4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 420.0,50.0 L 451.7,50.0" stroke="#1A6FC4" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="465.0,50.0 448.2,58.9 448.2,41.1" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 590.0,104.0 L 590.0,124.0 L 91.0,124.0 L 91.0,138.7" stroke="#1A6FC4" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="91.0,152.0 82.1,135.2 99.9,135.2" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 1109.0,150.0 L 1109.0,119.3" stroke="#1A6FC4" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="1109.0,106.0 1117.9,122.8 1100.1,122.8" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3.0" y="160" width="176.0" height="272" rx="22" ry="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="91" cy="250" r="62" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(91 250) scale(1.0)">
+<rect x="-19.07" y="-37.86000000000001" width="10.14" height="72.54" rx="5.07" ry="5.07" fill="#FFFFFF" stroke="#13294B" stroke-width="3.50" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-14" cy="30" r="11.700000000000001" fill="#5CB8F2" stroke="#13294B" stroke-width="3.50" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-14" y1="25.32" x2="-14" y2="-20.8248" stroke="#5CB8F2" stroke-width="3.90" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 24.0,26.0 L 24.0,-25.5" stroke="#1A6FC4" stroke-width="5.50" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="24.0,-36.0 31.0,-22.8 17.0,-22.8" fill="#1A6FC4" stroke="none" stroke-width="0.00" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
-<circle cx="870" cy="330" r="58" fill="#E7F3FD" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<g transform="translate(870 330) scale(0.6214285714285714)">
-<rect x="-44" y="-34" width="88" height="68" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="4.79" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-34.0" y1="-24" x2="-34.0" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-24.285714285714285" y1="-24" x2="-24.285714285714285" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-14.571428571428573" y1="-24" x2="-14.571428571428573" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-4.857142857142861" y1="-24" x2="-4.857142857142861" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="4.857142857142854" y1="-24" x2="4.857142857142854" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="14.57142857142857" y1="-24" x2="14.57142857142857" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="24.285714285714278" y1="-24" x2="24.285714285714278" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="34.0" y1="-24" x2="34.0" y2="24" stroke="#D3D9E1" stroke-width="2.74" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="-20.9" cy="-13.299999999999999" r="7.6" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="-5.699999999999999" cy="-19.0" r="5.699999999999999" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="9.5" cy="-11.399999999999999" r="8.549999999999999" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="22.799999999999997" cy="-17.099999999999998" r="4.75" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="-15.2" cy="3.8" r="6.6499999999999995" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="1.9" cy="1.9" r="9.5" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="19.0" cy="5.699999999999999" r="6.6499999999999995" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="-7.6" cy="19.0" r="5.699999999999999" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="11.399999999999999" cy="20.9" r="7.6" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="-24.7" cy="17.099999999999998" r="4.75" fill="#D3D9E1" stroke="#13294B" stroke-width="2.74" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="324.0" y="160" width="226.0" height="272" rx="22" ry="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="437" cy="250" r="62" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(437 250) scale(0.78)">
+<rect x="-44" y="-34" width="88" height="68" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="3.81" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-34.0" y1="-24" x2="-34.0" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-24.285714285714285" y1="-24" x2="-24.285714285714285" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-14.571428571428573" y1="-24" x2="-14.571428571428573" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-4.857142857142861" y1="-24" x2="-4.857142857142861" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="4.857142857142854" y1="-24" x2="4.857142857142854" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="14.57142857142857" y1="-24" x2="14.57142857142857" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="24.285714285714278" y1="-24" x2="24.285714285714278" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="34.0" y1="-24" x2="34.0" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-52" y1="44" x2="52" y2="-44" stroke="#13294B" stroke-width="6.54" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
-<circle cx="1110" cy="330" r="58" fill="#E7F3FD" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<g transform="translate(1110 330) scale(0.6835714285714287)">
-<rect x="-44" y="-34" width="88" height="68" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="4.35" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-34.0" y1="-24" x2="-34.0" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-24.285714285714285" y1="-24" x2="-24.285714285714285" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-14.571428571428573" y1="-24" x2="-14.571428571428573" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="-4.857142857142861" y1="-24" x2="-4.857142857142861" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="4.857142857142854" y1="-24" x2="4.857142857142854" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="14.57142857142857" y1="-24" x2="14.57142857142857" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="24.285714285714278" y1="-24" x2="24.285714285714278" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="34.0" y1="-24" x2="34.0" y2="24" stroke="#D3D9E1" stroke-width="2.49" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="695.0" y="160" width="176.0" height="272" rx="22" ry="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="783" cy="250" r="62" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(783 250) scale(0.78)">
+<rect x="-44" y="-34" width="88" height="68" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="3.81" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-34.0" y1="-24" x2="-34.0" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-24.285714285714285" y1="-24" x2="-24.285714285714285" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-14.571428571428573" y1="-24" x2="-14.571428571428573" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-4.857142857142861" y1="-24" x2="-4.857142857142861" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="4.857142857142854" y1="-24" x2="4.857142857142854" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="14.57142857142857" y1="-24" x2="14.57142857142857" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="24.285714285714278" y1="-24" x2="24.285714285714278" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="34.0" y1="-24" x2="34.0" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-20.9" cy="-13.299999999999999" r="7.6" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-5.699999999999999" cy="-19.0" r="5.699999999999999" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="9.5" cy="-11.399999999999999" r="8.549999999999999" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="22.799999999999997" cy="-17.099999999999998" r="4.75" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-15.2" cy="3.8" r="6.6499999999999995" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1.9" cy="1.9" r="9.5" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="19.0" cy="5.699999999999999" r="6.6499999999999995" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-7.6" cy="19.0" r="5.699999999999999" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="11.399999999999999" cy="20.9" r="7.6" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-24.7" cy="17.099999999999998" r="4.75" fill="#D3D9E1" stroke="#13294B" stroke-width="2.18" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="1021.0" y="160" width="176.0" height="272" rx="22" ry="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1109" cy="250" r="62" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(1109 250) scale(0.78)">
+<rect x="-44" y="-34" width="88" height="68" rx="7" ry="7" fill="#FFFFFF" stroke="#13294B" stroke-width="3.81" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-34.0" y1="-24" x2="-34.0" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-24.285714285714285" y1="-24" x2="-24.285714285714285" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-14.571428571428573" y1="-24" x2="-14.571428571428573" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-4.857142857142861" y1="-24" x2="-4.857142857142861" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="4.857142857142854" y1="-24" x2="4.857142857142854" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="14.57142857142857" y1="-24" x2="14.57142857142857" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="24.285714285714278" y1="-24" x2="24.285714285714278" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="34.0" y1="-24" x2="34.0" y2="24" stroke="#D3D9E1" stroke-width="2.18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M -56,-39 L -56,-21 M -65,-30 L -47,-30" stroke="#1A6FC4" stroke-width="4.36" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 58,-33 L 58,-15 M 49,-24 L 67,-24" stroke="#1A6FC4" stroke-width="4.36" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M -58,17 L -58,35 M -67,26 L -49,26" stroke="#1A6FC4" stroke-width="4.36" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 56,23 L 56,41 M 47,32 L 65,32" stroke="#1A6FC4" stroke-width="4.36" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M 190.0,250.0 L 299.7,250.0" stroke="#1A6FC4" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="313.0,250.0 296.2,258.9 296.2,241.1" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 684.0,250.0 L 574.3,250.0" stroke="#1A6FC4" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="561.0,250.0 577.8,241.1 577.8,258.9" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 1010.0,250.0 L 895.3,250.0" stroke="#1A6FC4" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="882.0,250.0 898.8,241.1 898.8,258.9" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>

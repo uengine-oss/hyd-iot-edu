@@ -4,11 +4,11 @@
 
 - 캐시(음성_저장/의 mp3 · json 둘 다)가 있는 구획은 사지 않는다(기록에 credits 0 · 기존). 살 구획이 없으면 키 없이도 끝난다.
 - 기록 JSON은 강의영상.py --audio-ledger 꼴({"voice", "completed": {캐시 이름: {"sha", "credits", …}}})이라 그대로 렌더에 넘긴다.
-- 실패하면 다시 보내지 않고 새 요청을 멈춘다(영상.md V-4). 실패는 기록의 failed에 남는다.
+- 실패하면 다시 보내지 않고 새 요청을 멈춘다(영상.md V-4). 실패는 기록의 failed에 남는다. 예외는 연결 단계에서 끊긴 요청 하나다. urllib은 요청을 다 보내기 전의 오류만 URLError로 감싸므로 그 요청은 서버에 닿지 않아 과금이 없고, 20 · 40 · 60초 뒤 세 번까지 다시 보낸다(2026-11-17 이 PC에서 연결이 세 번에 한 번꼴로 시간 초과로 끊겼고, 끊긴 요청의 크레딧이 차감되지 않은 것을 잔액으로 확인했다). 응답을 기다리다 끊긴 것과 HTTP 오류는 다시 보내지 않는다.
 - 상한: 응답 머리의 character-cost 합 + 다음 글자 수 × 0.6이 상한을 넘으면 그 앞에서 멈춘다.
 - 음성 ID는 꼭 준다. 캐시 이름에 들어가고 강의영상.py에도 기본값이 없다(영상.md V-4).
 """
-import argparse, hashlib, json, sys, threading, time, traceback
+import argparse, hashlib, json, sys, threading, time, traceback, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -65,7 +65,14 @@ def one(job):
         reserved += len(t) * 0.6
     t0 = time.time()
     try:
-        mp3, _, cost = tool.tts(t, prev, nxt)
+        for n in range(4):
+            try:
+                mp3, _, cost = tool.tts(t, prev, nxt); break
+            except urllib.error.HTTPError: raise
+            except urllib.error.URLError as e:   # 요청을 다 보내기 전에 끊겼다 — 서버가 받지 않았다
+                if n == 3: raise
+                print(f"연결 실패 {name} 장 {sl}: {e.reason} — 요청이 서버에 닿지 않아 {20 * (n + 1)}초 뒤 다시 보낸다({n + 1}/3)", flush=True)
+                time.sleep(20 * (n + 1))
         ok = (tool.CACHE / f"{h}.json").exists()
         err = None if ok else "json이 없다"
     except BaseException as e:   # tts는 HTTP 오류에 sys.exit를 부른다

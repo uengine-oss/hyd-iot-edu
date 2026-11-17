@@ -1660,18 +1660,6 @@ def ontology_four() -> str:
     return svg(o)
 
 
-def memo_two_readings() -> str:
-    """50장: 위 가운데 메모 한 장을 왼쪽은 사람이, 오른쪽은 컴퓨터가 읽는다. 두 칸의 글(칸 이름과 읽어 낸 세 줄)은 라벨로 얹는다.
-    칸 높이는 아이콘과 글 네 줄 높이에 맞추고, 아이콘은 칸 세로 가운데(298)에 둔다. 1200×400."""
-    o: list[str] = []
-    o += g(300, 78, 0.95, note_doc(0, 0, ON))
-    o += [line(600, 150, 600, 172, stroke=NAVY, sw=3.5), line(300, 172, 900, 172, stroke=NAVY, sw=3.5)]
-    o += [arrow([(300, 172), (300, 208)], NAVY, sw=3.5), arrow([(900, 172), (900, 208)], NAVY, sw=3.5)]
-    o += [rect(40, 212, 520, 172, 14, fill=LIGHT, stroke="none", sw=0), rect(640, 212, 520, 172, 14, fill=LIGHT, stroke="none", sw=0)]
-    o += g(125, 302, 1.3, person_icon(0, 0, ON)) + g(725, 298, 1.0, monitor(0, 0, ON, kind="text"))
-    return svg(o, h=400)
-
-
 def ontology_frame() -> str:
     """52장: 온톨로지의 틀 — 빈 원 둘(종류), 왼쪽 원의 꼬리표(속성), 이름 붙은 화살표(관계), 화살표 양 끝의 파란 고리(제약).
     실제 대상의 그림은 넣지 않는다. 오른쪽 40 %는 네 칸 목록(연회색 칸 넷)을 라벨로 얹는 자리다."""
@@ -1780,114 +1768,392 @@ def same_reading() -> str:
     return svg(o)
 
 
-MEMO4 = {"Y": (190, 345, 60), "F": (480, 345, 68), "C": (770, 345, 60), "K": (1050, 345, 60)}
+# ───────────────────────── 03편 온톨로지 차례(49~63장): 노드 = 아이콘 원판과 글 한 덩어리가 든 카드 하나 ─────────────────────────
+# 카드 안에 큰 아이콘 원판 하나와 글 자리 하나만 둔다(종류 · 이름은 그 자리에 덱 라벨로 붙여 얹는다). 장마다 볼 곳 하나만 파랑 · 연하늘로 둔다.
+# 그림은 모두 1200×510이다. 좌표를 바꾸면 덱 MD의 라벨 좌표(x ÷ 12, y ÷ 5.1)도 함께 고친다.
+FW, FH = 1200, 510
 
 
-def _memo_row(P, hot_edges=()):
-    """메모를 다시 적은 한 줄: 증상 Y → 고장 유형 F ← 원인 C ← 조치 K. 원 바로 위는 종류 이름(덱 라벨, 테두리 없음) 자리."""
-    Y, F, C, K = P["Y"], P["F"], P["C"], P["K"]
-    o: list[str] = []
-    for key, (a, b) in (("YF", (Y, F)), ("CF", (C, F)), ("KC", (K, C))):
-        o += _edge_arrow(a, b, BLUE if key in hot_edges else NAVY, sw=5 if key in hot_edges else 4.5)
-    o += _node(Y, "rise") + _node(F, "fm", hot=True) + _node(C, "pin") + _node(K, "wash")
+def _card_icon(kind, cx, cy, k=1.0):
+    """카드 안 큰 아이콘. (cx, cy)는 아이콘 가운데, k는 배율(1.0 = 높이 약 100)."""
+    if kind == "none":
+        return []
+    if kind == "rise":
+        return g(cx, cy, k, thermo(-14, 30, ON, s=0.78, level=0.72) + [arrow([(24, 26), (24, -36)], BLUE, sw=5.5, size=15)], boost=1.0)
+    if kind == "fm":
+        return g(cx, cy, 0.78 * k, broken_cooler(0, 0, NORM))
+    if kind == "pin":
+        return g(cx, cy, 0.78 * k, dusty_cooler(0, 0, NORM))
+    if kind == "wash":
+        sp = [path(f"M {x},{y - 9} L {x},{y + 9} M {x - 9},{y} L {x + 9},{y}", stroke=BLUE, sw=4) for x, y in ((-56, -30), (58, -24), (-58, 26), (56, 32))]
+        return g(cx, cy, 0.78 * k, radiator(-44, -34, 88, 68, ON, fins=8, r=7) + sp)
+    if kind == "sensor":
+        return g(cx, cy, k, gauge(0, 0, ON, r=34, hot=True, ang=-40), boost=1.0)
+    if kind == "fan":
+        return g(cx, cy, k, fan(0, 0, 36, ON, rot=20), boost=1.0)
+    if kind == "fanmax":
+        return g(cx, cy, k, fan(0, 0, 36, ON, rot=20, hot=True), boost=1.0)
+    if kind == "fanbad":
+        return g(cx, cy, k, _shaky_fan(0, 0, 25, NORM), boost=1.0)
+    if kind == "equip":
+        return g(cx, cy - 2 * k, 0.78 * k, equip_mini(0, 0, ON))
+    if kind == "doc":
+        return g(cx, cy, 0.6 * k, book_icon(0, 0, ON))
+    if kind == "person":
+        return g(cx, cy + 2 * k, 1.05 * k, person_icon(0, 0, ON))
+    if kind == "computer":
+        return g(cx, cy + 1 * k, 0.72 * k, monitor(0, 0, ON, kind="text"))
+    if kind == "agent":
+        return g(cx, cy + 6 * k, 0.78 * k, agent_icon(0, 0, ON))
+    raise ValueError(kind)
+
+
+def _f_box(x, y, w, h, hot=False, r=22):
+    return [rect(x, y, w, h, r, fill=PALE if hot else WHITE, stroke=BLUE if hot else NAVY, sw=5 if hot else 3)]
+
+
+def _f_disc(cx, cy, r, kind, hot=False, ring=False):
+    o = [circle(cx, cy, r, fill=WHITE if (hot or ring) else PALE, stroke=NAVY if ring else "none", sw=3 if ring else 0)]
+    return o + _card_icon(kind, cx, cy, r / 62)
+
+
+def _f_vcard(cx, top, w, h, r, kind, hot=False, disc_y=None):
+    """세로 카드: 위 큰 아이콘 원판, 그 아래 글 한 덩어리(종류 + 이름) 자리."""
+    dy = disc_y if disc_y is not None else top + 26 + r
+    return _f_box(cx - w / 2, top, w, h, hot) + _f_disc(cx, dy, r, kind, hot)
+
+
+def _f_hcard(cx, cy, w, h, kind, hot=False, ring=False):
+    """가로 카드: 왼쪽 큰 아이콘 원판, 오른쪽 글 자리."""
+    r = h / 2 - 14
+    return _f_box(cx - w / 2, cy - h / 2, w, h, hot) + _f_disc(cx - w / 2 + 16 + r, cy, r, kind, hot, ring)
+
+
+def _f_plus(cx, cy, r=18):
+    """새로 생긴 것 표시: 파란 원판 + 흰 더하기."""
+    return [circle(cx, cy, r, fill=BLUE, stroke=WHITE, sw=4),
+            line(cx - r * 0.45, cy, cx + r * 0.45, cy, stroke=WHITE, sw=4), line(cx, cy - r * 0.45, cx, cy + r * 0.45, stroke=WHITE, sw=4)]
+
+
+def _f_banded(x, top, w, bot, B, band, edge, sw, zone=None, T=None, r=22, fill=WHITE):
+    """아래 띠(B~bot)가 있는 상자. zone을 주면 위쪽(top~T)도 그 색으로 채운다(그림 자리)."""
+    o = [rect(x, top, w, bot - top, r, fill=fill, stroke="none", sw=0)]
+    if zone is not None:
+        o.append(path(f"M {x},{T} L {x},{top + r} A {r} {r} 0 0 1 {x + r},{top} L {x + w - r},{top} A {r} {r} 0 0 1 {x + w},{top + r} L {x + w},{T} Z",
+                      fill=zone, stroke="none", sw=0))
+    o.append(path(f"M {x},{B} L {x + w},{B} L {x + w},{bot - r} A {r} {r} 0 0 1 {x + w - r},{bot} L {x + r},{bot} A {r} {r} 0 0 1 {x},{bot - r} Z",
+                  fill=band, stroke="none", sw=0))
+    o.append(rect(x, top, w, bot - top, r, fill="none", stroke=edge, sw=sw))
     return o
 
 
-def memo_rewritten() -> str:
-    """52장: 위 왼쪽 메모 한 장(글은 라벨), 아래는 같은 내용을 종류 이름표와 이름 붙은 화살표로 다시 적은 한 줄."""
+def _f_memo(mx0, my0, mx1, my1):
+    """메모 한 장(오른쪽 위 귀를 접은 종이)과 왼쪽의 글 줄 표시. 메모의 글은 덱 라벨로 얹는다."""
+    f = 24
+    o = [path(f"M {mx0 + 10},{my0} L {mx1 - f},{my0} L {mx1},{my0 + f} L {mx1},{my1 - 10} A 10 10 0 0 1 {mx1 - 10},{my1} L {mx0 + 10},{my1} "
+              f"A 10 10 0 0 1 {mx0},{my1 - 10} L {mx0},{my0 + 10} A 10 10 0 0 1 {mx0 + 10},{my0} Z", fill=WHITE, stroke=NAVY, sw=3),
+         path(f"M {mx1 - f},{my0} L {mx1 - f},{my0 + f} L {mx1},{my0 + f}", fill=PALE, stroke=NAVY, sw=3)]
+    ix, iy = mx0 + 62, (my0 + my1) / 2
+    o.append(circle(ix, iy, 30, fill=PALE, stroke="none", sw=0))
+    o += [line(ix - 14, iy + dy, ix + (14 if dy < 10 else 2), iy + dy, stroke=NAVY, sw=3.5) for dy in (-11, 0, 11)]
+    return o
+
+
+def _f_down(o, dy):
+    """그림 전체를 dy만큼 내려 세로 가운데에 놓는다."""
+    return [f'<g transform="translate(0 {dy})">', *o, "</g>"]
+
+
+def _f_branch(x, y0, y1, color=GREY):
+    """아래로 내려가 닿는 점선 가지와 화살촉."""
+    return dash_line(x, y0, x, y1 - 11, color, 3.5, 8, 6) + [head(x, y1, math.pi / 2, color, 13)]
+
+
+# 49장: 세 단이 오른쪽으로 갈수록 높아지는 계단. 단마다 위는 그림(값 하나 → 뜻이 붙은 값 → 이어진 정보), 가운데는 뜻과 예, 맨 아래 띠는 답할 수 있는 물음.
+F49 = dict(xs=(3, 417, 831), w=366, tops=(178, 98, 18), T=288, B=446, bot=507)
+
+
+def _f_cell(cx, cy, a, hot=False):
+    o = [rect(cx - a / 2, cy - a / 2, a, a, a * 0.17, fill=SKY if hot else WHITE, stroke=NAVY if hot else GREY, sw=3.5 if hot else 2.5)]
+    c = NAVY if hot else GREY
+    return o + [line(cx - a * 0.24, cy - a * 0.1, cx + a * 0.24, cy - a * 0.1, stroke=c, sw=4 if hot else 3),
+                line(cx - a * 0.24, cy + a * 0.14, cx + a * 0.06, cy + a * 0.14, stroke=c, sw=4 if hot else 3)]
+
+
+def data_info_knowledge() -> str:
+    s = F49
+    (x0, x1, x2), w, T, B, bot = s["xs"], s["w"], s["T"], s["B"], s["bot"]
     o: list[str] = []
-    o += g(120, 92, 0.72, note_doc(0, 0, ON))
-    o.append(arrow([(600, 150), (600, 200)], GREY, sw=5, size=16))
-    o += _memo_row(MEMO4)
-    return svg(o)
+    o += _f_banded(x0, s["tops"][0], w, bot, B, GREY, GREY, 3, LIGHT, T)
+    o += _f_banded(x1, s["tops"][1], w, bot, B, PALE, NAVY, 3, PALE, T)
+    o += _f_banded(x2, s["tops"][2], w, bot, B, SKY, BLUE, 5, PALE, T)
+    o.append(line(x1 + 2, B, x1 + w - 2, B, stroke=NAVY, sw=2))
+    for xa in (x0 + w, x1 + w):                                           # 단 사이: 다음 단으로
+        o.append(arrow([(xa + 9, 366), (xa + 41, 366)], BLUE, sw=6, size=17))
+    # 데이터: 기록된 값들 가운데 하나
+    cx, cy = x0 + w / 2, (s["tops"][0] + T) / 2
+    for i in (-2, -1, 1, 2):
+        o += _f_cell(cx + i * 66 + (6 if i > 0 else -6), cy, 50)
+    o += _f_cell(cx, cy, 64, hot=True)
+    # 정보: 그 값 + 뜻(무엇을 · 어떤 단위로 · 기준보다 어떤가)
+    cx, cy = x1 + w / 2, (s["tops"][1] + T) / 2
+    o.append(line(cx - 86, cy, cx - 34, cy, stroke=NAVY, sw=3.5))
+    o += _f_cell(cx - 118, cy, 64, hot=True)
+    dx, R = cx + 46, 80
+    o.append(circle(dx, cy, R, fill=WHITE, stroke=NAVY, sw=3))
+    o += thermo(dx - 22, cy + 36, ON, s=0.98, level=0.74)
+    o += dash_line(dx + 2, cy - 4, dx + 56, cy - 4, NAVY, 3, 8, 7)
+    o.append(arrow([(dx + 29, cy + 40), (dx + 29, cy - 46)], BLUE, sw=5.5, size=16))
+    bx, by = dx + 66, cy + 58
+    o.append(circle(bx, by, 33, fill=WHITE, stroke=NAVY, sw=3))
+    o += g(bx, by, 0.44, radiator(-44, -34, 88, 68, ON, fins=8, r=7), boost=1.6)
+    # 지식: 정보들이 이어진 것
+    cx = x2 + w / 2
+    P = {"pin": (cx, 88, 54), "rise": (cx - 104, 222, 50), "wash": (cx + 104, 222, 50)}
+    for a, b in (("pin", "rise"), ("rise", "wash"), ("wash", "pin")):
+        o += _edge_arrow(P[a], P[b], NAVY, sw=5, size=16, gap_a=7, gap_b=10)
+    for k, (px, py, pr) in P.items():
+        o += _f_disc(px, py, pr, k, ring=True)
+    return svg(o, FW, FH)
 
 
-ASK4 = {"Y": (330, 330, 58), "F": (600, 330, 66), "C": (870, 330, 58), "K": (1110, 330, 58)}
+# 50장: 위에 메모 한 장, 아래에 같은 메모를 읽는 둘(왼쪽 사람 · 오른쪽 컴퓨터). 메모와 가지는 51장과 같은 자리다. 컴퓨터 카드만 연하늘.
+def memo_two_readings() -> str:
+    o: list[str] = _f_memo(320, 6, 880, 94)
+    by = 124
+    o += dash_line(600, 99, 600, by, GREY, 3.5, 8, 6) + dash_line(300, by, 900, by, GREY, 3.5, 8, 6)
+    o += _f_branch(300, by, 159) + _f_branch(900, by, 159)
+    o += _f_box(30, 164, 540, 316) + _f_disc(140, 322, 78, "person")
+    o += _f_box(630, 164, 540, 316, hot=True) + _f_disc(740, 322, 78, "computer", hot=True)
+    return svg(o, FW, FH)
+
+
+# 51장: 위에 메모 한 장, 아래에 카드 넷. 메모에서 내려오는 가지는 증상 · 원인 · 조치에만 닿고, 메모에 없던 고장 유형 카드는 크고 연하늘이며 더하기 표시가 붙는다.
+F51 = dict(xs=(103, 441, 779, 1097), w=190, hw=230, top=160, h=272, htop=140, hh=312, r=66, hr=78, disc_y=250,
+           memo=(320, 6, 880, 94), bus_y=120)
+ROW4 = ("rise", "fm", "pin", "wash")
+
+
+def memo_rewritten() -> str:
+    s = F51
+    xs, w, hw = s["xs"], s["w"], s["hw"]
+    o: list[str] = _f_memo(*s["memo"])
+    by = s["bus_y"]
+    o += dash_line(600, s["memo"][3] + 5, 600, by, GREY, 3.5, 8, 6)
+    o += dash_line(xs[0], by, xs[3], by, GREY, 3.5, 8, 6)
+    for i in (0, 2, 3):
+        o += _f_branch(xs[i], by, s["top"] - 5)
+    for i, kind in enumerate(ROW4):
+        hot = i == 1
+        o += _f_vcard(xs[i], s["htop"] if hot else s["top"], hw if hot else w, s["hh"] if hot else s["h"], s["hr"] if hot else s["r"],
+                      kind, hot, s["disc_y"])
+    o += _f_plus(xs[1] + hw / 2 - 8, s["htop"] + 8)
+    ay, gap = s["disc_y"], 11
+    half = lambda i: (hw if i == 1 else w) / 2
+    o.append(arrow([(xs[0] + half(0) + gap, ay), (xs[1] - half(1) - gap - 3, ay)], NAVY, sw=6, size=19))      # 증상 → 고장 유형
+    o.append(arrow([(xs[2] - half(2) - gap, ay), (xs[1] + half(1) + gap + 3, ay)], NAVY, sw=6, size=19))      # 원인 → 고장 유형
+    o.append(arrow([(xs[3] - half(3) - gap, ay), (xs[2] + half(2) + gap, ay)], NAVY, sw=6, size=19))          # 조치 → 원인
+    return svg(_f_down(o, 30), FW, FH)
+
+
+# 52장: 위 줄은 물음 → 컴퓨터 … 찾은 답, 아래 줄은 51장과 같은 차례의 카드 넷. 컴퓨터에서 내려온 파란 길이 증상 카드로 들어가
+# 화살표 셋을 지나 조치 카드에서 찾은 답으로 올라간다. 파란 길과 찾은 답 칸만 강조한다.
+F52 = dict(xs=(91, 437, 783, 1109), w=176, fw=226, top=160, h=272, r=62, disc_y=250, bus_y=124)
 
 
 def ask_and_follow() -> str:
-    """52장: 왼쪽 프로그램이 증상에서 출발해 이름 붙은 화살표를 따라 원인과 조치에 닿는다. 위 칸은 물음과 답 자리(글 두 줄 높이에 맞춘다)."""
-    o: list[str] = [rect(230, 14, 960, 100, 14, fill=LIGHT, stroke="none", sw=0)]
-    o += g(95, 330, 1.0, monitor(0, 0, ON, kind="text"))
-    o.append(arrow([(165, 330), (258, 330)], BLUE, sw=5, size=15))
-    o += _memo_row(ASK4, hot_edges=("YF", "CF", "KC"))
-    return svg(o, h=440)
+    s = F52
+    xs, top, ay = s["xs"], s["top"], s["disc_y"]
+    A = dict(color=BLUE, sw=6, size=19)
+    o: list[str] = _f_box(3, 6, 407, 88, r=18) + _f_hcard(590, 50, 230, 88, "computer") + _f_box(770, 6, 427, 88, hot=True, r=18)
+    o.append(arrow([(420, 50), (465, 50)], **A))                                                  # 물음 → 컴퓨터
+    o.append(arrow([(590, 104), (590, s["bus_y"]), (xs[0], s["bus_y"]), (xs[0], top - 8)], **A))   # 컴퓨터 → 증상
+    o.append(arrow([(xs[3], top - 10), (xs[3], 106)], **A))                                       # 조치 → 찾은 답
+    half = lambda i: (s["fw"] if i == 1 else s["w"]) / 2
+    for i, kind in enumerate(ROW4):
+        o += _f_vcard(xs[i], top, half(i) * 2, s["h"], s["r"], kind, False, ay)
+    gap = 11
+    o.append(arrow([(xs[0] + half(0) + gap, ay), (xs[1] - half(1) - gap, ay)], **A))               # 증상 → 고장 유형
+    o.append(arrow([(xs[2] - half(2) - gap, ay), (xs[1] + half(1) + gap, ay)], **A))               # 원인 → 고장 유형
+    o.append(arrow([(xs[3] - half(3) - gap, ay), (xs[2] + half(2) + gap, ay)], **A))               # 조치 → 원인
+    return svg(_f_down(o, 36), FW, FH)
+
+
+# 53장: 두 정비 담당이 같은 고장의 까닭을 하나씩 적은 줄 둘. 컴퓨터가 이름을 맞춰 따라간 위 줄만 연하늘 바탕 · 파란 화살표이고,
+# 오른쪽은 물음과 찾은 답(연하늘) 칸이다.
+F53 = dict(rows=(126, 376), cause=(278, 264), fm=(698, 340), h=124, person_x=68)
 
 
 def names_apart() -> str:
-    """53장: 두 정비 담당이 같은 고장의 까닭을 하나씩, 서로 다른 종류 이름(원인 · 까닭)과 화살표 이름(일으킨다 · 유발한다)으로 적었다.
-    컴퓨터가 「원인 · 일으킨다」를 맞춰 따라간 위 줄 화살표만 파랑. 오른쪽 칸은 물음과 찾은 답 자리 — 글 다섯 줄 높이에 맞추고,
-    두 줄의 세로 가운데(248)에 둔다. 1200×500."""
-    o: list[str] = [rect(800, 141, 385, 214, 14, fill=LIGHT, stroke="none", sw=0)]
-    for y, kind, hot in ((135, "pin", True), (360, "fanbad", False)):
-        C, F = (300, y, 52), (600, y, 56)
-        o += _edge_arrow(C, F, BLUE if hot else NAVY, sw=5 if hot else 4.5)
-        o += _node(C, kind) + _node(F, "fm")
-    return svg(o, h=500)
+    s = F53
+    o: list[str] = []
+    for cy, kind, hot in ((s["rows"][0], "pin", True), (s["rows"][1], "fanbad", False)):
+        o.append(rect(3, cy - 118, 877, 236, 24, fill=PALE if hot else LIGHT, stroke="none", sw=0))
+        o += _f_disc(s["person_x"], cy - 20, 38, "person", ring=True)
+        (cx, cw), (fx, fw) = s["cause"], s["fm"]
+        o += _f_hcard(cx, cy, cw, s["h"], kind) + _f_hcard(fx, cy, fw, s["h"], "fm")
+        o.append(arrow([(cx + cw / 2 + 10, cy), (fx - fw / 2 - 10, cy)], BLUE if hot else NAVY, sw=6, size=19))
+    o += _f_box(905, 96, 292, 130) + _f_box(905, 276, 292, 110, hot=True)
+    o.append(arrow([(1051, 236), (1051, 266)], BLUE, sw=6, size=17))
+    return svg(o, FW, FH)
 
 
-def read_and_search() -> str:
-    """57장: 왼쪽 「읽을 때」는 원인 → 일으킨다 → 고장 유형을 문장으로 읽는 화살표, 오른쪽 「찾을 때」는 같은 화살표를 두고
-    고장 유형에서 원인 쪽으로 거꾸로 따라가는 길(파란 점선, 위로 꺾음). 1200×500."""
-    o: list[str] = [rect(15, 10, 570, 400, 14, fill=PALE, stroke="none", sw=0), rect(615, 10, 570, 400, 14, fill=LIGHT, stroke="none", sw=0)]
-    for cx in (150, 750):
-        C, F = (cx, 230, 60), (cx + 300, 230, 64)
-        o += _edge_arrow(C, F, BLUE if cx == 150 else NAVY, sw=5 if cx == 150 else 4.5)
-        o += _node(C, "pin") + _node(F, "fm")
-    o += dash_line(1050, 160, 1050, 98, BLUE, 4, 10, 8) + dash_line(1050, 98, 750, 98, BLUE, 4, 10, 8) + dash_line(750, 98, 750, 150, BLUE, 4, 10, 8)
-    o.append(head(750, 164, math.pi / 2, BLUE, size=14))
-    return svg(o, h=420)
-
-
-def two_actions() -> str:
-    """58장: 한 줄에 완화 조치 M ← 완화된다 ← 고장 유형 F → 근본 해결된다 → 근본 조치 R → 없앤다 → 원인 C(완화 · 근본은 파랑).
-    원 바로 위는 종류 이름(덱 라벨, 테두리 없음), 원 아래는 이름, 그 아래 두 조치 밑의 연회색 칸은 조치의 갈래 이름과 조치 뒤에 남는 것.
-    실습 08과 같은 방향. 1200×395 — 위 종류 글(36)부터 아래 칸(350)까지를 그림 세로 가운데에 두고, 줄을 오른쪽으로 옮겨
-    왼쪽 칸과 오른쪽 끝 원의 이름이 좌우로 같은 여백을 갖게 한다."""
-    M, F, R, C = (205, 150, 58), (495, 150, 64), (785, 150, 58), (1075, 150, 58)
-    o: list[str] = [rect(M[0] - 150, 272, 300, 78, 14, fill=LIGHT, stroke="none", sw=0),
-                    rect(R[0] - 150, 272, 300, 78, 14, fill=LIGHT, stroke="none", sw=0)]
-    o += _edge_arrow(F, M, BLUE, sw=5.5, size=17) + _edge_arrow(F, R, BLUE, sw=5.5, size=17) + _edge_arrow(R, C)
-    o += _node(M, "fanmax") + _node(F, "fm") + _node(R, "wash") + _node(C, "pin")
-    return svg(o, h=395)
+# 54장: 위 띠 = 온톨로지(정해 둔 종류 넷 — 원판이 빈 가로 카드 — 과 관계 셋), 아래 띠 = 지식 그래프(그 정한 대로 적은 실제 대상 넷).
+# 위아래 카드는 같은 가로 자리에 두고 점선으로 잇는다. 온톨로지 띠만 연하늘.
+F54 = dict(xs=(290, 580, 870, 1122), w=150, fw=226, kw=150, kfw=210, ky=95, kh=80, top=226, h=234, r=68)
 
 
 def ontology_two_bands() -> str:
-    """53장: 위 띠 = 온톨로지(정해 둔 종류 넷의 빈 원과 관계 셋), 아래 띠 = 지식 그래프(그 정한 대로 메모를 적은 실제 대상 넷).
-    화살표는 51장과 같은 이름 · 같은 방향(증상 → 고장 유형 ← 원인 ← 조치). 띠 왼쪽 끝은 띠 이름 자리. 1200×440."""
-    xs, yt, yb = (380, 620, 860, 1100), 112, 300
-    o: list[str] = [rect(15, 10, 1170, 180, 16, fill=PALE, stroke="none", sw=0), rect(15, 205, 1170, 225, 16, fill=WHITE, stroke=GREY, sw=3)]
-    for x in xs:
-        o += dash_line(x, yt + 47, x, yb - 64, GREY, 3, 8, 7)
-    o += [arrow([(xs[0] + 47, yt), (xs[1] - 51, yt)], NAVY, sw=4.5, size=15),
-          arrow([(xs[2] - 47, yt), (xs[1] + 51, yt)], NAVY, sw=4.5, size=15),
-          arrow([(xs[3] - 47, yt), (xs[2] + 51, yt)], NAVY, sw=4.5, size=15)]
-    for x in xs:
-        o.append(circle(x, yt, 42, fill=WHITE, stroke=NAVY, sw=3.5))
-    Y, Fm, C, K = (xs[0], yb, 52), (xs[1], yb, 56), (xs[2], yb, 52), (xs[3], yb, 52)
-    o += _edge_arrow(Y, Fm) + _edge_arrow(C, Fm) + _edge_arrow(K, C)
-    o += _node(Y, "rise") + _node(Fm, "fm") + _node(C, "pin") + _node(K, "wash")
-    return svg(o, h=440)
+    s = F54
+    xs, ky, top = s["xs"], s["ky"], s["top"]
+    A = dict(color=NAVY, sw=5, size=17)
+    o: list[str] = [rect(3, 20, 1194, 150, 24, fill=PALE, stroke="none", sw=0), rect(3, 190, 1194, 300, 24, fill=LIGHT, stroke="none", sw=0)]
+    kw = lambda i: s["kfw"] if i == 1 else s["kw"]
+    cw = lambda i: s["fw"] if i == 1 else s["w"]
+    for i, x in enumerate(xs):
+        o += dash_line(x, ky + s["kh"] / 2 + 7, x, top - 7, GREY, 3.5, 8, 6)
+    dy = top + 22 + s["r"]
+    for a, b in ((0, 1), (2, 1), (3, 2)):                                  # 증상 → 고장 유형, 원인 → 고장 유형, 조치 → 원인
+        sg = 1 if xs[b] > xs[a] else -1
+        o.append(arrow([(xs[a] + sg * (kw(a) / 2 + 10), ky), (xs[b] - sg * (kw(b) / 2 + 10), ky)], **A))
+        o.append(arrow([(xs[a] + sg * (cw(a) / 2 + 10), dy), (xs[b] - sg * (cw(b) / 2 + 10), dy)], **A))
+    for i, (x, kind) in enumerate(zip(xs, ROW4)):
+        o += _f_hcard(x, ky, kw(i), s["kh"], "none", ring=True)
+        o += _f_vcard(x, top, cw(i), s["h"], s["r"], kind, False, dy)
+    return svg(o, FW, FH)
+
+
+# 57장: 두 칸. 왼쪽 「읽을 때」는 원인 → 고장 유형 화살표(파랑)를 문장으로 읽고, 오른쪽 「찾을 때」는 같은 화살표를 두고
+# 고장 유형에서 원인 쪽으로 거꾸로 따라가는 길(파란 점선)을 보인다. 칸 맨 아래 띠는 읽은 · 찾은 문장 자리.
+F57 = dict(px=(3, 610), pw=587, pin=115, fm=444, w=170, fw=226, top=160, h=222, r=64, B=432, bot=507, loop_y=134)
+
+
+def read_and_search() -> str:
+    s = F57
+    o: list[str] = []
+    for n, px in enumerate(s["px"]):
+        o += _f_banded(px, 3, s["pw"], s["bot"], s["B"], PALE, NAVY, 3)
+        cx, fx = px + s["pin"], px + s["fm"]
+        dy = s["top"] + 22 + s["r"]
+        o += _f_vcard(cx, s["top"], s["w"], s["h"], s["r"], "pin", False, dy) + _f_vcard(fx, s["top"], s["fw"], s["h"], s["r"], "fm", False, dy)
+        o.append(arrow([(cx + s["w"] / 2 + 10, dy), (fx - s["fw"] / 2 - 10, dy)], BLUE if n == 0 else NAVY, sw=6, size=19))
+        if n == 1:
+            ly = s["loop_y"]
+            o += dash_line(fx, s["top"] - 8, fx, ly, BLUE, 4.5, 10, 7) + dash_line(fx, ly, cx, ly, BLUE, 4.5, 10, 7)
+            o += dash_line(cx, ly, cx, s["top"] - 20, BLUE, 4.5, 10, 7)
+            o.append(head(cx, s["top"] - 7, math.pi / 2, BLUE, 15))
+    return svg(o, FW, FH)
+
+
+# 58장: 한 줄에 완화 조치 M ← 완화된다 ← 고장 유형 F → 근본 해결된다 → 근본 조치 R → 없앤다 → 원인 C. 고장 유형에서 나가는 두 화살표만 파랑.
+# 두 조치 카드의 아래 띠는 조치의 갈래 이름과 조치 뒤에 남는 것 자리다. 실습 08과 같은 방향.
+F58 = dict(M=(103, 200), F=(439, 240), R=(825, 200), C=(1114, 166), top=80, r=66, plain_bot=327, band_bot=430)
+
+
+def two_actions() -> str:
+    s = F58
+    top, B, bot = s["top"], s["plain_bot"], s["band_bot"]
+    dy = top + 22 + s["r"]
+    o: list[str] = []
+    for key, kind in (("M", "fanmax"), ("R", "wash")):
+        cx, w = s[key]
+        o += _f_banded(cx - w / 2, top, w, bot, B, PALE, NAVY, 3) + _f_disc(cx, dy, s["r"], kind)
+    for key, kind in (("F", "fm"), ("C", "pin")):
+        cx, w = s[key]
+        o += _f_vcard(cx, top, w, B - top, s["r"], kind, False, dy)
+    edge = lambda key, sg: s[key][0] + sg * (s[key][1] / 2 + 10)
+    o.append(arrow([(edge("F", -1), dy), (edge("M", 1), dy)], BLUE, sw=6, size=19))       # 고장 유형 → 완화 조치
+    o.append(arrow([(edge("F", 1), dy), (edge("R", -1), dy)], BLUE, sw=6, size=19))       # 고장 유형 → 근본 조치
+    o.append(arrow([(edge("R", 1), dy), (edge("C", -1), dy)], NAVY, sw=6, size=19))       # 근본 조치 → 원인
+    return svg(o, FW, FH)
+
+
+# 59장: 센서 카드 둘(같은 항목 단위, 저마다의 값)과 원인 카드 하나(다른 항목 증거). 카드 아래 띠의 왼쪽 칸이 항목, 오른쪽 칸이 그 노드에 적은 값이다.
+# 원인 카드만 파란 테두리 · 하늘색 항목 칸.
+F59 = dict(xs=(173, 543, 1027), w=340, top=70, r=70, B=330, bot=414, item_w=104)
 
 
 def property_evidence() -> str:
-    """59장: 센서 노드 둘(유온 센서 · 토출 압력 센서)에 같은 항목 단위와 저마다의 값, 원인 노드 하나(쿨러 핀 오염)에 다른 항목 증거.
-    원 바로 위는 종류 이름(덱 라벨), 원 아래는 이름, 그 아래 두 칸 카드는 항목 이름(왼쪽) · 그 노드에 적은 값(오른쪽)이고,
-    두 칸 모두 같은 크기의 글 한 줄이 들어가는 높이다. 1200×445 — 종류 글(63)부터 카드 아래(382)까지를 세로 가운데에 둔다."""
-    o: list[str] = [*dash_line(800, 50, 800, 390, GREY, 2.5, 8, 8)]
-    for x, kind in ((205, "sensor"), (600, "sensor"), (995, "pin")):
-        P = (x, 170, 62)
-        o += _node(P, kind)
-        o.append(rect(x - 188, 300, 376, 80, 14, fill=WHITE, stroke=NAVY, sw=3))
-        o.append(rect(x - 176, 312, 92, 56, 10, fill=PALE, stroke="none", sw=0))
-        o.append(rect(x - 72, 312, 248, 56, 10, fill=LIGHT, stroke="none", sw=0))
-    return svg(o, h=445)
+    s = F59
+    top, B, bot, w = s["top"], s["B"], s["bot"], s["w"]
+    o: list[str] = []
+    for cx, kind in zip(s["xs"], ("sensor", "sensor", "pin")):
+        hot = kind == "pin"
+        x = cx - w / 2
+        o += _f_banded(x, top, w, bot, B, PALE if hot else LIGHT, BLUE if hot else NAVY, 5 if hot else 3)
+        o += _f_disc(cx, top + 24 + s["r"], s["r"], kind)
+        o.append(rect(x + 12, B + 12, s["item_w"], bot - B - 24, 10, fill=SKY if hot else GREY, stroke="none", sw=0))
+        o.append(rect(x + 24 + s["item_w"], B + 12, w - 36 - s["item_w"], bot - B - 24, 10, fill=WHITE, stroke="none", sw=0))
+    return svg(o, FW, FH)
+
+
+# 61장: 종류 여덟을 3 × 3 칸의 가로 카드로. 왼쪽 열은 설비 쪽(센서 · 부품 · 설비, 옅은 바탕), 가운데 한복판이 고장 유형,
+# 위 줄을 따라 센서 → 증상 → … → 근거 문서로 읽는다. 화살표는 모두 곧고, 조치 → 원인 하나만 한 번 꺾는다. 방향은 덱 61장 제작 기준의 연결과 같다.
+F61 = dict(cols=(150, 610, 1060), rows=(64, 255, 446), w=252, h=104, hw=276, hh=128,
+           nodes={"sen": (0, 0, "sensor"), "comp": (0, 1, "fan"), "asset": (0, 2, "equip"), "sym": (1, 0, "rise"), "fm": (1, 1, "fm"),
+                  "cause": (1, 2, "pin"), "doc": (2, 0, "doc"), "act": (2, 1, "wash")})
+
+
+def fault_ontology() -> str:
+    s = F61
+    C, R, w, h, hw, hh = s["cols"], s["rows"], s["w"], s["h"], s["hw"], s["hh"]
+    gap, A = 10, dict(color=NAVY, sw=5, size=17)
+    o: list[str] = [rect(3, 3, C[0] * 2 - 6, FH - 6, 26, fill=LIGHT, stroke="none", sw=0)]
+    xw, yh, xH, yH = w / 2 + gap, h / 2 + gap, hw / 2 + gap, hh / 2 + gap
+    o.append(arrow([(C[0], R[2] - yh), (C[0], R[1] + yh)], **A))               # 설비 → 부품
+    o.append(arrow([(C[0], R[1] - yh), (C[0], R[0] + yh)], **A))               # 부품 → 센서
+    o.append(arrow([(C[1] - xw, R[0]), (C[0] + xw, R[0])], **A))               # 증상 → 센서
+    o.append(arrow([(C[1], R[0] + yh), (C[1], R[1] - yH - 3)], **A))           # 증상 → 고장 유형
+    o.append(arrow([(C[1] - xH, R[1]), (C[0] + xw, R[1])], **A))               # 고장 유형 → 부품
+    o.append(arrow([(C[1], R[2] - yh), (C[1], R[1] + yH + 3)], **A))           # 원인 → 고장 유형
+    o.append(arrow([(C[1] + xH, R[1]), (C[2] - xw, R[1])], **A))               # 고장 유형 → 조치
+    o.append(arrow([(C[2], R[1] - yh), (C[2], R[0] + yh)], **A))               # 조치 → 근거 문서
+    o.append(arrow([(C[2], R[1] + yh), (C[2], R[2]), (C[1] + xw, R[2])], **A))  # 조치 → 원인
+    for key, (ci, ri, kind) in s["nodes"].items():
+        hot = key == "fm"
+        o += _f_hcard(C[ci], R[ri], hw if hot else w, hh if hot else h, kind, hot)
+    return svg(o, FW, FH)
+
+
+# 63장: 두 단(49장과 같은 꼴, 오른쪽이 높다). 왼쪽은 AI가 흩어진 기록을 그때그때 읽는 모습(점선), 오른쪽은 지식 그래프에서
+# 노드와 관계를 따라간 길이 파랗게 남은 모습. 가운데는 그 방식의 설명, 맨 아래 띠는 근거가 어떻게 되는지.
+F63 = dict(xs=(3, 640), w=557, tops=(98, 18), T=262, B=440, bot=507)
+
+
+def evidence_two_ways() -> str:
+    s = F63
+    (x0, x1), w, T, B, bot = s["xs"], s["w"], s["T"], s["B"], s["bot"]
+    o: list[str] = []
+    o += _f_banded(x0, s["tops"][0], w, bot, B, GREY, GREY, 3, LIGHT, T)
+    o += _f_banded(x1, s["tops"][1], w, bot, B, SKY, BLUE, 5, PALE, T)
+    o.append(arrow([(x0 + w + 16, 351), (x1 - 14, 351)], BLUE, sw=6, size=19))
+    # 왼쪽: AI와 흩어진 기록 세 장(읽는 길은 점선)
+    cy = (s["tops"][0] + T) / 2
+    ax = x0 + 110
+    docs = ((x0 + 290, cy - 24), (x0 + 386, cy + 20), (x0 + 478, cy - 18))
+    for dx, dy in docs:
+        o += dash_line(ax + 62, cy, dx - 36, dy, GREY, 3.5, 8, 7)
+    o += _f_disc(ax, cy, 54, "agent", ring=True)
+    for dx, dy in docs:
+        o += g(dx, dy, 0.52, note_doc(0, 0, NORM), boost=1.5)
+    # 오른쪽: AI가 지식 그래프의 노드와 관계를 따라간 길(파랑)
+    cy = (s["tops"][1] + T) / 2
+    ax = x1 + 104
+    N = {"a": (x1 + 262, cy, 26), "b": (x1 + 370, cy - 62, 22), "c": (x1 + 370, cy + 62, 22), "d": (x1 + 482, cy, 26)}
+    o += _edge_arrow(N["a"], N["c"], GREY, sw=4, size=13) + _edge_arrow(N["c"], N["d"], GREY, sw=4, size=13)
+    o.append(arrow([(ax + 70, cy), (N["a"][0] - 36, cy)], BLUE, sw=6, size=17))
+    o += _edge_arrow(N["a"], N["b"], BLUE, sw=6, size=16) + _edge_arrow(N["b"], N["d"], BLUE, sw=6, size=16)
+    o += _f_disc(ax, cy, 60, "agent", ring=True)
+    for k, (nx, ny, nr) in N.items():
+        hot = k != "c"
+        o.append(circle(nx, ny, nr, fill=SKY if hot else WHITE, stroke=NAVY if hot else GREY, sw=3.5 if hot else 3))
+    return svg(o, FW, FH)
 
 
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
                  "값_같은숫자.svg", "메모_다시적기.svg", "물음_따라가기.svg", "조치_두화살표.svg",
                  "온톨로지_두띠.svg", "속성_증거.svg", "이름_제각각.svg", "관계_읽기찾기.svg", "메모_두읽기.svg",
-                 "통로_창고.svg", "원인후보_갈래.svg"}
+                 "통로_창고.svg", "원인후보_갈래.svg", "데이터_정보_지식.svg", "고장온톨로지_여덟종류.svg", "근거_두길.svg"}
 
 
 def main():
@@ -1913,7 +2179,8 @@ def main():
            "값_같은숫자.svg": same_reading(), "메모_다시적기.svg": memo_rewritten(), "물음_따라가기.svg": ask_and_follow(),
            "조치_두화살표.svg": two_actions(),
            "온톨로지_두띠.svg": ontology_two_bands(), "속성_증거.svg": property_evidence(),
-           "이름_제각각.svg": names_apart(), "관계_읽기찾기.svg": read_and_search()}
+           "이름_제각각.svg": names_apart(), "관계_읽기찾기.svg": read_and_search(),
+           "데이터_정보_지식.svg": data_info_knowledge(), "고장온톨로지_여덟종류.svg": fault_ontology(), "근거_두길.svg": evidence_two_ways()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:

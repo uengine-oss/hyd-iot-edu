@@ -153,7 +153,7 @@ def plan(cfg, subs, slides):
             # 묶음 구획의 간지 표시는 설명 장의 첫 문장(둘째 문장)에서 지운다 — 그 문장은 설명 장의 시각 안에 있다(영상 V-11)
             n_end = BUNDLE.get(m["장"], m["장"])
             end = find_sentence(where, subs, slides, n_end, m["끝문장"])[0][0]
-            if n_end != m["장"]: end = min(end, slides[n_end])   # 간지 그림이 설명 장으로 바뀌는 시각을 넘기지 않는다
+            if n_end != m["장"]: end = min(end, slides[n_end] - FADE)   # 사라지는 FADE초까지 간지 그림이 설명 장으로 바뀌기 전에 끝낸다(안 빼면 간지 강조가 설명 장 위에 번진다)
         else:
             end = max(s[1] for s in subs if s[0] < hi)
             # 마지막 문장에서 뜨는 짧은 표시는 말이 끝난 뒤 장 넘김 쉼 동안에도 남긴다. 장 조각은 말 끝 + 장 넘김 쉼보다 짧지 않으므로, 다 지워진 때가 넘김 0.2초 앞이다
