@@ -44,7 +44,8 @@ gstate = gw.GatewayState()
 board = gw.AlertBoard()
 delivery = Delivery()
 decisions: deque = deque(maxlen=200)
-unsent_boards: dict[str, dict] = {}
+boards: dict[str, dict] = {}            # asset -> the display last made (or restored) for it: what the plant board should show now
+unsent_boards: dict[str, dict] = {}     # the ones of those the path to the plant did not take yet
 
 
 def _malformed(where: str, reason) -> None:
@@ -58,8 +59,11 @@ def _on_connect(client):
 
 
 def _on_bridge_up(client):
-    for asset in sorted(unsent_boards):      # 끊긴 동안(DMZ 브로커 연결 · 공장 쪽 브리지) 올리지 못한 경보판은 길이 다시 이어지면 그 설비의 마지막 판으로 올린다(link.publish 는 못 보낸 것을 남겨 두지 않는다)
-        _publish_board(asset, unsent_boards[asset])
+    # 설비로 가는 길(DMZ 브로커 연결 + 공장 쪽 브리지의 두 다리)이 이어질 때마다 설비별 지금 경보판을 다시 올린다. 끊긴 동안 올리지 못한 판
+    # (link.publish 는 못 보낸 것을 남겨 두지 않는다)뿐 아니라 이미 올린 판도 — 그 사이 다시 켜진 브로커는 보존해 둔 판을 잃었을 수 있다
+    # (DMZ 브로커는 디스크에 남기지 않는다). 경보판은 「지금 상태」라 같은 판을 다시 올려도 달라지는 것이 없다.
+    for asset in sorted(boards):
+        _publish_board(asset, boards[asset])
 
 
 def _on_message(client, msg):
@@ -77,8 +81,8 @@ def _on_message(client, msg):
             gstate.last_status[asset] = schemas.status_record(asset, body)
         except schemas.RecordError as exc:
             _malformed(msg.topic, exc)
-    elif kind == "alert" and msg.retain:
-        board.restore(asset, body)
+    elif kind == "alert" and msg.retain and board.restore(asset, body):
+        boards.setdefault(asset, body)
 
 
 link = Link("cmd-gateway", _on_message, on_connect=_on_connect, behind_bridge=True, on_bridge_up=_on_bridge_up)
@@ -153,7 +157,9 @@ async def run_ledger():
 
 
 def _publish_board(asset: str, display: dict) -> bool:
-    """The asset's alert display to plant/{a}/alert (retained). A display the broker did not take is kept for the reconnect."""
+    """The asset's alert display to plant/{a}/alert (retained). A display the path did not take is kept as unsent; every
+    known display goes up again when the path to the plant comes (back) up (_on_bridge_up)."""
+    boards[asset] = display
     sent = link.publish(topics.mqtt_alert(topics.asset_key(asset)), json.dumps(display, ensure_ascii=False), qos=1, retain=True)
     if sent:
         unsent_boards.pop(asset, None)

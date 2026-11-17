@@ -2,7 +2,7 @@
 
 Despite the name this module does not query Prometheus (the `mcp_` prefix names the role — Prometheus is an optional
 monitoring profile and no agent tool reads it). Sources: newest tag age in TimescaleDB (end-to-end freshness) + connect-ingest /healthz, whose `ok` is true only
-while its MQTT leg and Kafka pump are both alive.
+while its MQTT link (to the DMZ broker), the plant-side bridge behind it (both legs) and its Kafka pump are all alive.
 """
 import json
 import os

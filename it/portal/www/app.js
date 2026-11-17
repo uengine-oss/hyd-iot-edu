@@ -154,7 +154,8 @@ selectTab('main');
 /* ---------------- 시스템 구성: 구조 그림 + 서비스 상태 ----------------
    밝은 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉(layers.js 의 차례 그대로 — 위가 업무, 아래가 현장), 부품 상자, 길 넷(디자인기준 6-4).
    부품의 계층 · 영역 · 역할 · 현업 대응 · 주소 · 상태 확인 주소는 layers.js 의 표에서 읽는다. 이 화면이 갖는 것은 화면 이름 · 아이콘 · 띠 안의 칸과 길뿐이다.
-   길은 실제 통로대로 그린다: 값은 설비 → MQTT 브로커 → 수집 중계(DMZ) → 이벤트 저장 → 탐지 · 시계열로, 승인된 명령은 흐름 엔진 → 이벤트 저장 → 명령 관문(DMZ) → MQTT 브로커 → 설비로. */
+   길은 실제 통로대로 그린다: 값은 설비 → 공장 브로커 → 공장 쪽 브리지 → DMZ 브로커 → 수집 중계 → 이벤트 저장 → 탐지 · 시계열로, 승인된 명령은 흐름 엔진 → 이벤트 저장 → 명령 관문 → DMZ 브로커 → 공장 쪽 브리지 → 공장 브로커 → 설비로.
+   공장과 DMZ 사이의 두 길은 모두 공장 쪽 브리지가 DMZ 브로커에 먼저 접속해 연다(화살표는 값 · 명령이 가는 방향이고, 그 두 길 사이의 글이 연결을 여는 쪽을 말한다). */
 const healthState = {};
 // 선택 도구: 서비스 자체가 선택(optional)이거나, 서비스는 기본인데 사람이 여는 화면만 선택 도구(entryHealth — Redpanda 는 기본, Console 은 tools 프로필)인 것
 const optionalOf = c => c.entryHealth || c.optional;
@@ -171,8 +172,8 @@ const SYS = {
     'agent-worker': ['AI 에이전트', 'bot', 'b'], agent: ['판단 서비스', 'scale', 'c'], Neo4j: ['지식 그래프', 'network', 'c'],
     FUXA: ['관제 화면', 'gauge', 'ot'], Grafana: ['추이 화면', 'chart-line', 'b'], Prometheus: ['서비스 감시', 'signal', 'c'],
     TimescaleDB: ['시계열 저장소', 'database', 'b'], 'connect-sink': ['시계열 기록', 'download', 'c'], detector: ['이상 탐지', 'activity', 'b'],
-    'cmd-gateway': ['명령 관문', 'shield-check', 'd1'], 'connect-ingest': ['수집 중계', 'arrow-up-right', 'd2'], Redpanda: ['이벤트 저장', 'layers', 'a'],
-    EMQX: ['MQTT 브로커', 'radio', 'ot', 168], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 168],
+    'ot-bridge': ['공장 쪽 브리지', 'plug', 'ot'], 'cmd-gateway': ['명령 관문', 'shield-check', 'd1'], 'connect-ingest': ['수집 중계', 'arrow-up-right', 'd2'], Redpanda: ['이벤트 저장', 'layers', 'a'],
+    EMQX: ['공장 브로커', 'radio', 'ot', 168], 'dmz-broker': ['DMZ 브로커', 'inbox', 'd2'], 'plant-sim': ['유압 설비 3기', 'factory', 'ot', 168],
   },
   ai: ['agent-worker', 'agent', 'Neo4j'],
   // 길의 종류와 범례의 말(그림 안 오른쪽 아래)
@@ -210,14 +211,20 @@ function renderStack() {
     const e = pts[pts.length - 1]; return d + ` L${e[0]},${e[1]}`;
   };
   const rowY = i => y0 + i * dy;      // 위에서 i 번째 계층의 가운데 높이
-  const gw = at['cmd-gateway'], bus = at.Redpanda;
-  /* 길: [종류, 꺾이는 점들, 이름표, 이름표 자리, 맞춤]. 이름표는 그 길 곁의 빈 자리에 둔다 — 다른 길 · 상자 · 이름표와 겹치지 않고 글자 높이만큼 떨어진다(시험이 실제 브라우저에서 잰다).
+  const gw = at['cmd-gateway'], bus = at.Redpanda, br = at['ot-bridge'], dz = at['dmz-broker'];
+  // 공장 쪽 브리지와 DMZ 브로커 사이의 두 길: 브리지의 오른쪽에서 나와 OT 띠와 DMZ 띠 사이(X_UP · X_DOWN)로 내려가, 비어 있는 맨 아래 계층의 DMZ 칸(Y_UP · Y_DOWN)을 지나
+  // DMZ 브로커의 아래로 닿는다 — 명령 관문과 DMZ 브로커 사이(「검증을 통과한 명령」과 그 이름표의 자리)를 지나지 않는다. 값의 길이 바깥, 명령의 길이 안쪽이라 서로 가로지르지 않는다.
+  // 관제 화면의 길은 OT 띠 왼쪽 가장자리(X_HMI)로 브리지 상자를 돌아 내려간다
+  const X_UP = br.x + br.w / 2 + 16, X_DOWN = X_UP + 14, Y_DOWN = dz.y + NH / 2 + 34, Y_UP = Y_DOWN + 16, X_HMI = br.x - br.w / 2 - 8, GAP = NH / 2 + (dy - NH) / 2;
+  /* 길: [종류, 꺾이는 점들, 이름표, 이름표 자리, 맞춤, 이름표 색(없으면 길의 종류)]. 이름표는 그 길 곁의 빈 자리에 둔다 — 다른 길 · 상자 · 이름표와 겹치지 않고 글자 높이만큼 떨어진다(시험이 실제 브라우저에서 잰다).
      「검증할 명령」은 이벤트 저장에서 한 계층 위(부품이 없는 스트림 처리 줄의 DMZ 칸)로 올라가 명령 관문의 위로 내려온다 — 상자 사이의 좁은 틈을 지나지 않는다.
      세로로 긴 두 길(경보 · 사건이 올라가는 길, 승인된 명령이 내려가는 길)의 이름표는 그 길 위에, 서로 다른 계층 높이에 둔다 */
   const P = [
     // 값이 올라가는 길
     ['data', [Tp('plant-sim', 34), Bp('EMQX', 34)]],
-    ['data', [Rp('EMQX', 12), [at['connect-ingest'].x, at.EMQX.y + 12], Bp('connect-ingest')]],
+    ['data', [Tp('EMQX', 34), Bp('ot-bridge', 34)]],
+    ['data', [Rp('ot-bridge', 12), [X_UP, br.y + 12], [X_UP, Y_UP], [dz.x + 34, Y_UP], Bp('dmz-broker', 34)], '연결은 공장 쪽이 엽니다', [(X_DOWN + dz.x - 34) / 2, Y_UP + 20], 'middle', 'plain'],      // 두 길(값 · 명령) 아래의 글 — 어느 한 길의 이름이 아니라 둘 다에 대한 말이라 길 색을 쓰지 않는다
+    ['data', [Tp('dmz-broker', 20), Bp('connect-ingest', 20)]],
     ['data', [Rp('connect-ingest'), Lp('Redpanda')]],
     ['data', [Rp('Redpanda', -12), [at.detector.x, bus.y - 12], Bp('detector')]],
     ['data', [Rp('Redpanda', 12), [at['connect-sink'].x, bus.y + 12], Bp('connect-sink')]],
@@ -227,14 +234,16 @@ function renderStack() {
     // 승인된 명령이 내려가는 길
     ['cmd', [Bp('process', 30), Tp('Redpanda', 30)], '승인된 명령', [bus.x + 30, rowY(3) + 5], 'middle'],
     ['cmd', [Tp('Redpanda', -56), [bus.x - 56, at.detector.y], [gw.x, at.detector.y], Tp('cmd-gateway')], '검증할 명령', [(gw.x + bus.x - 56) / 2 - 40, at.detector.y - 11], 'middle'],
-    ['cmd', [Bp('cmd-gateway', -34), [gw.x - 34, at.EMQX.y - 12], Rp('EMQX', -12)], '검증을 통과한 명령', [gw.x - 20, gw.y + NH / 2 + 35], 'start'],
+    ['cmd', [Bp('cmd-gateway'), [gw.x, dz.y], Lp('dmz-broker')], '검증을 통과한 명령', [dz.x - dz.w / 2 - 16, dz.y + 19], 'end'],
+    ['cmd', [Bp('dmz-broker', -34), [dz.x - 34, Y_DOWN], [X_DOWN, Y_DOWN], [X_DOWN, br.y - 12], Rp('ot-bridge', -12)]],
+    ['cmd', [Bp('ot-bridge', -34), Tp('EMQX', -34)]],
     ['cmd', [Bp('EMQX', -34), Tp('plant-sim', -34)]],
     // AI 가 지식을 읽는 길
     ['ai', [Bp('process', 56), [at.process.x + 56, at['agent-worker'].y], Lp('agent-worker')]],
     ['ai', [Rp('agent-worker'), Lp('agent')]],
     ['ai', [Bp('agent'), Tp('Neo4j')]],
     // 그 밖의 연결
-    ['plain', [Bp('FUXA'), Tp('EMQX')], '감시 · 수동 조작', [at.FUXA.x, rowY(5) + 5], 'middle'],
+    ['plain', [Lp('FUXA'), [X_HMI, at.FUXA.y], [X_HMI, br.y + GAP], [at.EMQX.x - 62, br.y + GAP], Tp('EMQX', -62)], '감시 · 수동 조작', [X_HMI + 8, rowY(5) - 9], 'start'],
     ['plain', [Lp('portal'), Rp('process')]],      // 사람은 포털에서 승인한다
     ['plain', [Tp('process', 34), [at.process.x + 34, at.process.y - NH / 2 - 14], [at['enterprise-sim'].x, at.process.y - NH / 2 - 14], Tp('enterprise-sim')], '정비 요청 · 구매', [at.portal.x, at.process.y - NH / 2 - 22], 'middle'],
     // 명령 길 밖: 흐름 엔진 · 포털 → 가상 설비 API(sim-net). 영역 띠 바깥(아래)으로 돌아 설비에 직접 닿는다 — 브로커와 명령 관문을 지나지 않는다
@@ -270,7 +279,7 @@ function renderStack() {
     <text class="sys-row-t" x="16" y="38">계층</text><text class="sys-row-cap" x="16" y="57">위가 업무</text><text class="sys-row-cap" x="16" y="74">아래가 현장</text>
     ${LAYERS.map((L, i) => `${i % 2 ? '' : `<rect class="sys-row-bg" x="8" y="${rowY(i) - dy / 2 + 3}" width="${W - 16}" height="${dy - 6}" rx="10"/>`}${layerLines(L, i)}`).join('')}
     ${P.map(([k, pts], i) => `<path class="sys-p" data-k="${k}" data-i="${i}" d="${path(pts)}" marker-end="url(#sysAh-${k})"/>`).join('')}
-    ${P.map(([k, , t, pos, anchor], i) => t ? `<text class="sys-p-t" data-k="${k}" data-i="${i}" x="${pos[0]}" y="${pos[1]}" text-anchor="${anchor}">${esc(t)}</text>` : '').join('')}
+    ${P.map(([k, , t, pos, anchor, tk], i) => t ? `<text class="sys-p-t" data-k="${tk || k}" data-i="${i}" x="${pos[0]}" y="${pos[1]}" text-anchor="${anchor}">${esc(t)}</text>` : '').join('')}
     ${comps.map(node).join('')}
     <g class="sys-legend" aria-label="길의 종류">${legend}</g>
     <rect id="sysSlot" x="${SYS.band.it[0] + 12}" y="${bus.y + NH / 2 + 10}" width="${SYS.band.it[1] - 24}" height="${HB - 10 - (bus.y + NH / 2 + 10)}" fill="none" pointer-events="none"/></svg>`;
@@ -387,24 +396,25 @@ async function pollHealth() {
   if (pollHealth.busy) return; pollHealth.busy = true;
   const dots = $('#healthDots');
   try {
-    const said = {};      // 우리 서비스의 /healthz 가 말한 것 — 여는 화면이 없는 부품(MQTT 브로커)의 상태를 여기서 읽는다(layers.js healthOf)
+    const said = {};      // 우리 서비스의 /healthz 가 말한 것(503 이어도 본문은 읽는다) — 여는 화면이 없는 부품(MQTT 브로커 둘 · 공장 쪽 브리지)의 상태를 여기서 읽는다(layers.js healthOf)
     await Promise.all(LAYERS.flatMap(L => L.comps).filter(c => c.health && !c.optional && !c.healthOf).map(async c => {
       const key = c.health;
       const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 4000);
       try {
         if (c.health.endsWith('/healthz')) {            // 우리 서비스: 같은 출처의 /healthz 가 JSON 으로 답한다
           const r = await fetch(c.health, { cache: 'no-store', signal: controller.signal }); healthState[key] = r.ok ? 'up' : 'down';
-          if (r.ok) said[key] = await r.json().catch(() => null);
+          said[key] = await r.json().catch(() => null);
         } else {                                         // 바깥 도구: 그 포트에 닿는지만 본다
           await fetch(c.health, { mode: 'no-cors', cache: 'no-store', signal: controller.signal }); healthState[key] = 'up';
         }
       } catch (e) { healthState[key] = 'down'; }
       finally { clearTimeout(timer); }
     }));
-    // 브로커: 붙어 있는 서비스 가운데 하나라도 「연결됨」이라고 하면 살아 있다. 아무도 답하지 않았으면 알 수 없으므로 「확인 중」으로 둔다(그 서비스들이 응답 없음으로 따로 보인다)
+    // 브로커 둘 · 공장 쪽 브리지: 붙어 있는 서비스 가운데 하나라도 「이어져 있다」고 하면 정상, 그런 서비스 없이 「끊겼다」는 서비스가 있으면 응답 없음.
+    // 아무도 모르면(답한 서비스가 없거나, 답한 서비스가 그 부품을 볼 자리에 없다) 「확인 중」으로 둔다 — 그 서비스들이 응답 없음으로 따로 보인다
     LAYERS.flatMap(L => L.comps).filter(c => c.healthOf).forEach(c => {
-      const heard = c.healthOf.from.map(u => said[u]).filter(Boolean);
-      healthState[c.health] = !heard.length ? undefined : heard.some(h => h[c.healthOf.field] === true) ? 'up' : 'down';
+      const heard = c.healthOf.from.map(u => said[u]).filter(h => h && typeof h === 'object').map(c.healthOf.read);
+      healthState[c.health] = heard.includes(true) ? 'up' : heard.includes(false) ? 'down' : undefined;
     });
     // 감지기가 감지에서 뺀 이상 패턴(/healthz 의 patterns.rejected — 조건식이 틀린 패턴은 그것만 빠지고 감지기는 정상으로 답한다). 서비스 점이 초록인 채
     // 조용히 감지되지 않는 일이 없게 메뉴 줄 · 시스템 구성 머리 · 이상 탐지 부품의 정보 띠 · 결함 시뮬레이션에 그 사실과 까닭을 보인다

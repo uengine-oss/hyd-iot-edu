@@ -13,7 +13,8 @@ main 만 `test_main.py`), 포털 화면 JS 는 `test_www_<파일>.py`, 코드 �
   지식 그래프(neo4j + kg-seed)     → 이 테스트 자리의 neo4j 컨테이너 + kg-seed 와 같은 it/neo4j/seed.sh             neo4j_graph · seeded_graph
   시작이 넣는 수업 지식            → 시작과 같은 scripts/class_knowledge.ensure(이 묶음 process 의 지식 적재 API)                     course_graph
   시계열(TimescaleDB)              → 이 테스트 자리의 timescaledb 컨테이너 + 같은 init.sql · reader.sql              timescale
-  MQTT(emqx) · Kafka(redpanda)     → 이 테스트 자리의 emqx · redpanda 컨테이너 + topic-init 과 같은 topics.sh           brokers
+  MQTT(emqx · dmz-broker · ot-bridge) → 이 테스트 자리의 그 세 컨테이너(compose 의 망 그대로 — 공장 브로커는 ot-net 에만)        plant_mqtt
+  Kafka(redpanda)                  → 이 테스트 자리의 redpanda 컨테이너 + topic-init 과 같은 topics.sh(MQTT 셋과 함께)     brokers
   설비 데이터 수집기(connect-ingest) → Dockerfile 실행 명령을 하위 프로세스로, 위 두 브로커에 붙는다(agent 신선도 확인이 읽음)  stack
   process                          → 실제 procsvc.main 앱(이 프로세스 안 · 이 PC 포트). 기동은 main.restore_and_build   world
   agent · dmn-mcp(+neo4j 도구) · enterprise-mcp 셋 · enterprise-sim · effects-mcp
@@ -405,6 +406,11 @@ def container_name(service):
     return f'hyd-test-{service}-{_test_site()}'
 
 
+def site_network(net):
+    """compose 망 이름(ot-net · ot-dmz-net …) → 이 테스트 자리의 그 망(ComposeContainer networked=True 가 만들고, 자리 정리가 지운다)."""
+    return f'hyd-test-{net}-{_test_site()}'
+
+
 def _published_port(name, container_port):
     """그 이름의 테스트 컨테이너가 이 PC 에 연 포트(없으면 None) — 묶음이 시작할 때 process 주소를 다시 쓰는 컨테이너에 맞춘다."""
     try:
@@ -563,6 +569,8 @@ def remove_site_containers(site):
     left = _docker('ps', '-a', '--filter', f'label={CONTAINER_SITE}={site}', '--format', '{{.Names}}').split()
     if left:
         raise RuntimeError(f'테스트 자리 {site}의 컨테이너를 지웠는데 남았다: {left}')
+    for net in _docker('network', 'ls', '--filter', f'label={CONTAINER_SITE}={site}', '--format', '{{.Name}}').split():
+        _docker('network', 'rm', net)          # 그 자리의 망(site_network) — 컨테이너를 모두 지운 뒤라 비어 있다
     return names
 
 
@@ -615,7 +623,7 @@ def heavy_slot(request, pytestconfig):
 
 
 #: 다시 쓰는 테스트 컨테이너(서비스, 컨테이너 포트) — pytest_configure 가 이 PC 포트를 기존 컨테이너의 것으로 맞춘다
-REUSED_CONTAINERS = (('neo4j', 7687), ('timescaledb', 5432), ('emqx', 1883), ('redpanda', 19092))
+REUSED_CONTAINERS = (('neo4j', 7687), ('timescaledb', 5432), ('emqx', 1883), ('redpanda', 19092))      # dmz-broker 는 PORTS 에 없다 — ComposeContainer 가 기존 컨테이너의 포트를 읽는다
 
 
 class ComposeContainer:
@@ -623,9 +631,11 @@ class ComposeContainer:
     주 포트는 127.0.0.1 의 PORTS[서비스](없는 서비스면 기존 컨테이너의 포트 또는 빈 포트), extra_ports 도 같다 — `box.ports[컨테이너 포트]`가
     이 PC 포트. 이름 붙은 볼륨은 붙이지 않는다(새 컨테이너 = 처음 켠 PC). 내용 지문(라벨)이 같으면 다시 쓰고(reused=True), 다르면 지우고 새로."""
 
-    def __init__(self, service, container_port, *, env=None, memory=None, extra_mounts=(), extra_ports=(), name=None, hosts=()):
+    def __init__(self, service, container_port=None, *, env=None, memory=None, extra_mounts=(), extra_ports=(), name=None, hosts=(), networked=False):
         """name: 이 자리의 기본 이름 대신 쓸 이름(그 이름의 포트는 PORTS 가 아니라 그 컨테이너의 것 · 빈 포트).
         hosts: 컨테이너 안에서 127.0.0.1 로 풀 이름(compose 망에서 서비스 이름이 자기 자신을 가리키는 자리 — 예: redpanda).
+        networked: compose 가 그 서비스에 준 망(networks)마다 이 자리의 같은 이름 망(site_network)에 서비스 이름으로 붙인다 — 서로를 이름으로
+        찾고, 같은 망에 없는 컨테이너에는 닿지 못한다(compose 와 같은 망 구조). container_port 가 None 이면 이 PC 에 여는 포트가 없다.
         compose 명령의 `${HYD_PORT_<n>:-…}`(그 서비스가 호스트에 여는 포트)는 이 컨테이너가 이 PC 에 연 포트로 바꾼다."""
         import hashlib
         try:
@@ -634,8 +644,12 @@ class ComposeContainer:
             pytest.fail(f'Docker 엔진에 닿지 않아 {service} 테스트 컨테이너를 띄우지 못했다 — Docker Desktop을 켠다({exc})', pytrace=False)
         spec = _compose_service(service)
         self.service, self.name = service, name or container_name(service)
-        self.port = (None if name else PORTS.get(service)) or _published_port(self.name, container_port) or _free_port()
-        self.ports = {container_port: self.port, **{p: _published_port(self.name, p) or _free_port() for p in extra_ports}}
+        if container_port is None:
+            self.port, self.ports = None, {}
+        else:
+            self.port = (None if name else PORTS.get(service)) or _published_port(self.name, container_port) or _free_port()
+            self.ports = {container_port: self.port, **{p: _published_port(self.name, p) or _free_port() for p in extra_ports}}
+        self.networks = [site_network(net) for net in spec.get('networks') or ()] if networked else []
         self.env = {k: _compose_default(v) for k, v in (spec.get('environment') or {}).items()}
         self.env.update(env or {})
         host_ports = {}
@@ -644,6 +658,10 @@ class ComposeContainer:
             if m and int(m[2]) in self.ports:
                 host_ports[m[1]] = self.ports[int(m[2])]
         content = ['--memory', memory or spec['mem_limit'], *(a for h in hosts for a in ('--add-host', f'{h}:127.0.0.1'))]
+        if spec.get('user'):
+            content += ['--user', str(spec['user'])]
+        if self.networks:
+            content += ['--network', self.networks[0], '--network-alias', service]
         for volume in list(spec.get('volumes') or []) + list(extra_mounts):
             source, target, *mode = volume.split(':')
             if source.startswith('./'):
@@ -652,7 +670,7 @@ class ComposeContainer:
             content += ['-e', f'{k}={v}']
         content += [spec['image'], *(_compose_default(a, host_ports) for a in spec.get('command') or [])]
         site = [CONTAINER_SITE, _test_site()]      # 자리 꼬리표 — 묶음 끝 정리 · 죽은 자리 정리가 이 값과 정확히 같은 것만 고른다
-        fingerprint = hashlib.sha256(json.dumps([content, sorted(self.ports), site]).encode()).hexdigest()[:16]
+        fingerprint = hashlib.sha256(json.dumps([content, sorted(self.ports), site, self.networks]).encode()).hexdigest()[:16]
         found = _docker('ps', '-a', '--filter', f'name=^{self.name}$', '--format', f'{{{{.Label "{CONTAINER_SPEC}"}}}} {{{{.State}}}}').split()
         published = {inside: _published_port(self.name, inside) for inside in self.ports} if found else {}
         self.reused = bool(found) and found[0] == fingerprint and published == self.ports
@@ -663,8 +681,13 @@ class ComposeContainer:
         if found:
             _docker('rm', '-f', '-v', self.name)
         ports = [a for inside, outside in self.ports.items() for a in ('-p', f'127.0.0.1:{outside}:{inside}')]
+        for net in self.networks:
+            if not _docker('network', 'ls', '--filter', f'name=^{net}$', '--format', '{{.Name}}').strip():
+                _docker('network', 'create', '--label', '='.join(site), net)
         _docker('run', '-d', '--name', self.name, '--label', f'{CONTAINER_LABEL}={service}', '--label', f'{CONTAINER_SPEC}={fingerprint}',
                 '--label', '='.join(site), *ports, *content, timeout=600)      # 여러 묶음이 함께 돌면 docker run 이 5분을 넘었다(실측)
+        for net in self.networks[1:]:
+            _docker('network', 'connect', '--alias', service, net, self.name)
 
     def logs(self):
         return _docker('logs', '--tail', '40', self.name, check=False).strip()[-2500:]
@@ -916,27 +939,109 @@ def timescale(heavy_slot):
     return TimescaleServer()
 
 
-# ---------------------------------------------------------------- 설비 데이터 길의 브로커(MQTT · Kafka) — connect-ingest 가 붙는다
+# ---------------------------------------------------------------- 설비 데이터 길의 브로커(MQTT 셋 · Kafka) — connect-ingest · cmd-gateway 가 붙는다
 BROKER_BOOT_S = 300
 
 
-class Brokers:
-    """이 테스트 자리의 emqx · redpanda 컨테이너(compose 서비스 그대로 — 같은 이미지 · 명령 · 설정 파일) + compose topic-init 과 같은
-    토픽 만들기(it/redpanda/topics.sh 를 redpanda 컨테이너 안에서). emqx 의 안쪽 입구(1883, 서비스 이름만)는 이 PC 의 서비스가 붙는
-    자리라 이 PC 포트로 연다(compose 에서는 ot-net 안에만). redpanda 의 바깥 입구는 compose 처럼 호스트 포트를 광고한다.
-    mqtt = (주소, 포트), kafka = 이 PC 에서 붙는 Kafka 주소."""
+class MqttClient:
+    """실제 MQTT 클라이언트 하나(paho, MQTT 5) — 이 PC 포트 port 의 브로커에 이름 user 로 붙어, 생긴 일(CONNACK · SUBACK · 끊김)과 받은
+    메시지를 남긴다. messages = 받은 토픽들, received = (토픽, 본문, 보존 여부)들."""
+
+    def __init__(self, port, user=None, password=None, ws=False):
+        import uuid
+        import paho.mqtt.client as mqtt
+        self.events = {'connect': None, 'disconnect': None, 'suback': None}
+        self.messages, self.received = [], []
+        self.c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='t-' + uuid.uuid4().hex[:8],
+                             transport='websockets' if ws else 'tcp', protocol=mqtt.MQTTv5)
+        if user is not None:
+            self.c.username_pw_set(user, password)
+        self.c.on_connect = lambda c, u, f, rc, p=None: self.events.__setitem__('connect', str(rc))
+        self.c.on_disconnect = lambda c, u, f, rc, p=None: self.events.__setitem__('disconnect', str(rc))
+        self.c.on_subscribe = lambda c, u, mid, rcs, p=None: self.events.__setitem__('suback', [str(r) for r in rcs])
+        self.c.on_message = self._got
+        self.c.connect('127.0.0.1', port, 10)
+        self.c.loop_start()
+        until(lambda: self.events['connect'] is not None, 'CONNACK', 10)
+
+    def _got(self, client, userdata, m):
+        self.received.append((m.topic, m.payload.decode('utf8', 'replace'), bool(m.retain)))
+        self.messages.append(m.topic)
+
+    @property
+    def accepted(self):
+        return self.events['connect'] == 'Success'
+
+    def subscribe(self, topic):
+        self.events['suback'] = None
+        self.c.subscribe(topic, 1)
+        until(lambda: self.events['suback'] is not None or self.events['disconnect'] is not None, 'SUBACK', 10)
+
+    def publish(self, topic, payload, qos=1, retain=False):
+        return self.c.publish(topic, payload, qos=qos, retain=retain)
+
+    def close(self):
+        self.c.loop_stop()
+        self.c.disconnect()
+
+
+class PlantMqtt:
+    """이 테스트 자리의 MQTT 셋(compose 서비스 그대로 — 같은 이미지 · 설정 파일 · 망): 공장 브로커 emqx(ot-net), DMZ 브로커 dmz-broker
+    (ot-dmz-net), 그 둘에 스스로 접속하는 공장 쪽 브리지 ot-bridge(두 망). 망은 compose 의 networks 대로 이 자리에 만든다(site_network) —
+    그래서 「경계 망에서 공장 브로커에 닿는가」를 실제 연결로 잴 수 있다(test_zones). emqx 의 입구들과 dmz-broker 의 입구는 이 PC 의 시험 ·
+    서비스가 붙는 자리라 이 PC 포트로도 연다(compose 에서는 망 안에만). plant = 공장 브로커 안쪽 입구, dmz = DMZ 브로커(이 PC 주소, 포트)."""
+    PLANT_PORTS = (1884, 8083, 18083)                  # 바깥 입구 · 웹소켓 · 관리 API 자리(꺼져 있어야 한다 — test_emqx)
 
     def __init__(self):
-        init = _compose_service('topic-init')
-        self.mqtt_box = ComposeContainer('emqx', 1883, extra_ports=(1884, 8083))
-        self.kafka_box = ComposeContainer('redpanda', 19092, extra_mounts=init['volumes'], hosts=('redpanda',))
-        self.mqtt = ('127.0.0.1', self.mqtt_box.port)
-        self.kafka = f'127.0.0.1:{self.kafka_box.port}'
-        self.mqtt_box.wait(lambda: 'is started' in _docker('exec', self.mqtt_box.name, 'emqx', 'ctl', 'status', timeout=30),
-                           'emqx ctl status', BROKER_BOOT_S)
+        self.plant_box = ComposeContainer('emqx', 1883, extra_ports=self.PLANT_PORTS, networked=True)
+        self.dmz_box = ComposeContainer('dmz-broker', 1883, networked=True)
+        self.bridge_box = ComposeContainer('ot-bridge', networked=True)
+        self.plant, self.dmz = ('127.0.0.1', self.plant_box.port), ('127.0.0.1', self.dmz_box.port)
+        self.plant_box.wait(lambda: 'is started' in _docker('exec', self.plant_box.name, 'emqx', 'ctl', 'status', timeout=30),
+                            'emqx ctl status', BROKER_BOOT_S)
         # 다시 쓰는 컨테이너에는 앞 묶음이 남긴 보존(retain) 메시지가 있다 — 붙자마자 그 메시지가 와서 뒤 테스트의 셈이 어긋났다
-        # (전체 테스트 1: test_gw_main 경보판 시험의 malformed 2). 처음 켠 브로커처럼 비우고 시작한다(시계열 · 그래프 준비와 같은 규칙).
-        _docker('exec', self.mqtt_box.name, 'emqx', 'ctl', 'retainer', 'clean', timeout=30)
+        # (전체 테스트 1: test_gw_main 경보판 시험의 malformed 2). 처음 켠 브로커처럼 비우고 시작한다: emqx 는 보존 저장을 비우고,
+        # DMZ 브로커는 디스크에 남기지 않으므로(persistence false) 다시 켠다. 브리지는 두 브로커에 스스로 다시 붙는다.
+        _docker('exec', self.plant_box.name, 'emqx', 'ctl', 'retainer', 'clean', timeout=30)
+        if self.dmz_box.reused:
+            _docker('restart', '-t', '2', self.dmz_box.name)
+        self.wait_bridge({'broker': True, 'dmz': True}, BROKER_BOOT_S)
+
+    def bridge_legs(self):
+        """DMZ 브로커에 보존된 다리 상태(bridge/ot/<다리>) → {'broker': 참/거짓, 'dmz': 참/거짓}. 아직 올라오지 않은 다리는 없다."""
+        probe = MqttClient(self.dmz[1], 'connect-ingest')
+        try:
+            probe.subscribe('bridge/ot/+')
+            time.sleep(0.5)
+            return {topic.rsplit('/', 1)[1]: body == '1' for topic, body, _ in probe.received}
+        finally:
+            probe.close()
+
+    def wait_bridge(self, legs, timeout=60):
+        last = {}
+
+        def reached():
+            nonlocal last
+            last = self.bridge_legs()
+            return last == legs
+        self.dmz_box.wait(reached, f'공장 쪽 브리지의 다리 상태 {legs}(마지막으로 읽은 것 {last})', timeout)
+
+
+@pytest.fixture(scope='session')
+def plant_mqtt(heavy_slot):
+    return PlantMqtt()
+
+
+class Brokers:
+    """이 테스트 자리의 MQTT 셋(PlantMqtt) · redpanda 컨테이너(compose 서비스 그대로 — 같은 이미지 · 명령 · 설정 파일) + compose topic-init 과
+    같은 토픽 만들기(it/redpanda/topics.sh 를 redpanda 컨테이너 안에서). redpanda 의 바깥 입구는 compose 처럼 호스트 포트를 광고한다.
+    mqtt = DMZ 브로커(주소, 포트) — DMZ 의 서비스(connect-ingest · cmd-gateway)가 붙는 자리, plant_mqtt = 그 셋, kafka = 이 PC 에서 붙는 Kafka 주소."""
+
+    def __init__(self, plant_mqtt):
+        init = _compose_service('topic-init')
+        self.plant_mqtt, self.mqtt = plant_mqtt, plant_mqtt.dmz
+        self.kafka_box = ComposeContainer('redpanda', 19092, extra_mounts=init['volumes'], hosts=('redpanda',))
+        self.kafka = f'127.0.0.1:{self.kafka_box.port}'
         self.kafka_box.wait(lambda: re.search(r'Healthy:\s+true', _docker('exec', self.kafka_box.name, 'rpk', 'cluster', 'health', timeout=30)),
                             'rpk cluster health', BROKER_BOOT_S)
         try:
@@ -946,8 +1051,9 @@ class Brokers:
 
 
 @pytest.fixture(scope='session')
-def brokers(heavy_slot):
-    return Brokers()
+def brokers(heavy_slot, plant_mqtt):
+    return Brokers(plant_mqtt)
+
 
 
 # ---------------------------------------------------------------- 서비스(각 Dockerfile 의 실행 명령을 이 PC 의 하위 프로세스로)
@@ -1238,7 +1344,7 @@ def stack(pg_dsn, graph_server, timescale, brokers, smtp, relay, worker_key, tmp
     overrides = {'effects-mcp': {'SMTP_HOST': '127.0.0.1', 'SMTP_PORT': str(smtp.port), 'EFFECTS_STATE_PATH': str(logs / 'effects.sqlite3'),
                                  'PROCESS_CALLER_TOKEN': CALLER_TOKEN},
                  'enterprise-sim': {'PROCESS_CALLER_TOKEN': CALLER_TOKEN},
-                 # compose 값 MQTT_HOST=emqx · KAFKA_BOOTSTRAP=redpanda:9092 는 scheme 없는 이름이라(here 가 못 바꿈) 이 PC 의 브로커 입구로.
+                 # compose 값 MQTT_HOST=dmz-broker · KAFKA_BOOTSTRAP=redpanda:9092 는 scheme 없는 이름이라(here 가 못 바꿈) 이 PC 의 브로커 입구로.
                  # agent 의 INGEST_URL 은 코드 기본값(컨테이너 이름)
                  'connect-ingest': {'MQTT_HOST': brokers.mqtt[0], 'MQTT_PORT': str(brokers.mqtt[1]), 'KAFKA_BOOTSTRAP': brokers.kafka},
                  'agent': {'INGEST_URL': ingest}}
@@ -1319,13 +1425,23 @@ class KafkaRecorder:
 
 class MqttRecorder:
     """MQTT 브로커 자리: 받은 PUBLISH 를 (토픽, 본문)으로 적는 최소 MQTT 3.1.1 브로커. CONNECT · SUBSCRIBE · QoS 1 PUBLISH 에만 답한다.
-    serve() 전에는 포트만 잡혀 있어 연결이 거절된다."""
+    serve() 전에는 포트만 잡혀 있어 연결이 거절된다. retained = 구독에 답한 뒤 보내 주는 보존 메시지 (토픽, 본문)들 — 공장 쪽 브리지가
+    DMZ 브로커에 올려 둔 다리 상태(bridge/ot/…) 자리. send() 는 붙어 있는 클라이언트에게 메시지 하나를 보낸다(다리 상태가 바뀐 자리)."""
+    BRIDGE_UP = (('bridge/ot/broker', '1'), ('bridge/ot/dmz', '1'))
 
-    def __init__(self):
+    def __init__(self, retained=()):
         self.sock = socket.socket()
         self.sock.bind(('127.0.0.1', 0))
         self.port = self.sock.getsockname()[1]
         self.published = []
+        self.retained = list(retained)
+        self.conn = None
+
+    def send(self, topic, body, retain=False):
+        name, payload = topic.encode(), body.encode()
+        size = 2 + len(name) + len(payload)
+        assert size < 128, '이 대역은 짧은 메시지만 보낸다'
+        self.conn.sendall(bytes([0x31 if retain else 0x30, size]) + len(name).to_bytes(2, 'big') + name + payload)
 
     def serve(self):
         self.sock.listen(1)
@@ -1333,6 +1449,7 @@ class MqttRecorder:
 
     def _run(self):
         conn, _ = self.sock.accept()
+        self.conn = conn
         buf = b''
         while True:
             data = conn.recv(4096)
@@ -1363,6 +1480,8 @@ class MqttRecorder:
                     while rest:
                         rest, topics = rest[3 + int.from_bytes(rest[:2], 'big'):], topics + 1
                     conn.sendall(b'\x90' + bytes([2 + topics]) + packet[2:4] + b'\x01' * topics)
+                    for topic, body in self.retained:
+                        self.send(topic, body, retain=True)
 
 
 def _run_async(coro):

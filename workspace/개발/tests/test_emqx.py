@@ -1,24 +1,24 @@
-"""MQTT 브로커 규칙(ot/emqx/emqx.conf · acl.conf · users.csv) — 설비 명령 토픽은 명령 관문만 보낼 수 있다(G3b-5).
+"""공장 MQTT 브로커 규칙(ot/emqx/emqx.conf · acl.conf · users.csv) — 설비 명령 토픽은 공장 쪽 브리지만 낼 수 있다(G3b-5).
 
-실제 EMQX(compose emqx 서비스 그대로 — 이미지 · 설정 파일 마운트, conftest ComposeContainer)에 실제 MQTT 클라이언트로 붙는다.
-안쪽 입구 1883(OT 망 · 경계 망 ot-dmz-net 의 서비스, 이름만) · 바깥 입구 1884(호스트 1883) · 웹소켓 8083(계정 student 만, 구독만).
+실제 EMQX(compose emqx 서비스 그대로 — 이미지 · 설정 파일 마운트, conftest PlantMqtt)에 실제 MQTT 클라이언트로 붙는다.
+안쪽 입구 1883(OT 망의 서비스, 이름만) · 바깥 입구 1884(호스트 1883) · 웹소켓 8083(계정 student 만, 구독만).
+공장 밖(DMZ)의 서비스 이름(cmd-gateway · connect-ingest)은 이 브로커의 규칙에 없다 — 명령 관문이 DMZ 브로커에 놓은 명령을 공장 쪽 브리지가
+가져와 내는 길은 test_bridge.py 가 실제 세 컨테이너로 잰다.
 관리 화면 · 관리 API(18083)는 꺼져 있다 — 관리 API 의 발행은 토픽 규칙을 거치지 않는다(2026-11-14 실측: 공개된 초기 비밀번호로 들어가
 plant/hyd03/cmd/auto 에 낸 명령을 가상 설비가 실행했다).
 """
 import http.client
-import uuid
 
-import paho.mqtt.client as mqtt
 import pytest
 
-from conftest import ComposeContainer, until
+from conftest import MqttClient, until
 
 INNER, OUTER, WS, ADMIN = 1883, 1884, 8083, 18083
 
 
 @pytest.fixture(scope='module')
-def broker():
-    box = ComposeContainer('emqx', INNER, extra_ports=(OUTER, WS, ADMIN))
+def broker(plant_mqtt):
+    box = plant_mqtt.plant_box
 
     def ready():
         for port, user in ((INNER, 'plant-sim'), (OUTER, 'student')):      # 두 입구 모두 CONNACK 까지
@@ -31,33 +31,8 @@ def broker():
     return box                     # conftest 가 같은 내용의 컨테이너를 다음 묶음에도 다시 쓴다
 
 
-class Client:
-    def __init__(self, broker, port, user=None, password=None, ws=False):
-        self.events = {'connect': None, 'disconnect': None, 'suback': None}
-        self.messages = []
-        self.c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='t-' + uuid.uuid4().hex[:8],
-                             transport='websockets' if ws else 'tcp', protocol=mqtt.MQTTv5)
-        if user is not None:
-            self.c.username_pw_set(user, password)
-        self.c.on_connect = lambda c, u, f, rc, p=None: self.events.__setitem__('connect', str(rc))
-        self.c.on_disconnect = lambda c, u, f, rc, p=None: self.events.__setitem__('disconnect', str(rc))
-        self.c.on_subscribe = lambda c, u, mid, rcs, p=None: self.events.__setitem__('suback', [str(r) for r in rcs])
-        self.c.on_message = lambda c, u, m: self.messages.append(m.topic)
-        self.c.connect('127.0.0.1', broker.ports[port], 10)
-        self.c.loop_start()
-        until(lambda: self.events['connect'] is not None, 'CONNACK', 10)
-
-    @property
-    def accepted(self):
-        return self.events['connect'] == 'Success'
-
-    def subscribe(self, topic):
-        self.c.subscribe(topic, 1)
-        until(lambda: self.events['suback'] is not None or self.events['disconnect'] is not None, 'SUBACK', 10)
-
-    def close(self):
-        self.c.loop_stop()
-        self.c.disconnect()
+def Client(broker, port, user=None, password=None, ws=False):
+    return MqttClient(broker.ports[port], user, password, ws)
 
 
 @pytest.fixture
@@ -83,7 +58,9 @@ def _publish_reaches(broker, plant, port, user, password=None, ws=False, topic='
 
 
 @pytest.mark.parametrize('port, user, password, ws, outcome', [
-    (INNER, 'cmd-gateway', None, False, 'delivered'),      # 명령 관문만
+    (INNER, 'ot-bridge', None, False, 'delivered'),        # 공장 쪽 브리지만(명령 관문이 검증해 DMZ 브로커에 놓은 것을 옮긴다)
+    (INNER, 'cmd-gateway', None, False, 'dropped'),        # 공장 밖의 이름은 이 브로커에서 아무것도 못 한다
+    (INNER, 'connect-ingest', None, False, 'dropped'),
     (INNER, 'fuxa', None, False, 'dropped'),               # FUXA 는 수동 조작 · 모드만
     (INNER, 'plant-sim', None, False, 'dropped'),
     (INNER, None, None, False, 'dropped'),                 # 이름 없음
@@ -94,7 +71,7 @@ def _publish_reaches(broker, plant, port, user, password=None, ws=False, topic='
     (WS, 'student', 'student', True, 'dropped'),           # 브라우저 웹소켓(출처 검사 없음)도 구독만
     (WS, 'cmd-gateway', None, True, 'refused'),
 ])
-def test_설비_명령_토픽은_명령_관문만_보낼_수_있다(broker, plant, port, user, password, ws, outcome):
+def test_공장_브로커에서_설비_명령_토픽은_공장_쪽_브리지만_낼_수_있다(broker, plant, port, user, password, ws, outcome):
     assert _publish_reaches(broker, plant, port, user, password, ws) == outcome
 
 

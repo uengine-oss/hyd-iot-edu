@@ -2,9 +2,10 @@
 
 Publishes  plant/{a}/tag/{name} (1 Hz, DAQ filter), plant/{a}/wave/{sensor} (1 s batch, full profile), plant/{a}/status (1 Hz,
            retained, and right after each command / mode change)
-Subscribes plant/{a}/cmd/manual (FUXA), plant/{a}/cmd/auto (cmd-gateway), plant/{a}/mode (FUXA)
-Command ownership comes from the topic, never from the payload: the broker lets only cmd-gateway publish cmd/auto (HITL) and
-only FUXA publish cmd/manual · mode (ot/emqx/acl.conf). A payload claiming another source is ignored.
+Subscribes plant/{a}/cmd/manual (FUXA), plant/{a}/cmd/auto (validated by cmd-gateway, carried in by ot-bridge), plant/{a}/mode (FUXA)
+Command ownership comes from the topic, never from the payload: the plant broker lets only the plant-side bridge publish
+cmd/auto (HITL — it carries what cmd-gateway put on the DMZ broker, where only cmd-gateway may publish that topic) and
+only FUXA publish cmd/manual · mode (ot/emqx/acl.conf · dmz/broker/acl). A payload claiming another source is ignored.
 One tick has one measurement time: its tags and its status carry the same `t`, so a reader pairing them (the detector's PLC
 state check) never sees the status "after" the measurement it belongs with.
 """

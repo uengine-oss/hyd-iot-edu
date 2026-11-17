@@ -41,7 +41,8 @@ class World:
     def __init__(self):
         self.units = {a: unit(a) for a in ('HYD-01', 'HYD-02', 'HYD-03')}
         self.phase, self.alert, self.incidents, self.down, self.extra = 'IDLE', None, [], set(), {}
-        self.broker, self.left_out, self.asked = {'plant-sim', 'connect-ingest', 'cmd-gateway'}, [], []      # 브로커에 붙었다고 답하는 서비스 · 감지기가 뺀 패턴 · 화면이 부른 주소
+        self.broker, self.left_out, self.asked = {'plant-sim', 'connect-ingest', 'cmd-gateway'}, [], []      # 자기 브로커에 붙었다고 답하는 서비스(가상 설비 = 공장 브로커, 나머지 = DMZ 브로커) · 감지기가 뺀 패턴 · 화면이 부른 주소
+        self.legs = {'broker': True, 'dmz': True}      # DMZ 의 두 서비스가 DMZ 브로커에서 들었다고 답하는 공장 쪽 브리지의 다리 상태
         self.scen = {'scenarios': {}, 'presses': {}}      # 업무 사건의 상태(GET /api/scenario/status)
         self.conflict, self.oil, self.sent_oil = None, None, None      # 시작을 409 로 거절할 때의 응답 · 오일 분석 입력의 응답 · 화면이 보낸 입력
 
@@ -60,6 +61,11 @@ class World:
             body = {'ok': True}
             if service in ('plant-sim', 'connect-ingest', 'cmd-gateway'):
                 body['mqtt'] = service in self.broker
+            if service in ('connect-ingest', 'cmd-gateway'):          # hydcommon.mqtt.Link.health(behind_bridge) 의 꼴 — 붙지 못했으면 다리 상태를 모른다
+                legs = self.legs if body['mqtt'] else {'broker': None, 'dmz': None}
+                body.update(ot_bridge=all(v is True for v in legs.values()), ot_bridge_legs=legs)
+                body['ok'] = body['mqtt'] and body['ot_bridge']
+                return send(body, 200 if body['ok'] else 503)         # 서비스는 건강하지 않으면 503 으로 같은 본문을 낸다(hydcommon.service)
             if service == 'detector':
                 body['patterns'] = {'ready': True, 'error': None, 'rejected': self.left_out}
             return send(body)
@@ -198,24 +204,33 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
     assert not page.is_visible('#sysSum')
 
 
-def test_MQTT_브로커의_상태는_관리_화면이_아니라_브로커에_붙는_서비스들의_mqtt_값으로_읽는다(world):
-    """메시지 중계기의 관리 화면 · 관리 API(18083)는 꺼져 있다. 화면이 그 주소의 상태를 읽으면 늘 「1개 응답 없음」이 되어, 시작 창이 「서비스 상태 점이
-    초록이면 됩니다」라고 한 학생은 설치가 실패했다고 읽는다. 브로커의 상태는 그 브로커에 붙는 세 서비스(가상 설비 · 수집 중계 · 명령 관문)의 /healthz 가
-    말하는 mqtt 값이다: 하나라도 붙어 있으면 살아 있고, 셋 다 떨어졌다고 하면 응답 없음이다. 여는 화면은 없다."""
+def test_여는_화면이_없는_브로커_둘과_브리지의_상태는_거기_붙는_서비스들이_말한_것으로_읽는다(world):
+    """공장 브로커의 관리 화면 · 관리 API(18083)는 꺼져 있고, DMZ 브로커와 공장 쪽 브리지에는 여는 화면도 상태 주소도 없다. 화면이 없는 주소의
+    상태를 읽으면 늘 「응답 없음」이 되어, 시작 창이 「서비스 상태 점이 초록이면 됩니다」라고 한 학생은 설치가 실패했다고 읽는다. 세 부품의 상태는
+    거기 붙는 서비스의 /healthz 본문으로 읽는다(503 이어도 본문은 읽는다): 공장 브로커 = 가상 설비의 mqtt 와 브리지의 공장 브로커 쪽 다리,
+    DMZ 브로커 = 수집 중계 · 명령 관문의 mqtt, 브리지 = 그 둘이 들은 두 다리. 브리지가 끊기면 「응답 있음」인 채 값만 멈추지 않고 그 부품이 응답 없음이다."""
     w, page = world, world.page
     page.goto(w.base + '/index.html#/home')
-    state = lambda: page.get_attribute("#stack .sys-nd[data-key='EMQX']", 'data-st')
-    page.wait_for_function("document.querySelector(\"#stack .sys-nd[data-key='EMQX']\").dataset.st === 'ok'", timeout=15000)
-    assert '14/14' in page.inner_text('#healthDots') and page.get_attribute('#healthDot', 'data-tone') == 'ok'
-    assert page.get_attribute("#stack .sys-nd[data-key='EMQX']", 'href') is None          # 누르면 열리는 화면이 없다
-    page.hover("#stack .sys-nd[data-key='EMQX']")
-    assert '여는 화면이 없습니다' in page.inner_text('#sysInfo') and page.locator('#sysInfo [data-sys-open]').count() == 0
-    w.broker = {'cmd-gateway'}                                                            # 한 서비스만 붙어 있어도 브로커는 살아 있다
-    page.wait_for_timeout(6000)
-    assert state() == 'ok'
-    w.broker = set()                                                                      # 셋 다 「브로커에 붙지 못했다」고 답한다
-    page.wait_for_function("document.querySelector(\"#stack .sys-nd[data-key='EMQX']\").dataset.st === 'down'", timeout=15000)
-    assert page.inner_text('#sysSum') == '응답 없음 1 — EMQX' and '13/14' in page.inner_text('#healthDots')
+    state = lambda key: page.get_attribute(f"#stack .sys-nd[data-key='{key}']", 'data-st')
+    states = lambda: {key: state(key) for key in ('EMQX', 'ot-bridge', 'dmz-broker')}
+    reach = lambda want: page.wait_for_function("want => Object.entries(want).every(([k, v]) => document.querySelector(`#stack .sys-nd[data-key='${k}']`).dataset.st === v)", arg=want, timeout=15000)
+    reach({'EMQX': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
+    assert '16/16' in page.inner_text('#healthDots') and page.get_attribute('#healthDot', 'data-tone') == 'ok'
+    for key in ('EMQX', 'ot-bridge', 'dmz-broker'):
+        assert page.get_attribute(f"#stack .sys-nd[data-key='{key}']", 'href') is None          # 누르면 열리는 화면이 없다
+        page.hover(f"#stack .sys-nd[data-key='{key}']")
+        assert '여는 화면이 없습니다' in page.inner_text('#sysInfo') and page.locator('#sysInfo [data-sys-open]').count() == 0
+    w.legs = {'broker': True, 'dmz': False}                                               # 브리지의 DMZ 쪽 다리가 끊겼다 — 두 서비스는 503 으로 그 사실을 말한다
+    reach({'EMQX': 'ok', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
+    assert page.inner_text('#sysSum') == '응답 없음 3 — ot-bridge, connect-ingest, cmd-gateway' and '13/16' in page.inner_text('#healthDots')
+    w.legs = {'broker': False, 'dmz': True}                                               # 브리지가 공장 브로커와 끊겼다 — 가상 설비는 공장 브로커에 붙어 있다
+    reach({'EMQX': 'ok', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
+    w.broker = {'connect-ingest', 'cmd-gateway'}                                          # 가상 설비도 공장 브로커에 붙지 못했다 → 공장 브로커가 응답 없음
+    reach({'EMQX': 'down', 'ot-bridge': 'down', 'dmz-broker': 'ok'})
+    w.legs, w.broker = {'broker': True, 'dmz': True}, {'plant-sim', 'cmd-gateway'}        # 한 서비스만 붙어 있어도 DMZ 브로커는 살아 있다
+    reach({'EMQX': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
+    w.broker = {'plant-sim'}                                                              # 둘 다 DMZ 브로커에 붙지 못했다 → DMZ 브로커는 응답 없음, 브리지는 볼 자리가 없어 모른다
+    reach({'EMQX': 'ok', 'ot-bridge': 'wait', 'dmz-broker': 'down'})
     assert not [u for u in w.asked if ':18083' in u], '꺼 둔 관리 화면의 주소를 부른다'
 
 
@@ -224,7 +239,7 @@ def test_감지기가_감지에서_뺀_이상_패턴은_서비스_점이_초록�
     초록이고, 그 패턴의 결함은 넣어도 조용히 경보가 나지 않는다. 메뉴 줄 · 시스템 구성 머리 · 결함 시뮬레이션이 빠진 패턴과 까닭을 말한다."""
     w, page = world, world.page
     page.goto(w.base + '/index.html#/scenario')
-    page.wait_for_function("document.getElementById('healthDots').textContent.includes('14/14')", timeout=15000)
+    page.wait_for_function("document.getElementById('healthDots').textContent.includes('16/16')", timeout=15000)
     assert page.is_hidden('#labLeftOut') and page.get_attribute('#healthDot', 'data-tone') == 'ok'
     w.left_out = [{'code': 'MY_PATTERN', 'id': 'pattern:my', 'reason': "DefinitionError: unknown tag 'TS9'"}, {'code': None, 'id': 'pattern:two', 'reason': '지속 시간이 0초입니다'}]
     page.wait_for_function("!document.getElementById('labLeftOut').hidden", timeout=15000)
@@ -816,25 +831,25 @@ RAIL_TEXT = r"""() => { const btn = document.getElementById('railStatus'), clip 
 
 
 def test_메뉴_줄_아래_서비스_상태_글은_가장_긴_때에도_말줄임_없이_끝까지_보인다(world):
-    """대역(2026-11-16, 1440 폭): 감지에서 빠진 패턴이 있을 때 「서비스 14/14 · 감지에서 빠진 패턴 1 · 20배속」의 끝(배속)이 말줄임으로 잘렸다. 실제 브라우저에서 그 줄의 글자 하나하나가
+    """대역(2026-11-16, 1440 폭): 감지에서 빠진 패턴이 있을 때 「서비스 16/16 · 감지에서 빠진 패턴 1 · 20배속」의 끝(배속)이 말줄임으로 잘렸다. 실제 브라우저에서 그 줄의 글자 하나하나가
     보이는 자리 안에 있는지 잰다(RAIL_TEXT — 글자 상자가 잘라 내는 상자 밖으로 나가면 잘린 글자다). 넘치면 조각 단위로 다음 줄로 가고, 어느 줄도 가름 점 「·」으로 시작하거나 끝나지 않는다.
     짧을 때는 한 줄 그대로다."""
     w, page = world, world.page
     page.goto(w.base + '/index.html#/scenario')
-    page.wait_for_function("(t => t.includes('20배속') && t.includes('14/14'))(document.getElementById('railStatus').textContent)", timeout=15000)
+    page.wait_for_function("(t => t.includes('20배속') && t.includes('16/16'))(document.getElementById('railStatus').textContent)", timeout=15000)
     got = page.evaluate(RAIL_TEXT)
-    assert got['text'] == '서비스 14/14 · 20배속' and got['lines'] == ['서비스14/14·20배속'] and not got['cut'], got      # 짧을 때는 한 줄
+    assert got['text'] == '서비스 16/16 · 20배속' and got['lines'] == ['서비스16/16·20배속'] and not got['cut'], got      # 짧을 때는 한 줄
     w.left_out = [{'code': f'P{i}', 'id': f'pattern:p{i}', 'reason': '지속 시간이 0초입니다'} for i in range(12)]
     page.wait_for_function("document.getElementById('railStatus').textContent.includes('감지에서 빠진 패턴 12')", timeout=15000)
     got = page.evaluate(RAIL_TEXT)
-    assert got['text'] == '서비스 14/14 · 감지에서 빠진 패턴 12 · 20배속', got
+    assert got['text'] == '서비스 16/16 · 감지에서 빠진 패턴 12 · 20배속', got
     assert not got['cut'] and got['ellipsis'] != 'ellipsis' and got['inRail'], got                              # 한 글자도 잘리지 않는다
-    assert ''.join(got['lines']).replace('·', '') == '서비스14/14감지에서빠진패턴1220배속', got
+    assert ''.join(got['lines']).replace('·', '') == '서비스16/16감지에서빠진패턴1220배속', got
     assert all(not ln.startswith('·') and not ln.endswith('·') for ln in got['lines']), got                     # 줄이 가름 점으로 시작하거나 끝나지 않는다
     w.left_out, w.down = [], {'detector'}
     page.wait_for_function("document.getElementById('railStatus').textContent.includes('응답 없음')", timeout=20000)
     got = page.evaluate(RAIL_TEXT)
-    assert got['text'] == '서비스 13/14 · 1개 응답 없음 · 20배속' and not got['cut'], got
+    assert got['text'] == '서비스 15/16 · 1개 응답 없음 · 20배속' and not got['cut'], got
     assert all(not ln.startswith('·') and not ln.endswith('·') for ln in got['lines']), got
 
 def test_지금_누를_수_없는_단추는_손가락_모양이_아니고_눌러도_요청을_보내지_않으며_그_자리에_까닭이_있다(world):

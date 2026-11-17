@@ -97,7 +97,7 @@ services:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:1881/api/settings', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       <<: *py-health
 
-  ot-bridge:                              # L2 공장 쪽 브리지: 공장 브로커와 DMZ 브로커에 스스로 접속해 값을 내보내고 승인된 명령을 가져온다(ot/bridge/mosquitto.conf)
+  ot-bridge:                              # L3 OT 공장 쪽 브리지: 공장 브로커와 DMZ 브로커에 스스로 접속해 값을 내보내고 승인된 명령을 가져온다(ot/bridge/mosquitto.conf)
     restart: unless-stopped
     logging: *log
     mem_limit: 24m

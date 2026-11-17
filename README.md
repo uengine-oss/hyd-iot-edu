@@ -10,8 +10,9 @@ HYD 제조 AI 교육과정(경남대학교 피지컬AI 사관학교)의 실습 �
 
 | 구성 | 역할 |
 |---|---|
-| EMQX / Redpanda | 설비 데이터와 사건 전달 |
-| `connect-ingest` · `cmd-gateway` · `connect-sink` | 설비망 → 사무망 복제, 승인된 설비 명령만 내려보내는 통로, 시계열 적재 |
+| EMQX / Redpanda | 설비 데이터와 사건 전달(EMQX는 설비망 안의 MQTT 브로커 — 설비망 밖에서는 닿지 못한다) |
+| `ot-bridge` · `dmz-broker` | 설비망과 사무망 사이의 연결을 설비망 쪽에서 먼저 여는 자리. 공장 쪽 브리지(`ot-bridge`)가 DMZ 브로커(`dmz-broker`)에 접속해 값을 내보내고, 검증을 통과한 명령을 가져간다 |
+| `connect-ingest` · `cmd-gateway` · `connect-sink` | DMZ 브로커에 올라온 값을 사무망으로 복제, 승인된 설비 명령만 검증해 DMZ 브로커에 놓는 통로, 시계열 적재 |
 | TimescaleDB / Supabase | 시계열 측정값과 업무 데이터 저장(Supabase는 업무 DB — 시작 파일이 따로 켠다) |
 | Neo4j | 설비·부품·업무 대상의 관계 저장 |
 | FUXA / Grafana | 설비 화면과 데이터 시각화 |

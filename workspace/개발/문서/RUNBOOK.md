@@ -29,14 +29,16 @@
 
 서비스 응답 → 쿨러 사건 한 바퀴(경보 → 처리 건 → AI 판단 · 제안 → 승인 → 냉각 명령 → 재관측 → 작업지시 → 결과 보고) → 점검이 연 처리 건 닫기 · 설비 되돌리기 → 강의 중계(키 있는 PC만). 약 2분(이 PC 실측, 키 없음).
 
-떠 있어야 하는 것: compose 서비스 24개 = 계속 떠 있는 21개(전부 healthy) + 한 번 돌고 끝나는 3개(`fuxa-init` · `topic-init` · `kg-seed`, Exited 0이 정상) + Supabase 컨테이너 3개(`supabase_db` · `supabase_inbucket` · `supabase_kong`, 이름 끝에 `_<프로젝트 이름>`). 선택 프로필 `monitor`(prometheus) · `tools`(redpanda-console)는 기본으로 뜨지 않는다.
+떠 있어야 하는 것: compose 서비스 26개 = 계속 떠 있는 23개(전부 healthy) + 한 번 돌고 끝나는 3개(`fuxa-init` · `topic-init` · `kg-seed`, Exited 0이 정상) + Supabase 컨테이너 3개(`supabase_db` · `supabase_inbucket` · `supabase_kong`, 이름 끝에 `_<프로젝트 이름>`). 선택 프로필 `monitor`(prometheus) · `tools`(redpanda-console)는 기본으로 뜨지 않는다.
 
 ```bash
 docker compose ps -a
 cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다른 프로그램과 겹쳐 옮긴 포트 포함)
 ```
 
-화면 주소(기본 포트, 옮겼으면 `ports.json`의 값): 포털 8088 · Neo4j Browser 7474 · Grafana 3000 · FUXA 1881. 메시지 중계기(EMQX)의 관리 화면 · 관리 API(18083)는 꺼 두었다 — 관리 API 의 발행이 토픽 규칙을 거치지 않아 승인 없이 설비 명령을 낼 수 있었기 때문이다(`ot/emqx/emqx.conf`). 브로커 상태는 `docker compose exec emqx emqx ctl status` · `emqx ctl clients list`로 본다. MQTT 바깥 입구는 호스트 1883(MQTT) · 8083(WebSocket), 계정 `student`/`student` — 구독만 된다(발행하면 연결이 끊긴다). 설비 명령 토픽은 관문(cmd-gateway)만 보낸다.
+화면 주소(기본 포트, 옮겼으면 `ports.json`의 값): 포털 8088 · Neo4j Browser 7474 · Grafana 3000 · FUXA 1881. 메시지 중계기(EMQX)의 관리 화면 · 관리 API(18083)는 꺼 두었다 — 관리 API 의 발행이 토픽 규칙을 거치지 않아 승인 없이 설비 명령을 낼 수 있었기 때문이다(`ot/emqx/emqx.conf`). 브로커 상태는 `docker compose exec emqx emqx ctl status` · `emqx ctl clients list`로 본다. MQTT 바깥 입구는 호스트 1883(MQTT) · 8083(WebSocket), 계정 `student`/`student` — 구독만 된다(발행하면 연결이 끊긴다).
+
+공장과 DMZ 사이의 연결은 공장 쪽이 먼저 연다. 공장 브로커(emqx)는 OT 망에만 붙어 DMZ · IT 의 컨테이너가 닿지 못하고, 공장 쪽 브리지(`ot-bridge`, mosquitto, 설정 `ot/bridge/mosquitto.conf`)가 공장 브로커와 DMZ 브로커(`dmz-broker`, mosquitto, 설정 `dmz/broker/`) 양쪽에 스스로 접속해 값을 내보내고 명령 · 경보판을 가져온다. 수집 중계와 명령 관문은 DMZ 브로커에만 붙는다. 설비 명령 토픽은 DMZ 브로커에서는 명령 관문(cmd-gateway)만, 공장 브로커에서는 브리지만 낼 수 있다(`dmz/broker/acl` · `ot/emqx/acl.conf`). 브리지의 두 다리 상태는 `curl -s localhost:8093/healthz`의 `ot_bridge_legs`(`broker` = 공장 브로커 쪽, `dmz` = DMZ 브로커 쪽)로 본다 — 하나라도 끊기면 수집 중계 · 명령 관문의 `/healthz`가 503이고, 그동안 승인된 명령은 「설비 통신이 끊겨 보내지 못했습니다」로 거절된다. 브리지는 끊긴 동안의 값 · 명령을 쌓아 두지 않는다. DMZ 브로커에 올라온 것은 `docker compose exec ot-bridge mosquitto_sub -h dmz-broker -u connect-ingest -t 'bridge/ot/+' -t 'plant/+/status' -C 5 -v`로 본다. 이 구조의 판정은 `workspace/개발/tests/test_zones.py`(망 · 실제 연결 시도) · `test_ot_bridge.py`(값 · 명령 · 끊김)다.
 
 ## 3. 끄기 — `scripts/stop_all.sh`
 
