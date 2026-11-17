@@ -38,7 +38,7 @@ ACT = re.compile(r'누르|누릅|눌러|클릭|선택|입력|적겠|적어|적�
 STEP = 0.2          # 변화 재는 간격(초)
 TW, TH = 512, 288   # 판의 프레임 크기
 STILL, STALL = 0.5, 3.0   # 이웃 프레임 차이가 STILL 미만이면 멈춘 화면, 말 사이에서 STALL초 넘게 멈추면 「멈춤」 후보
-FONTS = ('C:/Windows/Fonts/malgun.ttf', '/usr/share/fonts/malgun/malgun.ttf', '/usr/share/fonts/truetype/nanum/NanumGothic.ttf')
+FONTS = ('C:/Windows/Fonts/malgun.ttf', '/usr/share/fonts/malgun/malgun.ttf', '/usr/local/share/fonts/malgun/malgun.ttf', '/usr/share/fonts/truetype/nanum/NanumGothic.ttf')
 
 
 class 실패(SystemExit):

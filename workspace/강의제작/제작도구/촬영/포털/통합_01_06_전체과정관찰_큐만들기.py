@@ -18,7 +18,7 @@ PICK = sys.argv[2:4] if sys.argv[1:2] == ['--고르기'] else None
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 and not PICK else ROOT / 'workspace/강의제작/산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md'
 OUT = HERE / '통합_01_06_전체과정관찰_큐.json'
 VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
-ORDER = [f'v06{n:02d}' for n in range(1, 36)] + ['v0656'] + [f'v06{n:02d}' for n in range(38, 54)] + ['v0657', 'v0654', 'v0655']
+ORDER = [f'v06{n:02d}' for n in range(1, 13)] + ['v0658'] + [f'v06{n:02d}' for n in range(13, 36)] + ['v0656'] + [f'v06{n:02d}' for n in range(38, 54)] + ['v0657', 'v0654', 'v0655']
 GAP_JOIN, GAP_CUE, GAP_RESULT, GAP_SEG = 0.6, 1.3, 2.0, 2.3      # 영상 V-14 실습 값(잇기 · 큐 사이 · 조작 결과가 뜬 뒤 · 구간이 바뀌는 곳)
 
 
@@ -51,6 +51,7 @@ OPT = lambda n: f'{SHEET} table.opts tbody tr:nth-child({n})'
 STEP = lambda name: T('#instRecord [data-cr-steps] .step-title', exact=name)
 SUB = lambda has, **k: T('#instRecord [data-cr-steps] .step-sub', contains=has, **k)
 SKIP = '#instRecord details.cr-skipped .fold-body p'
+TRAIL = lambda key, name: T(f'.doc-trail li[data-step="{key}"] .line-text > b', exact=name)
 
 OPS = {
  # 포털 홈 — 시작 상태 확인(처리 건 0건). 화살표는 위 막대 「홈」 오른쪽 빈자리(one06.mjs의 rest)
@@ -79,7 +80,11 @@ OPS = {
            P(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"] .row-title'), '쿨러 팬 정비'),
            C(T('#providedDocs button.row[data-provided="HM-8_cooler-fan-manual.md"] .row-title', anchor='after'), '누르면'), W(T('#manualAgentExtract'))],      # 누르기 기본 자리(요소 오른쪽 끝)는 줄 끝 「›」라 바로 옆 「원문 보기」를 누르는 것처럼 보인다 — 짚던 제목 끝에서 누른다
  'v0612': [P(T('#manualResult .result-label', exact='이미 적재된 문서', anchor='margin'), '이미 적재된'), P(T('#manualStageNote', anchor='margin'), '제공 문서는'),
-           C(T('#manualAgentExtract', anchor='center'), '누를게요'), W(T('#manualReview'), 20)],
+           C(T('#manualAgentExtract', anchor='center'), '누를게요')],
+ # 추출을 기다리는 동안 흐르는 단계 줄(TRAIL — 기다리는 동안은 실시간 칸 맨 위, 결과가 뜨면 결과 요약 밑으로 같은 칸이 옮겨진다).
+ # 결과가 뜨면 줄 자리가 바뀌므로 둘째 줄은 결과를 기다린 뒤 짚는다(결과가 늦으면 그만큼 늦게 짚는다)
+ 'v0658': [P(TRAIL('open', '원문 확인 · 추출 작업 열기'), '위에 단계가'), W(T('#manualReview'), 20),
+           P(TRAIL('verify', '저장된 추출 결과를 원문 · 지금 지식과 대조'), '대조하는')],
  'v0613': [P(T('#manualReview .result-main'), 'AI가 매뉴얼에서'), P(T('#manualAgentStatus'), '제공 문서는')],
  'v0614': [P(T('#manualReview .result-main'), '이렇게')],      # 대본: 커서는 결과 머리 줄에 둔다 — 앞 큐가 그 밑 줄에서 끝나므로 「이렇게」에서 머리 줄로 돌아온다
  'v0615': [SC(T('#manualReview .doc-review .doc-review-bar', top=70), '밑으로 내려'), P(T(ITEM('proc:SOP-FAN-11') + ' .row-title'), '처음 보이는'),
@@ -147,10 +152,12 @@ OPS = {
            P(T(OPT(4) + ' .opts-why', phrase='납기에서 뒤짐'), '납기 손해가')],
  # 승인하고 결과 따라가기
  'v0643': [C(T('dialog[open] [data-cr-sheet-close]', anchor='center'), '닫을게요'), P(T('#todoPanel .turn-foot .who'), '카드 오른쪽 아래에는')],
- 'v0644': [P(BELOW('#tdRejectOpen'), '옆의 반려는'), P(BELOW('#tdMore'), '다른 안 고르기로는'), C(T('#tdGo', anchor='center'), '승인해 보겠습니다'),
-           W(STEP('냉각 명령'), 30), SETTLE(8)],
+ 'v0644': [P(BELOW('#tdRejectOpen'), '옆의 반려는'), P(BELOW('#tdMore'), '다른 안 고르기로는'), C(T('#tdGo', anchor='center'), '승인해 보겠습니다')],
+ # 승인 뒤 기다림(냉각 명령 줄 · 기록이 따라 내려가 멈추기)은 이 큐의 말이 흐르는 동안 한다. v0644 끝에서 기다리면 그만큼 v0648이 늦어져,
+ # 효과 확인 줄의 「(설비 시간 15분)」이 사라지는 승인 뒤 약 48초(연장될 때)보다 늦게 짚었다(구간 7 실측 계산: 48.7초 → 44.3초).
  # 설비가 실행 완료로 답한 뒤에 다음 말(v0646)을 시작한다
- 'v0645': [P(STEP('운전원 승인'), '사람이 할 일은'), P(STEP('냉각 명령'), '여기서부터는'), LONG(SUB('설비가 실행 완료로 답했습니다'), 60)],
+ 'v0645': [SETTLE(4), P(STEP('운전원 승인'), '사람이 할 일은'), W(STEP('냉각 명령'), 30), P(STEP('냉각 명령'), '여기서부터는'),
+           LONG(SUB('설비가 실행 완료로 답했습니다'), 60)],
  'v0646': [P(STEP('냉각 명령'), '냉각 명령 줄을'), P(SUB('설비가 실행 완료로 답했습니다', phrase='설비가 실행 완료로 답했습니다'), '설비가 실행했다고')],
  'v0647': [P(SUB('(안전 연동 통과)', phrase='(안전 연동 통과)'), '괄호 안의 안전')],
  # 말이 끝나면 효과 확인이 끝날 때까지(승인 뒤 약 66초) 말 없이 기다린다 — 처리 건이 끝나며 맨 위에 결과 칸이 끼어드니 화면이 멈춘 뒤 다음 말
