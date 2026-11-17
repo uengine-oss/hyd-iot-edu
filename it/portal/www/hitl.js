@@ -1199,12 +1199,15 @@
   document.querySelectorAll('#manualPick, #ddlPick').forEach(pick => pick.addEventListener('click', ev => { const b = ev.target.closest('[data-pick-mode]'); if (b) showPick(pick, b.dataset.pickMode); }));
   // 제공 문서 한 개(같은 출처의 samples/<파일>)를 한 번 읽어 둔다: blob(올릴 때 보내는 바이트 그대로) · text · title(파일 머리의 첫 제목 줄) ·
   // view(새 탭에서 글로 열리는 주소 — 서버는 이 파일을 내려받는 형식으로 주므로 화면이 글 형식으로 다시 싼다)
+  // 제목 끝의 출처 괄호(「(HM-8, 교육용 예시)」 꼴 — 문서 번호와 「교육용 예시」)는 문서 제목이 아니라 보일 때 뗀다. 올리는 바이트는 서명 묶음이 걸려 원문 그대로다.
+  // 서버가 처리 건 이름을 지을 때 떼는 꼴과 같다(procsvc/manual_extraction.PROVIDED_NOTE)
+  const PROVIDED_NOTE = /\s*\([A-Z]+-\d+, 교육용 예시\)$/;
   function sample(file) {
     if (!H.samples.has(file)) H.samples.set(file, (async () => {
       const res = await fetch('samples/' + encodeURIComponent(file), { cache: 'no-cache' });
       if (!res.ok) throw new Error(`제공 문서 「${file}」를 읽지 못했습니다(HTTP ${res.status}).`);
       const blob = await res.blob(), text = await blob.text();
-      return { blob, text, title: (text.match(/^#\s+(.+)$/m) || [])[1] || '', view: URL.createObjectURL(new Blob([blob], { type: 'text/plain;charset=utf-8' })) };
+      return { blob, text, title: ((text.match(/^#\s+(.+)$/m) || [])[1] || '').trim().replace(PROVIDED_NOTE, ''), view: URL.createObjectURL(new Blob([blob], { type: 'text/plain;charset=utf-8' })) };
     })().catch(e => { H.samples.delete(file); throw e; }));
     return H.samples.get(file);
   }

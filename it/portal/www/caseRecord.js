@@ -645,9 +645,11 @@
       if (!inc) incidentGap(ctx, '재관측 기준 · 사건 기록');
       const tag = m && m.tag ? m.tag.toLowerCase() : crit ? String(crit[0]).toLowerCase() : '';
       const valTxt = m && m.tag ? `${W().fieldName(tag)} ${m.value == null ? '값 없음' : `${W().num(m.value)} ${W().unit(tag)}`}` : '';
-      // 지켜본 길이는 판정 줄의 설비 시간(연장까지 — 시작 줄의 15분이 아니라 끝난 때의 값), 없으면 시작 줄의 계획 값
-      const simS = m && m.sim_s != null ? m.sim_s : obs && obs.reobservation && obs.reobservation.sim_s != null ? obs.reobservation.sim_s : null;
-      const span = simSpan(simS, null);
+      // 지켜본 길이: 시작 줄의 기본 창(설비 시간 15분)과 판정 줄의 설비 시간(연장까지). 판정 줄이 더 길면 그 차이를 「+ 연장」으로 따로 적는다 —
+      // 늘린 합(20분)만 적으면 도는 동안 본 「15분」과 다른 시간으로 읽힌다. 판정 줄이 없으면(도는 중) 기본 창
+      const baseS = obs && obs.reobservation && obs.reobservation.sim_s != null ? obs.reobservation.sim_s : null;
+      const win = { baseS, simS: m && m.sim_s != null ? m.sim_s : baseS }, simS = win.simS;
+      const span = reobsSpan(win, null);
       sentence = rec == null ? `설비가 기준 안으로 돌아오는지 지켜보는 중입니다${span ? ` (${span})` : ''}.`
         : `${span ? span + ' 동안 ' : ''}지켜본 뒤 ${reobsBasis(valTxt, crit, rec)}${rec ? '회복으로' : '미회복으로'} 판정했습니다.`;
       // 지켜보는 동안(1분 남짓)은 실제로 보는 값이 흘러나온다: 지금 값(설비 상태 1초 값) · 기준 · 판정까지 남은 시간(서버가 기록 줄에 적은 마감 시각 — 연장되면 새 마감) · 서버가 적은 기록 줄
@@ -668,7 +670,7 @@
         chips.push(chip('값 흐름 못 읽음', 'warning'));
       } else if (series && (series.points || []).length) {
         b.series = series;
-        sentence = `${seriesSentence(series, simS)} — ${rec == null ? '아직 판정하지 않았습니다' : rec ? '회복으로 판정했습니다' : '미회복으로 판정했습니다'}.`;
+        sentence = `${seriesSentence(series, win)} — ${rec == null ? '아직 판정하지 않았습니다' : rec ? '회복으로 판정했습니다' : '미회복으로 판정했습니다'}.`;
         sections.unshift(sec('지켜본 동안의 값', seriesHtml(series), { open: true }));
         chips.push(chip(`기준 안 ${Math.round((series.inside_share || 0) * 100)} %`, series.inside_last ? 'success' : 'danger'));
       }
@@ -767,9 +769,14 @@
     return basis ? `${basis}${rec ? ' 안이라 ' : ' 밖이라 '}` : '';
   }
   const SIDE = { '<': '아래', '<=': '이하', '>': '위', '>=': '이상' };
-  function seriesSentence(x, simS = null) {
+  // 효과 확인의 지켜본 길이(win = { baseS 시작 줄의 기본 창, simS 판정 줄의 설비 시간 }) — 서버가 값은 기준 안인데 경보가 아직 꺼지지 않아 창을 늘렸으면
+  // (service_parts._reobserve) 「설비 시간 15분 + 연장 5분 (실제 1분 2초)」, 아니면 「설비 시간 15분 (실제 46초)」
+  const reobsSpan = (win, realMs) => win && win.baseS != null && win.simS > win.baseS
+    ? `설비 시간 ${fmtMs(win.baseS * 1000)} + 연장 ${fmtMs((win.simS - win.baseS) * 1000)}${realMs != null ? ` (실제 ${fmtMs(realMs)})` : ''}`
+    : simSpan(win ? win.simS : null, realMs);
+  function seriesSentence(x, win = null) {
     const tag = String(x.tag || '').toLowerCase(), u = W().unit(tag);
-    const span = simSpan(simS, x.from && x.to ? ts(x.to) - ts(x.from) : null);
+    const span = reobsSpan(win, x.from && x.to ? ts(x.to) - ts(x.from) : null);
     return `${span ? span + ' 동안 ' : ''}${W().fieldName(tag)} ${W().num(x.first)}→${W().num(x.last)}${u ? ' ' + u : ''}, 기준(${W().num(x.limit)}${u ? ' ' + u : ''} ${SIDE[x.op] || ''}) 안에 있던 시간 ${Math.round((x.inside_share || 0) * 100)} %`;
   }
   // 작은 선 그림: 값 흐름 + 기준선(점선) + 마지막 점

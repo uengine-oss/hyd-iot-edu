@@ -485,12 +485,20 @@ def segment_view(source, seg):
     return view
 
 
+#: 제공 문서 원문의 첫 제목 끝에 붙은 출처 괄호(「(HM-8, 교육용 예시)」 꼴 — 문서 번호와 「교육용 예시」)는 문서 제목이 아니다. 원문은 서명 묶음 ·
+#: 정답표가 그 바이트에 걸려 고치지 않으므로 이름을 지을 때 이 꼴 하나만 뗀다 — 학생 문서 제목의 다른 괄호는 그대로 둔다. 올리기 전에 그리는
+#: 제공 문서 목록은 서버를 거치지 않아 화면(it/portal/www/hitl.js PROVIDED_NOTE)이 같은 꼴을 뗀다.
+PROVIDED_NOTE = re.compile(r'\s*\([A-Z]+-\d+, 교육용 예시\)$')
+
+
 def display_name(source):
     """Instance list label (A155): a Markdown document's own first `# ` heading when it declares one — that is the
-    document's title, not a guess — otherwise the uploaded filename (PDF/plain text carry no declared title here)."""
+    document's title, not a guess — otherwise the uploaded filename (PDF/plain text carry no declared title here).
+    A provided document's trailing provenance note (PROVIDED_NOTE) is not part of its title."""
     if source.get('media_type')=='text/markdown' and source.get('pages'):
         for line in source['pages'][0]['text'].splitlines():
-            if line.startswith('# ') and line[2:].strip():return line[2:].strip()[:120]
+            title = PROVIDED_NOTE.sub('', line[2:].strip()) if line.startswith('# ') else ''
+            if title:return title[:120]
     return source['filename']
 
 
