@@ -37,23 +37,29 @@ def test_처리_기록을_그려도_다른_화면의_값_이름이_정의_설명
     assert got == ['판정 원인', '판정 원인']
 
 
-@pytest.mark.parametrize('sim_s, wall, expected', [
-    (1200.0, ('05:43:42.085', '05:44:45.557'), '설비 시간 20분 (실제 1분 3초) 동안'),   # 연장 뒤 판정 줄의 설비 시간(시작 줄 15분이 아니라)
-    (900.0, ('05:43:42.000', '05:44:27.000'), '설비 시간 15분 (실제 45초) 동안'),
+@pytest.mark.parametrize('sim_s, wall, series, expected', [
+    # 값은 기준 안인데 경보 해제가 늦어 한 번 늘린 판정 줄(설비 시간 20분) — 도는 동안 본 기본 창 15분과 늘린 만큼을 따로 적는다
+    (1200.0, ('05:43:42.085', '05:44:45.557'), True, '설비 시간 15분 + 연장 5분 (실제 1분 3초) 동안 유온 60.8→51.2 ℃, 기준(55 ℃ 아래) 안에 있던 시간 64 % — 회복으로 판정했습니다.'),
+    (900.0, ('05:43:42.000', '05:44:27.000'), True, '설비 시간 15분 (실제 45초) 동안 유온 60.8→51.2 ℃, 기준(55 ℃ 아래) 안에 있던 시간 64 % — 회복으로 판정했습니다.'),
+    (1800.0, ('05:43:42.000', '05:45:12.000'), False, '설비 시간 15분 + 연장 15분 동안 지켜본 뒤 유온 51.2 ℃ — 기준 ‘유온 < 55 ℃’ 안이라 회복으로 판정했습니다.'),   # 값 흐름 없는 판정 줄 · 세 번 늘림
 ])
-def test_효과_확인_문장은_설비_시간과_실제_시간을_한_형식으로_적는다(sim_s, wall, expected):
-    """W1-03: 효과 확인 단계가 「1분 3초 동안」(실제)만 말해 같은 카드의 「설비 시간 15분」과 어긋났다."""
+def test_효과_확인_문장은_설비_시간과_실제_시간을_한_형식으로_적고_늘린_창은_기본_창과_따로_적는다(sim_s, wall, series, expected):
+    """W1-03: 효과 확인 단계가 「1분 3초 동안」(실제)만 말해 같은 카드의 「설비 시간 15분」과 어긋났다. 2026-11-17 06 촬영 전: 도는 동안
+    「(설비 시간 15분)」이던 같은 단계가 끝난 뒤 「설비 시간 20분 (실제 1분 2초)」로 보여 시간이 달라 보였다 — 서버가 창을 늘린 것(15분 + 5분)인데
+    늘렸다는 말 없이 합만 적었다. 판정 줄의 설비 시간이 시작 줄의 기본 창보다 길면 「기본 창 + 연장」으로 적는다."""
     a, b = (f'2026-10-30T{t}Z' for t in wall)
     inc = {'id': 'INC-1', 'asset': 'HYD-01', 'state': 'CLOSED', 'recoveryPolicy': {'criterion': ['TS1', '<', 55]},
            'history': [{'state': 'RE_OBSERVING', 't': a, 'reobservation': {'sim_s': 900}},
-                       {'state': 'RESOLVED', 't': b, 'note': '재관측 결과 회복', 'reobservation': {'tag': 'TS1', 'op': '<', 'limit': 55, 'value': 51.2, 'cleared': True, 'recovered': True, 'sim_s': sim_s}}],
-           'reobsSeries': {'tag': 'TS1', 'op': '<', 'limit': 55, 'first': 60.8, 'last': 51.2, 'inside_share': 0.64, 'inside_last': True, 'from': a, 'to': b,
-                           'points': [{'t': a, 'v': 60.8}, {'t': b, 'v': 51.2}]}}
+                       {'state': 'RESOLVED', 't': b, 'note': '재관측 결과 회복', 'reobservation': {'tag': 'TS1', 'op': '<', 'limit': 55, 'value': 51.2, 'cleared': True, 'recovered': True, 'sim_s': sim_s}}]}
+    if series:
+        inc['reobsSeries'] = {'tag': 'TS1', 'op': '<', 'limit': 55, 'first': 60.8, 'last': 51.2, 'inside_share': 0.64, 'inside_last': True, 'from': a, 'to': b,
+                              'points': [{'t': a, 'v': 60.8}, {'t': b, 'v': 51.2}]}
     wis = [{'id': 'w1', 'activity_id': 'T_reobs', 'activity_name': '재관측', 'tool': 'incident:reobserve', 'start_date': a, 'end_date': b, 'output': {'recovered': True}}]
     v = view(wis, ['T_reobs'], variables=[('incident', 'INC-1'), ('recovered', True)])
-    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); out(m.steps.find(s => s.title === '효과 확인').sentence)",
+    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); const s = m.steps.find(s => s.title === '효과 확인'); out([s.sentence, UI.leadRest(s.sentence, 110)[0]])",
               {'v': v, 'inc': inc})
-    assert got.startswith(expected) and '기준(55 ℃ 아래) 안에 있던 시간 64 %' in got, got
+    assert got[0] == expected, got[0]
+    assert got[1] == got[0]          # 단계 줄의 보조 글(caseRecord stepRow — 110자 넘으면 가른다)에 판정까지 다 보인다
 
 
 def test_발주_단계의_공급사는_승인_때_확정한_업무_DB_공급사_이름으로_보인다():

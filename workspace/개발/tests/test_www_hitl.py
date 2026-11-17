@@ -247,11 +247,12 @@ def test_제공_문서를_목록에서_고르면_내려받지_않고_그_원문_
             open_screen(page, 'knowledge')
             row = lambda f: page.locator(f"#providedDocs [data-provided='{f}']")
             page.wait_for_function("document.querySelectorAll('#providedDocs .row-meta').length === 3 && [...document.querySelectorAll('#providedDocs .row-meta')].every(n => n.textContent)", timeout=15000)
-            # 처음 보이는 길은 「제공 문서에서 고르기」이고 파일 고르기 칸은 숨어 있다. 줄의 제목은 그 파일 머리의 제목 줄이다
+            # 처음 보이는 길은 「제공 문서에서 고르기」이고 파일 고르기 칸은 숨어 있다. 줄의 제목은 그 파일 머리의 제목 줄이고, 끝의 출처 괄호
+            # 「(HM-8, 교육용 예시)」 꼴(문서 번호 · 「교육용 예시」 — 제작 흔적)만 떼어 보인다. 괄호 없는 제목(HI-01)은 그대로다
             assert row(new).is_visible() and not page.locator('#manualPreview').is_visible()
-            for f in (new, loaded):
+            for f, note in ((new, ''), (loaded, ' (HM-8, 교육용 예시)')):
                 head = (WWW / 'samples' / f).read_text(encoding='utf-8').splitlines()[0].lstrip('# ').strip()
-                assert row(f).locator('.row-title').inner_text() == head and f in row(f).locator('.row-meta').inner_text()
+                assert row(f).locator('.row-title').inner_text() + note == head and f in row(f).locator('.row-meta').inner_text()
             assert '적재됨' in row(loaded).inner_text() and '적재됨' not in row(new).inner_text()
             # 줄의 자리(2026-11-16 사용자: 「적재됨과 원문 보기가 구분 없이 떠다닌다」): 상태 알약은 제목 쪽의 정해진 칸에, [원문 보기]는 줄 오른쪽 끝에 글 링크로 —
             # 같은 종류는 모든 줄에서 같은 세로선에 선다. 줄을 누르면 올라간다는 것은 목록 위 한 줄과 줄 끝의 꺾쇠가 말한다

@@ -6,6 +6,7 @@ from copy import deepcopy
 import pytest
 
 import class_knowledge
+from conftest import WWW
 from procsvc import manual_extraction as mx, manual_segments
 from procsvc.manual_sources import ManualSources
 
@@ -164,9 +165,27 @@ def test_구간_작업은_담당_구간의_원문만_본다(archive):
     assert view['source_id'] == source['source_id'] and view['pages'][0]['text'].startswith('# 2장')
 
 
-@pytest.mark.parametrize('filename, raw, name', [('a.md', b'# HM-8 \xec\xbf\xa8\xeb\x9f\xac\n', 'HM-8 쿨러'), ('a.txt', b'plain\n', 'a.txt')])
+@pytest.mark.parametrize('filename, raw, name', [('a.md', b'# HM-8 \xec\xbf\xa8\xeb\x9f\xac\n', 'HM-8 쿨러'), ('a.txt', b'plain\n', 'a.txt'),
+                                                 # 학생 문서 제목의 괄호는 그대로 — 문서 번호가 있어도 「교육용 예시」 꼴이 아니면 떼지 않는다
+                                                 ('b.md', '# 펌프 점검표 (2024년판)\n'.encode(), '펌프 점검표 (2024년판)'),
+                                                 ('c.md', '# 펌프 점검표 (PM-02, 사내 기준)\n'.encode(), '펌프 점검표 (PM-02, 사내 기준)')])
 def test_처리_건_이름은_마크다운이면_첫_제목_아니면_파일_이름이다(archive, filename, raw, name):
     assert mx.display_name(archive.save('hyd', filename, raw)) == name
+
+
+def test_제공_문서의_처리_건_이름은_원문_첫_제목에서_끝의_출처_괄호만_뗀_것이다(archive):
+    """제공 문서 원문의 첫 제목 끝 「(HM-8, 교육용 예시)」 꼴은 제작 흔적이라 처리 건 목록(「… 추출 제안」)에 보이지 않는다. 원문 바이트는 서명
+    묶음이 걸려 그대로 둔다 — 실제 제공 문서 파일로 이름을 짓는다."""
+    names = {}
+    for f in sorted((WWW / 'samples').glob('*.md')):
+        head = f.read_text(encoding='utf-8').splitlines()[0][2:]
+        names[f.name] = (head, mx.display_name(archive.save('hyd', f.name, f.read_bytes())))
+    assert sum('교육용 예시' in head for head, _ in names.values()) == 3          # 괄호가 붙은 제공 문서 셋(HM-8 · PM-02 · PR-07)
+    for f, (head, name) in names.items():      # 뗀 것은 제목 끝의 「(문서 번호, 교육용 예시)」 하나뿐이다
+        code = f.split('_')[0]
+        assert head in (name, f'{name} ({code}, 교육용 예시)'), (head, name)
+    assert names['HM-8_cooler-fan-manual.md'][1] == '유압 파워유닛 쿨러 팬 정비 매뉴얼'
+    assert names['HI-01_shift-inspection-supplement.md'][1] == names['HI-01_shift-inspection-supplement.md'][0]   # 괄호 없는 제목은 그대로
 
 
 def test_추출_정의는_판본과_계약을_싣는다():
