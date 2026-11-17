@@ -684,7 +684,7 @@ def f13():
     for y0, y1 in rows:
         f.add([rect(3, y0, 1194, y1 - y0, 20, fill=LIGHT, stroke="none", sw=0)])
     heads = [("1:1", "설비 → 놓인다 → 설치 위치 / 양쪽 모두 많아야 하나"),
-             ("1:N", "구성 요소 → 감시된다 → 센서 / 구성 요소 하나에 센서 여럿, / 센서 하나에 구성 요소 하나 / 반대쪽에서 읽으면 N:1"),
+             ("1:N", "구성 요소 → 감시된다 → 센서 / 구성 요소 하나에 센서 여럿, / 센서 하나에 구성 요소 하나"),
              ("N:M", "공급사 → 공급한다 → 부품 / 양쪽 모두 여럿")]
     for (y0, y1), (t, d) in zip(rows, heads):
         nd = len(d.split(" / "))
@@ -823,7 +823,7 @@ def f17():
 
 def f18():
     """18장: 위 띠(클래스)에 설비 → 가진다 → 구성 요소(관계 유형)와 쿨러 ▷ 구성 요소(상속), 아래 띠(인스턴스)에 2호기 → 가진다 → 오일 쿨러.
-    인스턴스는 점선 「속한다」로 제 클래스에 닿는다. ① 한 종류다 = 상속, ② 속한다 = 인스턴스, ③ 일부다 = 관계(가진다)."""
+    오일 쿨러에서 쿨러로 점선 「속한다」 하나를 올린다. ① 한 종류다 = 상속, ② 속한다 = 인스턴스, ③ 일부다 = 관계(가진다)."""
     f = Fig("카드_세연결_가르기.svg")
     XE, XC, XK, ky, iy = 170, 600, 1030, 92, 410
     f.add(band_rect(4, 182, PALE) + band_rect(196, 506, LIGHT))
@@ -836,9 +836,8 @@ def f18():
     f.lab("① 한 종류다", "상속", (XC + XK) / 2 + 12, ky - 72, 200)
     for x, kind, nm in ((XE, "equip", "2호기"), (XK, "cooler", "오일 쿨러")):
         hcard(f, x, iy, 250, 92, kind, name=nm, hot=x == XK)
-        f.add(dash_arrow([(x, iy - 52), (x, ky + 48)], BLUE if x == XK else GREY, 4.5, 16, 9, 7))
+    f.add(dash_arrow([(XK, iy - 52), (XK, ky + 48)], BLUE, 4.5, 16, 9, 7))
     f.lab("② 속한다", "인스턴스", XK + 66, 232, 130)
-    f.lab("", "속한다", XE + 52, 248, 90)
     harrow(f, XE + 135, XK - 135, iy, BLUE, label=None)
     f.lab("③ 가진다", "일부다 · 관계", (XE + XK) / 2, iy - 70, 220)
     return f
@@ -1165,8 +1164,309 @@ def f34():
     return f
 
 
+# ───────────────────────── 3단원(35~51장) ─────────────────────────
+
+def table(f: Fig, x, y, cols, header, rows, rh=50, hh=46, hot=(), title=False):
+    """표 하나: 머리 줄(회색)과 값 줄(흰색, hot이면 하늘색). 칸 글은 라벨로 얹는다. 돌려주는 값: 칸마다의 (x0, x1) 목록과 끝 y."""
+    w = sum(cols)
+    xs, cx = [], x
+    for c in cols:
+        xs.append((cx, cx + c))
+        cx += c
+    f.add([rect(x, y, w, hh, 10, fill=GREY, stroke="none", sw=0)])
+    for (a, b), h in zip(xs, header):
+        f.lab("", h, (a + b) / 2, y + hh / 2 - 15, b - a - 8)
+    ry = y + hh + 6
+    for i, row in enumerate(rows):
+        hr = i in hot
+        f.add([rect(x, ry, w, rh, 10, fill=PALE if hr else WHITE, stroke=BLUE if hr else NAVY, sw=3 if hr else 2)])
+        for k, ((a, b), v) in enumerate(zip(xs, row)):
+            if k:
+                f.add([line(a, ry + 8, a, ry + rh - 8, stroke=GREY, sw=2)])
+            if title:
+                f.lab(v, "", (a + b) / 2, ry + rh / 2 - 19, b - a - 8)
+            else:
+                f.lab("", v, (a + b) / 2, ry + rh / 2 - 15, b - a - 8)
+        ry += rh + 6
+    return xs, ry - 6
+
+
+def code_box(f: Fig, cx, cy, w, h, text, hot=False):
+    """글자로 적은 쿼리 조각을 담는 상자(연회색, hot이면 파란 테두리)."""
+    f.add([rect(cx - w / 2, cy - h / 2, w, h, 14, fill=LIGHT, stroke=BLUE if hot else NAVY, sw=4 if hot else 2.5)])
+    f.lab(text, "", cx, cy - 19, w - 20)
+
+
+def ask_answer(f: Fig, answer=True):
+    """38 · 39장 위 줄: 왼쪽 물음, 오른쪽 찾은 답(19장과 같은 꼴)."""
+    f.add([rect(3, 4, 640, 66, 18, fill=WHITE, stroke=NAVY, sw=3)])
+    f.lab("물음", "2호기 오일 쿨러에 갈아 끼울 부품의 품번", 323, 7, 600)
+    if answer:
+        f.add([rect(840, 4, 357, 66, 18, fill=PALE, stroke=BLUE, sw=4)])
+        f.lab("찾은 답", "품번 **CC-2040**", 1018, 7, 330)
+
+
+def f36():
+    """36장: 그래프 DB 안의 모양. 노드 둘(설비 2호기 · 구성 요소 오일 쿨러)을 관계 가진다로 잇고, 노드마다 속성을 키와 값의 짝으로 붙인다.
+    위 줄의 이름표(노드 · 관계 · 노드)가 세 조각을 가리킨다."""
+    f = Fig("카드_저장구조_노드관계속성.svg", dy=36)
+    for x, t in ((290, "노드"), (600, "관계"), (910, "노드")):
+        f.lab(t, "", x, 0, 160, strong=True)
+    spec = ((60, "equip", "설비", "2호기", [("설비 코드", "EQ-02"), ("이름", "2호기")], 150),
+            (680, "cooler", "구성 요소", "오일 쿨러", [("구성 요소 코드", "EQ-02-COOLER"), ("이름", "오일 쿨러")], 196))
+    top, B, w = 46, 160, 460
+    for x0, kind, cls, nm, rows, iw in spec:
+        bot = B + 18 + 2 * 54 + 10 + 18
+        f.add(banded(x0, top, w, bot, B, LIGHT, NAVY, 3))
+        r = 40
+        f.add(disc(x0 + 18 + r, (top + B) / 2, r, kind))
+        tx0 = x0 + 18 + 2 * r + 12
+        tx, tw = (tx0 + x0 + w) / 2, x0 + w - tx0 - 8
+        f.lab("", f"**{cls}**", tx, (top + B) / 2 - 33, tw)
+        f.lab(nm, "", tx, (top + B) / 2 - 5, tw)
+        cells(f, x0 + 18, B + 18, w - 36, rows, item_w=iw, rh=54)
+    harrow(f, 530, 670, (top + B) / 2, BLUE, label="가진다", small=False)
+    f.lab("속성", "회색 칸이 키(속성명), 흰 칸이 값(속성값)", 600, 330, 460, strong=True)
+    return f
+
+
+def f37():
+    """37장: 관계형 DB는 클래스마다 테이블을 두고(위 줄 셋, 구성 요소 테이블만 파랑) 인스턴스 하나를 행 하나로, 속성을 열로 담는다.
+    오일 쿨러 행은 하늘색, 이름 열은 파란 테두리."""
+    f = Fig("카드_관계형_테이블.svg", dy=30)
+    for cx, nm, hot in ((250, "설비 테이블", False), (600, "구성 요소 테이블", True), (950, "부품 테이블", False)):
+        f.add([rect(cx - 150, 4, 300, 58, 16, fill=PALE if hot else WHITE, stroke=BLUE if hot else NAVY, sw=4 if hot else 2.5)])
+        f.lab(nm, "", cx, 14, 280)
+    f.add(arrow([(600, 66), (600, 104)], BLUE, sw=5, size=15))
+    x0, cols = 150, (270, 230, 230)
+    xs, yb = table(f, x0, 112, cols, ("구성 요소 코드", "이름", "설비 코드"),
+                   [("EQ-02-COOLER", "오일 쿨러", "EQ-02"), ("EQ-02-FAN", "쿨러 팬", "EQ-02"), ("EQ-02-PUMP", "주 펌프", "EQ-02")],
+                   rh=64, hh=50, hot=(0,), title=True)
+    a, b = xs[1]
+    f.add([rect(a + 4, 106, b - a - 8, yb - 106 + 8, 14, fill="none", stroke=BLUE, sw=4)])
+    rx = x0 + sum(cols) + 30
+    f.add(arrow([(rx + 64, 112 + 50 + 6 + 32), (rx + 4, 112 + 50 + 6 + 32)], BLUE, sw=5, size=15))
+    f.lab("행", "인스턴스 하나", rx + 150, 112 + 50 + 6 + 32 - 30, 170, strong=True)
+    f.lab("열", "속성 하나", (a + b) / 2, yb + 22, 200, strong=True)
+    return f
+
+
+def f38():
+    """38장: 19장의 물음을 테이블 넷(설비 · 구성 요소 · 잇는 표 · 부품)에서 푼다. 표 이름 아래 작은 줄이 열 이름이고, 이웃한 두 테이블에서
+    같은 값을 적은 열이 마주 본다. 마주 본 칸을 조인으로 잇는다. 쓴다는 다대다라 잇는 표(구성 요소 코드 · 품번)를 하나 더 건너고,
+    그 표에는 다른 오일 쿨러가 같은 품번을 쓰는 줄도 있다. 질문의 길에 든 행은 하늘색."""
+    f = Fig("카드_조인_네테이블.svg", dy=90)
+    f.add([rect(3, 4, 640, 66, 18, fill=WHITE, stroke=NAVY, sw=3)])
+    f.lab("물음", "2호기 오일 쿨러에 갈아 끼울 부품의 품번", 323, 7, 600)
+    gap = 72
+    specs = [("설비 테이블", "이름 · 설비 코드", (124, 124), [("2호기", "EQ-02")]),
+             ("구성 요소 테이블", "설비 코드 · 구성 요소 코드", (124, 172), [("EQ-02", "EQ-02-COOLER")]),
+             ("잇는 표", "구성 요소 코드 · 품번", (172, 124), [("EQ-02-COOLER", "CC-2040"), ("EQ-03-COOLER", "CC-2040")]),
+             ("부품 테이블", "품번", (124,), [("CC-2040",)])]
+    ty, rh = 186, 64
+    x, edges = 4, []
+    for i, (nm, cols_, ws, rows) in enumerate(specs):
+        w = sum(ws)
+        f.lab(nm, cols_, x + w / 2, ty - 66, max(w, 248) + 20, strong=(i == 2))
+        for r, row in enumerate(rows):
+            ry = ty + r * (rh + 8)
+            hot = r == 0
+            f.add([rect(x, ry, w, rh, 10, fill=PALE if hot else WHITE, stroke=BLUE if hot else NAVY, sw=3 if hot else 2)])
+            cx0 = x
+            for k, (v, cw) in enumerate(zip(row, ws)):
+                if k:
+                    f.add([line(cx0, ry + 8, cx0, ry + rh - 8, stroke=GREY, sw=2)])
+                f.lab("", v, cx0 + cw / 2, ry + rh / 2 - 15, cw - 8)
+                cx0 += cw
+        edges.append((x, x + w))
+        x += w + gap
+    row_y = ty + rh / 2
+    for i in range(3):
+        a, b = edges[i][1], edges[i + 1][0]
+        f.add([line(a + 6, row_y, b - 6, row_y, stroke=BLUE, sw=5), circle(a + 6, row_y, 5, fill=BLUE, stroke="none", sw=0),
+               circle(b - 6, row_y, 5, fill=BLUE, stroke="none", sw=0)])
+        f.lab("조인", "", (a + b) / 2, row_y + 14, gap - 4, strong=True)
+    return f
+
+
+def f39():
+    """39장: 같은 물음을 그래프 DB에서 푼다. 2호기 → 가진다 → 오일 쿨러 → 쓴다 → 쿨러 코어로 저장된 관계를 따라간다.
+    아래의 회색 오일 쿨러 둘(1 · 3호기)도 같은 쿨러 코어를 쓴다는 연결이 관계 하나씩으로 저장돼 있다(잇는 표가 없다)."""
+    f = Fig("카드_관계따라가기_그래프.svg")
+    ask_answer(f)
+    ry = 196
+    hcard(f, 150, ry, 270, 104, "equip", "설비", "2호기", desc="EQ-02", hot=True)
+    hcard(f, 570, ry, 300, 104, "cooler", "구성 요소", "오일 쿨러", desc="EQ-02-COOLER", hot=True)
+    hcard(f, 1018, ry, 300, 104, "core", "부품", "쿨러 코어", desc="품번 CC-2040", hot=True)
+    harrow(f, 290, 414, ry, BLUE, label="가진다", small=False)
+    harrow(f, 726, 862, ry, BLUE, label="쓴다", small=False)
+    f.add(arrow([(1150, ry - 56), (1150, 76)], BLUE, sw=6, size=17))
+    for y, code in ((340, "EQ-01-COOLER"), (440, "EQ-03-COOLER")):
+        hcard(f, 570, y, 300, 80, "cooler", "구성 요소", "오일 쿨러", desc=code, grey=True, small=True)
+        f.add(arrow([(726, y), (1018, ry + 58)], GREY, sw=4))
+    f.lab("", "다른 오일 쿨러가 같은 부품을 쓰는 것도 / 관계 하나씩으로 저장돼 있다", 210, 362, 380)
+    return f
+
+
+def f40():
+    """40장: 왼쪽은 온톨로지 스키마의 네 줄 — 위 둘(클래스 이름 · 관계 유형 이름)은 그래프 DB의 노드 · 관계에 이름으로 붙고(파랑),
+    아래 둘(의미 · 자료형 · 필수, 시작 · 종료 클래스 · 카디널리티)은 노드 · 관계에 붙지 않고 스키마에 적혀 있으며 그 일부는 DB에 조건으로 건다(41장).
+    오른쪽 이름은 쌍점 없이 영문만(쌍점은 44 · 45장에서 처음). 오른쪽 그래프 DB는 레이블이 붙은 노드 셋과
+    관계 유형 둘(한글 이름을 곁에)."""
+    f = Fig("카드_스키마와DB_가름.svg")
+    f.add([rect(3, 4, 560, 502, 22, fill=LIGHT, stroke="none", sw=0), rect(640, 4, 557, 502, 22, fill=LIGHT, stroke="none", sw=0)])
+    f.lab("온톨로지 스키마", "", 283, 16, 400, strong=True)
+    f.lab("그래프 DB", "쿼리에 쓰는 영문 이름", 918, 6, 400, strong=True)
+    rows = ((70, "클래스 이름", "설비 · 구성 요소 · 부품", False), (166, "관계 유형 이름", "가진다 · 쓴다", False),
+            (282, "의미 · 자료형 · 필수", "", True), (378, "시작 · 종료 클래스 · 카디널리티", "", True))
+    for y, nm, val, grey in rows:
+        f.add([rect(26, y, 514, 80, 16, fill=WHITE if grey else PALE, stroke=GREY if grey else BLUE, sw=3 if grey else 4)])
+        if val:
+            f.lab(nm, val, 283, y + 40 - 30, 480)
+        else:
+            f.lab(nm, "", 283, y + 40 - 19, 480)
+    f.lab("", "노드 · 관계에는 붙지 않는다 · 일부는 DB에 조건으로 건다", 283, 466, 520)
+    f.add(arrow([(548, 158), (630, 158)], BLUE, sw=6, size=17))
+    nodes = ((112, "Asset", "설비"), (264, "Component", "구성 요소"), (416, "Part", "부품"))
+    for y, lb, ko in nodes:
+        f.add([rect(680, y - 38, 290, 76, 38, fill=WHITE, stroke=NAVY, sw=3.5)])
+        f.lab(lb, ko, 825, y - 30, 270)
+    for (y1, _, _), (y2, _, _), lb, ko in ((nodes[0], nodes[1], "HAS_COMPONENT", "가진다"), (nodes[1], nodes[2], "USES_PART", "쓴다")):
+        f.add(arrow([(825, y1 + 40), (825, y2 - 42)], BLUE, sw=5, size=15))
+        f.lab(lb, ko, 1060, (y1 + y2) / 2 - 30, 260)
+    return f
+
+
+def f41():
+    """41장: 넣을 데이터가 관문 둘을 지난다. 넣기 전에 검사 프로그램이 DB에 걸지 않은 규칙을 보고(29장의 거꾸로 그은 가진다 ✕),
+    저장할 때 그래프 DB가 DB 제약 조건으로 막는다(유일 제약 — 품번이 같은 부품 둘째 ✕). 맨 아래는 걸 수 있는 조건이 제품 · 판마다 다르다는 한 줄."""
+    f = Fig("카드_제약조건_두관문.svg")
+    cy = 96
+    hcard(f, 140, cy, 250, 100, "doc", name="넣을 데이터")
+    hcard(f, 480, cy, 330, 116, "sheet", name="검사 프로그램", desc="넣기 전 / DB에 걸지 않은 규칙", hot=True)
+    hcard(f, 870, cy, 330, 116, "graph", name="그래프 DB", desc="저장할 때 / DB에 건 조건", hot=True)
+    f.add(arrow([(268, cy), (308, cy)], NAVY, sw=5, size=15) + arrow([(648, cy), (698, cy)], NAVY, sw=5, size=15)
+          + arrow([(1038, cy), (1100, cy)], NAVY, sw=5, size=15))
+    f.add(check_badge(1140, cy, 26))
+    f.lab("", "저장", 1140, cy + 34, 90)
+    for cx, bx, bw, title, desc in ((480, 480, 340, "", "오일 쿨러에서 2호기로 / 거꾸로 그은 가진다"),
+                                    (870, 900, 470, "**유일 제약**(Uniqueness Constraint)", "품번 CC-2040인 부품이 / 하나 더 들어온다")):
+        f.add(arrow([(cx, cy + 62), (cx, 214)], GREY, sw=4, size=14))
+        f.add([rect(bx - bw / 2, 222, bw, 126, 18, fill=WHITE, stroke=NAVY, sw=2.5)])
+        f.add(cross_badge(bx - bw / 2 + 40, 285, 20))
+        if title:
+            f.lab(title, desc, bx + 35, 285 - 52, bw - 90)
+        else:
+            f.lab("", desc, bx + 22, 285 - 26, 270)
+    f.add([rect(3, 400, 1194, 106, 22, fill=PALE, stroke="none", sw=0)])
+    f.lab("", "DB에 걸 수 있는 조건은 제품과 판마다 다르다 / DB에 걸지 않은 규칙은 넣기 전에 검사 프로그램이 맡는다", 600, 420, 1100)
+    return f
+
+
+def f42():
+    """42장: 말로 물은 「2호기 쿨러 부품」이 세 갈래로 읽힌다 — 쿨러에 딸린 구성 요소(쿨러 팬), 오일 쿨러가 쓰는 부품의 이름(쿨러 코어),
+    그 부품의 품번(CC-2040)."""
+    f = Fig("카드_말질문_세갈래.svg")
+    hcard(f, 250, 255, 450, 140, "question", name="2호기 쿨러 부품 알려 줘", hot=True)
+    spec = ((80, "fan", "쿨러 팬", "쿨러에 딸린 / 구성 요소로 읽으면"),
+            (255, "core", "쿨러 코어", "오일 쿨러가 쓰는 / 부품의 이름으로 읽으면"),
+            (430, "core", "CC-2040", "그 부품의 / 품번으로 읽으면"))
+    for y, kind, nm, desc in spec:
+        hcard(f, 900, y, 520, 140, kind, name=nm, desc=desc)
+        f.add(arrow([(482, 255 + (y - 255) * 0.25), (632, y)], NAVY, sw=5))
+    return f
+
+
+def f44():
+    """44장: 위는 관계 그림 한 줄(설비 → 가진다 → 구성 요소, 클래스 카드), 아래는 같은 모양의 글자 한 줄. 카드는 괄호로,
+    화살표는 화살표 모양 그대로 옮긴다. 점선이 위아래 짝을 잇는다."""
+    f = Fig("카드_패턴_한줄.svg", dy=20)
+    y1 = 110
+    hcard(f, 210, y1, 300, 110, "none", name="설비", ring=True, strong=True)
+    hcard(f, 990, y1, 300, 110, "none", name="구성 요소", ring=True, strong=True)
+    harrow(f, 372, 828, y1, NAVY, label="가진다", small=False)
+    y2 = 330
+    f.add([rect(30, y2 - 46, 1140, 92, 18, fill=LIGHT, stroke=NAVY, sw=2.5)])
+    for x, t in ((210, "(:Asset)"), (600, "-[:HAS_COMPONENT]->"), (990, "(:Component)")):
+        f.lab(t, "", x, y2 - 19, 360)
+    for x, t in ((210, "노드"), (600, "관계"), (990, "노드")):
+        f.add(dash_line(x, y1 + 64 if x != 600 else y1 + 16, x, y2 - 52, BLUE, 3.5, 9, 7))
+        f.lab("", t, x + 50, (y1 + 64 + y2 - 52) / 2 - 13, 80)
+    return f
+
+
+def f46():
+    """46장: Neo4j Browser 화면 — 위 칸에 쿼리를 넣고, 아래 결과 칸에서 그래프 보기 · 표 보기로 결과를 본다.
+    데이터는 화면이 아니라 점선으로 이어진 그래프 DB에 있다."""
+    f = Fig("카드_브라우저_화면.svg")
+    x0, x1 = 3, 790
+    f.add([rect(x0, 4, x1 - x0, 502, 20, fill=WHITE, stroke=NAVY, sw=3), rect(x0, 4, x1 - x0, 46, 20, fill=LIGHT, stroke="none", sw=0),
+           line(x0, 50, x1, 50, stroke=NAVY, sw=2)])
+    f.add([circle(x0 + 30 + i * 26, 27, 7, fill=GREY, stroke="none", sw=0) for i in range(3)])
+    f.add([rect(x0 + 22, 70, x1 - x0 - 44, 64, 12, fill=PALE, stroke=BLUE, sw=4)])
+    f.lab("", "쿼리를 넣는 칸", (x0 + x1) / 2, 70 + 32 - 15, 500)
+    fy0 = 156
+    f.add([rect(x0 + 22, fy0, x1 - x0 - 44, 330, 12, fill=WHITE, stroke=NAVY, sw=2.5)])
+    tabs = ((fy0 + 54, "그래프"), (fy0 + 140, "표"))
+    for y, t in tabs:
+        f.add([rect(x0 + 40, y - 34, 120, 68, 12, fill=PALE if t == "그래프" else LIGHT, stroke=BLUE if t == "그래프" else GREY, sw=3)])
+        f.lab(t, "", x0 + 100, y - 19, 110)
+    gx, gy = 520, fy0 + 170
+    pts = [(gx, gy - 90), (gx - 170, gy + 70), (gx, gy + 100), (gx + 170, gy + 70)]
+    for (px, py) in pts[1:]:
+        f.add(arrow([(gx, gy - 90 + 30), (px + (gx - px) * 0.18, py - 26)], NAVY, sw=4, size=13))
+    for i, (px, py) in enumerate(pts):
+        f.add([circle(px, py, 30 if i == 0 else 26, fill=PALE if i == 0 else WHITE, stroke=NAVY, sw=3)])
+    hcard(f, 1030, 255, 300, 130, "graph", name="그래프 DB", desc="데이터는 / 여기에 있다", hot=True)
+    f.add(dash_line(x1 + 8, 255, 872, 255, BLUE, 4, 10, 8))
+    f.lab("", "연결", 834, 255 - 40, 70)
+    return f
+
+
+def run_tag(f: Fig, cx, cy, n):
+    f.add([rect(cx - 80, cy - 30, 160, 60, 30, fill=WHITE, stroke=NAVY, sw=2.5)])
+    f.lab(f"{n}번째 실행", "", cx, cy - 19, 150)
+
+
+def f49():
+    """49장: 같은 CREATE를 두 번 돌리면 품번이 같은 부품 노드가 둘 생긴다(50장 MERGE와 같은 패턴으로 견준다). 맨 아래는 품번에 유일 제약이 걸려 있으면
+    두 번째 실행이 거절된다는 한 줄(41장과 같은 ✕)."""
+    f = Fig("카드_CREATE_두번.svg")
+    for y, n in ((80, 1), (230, 2)):
+        run_tag(f, 90, y, n)
+        code_box(f, 470, y, 560, 76, "CREATE (:Part {partNo: 'CC-2040'})")
+        f.add(arrow([(758, y), (836, y)], NAVY, sw=5, size=15))
+        hcard(f, 1010, y, 330, 104, "core", "부품", "품번 CC-2040", hot=(n == 2))
+    f.lab("", "품번이 같은 부품 노드가 둘", 1010, 292, 330)
+    f.add([rect(3, 360, 1194, 146, 22, fill=WHITE, stroke=GREY, sw=3)])
+    f.add(cross_badge(90, 433, 24))
+    f.lab("품번에 유일 제약이 걸려 있으면", "2번째 실행은 DB가 거절하고, 부품 노드는 하나로 남는다", 640, 433 - 30, 1000)
+    return f
+
+
+def f50():
+    """50장: 같은 MERGE를 두 번 돌린다. 1번째는 품번 CC-2040인 부품이 없으니 만들고, 2번째는 있으니 찾기만 해 노드는 하나다.
+    맨 아래는 찾는 기준에 식별자(품번)를 적는다는 한 줄."""
+    f = Fig("카드_MERGE_두번.svg")
+    code_box(f, 470, 44, 560, 76, "MERGE (:Part {partNo: 'CC-2040'})")
+    lanes = ((170, 1, "없으니 만든다", "품번 CC-2040인 부품이 없다"), (300, 2, "있으니 찾는다", "품번 CC-2040인 부품이 있다"))
+    for y, n, t, d in lanes:
+        run_tag(f, 90, y, n)
+        f.add(arrow([(174, y), (226, y)], NAVY, sw=5, size=15))
+        f.add([rect(236, y - 46, 470, 92, 18, fill=PALE if n == 1 else WHITE, stroke=BLUE if n == 1 else NAVY, sw=3)])
+        f.lab(t, d, 471, y - 30, 440)
+    f.add(arrow([(714, 170), (838, 222)], BLUE, sw=5, size=15))
+    f.add(dash_arrow([(714, 300), (838, 250)], NAVY, sw=4.5, size=15))
+    hcard(f, 1010, 236, 330, 120, "core", "부품", "품번 CC-2040", hot=True)
+    f.lab("", "노드는 하나", 1010, 304, 300)
+    f.add([rect(3, 392, 1194, 114, 22, fill=PALE, stroke="none", sw=0)])
+    f.lab("MERGE의 패턴에는 식별자를 적는다", "바뀔 수 있는 이름까지 적으면, 이름이 다를 때 같은 부품을 못 찾고 하나 더 만든다", 600, 449 - 30, 1100)
+    return f
+
+
 FIGS = [f05, f06, f07, f08, f09, f10, f11, f12, f13, f14, f16, f17, f18, f19, f20,
-        f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f34]
+        f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f34,
+        f36, f37, f38, f39, f40, f41, f42, f44, f46, f49, f50]
 
 
 def fit_deck(md: Path, labels: dict[str, list[str]]) -> int:

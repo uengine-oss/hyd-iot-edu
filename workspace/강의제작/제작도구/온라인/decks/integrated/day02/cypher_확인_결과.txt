@@ -1,0 +1,133 @@
+name, versions, edition
+"Neo4j Kernel", ["5.26.33"], "community"
+
+######## 49장 CREATE — 빈 DB, 제약 없음
+== 49-1 CREATE 첫 번째
+   > CREATE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 49-2 CREATE 두 번째(같은 쿼리)
+   > CREATE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 49-3 품번 CC-2040인 부품 노드 수
+   > MATCH (p:Part {partNo: 'CC-2040'}) RETURN count(p) AS n;
+n
+2
+   (종료 코드 0)
+== 정리
+   > MATCH (p:Part) DETACH DELETE p;
+   (종료 코드 0)
+
+######## 41 · 49장 품번에 유일 제약을 건 뒤의 CREATE
+== 41-1 유일 제약 만들기
+   > CREATE CONSTRAINT part_partno_unique IF NOT EXISTS FOR (p:Part) REQUIRE p.partNo IS UNIQUE;
+   (종료 코드 0)
+== 41-2 CREATE 첫 번째
+   > CREATE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 41-3 CREATE 두 번째(같은 쿼리)
+   > CREATE (:Part {partNo: 'CC-2040'});
+Node(0) already exists with label `Part` and property `partNo` = 'CC-2040'
+   (종료 코드 1)
+== 41-4 품번 CC-2040인 부품 노드 수
+   > MATCH (p:Part {partNo: 'CC-2040'}) RETURN count(p) AS n;
+n
+1
+   (종료 코드 0)
+== 정리
+   > MATCH (p:Part) DETACH DELETE p;
+   (종료 코드 0)
+== 정리
+   > DROP CONSTRAINT part_partno_unique;
+   (종료 코드 0)
+
+######## 50장 MERGE — 빈 DB, 제약 없음
+== 50-1 MERGE 첫 번째
+   > MERGE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 50-2 MERGE 두 번째(같은 쿼리)
+   > MERGE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 50-3 품번 CC-2040인 부품 노드 수
+   > MATCH (p:Part {partNo: 'CC-2040'}) RETURN count(p) AS n;
+n
+1
+   (종료 코드 0)
+== 정리
+   > MATCH (p:Part) DETACH DELETE p;
+   (종료 코드 0)
+== 50-4 이름까지 적은 MERGE 첫 번째
+   > MERGE (:Part {partNo: 'CC-2040', name: '쿨러 코어'});
+   (종료 코드 0)
+== 50-5 이름을 다르게 적은 MERGE(품번은 같다)
+   > MERGE (:Part {partNo: 'CC-2040', name: '쿨러코어'});
+   (종료 코드 0)
+== 50-6 품번 CC-2040인 부품 노드 수
+   > MATCH (p:Part {partNo: 'CC-2040'}) RETURN count(p) AS n;
+n
+2
+   (종료 코드 0)
+== 정리
+   > MATCH (p:Part) DETACH DELETE p;
+   (종료 코드 0)
+
+######## 1 · 2단원의 예(1~3호기, 2호기의 구성 요소 셋, 세 오일 쿨러가 같은 쿨러 코어를 쓴다)를 넣는다
+== 예 넣기
+   > CREATE (e1:Asset {code: 'EQ-01', name: '1호기'}), (e2:Asset {code: 'EQ-02', name: '2호기'}), (e3:Asset {code: 'EQ-03', name: '3호기'}),
+   >  (c1:Component {code: 'EQ-01-COOLER', name: '오일 쿨러'}), (c2:Component {code: 'EQ-02-COOLER', name: '오일 쿨러'}),
+   >  (f2:Component {code: 'EQ-02-FAN', name: '쿨러 팬'}), (m2:Component {code: 'EQ-02-PUMP', name: '주 펌프'}),
+   >  (c3:Component {code: 'EQ-03-COOLER', name: '오일 쿨러'}),
+   >  (p:Part {partNo: 'CC-2040', name: '쿨러 코어'}),
+   >  (e1)-[:HAS_COMPONENT]->(c1), (e2)-[:HAS_COMPONENT]->(c2), (e2)-[:HAS_COMPONENT]->(f2), (e2)-[:HAS_COMPONENT]->(m2), (e3)-[:HAS_COMPONENT]->(c3),
+   >  (c1)-[:USES_PART]->(p), (c2)-[:USES_PART]->(p), (c3)-[:USES_PART]->(p);
+   (종료 코드 0)
+== 43 · 47장 MATCH · RETURN
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component)
+   > RETURN c.name;
+c.name
+"주 펌프"
+"쿨러 팬"
+"오일 쿨러"
+   (종료 코드 0)
+== 45장 첫째 줄 — 설비부터 적은 패턴
+   > MATCH (:Asset {code: 'EQ-02'})-[:HAS_COMPONENT]->(c:Component)
+   > RETURN c.name;
+c.name
+"주 펌프"
+"쿨러 팬"
+"오일 쿨러"
+   (종료 코드 0)
+== 45장 둘째 줄 — 구성 요소부터 적은 같은 패턴
+   > MATCH (c:Component)<-[:HAS_COMPONENT]-(:Asset {code: 'EQ-02'})
+   > RETURN c.name;
+c.name
+"주 펌프"
+"쿨러 팬"
+"오일 쿨러"
+   (종료 코드 0)
+== 48장 WHERE
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component)
+   > WHERE c.name = '오일 쿨러'
+   > RETURN c.code;
+c.code
+"EQ-02-COOLER"
+   (종료 코드 0)
+== 51장 역량 질문
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component)
+   >       -[:USES_PART]->(p:Part)
+   > WHERE c.name = '오일 쿨러'
+   > RETURN p.partNo;
+p.partNo
+"CC-2040"
+   (종료 코드 0)
+== 39장 쿨러 코어를 쓰는 구성 요소(다대다가 관계로 남았는지)
+   > MATCH (c:Component)-[:USES_PART]->(p:Part {partNo: 'CC-2040'})
+   > RETURN c.code ORDER BY c.code;
+c.code
+"EQ-01-COOLER"
+"EQ-02-COOLER"
+"EQ-03-COOLER"
+   (종료 코드 0)
+== 임시 컨테이너 지움: hyd-deck-u3-cypher-check

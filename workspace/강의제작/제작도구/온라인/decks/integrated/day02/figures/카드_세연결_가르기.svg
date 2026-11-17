@@ -26,20 +26,6 @@
 <line x1="-30" y1="-6" x2="-30" y2="4" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="-4" y1="-6" x2="-4" y2="4" stroke="#13294B" stroke-width="5.65" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
-<line x1="170.0" y1="358.0" x2="170.0" y2="349.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="342.0" x2="170.0" y2="333.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="326.0" x2="170.0" y2="317.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="310.0" x2="170.0" y2="301.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="294.0" x2="170.0" y2="285.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="278.0" x2="170.0" y2="269.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="262.0" x2="170.0" y2="253.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="246.0" x2="170.0" y2="237.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="230.0" x2="170.0" y2="221.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="214.0" x2="170.0" y2="205.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="198.0" x2="170.0" y2="189.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="182.0" x2="170.0" y2="173.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170.0" y1="166.0" x2="170.0" y2="157.0" stroke="#D3D9E1" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<polygon points="170.0,140.0 177.5,154.1 162.5,154.1" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="905.0" y="364.0" width="250" height="92" rx="20" ry="20" fill="#E7F3FD" stroke="#1A6FC4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="951.0" cy="410" r="32.0" fill="#FFFFFF" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 <g transform="translate(951.0 410) scale(0.4129032258064516)">
