@@ -737,6 +737,8 @@ def provided_basis(practical):
             f'INSTALLED_UNIT의 current가 true면 지금 달린 실물, false면 철거된 실물입니다(`입력/자료/구성요소_목록.csv` {" · ".join(f"{i}행" for i in removed)}).',
             '- 이름: 설비마다 다르게 적은 구성 요소 이름은 하나로 맞추고, 원자료 이름은 aliases에 남겼습니다.',
             '- 센서와 물리량: 같은 물리량은 붙은 자리까지 같아야 묶었습니다(쿨러 쪽 유온, 쿨러 출구 유온, 탱크 유온이 따로). '
+            'HYD-07의 현장 지시계는 붙은 자리의 물리량에 두었고(탱크의 유온계는 탱크 유온, 펌프의 압력계는 토출 압력), '
+            'HYD-04의 FS2는 냉각수 유량이라 작동유를 재는 냉각 회로 유량과 따로 두었습니다. '
             f'단위는 물리량 기준 단위로 맞추고 바꾼 센서에는 source_unit을 남겼습니다({" · ".join(other)}). 한계가 없으면 limit을 생략했습니다.',
             '- 부품: 교체부품 칸의 예전 품번 · 줄여 쓴 표기 · 제조사 품번은 품번 교차표로 사내 품번에 이었고, 그 표기들은 부품의 other_codes에 남겼습니다.']) + '\n'
     lines = ['# 제공된 모델의 자료 처리 근거', '',
@@ -804,7 +806,7 @@ def chosen_text(rows):
 
 
 EXPECT_ASSET, EXPECT_UNIT_ASSET = 'HYD-01', 'HYD-02'          # 기대 답 예가 묻는 설비(구성 요소별 센서 · 교체 이력이 있는 구성 요소 자리)
-EXPECT_SENSORS = ('HYD-01:TS1', 'HYD-03:PS1')                   # 값을 견주는 센서(둘째는 단위가 다른 줄)
+EXPECT_SENSORS = ('HYD-01:TS1', 'HYD-03:PS1', 'HYD-07:TI-1')    # 값을 견주는 센서(둘째는 같은 값을 다른 단위로 적은 줄, 셋째는 손으로 읽는 현장 지시계)
 EXPECT_CODES = ('P-PMP-SEAL', 'PS-4510', 'RF-10', 'P-PMP-SEAL-X')   # 사내 품번 · 예전 품번 · 줄여 쓴 표기 · 원자료에 없는 품번
 
 
@@ -1235,8 +1237,9 @@ def graph_chosen(course):
                    f'{GRAPH_SHARED_PART} 사용 설비가 {" · ".join(kept)} — 보전팀은 남은 설비 몫만 예비품을 준비하고, {retired}의 지난 기록은 CMMS에서 찾음']}
 
 
-GRAPH_SHARED_PART = 'P-PMP-SEAL'          # 통합반 그래프 랩 기대 답과 결정 지점이 묻는 공용 부품
-GRAPH_ASK = {'sensors': 'HYD-01', 'parts': 'HYD-02', 'aliases': ('RF-10', 'PS-4510'), 'missing': 'P-PMP-SEAL-X'}   # 기대 답이 묻는 값(설비 · 다른 표기 · 없는 품번)
+GRAPH_SHARED_PART = 'P-CPL-ELM'           # 통합반 그래프 랩 기대 답과 결정 지점이 묻는 공용 부품(불용 결정 설비도 쓴다)
+# 기대 답이 묻는 값(설비 · 다른 표기 · 없는 품번). 다른 표기 셋은 쓰는 설비가 다 다르다 — RF-10은 다섯 대 모두, PS-4510은 HPP-45A 세 대, HI-GS-22는 불용 결정 설비 하나
+GRAPH_ASK = {'sensors': 'HYD-01', 'parts': 'HYD-02', 'aliases': ('RF-10', 'PS-4510', 'HI-GS-22'), 'missing': 'P-PMP-SEAL-X'}
 
 
 def graph_queries(course):

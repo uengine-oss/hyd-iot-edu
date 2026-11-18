@@ -51,7 +51,7 @@ def expectation(folder, after=None):
             if retired not in assets:
                 continue                               # 불용 결정 설비가 쓰지 않는 부품의 줄은 수정본으로 바뀌지 않는다
             kept = [a for a in assets if not (after == '삭제' and a == retired)]
-            row[3] = ' · '.join((status if a == retired else '가동') for a in kept) if row[2] == 'status' else ' · '.join(kept)
+            row[3] = (' · '.join((status if a == retired else '가동') for a in kept) if row[2] == 'status' else ' · '.join(kept)) or '없음'   # 쓰던 설비가 모두 지워진 부품은 조회 한 줄의 빈 칸
             row[4] += ' · ' + where
     put(folder, {'결과/기대_답.csv': B.graph_expect_text(rows, '통합반')}, True)
 

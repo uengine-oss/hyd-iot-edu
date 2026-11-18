@@ -1,8 +1,16 @@
 사내품번,다른표기,표기종류,쓰는곳,비고
 P-PMP-SEAL,PS-4510,구 사내 품번,구 CMMS · 점검표,2024-03 품번 체계 변경 전
 P-PMP-SEAL,PMP-SEAL,표기 변형,점검표 수기,
+P-PMP-SEAL,P_PMP_SEAL,표기 변형,구 엑셀 대장,
 P-PMP-SEAL,HI-SK-45A,제조사 품번,한일유압 부품표,
+P-PMP-SEAL-HT,HI-SK-45B,제조사 품번,한일유압 부품표,
+P-PMP-SEAL-22,HI-GS-22,제조사 품번,한일유압 부품표,
 P-FAN-BRG,FB-6205,구 사내 품번,구 CMMS · 점검표,2024-03 품번 체계 변경 전
+P-FAN-BRG,6205-2RS,제조사 품번,베어링 규격,
 P-CLR-CORE,HI-CC-45A,제조사 품번,한일유압 부품표,
+P-CLR-PLT,HI-PHE-45B,제조사 품번,한일유압 부품표,
+P-RTN-FLT,HI-RF-10,제조사 품번,한일유압 부품표,
 P-RTN-FLT,RF-10,표기 변형,점검표 수기,
+P-SUC-STR,HI-SS-45,제조사 품번,한일유압 부품표,
 P-CPL-ELM,ROTEX-24-98A,제조사 품번,커플링 규격,
+P-VLV-COIL,D03-24VDC,제조사 품번,밸브 규격,

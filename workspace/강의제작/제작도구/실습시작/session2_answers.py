@@ -83,9 +83,9 @@ def name_rules_answer():
 
 
 def same_device(a, b):
-    \"\"\"근거: 현장 메모 {memo_line('같은 모델(HPP-45A)')}행(세 대는 같은 모델) · {memo_line('태그 이름(TS1')}행(세 대는 태그 이름이 같음) —
-    같은 계통에서 이름이 같거나, 같은 모델에서 같은 태그가 붙은 자리는 같은 장치. 예비품 목록의 사내 품번 — 같은 교체 부품을 쓰는 자리는 같은 장치
-    (부품만 보면 엘리먼트 등급이 다른 HYD-03 리턴 필터가 따로 남는다). 계통이 다르면 다른 장치.\"\"\"
+    \"\"\"근거: 현장 메모 {memo_line('같은 모델(HPP-45A)')}행(HYD-01 · 02 · 03은 같은 모델) · {memo_line('태그 이름(TS1')}행(한일유압 파워팩은 태그 이름이 같음) —
+    같은 계통에서 이름이 같거나, 같은 모델에서 같은 태그가 붙은 자리는 같은 장치. 예비품 목록의 사내 품번 — 같은 교체 부품을 쓰는 자리는 같은 장치.
+    계통이 다르면 다른 장치. 모델이 다르고 이름 · 부품도 다르면 다른 장치로 남는다(HYD-04 수냉 열교환기, HYD-07 펌프).\"\"\"
     if a['계통'] != b['계통']:
         return False
     if a['이름'] == b['이름']:
@@ -102,9 +102,21 @@ def group_name(members):
 
 
 def quantity_rules_answer(scope='종류'):
-    """같은 물리량의 범위 — '종류'(재는 값의 종류: 세 온도가 작동유 온도 하나, 자리는 붙은 구성 요소가 말함) · '자리'(붙은 자리까지 같아야 — 태그가 같은 센서끼리)."""
+    """같은 물리량의 범위 — '종류'(재는 값의 종류: 작동유의 온도 · 압력 · 유량은 어디에 붙었든 종류마다 하나, 자리는 붙은 구성 요소가 말함) ·
+    '자리'(붙은 자리까지 같아야 — 같은 종류이고 태그가 같은 센서끼리, 태그가 없는 현장 지시계는 같은 종류 · 같은 계통의 센서와)."""
     head = f'# {F.MARK} — 같은 물리량을 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.\n'
-    common = '''
+    common = f'''
+
+def value_kind(row):
+    """재는 값의 종류(무엇의 어떤 값) — 재는것 이름에 든 말로 가른다. 작동유의 온도 · 압력 · 유량과, 따로 재는 냉각수 유량
+    (현장 메모 {memo_line('냉각수 유량을 잽니다')}행) · 필터 차압 · 진동은 다른 종류다."""
+    what = row['재는것']
+    for word, kind in (('냉각수', '냉각수 유량'), ('차압', '차압'), ('온도', '작동유 온도'), ('유온', '작동유 온도'),
+                       ('압력', '작동유 압력'), ('유량', '작동유 유량'), ('진동', '진동')):
+        if word in what:
+            return kind
+    return what
+
 
 def common_name(members):
     """묶음에서 가장 많이 쓴 재는것(같은 수면 센서 목록에서 먼저 나온 것)."""
@@ -112,12 +124,7 @@ def common_name(members):
     return max(names, key=lambda n: (names.count(n), -names.index(n)))
 '''
     if scope == '종류':
-        return head + common + f'''
-
-def value_kind(row):
-    """재는 값의 종류: 작동유의 온도를 재는 센서(재는것에 「온도」나 「유온」)는 어디에 붙었든 작동유 온도. 그 밖에는 태그가 같은 센서끼리(현장 메모 {memo_line('태그 이름(TS1')}행)."""
-    return '작동유 온도' if ('온도' in row['재는것'] or '유온' in row['재는것']) else row['태그']
-
+        return head + common + '''
 
 def same_quantity(a, b):
     """근거: 재는 값의 종류가 같으면 같은 물리량 — 어디에 붙었는지는 센서가 붙은 구성 요소(붙은곳)가 따로 말한다."""
@@ -125,15 +132,25 @@ def same_quantity(a, b):
 
 
 def quantity_name(members):
-    """근거: 온도 묶음은 「작동유 온도」, 그 밖에는 묶음에서 가장 많이 쓴 재는것."""
-    kind = value_kind(members[0])
-    return kind if kind == '작동유 온도' else common_name(members)
+    """근거: 묶음의 재는 값의 종류를 그대로 이름으로 — 서로 다른 묶음은 종류가 달라 이름도 다르다."""
+    return value_kind(members[0])
 '''
     return head + common + f'''
 
+def local_gauge(row):
+    """통신 없이 손으로 읽는 현장 지시계 — SCADA 태그가 없다(현장 메모 {memo_line('현장 지시계는 SCADA 태그가 없어')}행)."""
+    return '현장 지시' in row['센서명']
+
+
 def same_quantity(a, b):
-    """근거: 붙은 자리까지 같아야 같은 물리량 — 세 대는 같은 자리의 센서에 같은 태그를 쓴다(현장 메모 {memo_line('태그 이름(TS1')}행)."""
-    return a['태그'] == b['태그']
+    """근거: 붙은 자리까지 같아야 같은 물리량. 한일유압 파워팩은 같은 자리의 센서에 같은 태그를 쓰므로(현장 메모 {memo_line('태그 이름(TS1')}행)
+    종류와 태그가 같으면 같은 자리다(HYD-04의 FS2는 태그가 같아도 냉각수 유량이라 다르다). 태그가 없는 현장 지시계는 종류와 붙은 구성 요소의 계통이
+    같은 센서와 같은 자리로 본다(탱크의 유온계는 탱크 유온, 펌프의 압력계는 토출 압력)."""
+    if value_kind(a) != value_kind(b):
+        return False
+    if local_gauge(a) == local_gauge(b):
+        return a['태그'] == b['태그']
+    return a['계통'] == b['계통']
 
 
 def quantity_name(members):
@@ -159,7 +176,7 @@ def integrated_design(branch='A'):
     files['결과/설계.csv'] = csv_text(DESIGN_EXPLAIN['설계.csv'], DESIGN_COLUMNS['설계.csv'], [
         ['설비', '{설비코드}', '자료/설비_대장.csv:1 설비코드 칸 — 설비마다 하나'],
         ['구성 요소', '{설비코드}:{구성요소}', f'{memo("같은 모델(HPP-45A)")} — 같은 모델의 같은 품목이 설비마다 있으므로 설비코드를 붙임'],
-        ['센서', '{설비코드}:{태그}', f'{memo("태그 이름(TS1")} — 태그 이름은 세 대가 같아 설비코드를 붙임'],
+        ['센서', '{설비코드}:{태그}', f'{memo("태그 이름(TS1")} — 태그 이름은 한일유압 파워팩이 모두 같아 설비코드를 붙임'],
         ['물리량', '{물리량}', f'{memo("재는 값의 이름도")} — 재는 값의 이름이 사람마다 달라 묶어 정한 이름 하나를 씀'],
         ['부품', '{품번}', '자료/예비품_목록.csv:1 품번 칸(사내 품번) — 다른 표기는 식별자가 아니라 부품의 다른 이름'],
         *([['실물', '{일련번호}', f'{memo("구성 요소 목록의 일련번호")} — 일련번호는 그 자리에 달린 장치 한 대']] if split else [])])
@@ -184,9 +201,12 @@ def integrated_chosen(branch='A'):
     (gone, now, removed), = removed_rows()
     code, key, old_serial, _ = D.REMOVED_PUMP
     new_serial = D.SERIALS[(code, key)]
+    import verify_reference as V
     sline = {(x['설비코드'], x['태그']): i for i, x in B.numbered('센서_목록.csv')}
     temps = sorted(i for (c, tag), i in sline.items() if c == 'HYD-01' and tag.startswith('TS'))
     t = D.TRUTH['assets']['HYD-01']['sensors']
+    members = V.expected('통합반', branch)['quantity_members']
+    tank = [s for s in members.get('quantity:TS3', []) if not s.endswith(':TS3')]          # 붙은 자리까지 갈래에서 탱크 유온에 함께 드는 현장 지시계
     # 근거 칸 = 내 이유와, 그 결정을 좌우해 열어 본 원문 줄(lab_frame.CHOSEN_TEMPLATE)
     place = [['구성 요소 자리와 그 실물', '나눔(일련번호가 붙은 실물을 따로 두고 철거된 실물을 남김)' if unit == '나눔' else '한 대상(일련번호는 구성 요소의 속성)',
               ('떼어 낸 펌프도 일련번호가 붙은 장치 한 대라 그 자리를 거쳐 간 장치를 물을 수 있게 하려고' if unit == '나눔' else
@@ -196,12 +216,12 @@ def integrated_chosen(branch='A'):
                if unit == '나눔' else f'{code} 주 펌프 구성 요소에 지금 일련번호 {new_serial}만 속성으로 남음 — 떼어 낸 펌프는 이 모델에서 물을 수 없어, 보전팀은 그 이력을 CMMS에서 따로 찾음')]]
     quantity = [['같은 물리량의 범위', '붙은 자리까지 같아야 묶음' if scope == '자리' else '재는 값의 종류로 묶음(자리는 붙은 구성 요소로 봄)',
                  ('운전 담당은 같은 자리의 값끼리 정상값과 견주므로' if scope == '자리' else
-                  '세 온도 모두 작동유의 온도라 한 번에 모아 보고 어디서 쟀는지는 붙은 구성 요소로 읽으려고')
+                  '유온 · 쿨러 출구 유온 · 탱크 유온 모두 작동유의 온도라 한 번에 모아 보고 어디서 쟀는지는 붙은 구성 요소로 읽으려고')
                  + ' — 자료/센서_목록.csv:' + ' · '.join(map(str, temps)) + f' · 자료/현장_메모.md:{memo_line("태그 이름(TS1")}',
-                 ('유온 · 쿨러 출구 유온 · 탱크 유온이 따로 묶여 묶음마다 센서 세 개 — 운전은 탱크 유온을 물으면 세 대의 탱크 값만 받아 '
-                  f'정상값 {t["TS3"]["normal"]:g} ℃와 바로 견줌' if scope == '자리' else
-                  '작동유 온도 하나에 세 대의 온도 센서 아홉 개가 함께 듦 — 운전은 작동유 온도를 한 번에 모아 보되, '
-                  f'견줄 정상값({t["TS1"]["normal"]:g} · {t["TS2"]["normal"]:g} · {t["TS3"]["normal"]:g} ℃)은 센서가 붙은 구성 요소를 함께 보고 고름')]]
+                 (f'유온 · 쿨러 출구 유온 · 탱크 유온이 따로 묶이고 탱크 유온에는 {" · ".join(tank)} 현장 지시계까지 센서 {len(members["quantity:TS3"])}개 — '
+                  f'운전은 탱크 유온을 물으면 탱크의 값만 받아 정상값(HPP-45A {t["TS3"]["normal"]:g} ℃)과 바로 견줌' if scope == '자리' else
+                  f'작동유 온도 하나에 온도 센서 {len(members["quantity:oil-temp"])}개가 함께 듦 — 운전은 작동유 온도를 한 번에 모아 보되, '
+                  f'견줄 정상값(HPP-45A {t["TS1"]["normal"]:g} · {t["TS2"]["normal"]:g} · {t["TS3"]["normal"]:g} ℃)은 센서가 붙은 구성 요소와 설비 모델을 함께 보고 고름')]]
     return place + quantity
 
 
