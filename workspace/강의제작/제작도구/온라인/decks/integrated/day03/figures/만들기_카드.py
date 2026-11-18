@@ -602,7 +602,7 @@ def u09():
         y = panel(f, cx, 0, W, H, term, q)
     iy = y + 26 + r
     f.add(disc(220, iy, r, "equip") + disc(400, iy, r, "equip2"))
-    f.lab("", "같은 이름의 정비도 기종마다 부품 자리와 차례가 달라, / 기종마다 따로 적는다", 310, iy + r + 14, W - 40)
+    f.lab("", "기종마다 부품 자리와 차례가 달라 따로 적는다", 310, iy + r + 14, W - 40)
     for x, kind, a, b in ((800, "worker", "수행", "정비 작업자"), (980, "owner", "승인", "보전 책임자")):
         f.add(disc(x, iy, r, kind))
         f.lab(a, b, x, iy + r + 8, 170)
@@ -641,25 +641,36 @@ def u11():
     return f.fin(0, foot(f, "멈춘 설비에도 압력과 전기가 남고, 누군가 다시 켤 수 있다", cy + r + 24 + 5 + LH_T + LH_D + 46))
 
 
+def steps_icon(st: St):
+    """수행 단계: 번호 표시가 붙은 줄 셋."""
+    o = []
+    for y in (-26, 0, 26):
+        o += [circle(-30, y, 9, fill=st.accent, stroke=st.line, sw=3), line(-12, y, 38, y, stroke=st.line, sw=5)]
+    return o
+
+
+def ban_icon(st: St):
+    """금지 사항: 원 안의 ✕."""
+    return [circle(0, 0, 38, fill=st.fill, stroke=st.line, sw=5), line(-16, -16, 16, 16, stroke=st.line, sw=8), line(16, -16, -16, 16, stroke=st.line, sw=8)]
+
+
+ICONS.update({"steps": (steps_icon, 0.9), "ban": (ban_icon, 0.9)})
+
+
 def u12():
-    """12장: 앞 장의 세 칸과 같은 꼴. 수행 단계 칸은 번호 붙은 줄 셋, 금지 사항 칸은 ✕ 줄 둘, 완료 확인 기준 칸은 바늘이 기준 띠 안으로
-    돌아온 계기와 예 한 줄."""
+    """12장: 앞 장의 세 칸과 같은 꼴(원판 아이콘 하나와 한 줄). 수행 단계는 번호 붙은 줄, 금지 사항은 ✕, 완료 확인 기준은 바늘이 기준 띠 안으로
+    돌아온 계기."""
     f = Fig("카드_하는동안_끝낼때.svg")
     W, H, r = 350, 360, 72
-    spec = (("수행 단계", "어떤 차례로 하나"), ("금지 사항", "언제나 하지 않을 것"), ("완료 확인 기준", "무엇을 보면 끝났나"))
-    for cx, (term, q) in zip(XS3, spec):
+    spec = (("수행 단계", "어떤 차례로 하나", "steps", "번호를 붙여 차례대로 적는다"), ("금지 사항", "언제나 하지 않을 것", "ban", "차례와 따로 적어 둔다"),
+            ("완료 확인 기준", "무엇을 보면 끝났나", "", "다시 잰 값이 기준 안으로 돌아왔다"))
+    for cx, (term, q, kind, ex) in zip(XS3, spec):
         y = panel(f, cx, 0, W, H, term, q)
-    my = (y + H) / 2
-    cx = XS3[0]
-    for k, dy in enumerate((-66, 0, 66)):
-        f.add([circle(cx - 100, my + dy, 18, fill=PALE, sw=3)] + [circle(cx - 100 + (j - k / 2) * 10, my + dy, 3, fill=NAVY, sw=1) for j in range(k + 1)]
-              + [line(cx - 64, my + dy, cx + (116, 72, 100)[k], my + dy, stroke=GREY, sw=8)])
-    cx = XS3[1]
-    for dy in (-42, 42):
-        f.add(cross_badge(cx - 100, my + dy, 20) + [line(cx - 62, my + dy, cx + (116 if dy < 0 else 78), my + dy, stroke=GREY, sw=8)])
-    cx = XS3[2]
-    f.add([circle(cx, y + 30 + r, r, fill=PALE, stroke="none", sw=0)] + g(cx, y + 30 + r, 1.44, gauge(ON, r=36, ang=-82, band=True), boost=0.85))
-    f.lab("", "다시 잰 값이 기준 안으로 돌아왔다", cx, y + 30 + 2 * r + 18, W - 30)
+        if kind:
+            f.add(disc(cx, y + 30 + r, r, kind))
+        else:
+            f.add([circle(cx, y + 30 + r, r, fill=PALE, stroke="none", sw=0)] + g(cx, y + 30 + r, 1.44, gauge(ON, r=36, ang=-82, band=True), boost=0.85))
+        f.lab("", ex, cx, y + 30 + 2 * r + 18, W - 30)
     return f.fin(0, foot(f, "보기에 깨끗한 것이 아니라 다시 잰 값으로 끝을 판정한다", H + 36))
 
 
@@ -731,8 +742,9 @@ def u15():
             f.add([line(cx, by, cx, by + 18, sw=5)] + cross_badge(cx, by + 36, 18))
             source(f, cx - 62, T + H / 2, mode, 0.74)
             f.add(arrow([(cx + 14, T + H / 2), (cx + 40, T + H / 2)], sw=4, size=13) + disc(cx + 90, T + H / 2, 40, "equip"))
-        f.lab(nm, "**받아들인다**" if ok else "**받아들이지 않는다**", cx, T + H + 8, W)
-    return f.fin(0, foot(f, "사람이 조작하는 동안 자동으로 내려오는 명령이 끼어들면, 둘이 같은 설비를 서로 다르게 움직인다", T + H + 8 + 5 + LH_T + LH_D + 22))
+        f.lab(nm, "", cx, T + H + 8, W)
+        f.lab("", "받아들인다" if ok else "받아들이지 않는다", cx, T + H + 8 + 5 + LH_T + 4, W)
+    return f.fin(0, foot(f, "사람이 조작하는 동안 자동으로 내려오는 명령이 끼어들면, 둘이 같은 설비를 서로 다르게 움직인다", T + H + 8 + 5 + LH_T + 4 + 5 + LH_D + 22))
 
 
 CW16, CH16 = 190, 64
@@ -760,7 +772,7 @@ def u16():
     f.lab("일으킨다", "", xs[0] + 78, (cy + cy2) / 2 - 19, 110)
     f.lab("", "앞에서 조치라 부른 클래스", xs[1], cy + CH16 / 2 + 10, 280)
     bot = cy2 + CH16 / 2 + 20
-    return f.fin(0, foot(f, "이 예에서는 SOP 하나를 조치 방법 하나로, 수행 단계 하나를 작업 단계 하나로 적고, 단계마다 근거 문서를 단다", bot + 20, w=1190))
+    return f.fin(0, foot(f, "SOP 하나는 조치 방법 하나, 수행 단계 하나는 작업 단계 하나", bot + 20))
 
 
 def mcard(f, cx, cy, w, h, cls, title, desc, hot=False):
@@ -778,14 +790,14 @@ def u17():
     f = Fig("카드_예방완화근본_시간띠.svg")
     FX, AY, CY, W, H, CW_ = 585, 52, 248, 290, 116, CW16
     LX, RX, ry = 165, 1045, (164, 332)
-    f.lab("고장 전", "", (30 + FX) / 2, 0, 200)
+    f.lab("고장 전", "", LX, 0, 200)
     f.lab("고장", "", FX, 0, 100)
-    f.lab("고장 뒤", "", (FX + 1180) / 2, 0, 200)
+    f.lab("고장 뒤", "", RX, 0, 200)
     f.add(arrow([(30, AY), (1180, AY)], GREY, sw=6, size=18) + [circle(FX, AY, 11, fill=NAVY, sw=1)] + dash_line(FX, AY + 18, FX, CY - 44, GREY, 3.5, 8, 6))
     hcard(f, FX, CY, CW_, CH16, "none", "고장 유형", ring=True)
     mcard(f, LX, CY, W, H, "조치 방법", "예방 조치", "고장이 나기 전에 미리 막는다", hot=True)
     rel(f, FX - CW_ / 2 - 8, LX + W / 2 + 8, CY, "예방된다")
-    f.lab("", "정해진 운전 시간이나 날짜마다 / 하는 점검과 교체", LX, CY + H / 2 + 10, W)
+    f.lab("", "예: 주기마다 하는 점검 · 교체", LX, CY + H / 2 + 10, W)
     bx = FX + CW_ / 2 + 30
     f.add([line(FX + CW_ / 2 + 2, CY, bx, CY, sw=5), line(bx, ry[0], bx, ry[1], sw=5)])
     for y, nm, d, rn in zip(ry, ("완화 조치", "근본 조치"), ("증상을 우선 낮춘다", "원인을 없앤다"), ("완화된다", "근본 해결된다")):
@@ -846,8 +858,7 @@ def u19():
     f.lab("조치 후보", "", xs[0], bot + 20, 170)
     f.lab("담당자", "", xs[5], bot + 20, 170)
     f.lab("", "허용 · 제외 · 감점", xs[1], bot + 22, 240)
-    y = foot(f, "운전 모드처럼 지금 상태에 달린 조건은 고르기 전에 거르고,", bot + 20 + 5 + LH_T + 40)
-    return f.fin(ty, foot(f, "세우고 잠그는 안전 조건은 손대기 직전에 확인한다", y))
+    return f.fin(ty, foot(f, "운전 모드는 고르기 전에, 세우고 잠그는 것은 손대기 직전에 본다", bot + 20 + 5 + LH_T + 48))
 
 
 # ───────────────────────── 2단원(21~33장) ─────────────────────────
@@ -1046,8 +1057,9 @@ def u26():
     f.lab("하한", "", PA, y2 + 20, 100)
     f.lab("상한", "", PB, y2 + 20, 100)
     my = (y1 + y2) / 2
-    f.add(box(985, my - 46, 190, 92, r=18))
-    f.lab("비교 연산자", "> · ≥ · < · ≤", 1080, my - 30, 180)
+    f.add(box(975, my - 54, 210, 108, r=18))
+    f.lab("비교 연산자", "", 1080, my - 44, 200)
+    f.lab(">   ≥   <   ≤", "", 1080, my - 2, 200)
     f.lab("", "채운 점은 넣고 빈 점은 뺀다", (X0 + X1) / 2, y2 + 68, 400)
     return f.fin(y1 - 22 - 5 - LH_T - LH_D, y2 + 68 + 5 + LH_D)
 
@@ -1069,86 +1081,89 @@ def u27():
     return f.fin(-12, b2 + 22 + 5 + LH_T)
 
 
-CASES = (("누락", "맞는 행이 없다", "잠금은 걸었지만 아직 돌고 있고 / 압력이 없다", ()),
-         ("중복", "같은 출력의 행이 함께 맞는다", "잠금도 없고 압력도 남았다", (R2, R3)),
-         ("상충", "다른 출력의 행이 함께 맞는다", "멈췄지만 잠금이 없다", (R2, R4)))
+CASES = (("누락", "맞는 행이 없다", "돌고 있다 · 걸렸다 · 없다", ()),
+         ("중복", "같은 출력의 행이 함께 맞는다", "돌고 있다 · 걸리지 않았다 · 남았다", (2, 3)),
+         ("상충", "다른 출력의 행이 함께 맞는다", "멈췄다 · 걸리지 않았다 · 없다", (2, 4)))
+RULES4 = {1: R1, 2: R2, 3: R3, 4: R4}
 
 
 def u28():
-    """28장: 왼쪽에 25장 결정표(조건 열 셋의 머리와 값은 같은 낱말 · 같은 자리, 출력은 ✓ 된다 · ✕ 안 된다)를 두고 넷째 행을 점선으로 더한다.
-    오른쪽에 같은 꼴 · 같은 폭의 칸 셋(누락 · 중복 · 상충)을 위아래로 두고, 칸마다 용어와 뜻, 그 입력, 그 입력이 맞은 행을
-    왼쪽 표의 행과 같은 꼴(같은 칸 자리 · 같은 테두리)의 작은 행으로 그린다. 누락 칸은 맞은 행 자리가 빈 점선이다."""
+    """28장: 세 경우(누락 · 중복 · 상충)를 같은 꼴의 가로 줄 셋으로 둔다. 줄마다 왼쪽에 용어와 뜻, 가운데에 입력 세 값,
+    오른쪽에 그 입력에 맞은 규칙을 글 그대로(조건 → 출력). 누락 줄은 맞은 행 자리가 빈 점선 칸이고, 상충 줄의 점선 행은
+    누군가 짧게 더한 행이다. 가운데 열 위에 그 열이 어느 값인지 머리 한 줄."""
     f = Fig("카드_누락중복상충.svg")
-    CX0, CW_, CH, P = 600, 590, 120, 132
-    tx, cols, rh, gap, hh = 10, (172, 172, 172, 56), 54, 8, 44
-    th = hh + gap + 4 * rh + 3 * gap + 12 + 5 + LH_T + LH_D
-    t0 = (2 * P + CH - th) / 2
-    rows = (("멈췄다", "걸렸다", "없다", ""), (None, "걸리지 않았다", None, ""), (None, None, "남았다", ""), ("멈췄다", None, None, ""))
-    xs, cys, bot = dtable(f, tx, t0, cols, ("설비가 멈췄나", "잠금", "남은 압력", ""), rows, rh=rh, hh=hh, gap=gap, dashed=(3,))
-    for cy, (_, ok) in zip(cys, (R1, R2, R3, R4)):
-        f.add(out_badge((xs[3][0] + xs[3][1]) / 2, cy, 17, ok))
-    f.lab("멈췄으면 된다", "누군가 짧게 더한 행", tx + sum(cols) / 2, bot + 12, 400)
-    for i, (nm, d, s, hits) in enumerate(CASES):
-        cy = i * P + CH / 2
-        f.add(box(CX0, cy - CH / 2, CW_, CH, r=20) + [line(CX0 + 276, cy - CH / 2 + 16, CX0 + 276, cy + CH / 2 - 16, stroke=GREY, sw=2.5)])
-        f.lab(nm, d, CX0 + 138, cy - 30, 284, strong=True)
-        rx = CX0 + 276 + (CW_ - 276) / 2
-        n = nlines(s)
-        f.lab("", s, rx, cy - 52 if n == 2 else cy - 40, CW_ - 286)
-        ry = cy + 12 if n == 2 else cy + 2
+    T, H, P = 42, 120, 132
+    rules = {2: "걸리지 않았다 → 안 된다", 3: "남았다 → 안 된다", 4: "멈췄다 → 된다"}
+    f.lab("", "입력 · 멈췄나 · 잠금 · 남은 압력", 495, 0, 370)
+    for i, (nm, d, inp, hits) in enumerate(CASES):
+        cy = T + i * P + H / 2
+        f.add(box(0, cy - H / 2, 1200, H, r=20) + [line(x, cy - H / 2 + 16, x, cy + H / 2 - 16, stroke=GREY, sw=2.5) for x in (300, 690)])
+        f.lab(nm, "", 150, cy - 38, 260, strong=True)
+        f.lab("", d, 150, cy + 4, 290)
+        f.lab("", inp, 495, cy - 15, 370)
         if hits:
-            for k, (pat, ok) in enumerate(hits):
-                mrow(f, rx - 146 + k * 152, ry, 140, 34, pat, ok, dashed=(pat, ok) == R4)
+            for k, n in enumerate(hits):
+                y = cy - 52 + k * 54
+                if n == 4:
+                    f.add(dash_rect(720, y, 440, 46, NAVY, 3, 10, 7))
+                else:
+                    f.add([rect(720, y, 440, 46, 12, fill=WHITE, sw=2.5)])
+                f.lab(rules[n], "", 940, y + 4, 420)
         else:
-            f.add(dash_rect(rx - 70, ry, 140, 34, GREY, 3, 8, 6))
-    return f.fin(0, foot(f, "빈 곳은 그 경우를 덮는 행을 더해 메운다", 2 * P + CH + 30))
+            f.add(dash_rect(720, cy - 23, 440, 46, GREY, 3, 8, 6))
+            f.lab("", "맞은 행 없음", 940, cy - 15, 300)
+    bot = T + 2 * P + H
+    f.lab("", "점선은 누군가 짧게 더한 행(멈췄으면 된다)", 940, bot + 8, 400)
+    return f.fin(0, foot(f, "빈 곳은 그 경우를 덮는 행을 더해 메운다", bot + 46))
+
+
+HP4 = (("Unique", "겹치는 행을 두지 않는다", "상충이면 표를 고친다", (2, 4)), ("Any", "출력이 같으면 어느 행이든", "중복일 때", (2, 3)),
+       ("Priority", "출력 순위로 하나를 고른다", "상충이면 안 된다가 먼저", (2, 4)), ("Collect", "맞은 출력을 모두 낸다", "빠짐없이 모을 때", (2, 3)))
+
+
+def hp_pic(f, x, my, nm, hits, w=120):
+    """29장 칸 안 작은 그림: 겹친 두 행 → 나오는 것. (x, my)가 그림 가운데."""
+    for k, n in enumerate(hits):
+        y = my - 39 + k * 44
+        mrow(f, x - 116, y, w, 34, RULES4[n][0], RULES4[n][1], dashed=n == 4)
+    f.add(arrow([(x + 16, my), (x + 50, my)], sw=4, size=14))
+    if nm == "Unique":
+        f.add(g(x + 96, my, 0.5, tools_icon(ON)))
+    elif nm == "Collect":
+        f.add(cross_badge(x + 82, my, 17) + cross_badge(x + 122, my, 17))
+    else:
+        f.add(cross_badge(x + 90, my, 17))
 
 
 def u29():
     """29장: 위에 두 갈래 머리(하나만 고른다 · 모두 모은다), 그 아래 같은 꼴 · 같은 폭의 칸 넷(Unique · Any · Priority | Collect).
-    칸마다 이름과 뜻, 겹친 두 행에서 무엇이 나오는지의 작은 그림, 한 줄. 칸 아래에 어느 때 쓰는지."""
+    칸마다 이름 / 뜻 한 줄 / 겹친 두 행에서 무엇이 나오는지의 작은 그림 / 쓰는 때 굵은 한 줄. 칸 밖 글은 갈래 머리뿐이다."""
     f = Fig("카드_HitPolicy_셋.svg")
-    xs, W, T, H = (150, 450, 750, 1050), 290, 70, 300
+    xs, W, T, H = (150, 450, 750, 1050), 292, 70, 290
     for a, b, t in ((xs[0] - W / 2, xs[2] + W / 2, "하나만 고른다"), (xs[3] - W / 2, xs[3] + W / 2, "모두 모은다")):
         f.lab(t, "", (a + b) / 2, 0, 300)
         f.add([path(f"M {a + 10},{T - 12} L {a + 10},{T - 24} L {b - 10},{T - 24} L {b - 10},{T - 12}", sw=3)])
-    spec = (("Unique", "겹치는 행을 / 두지 않는다", ("상충은 표를 고친다",), (R2, R4), "상충일 때"),
-            ("Any", "겹쳐도 출력이 같으면 / 어느 행이든", (), (R2, R3), "중복일 때"),
-            ("Priority", "정해 둔 출력 순위로 / 하나를 고른다", ("안 된다가", "된다보다 먼저"), (R2, R4), "상충일 때"),
-            ("Collect", "맞은 행의 출력을 / 모두 낸다", ("맞은 출력을 모두",), (R2, R3), "빠짐없이 알아야 할 때"))
-    by = T + H + 16
-    for x, (nm, d, lines, hits, when) in zip(xs, spec):
+    for x, (nm, d, when, hits) in zip(xs, HP4):
         f.add(box(x - W / 2, T, W, H))
-        f.lab(nm, d, x, T + 12, W - 10, strong=True)
-        my = T + 160
-        for k, (pat, ok) in enumerate(hits):
-            mrow(f, x - 132, my - 39 + k * 44, 130, 34, pat, ok, dashed=(pat, ok) == R4)
-        f.add(arrow([(x + 8, my), (x + 44, my)], sw=4, size=14))
-        if nm == "Unique":
-            f.add(g(x + 88, my, 0.52, tools_icon(ON)))
-        elif nm == "Collect":
-            f.add(cross_badge(x + 72, my, 18) + cross_badge(x + 114, my, 18))
-        else:
-            f.add(cross_badge(x + 80, my, 18))
-        y0 = T + H - 22 - len(lines) * 32
-        for k, t in enumerate(lines):
-            f.lab(t, "", x, y0 + k * 32 - 5, W - 10)
-        f.lab(when, "", x, by, W)
-    return f.fin(0, by + 5 + LH_T)
+        f.lab(nm, "", x, T + 14, W - 20, strong=True)
+        f.lab("", d, x, T + 54, W - 10)
+        hp_pic(f, x, T + 152, nm, hits)
+        f.lab(when, "", x, T + H - 56, W)
+    return f.fin(0, T + H)
 
 
 def u30():
     """30장: 맨 위 작은 머리 칸 한 줄(체 아이콘과 허용 조건), 그 아래 결정표 하나(조건 열 셋 · 출력 열 · 근거 열, 행 셋 — 셋째 행은
-    어느 조건에도 걸리지 않으면 허용). 출력 값만 파랗다."""
+    어느 조건에도 걸리지 않으면 허용). 출력 값은 25장처럼 남색 굵은 글이다."""
     f = Fig("카드_판단규칙_두행.svg")
     cols = (220, 290, 280, 126, 150)
     x = (FW - sum(cols)) / 2
     f.add([rect(250, 0, 700, 64, 18, fill=WHITE, sw=3), circle(292, 32, 24, fill=PALE, stroke="none", sw=0)] + g(292, 32, 0.36, sieve_icon(ON)))
     f.lab("허용 조건 · 고르기 전에 지금 상태로 정한다", "", 625, 32 - 19, 600)
     f.lab("", "2호기 오일 쿨러의 예", x + 96, 80, 200)
-    rows = (("원격 자동이 아니다", "자동으로 내려오는 명령", None, "!제외", "정비 매뉴얼"),
-            (None, "팬을 최대로 돌리는 조치", "기준을 넘었다", ("!감점", "팬 수명"), "정비 매뉴얼"),
-            (None, None, None, "!허용", None))
+    rows = (("원격 자동이 아니다", "자동으로 내려오는 명령", None, "제외", "정비 매뉴얼"),
+            (None, "팬을 최대로 돌리는 조치", "기준을 넘었다", ("감점", "팬 수명"), "정비 매뉴얼"),
+            (None, None, None, "허용", None))
     _, cys, bot = dtable(f, x, 120, cols, ("운전 모드", "조치의 갈래", "팬을 최대로 돌려 온 시간", "출력", "근거"), rows, rh=78, hh=58, gap=12, nout=2)
     return f.fin(0, bot)
 
@@ -1157,14 +1172,14 @@ def u31():
     """31장: 같은 폭의 세로 줄 둘. 줄마다 위에서 아래로 물음 → 입력 → Hit Policy(작은 결정표와 이름 · 뜻) → 출력의 네 단을 같은 높이로."""
     f = Fig("카드_물음둘_HitPolicy.svg")
     W = 520
-    spec = ((300, "이 후보를 지금 해도 되나", ("입력 · 운전 모드",), "Priority", "제외가 허용보다 먼저 / 제외 행과 허용 행이 함께 맞으면 제외", "허용 · 제외 중 하나"),
+    spec = ((300, "이 후보를 지금 해도 되나", ("입력 · 운전 모드",), "Priority", "함께 맞으면 제외가 먼저", "허용 · 제외 중 하나"),
             (900, "이 후보에 붙일 감점은", ("입력 · 조치의 갈래 ·", "팬을 최대로 돌려 온 시간"), "Collect", "붙는 감점을 모두", "감점 목록"))
     f.lab("", "2호기 오일 쿨러의 예", 300 - W / 2 + 96, 0, 200)
     T = 36
     for cx, q, ins, hp, d, o in spec:
         tcard(f, cx, T + 32, W, 64, q)
         f.add(arrow([(cx, T + 70), (cx, T + 94)], sw=4, size=14))
-        f.add([rect(cx - 200, T + 100, 400, 80, 12, fill=GREY, stroke="none", sw=0)])
+        f.add([rect(cx - 200, T + 100, 400, 80, 14, fill=WHITE, sw=2.5)])
         for k, t in enumerate(ins):
             f.lab(t, "", cx, T + 140 - 19 + (k - (len(ins) - 1) / 2) * 32, 390)
         f.add(arrow([(cx, T + 186), (cx, T + 210)], sw=4, size=14))
@@ -1217,7 +1232,7 @@ def u33():
     ry = 268
     f.add(disc(170, ry, 46, "rules") + arrow([(170, ry - 54), (170, cy + H / 2 + 8)]))
     f.lab("판단 규칙", "", 170, ry + 54, 200)
-    f.lab("허용된 후보가 여럿 남는다", "", 600, 214, 400)
+    f.lab("같은 입력이면 누가 조회해도 같은 출력과 근거", "", 600, 214, 560)
     return f.fin(0, foot(f, "AI 에이전트는 추천안까지, 승인과 안전 결정은 사람이 한다", ry + 54 + 5 + LH_T + 26))
 
 
@@ -1366,7 +1381,7 @@ def u40():
     return f.fin(0, bot + 34 + 5 + LH_T)
 
 
-KPI5 = (("설비 복구 시간", "시간"), ("생산 차질", "개"), ("전력비", "원"), ("품질", "불량률 %"), ("안전", "인터록까지 남은 여유"))
+KPI5 = (("설비 복구 시간", "시간"), ("생산 차질", "개"), ("전력비", "원"), ("품질", "불량률 %"), ("안전", "인터록 여유 ℃"))
 
 
 def u41():
@@ -1398,8 +1413,8 @@ def u42():
     f = Fig("카드_한잣대_체먼저.svg")
     SX, BX, ZX, cy, r, BW, BH = 170, 610, 1060, 196, 76, 440, 108
     f.add(disc(SX, cy, r, "sieve") + disc(ZX, cy, r, "scale"))
-    ty = cy - r - 16 - 5 - LH_T - 2 * LH_D
-    f.lab("판단 규칙", "인터록에 닿을 후보는 / 저울에 오르지 않는다", SX, ty, 330)
+    ty = cy - r - 14 - 5 - LH_T
+    f.lab("판단 규칙", "", SX, ty, 330)
     dy = cy + r + 56
     f.add(arrow([(SX, cy + r + 6), (SX, dy - 26)], GREY, sw=4, size=13)
           + [rect(SX - 52, dy - 20, 104, 40, 10, fill=WHITE, sw=3), line(SX - 36, dy, SX + 6, dy, stroke=GREY, sw=6)] + cross_badge(SX + 32, dy, 13))
@@ -1411,7 +1426,8 @@ def u42():
            line(BX + BW / 2 + 8, ys[1], b2, ys[1], sw=5), line(b2, ys[0], b2, ys[1], sw=5)])
     f.add(arrow([(b1, ys[0]), (BX - BW / 2 - 8, ys[0])]) + arrow([(b1, ys[1]), (BX - BW / 2 - 8, ys[1])]) + arrow([(b2, cy), (ZX - r - 12, cy)]))
     f.lab("한 잣대", "", ZX, cy + r + 12, 160)
-    return f.fin(ty, foot(f, "판단 규칙은 해도 되나와 감점을, 선택 근거는 허용된 후보의 효과와 비용을 맡는다", dy + 20 + 30))
+    f.lab("인터록에 닿을 후보는 뺀다", "", SX + 30, dy + 20 + 8, 300)
+    return f.fin(ty, foot(f, "판단 규칙은 해도 되나와 감점을, 선택 근거는 허용된 후보의 효과와 비용을 맡는다", dy + 20 + 8 + 5 + LH_T + 26))
 
 
 def u43():

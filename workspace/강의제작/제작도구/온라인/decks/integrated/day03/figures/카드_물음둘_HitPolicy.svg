@@ -3,7 +3,7 @@
 <rect x="40.0" y="36.0" width="520" height="64" rx="20" ry="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 300.0,106.0 L 300.0,120.2" stroke="#13294B" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <polygon points="300.0,130.0 293.4,117.6 306.6,117.6" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="100" y="136" width="400" height="80" rx="12" ry="12" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="100" y="136" width="400" height="80" rx="14" ry="14" fill="#FFFFFF" stroke="#13294B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 300.0,222.0 L 300.0,236.2" stroke="#13294B" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <polygon points="300.0,246.0 293.4,233.6 306.6,233.6" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="40.0" y="252" width="520" height="104" rx="20" ry="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -21,7 +21,7 @@
 <rect x="640.0" y="36.0" width="520" height="64" rx="20" ry="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 900.0,106.0 L 900.0,120.2" stroke="#13294B" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <polygon points="900.0,130.0 893.4,117.6 906.6,117.6" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="700" y="136" width="400" height="80" rx="12" ry="12" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="700" y="136" width="400" height="80" rx="14" ry="14" fill="#FFFFFF" stroke="#13294B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 900.0,222.0 L 900.0,236.2" stroke="#13294B" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <polygon points="900.0,246.0 893.4,233.6 906.6,233.6" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="640.0" y="252" width="520" height="104" rx="20" ry="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
