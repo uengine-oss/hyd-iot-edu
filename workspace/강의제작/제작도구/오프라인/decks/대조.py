@@ -3,10 +3,11 @@
 python3 workspace/강의제작/제작도구/오프라인/decks/대조.py <오프라인 덱 MD> <오프라인 PPTX> [--fix]
 
 MD의 제작 기준 「[출처] 온라인 <과정> <회차>회차 <장>장」을 읽어, 원 PPTX(workspace/강의제작/산출물/<과정>/이론/NN회차)의
-그 장과 새 PPTX의 같은 장에서 도형 글자와 위치 · 크기(노트 · 장 번호 제외)를 모아 비교한다. 다르면 장 번호와 차이를 찍고 실패한다.
+그 장과 새 PPTX의 같은 장에서 도형 글자와 위치 · 크기, 글상자 안 세로 맞춤, 그림의 잘라 낸 가장자리(노트 · 장 번호 제외)를 모아 비교한다. 다르면 장 번호와 차이를 찍고 실패한다.
 확정 PPTX는 원고 밖에서 손본 장이 있다(통합반 1회차 47장의 글상자 위치, 통합반 2회차 24 · 55장의 강제 줄바꿈 등).
 --fix는 공백 · 줄바꿈을 뺀 글자가 모두 같은 장에 한해, 원 PPTX 도형의 위치 · 크기와 글자 틀(줄바꿈 포함)을
 새 PPTX의 같은 글자 도형에 옮겨 저장한다. 글 없는 도형과 번호 배지(장 번호 아닌 숫자)도 위치 · 크기를 비교하고 옮긴다. 공백을 빼고도 글자가 다르면 고치지 않고 실패한다.
+세로 맞춤과 그림의 잘라 낸 가장자리도 원 PPTX의 것을 옮긴다.
 """
 from pathlib import Path
 import copy, hashlib, io, re, sys
@@ -39,19 +40,29 @@ def kind(sh):
     return str(sh.shape_type) + ' ' + sh.element.tag.rsplit('}', 1)[-1]
 
 
+def anchor(sh):
+    # 글상자 안에서 글이 놓이는 세로 자리(위 · 가운데 · 아래). 빌더가 바뀌면 확정 PPTX의 장과 달라진다.
+    return sh.text_frame._txBody.bodyPr.get('anchor') or ''
+
+
+def crop(sh):
+    # 그림에서 잘라 낸 가장자리(왼 · 위 · 오른 · 아래 비율). 확정 PPTX에서 손으로 자른 그림이 있다.
+    return (sh.crop_left, sh.crop_top, sh.crop_right, sh.crop_bottom)
+
+
 def texts(slide):
     out = []
     for sh in slide.shapes:
         if sh.has_text_frame:
             t = chr(10).join(p.text for p in sh.text_frame.paragraphs).strip()  # 문단 나눔도 비교한다
             if t and not is_page_number(sh, t):
-                out.append((t, sh.left, sh.top, sh.width, sh.height))
+                out.append((t, sh.left, sh.top, sh.width, sh.height, anchor(sh)))
             elif not t:
                 out.append(('도형 ' + kind(sh), sh.left, sh.top, sh.width, sh.height))  # 글 없는 칸 · 띠
         elif sh.shape_type != 13 and not getattr(sh, 'has_table', False):
             out.append(('도형 ' + kind(sh), sh.left, sh.top, sh.width, sh.height))  # 선 · 연결선
         if sh.shape_type == 13:  # 그림
-            out.append(('그림 ' + look(sh.image.blob), sh.left, sh.top, sh.width, sh.height))
+            out.append(('그림 ' + look(sh.image.blob), sh.left, sh.top, sh.width, sh.height, crop(sh)))
         if getattr(sh, 'has_table', False) and sh.has_table:
             for row in sh.table.rows:
                 out.append((' | '.join(c.text for c in row.cells), 0, 0, 0, 0))
@@ -95,7 +106,9 @@ def main():
                     if sign(sh) == '장 번호':
                         continue
                     sh.left, sh.top, sh.width, sh.height = o.left, o.top, o.width, o.height
-                    if sh.has_text_frame and sh.text_frame.text != o.text_frame.text:
+                    if sh.shape_type == 13:
+                        sh.crop_left, sh.crop_top, sh.crop_right, sh.crop_bottom = crop(o)
+                    if sh.has_text_frame and (sh.text_frame.text != o.text_frame.text or anchor(sh) != anchor(o)):
                         old = sh.text_frame._txBody
                         old.getparent().replace(old, copy.deepcopy(o.text_frame._txBody))
                 if texts(new[n - 1]) == a:

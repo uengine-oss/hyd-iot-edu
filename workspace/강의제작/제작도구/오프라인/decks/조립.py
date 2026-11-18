@@ -9,6 +9,7 @@ python3 workspace/강의제작/제작도구/오프라인/decks/조립.py workspa
 배치 설명 — 현장 목차 줄 번호 등)은 layout_edits로만 바꾼다.
 간지 번호는 새 순서대로 다시 매긴다. 구성.json의 note_end(글머리 목록)는 마지막 장(정답과 판단 기준) 노트의
 [다음] 앞에 덧붙인다. 오프라인에는 대본이 없으므로 실습과 다음 회차로 잇는 말은 이 자리에만 둔다.
+마지막 장의 [다음]은 「실습으로」이고, 실습이 단원 사이에 이미 놓인 덱(1회)은 구성.json의 end_next에 적은 구절을 쓴다.
 """
 from pathlib import Path
 import json, os, re, sys
@@ -99,6 +100,8 @@ def main():
         if i + 1 == len(items):
             assert x['title'] == '정답과 판단 기준', f"마지막 장이 정답과 판단 기준이 아님: {x['title']}"
             assert spec.get('note_end'), '구성.json에 note_end(실습 · 다음 회차 연결)가 없음'
+            if 'end_next' in spec:
+                nxt = f"[다음] {spec['end_next']}"
             nxt = ' / '.join([f'· {t}' for t in spec['note_end']] + [nxt])
         if not re.search(r'^- 노트: ', screen, re.M):
             raise SystemExit(f"{i + 1}장 「{x['title']}」 노트 없음")
