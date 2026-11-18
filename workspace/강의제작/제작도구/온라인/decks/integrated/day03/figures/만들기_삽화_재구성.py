@@ -1,6 +1,6 @@
 """통합반 3회차 덱 재구성(표 → 삽화)에 쓰는 새 삽화(SVG). 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
-그림 조각 · 선 굵기 · 색은 같은 폴더(또는 저장소 day03/figures)의 `삽화_기본.py` · `만들기_삽화.py`에서만 가져온다.
+그림 조각 · 선 굵기 · 색은 공용 조각 `온라인/tools/deck/삽화_기본.py`와 같은 폴더의 `만들기_삽화.py`에서만 가져온다.
 축척은 지식 그래프 그림과 같은 1213 × 540(본문 12.13 × 5.4인치, 1인치 = 100).
 사용: python 만들기_삽화_재구성.py   → 이 폴더에 SVG를 쓴다
 """
@@ -13,6 +13,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True       # 저장소의 그림 폴더에 __pycache__를 만들지 않는다
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(1, str(HERE.parents[3] / "tools" / "deck"))
 
 from 삽화_기본 import (BLUE, GREY, LIGHT, NAVY, NORM, ON, PALE, SKY, WHITE, arrow, circle, fan, g, line,  # noqa: E402
                     monitor, plc, radiator, rect, server)

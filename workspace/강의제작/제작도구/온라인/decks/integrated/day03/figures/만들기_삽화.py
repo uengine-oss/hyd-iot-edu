@@ -1,14 +1,16 @@
 """통합반 3일차 삽화(SVG)를 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
-화풍(선 굵기 · 색 · 그림 조각)은 1일차의 `만들기_삽화.py`를 복사한 `삽화_기본.py`에서 가져온다.
+화풍(선 굵기 · 색 · 그림 조각)은 공용 조각 `온라인/tools/deck/삽화_기본.py`에서 가져온다.
 한 그림을 여러 장에 걸쳐 쓰며 한 번에 한 부분만 밝히므로(제작지시 6.8) 그림마다 단계별 파일을 낸다.
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
 """
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "tools" / "deck"))
 from 삽화_기본 import (BLUE, GREY, LIGHT, NAVY, NORM, OFF, ON, PALE, SKY, WHITE, St, arrow, bell, book_icon,
                     broken_cooler, calendar_icon, circle, cylinder_db, dusty_cooler, fan, g, line, path, poly, radiator,
                     rect, svg, thermo)
