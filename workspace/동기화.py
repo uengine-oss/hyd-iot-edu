@@ -301,9 +301,22 @@ def age_days(task):
     return (datetime.datetime.now().timestamp() - t) / 86400
 
 
+def now_line(t):
+    """기록.md 「지금」 절의 첫 항목 앞부분 — 오래된 폴더가 무슨 일이었는지 세션 시작 알림에서 바로 보이게 한다."""
+    f = t / "기록.md"
+    if not f.is_file():
+        return "기록.md 없음"
+    lines = f.read_text(encoding="utf-8").splitlines()
+    i = next((k for k, l in enumerate(lines) if l.strip() == "## 지금"), None)
+    first = next((l for l in lines[i + 1:] if l.startswith("- ")), None) if i is not None else None
+    return first[2:122] + ("…" if len(first) > 122 else "") if first else "「지금」 절이 비어 있음"
+
+
 def task_line(t):
     days = age_days(t)
-    return f"{t.parent.name}/{t.name} · 상태 {state(t)}" + (f" · 오래됨 {days:.0f}일 — 닫을지 정한다" if days > STALE_DAYS else "")
+    if days <= STALE_DAYS:
+        return f"{t.parent.name}/{t.name} · 상태 {state(t)}"
+    return f"{t.parent.name}/{t.name} · 상태 {state(t)} · 오래됨 {days:.0f}일 — 닫을지 정한다(hyd-task 1절)\n    지금: {now_line(t)}"
 
 
 def log_warnings():
