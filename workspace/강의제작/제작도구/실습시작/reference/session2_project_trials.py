@@ -52,9 +52,9 @@ def blocks(folder, action):
 
 
 def model_answers(branch, graph):
-    """학생 꼴 모델(output/graph.json)을 verify_reference.expected와 같은 꼴로 읽는다 — 이름은 강사 참조의 이름표(CANON_NAME · quantities_of)로 되짚는다."""
+    """학생 꼴 모델(output/graph.json)을 verify_reference.expected와 같은 꼴로 읽는다 — 구성 요소 이름은 그 설비 모델의 품목 키(build_labs.comp_key),
+    물리량 이름은 강사 참조의 이름표(quantities_of)로 되짚는다."""
     pol = B.policy(branch)
-    key_of = {B.CANON_NAME[k]: k for k, *_ in D.MODEL_COMPONENTS['HPP-45A']}
     qid_of = {name: qid for qid, (name, _) in B.quantities_of(pol).items()}
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
     props = {n['props']['id']: n['props'] for n in graph['nodes']}
@@ -62,16 +62,17 @@ def model_answers(branch, graph):
     for r in graph['rels']:
         by.setdefault(r['type'], []).append(r)
     owner = {r['b']: r['a'] for r in by['HAS_COMPONENT']}
-    comp = lambda cid: f'{owner[cid]}:{key_of[props[cid]["name"]]}'
+    key = lambda cid: B.comp_key(props[cid]['name'], {k for k, *_ in D.MODEL_COMPONENTS[props[owner[cid]]['model']]})
+    comp = lambda cid: f'{owner[cid]}:{key(cid)}'
     sensors, members, sprops, parts, units = {}, {}, {}, {a: {} for a, l in label.items() if l == 'Asset'}, {}
     for r in by['MONITORED_BY']:
-        sensors.setdefault(owner[r['a']], {}).setdefault(key_of[props[r['a']]['name']], []).append(props[r['b']]['tag'])
+        sensors.setdefault(owner[r['a']], {}).setdefault(key(r['a']), []).append(props[r['b']]['tag'])
     for r in by['OBSERVES']:
         qid, s = qid_of[props[r['b']]['name']], props[r['a']]
         members.setdefault(qid, []).append(r['a'])
         sprops[r['a']] = [qid, s['unit'], s.get('normal'), s.get('limit'), s.get('limit_direction'), None]   # 학생 꼴 모델은 kind를 두지 않는다 — 실측뿐인 실습 랩 규모의 기대 답도 None
     for cid, aid in owner.items():
-        parts[aid][key_of[props[cid]['name']]] = next((r['b'] for r in by['USES_PART'] if r['a'] == cid), None)
+        parts[aid][key(cid)] = next((r['b'] for r in by['USES_PART'] if r['a'] == cid), None)
     for r in by.get('INSTALLED_UNIT', []):
         units.setdefault(comp(r['a']), []).append([props[r['b']]['serial'], r['props']['current']])
     serials = {comp(c): p['serial'] for c, p in props.items() if label[c] == 'Component' and 'serial' in p}
@@ -146,7 +147,7 @@ def field_damage(folder, files):
         'cardinality-unknown': ('app/features/relations.csv', rel.replace('센서-물리량,OBSERVES,센서,N:1', '센서-물리량,OBSERVES,센서,여럿'), 'design', '카디널리티 「여럿」'),
         'past-unit-without-split': ('app/features/row_rules.csv', P.convert(files['결과/행_처리.csv']).replace(',빼기,', f',지난 실물:{now},'), 'names', '「지난 실물」은 구성 요소 자리와 그 실물을 나눌 때'),
         'removed-row-not-handled': ('app/features/row_rules.csv', '\n'.join(P.convert(files['결과/행_처리.csv']).split('\n')[:2]) + '\n', 'names', f'components.csv:{now}: 식별자 「'),
-        'quantity-name-collision': ('app/features/quantity_rules.py', rules.replace("    kind = value_kind(members[0])\n", "    return '온도'\n"), 'quantities', '같은 물리량 이름 「온도」'),
+        'quantity-name-collision': ('app/features/quantity_rules.py', rules.replace("    return value_kind(members[0])\n", "    return '온도'\n"), 'quantities', '같은 물리량 이름 「온도」'),
         'units-mixed-in-one-quantity': ('app/features/quantity_rules.py', rules.replace('    return value_kind(a) == value_kind(b)', '    return True'), 'quantities', '바꾸는 법을 모릅니다'),
         'empty-decision': ('app/features/decisions.csv', '\n'.join('같은 물리량의 범위,,,' if x.startswith('같은 물리량의 범위,') else x for x in P.convert(files['결과/정한_것.csv']).split('\n')),
                            'quantities', 'decisions.csv:'),

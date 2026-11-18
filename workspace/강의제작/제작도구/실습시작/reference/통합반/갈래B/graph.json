@@ -10,7 +10,32 @@
         "other_codes": [
           "HI-SK-45A",
           "PMP-SEAL",
-          "PS-4510"
+          "PS-4510",
+          "P_PMP_SEAL"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "P-PMP-SEAL-HT",
+        "name": "펌프 축 씰 키트(고온형 FKM)",
+        "other_codes": [
+          "HI-SK-45B"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "P-PMP-SEAL-22",
+        "name": "기어 펌프 씰 키트",
+        "other_codes": [
+          "HI-GS-22"
         ]
       }
     },
@@ -22,6 +47,7 @@
         "id": "P-FAN-BRG",
         "name": "팬 베어링",
         "other_codes": [
+          "6205-2RS",
           "FB-6205"
         ]
       }
@@ -43,9 +69,22 @@
         "Part"
       ],
       "props": {
+        "id": "P-CLR-PLT",
+        "name": "수냉 열교환기 플레이트 팩",
+        "other_codes": [
+          "HI-PHE-45B"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
         "id": "P-RTN-FLT",
         "name": "리턴 필터 엘리먼트 10µm",
         "other_codes": [
+          "HI-RF-10",
           "RF-10"
         ]
       }
@@ -55,9 +94,11 @@
         "Part"
       ],
       "props": {
-        "id": "P-RTN-FLT-25",
-        "name": "리턴 필터 엘리먼트 25µm",
-        "other_codes": []
+        "id": "P-SUC-STR",
+        "name": "흡입 스트레이너",
+        "other_codes": [
+          "HI-SS-45"
+        ]
       }
     },
     {
@@ -69,6 +110,18 @@
         "name": "커플링 탄성체",
         "other_codes": [
           "ROTEX-24-98A"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "P-VLV-COIL",
+        "name": "솔레노이드 코일 24VDC",
+        "other_codes": [
+          "D03-24VDC"
         ]
       }
     },
@@ -127,9 +180,69 @@
         "Quantity"
       ],
       "props": {
+        "id": "quantity:PS2",
+        "name": "시스템 압력",
+        "unit": "bar"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:PS4",
+        "name": "필터 차압",
+        "unit": "bar"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:EPS1",
+        "name": "모터 출력",
+        "unit": "kW"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:FS1",
+        "name": "유량",
+        "unit": "L/min"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:FS2",
+        "name": "냉각 회로 유량",
+        "unit": "L/min"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
         "id": "quantity:VS1",
         "name": "팬 진동",
         "unit": "mm/s"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:CW-FLOW",
+        "name": "냉각수 유량",
+        "unit": "L/min"
       }
     },
     {
@@ -179,6 +292,36 @@
     },
     {
       "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-04",
+        "name": "HYD-04 유압 파워팩",
+        "model": "HPP-45B",
+        "maker": "한일유압",
+        "serial": "HP45B-24-0031",
+        "functional_location": "CW1-L2-HPU-04",
+        "installed": "2024-07-08",
+        "status": "가동"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-07",
+        "name": "이동식 예비 파워팩",
+        "model": "HPP-22M",
+        "maker": "한일유압",
+        "serial": "HP22M-17-0009",
+        "functional_location": "CW1-MNT-SPARE-01",
+        "installed": "2017-09-11",
+        "status": "예비(보관)"
+      }
+    },
+    {
+      "labels": [
         "Component"
       ],
       "props": {
@@ -213,6 +356,16 @@
         "Component"
       ],
       "props": {
+        "id": "HYD-01:motor",
+        "name": "구동 모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
         "id": "HYD-01:coupling",
         "name": "커플링",
         "group": "동력"
@@ -236,6 +389,26 @@
         "id": "HYD-01:rtn-filter",
         "name": "리턴 필터",
         "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:strainer",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:valve",
+        "name": "전환 밸브",
+        "group": "제어"
       }
     },
     {
@@ -283,6 +456,19 @@
         "Component"
       ],
       "props": {
+        "id": "HYD-02:motor",
+        "name": "구동 모터",
+        "group": "동력",
+        "aliases": [
+          "모터"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
         "id": "HYD-02:coupling",
         "name": "커플링",
         "group": "동력"
@@ -309,6 +495,32 @@
         "id": "HYD-02:rtn-filter",
         "name": "리턴 필터",
         "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:strainer",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과",
+        "aliases": [
+          "석션 스트레이너"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:valve",
+        "name": "전환 밸브",
+        "group": "제어",
+        "aliases": [
+          "방향 전환 밸브"
+        ]
       }
     },
     {
@@ -356,6 +568,16 @@
         "Component"
       ],
       "props": {
+        "id": "HYD-03:motor",
+        "name": "구동 모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
         "id": "HYD-03:coupling",
         "name": "커플링",
         "group": "동력",
@@ -383,6 +605,170 @@
       ],
       "props": {
         "id": "HYD-03:rtn-filter",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:strainer",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:valve",
+        "name": "전환 밸브",
+        "group": "제어",
+        "aliases": [
+          "솔레노이드 밸브"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:cooler",
+        "name": "수냉 열교환기",
+        "group": "냉각"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:pump-a",
+        "name": "주 펌프 (A)",
+        "group": "동력",
+        "serial": "KP-2407-310"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:motor",
+        "name": "구동 모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:coupling",
+        "name": "커플링",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:tank",
+        "name": "작동유 탱크",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:rtn-filter",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:strainer",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:valve",
+        "name": "전환 밸브",
+        "group": "제어"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:pump",
+        "name": "메인 펌프",
+        "group": "동력",
+        "serial": "GP-1709-004",
+        "aliases": [
+          "펌프"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:motor",
+        "name": "구동 모터",
+        "group": "동력",
+        "aliases": [
+          "모터"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:coupling",
+        "name": "커플링",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:tank",
+        "name": "작동유 탱크",
+        "group": "저장·여과",
+        "aliases": [
+          "탱크"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:rtn-filter",
         "name": "리턴 필터",
         "group": "저장·여과"
       }
@@ -433,6 +819,61 @@
         "normal": 182.0,
         "limit": 130.0,
         "limit_direction": "lower"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:PS2",
+        "tag": "PS2",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:PS4",
+        "tag": "PS4",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:EPS1",
+        "tag": "EPS1",
+        "unit": "kW",
+        "normal": 2.8
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:FS1",
+        "tag": "FS1",
+        "unit": "L/min",
+        "normal": 9.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:FS2",
+        "tag": "FS2",
+        "unit": "L/min",
+        "normal": 10.0
       }
     },
     {
@@ -494,6 +935,61 @@
         "normal": 182.0,
         "limit": 130.0,
         "limit_direction": "lower"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:PS2",
+        "tag": "PS2",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:PS4",
+        "tag": "PS4",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:EPS1",
+        "tag": "EPS1",
+        "unit": "kW",
+        "normal": 2.8
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:FS1",
+        "tag": "FS1",
+        "unit": "L/min",
+        "normal": 9.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:FS2",
+        "tag": "FS2",
+        "unit": "L/min",
+        "normal": 10.0
       }
     },
     {
@@ -563,12 +1059,193 @@
         "Sensor"
       ],
       "props": {
+        "id": "HYD-03:PS2",
+        "tag": "PS2",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:PS4",
+        "tag": "PS4",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:EPS1",
+        "tag": "EPS1",
+        "unit": "kW",
+        "normal": 2.8
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:FS1",
+        "tag": "FS1",
+        "unit": "L/min",
+        "normal": 9.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:FS2",
+        "tag": "FS2",
+        "unit": "L/min",
+        "normal": 10.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
         "id": "HYD-03:VS1",
         "tag": "VS1",
         "unit": "mm/s",
         "normal": 0.6,
         "limit": 2.0,
         "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:TS1",
+        "tag": "TS1",
+        "unit": "℃",
+        "normal": 46.0,
+        "limit": 65.0,
+        "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:TS2",
+        "tag": "TS2",
+        "unit": "℃",
+        "normal": 44.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:TS3",
+        "tag": "TS3",
+        "unit": "℃",
+        "normal": 40.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:PS1",
+        "tag": "PS1",
+        "unit": "bar",
+        "normal": 190.0,
+        "limit": 140.0,
+        "limit_direction": "lower"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:PS2",
+        "tag": "PS2",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:PS4",
+        "tag": "PS4",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:EPS1",
+        "tag": "EPS1",
+        "unit": "kW",
+        "normal": 3.1,
+        "source_unit": "W"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:FS1",
+        "tag": "FS1",
+        "unit": "L/min",
+        "normal": 11.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:FS2",
+        "tag": "FS2",
+        "unit": "L/min",
+        "normal": 18.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-07:TI-1",
+        "tag": "TI-1",
+        "unit": "℃",
+        "normal": 45.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-07:PI-1",
+        "tag": "PI-1",
+        "unit": "bar",
+        "normal": 140.0
       }
     }
   ],
@@ -618,6 +1295,12 @@
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
+      "b": "HYD-01:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
       "b": "HYD-01:coupling",
       "props": {}
     },
@@ -655,6 +1338,34 @@
       "b": "P-RTN-FLT",
       "props": {
         "source_text": "리턴 필터 엘리먼트 (P-RTN-FLT)"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:strainer",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:strainer",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "흡입 스트레이너 (P-SUC-STR)"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:valve",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:valve",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "솔레노이드 코일 (P-VLV-COIL)"
       }
     },
     {
@@ -702,6 +1413,12 @@
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
+      "b": "HYD-02:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
       "b": "HYD-02:coupling",
       "props": {}
     },
@@ -739,6 +1456,34 @@
       "b": "P-RTN-FLT",
       "props": {
         "source_text": "RF-10"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:strainer",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:strainer",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "P-SUC-STR"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:valve",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:valve",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "P-VLV-COIL"
       }
     },
     {
@@ -786,6 +1531,12 @@
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
+      "b": "HYD-03:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
       "b": "HYD-03:coupling",
       "props": {}
     },
@@ -820,9 +1571,203 @@
     {
       "type": "USES_PART",
       "a": "HYD-03:rtn-filter",
-      "b": "P-RTN-FLT-25",
+      "b": "P-RTN-FLT",
       "props": {
-        "source_text": "P-RTN-FLT-25"
+        "source_text": "HI-RF-10"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:strainer",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:strainer",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "HI-SS-45"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:valve",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:valve",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "D03-24VDC"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:cooler",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:cooler",
+      "b": "P-CLR-PLT",
+      "props": {
+        "source_text": "수냉 플레이트 팩 (P-CLR-PLT)"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:pump-a",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:pump-a",
+      "b": "P-PMP-SEAL-HT",
+      "props": {
+        "source_text": "고온형 축 씰 키트 (P-PMP-SEAL-HT)"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:coupling",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:coupling",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "P-CPL-ELM"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:tank",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:tank",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "P-HYD-OIL"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:rtn-filter",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:rtn-filter",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "P-RTN-FLT"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:strainer",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:strainer",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "P-SUC-STR"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-04",
+      "b": "HYD-04:valve",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:valve",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "P-VLV-COIL"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-07",
+      "b": "HYD-07:pump",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:pump",
+      "b": "P-PMP-SEAL-22",
+      "props": {
+        "source_text": "P-PMP-SEAL-22"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-07",
+      "b": "HYD-07:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-07",
+      "b": "HYD-07:coupling",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:coupling",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "P-CPL-ELM"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-07",
+      "b": "HYD-07:tank",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:tank",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "P-HYD-OIL"
+      }
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-07",
+      "b": "HYD-07:rtn-filter",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:rtn-filter",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "P-RTN-FLT"
       }
     },
     {
@@ -871,6 +1816,66 @@
       "type": "OBSERVES",
       "a": "HYD-01:PS1",
       "b": "quantity:PS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:valve",
+      "b": "HYD-01:PS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:PS2",
+      "b": "quantity:PS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:rtn-filter",
+      "b": "HYD-01:PS4",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:PS4",
+      "b": "quantity:PS4",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:motor",
+      "b": "HYD-01:EPS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:EPS1",
+      "b": "quantity:EPS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:pump-a",
+      "b": "HYD-01:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:cooler",
+      "b": "HYD-01:FS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:FS2",
+      "b": "quantity:FS2",
       "props": {}
     },
     {
@@ -935,6 +1940,66 @@
     },
     {
       "type": "MONITORED_BY",
+      "a": "HYD-02:valve",
+      "b": "HYD-02:PS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:PS2",
+      "b": "quantity:PS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:rtn-filter",
+      "b": "HYD-02:PS4",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:PS4",
+      "b": "quantity:PS4",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:motor",
+      "b": "HYD-02:EPS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:EPS1",
+      "b": "quantity:EPS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:pump-a",
+      "b": "HYD-02:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:cooler",
+      "b": "HYD-02:FS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:FS2",
+      "b": "quantity:FS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
       "a": "HYD-02:fan",
       "b": "HYD-02:VS1",
       "props": {}
@@ -995,6 +2060,66 @@
     },
     {
       "type": "MONITORED_BY",
+      "a": "HYD-03:valve",
+      "b": "HYD-03:PS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:PS2",
+      "b": "quantity:PS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:rtn-filter",
+      "b": "HYD-03:PS4",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:PS4",
+      "b": "quantity:PS4",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:motor",
+      "b": "HYD-03:EPS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:EPS1",
+      "b": "quantity:EPS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:pump-a",
+      "b": "HYD-03:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:cooler",
+      "b": "HYD-03:FS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:FS2",
+      "b": "quantity:FS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
       "a": "HYD-03:fan",
       "b": "HYD-03:VS1",
       "props": {}
@@ -1003,6 +2128,138 @@
       "type": "OBSERVES",
       "a": "HYD-03:VS1",
       "b": "quantity:VS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:cooler",
+      "b": "HYD-04:TS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:TS1",
+      "b": "quantity:TS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:cooler",
+      "b": "HYD-04:TS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:TS2",
+      "b": "quantity:TS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:tank",
+      "b": "HYD-04:TS3",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:TS3",
+      "b": "quantity:TS3",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:pump-a",
+      "b": "HYD-04:PS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:PS1",
+      "b": "quantity:PS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:valve",
+      "b": "HYD-04:PS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:PS2",
+      "b": "quantity:PS2",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:rtn-filter",
+      "b": "HYD-04:PS4",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:PS4",
+      "b": "quantity:PS4",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:motor",
+      "b": "HYD-04:EPS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:EPS1",
+      "b": "quantity:EPS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:pump-a",
+      "b": "HYD-04:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-04:cooler",
+      "b": "HYD-04:FS2",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-04:FS2",
+      "b": "quantity:CW-FLOW",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-07:tank",
+      "b": "HYD-07:TI-1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-07:TI-1",
+      "b": "quantity:TS3",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-07:pump",
+      "b": "HYD-07:PI-1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-07:PI-1",
+      "b": "quantity:PS1",
       "props": {}
     }
   ]

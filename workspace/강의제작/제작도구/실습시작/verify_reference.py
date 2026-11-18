@@ -32,7 +32,8 @@ import build_labs as B             # noqa: E402
 REPORT = HERE/'reference/session2_검증.json'
 EXPECT = {'통합반': HERE/'reference/통합반/기대답.json', '실전반': HERE/'reference/실전반/기대답.json'}
 # 통합반(실습 랩 규모): 사내 품번 · 예전 품번 · 줄여 쓴 표기 · 제조사 품번 · 원자료에 없는 품번.
-PROBES = {'통합반': ['P-PMP-SEAL', 'P-FAN-BRG', 'P-CLR-CORE', 'P-RTN-FLT', 'P-RTN-FLT-25', 'P-CPL-ELM', 'P-HYD-OIL', 'PS-4510', 'PMP-SEAL', 'FB-6205', 'RF-10', 'HI-SK-45A', 'P-PMP-SEAL-X'],
+PROBES = {'통합반': ['P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-PMP-SEAL-22', 'P-FAN-BRG', 'P-CLR-CORE', 'P-CLR-PLT', 'P-RTN-FLT', 'P-SUC-STR', 'P-CPL-ELM', 'P-VLV-COIL', 'P-HYD-OIL',
+                   'PS-4510', 'PMP-SEAL', 'P_PMP_SEAL', 'FB-6205', 'RF-10', 'HI-RF-10', 'HI-SK-45A', 'HI-GS-22', 'P-PMP-SEAL-X'],
           '실전반': ['P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-CLR-CORE', 'P-CLR-PLT', 'P-ACC-BLD', 'P-RTN-FLT', 'P-FAN-BRG', 'PS-4510', 'PMP-SEAL', 'P-PMP-SEAL-X']}
 
 

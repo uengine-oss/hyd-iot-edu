@@ -5,7 +5,7 @@
 - 품번·공급·재고 기준값: it/enterprise-sim/entsim/data.py (_PART_QUOTES·_SUPPLIERS·SPARE_BASE), PR-07
 - 실라버스 고정 대상: P-PMP-SEAL → HYD-01·02·03, 유효 공급 조건 3행(A정밀 35/0.12/2, B-OEM 55/0.02/5, C트레이딩 비승인 20/0.30/1)
 
-규모는 둘이다(코딩랩 K-3 · K-10). 「공장 규모」는 이 파일의 기본값이고 실전반 2회차가 쓴다. 「실습 랩 규모」(아래 LAB — 설비 3대)는 통합반 2회차가 쓴다.
+규모는 둘이다(코딩랩 K-3 · K-10). 「공장 규모」는 이 파일의 기본값이고 실전반 2회차가 쓴다. 「실습 랩 규모」(아래 LAB — 공장 규모에서 고른 2라인 설비 5대)는 통합반 2회차가 쓴다.
 통합반 것을 만들거나 검증하는 코드는 `with for_course('통합반'):` 안에서 돌고, 그 밖에서는 공장 규모다. 규모를 바꾸면 TRUTH도 그 규모로 다시 선다.
 
 이 파일은 두 가지를 낸다.
@@ -212,6 +212,35 @@ QUANTITY_KINDS = {
     **{q: (q, QUANTITIES[q][0], QUANTITIES[q][1]) for q in ('quantity:CE', 'quantity:CP', 'quantity:SE', 'quantity:FanSpeedSP', 'quantity:LoadSP')},
 }
 SENSOR_COLS = ['설비코드', '태그', '계장태그', '센서명', '붙은곳', '재는것', '단위', '표본주기', '수집방식', '정상값', '한계', '한계구분', '비고']
+# 두 규모의 센서 목록이 함께 쓰는 칸 값(한 곳에만 둔다).
+WHAT_NAMES = {'HYD-02': {'유온': '오일 온도', '냉각 효율': '쿨러 효율', '토출 압력': '펌프 압력', '유량': '토출 유량', '팬 진동': '진동'}}   # 적은 사람마다 다른 재는것 이름
+# 후속 모델 HPP-45B(HYD-04)는 정상값 · 단위가 다르고, 수냉 열교환기라 FS2 자리에서 냉각수 유량을 잰다 {설비: {태그: {칸: 값}}}
+SENSOR_EDITS = {'HYD-04': {'TS1': {'정상값': '46'}, 'PS1': {'정상값': '190', '한계': '140'}, 'FS1': {'단위': 'L/min', '정상값': '11'}, 'CE': {'정상값': '88'},
+                           'EPS1': {'단위': 'W', '정상값': '3100'}, 'FS2': {'센서명': '냉각수 유량 센서', '재는것': '냉각수 유량', '단위': 'L/min', '정상값': '18'}}}
+# 통신 없는 이동식 예비 파워팩(HYD-07)의 현장 지시계 — 투입 때 점검표에 손으로 적는다
+GAUGES = {'HYD-07': [{'태그': 'TI-1', '센서명': '유온계(현장 지시)', '붙은곳': '탱크', '재는것': '유온', '단위': '℃', '정상값': '45'},
+                     {'태그': 'PI-1', '센서명': '압력계(현장 지시)', '붙은곳': '펌프', '재는것': '토출 압력', '단위': 'bar', '정상값': '140'}]}
+GAUGE_HOW, GAUGE_NOTE = '수기 점검(통신 없음)', '투입 때만 읽음'
+
+
+def edit_sensor(row, code, tag):
+    """센서 목록 한 줄(SENSOR_COLS 차례)에 그 설비의 SENSOR_EDITS를 적용한다."""
+    for col, value in SENSOR_EDITS.get(code, {}).get(tag, {}).items():
+        row[SENSOR_COLS.index(col)] = value
+    return row
+
+
+def gauge_rows(code):
+    """현장 지시계 줄(SENSOR_COLS 차례). 수집방식 칸이 없는 목록(실습 랩 규모)은 수기 점검 사정을 비고에 함께 적는다."""
+    rows = []
+    for g in GAUGES[code]:
+        cells = dict.fromkeys(SENSOR_COLS, '') | {'설비코드': code, **g}
+        if '수집방식' in SENSOR_COLS:
+            cells |= {'수집방식': GAUGE_HOW, '비고': GAUGE_NOTE}
+        else:
+            cells['비고'] = f'{GAUGE_HOW} · {GAUGE_NOTE}'
+        rows.append([cells[c] for c in SENSOR_COLS])
+    return rows
 
 # ───────────── 공급 ─────────────
 QUOTES = [  # 품번칸 글, 공급사 글, 공급사품번, 승인칸, 단가, 불량률 글, 납기 글, MOQ, 견적일, 유효기한, 비고
@@ -338,11 +367,18 @@ def dpu_instrument(code, tag):
 
 
 def lab_sensor_rows():
-    """실습 랩 규모 센서 목록 — 태그는 세 대가 같고, 재는것 이름은 적은 사람마다 다르며, 한 줄은 단위가 다르다(LAB_SENSOR_QUIRKS)."""
+    """실습 랩 규모 센서 목록 — 한일유압 파워팩(HPP-45A · 45B)은 같은 태그를 쓰고(45B는 쿨러 팬이 없다), 재는것 이름은 적은 사람마다 다르며(WHAT_NAMES),
+    후속 모델은 값이 다르고(SENSOR_EDITS), 한 줄은 같은 값을 다른 단위로 적었다(LAB_SENSOR_QUIRKS). HYD-07은 현장 지시계 두 줄이다(GAUGES)."""
     rows = []
     for code, *_ in ASSETS:
+        if code in GAUGES:
+            rows += gauge_rows(code)
+            continue
+        keys = {k for k, *_ in MODEL_COMPONENTS[model_of(code)]}
         for tag, _, name, comp, what, q, unit, _, _, normal, limit, direc, _ in HPP_TAGS:
-            row = [code, tag, name, _place(code, comp), LAB_WHAT.get(code, {}).get(what, what), unit, _num(normal), '' if limit is None else _num(limit), direc, '']
+            if comp not in keys:
+                continue
+            row = edit_sensor([code, tag, name, _place(code, comp), WHAT_NAMES.get(code, {}).get(what, what), unit, _num(normal), '' if limit is None else _num(limit), direc, ''], code, tag)
             row[5:8] = LAB_SENSOR_QUIRKS.get((code, tag), row[5:8])
             rows.append(row)
     return rows
@@ -364,20 +400,13 @@ def sensor_rows():
                 row[12] = '계기 없음. 다른 값으로 계산'
             if kind == 'setpoint':
                 row[12] = 'PLC 설정값(운전원·자동 조치가 바꿈)'
+            row[5] = WHAT_NAMES.get(code, {}).get(what, what)
             if code == 'HYD-02':
-                row[5] = {'유온': '오일 온도', '냉각 효율': '쿨러 효율', '토출 압력': '펌프 압력', '유량': '토출 유량', '팬 진동': '진동'}.get(what, what)
                 if tag == 'PS1': row[10] = '130 bar'
                 if tag == 'FS1': row[6] = 'L/min'
             if code == 'HYD-03' and tag == 'VS1':
                 row[6] = ''
-            if code == 'HYD-04':
-                if tag == 'TS1': row[9] = '46'
-                if tag == 'PS1': row[9] = '190'; row[10] = '140'
-                if tag == 'FS1': row[6] = 'L/min'; row[9] = '11'
-                if tag == 'CE': row[9] = '88'
-                if tag == 'EPS1': row[6] = 'W'; row[9] = '3100'
-                if tag == 'FS2': row[3] = '냉각수 유량 센서'; row[5] = '냉각수 유량'; row[6] = 'L/min'; row[9] = '18'
-            rows.append(row)
+            rows.append(edit_sensor(row, code, tag))
             if code == 'HYD-01' and tag == 'TS1':
                 rows.append([code, 'TS1', 'TT-211', 'TS1 오일 온도', '쿨러', '작동유 온도', '℃', '', '', '48', '65', '', ''])
     for code in ['HYD-05', 'HYD-06']:
@@ -388,9 +417,7 @@ def sensor_rows():
                 nv = ''; note = '시운전 기록 못 찾음'
             rows.append([code, tag, dpu_instrument(code, tag), name, _place(code, comp), what, unit, '', '5초 주기(3라인 게이트웨이)', nv,
                          '' if limit is None else _num(limit), direc, note])
-    rows.append(['HYD-07', 'TI-1', '', '유온계(현장 지시)', '탱크', '유온', '℃', '', '수기 점검(통신 없음)', '45', '', '', '투입 때만 읽음'])
-    rows.append(['HYD-07', 'PI-1', '', '압력계(현장 지시)', '펌프', '토출 압력', 'bar', '', '수기 점검(통신 없음)', '140', '', '', '투입 때만 읽음'])
-    return rows
+    return rows + gauge_rows('HYD-07')
 
 
 def part_rows():
@@ -439,25 +466,28 @@ def lab_memo():
 작성: 설비보전팀 2라인 기계 담당 · {REF_DATE}
 받는 사람: 설비 지식 정리 담당
 
-창원1공장 2라인 유압 파워팩 세 대(HYD-01 · 02 · 03)의 자료를 시스템별로 내려받아 보냅니다. 대장과 점검표, SCADA 태그 목록, ERP 화면에서 각자 내보낸 것이라 줄마다 적는 방식이 다릅니다. 기준일은 {REF_DATE}입니다.
+창원1공장 2라인 유압 파워팩 네 대(HYD-01 · 02 · 03 · 04)와 정비 때 쓰는 이동식 예비 파워팩 한 대(HYD-07)의 자료를 시스템별로 내려받아 보냅니다. 대장과 점검표, SCADA 태그 목록, ERP 화면에서 각자 내보낸 것이라 줄마다 적는 방식이 다릅니다. 기준일은 {REF_DATE}입니다.
 
 ## 1. 보낸 파일
 
 | 파일 | 어디서 왔나 | 내용 |
 |---|---|---|
-| `설비_대장.csv` | CMMS 설비 대장 | 유압 파워팩 세 대 |
-| `구성요소_목록.csv` | 설비별 담당자 작성 | 설비마다 정비하는 품목을 한 줄씩. HYD-01은 저, HYD-02는 2라인 정비 담당, HYD-03은 전기계장 담당 |
-| `센서_목록.csv` | SCADA 태그 목록 | 설비마다 태그를 한 줄씩 |
+| `설비_대장.csv` | CMMS 설비 대장 | 유압 파워팩 다섯 대 |
+| `구성요소_목록.csv` | 설비별 담당자 작성 | 설비마다 정비하는 품목을 한 줄씩. HYD-01 · 04는 저, HYD-02 · 07은 2라인 정비 담당, HYD-03은 전기계장 담당 |
+| `센서_목록.csv` | SCADA 태그 목록 + 점검표 | 설비마다 태그를 한 줄씩. HYD-07은 점검표에서 옮겼습니다 |
 | `예비품_목록.csv` | ERP 자재 | 관리하는 예비품 |
 | `품번_교차표.csv` | 구매팀 | 사내 품번과 예전 품번, 손으로 쓴 표기, 제조사 품번 |
 
 ## 2. 설비에 대해
-- HYD-01, HYD-02, HYD-03은 같은 모델(HPP-45A)입니다. 펌프는 주 펌프 (A)와 예비 펌프 (B)가 있는데, 이번 목록에는 정비 주기를 두고 관리하는 품목 여섯 가지만 넣었습니다.
+- HYD-01, HYD-02, HYD-03은 같은 모델(HPP-45A)입니다.
+- HYD-04는 같은 회사의 후속 모델(HPP-45B)입니다. 열교환기가 수냉식이라 쿨러 팬이 없고, 냉각 회로 유량 자리(FS2)에서 냉각수 유량을 잽니다.
+- HYD-07은 정비 때 잠깐 붙여 쓰는 이동식 예비 파워팩(HPP-22M)입니다. 통신이 없어 계기는 현장 지시계뿐이고, 투입할 때 점검표에 손으로 적습니다.
+- HPP-45A · 45B의 펌프는 주 펌프 (A)와 예비 펌프 (B) 두 대인데, 이번 목록에는 정비 주기를 두고 관리하는 품목만 넣어 예비 펌프는 빠졌습니다. 구동 모터는 교체 부품을 따로 두지 않아 교체부품 칸이 비어 있습니다.
 - 구성 요소 목록의 일련번호는 그 구성 요소에 달린 장치(펌프)의 번호입니다. HYD-02 주 펌프는 2026-03-11에 교체했습니다.
 
 ## 3. 이름과 표기에 대해
 - 같은 장치인데 적은 사람에 따라 이름이 다릅니다. 현장에서 실제로 섞어 쓰는 말이라 어느 것도 틀린 말은 아닙니다. 재는 값의 이름도 마찬가지입니다.
-- 태그 이름(TS1, PS1 …)은 세 대가 모두 같은 이름을 씁니다.
+- 태그 이름(TS1, PS1 …)은 한일유압 파워팩(HPP-45A · 45B)이 모두 같은 이름을 씁니다. HYD-07의 현장 지시계는 SCADA 태그가 없어 점검표의 이름(TI-1, PI-1)으로 적었습니다.
 - 「한계」 칸은 인터록이 걸리는 값이고 「한계구분」은 위로 넘을 때(상한)인지 아래로 떨어질 때(하한)인지입니다.
 - 사내 품번은 2024년 3월에 바뀌었습니다. 점검표에는 예전 품번이나 줄여 쓴 표기가 남아 있습니다.
 
@@ -617,7 +647,7 @@ def changes():
     if SCALE == LAB_SCALE:     # 설비 하나는 이름이 바뀌고(같은 식별자로 남는가), 하나는 불용이 된다(상태로 남길지 지울지)
         renamed, retired = a[LAB_RENAMED[0]][:], a[LAB_RETIRED[0]][:]
         renamed[1], renamed[9] = LAB_RENAMED[1], f'설비명 표준화({CHANGE_DATE})'
-        retired[8], retired[9] = LAB_RETIRED[1], f'{CHANGE_DATE} 불용 결정(2라인 재편)'
+        retired[8], retired[9] = LAB_RETIRED[1], f'{CHANGE_DATE} 불용 결정'
         return {'설비_대장_변경.csv': [['수정', *renamed], ['수정', *retired]]}
     hyd02 = a['HYD-02'][:]; hyd02[1] = 'HYD-02 2라인 2호 파워팩'; hyd02[9] = '설비명 표준화(2026-10-20)'
     hyd07 = a['HYD-07'][:]; hyd07[8] = '불용(매각 예정)'; hyd07[9] = '2026-10-20 불용 결정'
@@ -709,40 +739,55 @@ def _supply(live, mode):
 
 
 # ───────────── 실습 랩 규모(통합반 2회차) ─────────────
-# 같은 모델 세 대, 정비 품목 여섯 가지, 센서 다섯 가지. 남긴 현실감: 설비마다 다른 이름, 품번 표기 변형(구 품번 · 줄여 쓴 표기 · 제조사 품번),
-# 철거된 펌프 한 줄, 단위가 다른 센서 한 줄, 리턴 필터 엘리먼트 등급이 다른 설비 하나(HYD-03은 25µm — 그래서 부품마다 쓰는 설비가 다 같지는 않다).
-# 결정 지점은 둘(구성 요소 자리와 그 실물 · 같은 물리량의 범위)이고, 교체부품 칸은 모두 품번 · 교차표로 풀린다.
+# 공장 규모에서 2라인 한일유압 설비만 고른 부분이다(실전반과 같은 사례 — 코딩랩 K-3 · K-10): 설비 다섯 대 · 모델 셋(HPP-45A 세 대, 수냉 후속형 HPP-45B 한 대,
+# 통신 없는 이동식 예비 HPP-22M 한 대), 구성 요소 41줄(철거된 펌프 한 줄 포함), 센서 41줄(SCADA 태그 체계 하나와 현장 지시계 두 줄), 사내 품번 11 · 다른 표기 15줄.
+# 3라인 DPU-30(다른 태그 체계 · 계장태그)과 공급 · 입고 자료는 넣지 않는다(이 회차 원리와 상관없는 덩어리).
+# 어긋남은 같은 사실을 다르게 적은 것뿐이다 — 설비마다 다른 구성 요소 · 재는것 이름, 품번 표기(구 품번 · 줄여 쓴 표기 · 제조사 품번), 같은 값의 다른 단위,
+# 철거 · 교체 이력. 공장 규모의 자료 다듬기 판단(빈 교체부품 칸 · 빈 단위 칸 · 옛 코드 줄 · 점검표 중복 행 · 단위가 붙은 한계 칸)은 넣지 않아, 교체부품 칸은 모두 품번 · 교차표로 풀린다.
+# 결정 지점은 둘(구성 요소 자리와 그 실물 · 같은 물리량의 범위)이고, 모델이 셋이라 부품마다 쓰는 설비가 갈린다(P-PMP-SEAL은 45A 세 대, HT는 HYD-04, -22는 HYD-07).
 FACTORY_SCALE, LAB_SCALE = '공장 규모', '실습 랩 규모'
 COURSE_SCALE = {'통합반': LAB_SCALE, '실전반': FACTORY_SCALE}
-LAB_TAGS = [t for t in HPP_TAGS if t[0] in ('TS1', 'TS2', 'TS3', 'PS1', 'VS1')]
-LAB_WHAT = {'HYD-02': {'유온': '오일 온도', '탱크 유온': '탱크 온도', '토출 압력': '펌프 압력', '팬 진동': '진동'}}      # 적은 사람마다 다른 재는것 이름
-LAB_SENSOR_QUIRKS = {('HYD-03', 'PS1'): ['MPa', '18.2', '13']}                                                      # 단위가 다른 한 줄(182 bar · 130 bar)
+LAB_CODES = ('HYD-01', 'HYD-02', 'HYD-03', 'HYD-04', 'HYD-07')
+LAB_KEYS = ('cooler', 'fan', 'pump-a', 'pump', 'motor', 'coupling', 'tank', 'rtn-filter', 'strainer', 'valve')   # 정비 주기를 두고 관리하는 품목
+# 유량 단위는 L/min 하나로 적는다(공장 규모의 l/min · L/min 표기 차이는 원리와 상관없다)
+LAB_TAGS = [(*t[:6], 'L/min' if t[6] == 'l/min' else t[6], *t[7:]) for t in HPP_TAGS if t[0] in ('TS1', 'TS2', 'TS3', 'PS1', 'PS2', 'PS4', 'EPS1', 'FS1', 'FS2', 'VS1')]
+LAB_QUANTITY_IDS = [*dict.fromkeys(t[5] for t in LAB_TAGS), 'quantity:CW-FLOW']    # HYD-04 FS2(SENSOR_EDITS — 냉각수 유량)
+LAB_PARTS = ('P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-PMP-SEAL-22', 'P-FAN-BRG', 'P-CLR-CORE', 'P-CLR-PLT', 'P-RTN-FLT', 'P-SUC-STR', 'P-CPL-ELM', 'P-VLV-COIL', 'P-HYD-OIL')
+LAB_SENSOR_QUIRKS = {('HYD-03', 'PS1'): ['MPa', '18.2', '13']}                                                      # 같은 값을 다른 단위로 적은 줄(182 bar · 130 bar)
 LAB_RENAMED = ('HYD-02', 'HYD-02 2라인 2호 파워팩')
-LAB_RETIRED = ('HYD-03', '불용(매각 예정)')
+LAB_RETIRED = ('HYD-07', '불용(매각 예정)')
 LAB = dict(
-    ASSETS=[(*a[:9], '') for a in ASSETS[:3]], LEGACY_ASSET=None,
-    MODEL_COMPONENTS={'HPP-45A': [c for c in MODEL_COMPONENTS['HPP-45A'] if c[0] in ('cooler', 'fan', 'pump-a', 'coupling', 'tank', 'rtn-filter')]},
-    WRITER={k: WRITER[k] for k in ('HYD-01', 'HYD-02', 'HYD-03')},
-    NAMES={'HYD-02': {'cooler': '쿨러', 'fan': '팬', 'pump-a': '유압 펌프', 'coupling': '커플링', 'tank': '탱크', 'rtn-filter': '리턴 필터'},
-           'HYD-03': {'cooler': '열교환기', 'fan': '송풍기', 'pump-a': '주 펌프 A', 'coupling': '축 커플링', 'tank': '리저버', 'rtn-filter': '리턴 필터'}},
-    PART_TEXT={'HYD-01': {'cooler': '쿨러 코어 (P-CLR-CORE)', 'fan': '팬 베어링 (P-FAN-BRG)', 'pump-a': '펌프 축 씰 키트 (P-PMP-SEAL)', 'coupling': '커플링 탄성체 (P-CPL-ELM)',
-                          'tank': '작동유 VG46 (P-HYD-OIL)', 'rtn-filter': '리턴 필터 엘리먼트 (P-RTN-FLT)'},
-               'HYD-02': {'cooler': 'P-CLR-CORE', 'fan': 'FB-6205', 'pump-a': 'PMP-SEAL', 'coupling': 'P-CPL-ELM', 'tank': 'P-HYD-OIL', 'rtn-filter': 'RF-10'},
-               'HYD-03': {'cooler': 'HI-CC-45A', 'fan': 'P-FAN-BRG', 'pump-a': 'PS-4510', 'coupling': 'ROTEX-24-98A', 'tank': 'P-HYD-OIL', 'rtn-filter': 'P-RTN-FLT-25'}},
-    COMP_NOTE={}, SERIALS={k: v for k, v in SERIALS.items() if k[0] in ('HYD-01', 'HYD-02', 'HYD-03')},
-    ASSET_PARTS={('HYD-03', 'rtn-filter'): 'P-RTN-FLT-25'},
-    PARTS=[(pid, name, where, 'HPP-45A', '') for pid, name, where, *_ in PARTS if pid in ('P-PMP-SEAL', 'P-FAN-BRG', 'P-CLR-CORE', 'P-RTN-FLT', 'P-RTN-FLT-25', 'P-CPL-ELM', 'P-HYD-OIL')],
+    ASSETS=[(*a[:9], '') for a in ASSETS if a[0] in LAB_CODES], LEGACY_ASSET=None,
+    MODEL_COMPONENTS={m: [c for c in MODEL_COMPONENTS[m] if c[0] in LAB_KEYS] for m in ('HPP-45A', 'HPP-45B', 'HPP-22M')},
+    WRITER={k: WRITER[k] for k in LAB_CODES},
+    NAMES={k: NAMES[k] for k in ('HYD-02', 'HYD-03', 'HYD-07')},
+    # 교체부품 칸: 적은 사람의 버릇 그대로(HYD-01 · 04 「품명 (품번)」, HYD-02 · 07 품번 · 줄여 쓴 표기, HYD-03 제조사 부품표의 번호) — 모두 품번 · 교차표로 풀린다
+    PART_TEXT={'HYD-01': PART_TEXT['HYD-01'], 'HYD-02': PART_TEXT['HYD-02'] | {'fan': 'FB-6205'},
+               'HYD-03': {'cooler': 'HI-CC-45A', 'fan': 'P-FAN-BRG', 'pump-a': 'PS-4510', 'coupling': 'ROTEX-24-98A', 'tank': 'P-HYD-OIL', 'rtn-filter': 'HI-RF-10',
+                          'strainer': 'HI-SS-45', 'valve': 'D03-24VDC'},
+               'HYD-04': PART_TEXT['HYD-04'], 'HYD-07': PART_TEXT['HYD-07']},
+    COMP_NOTE={}, SERIALS={k: v for k, v in SERIALS.items() if k[0] in LAB_CODES},
+    ASSET_PARTS={},
+    PARTS=[(*p[:4], '') for p in PARTS if p[0] in LAB_PARTS],
     CROSS=[('P-PMP-SEAL', 'PS-4510', '구 사내 품번', '구 CMMS · 점검표', '2024-03 품번 체계 변경 전'),
            ('P-PMP-SEAL', 'PMP-SEAL', '표기 변형', '점검표 수기', ''),
+           ('P-PMP-SEAL', 'P_PMP_SEAL', '표기 변형', '구 엑셀 대장', ''),
            ('P-PMP-SEAL', 'HI-SK-45A', '제조사 품번', '한일유압 부품표', ''),
+           ('P-PMP-SEAL-HT', 'HI-SK-45B', '제조사 품번', '한일유압 부품표', ''),
+           ('P-PMP-SEAL-22', 'HI-GS-22', '제조사 품번', '한일유압 부품표', ''),
            ('P-FAN-BRG', 'FB-6205', '구 사내 품번', '구 CMMS · 점검표', '2024-03 품번 체계 변경 전'),
+           ('P-FAN-BRG', '6205-2RS', '제조사 품번', '베어링 규격', ''),
            ('P-CLR-CORE', 'HI-CC-45A', '제조사 품번', '한일유압 부품표', ''),
+           ('P-CLR-PLT', 'HI-PHE-45B', '제조사 품번', '한일유압 부품표', ''),
+           ('P-RTN-FLT', 'HI-RF-10', '제조사 품번', '한일유압 부품표', ''),
            ('P-RTN-FLT', 'RF-10', '표기 변형', '점검표 수기', ''),
-           ('P-CPL-ELM', 'ROTEX-24-98A', '제조사 품번', '커플링 규격', '')],
+           ('P-SUC-STR', 'HI-SS-45', '제조사 품번', '한일유압 부품표', ''),
+           ('P-CPL-ELM', 'ROTEX-24-98A', '제조사 품번', '커플링 규격', ''),
+           ('P-VLV-COIL', 'D03-24VDC', '제조사 품번', '밸브 규격', '')],
     HPP_TAGS=LAB_TAGS,
-    QUANTITIES={q: QUANTITIES[q] for q in (t[5] for t in LAB_TAGS)},
-    # 결정 지점 「같은 물리량의 범위」의 갈래 「재는 값의 종류」: 세 온도는 작동유 온도 하나, 나머지는 그대로
-    QUANTITY_KINDS={t[5]: QUANTITY_KINDS[t[5]] if t[0].startswith('TS') else (t[5], *QUANTITIES[t[5]]) for t in LAB_TAGS},
+    QUANTITIES={q: QUANTITIES[q] for q in LAB_QUANTITY_IDS},
+    # 결정 지점 「같은 물리량의 범위」의 갈래 「재는 값의 종류」: 작동유의 온도 · 압력 · 유량은 종류마다 하나, 냉각수 유량 · 차압 · 진동 · 모터 출력은 따로(공장 규모와 같은 판단)
+    QUANTITY_KINDS={q: QUANTITY_KINDS[q] for q in LAB_QUANTITY_IDS},
     SENSOR_COLS=['설비코드', '태그', '센서명', '붙은곳', '재는것', '단위', '정상값', '한계', '한계구분', '비고'],
     QUOTES=[], AVL=[],
     CHANGE_COLS={'설비_대장_변경.csv': ['변경', *ASSET_COLS]},

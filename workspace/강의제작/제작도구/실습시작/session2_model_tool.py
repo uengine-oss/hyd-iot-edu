@@ -484,17 +484,17 @@ def build(stage):
         other = sorted({c['다른표기'] for c in cross if c['사내품번'] == pid})
         node('Part', part_id[pid], f'자료/예비품_목록.csv:{line}', name=r['품명'], other_codes=other)
         codes.append((part_id[pid], r['품명'], ' · '.join(other) or '없음'))
-    linked, lost = [], []
+    linked, lost, blank = [], [], []
     for (code, cname), (cid, line, r) in comps.items():
         cell = r['교체부품']
         pid, how = resolve_cell(cell, parts, cross)
-        if pid is None:      # 품번으로 풀리지 않는 칸은 짐작해 잇지 않고 화면에 보인다
-            lost.append((f'구성요소_목록.csv:{line}', code, cname, cell or '(빈칸)'))
+        if pid is None:      # 품번으로 풀리지 않는 칸 · 빈 칸은 짐작해 잇지 않고 화면에 따로 보인다
+            (lost if cell else blank).append((f'구성요소_목록.csv:{line}', code, cname, cell or '(빈칸)'))
             continue
         rel_('구성 요소-부품', cid, part_id[pid], f'구성요소_목록.csv:{line}', source_text=cell)
         linked.append((f'구성요소_목록.csv:{line}', code, cname, cell, pid, how))
     info['카디널리티'] = check_cardinality(links, rels, where_of)
-    info.update(이은_부품=linked, 못_찾은_칸=lost, 다른_표기=codes, unused=[k for k in rows_done if k not in used_rows])
+    info.update(이은_부품=linked, 못_찾은_칸=lost, 빈_칸=blank, 다른_표기=codes, unused=[k for k in rows_done if k not in used_rows])
     return info, write_model(ids, links, nodes, rels)
 
 
