@@ -658,8 +658,8 @@
       "raw_frame_sha256": "a0e8725e2f84c0abc7692b347d1da9bae951da488a4ac7c2e8d3bd7e8978221d"
     },
     "06-판단근거": {
-      "required_scene": "강사 화면의 예: 결론 · 근거 · 후보 비교의 1번과 4번",
-      "check": "강사 화면의 예: 결론 · 근거 · 후보 비교의 1번과 4번",
+      "required_scene": "강사 화면의 예: 결론 · 근거 · 후보 비교의 1번과 4번 · 판을 닫는 ×",
+      "check": "강사 화면의 예: 결론 · 근거 · 후보 비교의 1번과 4번 · 판을 닫는 ×",
       "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-판단근거.png",
       "verified": true,
       "source_type": "video",
@@ -701,12 +701,18 @@
           984,
           1886,
           1072
+        ],
+        [
+          1859,
+          41,
+          1884,
+          66
         ]
       ],
       "ignore": [],
       "redactions": [],
-      "caption": "강사 화면의 예: 결론 · 근거 · 후보 비교의 1번과 4번",
-      "sha256": "847aaf6dc2190467aad95e97b23b97eaee41fdde6c4a2cae83421e8a74ba1c05",
+      "caption": "강사 화면의 예: 결론 · 근거 · 후보 비교의 1번과 4번 · 판을 닫는 ×",
+      "sha256": "514378cc256cce4f9aeb17a397028204cac7ba573f63ec62aaa7e470ae39312a",
       "raw_frame_sha256": "61f574ebb5dcd76fa5df6a849f145f59530ac844eb4726d9d10acfab26909754"
     },
     "06-승인": {
@@ -842,8 +848,8 @@
       "raw_frame_sha256": "34bb1b12251418398234002bb88f816e1d8595141f1064122c1d26d7f2decb93"
     },
     "06-결과": {
-      "required_scene": "강사 화면의 예: 처리 건 맨 위의 결과",
-      "check": "강사 화면의 예: 처리 건 맨 위의 결과",
+      "required_scene": "강사 화면의 예: 처리 건 맨 위의 결과와 경보 해제",
+      "check": "강사 화면의 예: 처리 건 맨 위의 결과와 경보 해제",
       "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-결과.png",
       "verified": true,
       "source_type": "video",
@@ -867,17 +873,69 @@
           426,
           1556,
           514
+        ],
+        [
+          958,
+          578,
+          1146,
+          608
         ]
       ],
       "ignore": [],
       "redactions": [],
-      "caption": "강사 화면의 예: 처리 건 맨 위의 결과",
-      "sha256": "aed2ea9473b04b90d9330ee834eae0faba946b831bc710016ff3e910b4e5980a",
+      "caption": "강사 화면의 예: 처리 건 맨 위의 결과와 경보 해제",
+      "sha256": "1dbd18c8db33793c0fde6a082468da6d7d586b289ce53221d51c31d8d961e1f4",
       "raw_frame_sha256": "cb8b352d4e9cc7f64fbacfa809917fa0341cccfff362ccae076f3e2397f3dfc8"
     },
+    "06-세기록": {
+      "required_scene": "강사 화면의 예: 원인 진단 · 운전원 승인 · 냉각 명령이 따로 남은 줄",
+      "check": "강사 화면의 예: 원인 진단 · 운전원 승인 · 냉각 명령이 따로 남은 줄",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-세기록.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "Release 영상 · int-01-06-lab.mp4",
+      "source_sha256": "afafdc729682fd72cd4f7bc315e9c67e9aa99bea31c06cbf6ca6fa3925ca4702",
+      "seconds": 866.05,
+      "cue": [
+        "v0652",
+        "start",
+        10.2
+      ],
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          1012,
+          354,
+          1832,
+          416
+        ],
+        [
+          1012,
+          454,
+          1832,
+          518
+        ],
+        [
+          1014,
+          558,
+          1832,
+          648
+        ]
+      ],
+      "ignore": [],
+      "redactions": [],
+      "caption": "강사 화면의 예: 원인 진단 · 운전원 승인 · 냉각 명령이 따로 남은 줄",
+      "sha256": "d29d2145147f33724391c044fe009a98fdd272742c6a4368eb24d4c1ca888c2a",
+      "raw_frame_sha256": "61d2695ab6ea5d4bbfaaf7fdc9d3ca61d33093229dc0a95b84ff8be26185ae9e"
+    },
     "06-가지않은단계": {
-      "required_scene": "운전원 승인 · 냉각 명령 · 펼친 가지 않은 단계",
-      "check": "운전원 승인 · 냉각 명령 · 펼친 가지 않은 단계",
+      "required_scene": "펼친 가지 않은 단계의 이름",
+      "check": "펼친 가지 않은 단계의 이름",
       "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-가지않은단계.png",
       "verified": true,
       "source_type": "video",
@@ -897,18 +955,6 @@
       ],
       "rectangles": [
         [
-          1012,
-          142,
-          1832,
-          204
-        ],
-        [
-          1012,
-          244,
-          1832,
-          336
-        ],
-        [
           1000,
           742,
           1846,
@@ -917,8 +963,8 @@
       ],
       "ignore": [],
       "redactions": [],
-      "caption": "운전원 승인 · 냉각 명령 · 펼친 가지 않은 단계",
-      "sha256": "3a3bd8418685db92b69dd8f9afbe7ba09be1945fbb0638461daf1095a0f85e7e",
+      "caption": "펼친 가지 않은 단계의 이름",
+      "sha256": "2dd32143ab0f39e46d3d81c079b1b3ad9a4390ac6e9293fb4fae104c70599b6f",
       "raw_frame_sha256": "8800efdebe19123d553e73e871fbd992398440fcc2c68edba5875f933ec44202"
     },
     "06-홈결과": {

@@ -1816,41 +1816,6 @@
       "sha256": "e2fc2a769245241059cd01d88977fd207a8b02c08e4e8a99a25c9944dd668df4",
       "raw_frame_sha256": "e92de334a72853912cab3c2298fa0ceb7829e01ace5711bb056c0dee2be36636"
     },
-    "portal-arrival": {
-      "required_scene": "Ctrl 클릭 뒤 열린 포털 홈에서 제목 홈과 위쪽 네 칸을 본다",
-      "check": "Ctrl 클릭 뒤 열린 포털 홈에서 제목 홈과 위쪽 네 칸을 본다",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-arrival.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
-      "seconds": 1527.4,
-      "portal_segment_seconds": 3.0,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          420,
-          120,
-          453,
-          162
-        ],
-        [
-          420,
-          192,
-          1849,
-          334
-        ]
-      ],
-      "redactions": [],
-      "caption": "포털 홈 — 제목 홈과 위쪽 네 칸",
-      "sha256": "e486dbd4f2f750601dd4e660643df7e92360015339d7385496be544077927d02",
-      "raw_frame_sha256": "01f2eb79e2d56f6480f578a90143a518a35e10418fe2efdd12184e76e4bdc220"
-    },
     "docker-skip": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-skip.png",
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
