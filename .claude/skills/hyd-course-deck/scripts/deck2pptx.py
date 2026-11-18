@@ -70,7 +70,7 @@ COUNTS = {"표지": (0, 0), "목차": (2, 9), "간지": (0, 9),
           "그림": (0, 4), "삽화": (0, 17), "풀이": (2, 6), "구조": (2, 12), "파이프라인": (3, 7), "관계도": (2, 8),
           "코드": (0, 4), "문답": (2, 5)}
 KEYS = {"유형", "메시지", "노트", "요소", "아이콘", "그림", "문장", "기관", "과정", "부제", "번호", "구분",
-        "머리", "영역", "연결", "사이", "코드", "라벨", "단", "층", "참고"}
+        "머리", "영역", "연결", "사이", "코드", "라벨", "단", "견줌", "층", "참고"}
 LAYERS = 9                     # `층:` 눈금의 칸 수(기능 계층의 수)
 NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문장",), "그림": ("그림",), "삽화": ("그림",), "구조": ("영역",),
         "코드": ("코드",), "관계도": ("연결",)}
@@ -218,6 +218,9 @@ def validate(slides: list[Slide], md_path: Path) -> None:
         if "참고" in sl.fields and (sl.kind not in BODY_KINDS or not re.fullmatch(r"\S.*?\s\|\s+\S.*", sl.fields["참고"])):
             errs.append(f"{where} `참고:`는 본문 장에서 `꼬리표 | 내용` 꼴이어야 함")
         lo, hi = COUNTS[sl.kind]
+        if "견줌" in sl.fields and (sl.kind != "표" or sl.fields["견줌"] != "같게" or "단" in sl.fields
+                                   or sl.fields.get("머리", "").count("|") != 2):
+            errs.append(f"{where} `견줌:`은 머리가 세 칸인 표에서 `같게`만 허용(`단:`과 함께 쓰지 않음)")
         if "단" in sl.fields:
             if sl.kind != "표" or sl.fields["단"] != "2":
                 errs.append(f"{where} `단:`은 표에서 `2`만 허용")
@@ -843,6 +846,10 @@ def render_table(sl, s, page):
     c1 = 3.3 if s.icons else 2.9
     c3 = 2.4 if has_tag else 0
     c2 = CW - c1 - c3
+    pair = s.fields.get("견줌") == "같게"     # 둘째 · 셋째 칸이 같은 무게로 견주는 짝: 같은 폭, 같은 본문 글
+    if pair:
+        c1 = 2.6 if s.icons else 2.2
+        c2 = c3 = (CW - c1) / 2
     lab_pt = 16 if rh >= 0.6 else 14.5
     val_pt = BODY_PT if rh >= 0.56 else 12.5
     if head:
@@ -866,7 +873,10 @@ def render_table(sl, s, page):
         if it.desc:
             add_text(sl, MX + c1, y, c2 - 0.1, rh, "\n".join(it.lines), val_pt, INK, anchor=MSO_ANCHOR.MIDDLE,
                      name=f"줄{i + 1} 값", slide_no=s.no)
-        if it.tag:
+        if it.tag and pair:
+            add_text(sl, MX + c1 + c2, y, c3 - 0.1, rh, it.tag.replace(" / ", "\n"), val_pt, INK,
+                     anchor=MSO_ANCHOR.MIDDLE, name=f"줄{i + 1} 셋째 칸", slide_no=s.no)
+        elif it.tag:
             add_text(sl, MX + c1 + c2, y, c3 - 0.1, rh, it.tag.replace(" / ", "\n"), 12.5,
                      SKY_D if it.strong else MUTED, bold=True, anchor=MSO_ANCHOR.MIDDLE,
                      name=f"줄{i + 1} 상태", slide_no=s.no, max_lines=3)
