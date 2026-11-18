@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 510" width="1200" height="510">
+<g transform="translate(0 79)">
+<rect x="40.0" y="100.0" width="420" height="104" rx="20" ry="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="92.0" cy="152" r="38.0" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(92.0 152) scale(0.5270967741935484)">
+<path d="M -46,-36 Q -46,-46 -36,-46 L 36,-46 Q 46,-46 46,-36 L 46,20 Q 46,30 36,30 L -6,30 L -22,46 L -20,30 L -36,30 Q -46,30 -46,20 Z" stroke="#13294B" stroke-width="5.64" fill="#FFFFFF" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M -12,-20 Q -12,-34 0,-34 Q 13,-34 13,-22 Q 13,-12 0,-8 L 0,2" stroke="#1A6FC4" stroke-width="9.68" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="0" cy="15" r="4.5" fill="#1A6FC4" stroke="#1A6FC4" stroke-width="1.61" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="720.0" y="0.0" width="440" height="88" rx="18" ry="18" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 468.0,125.0 L 700.7,47.7" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="712.0,44.0 700.3,56.3 695.2,41.2" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="720.0" y="108.0" width="440" height="88" rx="18" ry="18" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 468.0,152.0 L 700.1,152.0" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="712.0,152.0 697.0,160.0 697.0,144.0" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="720.0" y="216.0" width="440" height="88" rx="18" ry="18" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 468.0,179.0 L 700.7,256.3" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="712.0,260.0 695.2,262.8 700.3,247.7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
