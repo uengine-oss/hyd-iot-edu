@@ -1,7 +1,8 @@
 """통합반 2회차 이론 덱의 카드 그림(SVG)을 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다, 덱 D-8).
 
 사용:
-  python 만들기_카드.py            → 이 폴더에 「카드_*.svg」와 새 꼴 견본 「새꼴_*.svg」를 쓴다(옛 그림과 옛 생성기 만들기_삽화*.py는 건드리지 않는다)
+  python 만들기_카드.py            → 이 폴더에 지금 원고가 쓰는 「카드_*.svg」를 쓴다(옛 생성기 만들기_삽화*.py와 그 그림은 건드리지 않는다)
+  python 만들기_카드.py --옛판     → 지금 원고가 쓰지 않는 옛 판 「카드_*.svg」(FIGS)도 함께 다시 쓴다
   python 만들기_카드.py --라벨     → 그림마다 덱 MD에 붙일 라벨 요소 줄(`라벨 | 설명 | x,y,폭`)을 찍는다
   python 만들기_카드.py --덱맞춤 <덱.md>  → 그 덱에서 이 그림을 쓰는 장의 `- 요소:` 목록을 이 파일의 라벨 줄로 바꿔 쓴다
                                           (라벨 글은 이 파일이 정본이다. 글을 고칠 때는 여기서 고친 뒤 덱맞춤을 돌린다)
@@ -1464,238 +1465,9 @@ def f50():
     return f
 
 
-# ───────────────────────── 새 꼴 견본(「새꼴_*.svg」) ─────────────────────────
-# 장마다 답 하나만 남긴다. 카드는 크고 적게 두고, 띠는 정의와 기록 두 층을 가를 때만 쓰며, 카드에 딸린 글은 카드 안 한 덩어리로 둔다.
-# 지금 판 그림(카드_*.svg)과 그 함수는 그대로 두고, 여기 함수만 「새꼴_<지금 판 장><나눈 차례>_<이름>.svg」를 쓴다.
-
-def n06a():
-    """6장을 나눈 첫 장: 앞에서 「부품」이라 부른 종류 하나가 구성 요소와 부품 두 클래스로 나뉜다. 칸 하나가 클래스 하나이고,
-    칸 안의 원판은 그 클래스에 드는 대상의 예, 칸 아래 띠는 그 클래스의 뜻이다."""
-    f = Fig("새꼴_06a_구성요소와부품.svg", dy=34)
-    hcard(f, 600, 46, 260, 84, "none", name="부품", ring=True, desc="앞에서 부른 종류")
-    f.add([path("M 600,92 L 600,112 M 305,112 L 895,112")])
-    top, B, bot = 140, 372, 436
-    panels = ((20, 570, "구성 요소", "Component", "설비를 이루는 기계 하나하나",
-               ((125, "cooler", "오일 쿨러"), (305, "fan", "쿨러 팬"), (485, "pump", "주 펌프"))),
-              (610, 570, "부품", "Part", "구성 요소 안에서 닳으면 갈아 끼우는 것",
-               ((800, "core", "쿨러 코어"), (990, "bearing", "팬 베어링"))))
-    for x0, w, name, eng, meaning, items in panels:
-        cx = x0 + w / 2
-        f.add(arrow([(cx, 112), (cx, top - 6)], NAVY, sw=SW, size=13))
-        f.add(banded(x0, top, w, bot, B, PALE, BLUE, 4))
-        f.lab(name, eng, cx, top + 10, 300, strong=True)
-        for x, kind, nm in items:
-            f.add(disc(x, 262, 46, kind))
-            f.lab(nm, "", x, 316, 170)
-        f.lab(meaning, "", cx, B + 13, w - 40)
-    return f
-
-
-def n06b():
-    """6장을 나눈 둘째 장: 설비 한 대에 딸린 대상 넷을 큰 카드 넷으로. 가운데 줄은 설비 → 구성 요소 → 부품, 센서는 구성 요소 아래에 달려
-    화살표가 카드를 돌아가지 않는다."""
-    f = Fig("새꼴_06b_설비한대_네클래스.svg", dy=14)
-    top, r, w, xs = 10, 58, 230, (200, 600, 1000)
-    for x, kind, cls, nm in zip(xs, ("equip", "cooler", "core"), ("설비", "구성 요소", "부품"), ("1호기", "오일 쿨러", "쿨러 코어")):
-        bot, dcy = vcard(f, x, top, w, r, kind, cls, nm)
-    harrow(f, xs[0] + w / 2 + 10, xs[1] - w / 2 - 10, dcy, label="가진다", small=False)
-    harrow(f, xs[1] + w / 2 + 10, xs[2] - w / 2 - 10, dcy, label="쓴다", small=False)
-    sy, sh = 420, 110
-    hcard(f, 600, sy, 310, sh, "sensor", "센서", "유온 센서")
-    y0, y1 = bot + 8, sy - sh / 2 - 8
-    f.add(arrow([(600, y0), (600, y1)]))
-    f.lab("감시된다", "", 695, (y0 + y1) / 2 - 19, 130)
-    return f
-
-
-def n13a():
-    """13장을 나눈 첫 장: 표기 셋을 줄 하나씩. 왼쪽은 표기와 클래스 사이의 관계, 오른쪽은 인스턴스 카드와 화살표이고 화살표를 세면 표기와 같다.
-    띠와 설명 줄은 두지 않고, 줄 사이는 가는 선 하나로만 가른다."""
-    f = Fig("새꼴_13a_카디널리티_세표기.svg")
-    LX, RX, W, H = 560, 1000, 270, 72
-    a0, a1 = LX + W / 2 + 10, RX - W / 2 - 10
-
-    def node(x, y, kind, nm):
-        hcard(f, x, y, W, H, kind, name=nm)
-
-    def notation(t, d, cy):
-        f.lab(t, d, 190, cy - (LH_T + LH_D) / 2 - 6, 340, strong=True)
-    for y in (115, 311):
-        f.add([line(20, y, 1180, y, stroke=GREY, sw=2)])
-    notation("1:1", "설비 → 놓인다 → 설치 위치", 59)
-    node(LX, 59, "equip", "1호기"); node(RX, 59, "loc", "1번 자리")
-    f.add(arrow([(a0, 59), (a1, 59)]))
-    notation("1:N", "구성 요소 → 감시된다 → 센서", 213)
-    node(LX, 213, "pump", "주 펌프"); node(RX, 171, "sensor", "토출 압력 센서"); node(RX, 255, "sensor", "유량 센서")
-    f.add(arrow([(a0, 205), (a1, 175)]) + arrow([(a0, 221), (a1, 251)]))
-    notation("N:M", "공급사 → 공급한다 → 부품", 409)
-    node(LX, 367, "supplier", "공급사 1"); node(LX, 451, "supplier", "공급사 2")
-    node(RX, 367, "core", "쿨러 코어"); node(RX, 451, "bearing", "팬 베어링")
-    f.add(arrow([(a0, 363), (a1, 363)]) + arrow([(a0, 375), (a1, 439)]) + arrow([(a0, 455), (a1, 455)]))
-    return f
-
-
-def n13b():
-    """13장을 나눈 둘째 장: 1:1로 정한 관계에 많아야 하나를 넘는 연결 하나(2호기를 같은 자리에 또 잇기)가 ✕로 걸린다.
-    맨 아래 한 줄은 표기가 적는 많아야와 함께 적는 적어도."""
-    f = Fig("새꼴_13b_많아야를넘는연결.svg", dy=12)
-    W, H, L, R_ = 320, 116, 275, 925
-    f.lab("1:1", "양쪽 모두 많아야 하나", 600, 0, 320, strong=True)
-    hcard(f, L, 150, W, H, "equip", "설비", "1호기")
-    hcard(f, R_, 150, W, H, "loc", "설치 위치", "1번 자리")
-    harrow(f, L + W / 2 + 10, R_ - W / 2 - 10, 150, label="놓인다", small=False)
-    hcard(f, L, 340, W, H, "equip", "설비", "2호기", grey=True)
-    xs, ys_, xe, ye = L + W / 2 + 10, 322, R_ - W / 2 - 2, 190
-    xm, ym = (xs + xe) / 2, (ys_ + ye) / 2
-    f.add(dash_arrow([(xs, ys_), (xe, ye)], GREY, 4.5, 16))
-    f.add(cross_badge(xm, ym, 26))
-    f.lab("많아야 하나를 넘는다", "", xm + 180, ym + 16, 260)
-    f.lab("1:1 · 1:N · N:M은 많아야를 적고, 적어도 몇 개(하나 이상)는 표기 옆에 함께 적는다", "", 600, 440, 1150)
-    return f
-
-
-def n14a():
-    """14장을 나눈 첫 장: 오일 쿨러는 설비마다 하나씩(식별자가 다른 카드 셋), 쿨러 코어는 품번마다 하나(카드 하나)로 센다.
-    카드 묶음 아래에 세는 기준과 그 기준을 정한 물음을 둔다."""
-    f = Fig("새꼴_14a_하나로세기.svg", dy=24)
-    CX, W, H, ys = 250, 340, 104, (60, 180, 300)
-    for i, y in enumerate(ys):
-        hcard(f, CX, y, W, H, "cooler", "구성 요소", "오일 쿨러", desc=f"EQ-0{i + 1}-COOLER")
-    KX, kw = 950, 290
-    bot, dcy = vcard(f, KX, 50, kw, 62, "core", "부품", "쿨러 코어", hot=True, desc="품번 CC-2040")
-    ex, mid = KX - kw / 2 - 12, (50 + bot) / 2
-    for y, ty in zip(ys, (mid - 26, mid, mid + 26)):
-        f.add(arrow([(CX + W / 2 + 10, y), (ex, ty)]))
-    f.lab("쓴다", "", 650, 62, 90)
-    f.lab("설비마다 하나씩 센다", "2호기 오일 쿨러의 정비 이력을 묻는다", CX, 372, 440)
-    f.lab("품번마다 하나로 센다", "어떤 부품을 주문할지 묻는다 / 쿨러마다 든 실물은 따로 세지 않는다", KX, 372, 440, strong=True)
-    return f
-
-
-def n14b():
-    """14장을 나눈 둘째 장: 세는 단위가 카디널리티로 드러난다. 화살표를 세면 위 띠의 표기와 같다(가진다 1:N — 오일 쿨러마다 설비 하나,
-    3호기는 오일 쿨러와 쿨러 팬 둘 / 쓴다 N:M — 품번 하나를 오일 쿨러 셋이, 3호기의 오일 쿨러는 쿨러 가스켓도). 아래 칸은 앞 장으로 갔다."""
-    f = Fig("새꼴_14b_세는단위와카디널리티.svg", dy=38)
-    class_band(f)
-    R, h = (178, 260, 342), 68
-    for y, nm in zip(R, ("1호기", "2호기", "3호기")):
-        hcard(f, XE, y, 200, h, "equip", name=nm)
-        hcard(f, XC, y, 220, h, "cooler", name="오일 쿨러")
-        f.add(arrow([(XE + 110, y), (XC - 120, y)]))
-    fy = 424
-    hcard(f, XC, fy, 220, h, "fan", name="쿨러 팬", grey=True)
-    f.add(arrow([(200, R[2] + h / 2 + 2), (200, fy), (XC - 120, fy)], GREY))
-    cy, ch, kw = 232, 110, 260
-    hcard(f, XP, cy, kw, ch, "core", "부품", "쿨러 코어", desc="품번 CC-2040", hot=True)
-    gy = 384
-    hcard(f, XP, gy, kw, 70, "gasket", name="쿨러 가스켓", grey=True)
-    ex = XP - kw / 2 - 10
-    for i, y in enumerate(R):
-        f.add(arrow([(XC + 120, y - 6 if i == 2 else y), (ex, cy + (y - R[1]) * 0.3)]))
-    f.add(arrow([(XC + 120, R[2] + 8), (ex, gy)], GREY))
-    return f
-
-
-def record_row(f: Fig, cy, h, sysname, code, core, *, rev=False, ok=True, why="", x0=20, cw=270, aw=105):
-    """22 · 23장의 한 줄: 시스템 이름 · 오일 쿨러 카드 → 쓴다 → 쿨러 코어 카드 · 물음에 나오는지(✓ ✕) · 그 까닭.
-    x0은 줄의 왼쪽 끝, cw는 카드 폭, aw는 화살표 길이."""
-    f.lab(sysname, "", x0 + 80, cy - 19, 150)
-    c0 = x0 + 165
-    hcard(f, c0 + cw / 2, cy, cw, h, "cooler", name="오일 쿨러", desc=code)
-    x1, x2 = c0 + cw + 10, c0 + cw + 10 + aw
-    f.add(arrow([(x2, cy), (x1, cy)] if rev else [(x1, cy), (x2, cy)], BLUE if rev else NAVY))
-    f.lab("쓴다", "", (x1 + x2) / 2, cy - 46, 90)
-    k0 = x2 + 10
-    hcard(f, k0 + cw / 2, cy, cw, h, "core", name="쿨러 코어", desc=core)
-    bx = k0 + cw + 45
-    f.add((check_badge if ok else cross_badge)(bx, cy, 22))
-    if why:
-        f.lab("", why, bx + 167, cy - len(why.split(" / ")) * LH_D / 2 - 5, 260)
-
-
-def n22():
-    """22장: 세 시스템이 이름은 같게(오일 쿨러 → 쓴다 → 쿨러 코어) 적었지만 값의 꼴 · 빈칸 · 같은 대상을 가리키는 값 · 방향이 갈린다.
-    줄 끝의 ✓ ✕가 맨 아래 물음에 그 오일 쿨러가 나오는지이고, 셋 가운데 하나만 나온다. 칸 바탕 · 시스템 카드 · 아래 상자는 두지 않는다."""
-    f = Fig("새꼴_22_의미불일치.svg", dy=38)
-    rows = (("설비 대장", "품번 CC-2040 / 교체 주기 12", False, True, "견줄 기준으로 둔 기록"),
-            ("부품 목록", "품번 **cc2040** / 교체 주기 **1년**", False, False, "**같은 대상을 가리키는 값**과 / **값의 꼴**이 다르다"),
-            ("정비 기록", "품번 **(빈칸)** / 교체 주기 12", True, False, "**관계 방향**이 반대이고 / 품번이 **빠졌다**"))
-    for i, (cy, (sysname, core, rev, ok, why)) in enumerate(zip((58, 178, 298), rows)):
-        record_row(f, cy, 96, sysname, f"EQ-0{i + 1}-COOLER", core, rev=rev, ok=ok, why=why)
-    f.lab("물음 「CC-2040을 쓰는 구성 요소는」", "오일 쿨러 셋 가운데 품번과 방향이 맞게 적힌 하나만 나온다", 600, 372, 1100)
-    return f
-
-
-def n23a():
-    """23장을 나눈 첫 장: 왼쪽 파란 카드 하나가 온톨로지 스키마, 오른쪽 세 줄이 그 정의대로 적은 인스턴스 데이터다. 22장의 세 시스템이
-    같은 스키마를 보고 적어 같아졌고(품번 CC-2040 · 교체 주기 12 · 같은 방향의 쓴다), 줄 끝이 모두 ✓다(22장의 물음에 셋이 다 나온다)."""
-    f = Fig("새꼴_23a_스키마대로적은기록.svg", dy=30)
-    ys = (112, 220, 328)
-    vcard(f, 143, 120, 210, 50, "sheet", "", "온톨로지 스키마", hot=True, desc="Schema · 공통 정의")
-    f.add(dash_line(258, ys[1], 282, ys[1], BLUE, 4, 8, 6) + dash_line(282, ys[0], 282, ys[2], BLUE, 4, 8, 6))
-    for y in ys:
-        f.add(dash_arrow([(282, y), (318, y)], BLUE, 4, 13, 8, 6))
-    f.lab("인스턴스 데이터", "Instance Data · 정의대로 적은 기록", 770, 0, 420, strong=True)
-    for i, (cy, sysname) in enumerate(zip(ys, ("설비 대장", "부품 목록", "정비 기록"))):
-        record_row(f, cy, 92, sysname, f"EQ-0{i + 1}-COOLER", "품번 CC-2040 / 교체 주기 12", x0=318, cw=250, aw=85)
-    f.lab("물음 「CC-2040을 쓰는 구성 요소는」", "오일 쿨러 셋이 다 나온다", 600, 396, 1100)
-    return f
-
-
-def n45a():
-    """45장을 나눈 첫 장: 패턴 한 줄(44장의 글자 띠 꼴)과 그 조각의 표기 넷. 조각마다 점선이 아래 카드로 내려가고, 카드 머리가 그 표기 글자다.
-    변수 카드만 파랗다(이 장에서 푸는 용어)."""
-    f = Fig("새꼴_45a_패턴표기.svg", dy=58)
-    y1 = 90
-    f.add([rect(150, y1 - 46, 960, 92, 18, fill=LIGHT, stroke=NAVY, sw=2.5)])
-    for x, t, w in ((360, "(:Asset {code: 'EQ-02'})", 340), (670, "-[:HAS_COMPONENT]->", 300), (930, "(c:Component)", 220)):
-        f.lab(t, "", x, y1 - 19, w)
-    ty, th, by = 226, 124, 182
-    cards = ((360, ((165, 210, ":Asset", "쌍점 뒤는 **레이블** / 이 노드는 설비", False),
-                    (402, 230, "{code: 'EQ-02'}", "중괄호 안은 **속성** / 설비 코드가 EQ-02", False))),
-             (670, ((670, 260, ":HAS_COMPONENT", "대괄호 안 쌍점 뒤는 / **관계 유형**", False),)),
-             (930, ((980, 320, "c", "괄호 맨 앞은 **변수** / 뒤에서 c.name처럼 다시 부른다", True),)))
-    for px, kids in cards:
-        xs = [k[0] for k in kids]
-        if len(xs) > 1:
-            f.add(dash_line(px, y1 + 54, px, by, BLUE, 3.5, 9, 7) + dash_line(min(xs), by, max(xs), by, BLUE, 3.5, 9, 7))
-        for cx, w, tok, desc, hot in kids:
-            lx = cx if len(xs) > 1 else px
-            f.add(dash_line(lx, by if len(xs) > 1 else y1 + 54, lx, ty - 8, BLUE, 3.5, 9, 7))
-            f.add(box(cx - w / 2, ty, w, th, hot=hot))
-            f.lab(tok, desc, cx, ty + (th - LH_T - 2 * LH_D) / 2 - 5, w - 16, strong=True)
-    return f
-
-
-def n45b():
-    """45장을 나눈 둘째 장: 같은 관계를 설비부터 적은 줄과 구성 요소부터 적은 줄. 구성 요소 조각만 파란 칸이고, 줄 아래 파란 화살표가
-    두 줄 모두 그 칸을 향한다(화살표 머리는 구성 요소 쪽 그대로)."""
-    f = Fig("새꼴_45b_거꾸로적기.svg", dy=28)
-
-    def strip(cy, cap, pieces, chip_x, ax0, ax1):
-        f.lab(cap, "", 100, cy - 19, 180)
-        f.add([rect(200, cy - 46, 980, 92, 18, fill=LIGHT, stroke=NAVY, sw=2.5),
-               rect(chip_x - 130, cy - 30, 260, 60, 14, fill=PALE, stroke=BLUE, sw=4)])
-        for x, t, w in pieces:
-            f.lab(t, "", x, cy - 19, w)
-        f.add(arrow([(ax0, cy + 78), (ax1, cy + 78)], BLUE))
-    strip(70, "설비부터", ((400, "(:Asset {code: 'EQ-02'})", 360), (725, "-[:HAS_COMPONENT]->", 280), (1020, "(c:Component)", 240)), 1020, 600, 880)
-    strip(280, "구성 요소부터", ((360, "(c:Component)", 240), (655, "<-[:HAS_COMPONENT]-", 280), (980, "(:Asset {code: 'EQ-02'})", 360)), 360, 780, 500)
-    f.lab("화살표 머리는 두 줄 모두 구성 요소 쪽이다", "머리를 반대로 적으면 아무것도 찾지 못한다", 690, 392, 700)
-    return f
-
-
-NEW_FIGS = [n06a, n06b, n13a, n13b, n14a, n14b, n22, n23a, n45a, n45b]
-
-
-# ───────────────────────── 새 꼴 2차 견본(「새꼴2_*.svg」) ─────────────────────────
-# 역할마다 A안(한 장에 담은 안)과 B안(같은 역할 안에서 나눈 안, 나눌 까닭이 없으면 구도가 다른 안)을 그린다. 덱 전체에 쓰는 꼴:
-#   · 세로 카드 V: 큰 아이콘 원판(반지름 60) 아래에 클래스(작은 파랑)와 이름(굵게). 한 줄에 셋까지는 폭 230, 넷이면 폭 200. 같은 줄은 같은 폭 · 같은 간격.
-#   · 가로 카드 H: 화살표를 세어 봐야 해 카드가 많은 장에만. 그 장의 카드는 모두 같은 폭 · 높이이고 이름 한 줄만 얹는다.
-#   · 파랑(칸 · 테두리 · 글자)은 그 장의 메시지가 가리키는 답에만, 견주는 짝은 같은 꼴로. 회색은 판단 밖의 곁가지와 걸리는 연결.
-#   · 남색 실선 화살표 = 관계, 파란 점선 = 대응(정의 → 기록, 코드 글자 → 풀이), ✓ ✕는 반지름 22 한 가지.
-#   · 라벨은 붙는 대상(카드 · 화살표 · 줄)에 줄을 맞추고, 본문 덩어리는 그림 세로 가운데에 둔다(Fig2.fin).
-#   · 코드 글자는 고정폭 라벨(이름을 `…`로 감싼다 — deck2pptx.py render_illust)로 얹어 글자 자리를 계산한다.
+# ───────────────────────── 새 꼴의 공용 조각 ─────────────────────────
+# 지금 원고의 그림(아래 1 · 2 · 3단원 새 꼴)이 함께 쓰는 조각. g06B1 · g45B2 · g3_* 는 이름을 받아 그리는 함수이고,
+# 아래 단원 함수(u06a · u2_22 · u3_45a 등)가 최종 이름 「카드_*.svg」를 넘겨 부른다(기본 이름으로는 부르지 않는다).
 
 VR = 60
 CW16 = 16 * 1126 / 2048 / 72 * (FW / 12.133)   # 고정폭 16pt 한 글자의 그림 폭(px). Consolas 한 글자는 0.55em, 그림 1200px = 12.133인치
@@ -1732,24 +1504,6 @@ def rel(f, x1, x2, y, name, color=NAVY, below="", strong_below=False, lift=46):
         f.lab(below, "", mid, y + lift - 22, w, strong=strong_below)
 
 
-def g06A():
-    """6장 A안(한 장): 세로 카드 넷을 한 줄에. 구성 요소와 부품 두 카드만 파랗고(이 장에서 푸는 두 클래스), 그 위 묶음 줄이
-    앞에서 「부품」이라 부른 것과의 이음새, 카드 아래 굵은 줄이 그 클래스의 뜻이다. 관계 화살표는 두지 않는다."""
-    f = Fig2("새꼴2_06A_네클래스.svg")
-    xs, top = (150, 450, 750, 1050), 88
-    spec = (("equip", "설비", "1호기", False), ("cooler", "구성 요소", "오일 쿨러", True),
-            ("core", "부품", "쿨러 코어", True), ("sensor", "센서", "유온 센서", False))
-    for x, (kind, cls, nm, hot) in zip(xs, spec):
-        bot, _ = V(f, x, top, kind, cls, nm, w=200, hot=hot)
-    f.lab("앞에서 부품이라 부른 것", "", 600, 0, 400)
-    f.add([path("M 600,40 L 600,56 M 450,56 L 750,56")])
-    for x in (450, 750):
-        f.add(arrow([(x, 56), (x, top - 6)], NAVY, sw=SW, size=13))
-    f.lab("설비를 이루는 기계 하나하나", "", 450, bot + 10, 190)
-    f.lab("구성 요소 안에서 닳으면 갈아 끼우는 것", "", 750, bot + 10, 290)
-    return f.fin(0, bot + 10 + 5 + 2 * LH_T)
-
-
 def g06B1(name="새꼴2_06B1_구성요소와부품.svg", dashed=False):
     """6장 B안 첫 장: 앞에서 「부품」이라 부른 것이 두 클래스로 나뉜다. 칸 하나가 클래스 하나(둘 다 같은 꼴 · 같은 파랑),
     칸 안의 원판은 그 클래스에 드는 대상의 예, 칸 아래 띠는 그 클래스의 뜻."""
@@ -1773,22 +1527,6 @@ def g06B1(name="새꼴2_06B1_구성요소와부품.svg", dashed=False):
             f.add(disc(x, top + 126, 50, kind))
             f.lab(nm, "", x, top + 184, 170)
         f.lab(meaning, "", cx, B + 13, 530)
-    return f.fin(0, bot)
-
-
-def g06B2():
-    """6장 B안 둘째 장: 설비 한 대에 딸린 대상 넷을 같은 세로 카드 넷으로 한 줄에. 설비 → 구성 요소 → 부품이 이웃하고,
-    감시된다만 쿨러 코어 카드 위로 돌아 유온 센서에 닿는다. 파란 카드는 없다(넷이 같은 무게다)."""
-    f = Fig2("새꼴2_06B2_네인스턴스.svg")
-    xs, top, w = (150, 450, 750, 1050), 100, 200
-    spec = (("equip", "설비", "1호기"), ("cooler", "구성 요소", "오일 쿨러"), ("core", "부품", "쿨러 코어"), ("sensor", "센서", "유온 센서"))
-    for x, (kind, cls, nm) in zip(xs, spec):
-        bot, dcy = V(f, x, top, kind, cls, nm, w=w)
-    rel(f, xs[0] + w / 2 + 8, xs[1] - w / 2 - 8, dcy, "가진다")
-    rel(f, xs[1] + w / 2 + 8, xs[2] - w / 2 - 8, dcy, "쓴다")
-    ry = 48
-    f.add(arrow([(xs[1], top - 8), (xs[1], ry), (xs[3], ry), (xs[3], top - 8)]))
-    f.lab("감시된다", "", xs[2], ry - 46, 200)
     return f.fin(0, bot)
 
 
@@ -1828,193 +1566,10 @@ def rows13(f, hx, hw, LX, RX, W, H, ys, cross_x=None, small=False):
     f.add(arrow([(a0, m1 - 4), (a1, m1 - 4)]) + arrow([(a0, m1 + 8), (a1, m2 - 12)]) + arrow([(a0, m2 + 4), (a1, m2 + 4)]))
 
 
-def g13A():
-    """13장 A안(한 장): 표기 세 줄과, 1:1 줄 오른쪽 끝에 많아야 하나를 넘는 연결 하나(회색 2호기 · 회색 화살표 · ✕)."""
-    f = Fig2("새꼴2_13A_카디널리티.svg")
-    H = 68
-    rows13(f, 140, 270, 410, 730, 230, H, (34, 150, 230, 346, 426), cross_x=1050)
-    return f.fin(0, 426 + H / 2)
-
-
-def g13B1():
-    """13장 B안 첫 장: 표기 세 줄만."""
-    f = Fig2("새꼴2_13B1_세표기.svg")
-    H = 72
-    rows13(f, 190, 340, 560, 1000, 250, H, (36, 154, 238, 356, 440))
-    return f.fin(0, 440 + H / 2)
-
-
-def g13B2():
-    """13장 B안 둘째 장: 세로 카드 셋 한 줄. 1호기는 1번 자리에 놓여 있고(1:1), 회색 2호기를 같은 자리에 또 이으려는
-    회색 화살표가 ✕에 걸린다. 라벨은 모두 두 화살표의 위아래에 붙는다."""
-    f = Fig2("새꼴2_13B2_넘는연결.svg")
-    xs, top = (190, 600, 1010), 0
-    bot, dcy = V(f, xs[0], top, "equip", "설비", "1호기")
-    V(f, xs[1], top, "loc", "설치 위치", "1번 자리")
-    V(f, xs[2], top, "equip", "설비", "2호기", grey=True)
-    rel(f, xs[0] + 123, xs[1] - 123, dcy, "놓인다", below="1:1", strong_below=True, lift=66)
-    rel(f, xs[2] - 123, xs[1] + 123, dcy, "놓인다", GREY, below="하나를 넘는다", lift=66)
-    f.add(cross_badge((xs[1] + xs[2]) / 2, dcy, 22))
-    return f.fin(0, bot)
-
-
-def grid14(f, caps):
-    """14장 격자: 위 띠는 클래스 셋과 관계 유형 둘의 카디널리티, 아래는 같은 꼴의 가로 카드. 화살표를 세면 위 띠의 표기와 같다
-    (가진다 1:N — 오일 쿨러마다 설비 하나, 3호기는 오일 쿨러와 쿨러 팬 둘 / 쓴다 N:M — 품번 하나를 오일 쿨러 셋이, 3호기의 오일 쿨러는
-    쿨러 가스켓도). 곁가지는 회색이고 파란 카드는 없다. caps면 구성 요소 줄과 부품 줄 아래에 세는 단위를 정한 물음을 붙인다."""
-    XE_, XC_, XP_, W, H, ky = 175, 600, 1025, 300, 68, 38
-    f.add(band_rect(0, 108, PALE))
-    for x, nm in ((XE_, "설비"), (XC_, "구성 요소"), (XP_, "부품")):
-        hcard(f, x, ky, W, 64, "none", name=nm, ring=True, strong=True)
-    for xa, xb, nm, card in ((XE_, XC_, "가진다", "1:N"), (XC_, XP_, "쓴다", "N:M")):
-        f.add(arrow([(xa + W / 2 + 8, ky), (xb - W / 2 - 8, ky)]))
-        f.lab(nm, f"**{card}**", (xa + xb) / 2, ky + 8, 140)
-    R, fy = (164, 244, 324), 404
-    a0, a1, b0, b1 = XE_ + W / 2 + 8, XC_ - W / 2 - 8, XC_ + W / 2 + 8, XP_ - W / 2 - 8
-    for y, nm in zip(R, ("1호기", "2호기", "3호기")):
-        hcard(f, XE_, y, W, H, "equip", name=nm)
-        hcard(f, XC_, y, W, H, "cooler", name="오일 쿨러")
-        f.add(arrow([(a0, y), (a1, y)]))
-    hcard(f, XC_, fy, W, H, "fan", name="쿨러 팬", grey=True)
-    f.add(arrow([(XE_, R[2] + H / 2 + 4), (XE_, fy), (a1, fy)], GREY))
-    hcard(f, XP_, R[1], W, H, "core", name="쿨러 코어 CC-2040")
-    hcard(f, XP_, fy, W, H, "gasket", name="쿨러 가스켓", grey=True)
-    for i, y in enumerate(R):
-        f.add(arrow([(b0, y - 8 if i == 2 else y), (b1, R[1] + (i - 1) * 14)]))
-    f.add(arrow([(b0, R[2] + 10), (b1, fy)], GREY))
-    bot = fy + H / 2
-    if caps:
-        f.lab("정비 이력 → 설비마다 센다", "", XC_, bot + 12, 330)
-        f.lab("주문할 부품 → 품번마다 센다", "", XP_, bot + 12, 330)
-        bot += 12 + 5 + LH_T
-    return bot
-
-
-def g14A():
-    """14장 A안(한 장): 격자와, 구성 요소 줄 · 부품 줄 아래에 세는 단위를 정한 물음 한 줄씩."""
-    f = Fig2("새꼴2_14A_세는단위와카디널리티.svg")
-    return f.fin(0, grid14(f, True))
-
-
-def g14B2():
-    """14장 B안 둘째 장: 격자만(세는 단위가 카디널리티로 드러난다)."""
-    f = Fig2("새꼴2_14B2_카디널리티.svg")
-    return f.fin(0, grid14(f, False))
-
-
-def g14B1():
-    """14장 B안 첫 장: 오일 쿨러는 설비마다 하나씩(카드 셋), 쿨러 코어는 품번마다 하나(카드 하나). 넷 다 같은 가로 카드이고
-    파란 카드는 없다(두 세는 법을 같은 무게로 견준다). 쓴다 셋은 한 줄로 모여 쿨러 코어에 닿는다. 줄 아래에 물음과 세는 단위."""
-    f = Fig2("새꼴2_14B1_하나로세기.svg")
-    W, H, LX, RX, ys = 290, 72, 400, 900, (36, 132, 228)
-    for i, y in enumerate(ys):
-        f.lab(f"{i + 1}호기", "", LX - W / 2 - 70, y - 19, 110)
-        hcard(f, LX, y, W, H, "cooler", name="오일 쿨러")
-    hcard(f, RX, ys[1], W, H, "core", name="쿨러 코어 CC-2040")
-    bx = 650
-    for y in ys:
-        f.add([line(LX + W / 2 + 8, y, bx, y, sw=5)])
-    f.add([line(bx, ys[0], bx, ys[2], sw=5)])
-    rel(f, bx, RX - W / 2 - 8, ys[1], "쓴다")
-    cy = ys[2] + H / 2 + 22
-    for x, q, t in ((LX - 35, "2호기 오일 쿨러의 정비 이력을 묻는다", "설비마다 하나씩 센다"), (RX, "어떤 부품을 주문할지 묻는다", "품번마다 하나로 센다")):
-        f.lab("", q, x, cy, 400)
-        f.lab(t, "", x, cy + 26, 400)
-    f.lab("", "쿨러마다 든 실물은 따로 세지 않는다", RX, cy + 60, 400)
-    return f.fin(0, cy + 60 + 5 + LH_D)
-
-
-def rec_grid(f, gx, wd, cols, y0, rows, *, schema=False, hdr_y=None):
-    """22 · 23장의 기록 격자. 시스템 하나가 줄 하나(같은 꼴의 긴 칸)이고, 칸 안은 왼쪽부터 시스템 이름 · 쓴다의 방향(오일 쿨러와
-    쿨러 코어 원판 사이의 화살표) · 쿨러 코어의 품번 · 교체 주기, 칸 밖 오른쪽이 물음에 그 오일 쿨러가 나오는지(✓ ✕)다.
-    cols = (시스템, 방향, 원판 벌림, 품번, 주기, 표시)의 x(gx 기준). rows = (이름, 덧말, 품번, 주기, 거꾸로, 나옴, 다른 값 번호들).
-    schema면 머리 줄을 파란 칸(온톨로지 스키마)으로 그리고 줄마다 파란 점선을 내린다. 돌려주는 값: (줄 가운데 y들, 아래 y)."""
-    cs, cp, sp, c1, c2, cb = (gx + c if i != 2 else c for i, c in enumerate(cols))
-    heads = ((cp, "오일 쿨러 → 쓴다 → 쿨러 코어"), (c1, "품번"), (c2, "교체 주기"))
-    if schema:
-        f.add([rect(gx, y0, wd, 56, 16, fill=PALE, stroke=BLUE, sw=4)])
-        for x, t in heads:
-            f.lab(t, "", x, y0 + 28 - 19, 340 if x == cp else 130)
-        top = y0 + 56 + 44
-        for x in (cp, c1, c2):
-            f.add(dash_arrow([(x, y0 + 62), (x, top - 8)], BLUE, 4, 13, 8, 6))
-        f.lab("", "CC-2040을 쓰는 / 구성 요소", cb, y0 + 28 - 27, 190)
-    else:
-        for x, t in heads:
-            f.lab("", t, x, y0 + 12, 280 if x == cp else 130)
-        f.lab("", "CC-2040을 쓰는 / 구성 요소", cb, y0, 190)
-        top = y0 + 54
-    ys = []
-    for i, (name, sub, pno, cyc, rev, ok, hot) in enumerate(rows):
-        cy = top + 38 + i * 92
-        ys.append(cy)
-        f.add([rect(gx, cy - 38, wd, 76, 20, fill=WHITE, stroke=NAVY, sw=3)])
-        f.lab(name, sub, cs, cy - (LH_T + (LH_D if sub else 0)) / 2 - 6, 150)
-        f.add(disc(cp - sp, cy, 26, "cooler") + disc(cp + sp, cy, 26, "core"))
-        ax = (cp - sp + 36, cp + sp - 36)
-        f.add(arrow([(ax[1], cy), (ax[0], cy)] if rev else [(ax[0], cy), (ax[1], cy)], BLUE if rev else NAVY))
-        f.lab(pno, "", c1, cy - 19, 150, strong=1 in hot)
-        f.lab(cyc, "", c2, cy - 19, 130, strong=2 in hot)
-        f.add((check_badge if ok else cross_badge)(cb, cy, 22))
-    return ys, ys[-1] + 38
-
-
 ROWS22 = (("설비 대장", "견줄 기준", "CC-2040", "12", False, True, ()),
           ("부품 목록", "", "cc2040", "1년", False, False, (1, 2)),
           ("정비 기록", "", "(빈칸)", "12", True, False, (1,)))
 ROWS23 = tuple((n, "", "CC-2040", "12", False, True, ()) for n in ("설비 대장", "부품 목록", "정비 기록"))
-
-
-def g22A():
-    """22장 A안: 기록 격자. 세 줄이 같은 이름(머리 줄)으로 적었지만 기준 줄과 다른 값만 파란 글씨이고, 정비 기록은 화살표가
-    파랗게 거꾸로 간다. 줄 끝 ✓ ✕가 물음에 그 오일 쿨러가 나오는지다(셋 가운데 하나)."""
-    f = Fig2("새꼴2_22A_의미불일치_격자.svg")
-    _, bot = rec_grid(f, 80, 900, (105, 340, 80, 600, 780, 990), 0, ROWS22)
-    return f.fin(0, bot)
-
-
-def g22B():
-    """22장 B안(구도가 다른 안): 시스템 하나가 세로 칸 하나. 칸마다 위에서부터 시스템 이름 · 품번과 교체 주기 · 쓴다의 방향,
-    칸 아래에 물음에 나오는지(✓ ✕). 기준 칸과 다른 값만 파란 글씨다."""
-    f = Fig2("새꼴2_22B_의미불일치_세칸.svg")
-    W, hgt = 320, 290
-    for cx, (name, sub, pno, cyc, rev, ok, hot) in zip((200, 600, 1000), ROWS22):
-        f.add(box(cx - W / 2, 0, W, hgt))
-        f.add(disc(cx, 58, 40, "doc"))
-        f.lab(name, "", cx, 106, 200)
-        for x, h, v, k in ((cx - 75, "품번", pno, 1), (cx + 75, "교체 주기", cyc, 2)):
-            f.lab("", h, x, 146, 130)
-            f.lab(v, "", x, 182, 140, strong=k in hot)
-        py = 246
-        f.add(disc(cx - 75, py, 26, "cooler") + disc(cx + 75, py, 26, "core"))
-        ax = (cx - 39, cx + 39)
-        f.add(arrow([(ax[1], py), (ax[0], py)] if rev else [(ax[0], py), (ax[1], py)], BLUE if rev else NAVY))
-        f.add((check_badge if ok else cross_badge)(cx, hgt + 40, 22))
-    f.lab("CC-2040을 쓰는 구성 요소를 물으면 셋 가운데 하나만 나온다", "", 600, hgt + 76, 900)
-    return f.fin(0, hgt + 76 + 5 + LH_T)
-
-
-def g23A():
-    """23장 A안(한 장): 22장 격자의 머리 줄이 파란 칸(온톨로지 스키마 — 정의만 있고 값이 없다)이 되고, 그 아래 세 줄이
-    정의대로 적은 인스턴스 데이터다. 세 줄의 값과 방향이 같아졌고 줄 끝이 모두 ✓다. 왼쪽 글 둘이 두 층의 이름이다."""
-    f = Fig2("새꼴2_23A_스키마와기록_격자.svg")
-    ys, bot = rec_grid(f, 255, 740, (85, 290, 70, 515, 650, 835), 0, ROWS23, schema=True)
-    f.lab("온톨로지 스키마", "Schema / 인스턴스는 없다", 122, 28 - (LH_T + 2 * LH_D) / 2 - 5, 240, strong=True)
-    f.lab("인스턴스 데이터", "Instance Data / 정의대로 적은 값과 연결", 122, ys[1] - (LH_T + 2 * LH_D) / 2 - 5, 240, strong=True)
-    return f.fin(-8, bot)
-
-
-def g23B1():
-    """23장 B안 첫 장: 왼쪽 파란 세로 카드 하나가 온톨로지 스키마, 거기서 파란 점선이 세 갈래로 오른쪽 격자의 세 줄에 닿는다
-    (세 시스템이 같은 정의를 보고 적는다). 세 줄의 값과 방향이 같아졌고 줄 끝이 모두 ✓다."""
-    f = Fig2("새꼴2_23B1_스키마대로적은기록.svg")
-    f.lab("인스턴스 데이터", "Instance Data", 660, 0, 300, strong=True)
-    ys, bot = rec_grid(f, 300, 720, (80, 280, 70, 505, 635, 790), 62, ROWS23)
-    vcard(f, 125, ys[1] - 110, 230, VR, "sheet", "", "온톨로지 스키마", hot=True, desc="Schema")
-    f.add(dash_line(248, ys[1], 270, ys[1], BLUE, 4, 8, 6) + dash_line(270, ys[0], 270, ys[2], BLUE, 4, 8, 6))
-    for y in ys:
-        f.add(dash_arrow([(270, y), (294, y)], BLUE, 4, 13, 8, 6))
-    return f.fin(0, bot)
 
 
 P1 = "(:Asset {code: 'EQ-02'})-[:HAS_COMPONENT]->(c:Component)"
@@ -2061,31 +1616,6 @@ NOTE45 = (("쌍점 뒤는 레이블", "이 노드는 설비"), ("중괄호 안�
           ("대괄호 안은 관계 유형", "가진다라는 관계"), ("괄호 맨 앞은 변수", "c.name처럼 다시 부른다"))
 
 
-def g45A():
-    """45장 A안(한 장): 위 카드 셋(레이블 · 속성 · 변수)이 파란 점선으로 코드 첫 줄의 그 글자에 닿고, 같은 상자의 둘째 줄이
-    구성 요소부터 적은 같은 패턴이다. 두 줄의 화살표 머리(-> · <-)만 파란 글자다."""
-    f = Fig2("새꼴2_45A_패턴표기.svg")
-    h, c1, c2 = 96, 208, 260
-    f.add([rect(170, c1 - 40, 860, 132, 18, fill=LIGHT, stroke=NAVY, sw=2.5)])
-    sp = code_line(f, P1, 600, c1, "->")
-    code_line(f, P2, 600, c2, "<-")
-    callouts(f, (sp(":Asset"), sp("{code: 'EQ-02'}"), sp("(c:", 1, 1)), c1,
-             tuple((x, *NOTE45[i]) for x, i in ((300, 0), (600, 1), (900, 3))), 0, h, 280, up=True)
-    f.lab("구성 요소부터 적어도 화살표 머리는 구성 요소 쪽이다", "", 600, c2 + 64, 800)
-    return f.fin(0, c2 + 64 + 5 + LH_T)
-
-
-def g45B1():
-    """45장 B안 첫 장: 코드 한 줄과, 그 글자 넷에서 파란 점선으로 내려온 같은 꼴의 풀이 카드 넷."""
-    f = Fig2("새꼴2_45B1_패턴표기.svg")
-    cy, h = 38, 96
-    f.add([rect(170, 0, 860, 76, 18, fill=LIGHT, stroke=NAVY, sw=2.5)])
-    sp = code_line(f, P1, 600, cy)
-    callouts(f, (sp(":Asset"), sp("{code: 'EQ-02'}"), sp(":HAS_COMPONENT"), sp("(c:", 1, 1)), cy,
-             tuple((x, *NOTE45[i]) for i, x in enumerate((156, 452, 748, 1044))), 156, h, 280)
-    return f.fin(0, 156 + h)
-
-
 def g45B2(name="새꼴2_45B2_거꾸로적기.svg"):
     """45장 B안 둘째 장: 같은 패턴을 설비부터 적은 줄과 구성 요소부터 적은 줄. 두 줄 모두 화살표 머리만 파란 글자이고,
     머리가 가리키는 (c:Component)에 파란 밑줄을 긋는다."""
@@ -2098,16 +1628,6 @@ def g45B2(name="새꼴2_45B2_거꾸로적기.svg"):
     f.lab("화살표 머리는 두 줄 모두 구성 요소 쪽이다", "머리를 반대로 적으면 아무것도 찾지 못한다", 700, 216, 800)
     return f.fin(0, 216 + 5 + LH_T + LH_D)
 
-
-NEW_FIGS += [g06A, g06B1, g06B2, g13A, g13B1, g13B2, g14A, g14B1, g14B2, g22A, g22B, g23A, g23B1, g45A, g45B1, g45B2]
-
-
-# ───────────────────────── 새 꼴 3차 견본(「새꼴3_*.svg」) ─────────────────────────
-# 2차에서 고른 안(6 B · 13 B · 14 B · 22 A · 23 B · 45 B)만, 디자인 검토의 그림 · 배치 지적을 고쳐 그린다. 2차와 달라진 꼴:
-#   · 회색은 「걸린 연결」 한 뜻으로만 쓴다(13장 둘째 장의 2호기). 여럿 쪽을 보이는 카드와 화살표는 다른 인스턴스와 같은 진한 꼴.
-#   · 설명 이음(앞에서 부른 이름 → 두 칸)은 회색 점선으로 그려 관계 화살표(남색 실선)와 가른다.
-#   · 카디널리티 표기는 관계 이름과 한 덩어리 · 같은 굵은 크기로 화살표 위에 둔다. ✓ ✕의 뜻은 격자 아래 굵은 한 줄이 말한다.
-#   · 쌓인 가로 카드는 낮추고 사이를 25 이상 둔다.
 
 def hs(f, cx, cy, w, h, kind, name, hot=False, desc=""):
     """낮은 가로 카드(카드가 많은 장): 왼쪽 원판(반지름 = 높이 ÷ 2 - 7), 오른쪽에 이름 한 줄(desc가 있으면 그 아래 작은 줄)."""
@@ -2264,9 +1784,6 @@ def g3_45B1(name="새꼴3_45B1_패턴표기.svg"):
 def g3_45B2(name="새꼴3_45B2_거꾸로적기.svg"):
     """45장 둘째 장: 2차 그림 그대로."""
     return g45B2(name)
-
-
-NEW_FIGS += [g3_06B1, g3_06B2, g3_13B1, g3_13B2, g3_14B1, g3_14B2, g3_22A, g3_23B1, g3_45B1, g3_45B2]
 
 
 # ───────────────────────── 1단원 새 꼴(4~20장을 다시 짠 최종 그림 「카드_*.svg」) ─────────────────────────
@@ -2671,39 +2188,6 @@ def u20():
     return f.fin(0, foot(f, "4호기 오일 쿨러에 갈아 끼울 부품의 품번을 물어도 같은 길로 CC-2040이 나온다", R[3] + H / 2 + 16))
 
 
-# 다른 안(검토자가 고른다): 나눈 장을 한 장에 담은 배치
-
-def alt08():
-    """8장 다른 안(한 장): 식별자 그림 아래에 다른 이름을 굵은 한 줄로 둔다."""
-    return u08a("다른안_08_식별자와다른이름.svg", "쿨러 · 열교환기 같은 다른 이름은 이름 쪽에 두고 식별자로 쓰지 않는다")
-
-
-def alt16():
-    """16장 다른 안(한 장): 왼쪽에 빈 칸이 붙은 인스턴스 하나, 오른쪽에 공통 속성을 거듭 적은 클래스 셋."""
-    f = Fig2("다른안_16_두길.svg")
-    bot = part_blank(f, 170, 0, 320)
-    b2 = part_repeat(f, (520, 790, 1060), bot - 184, 250)
-    f.lab("빈 칸이 붙는다", "", 170, bot + 12, 320)
-    f.lab("공통 속성을 거듭 적는다", "", 790, bot + 12, 500)
-    return f.fin(0, bot + 12 + 5 + LH_T)
-
-
-def alt17():
-    """17장 다른 안(한 장): 클래스 계층 아래에 오일 쿨러 인스턴스를 달아 한 장에."""
-    f = Fig2("다른안_17_상속한장.svg")
-    xs, b1, b2 = tree17(f, 670, 0, inst=True)
-    f.lab("상위 클래스", "Superclass", 150, b1 / 2 - 30, 240, strong=True)
-    f.lab("하위 클래스", "Subclass", 150, b1 + 110 + 64 - 30, 240, strong=True)
-    f.lab("상속(Inheritance)", "", 670 + 130, b1 + 26, 240, strong=True)
-    f.lab("쿨러이면서 구성 요소", "하위 클래스의 인스턴스는 / 상위 클래스의 인스턴스이기도 하다", 980, b2 - 84, 330)
-    return f.fin(0, b2)
-
-
-U1_FIGS = [u05, u06a, u06b, u07, u08a, u08b, u09, u10, u11, u12, u13a, u13b, u14a, u14b, u16a, u16b, u17a, u17b, u18, u19, u20,
-           alt08, alt16, alt17]
-NEW_FIGS += U1_FIGS
-
-
 # ───────────────────────── 2단원 새 꼴(21~34장을 다시 짠 최종 그림 「카드_*.svg」) ─────────────────────────
 # 1단원의 카드 문법을 그대로 잇는다. 이 단원에서 더한 꼴:
 #   · 정의 카드 = 머리(클래스면 빈 테두리 원과 파란 이름) + 「칸 | 정한 것」 줄. 스키마에 적는 것은 늘 이 꼴.
@@ -2904,25 +2388,6 @@ def u2_34():
     f.add(arrow([(676, y), (524, y)]))
     f.lab("일어난다", "", 600, y - 46, 110)
     return f.fin(0, foot(f, "역량 질문의 갈래로 나눠 맡아도, 같은 스키마 하나로 이어 같은 뜻으로 읽힌다", 322 + 14))
-
-
-def alt2_27():
-    """27장 다른 안이던 그림(이제 초안 28장이 쓴다)을 옛 이름으로도 낸다 — 다른 안 원고가 남아 있는 동안만."""
-    return u2_27("다른안_27_식별자_부품만.svg")
-
-
-def alt2_34():
-    """34장 다른 안: 영역 넷을 한 줄에. 클래스 이름은 칸 하나에 글로만 적고, 영역을 건너는 관계는 맨 아래 한 줄로 말한다."""
-    f = Fig2("다른안_34_영역_한줄.svg")
-    for x, (name, q, classes) in zip((150, 450, 750, 1050), AREAS):
-        f.add(box(x - 135, 0, 270, 196))
-        f.lab(name, q, x, 14, 250, strong=True)
-        f.lab("", " / ".join(classes), x, 84, 250)
-    return f.fin(0, foot(f, "고장 유형은 구성 요소에서 일어난다처럼, 영역 사이도 같은 스키마의 관계로 잇는다", 210))
-
-
-U2_FIGS = [u2_22, u2_23, u2_24, u2_25, u2_26, u2_27, u2_28, u2_29, u2_30, u2_31, u2_34, alt2_27, alt2_34]
-NEW_FIGS += U2_FIGS
 
 
 # ───────────────────────── 3단원 새 꼴(35~51장을 다시 짠 최종 그림 「카드_*.svg」) ─────────────────────────
@@ -3241,10 +2706,10 @@ def u3_51():
     return f.fin(0, foot(f, "결과 1행  CC-2040", bot + 16))
 
 
-U3_FIGS = [u3_36, u3_37, u3_38, u3_39, u3_40, u3_41, u3_42, u3_43, u3_44, u3_45a, u3_45b, u3_46, u3_47, u3_48, u3_49, u3_50, u3_51]
-NEW_FIGS += U3_FIGS
+# 지금 원고가 쓰는 그림을 내는 함수(차례는 장 차례)
+NEW_FIGS = [u05, u06a, u06b, u07, u08a, u08b, u09, u10, u11, u12, u13a, u13b, u14a, u14b, u16a, u16b, u17a, u17b, u18, u19, u20, u2_22, u2_23, u2_24, u2_25, u2_26, u2_27, u2_28, u2_29, u2_30, u2_31, u2_34, u3_36, u3_37, u3_38, u3_39, u3_40, u3_41, u3_42, u3_43, u3_44, u3_45a, u3_45b, u3_46, u3_47, u3_48, u3_49, u3_50, u3_51]
 
-
+# 옛 판 그림(지금 원고가 쓰지 않는다)을 내던 함수. `--옛판`을 줄 때만 다시 쓴다
 FIGS = [f05, f06, f07, f08, f09, f10, f11, f12, f13, f14, f16, f17, f18, f19, f20,
         f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f34,
         f36, f37, f38, f39, f40, f41, f42, f44, f46, f49, f50]
@@ -3277,7 +2742,7 @@ def fit_deck(md: Path, labels: dict[str, list[str]]) -> int:
 def main():
     show = "--라벨" in sys.argv
     labels = {}
-    for fn in FIGS + NEW_FIGS:
+    for fn in NEW_FIGS + (FIGS if "--옛판" in sys.argv else []):
         f = fn()
         text = f.svg()
         assert "<text" not in text
