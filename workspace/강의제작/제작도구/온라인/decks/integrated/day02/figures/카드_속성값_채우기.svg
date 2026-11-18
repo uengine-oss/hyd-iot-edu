@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 510" width="1200" height="510">
+<g transform="translate(0 79)">
+<rect x="720.0" y="0" width="400" height="308" rx="22" ry="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="920" cy="62" r="46" fill="#E7F3FD" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(920 62) scale(0.7419354838709677)">
+<circle cx="0" cy="0" r="34" fill="#5CB8F2" stroke="#13294B" stroke-width="3.50" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-24.248711305964285" y1="-13.999999999999998" x2="-26.8467875173176" y2="-15.499999999999998" stroke="#13294B" stroke-width="2.00" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="1.7145055188062944e-15" y1="-28.0" x2="1.8982025386783976e-15" y2="-31.0" stroke="#13294B" stroke-width="2.00" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="24.248711305964285" y1="-13.999999999999998" x2="26.8467875173176" y2="-15.499999999999998" stroke="#13294B" stroke-width="2.00" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="0" y1="2" x2="21.449244407331385" y2="-15.998053071223097" stroke="#13294B" stroke-width="3.00" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="736.0" y="190" width="124" height="46" rx="10" ry="10" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="868.0" y="190" width="236" height="46" rx="10" ry="10" fill="#FFFFFF" stroke="#1A6FC4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="736.0" y="246" width="124" height="46" rx="10" ry="10" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="868.0" y="246" width="236" height="46" rx="10" ry="10" fill="#FFFFFF" stroke="#1A6FC4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="100.0" y="122" width="360" height="184" rx="20" ry="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="138.0" cy="156" r="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="114.0" y="190" width="332" height="46" rx="10" ry="10" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="114.0" y="246" width="332" height="46" rx="10" ry="10" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 470.0,241.0 L 698.1,241.0" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="710.0,241.0 695.0,249.0 695.0,233.0" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
