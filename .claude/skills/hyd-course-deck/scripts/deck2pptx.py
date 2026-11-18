@@ -1051,15 +1051,20 @@ def render_illust(sl, s, page, base: Path):
         nums = [float(v) for v in it.tag.split(",")]
         w = pw * (nums[2] if len(nums) > 2 else 16) / 100
         small = not it.plain_title          # 이름 칸이 비면 설명 줄만 작은 글씨로 쓴다(그래프의 관계 이름처럼)
-        text = "\n".join(it.lines) if small else it.plain_title + ("\n" + "\n".join(it.lines) if it.lines else "")
-        n1 = 0 if small else line_count(it.plain_title, t_pt, w - 0.2)
+        title = it.plain_title
+        mono = len(title) > 2 and title.startswith("`") and title.endswith("`")   # 이름을 `…`로 감싸면 코드 글자(고정폭)로 쓴다
+        if mono:
+            title = title[1:-1]
+            it = Item("**" + title + "**" if it.strong else title, it.desc, it.tag)
+        text = "\n".join(it.lines) if small else title + ("\n" + "\n".join(it.lines) if it.lines else "")
+        n1 = 0 if small else line_count(title, t_pt, (w - 0.2) / (1.12 if mono else 1))
         n2 = line_count("\n".join(it.lines), d_pt, w - 0.2) if it.lines else 0
         h = (n1 * t_pt + n2 * d_pt) * LINE_SPACING / 72 + 0.14
         x, y = px + pw * nums[0] / 100 - w / 2, py + ph * nums[1] / 100
         label = text.replace("\n", " ")
         add_text(sl, x, y, w, h, text, d_pt, NAVY if small else MUTED,
                  align=PP_ALIGN.CENTER, first_size=None if small else t_pt, first_color=SKY_D if it.strong else NAVY,
-                 name=f"라벨 「{label}」", slide_no=s.no, space_after=1)
+                 name=f"라벨 「{label}」", slide_no=s.no, space_after=1, **({"face": MONO} if mono else {}))
         rows = label_rows(x - px, y - py, w, it, t_pt, d_pt)
         hit = label_on_drawing(ink, rows)
         if hit:
