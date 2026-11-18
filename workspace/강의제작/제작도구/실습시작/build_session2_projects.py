@@ -23,7 +23,8 @@ import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
-VERSIONS = {'ontology-lab': 'v32-lab', 'graph-lab': 'v33-lab'}
+# v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
+VERSIONS = {'ontology-lab': 'v35-lab', 'graph-lab': 'v35-lab'}   # v35: 랩별 경계에 「권장안대로는 결정이 아니다」(장난감 시험 v34 two_turn)
 # v32-lab — 2026-11-18: 독립 검토 두 건(판정/검토_통합2_ontology_v31.json · 검토_통합2_graph_v31.json) 고침 — 가이드 끝의 내 말로 되짚기, 기대 답을 결정 직후 · 구현 앞에, 역량 질문을 현장 값(설비 코드 · 품번)으로 묻기(식별자 틀과 무관), 같은 모델의 구성 요소 이름 맞추기는 제공 코드로(name_rules.py 뺌), 그래프 랩의 쿼리 짚어 보기와 장부의 이름. 앞 판 v31-lab: 설비 3대는 눈으로 다 읽혀 실습 랩 규모(코딩랩 K-3)보다 작아, 공장 규모에서 2라인 한일유압 설비 5대 · 모델 셋(현장 지시계 포함)을 골라 다시 만듦 — 정할 지점은 그대로, 이론 개편의 이름을 받고 요령의 까닭은 lab_frame TIP_*. 앞 판 v30-lab: 독립 검토(판정/검토_지침과_통합2회차.json) 고침 — 작업 2026-11-17_코딩랩-원리중심-학생결정자
 WORK = ROOT / '작업/검사/session2-projects'
 
@@ -32,9 +33,26 @@ def write(path, text):
     F.write(path, text)
 
 
-def result_sources():
-    """제공 결과 화면 코드. 대조 표의 거르기 단추 글자를 표 머리로 읽히지 않는 말로 바꾼다(리허설 06 막힘 6)."""
+STRICT_OLD = """        if None in row and list(row)[-2:-1] == ['근거']:      # 맨 끝 「근거」 칸 글에 쉼표가 든 경우 — 남은 칸을 근거에 이어 붙인다
+            row['근거'] = ','.join([row['근거'] or '', *row.pop(None)])
+        if None in row:
+            raise Stop(f'{rel(path)}:{line}: 칸 수가 열 이름보다 많습니다(쉼표가 든 값은 큰따옴표로 감쌉니다).')
+"""
+STRICT_NEW = """        if None in row:      # 넘친 칸을 끝 칸에 이어 붙이지 않는다 — 앞 칸에 쉼표가 든 줄은 값이 한 칸씩 밀린 채 조용히 지나간다
+            raise Stop(f'{rel(path)}:{line}: 칸 수가 열 이름({len(reader.fieldnames)}칸)보다 많습니다 — 값 안에 쉼표가 있으면 그 값을 큰따옴표로 감싸거나 쉼표를 「 · 」로 바꿉니다.')
+        if None in row.values():
+            raise Stop(f'{rel(path)}:{line}: 칸 수가 열 이름({len(reader.fieldnames)}칸)보다 적습니다 — 빈 칸도 쉼표로 자리를 둡니다.')
+"""
+
+
+def result_sources(strict=False):
+    """제공 결과 화면 코드. 대조 표의 거르기 단추 글자를 표 머리로 읽히지 않는 말로 바꾼다(리허설 06 막힘 6).
+    strict = 통합반 2회차 두 랩: 칸 수가 열 이름과 다른 CSV 줄을 파일:줄로 짚고 멈춘다(리허설 v32 — 코딩랩 「함정」의 틀 꼴 멈춤). 실전반 · 3회차 생성기는 기본값을 쓴다."""
     utilities, ui = P.result_sources()
+    if strict:
+        if utilities.count(STRICT_OLD) != 1:
+            raise ValueError('결과 화면 코드의 CSV 읽기 꼴이 바뀌었습니다 — 칸 수 멈춤을 넣을 자리를 다시 봅니다.')
+        utilities = utilities.replace(STRICT_OLD, STRICT_NEW)
     for old, new in [('o.textContent=only?"모든 줄":"다른 줄만"', 'o.textContent=only?"모든 줄 보기":"같음 줄 숨기기"'),
                      ('<button class="t only">다른 줄만</button>', '<button class="t only">같음 줄 숨기기</button>')]:
         if ui.count(old) != 1:
@@ -48,11 +66,19 @@ DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app
                  '학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.\n'
                  '- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.')   # 실전반 설계 랩이 쓴다(build_practical2_projects)
 
+# 장난감 시험(v34-lab two_turn, 2026-11-18): 「권장안대로 다 해 줘」에 AI가 decisions.csv 두 줄을 근거 칸에 학생 이유 없이 스스로 채우고 끝까지 실행했다.
+# 코딩랩 K-3 「이유 없이 판단을 넘기는 부탁은 결정이 아니다」를 이 랩들의 파일 이름으로 적는다(통합반 두 랩만 — 실전반 바이트는 그대로).
+NOT_DECIDED = ('- 「권장안대로」 · 「알아서」 · 「다 해 줘」처럼 갈래를 고르지 않거나 이유를 말하지 않은 부탁은 결정이 아니다. '
+               '학생이 고를 갈래와 그렇게 고른 자기 이유를 말하기 전에는 `decisions.csv`의 그 줄을 쓰지 않고, 그 결정이 걸린 {files}도 만들거나 고치지 않는다. '
+               '추천안을 냈더라도 학생이 그 추천을 받아들인다고 말하고 이유를 대야 결정이고, `decisions.csv`의 근거 칸에는 그 이유를 학생의 말로 적는다. '
+               '그때까지는 무엇을 정해야 하는지와 선택지 · 각 선택의 결과를 쉬운 말로 다시 묻는다.')
+
 # 통합반 설계 랩의 랩별 경계 — 이 랩에는 랩 DB가 없고, 판단 함수 파일은 하나다. 표는 가이드가 한 요청에 둘셋을 맞추게 하므로 「요청받은 것만」으로 적는다(검토 지적, 코딩랩 K-6).
 DESIGN_RULE = (DECISION_RULE.split('\n')[0] + '\n'
                '- 판단 함수 파일은 `app/features/quantity_rules.py` 하나다. 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. '
                '표(`design.csv` · `relations.csv` · `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.\n'
-               '- 모델은 `python run.py parts`가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.')
+               '- 모델은 `python run.py parts`가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.\n'
+               + NOT_DECIDED.format(files='`quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `design.csv` · `relations.csv`의 실물 행'))
 
 
 # 리허설 07 막힘: Codex 샌드박스는 랩 DB(Docker)에 닿지 못해 AI가 실행을 시도하다 실패했다. 그래프 랩은 랩 DB 명령을 학생 터미널에 둔다.
@@ -65,7 +91,8 @@ GRAPH_DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거�
 GRAPH_RULE = (GRAPH_DECISION_RULE + '\n'
               '- `app/features/update.cypher`의 불용 설비 처리는 `decisions.csv` 「불용 결정 설비」 줄을 학생이 정한 뒤에만 쓴다. '
               '정하기 전에는 수정본의 다른 줄만 반영하고 그 처리는 쓰지 않으며, 무엇을 정해야 하는지 선택지와 결과로 묻는다.\n'
-              '- 「다 해 줘」처럼 여러 기능을 한꺼번에 부탁받아도 기능 파일 하나를 고친 뒤 멈추고, 다음 기능을 할지 묻는다.')
+              '- 「다 해 줘」처럼 여러 기능을 한꺼번에 부탁받아도 기능 파일 하나를 고친 뒤 멈추고, 다음 기능을 할지 묻는다.\n'
+              + NOT_DECIDED.format(files='`update.cypher`의 불용 설비 처리'))
 
 
 def run_source():
@@ -130,7 +157,7 @@ def build_ontology(folder):
         if name.startswith('결과/') and not name.endswith('README.md'):
             write(folder / P.convert(name), P.convert(text))
     write(folder / 'app/features/requirements.md', REQUIREMENTS)
-    utilities, ui = result_sources()
+    utilities, ui = result_sources(strict=True)
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/model.py', P.model_source())
@@ -174,7 +201,7 @@ def build_graph(folder):
             name = 'notes.md' if path.name == 'README.md' else P.NAMES[path.name]
             text = P.convert(path.read_text(encoding='utf-8-sig')).replace('`../data/`', '`data/`')
             write(folder / 'data/changes' / D.CHANGE_DATE / name, text)
-    utilities, ui = result_sources()
+    utilities, ui = result_sources(strict=True)
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/db.py', GP.db_source())

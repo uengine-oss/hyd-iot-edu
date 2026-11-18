@@ -208,6 +208,8 @@ def field_damage(folder, files):
         'removed-row-not-handled': ('app/features/row_rules.csv', '\n'.join(P.convert(files['결과/행_처리.csv']).split('\n')[:2]) + '\n', 'names', f'components.csv:{now}: 식별자 「'),
         'quantity-name-collision': ('app/features/quantity_rules.py', rules.replace("    return value_kind(members[0])\n", "    return '온도'\n"), 'quantities', '같은 물리량 이름 「온도」'),
         'units-mixed-in-one-quantity': ('app/features/quantity_rules.py', rules.replace('    return value_kind(a) == value_kind(b)', '    return True'), 'quantities', '바꾸는 법을 모릅니다'),
+        'comma-overflow-in-design': ('app/features/design.csv', P.convert(files['결과/설계.csv']).replace('설비코드 칸 — 설비마다 하나', '설비코드 칸, 설비마다 하나'), 'design', 'design.csv:3: 칸 수(4)'),
+        'comma-overflow-in-expected': ('app/features/expected.csv', P.convert(files['결과/기대_답.csv']).replace(',없음,', ',없음,,', 1), 'expected', '보다 많습니다'),
         'empty-decision': ('app/features/decisions.csv', '\n'.join('같은 물리량의 범위,,,' if x.startswith('같은 물리량의 범위,') else x for x in P.convert(files['결과/정한_것.csv']).split('\n')),
                            'quantities', 'decisions.csv:'),
     }

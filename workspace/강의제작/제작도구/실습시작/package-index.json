@@ -235,10 +235,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v33-lab",
+      "version": "v35-lab",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "76be311a48985b0c5981cfea53ac67afa0ccadd43f3dce8f58048fa4eb047c5b",
+      "sha256": "072683a6653c336db58da32588a05992a7cbc886c2d9fe23dc1f11b658c3cdba",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -255,7 +255,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab_guide.html",
-        "sha256": "2d3fb89caff5c1451f8f6c5df9cf7e33c66ca094343ec0bb9c7fc7b13a0e4a12"
+        "sha256": "a7b4d1f7a8a641af23393d7ba69aea9f6031a52391aeb064026f113cba35779a"
       }
     },
     {
@@ -263,10 +263,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v32-lab",
+      "version": "v35-lab",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "59b15cd90470f87cdac5c42b501b6e54420a3d4e1e8869a891f070aff507a6b6",
+      "sha256": "35f57295eece1ebeb64bdde53937aba17775e198b959f15b732bdf2a9c091f4d",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 자료 파악하기",
@@ -281,7 +281,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "30eae4007ba221105ae1e127671f5bfa037c2edd51d8a01c0973cabda3e17f7b"
+        "sha256": "c895b6335289a6c8b6d848989d6d4b5664f99e1524c70281bd1c32335c358a8f"
       }
     },
     {
@@ -299,10 +299,10 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "작업 절차와 판단 조건을 연결해 조치 기준 만들기",
-      "version": "v6-lab",
+      "version": "v7-lab",
       "folder": "action-criteria-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab.zip",
-      "sha256": "bb4e8a9dcf3368617f4968aedab9b060804e51cb4b2047abb1d42934f6aec848",
+      "sha256": "23b8e61e66149a89fcec8a1d5f5bfbecab2ec468e489f3b3acd4777c5085b7a3",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 매뉴얼과 결정표 파악하기",
@@ -317,7 +317,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab_guide.html",
-        "sha256": "282e7c09cd5e51b60e9767fa35aa2a1e7e7bfae161ecfbef755c839bf5f13f0c"
+        "sha256": "07e7017bd4422e553638228a2bc90179a5a04a5bce984be7642ee276764bb075"
       }
     },
     {
@@ -325,10 +325,10 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "설비 조건별 최적의 조치를 비교하는 판단 기능 만들기",
-      "version": "v6-lab",
+      "version": "v7-lab",
       "folder": "judgement-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab.zip",
-      "sha256": "29f5e6afc8e213e324bf578c25429d9fd867249e5816ab434e9ca9c06a337716",
+      "sha256": "1f46aac93a680d1466c8f592f2db3ad4c97d88115159430caa0ac08cc12b5a01",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 경보 표와 조치 기준 파악하기",
@@ -342,7 +342,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab_guide.html",
-        "sha256": "a1fc7c82605b189f72c5f14e1a4b01d22f207c17c55806bee1cf8ca493ce882b"
+        "sha256": "b159f5a4e5b00f11b06f5358fab7dfae4b70088a41978e74a418c41f0458c806"
       }
     },
     {

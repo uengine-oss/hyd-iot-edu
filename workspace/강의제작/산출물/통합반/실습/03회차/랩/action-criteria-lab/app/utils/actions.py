@@ -65,6 +65,7 @@ def expected_rows():
             raise Stop(f'{where}: 후보 「{r["후보"]}」가 data/targets.csv에 없습니다.')
         if r['기대_판정'] not in VERDICTS:
             raise Stop(f'{where}: 기대_판정은 ' + ' · '.join(VERDICTS) + f' 가운데 하나입니다(지금: 「{r["기대_판정"]}」).')
+        R.check_evidence(r['근거'], where)
     return rows
 
 

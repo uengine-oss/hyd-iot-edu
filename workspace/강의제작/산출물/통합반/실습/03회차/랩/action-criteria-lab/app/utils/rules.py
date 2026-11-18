@@ -7,6 +7,7 @@
 from pathlib import Path
 import csv
 import io
+import re
 
 from app.utils.results import Stop, read_text, rel
 
@@ -42,6 +43,23 @@ def read_rows(path, columns=None):
             raise Stop(f'{rel(path)}:{line}: 칸이 {len(cells)}개입니다. 열 이름은 {len(head)}개입니다(쉼표가 든 값은 큰따옴표로 감쌉니다).')
         rows.append({**{k: v.strip() for k, v in zip(head, cells)}, '_line': line})
     return rows
+
+
+def check_evidence(text, where):
+    """근거 칸의 꼴만 본다 — ;로 나눈 조각마다 「파일:줄」이고 그 파일의 그 줄이 실제로 있는가. 내용이 맞는 근거인지는 보지 않는다."""
+    pieces = split(text)
+    if not pieces:
+        raise Stop(f'{where}: 근거 칸이 비었습니다. 파일:줄을 적습니다(꼴: data/check_cases.csv:8, 여럿이면 ;).')
+    for piece in pieces:
+        m = re.fullmatch(r'(.+):(\d+)', piece)
+        if not m:
+            raise Stop(f'{where}: 근거 「{piece}」가 파일:줄 꼴이 아닙니다. 줄은 그 파일을 열었을 때 보이는 줄 번호(머리의 # 줄도 센 번호)입니다. 매뉴얼의 문장 번호(줄.문장)는 여기에 쓰지 않습니다.')
+        path = HERE / m.group(1)
+        if not path.is_file():
+            raise Stop(f'{where}: 근거의 파일 「{m.group(1)}」이 이 폴더에 없습니다. 폴더 맨 위에서부터의 경로를 적습니다(꼴: data/hm8_manual.md:62).')
+        total = len(read_text(path)[0].splitlines())
+        if not 1 <= int(m.group(2)) <= total:
+            raise Stop(f'{where}: 근거 「{piece}」의 줄 번호가 그 파일의 줄 수({total}줄)를 벗어납니다.')
 
 
 def split(text):

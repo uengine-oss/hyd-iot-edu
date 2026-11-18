@@ -49,10 +49,11 @@ def table(path):
     for offset, cells in enumerate(reader, head + 2):
         if not any(c.strip() for c in cells):
             continue
-        if len(cells) > len(cols) and cols[-1] == '근거':     # 맨 끝 「근거」 칸 글에 쉼표가 든 경우 — 남은 칸을 근거에 이어 붙인다
-            cells = cells[:len(cols) - 1] + [','.join(cells[len(cols) - 1:])]
+        # 칸 수가 열 이름과 다른 줄은 받지 않는다 — 넘친 칸을 끝 칸에 이어 붙이면, 앞 칸에 쉼표가 든 줄은 값이 한 칸씩 밀린 채 조용히 지나간다(리허설 v32)
         if len(cells) > len(cols):
-            raise Stop(f'{rel(path)}:{offset}: 칸 수가 열 이름보다 많습니다(쉼표가 든 값은 큰따옴표로 감쌉니다).')
+            raise Stop(f'{rel(path)}:{offset}: 칸 수({len(cells)})가 열 이름({len(cols)}칸)보다 많습니다 — 값 안에 쉼표가 있으면 그 값을 큰따옴표로 감싸거나 쉼표를 「 · 」로 바꿉니다.')
+        if len(cells) < len(cols):
+            raise Stop(f'{rel(path)}:{offset}: 칸 수({len(cells)})가 열 이름({len(cols)}칸)보다 적습니다 — 빈 칸도 쉼표로 자리를 둡니다.')
         out.append((offset, {c: (cells[i].strip() if i < len(cells) else '') for i, c in enumerate(cols)}))
     return out
 

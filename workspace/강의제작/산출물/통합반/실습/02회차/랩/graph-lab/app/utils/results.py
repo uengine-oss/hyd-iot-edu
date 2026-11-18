@@ -38,10 +38,10 @@ def read_table(path):
     reader = csv.DictReader(io.StringIO('\n'.join(x for _, x in kept)))
     for row in reader:
         line = kept[reader.line_num - 1][0]      # 건너뛴 # 줄 · 빈 줄을 셈에 넣은 실제 파일 줄 번호
-        if None in row and list(row)[-2:-1] == ['근거']:      # 맨 끝 「근거」 칸 글에 쉼표가 든 경우 — 남은 칸을 근거에 이어 붙인다
-            row['근거'] = ','.join([row['근거'] or '', *row.pop(None)])
-        if None in row:
-            raise Stop(f'{rel(path)}:{line}: 칸 수가 열 이름보다 많습니다(쉼표가 든 값은 큰따옴표로 감쌉니다).')
+        if None in row:      # 넘친 칸을 끝 칸에 이어 붙이지 않는다 — 앞 칸에 쉼표가 든 줄은 값이 한 칸씩 밀린 채 조용히 지나간다
+            raise Stop(f'{rel(path)}:{line}: 칸 수가 열 이름({len(reader.fieldnames)}칸)보다 많습니다 — 값 안에 쉼표가 있으면 그 값을 큰따옴표로 감싸거나 쉼표를 「 · 」로 바꿉니다.')
+        if None in row.values():
+            raise Stop(f'{rel(path)}:{line}: 칸 수가 열 이름({len(reader.fieldnames)}칸)보다 적습니다 — 빈 칸도 쉼표로 자리를 둡니다.')
         rows.append({k.strip(): (v or '').strip() for k, v in row.items() if k is not None})
     return rows
 

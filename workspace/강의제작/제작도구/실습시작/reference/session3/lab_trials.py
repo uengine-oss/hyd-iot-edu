@@ -1,4 +1,4 @@
-"""통합반 3회차 두 랩(v6-lab)의 강사 참조 시험 — project_trials.py가 부른다. 학생 ZIP에 넣지 않는다.
+"""통합반 3회차 두 랩(v7-lab)의 강사 참조 시험 — project_trials.py가 부른다. 학생 ZIP에 넣지 않는다.
 
 1. 제공 설비 모델이 통합 2회차 그래프 랩 제공 모델과 같은 바이트인가(생성기 함수의 값, 그리고 지금 산출물), 자료가 data_session3_lab.build()와 같은가, 뺀 자료가 없는가.
 2. 조치 기준 갈래(적용 범위 셋): 학생 경로(app/features 채움 → python run.py <기능>)로 돌린 판정이 손으로 정한 기대 판정과 같은가, HYD-04 사례의 답이 갈래마다 다른가.
@@ -163,6 +163,19 @@ class Trials:
             self.fail(f'조치 기준: 기준값을 틀리게 바꿨는데 경계 · 복수 조건 사례가 다름으로 잡히지 않음 {off}')
         if not stopped:
             self.fail(f'조치 기준: 적용 범위 줄이 비었는데 scope가 그 줄을 짚고 멈추지 않음\n{out[:600]}')
+        for kind, bad in (('criteria', 'data/hm8_manual.md:31.2'), ('judge', 'data/alarms.csv:999')):      # 근거 칸의 꼴 — 문장 번호를 섞거나 없는 줄을 대면 그 줄을 짚고 멈춘다
+            f = self.fresh(kind, f'{kind}_bad_evidence')
+            L.fill(kind, f, self.data)
+            path = f / 'app/features/expected.csv'
+            lines = path.read_text(encoding='utf-8').splitlines()
+            no = next(n for n, x in enumerate(lines) if x.startswith(('ALT-', '정상,')))
+            lines[no] = lines[no].rsplit(',', 1)[0] + ',' + bad
+            path.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+            code, out, _ = self.feature(f, 'expected', ok=False)
+            stopped = code != 0 and f'app/features/expected.csv:{no + 1}' in out
+            rec[f'{L.PROJECT[kind]}: 근거 칸에 「{bad}」'] = {'exit': code, '그 줄을 짚고 멈춤': stopped}
+            if not stopped:
+                self.fail(f'{L.PROJECT[kind]}: 근거 칸의 꼴이 어긋났는데 expected가 그 줄을 짚고 멈추지 않음\n{out[:500]}')
         f = self.fresh('criteria', 'criteria_fan_rule_one_sop')      # 감점 규칙을 글자대로 「팬 최대 운전」 하나에만 댄 읽기 — 참조(팬을 올리는 두 SOP)와 어디서 갈리는지 남긴다
         L.fill('criteria', f, self.data)
         path = f / 'app/features/decision_table.csv'
@@ -256,9 +269,14 @@ class Trials:
             line = next(n for n, x in enumerate(text, 1) if x.startswith(point + ','))
             text[line - 1] = point + ',,,'
             (f / 'app/features/decisions.csv').write_text('\n'.join(text) + '\n', encoding='utf-8', newline='\n')
-            code, out, _ = self.feature(f, cmd, ok=False)
+            code, out, blocks = self.feature(f, cmd, ok=False)
             stopped = code != 0 and f'app/features/decisions.csv:{line}' in out
             rec[f'「{point}」 줄이 빈 채로 python run.py {cmd}'] = {'exit': code, '그 줄을 짚고 멈춤': stopped}
+            if cmd == 'compare':
+                before = [b for b in blocks if b['kind'] == 'table' and b['title'].startswith('후보마다 비교값(만 원)과 비교값 순위')]
+                rec[f'「{point}」 줄이 빈 채로 python run.py {cmd}']['결정 전에도 비교값 표가 보임'] = bool(before) and len(before[0]['rows'])
+                if not before or any('내줄 차례' == c for c in before[0]['columns']):
+                    self.fail('판단 기능: 결정 줄이 빈 채의 compare가 비교값 표를 보이지 않거나 내줄 차례를 미리 보임')
             if not stopped:
                 self.fail(f'판단 기능: 「{point}」 줄이 비었는데 {cmd}가 그 줄을 짚고 멈추지 않음\n{out[:600]}')
         base = (done[A.BASE_ORDER] / 'app/features/decisions.csv').read_text(encoding='utf-8')

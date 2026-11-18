@@ -104,6 +104,7 @@ def expected_rows():
         odd = [x for x in R.split(r['기대_규칙']) if x not in known]
         if odd:
             raise Stop(f'{where}: 기대_규칙 {odd}이 결정표의 rule_id에 없습니다.')
+        R.check_evidence(r['근거'], where)
     return rows
 
 
@@ -141,9 +142,11 @@ def order(totals, back):
     return sorted(totals, key=lambda s: (s in back, totals[s], s))
 
 
-def compared():
-    """판정에 비교값 · 순위와 내줄 차례를 더한다. 허용된 후보는 경고나 감점이 붙어도 모두 견준다."""
-    decision(ORDER_POINT)
+def compared(ordered=True):
+    """판정에 비교값 · 순위를 더하고, ordered면 내줄 차례까지 더한다. 허용된 후보는 경고나 감점이 붙어도 모두 견준다.
+    비교값과 비교값 순위는 정할 지점과 상관없이 같으므로 ordered=False로 결정 전에도 볼 수 있다."""
+    if ordered:
+        decision(ORDER_POINT)
     doc, rules, alarms = load()
     events = judged(doc, rules, alarms)
     loaded = C.load()
@@ -164,7 +167,7 @@ def compared():
             by[sop]['rank'] = rank
         kept = [{'sop': s, 'warnings': [h['rule_id'] for h in by[s]['hits'] if h['result'] == '경고'] + [u['rule_id'] for u in by[s]['unknown'] if u['result'] == '경고'],
                  'penalties': [h['rule_id'] for h in by[s]['hits'] if h['result'] == '감점']} for s in totals]
-        back = held(kept) if kept else {}
+        back = held(kept) if kept and ordered else {}
         for sop, why in back.items():
             by[sop]['held_back'] = why
         e['order'] = order(totals, back)
@@ -173,7 +176,20 @@ def compared():
 
 
 def compare_view(_):
-    doc, events = compared()
+    try:
+        doc, events = compared()
+    except Stop as wait:      # 결정 줄이나 함수가 아직 비었으면 결정과 상관없는 비교값까지만 보이고, 무엇이 비었는지 알린다
+        doc, events = compared(ordered=False)
+        rows = []
+        for e in events:
+            for j in e['candidates']:
+                c = j['comparison']
+                rows.append([e['row']['경보_ID'], e['row']['팬100_연속_h'], j['sop'], R.short(j), *([f'{c[k]:.2f}' for k in (*C.PARTS, '비교값')] if c else [''] * 6), j['rank'] or '', j['not_compared'] or ''])
+        shown = table('후보마다 비교값(만 원)과 비교값 순위 — 1순위로 내줄 차례는 아직 정하지 않음', ['경보', '팬100_연속_h', '후보', '판정', *C.PARTS, '비교값', '비교값 순위', '견주지 못한 까닭'], rows,
+                      note='비교값과 비교값 순위는 내가 정할 것과 상관없이 같습니다. 경고가 붙은 후보가 비교값 순위 1인 경보를 여기서 찾을 수 있습니다.')
+        if isinstance(wait, Blank):
+            return [shown, note('아직 비어 있습니다: ' + str(wait))]
+        return [shown, {'kind': 'error', 'title': '확인 필요', 'text': str(wait)}]
     name = {s['id']: s['name'] for s in doc['sops']}
     rows, tops = [], []
     for e in events:
