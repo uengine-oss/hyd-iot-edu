@@ -9,7 +9,8 @@
     push                              origin에 없는 두 브랜치 커밋마다 키 검사 0일 때만 push, 끝에 이력 크기(7 GB 넘으면 경고)
     pull                              origin/workspace를 받아 제자리에 푼다. 이 PC가 손대지 않은 파일만 원격 판으로 바꾸고, 이 PC 판(미커밋 ·
                                       올리지 않은 커밋)은 디스크에 둔다 — 갈라졌으면 로컬 끝을 origin으로 옮기고 그 커밋 파일은 다음 commit에 들어간다.
-                                      둘 다 바꾼 파일이 있으면 아무것도 쓰지 않고 멈춘다
+                                      둘 다 바꾼 글 파일은 서로 다른 줄만 고쳤으면 세 판으로 합쳐 디스크에 두고(이 PC의 고침은 미커밋으로 남는다),
+                                      같은 줄을 고쳤거나 글 파일이 아니면 아무것도 쓰지 않고 멈춘다
     세션                               세션 시작 훅: 열린 작업 폴더의 상태 · 오래됨(STALE_DAYS일 넘게 안 바뀜) · origin보다 뒤처졌는지
     정리 [--실행]                       스펙.md 「상태: 끝」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다.
                                       상태 줄 꼴이 틀린 폴더가 하나라도 있으면 아무것도 지우지 않고 그 목록으로 실패한다
@@ -572,6 +573,36 @@ def worktree_blobs(paths):
     return dict(zip(have, out))
 
 
+def merge3(n, was, new):
+    """둘 다 바꾼 글 파일을 세 판(공통 바탕 · 이 PC 디스크 · 원격)으로 합친다. 서로 다른 줄만 고쳤으면 합친 바이트를,
+    같은 줄을 고쳤거나 글 파일이 아니면 None을 돌려준다(그때는 멈춘다). 세션 여럿이 한 지침의 이웃 줄을 고칠 때마다 손으로 합치던 일이다(2026-11-17)."""
+    p = ROOT / n
+    if not (was and new and p.is_file()):
+        return None
+    blob = lambda h: subprocess.run(["git", "cat-file", "-p", h], cwd=ROOT, capture_output=True, check=True).stdout
+    parts = [p.read_bytes(), blob(was), blob(new)]
+    if any(b"\0" in x for x in parts):
+        return None
+    with tempfile.TemporaryDirectory() as d:
+        fs = [Path(d) / k for k in ("이PC", "바탕", "원격")]
+        for f, x in zip(fs, parts):
+            f.write_bytes(x)
+        r = subprocess.run(["git", "merge-file", "-p", *map(str, fs)], capture_output=True)
+    if r.returncode == 0:
+        return r.stdout
+    # git은 이웃한 줄을 각자 고친 것도 충돌로 본다. 지침은 문단 하나가 한 줄이라 그런 고침이 잦으므로,
+    # 세 판의 줄 수가 같고 줄마다 한쪽만 고쳤으면 줄 단위로 합친다. 한 줄을 둘이 다르게 고쳤으면 None이다.
+    mine, base, theirs = (x.splitlines(keepends=True) for x in parts)
+    if not len(mine) == len(base) == len(theirs):
+        return None
+    out = []
+    for m, b, t in zip(mine, base, theirs):
+        if m != b and t != b and m != t:
+            return None
+        out.append(t if m == b else m)
+    return b"".join(out)
+
+
 def pull():
     remote, local = fetch_origin(), rev(f"refs/heads/{BRANCH}")
     if not remote:
@@ -588,7 +619,7 @@ def pull():
     with tempfile.TemporaryDirectory() as d:          # 작업 자료는 커밋과 같은 색인의 판, 그 밖(빼는 자리 · main 파일)은 바로 해시
         known = index_blobs(synced_index(local_files(need=False), d))
     now = branch_bytes({n: known[n] for n in names if n in known} | worktree_blobs([n for n in names if n not in known]), mine, theirs, base)
-    write, delete, clash = [], [], []
+    write, delete, clash, merged = [], [], [], {}
     for n in names:
         cur, old, new, was = now.get(n), mine.get(n), theirs.get(n), base.get(n)
         if cur == new or new == was:
@@ -599,8 +630,10 @@ def pull():
             clash.append(f"{n} — 원격에서 지웠는데 이 PC(디스크 · 올리지 않은 커밋)에서 바꿨다")
         elif cur is None:
             clash.append(f"{n} — 이 PC에서 지웠는데 원격에서 고쳤다")
+        elif (m := merge3(n, was, new)) is not None:
+            merged[n] = m                              # 서로 다른 줄만 고침 — 합친 판을 디스크에 두면 이 PC의 고침은 미커밋으로 남는다
         else:
-            clash.append(f"{n} — 이 PC 판과 원격 판이 둘 다 바뀌었다")
+            clash.append(f"{n} — 이 PC 판과 원격 판이 같은 줄을 고쳤다(또는 글 파일이 아니다)")
     if clash:
         sys.exit("겹치는 파일이 있어 아무것도 쓰지 않았다. 이 PC의 판을 작업 폴더에 복사해 두고 그 파일을 원격 판(`git show origin/workspace:<경로>`, 원격이 지웠으면 치움)으로 "
                  "바꾼 뒤 다시 받아 두 판을 합친다:\n  " + "\n  ".join(clash[:50]))
@@ -616,8 +649,12 @@ def pull():
     cat.stdin.close(); cat.wait()
     for n in delete:
         (ROOT / n).unlink(missing_ok=True)   # 이 PC에 이미 없으면 지운 것과 같다
+    for n, m in merged.items():
+        (ROOT / n).write_bytes(m)
     git("update-ref", f"refs/heads/{BRANCH}", remote, *([local] if local else []))
-    print(f"workspace {local[:8] or '(없음)'} → origin {remote[:8]} — 쓴 파일 {len(write)} · 지운 파일 {len(delete)}")
+    print(f"workspace {local[:8] or '(없음)'} → origin {remote[:8]} — 쓴 파일 {len(write)} · 지운 파일 {len(delete)} · 합친 파일 {len(merged)}")
+    if merged:
+        print("둘 다 고쳐 세 판으로 합친 파일(이 PC의 고침은 미커밋으로 남는다 — 합친 곳을 읽어 본다):\n  " + "\n  ".join(merged))
     if fork != local:                                  # 갈라졌던 경우: 올리지 않은 커밋은 브랜치에서 빠지고 그 파일은 디스크에 남아 다음 commit에 들어간다
         print(f"올리지 않은 커밋(브랜치에서 빠짐, `git show <id>`로 볼 수 있음 — 메시지는 다음 commit에 다시 쓴다):\n" + git("log", "--format=  %h %s", f"{fork}..{local}"))
         print("그 커밋이 바꾼 파일(디스크에 그대로, 다음 commit에 들어간다 — --만이면 이 경로를 준다):\n  " + "\n  ".join(git("diff", "--name-only", fork, local).splitlines()))
