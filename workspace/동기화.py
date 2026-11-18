@@ -596,6 +596,8 @@ def merge3(n, was, new):
     parts = [p.read_bytes(), blob(was), blob(new)]
     if any(b"\0" in x for x in parts):
         return None
+    if b"\r\n" in parts[0] and b"\r\n" not in parts[1]:   # 텍스트 모드로 쓴 도구가 줄 끝만 \r\n으로 바꾼 판 — 줄 끝을 맞춰 견준다(2026-11-18 off08)
+        parts[0] = parts[0].replace(b"\r\n", b"\n")
     with tempfile.TemporaryDirectory() as d:
         fs = [Path(d) / k for k in ("이PC", "바탕", "원격")]
         for f, x in zip(fs, parts):
