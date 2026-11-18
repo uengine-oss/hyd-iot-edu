@@ -88,10 +88,10 @@ def statements(text):
 
 def guard(path, parts):
     if not parts:
-        raise RuntimeError(f'{path}: 실행할 문장이 없습니다. 현재 기능의 문장을 작성한 뒤 실행합니다.')
+        raise RuntimeError(f'{path}: 실행할 쿼리가 없습니다. 현재 기능의 쿼리를 작성한 뒤 실행합니다.')
     for line, s, _ in parts:
         if WIPE.search(s):
-            raise RuntimeError(f'{path}:{line}: 전체를 지우는 문장은 이 랩에서 실행하지 않습니다. 필요한 대상만 고치세요.')
+            raise RuntimeError(f'{path}:{line}: 전체를 지우는 쿼리는 이 랩에서 실행하지 않습니다. 필요한 대상만 고치세요.')
 
 
 def read(path):
@@ -107,7 +107,7 @@ def run_file(path):
     guard(path, parts)
     for line, s, _ in parts:
         if PARAM.search(s):
-            raise RuntimeError(f'{path}:{line}: $ 자리가 있는 문장입니다 — 조회 기능에서 {path} --param 이름=값 으로 실행합니다.')
+            raise RuntimeError(f'{path}:{line}: $ 자리가 있는 쿼리입니다 — 수정 쿼리에는 $ 자리를 쓰지 않고 값을 직접 적습니다.')
     out = []
     for line, s, _ in parts:
         try:
@@ -135,7 +135,7 @@ def load_file(path, graph=None):
     for line, s, notes in parts:
         heads = [m.group(1) for m in (TARGET.match(x) for x in notes) if m]
         if len(heads) != 1:
-            raise RuntimeError(f'{path}:{line}: 문장 바로 위에 `// 넣을 것: <종류 또는 관계>` 주석이 한 줄 있어야 합니다(있는 종류: {", ".join(sorted(nodes))} / 관계: {", ".join(sorted(rels))}).')
+            raise RuntimeError(f'{path}:{line}: 쿼리 바로 위에 `// 넣을 것: <종류 또는 관계>` 주석이 한 줄 있어야 합니다(있는 종류: {", ".join(sorted(nodes))} / 관계: {", ".join(sorted(rels))}).')
         target = heads[0]
         if target not in nodes and target not in rels:
             raise RuntimeError(f'{path}:{line}: 「{target}」는 graph.json에 없는 종류 · 관계입니다.')
@@ -159,12 +159,12 @@ def questions(path):
     for line, s, notes in statements(read(path)):
         nums = [m.group(1) for m in (QUESTION.match(x) for x in notes) if m]
         if not nums:
-            raise RuntimeError(f'{path}:{line}: 조회 위에 `// 질문 <번호>` 주석이 없습니다.')
+            raise RuntimeError(f'{path}:{line}: 쿼리 위에 `// 질문 <번호>` 주석이 없습니다.')
         out[nums[-1]] = (line, s)
         for k, body_line in enumerate(s.splitlines()):
             m = QUESTION.match(body_line)
             if m and k:
-                raise RuntimeError(f'{path}:{line + k}: 「// 질문 {m.group(1)}」가 질문 {nums[-1]} 조회 문장 안에 있습니다 — 질문 {nums[-1]} 조회({line}행부터) 끝에 ;가 없습니다.')
+                raise RuntimeError(f'{path}:{line + k}: 「// 질문 {m.group(1)}」가 질문 {nums[-1]} 쿼리 안에 있습니다 — 질문 {nums[-1]} 쿼리({line}행부터) 끝에 ;가 없습니다.')
     return out
 
 
@@ -172,7 +172,7 @@ def query(path, number=None, params=None):
     """`// 질문 <번호>` 조회 하나(또는 전부)를 실행. [(번호, 줄, 열, 행)]. 문장의 $ 자리 가운데 params에 없는 것이 있으면 멈춘다."""
     qs = questions(path)
     if number is not None and str(number) not in qs:
-        raise RuntimeError(f'{path}: 「// 질문 {number}」 조회가 없습니다(있는 번호: {", ".join(qs)}).')
+        raise RuntimeError(f'{path}: 「// 질문 {number}」 쿼리가 없습니다(있는 번호: {", ".join(qs)}).')
     params = dict(params or {})
     out = []
     for num, (line, s) in qs.items():

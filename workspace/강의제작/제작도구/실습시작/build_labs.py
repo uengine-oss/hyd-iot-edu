@@ -794,7 +794,7 @@ def design_integrated():
                 files={'결과/정한_것.csv': decision_template(ANS.DECISION_POINTS),
                        '결과/기대_답.csv': F.blank_csv(ANS.EXPECT_COLUMNS_DESIGN, ANS.EXPECT_EXPLAIN_DESIGN),
                        **{f'결과/{n}': F.blank_csv(ANS.DESIGN_COLUMNS[n], ANS.DESIGN_EXPLAIN[n]) for n in ANS.DESIGN_COLUMNS},
-                       '결과/name_rules.py': ANS.NAME_RULES_BLANK, '결과/quantity_rules.py': ANS.QUANTITY_RULES_BLANK})
+                       '결과/quantity_rules.py': ANS.QUANTITY_RULES_BLANK})   # 같은 모델의 구성 요소 이름 맞추기는 제공 코드가 한다(session2_model_tool.name_map)
 
 
 def chosen_text(rows):
@@ -1015,7 +1015,7 @@ def graph_integrated():
     return dict(title='설계한 온톨로지를 그래프 DB에 구현하고 검증하기', course=course, kind='graph_integrated', change=True, steps=[],
                 files={'결과/정한_것.csv': decision_template(GRAPH_POINTS[course]),
                        '결과/기대_답.csv': F.blank_csv(ANS.GRAPH_EXPECT_COLUMNS, ANS.GRAPH_EXPECT_EXPLAIN[course]),
-                       '결과/load.cypher': ANS.LOAD_BLANK, '결과/query.cypher': ANS.QUERY_BLANK, '결과/update.cypher': ANS.UPDATE_BLANK})
+                       **ANS.BLANKS_INTEGRATED})
 
 
 def graph_lab(course):

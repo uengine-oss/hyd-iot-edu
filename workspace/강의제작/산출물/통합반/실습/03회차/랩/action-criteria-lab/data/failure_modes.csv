@@ -1,0 +1,5 @@
+failure_mode_id,name,component,cause_id,cause_name
+fm:cooler-cooling-loss,쿨러 냉각 성능 상실,오일 쿨러,cause:cooler-fin-fouling,쿨러 핀 오염
+fm:cooler-cooling-loss,쿨러 냉각 성능 상실,오일 쿨러,cause:ambient-temperature-rise,주변 온도 상승
+fm:cooler-cooling-loss,쿨러 냉각 성능 상실,오일 쿨러,cause:fan-drive-fault,팬 구동 불량
+fm:pump-volumetric-efficiency-loss,주 펌프 체적 효율 저하,주 펌프 (A),cause:pump-shaft-seal-wear,축 씰 마모

@@ -1,3 +1,0 @@
-failure_mode_id,name,component
-fm:cooler-cooling-loss,쿨러 냉각 성능 상실,오일 쿨러
-fm:pump-volumetric-efficiency-loss,주 펌프 체적 효율 저하,주 펌프 (A)

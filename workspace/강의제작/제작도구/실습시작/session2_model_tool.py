@@ -1,7 +1,7 @@
 """스키마와 지식 그래프를 만드는 제공 코드 — 원자료와 `결과/`의 빈 틀(내가 정한 표 · 함수)을 읽어 `결과/schema.json` · `결과/graph.json`을 쓴다.
 
-이 파일은 누가 해도 같은 일만 한다: 파일 읽기, 칸 공백 정리, 숫자 읽기, 단위를 물리량의 기준 단위로 맞추기, 교체부품 칸의 품번 찾기(괄호 속 품번 · 사내 품번 ·
-품번 교차표에 하나로 적힌 표기), 계약 꼴로 쓰기, 모델에 물어보기. 무엇을 하나로 보고 무엇을 따로 둘지, 식별자를 무엇으로 짓고 관계를 어느 쪽으로 둘지는
+이 파일은 누가 해도 같은 일만 한다: 파일 읽기, 칸 공백 정리, 숫자 읽기, 같은 모델의 설비끼리 다르게 적힌 구성 요소 이름 하나로 맞추기, 단위를 물리량의 기준 단위로 맞추기,
+교체부품 칸의 품번 찾기(괄호 속 품번 · 사내 품번 · 품번 교차표에 하나로 적힌 표기), 계약 꼴로 쓰기, 모델에 물어보기. 무엇을 하나로 보고 무엇을 따로 둘지, 식별자를 무엇으로 짓고 관계를 어느 쪽으로 둘지는
 `결과/`의 빈 틀이 정한다. 빈 틀에 없는 것은 짐작하지 않고 파일 · 행과 함께 멈춘다.
 직접 실행하지 않는다 — `python show_result.py`가 단계마다 부른다.
 """
@@ -194,10 +194,18 @@ def make_id(template, kind, values, where):
         raise Stop(f'{where}: {kind} 식별자에 쓸 {e} 칸이 비었습니다.')
 
 
+def same_kind(a, b):
+    """같은 모델의 두 설비에서 같은 구성 요소를 다르게 적은 행인가(일반 로직). 모델과 계통이 같고, 이름이 같거나 · 같은 태그의 센서가 붙었거나 ·
+    교체부품 칸이 같은 사내 품번으로 풀리면 그렇다(같은 모델의 설비는 같은 자리에 같은 태그 · 같은 부품을 쓴다). 모델이 다른 설비의 구성 요소는 견주지 않는다."""
+    if a['모델'] != b['모델'] or a['계통'] != b['계통']:
+        return False
+    return a['이름'] == b['이름'] or bool(set(a['태그']) & set(b['태그'])) or (a['부품'] != '' and a['부품'] == b['부품'])
+
+
 def name_map(src, rows_done, model_of):
-    """원자료 구성 요소 행마다 이름을 정한다. 내 규칙(결과/name_rules.py — same_device · group_name)으로 같은 장치끼리 묶어 묶음마다 이름 하나를 쓴다.
-    어느 묶음에도 들지 않은 행은 원자료 이름 그대로다. 돌려주는 것: ({(원자료 이름, 모델): 이름}, 화면용 {묶음, 다른 이름과 묶이지 않은 행})."""
-    mod = rules('name_rules')
+    """원자료 구성 요소 행마다 이름을 정한다(제공 코드 — 누가 해도 같은 일). 같은 모델의 설비끼리 다르게 적힌 같은 구성 요소(same_kind)를 묶어,
+    구성 요소 목록에서 먼저 나온 이름 하나로 맞춘다. 맞추기 전 원자료 이름은 그 구성 요소의 다른 이름(aliases)으로 남는다.
+    그 모델의 설비가 하나뿐이면 원자료 이름 그대로다. 돌려주는 것: ({(원자료 이름, 모델): 이름}, 화면용 {묶음, 원자료 이름 그대로인 행})."""
     parts = {r['품번'] for _, r in src['예비품_목록.csv']}
     cross = [r for _, r in src['품번_교차표.csv']]
     live_sensors = [(line, r) for line, r in src['센서_목록.csv'] if not rows_done.get(('센서_목록.csv', line))]
@@ -208,23 +216,23 @@ def name_map(src, rows_done, model_of):
         tags = sorted(s['태그'] for _, s in live_sensors if s['설비코드'] == r['설비코드'] and s['붙은곳'] == r['구성요소'])
         items.append({'설비코드': r['설비코드'], '모델': model_of[r['설비코드']], '계통': r['계통'], '이름': r['구성요소'], '태그': tags,
                       '부품': resolve_cell(r['교체부품'], parts, cross)[0] or '', '줄': f'구성요소_목록.csv:{line}'})
-    groups = grouped(items, lambda a, b: ask(mod, 'same_device', bool, dict(a, 태그=list(a['태그'])), dict(b, 태그=list(b['태그']))))
+    groups = grouped(items, same_kind)
     named, by_rule = {}, []
     for members in groups:
-        name = ask(mod, 'group_name', str, [dict(m, 태그=list(m['태그'])) for m in members]) if len(members) > 1 else members[0]['이름']
+        name = members[0]['이름']
         for m in members:
             key = (m['이름'], m['모델'])
             if key in named and named[key] != name:
-                raise Stop(f'결과/name_rules.py: 같은 모델({m["모델"]})의 원자료 이름 「{m["이름"]}」이 두 묶음({named[key]} · {name})에 들어갔습니다 — {m["줄"]}.')
+                raise Stop(f'자료/{m["줄"]}: 같은 모델({m["모델"]})의 원자료 이름 「{m["이름"]}」이 서로 다른 구성 요소 둘({named[key]} · {name})에 쓰였습니다 — 그 줄의 계통과 이름을 봅니다.')
             named[key] = name
-        if len(members) > 1:
-            by_rule.append((name, len(members), ' · '.join(sorted({f'{m["이름"]}({m["설비코드"]})' for m in members}))))
-    alone = [(m['줄'], m['설비코드'], m['계통'], m['이름']) for members in groups if len(members) == 1 for m in members]
+        if len({m['이름'] for m in members}) > 1:
+            by_rule.append((name, members[0]['모델'], len({m['설비코드'] for m in members}), ' · '.join(f'{m["이름"]}({m["설비코드"]})' for m in members)))
+    alone = [(m['줄'], m['설비코드'], m['모델'], m['계통'], m['이름']) for members in groups if len({m['설비코드'] for m in members}) == 1 for m in members]
     return named, {'묶음': sorted(by_rule), '그대로': sorted(alone, key=lambda x: int(x[0].split(':')[1]))}
 
 
 def name_of(named, raw, model):
-    """원자료 이름(붙은곳)을 같은 장치끼리 묶어 정한 이름으로. 그 모델의 구성 요소 행에 없는 이름은 원자료 이름 그대로 견준다."""
+    """원자료 이름(붙은곳)을 그 모델의 설비끼리 하나로 맞춘 이름으로. 그 모델의 구성 요소 행에 없는 이름은 원자료 이름 그대로 견준다."""
     return named.get((raw, model), raw)
 
 
@@ -375,7 +383,7 @@ def build(stage):
             continue
         assets[r['설비코드']] = make_id(ids['설비'], '설비', r, f'자료/설비_대장.csv:{line}')
         model_of[r['설비코드']] = r['모델']
-        node('Asset', assets[r['설비코드']], f'자료/설비_대장.csv:{line}', name=r['설비명'], model=r['모델'], maker=r['제조사'], serial=r['일련번호'],
+        node('Asset', assets[r['설비코드']], f'자료/설비_대장.csv:{line}', code=r['설비코드'], name=r['설비명'], model=r['모델'], maker=r['제조사'], serial=r['일련번호'],
              functional_location=r['기능위치'], installed=r['설치일'], status=r['상태'])
     # 구성 요소(자리)와, 나누기로 했으면 그 자리의 실물
     comps, per_asset, comp_at_row = {}, {}, {}
@@ -431,7 +439,7 @@ def build(stage):
     def place_of(line, r):
         cname = name_of(named, r['붙은곳'], model_of[r['설비코드']])
         if (r['설비코드'], cname) not in comps:
-            raise Stop(f'자료/센서_목록.csv:{line}: 붙은곳 「{r["붙은곳"]}」(→ {cname})이 {r["설비코드"]}의 구성 요소에 없습니다 — 같은 장치의 이름이 하나로 묶였는지 봅니다.')
+            raise Stop(f'자료/센서_목록.csv:{line}: 붙은곳 「{r["붙은곳"]}」(→ {cname})이 {r["설비코드"]}의 구성 요소에 없습니다 — 붙은곳 칸의 이름이 그 설비의 구성 요소 목록에 적힌 이름과 같은지 봅니다.')
         return cname, comps[(r['설비코드'], cname)][2]['계통']
     qmap = quantity_map(src, rows_done, assets, place_of)
     base, base_shown = unit_map(src, qmap)
@@ -475,15 +483,15 @@ def build(stage):
         check_cardinality(links, rels, where_of)
         info.update(unused=[k for k in rows_done if k not in used_rows])
         return info, None
-    # 부품 — 식별자는 사내 품번, 다른 표기는 그 부품의 다른 이름(other_codes)
+    # 부품 — 사내 품번 하나에 부품 하나(식별자는 결과/설계.csv의 틀로 짓고 사내 품번은 part_no에 남긴다), 다른 표기는 그 부품의 다른 이름(other_codes)
     parts = {r['품번']: (line, r) for line, r in src['예비품_목록.csv']}
     cross = [r for _, r in src['품번_교차표.csv']]
     part_id, codes = {}, []
     for pid, (line, r) in parts.items():
         part_id[pid] = make_id(ids['부품'], '부품', r, f'자료/예비품_목록.csv:{line}')
         other = sorted({c['다른표기'] for c in cross if c['사내품번'] == pid})
-        node('Part', part_id[pid], f'자료/예비품_목록.csv:{line}', name=r['품명'], other_codes=other)
-        codes.append((part_id[pid], r['품명'], ' · '.join(other) or '없음'))
+        node('Part', part_id[pid], f'자료/예비품_목록.csv:{line}', part_no=pid, name=r['품명'], other_codes=other)
+        codes.append((part_id[pid], pid, r['품명'], ' · '.join(other) or '없음'))
     linked, lost, blank = [], [], []
     for (code, cname), (cid, line, r) in comps.items():
         cell = r['교체부품']
@@ -500,19 +508,21 @@ def build(stage):
 
 def write_model(ids, links, nodes, rels):
     split = '실물' in ids
+    # 의미 문장은 이론의 클래스 정의(이름과 의미 한 문장)를 따른다 — 구성 요소 · 부품은 이론에서 세운 문장 그대로
     classes = {
-        'Asset': {'meaning': '개별 설비', 'required': {'id': 'string', 'name': 'string', 'model': 'string', 'status': 'string'},
+        'Asset': {'meaning': '설비 대장에 올려 한 대씩 관리하는 기계', 'required': {'id': 'string', 'code': 'string', 'name': 'string', 'model': 'string', 'status': 'string'},
                   'optional': {'maker': 'string', 'serial': 'string', 'functional_location': 'string', 'installed': 'string'}},
-        'Component': ({'meaning': '설비 안의 정비 가능 품목이 놓인 자리', 'required': {'id': 'string', 'name': 'string', 'group': 'string'},
+        'Component': ({'meaning': '설비를 이루는 기계 하나하나가 놓이는 자리', 'required': {'id': 'string', 'name': 'string', 'group': 'string'},
                        'optional': {'aliases': 'list'}} if split else
-                      {'meaning': '설비 안의 정비 가능 품목', 'required': {'id': 'string', 'name': 'string', 'group': 'string'},
+                      {'meaning': '설비를 이루는 기계 하나하나', 'required': {'id': 'string', 'name': 'string', 'group': 'string'},
                        'optional': {'serial': 'string', 'aliases': 'list'}}),
-        'Sensor': {'meaning': '설비별 계측 채널', 'required': {'id': 'string', 'tag': 'string'},
+        'Sensor': {'meaning': '구성 요소에 붙어 값을 재는 계기', 'required': {'id': 'string', 'tag': 'string'},
                    'optional': {'name': 'string', 'unit': 'string', 'normal': 'number', 'limit': 'number', 'limit_direction': ['upper', 'lower'], 'source_unit': 'string'}},
-        'Quantity': {'meaning': '재는 물리량과 기준 단위', 'required': {'id': 'string', 'name': 'string'}, 'optional': {'unit': 'string'}},
-        'Part': {'meaning': '사내 품번 하나로 관리하는 부품. 다른 표기는 other_codes', 'required': {'id': 'string', 'name': 'string'}, 'optional': {'other_codes': 'list'}}}
+        'Quantity': {'meaning': '센서가 재는 것. 같은 것을 재는 센서를 여기에 모은다', 'required': {'id': 'string', 'name': 'string'}, 'optional': {'unit': 'string'}},
+        'Part': {'meaning': '구성 요소 안에서 닳으면 갈아 끼우는 것. 사내 품번마다 하나이고, 예전 품번 같은 다른 표기는 다른 이름으로 남긴다',
+                 'required': {'id': 'string', 'part_no': 'string', 'name': 'string'}, 'optional': {'other_codes': 'list'}}}
     if split:
-        classes['Unit'] = {'meaning': '일련번호가 붙은 실물 한 대', 'required': {'id': 'string', 'serial': 'string'}}
+        classes['Unit'] = {'meaning': '구성 요소 자리에 달리는, 일련번호가 붙은 기계 한 대', 'required': {'id': 'string', 'serial': 'string'}}
     relations, names = {}, {}
     for link, (name, start, end, card, _) in links.items():
         relations[name] = {'from': LABEL[start], 'to': LABEL[end], 'cardinality': card}
@@ -531,6 +541,8 @@ def write_model(ids, links, nodes, rels):
 
 # ───────────── 물어보기(모델만 읽는다 — 원자료를 다시 읽지 않는다) ─────────────
 def load_model():
+    if not ((OUT / 'schema.json').is_file() and (OUT / 'graph.json').is_file()):
+        raise Stop('아직 모델이 없습니다 — python run.py parts로 만든 뒤 다시 실행합니다.')
     schema = json.loads((OUT / 'schema.json').read_text(encoding='utf-8'))
     graph = json.loads((OUT / 'graph.json').read_text(encoding='utf-8'))
     return schema, graph
@@ -544,11 +556,12 @@ def value_text(p):
 
 
 def answers(asks):
-    """asks = [(질문, 물을 값)] → [{'질문','물을_값','항목','답'}].
+    """asks = [(질문, 물을 값)] → [{'질문','물을_값','항목','답'}]. 물을 값과 답은 현장이 쓰는 값(설비 코드 · 사내 품번 · 다른 표기)이다 —
+    모델의 식별자를 어떻게 지었든 설비는 code, 부품은 part_no · other_codes 속성으로 찾고 그 속성으로 답한다.
     질문 1 = 설비 코드 → 구성 요소마다 붙은 센서 태그(항목 = 구성 요소 이름)와 그 자리에 달린 실물의 일련번호(항목 = 「구성 요소 이름 실물」 —
-    실물을 따로 둔 모델이면 「일련번호(지금)」 · 「일련번호(지난)」, 아니면 구성 요소의 일련번호 속성 하나).
+    실물을 따로 둔 모델이면 「일련번호(지금)」 · 「일련번호(지난)」, 아니면 구성 요소의 일련번호 속성 하나). 질문 1 줄에는 그 구성 요소의 다른 이름(원자료 이름)도 함께 돌려준다.
     질문 2 = 물리량 이름 → 그 물리량을 재는 센서(설비코드:태그, 항목 빈칸)와 센서마다 값(항목 = 설비코드:태그, 답 = 단위 · 정상값 · 한계 · 한계구분).
-    질문 3 = 품번 · 표기 → 그 부품을 쓰는 설비. 없으면 답 「없음」."""
+    질문 3 = 품번 · 표기 → 찾은 사내 품번(항목)과 그 부품을 쓰는 설비 코드. 없으면 답 「없음」."""
     schema, graph = load_model()
     unit_type = schema.get('links', {}).get('구성 요소-실물')
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
@@ -561,24 +574,29 @@ def answers(asks):
     def neighbours(i, want):
         return sorted({(r['b'] if r['a'] == i else r['a']) for r in rel_by.get(i, []) if label.get(r['b'] if r['a'] == i else r['a']) == want})
 
+    def code(asset):
+        return props[asset].get('code', asset)
+
     out = []
     for q, value in asks:
         q = str(q).strip()
         if q == '1':
-            if label.get(value) != 'Asset' and not any(label[i] == 'Asset' and p.get('id') == value for i, p in props.items()):
+            hit = [i for i, p in props.items() if label[i] == 'Asset' and code(i) == value]
+            if not hit:
                 out.append({'질문': q, '물을_값': value, '항목': '', '답': '없음'})
                 continue
-            for c in neighbours(value, 'Component'):
+            for c in neighbours(hit[0], 'Component'):
+                other = list(props[c].get('aliases', []))
                 tags = sorted(props[s]['tag'] for s in neighbours(c, 'Sensor'))
                 if tags:      # 센서가 없는 구성 요소는 센서 줄을 내지 않는다
-                    out.append({'질문': q, '물을_값': value, '항목': props[c]['name'], '답': ' · '.join(tags)})
+                    out.append({'질문': q, '물을_값': value, '항목': props[c]['name'], '답': ' · '.join(tags), '다른_이름': other})
                 if unit_type:
                     held = sorted(((not r['props'].get('current'), props[r['b'] if r['a'] == c else r['a']]['serial']) for r in rel_by.get(c, []) if r['type'] == unit_type))
                     serials = ' · '.join(f'{s}({"지난" if past else "지금"})' for past, s in held)
                 else:
                     serials = props[c].get('serial', '')
                 if serials:
-                    out.append({'질문': q, '물을_값': value, '항목': props[c]['name'] + ' 실물', '답': serials})
+                    out.append({'질문': q, '물을_값': value, '항목': props[c]['name'] + ' 실물', '답': serials, '다른_이름': [x + ' 실물' for x in other]})
         elif q == '2':
             hit = [i for i, p in props.items() if label[i] == 'Quantity' and p.get('name') == value]
             if not hit:
@@ -587,18 +605,18 @@ def answers(asks):
             found = []
             for s in neighbours(hit[0], 'Sensor'):
                 asset = next((a for c in neighbours(s, 'Component') for a in neighbours(c, 'Asset')), '')
-                key = f'{props[asset]["id"] if asset else "?"}:{props[s]["tag"]}'
+                key = f'{code(asset) if asset else "?"}:{props[s]["tag"]}'
                 found.append(key)
                 out.append({'질문': q, '물을_값': value, '항목': key, '답': value_text(props[s])})
             out.append({'질문': q, '물을_값': value, '항목': '', '답': ' · '.join(sorted(found))})
         elif q == '3':
-            ids = sorted(i for i, p in props.items() if label[i] == 'Part' and (i == value or value in p.get('other_codes', [])))
+            ids = sorted(i for i, p in props.items() if label[i] == 'Part' and (p.get('part_no', i) == value or value in p.get('other_codes', [])))
             if not ids:
                 out.append({'질문': q, '물을_값': value, '항목': '', '답': '없음'})
                 continue
             for pid in ids:
-                assets = sorted({a for c in neighbours(pid, 'Component') for a in neighbours(c, 'Asset')})
-                out.append({'질문': q, '물을_값': value, '항목': pid, '답': ' · '.join(props[a]['id'] for a in assets) or '쓰는 설비 없음'})
+                assets = sorted({code(a) for c in neighbours(pid, 'Component') for a in neighbours(c, 'Asset')})
+                out.append({'질문': q, '물을_값': value, '항목': props[pid].get('part_no', pid), '답': ' · '.join(assets) or '쓰는 설비 없음'})
         else:
             raise Stop(f'결과/기대_답.csv: 질문 「{q}」 — 질문은 1 · 2 · 3입니다.')
     return out

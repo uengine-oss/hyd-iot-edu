@@ -10,4 +10,5 @@
 - 키와 비밀번호를 코드·결과·기록에 적지 않는다. 열어 둔 프로젝트 폴더 밖의 파일은 읽지 않는다.
 
 - `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). 학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.
-- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.
+- 판단 함수 파일은 `app/features/quantity_rules.py` 하나다. 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 표(`design.csv` · `relations.csv` · `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.
+- 모델은 `python run.py parts`가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.

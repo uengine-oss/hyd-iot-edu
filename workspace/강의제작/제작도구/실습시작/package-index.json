@@ -235,17 +235,17 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v31-lab",
+      "version": "v33-lab",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "e164b18198de6e750b1d52eb203183faa5e9e40ca59582a79b378fbcf3571064",
+      "sha256": "76be311a48985b0c5981cfea53ac67afa0ccadd43f3dce8f58048fa4eb047c5b",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
         "Codex에게 물어 제공 모델 파악하기",
-        "질문과 기대 답 정하기",
+        "역량 질문과 기대 답 정하기",
         "스키마를 그래프로 옮기기: 적재와 다시 적재",
-        "질문을 Cypher로 묻기: 질문 1 구성 요소별 센서",
+        "역량 질문을 쿼리로 묻기: 질문 1 구성 요소별 센서",
         "질문 2: 구성 요소마다 교체 부품",
         "질문 3: 다른 표기로 부품 찾기와 사용 설비",
         "바뀐 것만 고치기: 수정본 반영",
@@ -255,7 +255,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab_guide.html",
-        "sha256": "a5e3b2fc752083c655347a7d107b05c0cd11d9e3849b023406cc2b153063cc76"
+        "sha256": "2d3fb89caff5c1451f8f6c5df9cf7e33c66ca094343ec0bb9c7fc7b13a0e4a12"
       }
     },
     {
@@ -263,10 +263,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v31-lab",
+      "version": "v32-lab",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "5055f41b7407844925385d9ef77971f73ef9ac5a8142d00e9c9626d84bab9238",
+      "sha256": "59b15cd90470f87cdac5c42b501b6e54420a3d4e1e8869a891f070aff507a6b6",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 자료 파악하기",
@@ -281,7 +281,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "401efff493f9be6d35b73065a522615363a1b66c8938d934650de3fe267c364d"
+        "sha256": "30eae4007ba221105ae1e127671f5bfa037c2edd51d8a01c0973cabda3e17f7b"
       }
     },
     {
@@ -299,26 +299,25 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "작업 절차와 판단 조건을 연결해 조치 기준 만들기",
-      "version": "v4-project",
+      "version": "v6-lab",
       "folder": "action-criteria-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab.zip",
-      "sha256": "2ecfb2fce5cc873b988644a554cbd8ba2b99b012de0e9bf13c396868f72d7b8b",
+      "sha256": "bb4e8a9dcf3368617f4968aedab9b060804e51cb4b2047abb1d42934f6aec848",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
-        "Codex와 자료 파악하기",
-        "요구와 기대 판정 정하기",
-        "조건 문장을 SOP 구조로 나누기",
+        "Codex에게 물어 매뉴얼과 결정표 파악하기",
+        "확인할 질문과 기대 판정 정하기",
+        "SOP와 결정표가 담는 것: 조건 문장을 SOP 항목으로 나누기",
         "고장 유형 · 원인 · 조치 잇기",
-        "적용 범위와 설비 모델 ID 잇기",
-        "조건표 규칙 만들기",
-        "출처가 확인되지 않는 규칙 정하기",
-        "구조 확인하기",
+        "적용 범위 정하기: 어느 설비에 걸 것인가",
+        "조건을 결정표의 규칙으로 옮기기",
+        "확인 사례로 검증하기",
         "저장하고 다시 확인하기"
       ],
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab_guide.html",
-        "sha256": "10119858dfc45bda6cde78fe2c649cb1f4fd53c43d6533abdb019dbabaa4ea2c"
+        "sha256": "282e7c09cd5e51b60e9767fa35aa2a1e7e7bfae161ecfbef755c839bf5f13f0c"
       }
     },
     {
@@ -326,25 +325,24 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "설비 조건별 최적의 조치를 비교하는 판단 기능 만들기",
-      "version": "v4-project",
+      "version": "v6-lab",
       "folder": "judgement-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab.zip",
-      "sha256": "db25b9b5a13759770769afed74f0722f7a5b9515703fb848d943d67c4e61ea9f",
+      "sha256": "29f5e6afc8e213e324bf578c25429d9fd867249e5816ab434e9ca9c06a337716",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
-        "Codex와 원천 기록 파악하기",
-        "기대 판정 먼저 적기",
-        "끊긴 카운터 기록의 값 정하기",
-        "견줄 후보 정하기",
-        "비교 기준 문장과 결과 쓰기",
-        "사례로 결과 검증하기",
-        "구조 확인하기",
+        "Codex에게 물어 경보 표와 조치 기준 파악하기",
+        "사례 다섯 종류의 기대 판정 정하기",
+        "결정표로 판정하기: 적용 대상과 확인되지 않은 조건",
+        "손익으로 견주기: 무엇을 1순위로 내줄지 정하기",
+        "비교값과 정책 점수: 비교 기준 문장 쓰기",
+        "사례 대조로 검증하기",
         "저장하고 다시 확인하기"
       ],
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab_guide.html",
-        "sha256": "dbc82d85aaedeec2dd7df77920af845919628e382bc1027900952995928c12ca"
+        "sha256": "a1fc7c82605b189f72c5f14e1a4b01d22f207c17c55806bee1cf8ca493ce882b"
       }
     },
     {

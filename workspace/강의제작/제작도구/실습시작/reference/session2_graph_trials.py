@@ -127,8 +127,17 @@ def trials(starter, work):
         command(folder, 'run.py', '--no-open')
         # 빈 기능을 이미 실행된 결과처럼 보이지 않는다.
         empty = command(folder, 'run.py', 'load', '--no-open', ok=False)
-        assert '실행할 문장이 없습니다' in empty
+        assert '실행할 쿼리가 없습니다' in empty
         fill(folder, change)
+        # 기대 답에 같은 (질문 · 물을_값) 짝을 두 줄 쓰면 그 두 줄을 짚고, 다른 열을 견줄 길(다른 표기로 물은 줄)을 말하며 멈춘다
+        expected_file = folder / 'app/features/expected.csv'
+        kept = expected_file.read_bytes()
+        last = kept.decode('utf-8').rstrip('\n').split('\n')[-2]       # 사용 설비를 묻는 줄 하나를 그대로 한 번 더
+        expected_file.write_bytes(kept + (last + '\n').encode('utf-8'))
+        twice = command(folder, 'run.py', 'expected', '--no-open', ok=False)
+        assert '두 줄입니다' in twice and '다른 표기로 물은 줄' in twice, twice[-400:]
+        expected_file.write_bytes(kept)
+        records.append({'same_pair_twice': 'expected', 'stopped_with_way_out': True})
         with instance(folder) as state:
             result(folder, 'load')
             result(folder, 'export')

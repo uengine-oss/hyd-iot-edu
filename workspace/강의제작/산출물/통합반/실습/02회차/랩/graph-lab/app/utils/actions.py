@@ -53,7 +53,7 @@ def expected_rows(columns, key):
             raise R.Stop(f'app/features/expected.csv:{line}: 빈 칸 ' + ', '.join(empty))
         k = tuple(r.get(c, '') for c in key)
         if k in seen:
-            raise R.Stop(f'app/features/expected.csv:{seen[k]} · {line}: 같은 ({" · ".join(key)}) 「{" · ".join(k)}」가 두 줄입니다 — 한 짝에 한 줄만 씁니다(여러 값은 한 칸에 「 · 」로).')
+            raise R.Stop(f'app/features/expected.csv:{seen[k]} · {line}: 같은 ({" · ".join(key)}) 「{" · ".join(k)}」가 두 줄입니다 — 한 줄에서 견줄 열(볼_열)은 하나입니다. 같은 대상의 다른 열도 견주려면 그 대상을 다른 표기로 물은 줄을 더하고, 한 열의 여러 값은 한 칸에 「 · 」로 잇습니다.')
         seen[k] = line
     return rows
 
@@ -129,7 +129,7 @@ def load(previous):
     _, model = graph_counts()
     have = db(C.counts)
     rows = [(k, v, have.get(k, 0), '같음' if v == have.get(k, 0) else '다름') for k, v in sorted(model.items())]
-    return [R.table('적재 문장마다 넘긴 행과 바뀐 것', ['문장', '넣을 것', '넘긴 행', '바뀐 것'], done),
+    return [R.table('적재 쿼리마다 넘긴 행과 바뀐 것', ['쿼리', '넣을 것', '넘긴 행', '바뀐 것'], done),
             R.table('모델 파일 ↔ 랩 DB 개수', ['항목', '모델 파일', '랩 DB', '견줌'], rows)]
 
 
@@ -138,7 +138,7 @@ def again(previous):
     load_once()
     after = db(C.counts)
     return [R.before_after('같은 적재를 한 번 더 — 개수 전후', before, after,
-                           note='늘어남이 있으면 같은 대상을 알아보는 열쇠(MERGE)가 다시 실행할 때 새로 만들고 있는 것입니다.')]
+                           note='늘어남이 있으면 MERGE의 패턴에 적은 것으로는 이미 있는 대상을 찾지 못해 다시 실행할 때 새로 만들고 있는 것입니다. 패턴에는 바뀌지 않는 식별자만 적습니다.')]
 
 
 def load_and_again(previous):
@@ -154,7 +154,7 @@ def ask_question(number):
     except RuntimeError as e:
         raise R.Stop(str(e))
     if str(number) not in qs:
-        raise R.Blank(f'app/features/query.cypher에 「// 질문 {number}」 조회가 아직 없습니다.')
+        raise R.Blank(f'app/features/query.cypher에 「// 질문 {number}」 쿼리가 아직 없습니다.')
     line, text = qs[str(number)]
     names = sorted(set(C.PARAM.findall(text)))
     if len(names) > 1:
@@ -172,8 +172,8 @@ def ask_question(number):
             act.append({'짝': r['물을_값'], '답': ' · '.join('없음' if row[i] in (None, '') else str(row[i]) for row in data) or '0줄'})
             blanks += sum(1 for row in data if row[i] == '')
     if exp:
-        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same,
-                                   note=SAME_NOTE + ' ' + (f'볼_열에서 빈 글자 {blanks}칸을 값 없음(null)과 같은 「없음」으로 견줬습니다. 조회가 값이 없는 칸을 빈 글자로 바꾸고 있습니다 — 값 없음은 null로 돌려주는 편이 다른 조회와 섞이지 않습니다.' if blanks else '')))
+        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 쿼리 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same,
+                                   note=SAME_NOTE + ' ' + (f'볼_열에서 빈 글자 {blanks}칸을 값 없음(null)과 같은 「없음」으로 견줬습니다. 쿼리가 값이 없는 칸을 빈 글자로 바꾸고 있습니다 — 값 없음은 null로 돌려주는 편이 다른 쿼리와 섞이지 않습니다.' if blanks else '')))
     return blocks
 
 

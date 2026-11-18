@@ -1,227 +1,245 @@
 """설비 조건별 최적의 조치를 비교하는 판단 기능 만들기 — 기능마다 결과 화면에 보일 표를 만든다(제공 — 고치지 않는다). 판단의 답은 이 파일에 없다."""
 from pathlib import Path
-import csv
-import io
+import collections
+import importlib
+import json
 import subprocess
 import sys
 
-import json
+from app.utils import compare as C
+from app.utils import rules as R
+from app.utils.results import Blank, Stop, compare, counts, note, read_text, rel, table
 
 HERE = Path(__file__).resolve().parents[2]
-from app.utils.results import compare, counts, error, note, read_table, table  # noqa: E402
-from app.utils import condition_tools as C  # noqa: E402
-
+DATA, FEATURES, OUTPUT = HERE / 'data', HERE / 'app/features', HERE / 'output'
 TITLE = '설비 조건별 최적의 조치를 비교하는 판단 기능 만들기'
+KINDS = ['정상', '경계', '복수 조건', '모두 제외', '필수값 누락']
+EXPECTED_COLUMNS = ['사례_종류', '사례', '후보', '기대_판정', '기대_규칙', '근거']
+VERDICTS = ('허용', '제외', '후보 아님')
+DECISION_COLUMNS = ['지점', '고른_것', '근거', '바뀌는_답']
+ORDER_POINT, STATEMENT_POINT = '쓰는 사람에 따라 갈리는 답', '비교 기준 문장'
+NEEDS = {ORDER_POINT: DECISION_COLUMNS[1:], STATEMENT_POINT: ['고른_것', '근거']}      # 비교 기준 문장은 내 말로 쓰는 줄이라 바뀌는_답을 받지 않는다
 
 
-def guarded(fn):
-    """제공 코드가 알린 멈춤(빈 틀 비어 있음 · 계약 어긋남)을 빨간 칸으로 — 파일 · 줄과 까닭 그대로."""
-    def run(previous):
-        try:
-            return fn(previous)
-        except (C.ContractError, *EXTRA_STOP) as e:
-            return [error('멈춤', str(e))]
-    return run
+def criteria_dir():
+    """쓰는 조치 기준. `app/features/criteria/`에 decision_table.csv와 sop.json이 둘 다 있으면 그것, 아니면 제공 기준."""
+    mine = FEATURES / 'criteria'
+    return mine if (mine / 'decision_table.csv').is_file() and (mine / 'sop.json').is_file() else DATA / 'criteria'
 
 
-EXPECT_COLUMNS = ['사례', '후보', '기대_판정', '근거']
+def load():
+    folder = criteria_dir()
+    try:
+        doc = json.loads(read_text(folder / 'sop.json')[0])
+    except json.JSONDecodeError as e:
+        raise Stop(f'{rel(folder / "sop.json")}:{e.lineno}: JSON 꼴이 아닙니다 — {e.msg}') from None
+    return doc, R.load_rules(folder / 'decision_table.csv'), R.read_rows(DATA / 'alarms.csv')
+
+
+def decision(point):
+    """decisions.csv에서 그 줄. 채워야 할 칸이 비어 있으면 그 줄을 짚고 멈춘다."""
+    path = FEATURES / 'decisions.csv'
+    rows = [r for r in R.read_rows(path, DECISION_COLUMNS) if r['지점'] == point]
+    if not rows:
+        raise Stop(f'{rel(path)}: 「{point}」 줄이 없습니다. 받은 빈 틀의 그 줄을 지우지 않습니다.')
+    r = rows[0]
+    empty = [c for c in NEEDS[point] if not r[c]]
+    if empty:
+        how = '내가 고른 것과 이유를 적고' if point == ORDER_POINT else '내 말로 쓴 문장과 읽은 근거 줄을 적고'
+        raise Stop(f'{rel(path)}:{r["_line"]}: 「{point}」의 ' + ' · '.join(empty) + f' 칸이 비어 있습니다. {how} 다시 실행합니다.')
+    return r
+
+
+def judged(doc, rules, alarms):
+    """경보마다 후보 선택과 판정 — [{'row', 'candidates': [판정 dict], 'not_candidates': [{'sop', 'reason'}]}]."""
+    out = []
+    for row in alarms:
+        picked = R.candidates(row, doc)
+        out.append({'row': row, 'candidates': [R.judge(sid, row, rules) for sid, ok, _ in picked if ok],
+                    'not_candidates': [{'sop': sid, 'reason': why} for sid, ok, why in picked if not ok]})
+    return out
+
+
+def verdict_rows(events):
+    rows = []
+    for e in events:
+        rid = e['row']['경보_ID']
+        rows += [{'사례 / 후보': f'{rid} / {j["sop"]}', '설비': e['row']['설비'], '판정': j['status'], '규칙': R.rule_ids(j), '판정_상세': R.short(j)} for j in e['candidates']]
+        rows += [{'사례 / 후보': f'{rid} / {n["sop"]}', '설비': e['row']['설비'], '판정': '후보 아님', '규칙': '', '판정_상세': f'후보 아님 — {n["reason"]}'} for n in e['not_candidates']]
+    return rows
+
+
+def condition_text(rule):
+    return ' 그리고 '.join(f'{c["input"]} {c["operator"]} {c["value"]:g} {c["unit"]}'.strip() if isinstance(c['value'], float) else f'{c["input"]} {c["operator"]} {c["value"]}'
+                         for c in rule['conditions'])
+
+
+def sources(_):
+    doc, rules, alarms = load()
+    blank = [[r['경보_ID'], r['설비'], ' · '.join(k for k, v in r.items() if k != '_line' and v == '')] for r in alarms if '' in [v for k, v in r.items() if k != '_line']]
+    return [table('받은 자료', ['파일', '줄 수'], [[p.relative_to(HERE).as_posix(), len(read_text(p)[0].splitlines())] for p in sorted(DATA.rglob('*')) if p.is_file()]),
+            counts(f'쓰는 조치 기준 — {rel(criteria_dir())}', [('SOP', len(doc['sops'])), ('관계', len(doc['relations'])), ('결정표 규칙', len(rules))]),
+            table('결정표의 규칙', ['규칙', '결과', '감점(만원)', '적용 대상', '조건', '출처'],
+                  [[r['id'], r['result'], '' if r['penalty'] is None else f'{r["penalty"]:g}', ' · '.join(r['targets']), condition_text(r), r['source']] for r in rules],
+                  note='조건이 「그리고」로 이어진 규칙은 조건이 모두 맞아야 맞습니다.'),
+            table('SOP마다 건 설비', ['SOP', '이름', '종류', '건 설비'], [[s['id'], s['name'], s['kind'], ' · '.join(s['assets']) or '-'] for s in doc['sops']]),
+            counts('설비마다 경보 수', sorted(collections.Counter(r['설비'] for r in alarms).items())),
+            table('값이 빈 칸이 있는 경보', ['경보', '설비', '빈 칸'], blank)]
 
 
 def expected_rows():
-    """app/features/expected.csv → 표 줄. 꼴이 계약과 다르면 파일:줄을 대고 멈춘다(맞지 않는 줄을 「실제 없음」으로 조용히 두지 않음)."""
-    p = HERE/'app/features/expected.csv'
-    if not p.is_file():
-        return []
-    body, skip = C.csv_body(p)
-    reader = csv.DictReader(io.StringIO(body, newline=''))
-    if reader.fieldnames != EXPECT_COLUMNS:
-        raise C.ContractError(f'app/features/expected.csv:{skip + 1} 열 이름이 {",".join(EXPECT_COLUMNS)}가 아님')
-    cases, sops = case_ids(), [r['sop_id'] for r in C.read_csv(HERE/'data/targets.csv')]
-    out, seen = [], {}
-    for line, r in enumerate(reader, start=skip + 2):
-        where = f'app/features/expected.csv:{line}'
-        if None in r or any(v is None for v in r.values()):
-            raise C.ContractError(f'{where} 칸 수가 열 이름과 다릅니다 — 쉼표가 빠졌거나 더 있는지 봅니다(쉼표가 든 글은 큰따옴표로 감쌉니다).')
-        if not any(v.strip() for v in r.values()):
-            continue
-        c, s, v = r['사례'].strip(), r['후보'].strip(), r['기대_판정'].strip()
-        if c not in cases:
-            raise C.ContractError(f'{where} 사례 「{c}」 — 사례 칸은 {CASE_FROM}')
-        if s not in sops:
-            raise C.ContractError(f'{where} 후보 「{s}」 — 후보 칸은 data/targets.csv의 SOP ID({" · ".join(sops)})')
-        if v not in ('유지', '제외', '보류'):
-            raise C.ContractError(f'{where} 기대_판정 「{v}」 — 유지 · 제외 · 보류 가운데 하나')
-        if (c, s) in seen:
-            raise C.ContractError(f'{where} {c} / {s} 줄이 {seen[(c, s)]}줄에도 있습니다 — 사례 · 후보마다 한 줄')
-        seen[(c, s)] = line
-        out.append({'사례 / 후보': f'{c} / {s}', '판정': v, '근거': r['근거'].strip()})
-    return out
+    rows = R.read_rows(FEATURES / 'expected.csv', EXPECTED_COLUMNS)
+    doc, rules, alarms = load()
+    ids, sops, known = {r['경보_ID'] for r in alarms}, {s['id'] for s in doc['sops']}, {r['id'] for r in rules}
+    for r in rows:
+        where = f'app/features/expected.csv:{r["_line"]}'
+        if r['사례_종류'] not in KINDS:
+            raise Stop(f'{where}: 사례_종류는 ' + ' · '.join(KINDS) + f' 가운데 하나입니다(지금: 「{r["사례_종류"]}」).')
+        if r['사례'] not in ids:
+            raise Stop(f'{where}: 사례 「{r["사례"]}」가 data/alarms.csv의 경보_ID에 없습니다.')
+        if r['후보'] not in sops:
+            raise Stop(f'{where}: 후보 「{r["후보"]}」가 조치 기준의 SOP에 없습니다.')
+        if r['기대_판정'] not in VERDICTS:
+            raise Stop(f'{where}: 기대_판정은 ' + ' · '.join(VERDICTS) + f' 가운데 하나입니다(지금: 「{r["기대_판정"]}」).')
+        odd = [x for x in R.split(r['기대_규칙']) if x not in known]
+        if odd:
+            raise Stop(f'{where}: 기대_규칙 {odd}이 결정표의 rule_id에 없습니다.')
+    return rows
 
 
-def against_expected(title, judged):
-    """judged = {(사례, 후보): 판정} — expected.csv에 적은 줄만 견준다."""
-    exp = expected_rows()
-    keys = {e['사례 / 후보'] for e in exp}
-    act = [{'사례 / 후보': f'{c} / {s}', '판정': v} for (c, s), v in judged.items() if f'{c} / {s}' in keys]
-    return compare(title, '사례 / 후보', exp, act, ['판정'], '기대는 실행 전에 정한 값입니다. 다른 줄은 기대 · 조건표 · 원문 가운데 어느 쪽이 원문과 다른지 찾아 고칩니다.')
+def expected(_):
+    rows = expected_rows()
+    if not rows:
+        raise Blank('app/features/expected.csv에 기대 판정이 아직 없습니다.')
+    seen = collections.Counter(k for k, _ in {(r['사례_종류'], r['사례']) for r in rows})
+    return [table('내가 정한 기대 판정', EXPECTED_COLUMNS, rows),
+            counts('사례 종류마다 고른 경보 수', [(k, seen[k]) for k in KINDS])]
 
 
-def run_check(previous):
-    p = subprocess.run([sys.executable, '-m', 'app.utils.check'], cwd=HERE, capture_output=True, text=True, encoding='utf-8')
-    lines = [[x] for x in (p.stdout + p.stderr).splitlines()]
-    return [note('구조 검사 통과' if p.returncode == 0 else '구조 확인 필요 — 아래 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다(아직 채우지 않은 파일이 있으면 그 파일이 짚힙니다).'),
-            table('python run.py check 출력', ['줄'], lines)]
+def judge_view(_):
+    doc, rules, alarms = load()
+    rows = verdict_rows(judged(doc, rules, alarms))
+    return [table('경보 · 후보마다 판정과 이유', ['사례 / 후보', '설비', '판정'], [[r['사례 / 후보'], r['설비'], r['판정_상세']] for r in rows]),
+            counts('판정 수', sorted(collections.Counter(r['판정'] for r in rows).items()))]
 
 
-
-def expected_view(previous):
-    exp = expected_rows()
-    return [table('기대 판정(실행 전에 적은 값)과 근거 줄', ['사례 / 후보', '판정', '근거'], exp)]
-
-from app.utils import judge_tools as T  # noqa: E402
-EXTRA_STOP = (T.Unfilled,)
-CASE_FROM = 'data/alarms.csv의 RAISE 행 경보_ID'
-
-
-def case_ids():
-    return {r['경보_ID'] for r in C.read_csv(HERE/'data/alarms.csv') if r['구분'] == 'RAISE'}
-
-
-def num(x):
-    """화면 표시용 수 — 원천 값은 소수 한두 자리라 계산 값(16.717499999999998)도 소수 둘째 자리로 둥글린다. 판정 · 결과 파일은 원값 그대로."""
-    return round(x, 2) if isinstance(x, float) else x
-
-
-REVIEW = False
-
-
-def overview(previous):
-    return [table('경보마다 판정 요청 직전 원천 기록(사실만 — 판정 없음)', ['경보', '설비', '판정 요청(UTC)', 'PLC 마지막 수신', '카운터 마지막 기록', '예측 행'], T.source_facts(HERE))]
-
-
-def judged_all(events, groups):
-    return {(e['id'], c['sop']): C.evaluate(c['sop'], c['inputs'], groups) for e in events for c in e['candidates']}
-
-
-def inputs_view(previous):
-    gap = T.load_function(HERE, T.GAP_FILE, 'fan_hours_when_gap')
-    events, _ = T.prepare(HERE, gap)
-    groups = C.load_table(T.pick(HERE, 'condition_table.csv'))
-    rows = []
-    for e in events:
-        if not e['counter_gap']:
-            continue
-        c = e['candidates'][0]
-        rows.append([e['id'], e['asset'], num(c['inputs']['fan100_hours']) if c['inputs']['fan100_hours'] is not None else '값 없음', c['missing_reasons'].get('fan100_hours', '')])
-    j = judged_all(events, groups)
-    st = [v['status'] for v in j.values()]
-    return [table('카운터 기록이 끊긴 경보 — 내 함수가 낸 팬 100 % 연속 시간(h)', ['경보', '설비', '팬 100 % 연속 시간(h)', '값이 없는 까닭'], rows),
-            counts('판정(경보 × 후보)', [('유지', st.count('유지')), ('제외', st.count('제외')), ('보류', st.count('보류'))]),
-            against_expected('기대 판정 ↔ 판정', {k: v['status'] for k, v in j.items()})]
-
-
-def compare_view(previous):
-    gap = T.load_function(HERE, T.GAP_FILE, 'fan_hours_when_gap')
-    cmp_ = T.load_function(HERE, T.COMPARE_FILE, 'choose_compared')
-    choices = T.load_choices(HERE)
-    res = T.run(HERE, T.pick(HERE, 'condition_table.csv'), gap, cmp_, choices, '')
-    rows = [[e['id'], ', '.join(f"{r['rank']}위 {r['sop']} {r['total']:.2f}" for r in e['ranking']) or '순위 없음',
-             '; '.join(f"{c['sop']}: {' · '.join(c['no_comparison_reason'])}" for c in e['candidates'] if c.get('no_comparison_reason'))] for e in res['events']]
-    m = (HERE/'data/metrics/metric_definitions.md').read_text(encoding='utf-8')
-    import re
-    cid = re.search(r'사례 (\S+)의 SOP-COOL-12', m).group(1)
-    ex = next(c for e in res['events'] if e['id'] == cid for c in e['candidates'] if c['sop'] == 'SOP-COOL-12')
-    hand = [[k, v, (ex['comparison'] or {}).get({'비용': 'cost', '생산': 'production', '품질': 'quality', '에너지': 'energy'}[k], '비교값 없음')]
-            for k, v in re.findall(r'^\| (비용|생산|품질|에너지) \| .* \| ([0-9.]+) \|$', m, re.M)]
-    ranked = sum(1 for e in res['events'] if e['ranking'])
-    mine = sum(len(T.call_compare(cmp_, [c for c in e['candidates'] if c['status'] == '유지'])) for e in res['events'])
-    skipped = sum(1 for e in res['events'] for c in e['candidates'] if c.get('no_comparison_reason'))
-    return [counts('순위', [('순위가 있는 경보', ranked), ('내 함수(compare_rule)가 뺀 유지 후보', mine),
-                           ('비교값이 없어 견주지 못한 유지 후보(까닭은 아래 표)', skipped - mine)]),
-            table('경보마다 순위와 견주지 않은 후보', ['경보', '순위(합계, 만원)', '견주지 않은 유지 후보와 까닭'], rows),
-            table(f'metric_definitions.md 손계산 예({cid} SOP-COOL-12) ↔ 제공 코드', ['손실', '문서', '프로그램'], hand)]
-
-
-def written(previous):
+def held(kept):
+    """학생이 구현한 함수를 부른다 — 견준 후보 가운데 1순위로 내주지 않고 뒤에 보일 후보와 그 까닭. 아직 빈 틀이면 그렇다고 알린다."""
+    sys.path.insert(0, str(HERE))
     try:
-        res, files = T.run_folder(HERE, review_mode=REVIEW)
-    except T.Unfilled as e:
-        return [note(f'아직 결과 파일을 쓰지 않았습니다 — {e}')]
-    exp_ids = {r['사례 / 후보'].split(' / ')[0] for r in expected_rows()}
-    sel = [[e['id'], e['selection']['reason'], ' / '.join(e['selection']['checks']) or '—'] for e in res['events'] if e['id'] in exp_ids]
-    return [note('쓴 파일: ' + ', '.join(files) + '\ncomparison_basis: ' + res['comparison_basis']),
-            table('기대를 적은 경보의 선택 이유와 추가로 확인할 사항', ['경보', '선택 이유', '추가로 확인할 사항'], sel)]
+        module = importlib.import_module('app.features.compare_rule')
+        back = module.hold_back(kept)
+    except NotImplementedError:
+        raise Blank('app/features/compare_rule.py의 hold_back이 아직 빈 틀입니다.') from None
+    if not isinstance(back, dict) or any(k not in {x['sop'] for x in kept} or not isinstance(v, str) or not v.strip() for k, v in back.items()):
+        raise Stop('app/features/compare_rule.py: hold_back은 {뒤에 보일 후보 ID: 까닭 글}을 돌려줘야 합니다. 받은 후보에 없는 ID나 빈 까닭이 있습니다.')
+    return back
 
 
-def cases_view(previous):
-    gap = T.load_function(HERE, T.GAP_FILE, 'fan_hours_when_gap')
-    cmp_ = T.load_function(HERE, T.COMPARE_FILE, 'choose_compared')
-    res = T.run(HERE, T.pick(HERE, 'condition_table.csv'), gap, cmp_, T.load_choices(HERE), '')
-    groups = C.load_table(T.pick(HERE, 'condition_table.csv'))
-    thresholds = sorted({(r['input'], float(r['value'])) for r in C.read_csv(T.pick(HERE, 'condition_table.csv')) if r['input'] in C.NUMERIC})
-    near = []
-    for name, v in thresholds:
-        vals = sorted({c['inputs'][name] for e in res['events'] for c in e['candidates'] if c['inputs'][name] is not None})
-        below = [x for x in vals if x < v][-1:]
-        above = [x for x in vals if x > v][:1]
-        for x in [*below, *([v] if v in vals else []), *above]:
-            hits = [f"{e['id']} {c['sop']}" for e in res['events'] for c in e['candidates'] if c['inputs'][name] == x]
-            near.append([LABEL.get(name, name), num(v), num(x), ', '.join(hits[:6]) + (' …' if len(hits) > 6 else '')])
-    allx = [e['id'] for e in res['events'] if all(c['status'] == '제외' for c in e['candidates'])]
-    ids = lambda hs: ' · '.join(h['rule_id'] for h in hs) or '—'
-    per = [[e['id'], c['sop'], c['status'], ids(c['warnings']), ids(c['penalties']), ids(c['exclusions']), ids(c['unknown']),
-            ' · '.join(f"{m}({c['missing_reasons'].get(m, '')})" for m in sorted({m for u in c['unknown'] for m in u['missing']})) or '—']
-           for e in res['events'] for c in e['candidates']]
-    out = [table('후보마다 판정 내용 — 사례 종류를 고를 때 거르기 칸에 경보 ID · 규칙 ID · 판정 낱말을 넣습니다',
-                 ['경보', '후보', '판정', '경고', '감점', '제외', '미확인', '빠진 입력(까닭)'], per),
-           table('조건표 기준값마다 같은 값 · 바로 아래 · 바로 위의 후보(사실)', ['입력', '기준값', '값', '경보 · 후보'], near),
-           note('모든 후보가 제외된 경보: ' + (', '.join(allx) or '없음')),
-           against_expected('기대 판정 ↔ 판정', {(e['id'], c['sop']): c['status'] for e in res['events'] for c in e['candidates']})]
-    if REVIEW and (HERE/'output/action_review.md').is_file():
-        md = (HERE/'output/action_review.md').read_text(encoding='utf-8')
-        first = INCIDENT
-        if first and f'## {first}' in md:
-            part = f'## {first}' + md.split(f'## {first}', 1)[1].split('\n## ', 1)[0]
-            out.append(table(f'action_review.md — {first} 절', ['줄'], [[x] for x in part.splitlines() if x.strip()]))
-    return out
+def order(totals, back):
+    """내줄 차례 — 뒤로 미루지 않은 후보를 비교값이 작은 차례로, 그 뒤에 미룬 후보를 비교값이 작은 차례로."""
+    return sorted(totals, key=lambda s: (s in back, totals[s], s))
 
 
+def compared():
+    """판정에 비교값 · 순위와 내줄 차례를 더한다. 허용된 후보는 경고나 감점이 붙어도 모두 견준다."""
+    decision(ORDER_POINT)
+    doc, rules, alarms = load()
+    events = judged(doc, rules, alarms)
+    loaded = C.load()
+    for e in events:
+        totals = {}
+        for j in e['candidates']:
+            j['comparison'], j['not_compared'], j['rank'], j['held_back'] = None, None, None, None
+            if j['status'] != '허용':
+                continue
+            values, missing = C.losses(j['sop'], e['row'], sum(h['penalty'] for h in j['hits'] if h['result'] == '감점'), loaded)
+            if values is None:
+                j['not_compared'] = '값이 없는 칸: ' + ' · '.join(missing)
+            else:
+                j['comparison'] = values
+                totals[j['sop']] = values['비교값']
+        by = {j['sop']: j for j in e['candidates']}
+        for sop, rank in C.ranked(totals).items():
+            by[sop]['rank'] = rank
+        kept = [{'sop': s, 'warnings': [h['rule_id'] for h in by[s]['hits'] if h['result'] == '경고'] + [u['rule_id'] for u in by[s]['unknown'] if u['result'] == '경고'],
+                 'penalties': [h['rule_id'] for h in by[s]['hits'] if h['result'] == '감점']} for s in totals]
+        back = held(kept) if kept else {}
+        for sop, why in back.items():
+            by[sop]['held_back'] = why
+        e['order'] = order(totals, back)
+        e['top'] = e['order'][:1]
+    return doc, events
 
-def short(j):
-    # 판정 한 칸 — 「제외(R1 · 미확인 R4)」 · 「유지(경고 R3 · 감점 R2)」. 판정과 같은 이름의 사유 낱말은 되풀이하지 않는다.
-    parts = [('' if k == j['status'] else k + ' ') + ','.join(h['rule_id'] for h in j[key]) for k, key in (('경고', 'warnings'), ('감점', 'penalties'), ('제외', 'exclusions')) if j[key]]
-    if j['unknown']:
-        parts.append('미확인 ' + ','.join(u['rule_id'] for u in j['unknown']))
-    return j['status'] + ('(' + ' · '.join(parts) + ')' if parts else '')
 
-INCIDENT = 'ALT-hyd02-0172-54a5'
-LABEL = {'forecast_ts1': '조치 후 예측 유온(℃)', 'forecast_ps1': '조치 후 예측 토출 압력(bar)', 'fan100_hours': '팬 100 % 연속 시간(h)'}
+def compare_view(_):
+    doc, events = compared()
+    name = {s['id']: s['name'] for s in doc['sops']}
+    rows, tops = [], []
+    for e in events:
+        rid = e['row']['경보_ID']
+        by = {j['sop']: j for j in e['candidates']}
+        for j in e['candidates']:
+            c = j['comparison']
+            place = e['order'].index(j['sop']) + 1 if j['sop'] in e['order'] else ''
+            rows.append([rid, j['sop'], R.short(j), *([f'{c[k]:.2f}' for k in (*C.PARTS, '비교값')] if c else [''] * 6), j['rank'] or '', place, j['held_back'] or j['not_compared'] or ''])
+        tops.append([rid, e['row']['설비'], e['row']['팬100_연속_h'], ' · '.join(f'{s} {name[s]}' for s in e['top']) or '없음',
+                     ' · '.join(R.short(by[s]) for s in e['top']), ' · '.join(s for s in e['order'] if by[s]['held_back']) or '-'])
+    return [table('경보마다 1순위로 내줄 후보', ['경보', '설비', '팬100_연속_h', '1순위', '1순위의 판정', '뒤로 미룬 후보'], tops,
+                  note='1순위는 내가 정한 기준으로 맨 앞에 내주는 후보입니다. 실행 승인이 아닙니다. 팬100_연속_h가 0보다 크면 그 설비는 팬이 이미 100 %로 돌고 있습니다.'),
+            table('후보마다 비교값(만 원)과 순위', ['경보', '후보', '판정', *C.PARTS, '비교값', '비교값 순위', '내줄 차례', '뒤로 미룬 까닭 · 견주지 못한 까닭'], rows)]
 
 
-def keep_previous(fn):
-    """개수 칸 옆에 직전 실행(output/result.json)의 같은 이름 값을 붙인다 — 결정을 바꾼 뒤 무엇이 바뀌었는지 본다."""
-    def run(previous):
-        blocks = fn(previous)
-        p = HERE/'output/result.json'
-        try:
-            before = json.loads(p.read_text(encoding='utf-8')).get('blocks', []) if p.is_file() else []
-        except ValueError:
-            before = []
-        old = {(b.get('title'), k): v for b in before if b.get('kind') == 'counts' for k, v in b.get('items', [])}
-        for b in blocks:
-            if b['kind'] == 'counts':
-                b['items'] = [(k, v if (b['title'], k) not in old or str(old[(b['title'], k)]).split(' ')[0] == str(v) else f"{v} (직전 실행 {str(old[(b['title'], k)]).split(' ')[0]})")
-                              for k, v in b['items']]
-        return blocks
-    return run
+def view(e):
+    return {'id': e['row']['경보_ID'], 'asset': e['row']['설비'],
+            'candidates': [{'sop': j['sop'], 'status': j['status'], 'hits': j['hits'], 'unknown': j['unknown'], 'comparison': j['comparison'],
+                            'not_compared': j['not_compared'], 'rank': j['rank'], 'held_back': j['held_back']} for j in e['candidates']],
+            'not_candidates': e['not_candidates'], 'order': e['order'], 'top': e['top']}
+
+
+def write(_):
+    statement = decision(STATEMENT_POINT)
+    doc, events = compared()
+    out = {'criteria': rel(criteria_dir()), 'decisions': {ORDER_POINT: decision(ORDER_POINT)['고른_것'], STATEMENT_POINT: statement['고른_것']},
+           'events': [view(e) for e in events]}
+    OUTPUT.mkdir(exist_ok=True)
+    (OUTPUT / 'judgement.json').write_text(json.dumps(out, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
+    with_top = sum(1 for e in events if e['top'])
+    return [note('비교 기준 문장: ' + statement['고른_것']),
+            counts('output/judgement.json에 쓴 것', [('경보', len(events)), ('1순위가 있는 경보', with_top), ('1순위가 없는 경보', len(events) - with_top)]),
+            note('output/judgement.json을 썼습니다. 1순위는 내가 정한 기준으로 맨 앞에 내주는 후보이고 실행 승인이 아닙니다.')]
+
+
+def cases_view(_):
+    exp = expected_rows()
+    if not exp:
+        raise Blank('app/features/expected.csv에 기대 판정이 아직 없습니다.')
+    doc, rules, alarms = load()
+    actual = verdict_rows(judged(doc, rules, alarms))
+    keys = {f'{r["사례"]} / {r["후보"]}' for r in exp}
+    seen = collections.Counter(k for k, _ in {(r['사례_종류'], r['사례']) for r in exp})
+    return [compare('사례 대조 — 기대 ↔ 판정', '사례 / 후보', [{'사례 / 후보': f'{r["사례"]} / {r["후보"]}', '판정': r['기대_판정'], '규칙': R.norm_ids(r['기대_규칙'])} for r in exp],
+                    [a for a in actual if a['사례 / 후보'] in keys], ['판정', '규칙'],
+                    note='규칙 칸은 그 후보에 걸린 규칙 이름입니다(맞은 규칙과 확인되지 않은 조건으로 남은 규칙). 판정이 같아도 걸린 규칙이 다르면 다름입니다.'),
+            table('대조한 줄의 판정 이유', ['사례 종류', '사례 / 후보', '판정'],
+                  [[r['사례_종류'], f'{r["사례"]} / {r["후보"]}', next(a['판정_상세'] for a in actual if a['사례 / 후보'] == f'{r["사례"]} / {r["후보"]}')] for r in exp]),
+            counts('사례 종류마다 대조한 경보 수', [(k, seen[k]) for k in KINDS])]
+
+
+def check(_):
+    p = subprocess.run([sys.executable, '-m', 'app.utils.check'], cwd=HERE, capture_output=True, text=True, encoding='utf-8')
+    text = (p.stdout + p.stderr).strip()
+    if p.returncode:
+        raise Stop(text)
+    return [note(text)]
 
 
 COMMANDS = {
-    'sources': ('판정 요청 직전 원천 기록', guarded(keep_previous(overview))),
-    'expected': ('기대 판정', guarded(keep_previous(expected_view))),
-    'inputs': ('끊긴 카운터 기록과 판정', guarded(keep_previous(inputs_view))),
-    'compare': ('견줄 후보와 순위', guarded(keep_previous(compare_view))),
-    'write': ('비교 기준 문장과 결과 파일', guarded(keep_previous(written))),
-    'cases': ('사례 대조', guarded(keep_previous(cases_view))),
-    'check': ('구조 검사', guarded(keep_previous(run_check))),
+    'sources': ('받은 자료', sources),
+    'expected': ('기대 판정', expected),
+    'judge': ('후보 선택과 판정', judge_view),
+    'compare': ('비교값과 내줄 차례', compare_view),
+    'write': ('비교 기준 문장과 결과 파일', write),
+    'cases': ('사례 대조', cases_view),
+    'check': ('구조 검사', check),
 }

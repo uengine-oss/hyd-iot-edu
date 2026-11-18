@@ -1,5 +1,8 @@
 """냉각 경보 조치 판단 네 랩을 새 프로젝트 구조(코딩랩.md K-5~K-7)로 만든다 — 지정한 랩 하나만, 다른 랩 · 강사 참조는 다시 만들지 않는다.
 
+통합반 03회차 두 랩(criteria · judge)은 build_session3_lab.py가 만든다(v5-lab — 실습 랩 규모, 2회차 v31 설비 모델). 이 파일의 아래 경로는 실전반 두 랩(conditions · review)의 것이고,
+통합반 키로 남은 정의는 실전반 랩을 통합반 생성기로 옮길 때까지 강사 참조 시험(reference/session3/project_trials.py)의 옛 구조 대조가 읽는다.
+
 통합반 03회차 실습2 action-criteria-lab · 실습3 judgement-lab, 실전반 02회차 실습5 condition-table-lab · 03회차 실습2 action-review-lab.
 판단 · 자료 · 난도는 기존 생성기(build_judgement_labs.py)의 정의를 그대로 쓴다: 그 랩 정의 · 원자료 코어(data_conditions.py) · 강사 검증 판(reference/session3/criteria.py) ·
 제공 코드(judgement_tools/) · 검사기 · 결과 화면 함수를 임시 폴더의 기존 구조로 한 번 만든 뒤, 경로 · 파일 이름만 영어로 바꿔(convert) 프로젝트로 옮긴다.
@@ -398,6 +401,9 @@ def main():
     dest.add_argument('--apply', action='store_true', help='검증 사본을 만든 뒤 그 랩 하나만 정본 자리에 바꿔 끼우고 등록')
     parser.add_argument('--completed', action='store_true')
     args = parser.parse_args()
+    if args.lab in ('criteria', 'judge'):     # 통합반 두 랩은 실습 랩 규모로 다시 만든 새 생성기(v5-lab)가 만든다
+        import build_session3_lab
+        return build_session3_lab.generate(args.lab, dest=args.dest, apply=args.apply, with_completed=args.completed)
     key = KEYS[args.lab]
     files, _ = DC.build()
     WORK.mkdir(parents=True, exist_ok=True)

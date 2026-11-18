@@ -3,6 +3,8 @@
 판정(한 기능을 여기 한 곳에서):
 - 갈래 A · B · C · E마다 만든 모델(output/graph.json) 전체를 생성 정답 구조(data_session2.TRUTH → verify_reference.expected)와 견준다.
 - 갈래마다 결과 화면의 대조(기대 답 ↔ 모델에 물은 답)가 줄마다 같음이고, 결정 지점마다 갈래가 다르면 그 질문의 답이 실제로 다르다.
+- 식별자 틀을 달리한 사본(갈래 E에 session2_answers.OTHER_IDS — 설비 · 부품에 머리를 붙이고 센서 · 구성 요소의 꼴을 바꿈)도 같은 기대 답(설비 코드 · 품번으로 묻는 줄)과
+  줄마다 같음이고 그 답이 갈래 E와 같으며, 모델을 설비 코드 · 사내 품번 · 태그로 되짚으면 생성 정답 구조와 같다. 질문 1의 항목을 원자료 이름으로 적어도 다른 이름으로 찾아 같음이다.
 - 빈 틀을 일부러 망가뜨리면(카디널리티 · 지난 실물 · 물리량 이름 · 빈 결정 · 처리 안 한 철거 줄 · 한 물리량에 섞인 단위) 제공 코드가 그 줄을 짚고 멈추고,
   교체부품 칸의 표기를 교차표에 없는 글로 바꾸면 잇지 않고 화면에 보인다. 모델을 망가뜨리면(ID 중복 · 끝점 없음 · 관계 방향) 구조 검사가 잡는다.
 - 학생 ZIP과 완성본 ZIP을 새 폴더에 풀어 첫 명령과 재실행이 된다.
@@ -108,6 +110,8 @@ def ontology(starter, work):
         answers[branch] = {r['key']: r['cells'][0][1] for r in rows}
         records.append({'branch': branch, 'policy': B.policy(branch)[2:], 'nodes': len(graph['nodes']), 'relations': len(graph['rels']),
                         'model_equals_truth': True, 'repeat_equal': True, 'answers_same_rows': len(rows), 'answers': answers[branch]})
+        if branch == 'E':
+            records.append(other_identifiers(starter, work, answers['E'], exp))
         if branch == 'A':
             records += field_damage(new, files)
             for label in ('duplicate-id', 'missing-endpoint', 'reverse-direction'):
@@ -134,6 +138,61 @@ def ontology(starter, work):
                 assert changed, (point, x, y, '갈래가 달라도 답이 같음')
                 records.append({'decision': point, 'branches': [x, y], 'changed_answers': {k: [answers[x].get(k), answers[y].get(k)] for k in changed}})
     return records
+
+
+def standard_ids(graph):
+    """식별자 틀을 달리한 모델을 설비 코드 · 사내 품번 · 설비코드:태그로 되짚은 사본 — 식별자의 꼴과 상관없이 같은 대상 · 같은 연결인지 model_answers로 견주려고."""
+    label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
+    props = {n['props']['id']: n['props'] for n in graph['nodes']}
+    owner = {r['b']: r['a'] for r in graph['rels'] if r['type'] == 'HAS_COMPONENT'}
+    place = {r['b']: r['a'] for r in graph['rels'] if r['type'] == 'MONITORED_BY'}
+    new = {}
+    for i, l in label.items():
+        if l == 'Asset':
+            new[i] = props[i]['code']
+        elif l == 'Part':
+            new[i] = props[i]['part_no']
+        elif l == 'Sensor':
+            new[i] = f"{props[owner[place[i]]]['code']}:{props[i]['tag']}"
+    assert len(set(new.values())) == len(new), '되짚은 식별자가 겹침'
+    out = copy.deepcopy(graph)
+    for n in out['nodes']:
+        n['props']['id'] = new.get(n['props']['id'], n['props']['id'])
+    for r in out['rels']:
+        r['a'], r['b'] = new.get(r['a'], r['a']), new.get(r['b'], r['b'])
+    return out
+
+
+def other_identifiers(starter, work, same_as, exp):
+    """식별자 틀을 달리한 사본 — 갈래 E의 판단 그대로, 식별자만 다른 꼴로 짓는다. 기대 답은 갈래 E의 것(설비 코드 · 품번으로 묻는 줄)을 그대로 쓰되
+    교체 이력이 있는 구성 요소 자리의 항목은 그 설비의 원자료 이름으로 적는다(학생이 원자료 이름으로 적는 길)."""
+    branch = 'E'
+    new = work / 'new-other-ids'
+    shutil.copytree(starter, new, ignore=shutil.ignore_patterns('__pycache__', 'output'))
+    files = A.integrated_design(branch, ids=A.OTHER_IDS)
+    files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen(branch))
+    (_, _, removed), = A.removed_rows()
+    canon = B.CANON_NAME[D.REMOVED_PUMP[1]] + ' 실물'
+    text = B.expect_design_text(branch)
+    assert text.count(',' + canon + ',') == 1 and removed['구성요소'] + ' 실물' != canon, (canon, removed['구성요소'])
+    files['결과/기대_답.csv'] = text.replace(',' + canon + ',', ',' + removed['구성요소'] + ' 실물,')
+    put(new, files, True)
+    for action in ACTIONS:
+        (work / f'other-ids-{action}.txt').write_text(command(new, 'run.py', action, '--no-open'), encoding='utf-8')
+    graph = json.loads((new / 'output/graph.json').read_text(encoding='utf-8'))
+    ids = {n['props']['id'] for n in graph['nodes']}
+    assert all(n['props']['id'] != n['props']['code'] for n in graph['nodes'] if n['labels'] == ['Asset']), '설비 식별자가 설비 코드와 같음 — 틀이 달라지지 않음'
+    assert not ids & {'HYD-01', 'P-PMP-SEAL', 'HYD-01:TS1'}, sorted(ids)[:5]
+    got, _ = model_answers(branch, standard_ids(graph))
+    gap = V.diff({k: exp[k] for k in got}, got)
+    assert not gap, ('other-ids', gap)
+    rows = [r for block in blocks(new, 'query') if block['kind'] == 'compare' for r in block['rows']]
+    assert rows and all(r['state'] == '같음' for r in rows), [r for r in rows if r['state'] != '같음']
+    answers = {r['key']: r['cells'][0][1] for r in rows}
+    assert answers == same_as, {k: (answers.get(k), same_as.get(k)) for k in set(answers) | set(same_as) if answers.get(k) != same_as.get(k)}
+    command(new, 'run.py', 'check', '--no-open')
+    return {'other_identifiers': A.OTHER_IDS, 'policy': B.policy(branch)[2:], 'model_equals_truth_by_field_values': True, 'answers_same_rows': len(rows),
+            'answers_equal_branch': branch, 'item_written_with_raw_name': removed['구성요소'] + ' 실물', 'check': 'pass'}
 
 
 def field_damage(folder, files):
@@ -195,7 +254,12 @@ def fresh_packages(starter, work):
     # 받은 그대로는 빈 틀이 비어 있어, 모델을 만드는 기능이 채울 파일을 짚고 멈춘다(빈 틀을 실행된 것처럼 보이지 않는다)
     stopped = command(folder, 'run.py', 'names', '--no-open', ok=False)
     assert 'app/features/design.csv' in stopped, stopped[-400:]
-    records.append({'fresh_starter': True, 'first_command': 'python run.py --no-open', 'actual_blocks': len(data['blocks']), 'blank_feature_stops': True})
+    # 모델을 만들기 전에 질문별 대조를 실행하면 만들 명령을 대고 멈춘다(파이썬 원문 오류 · 학생 PC의 절대 경로가 화면에 남지 않는다)
+    early = command(folder, 'run.py', 'query', '--no-open', ok=False)
+    assert '아직 모델이 없습니다' in early and 'python run.py parts' in early, early[-400:]
+    assert 'Errno' not in early and str(work.anchor) not in early and str(folder.parent.name) not in early, early[-400:]
+    assert not (folder / 'app/features/name_rules.py').exists(), '구성 요소 이름 맞추기는 제공 코드가 한다 — 학생 빈 틀이 남아 있음'
+    records.append({'fresh_starter': True, 'first_command': 'python run.py --no-open', 'actual_blocks': len(data['blocks']), 'blank_feature_stops': True, 'query_before_model_stops_with_next_command': True})
     archive = starter.parent / (starter.name + '-completed.zip')
     if archive.exists():
         with zipfile.ZipFile(archive) as z:

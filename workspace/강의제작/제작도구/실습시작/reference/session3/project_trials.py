@@ -1,12 +1,11 @@
-"""새 프로젝트 구조(build_session3_projects.py)의 냉각 경보 조치 판단 네 랩 — 강사 참조 갈래 · 랩 사슬 · 검사기 고의 손상 · 완성본 새 폴더 실행 · 옛 판 대조. 학생 ZIP에 넣지 않는다.
+"""냉각 경보 조치 판단 네 랩의 강사 참조 시험 — 갈래 실행 · 랩 사슬 · 검사기 고의 손상 · 완성본 새 폴더 실행. 학생 ZIP에 넣지 않는다.
 
-사용: HYD_MAIN_ROOT=<main 체크아웃> python project_trials.py <네 프로젝트가 든 --dest 폴더> --out <판정 폴더>
-기준은 기존 강사 참조와 같다: 같은 생성기 정의로 임시 폴더에 기존 구조 랩을 만들고, 같은 갈래를 기존 엔진(criteria.py · judge_actions.py · 기존 제공 코드)과
-새 프로젝트의 학생 경로(app/features 채움 → python run.py <기능>)로 각각 돌려, 경로 · 파일 이름 변환 말고는 결과가 같은지 본다.
-1. 옛 판 대조: 원자료 · 빈 틀 · 제공 코드 · 검사기 본문이 기존 정의를 변환한 것과 같은 바이트인가, 설비 모델이 통합02 그래프 랩 제공 모델과 같은 바이트인가.
-2. 조치 기준 갈래 6(지점1 × 지점2) · 조건표 갈래 3: SOP 구조의 뜻(run_reference.sop_meaning)과 사례 판정이 기존 엔진과 같은가, 검사기가 통과시키는가.
-3. 판정 갈래 4(지점3 × 지점4) × 두 랩: output/judgement.json · action_review.json · .md가 judge_actions.py 출력의 변환과 같은 바이트인가. 랩 사슬(조건 랩 갈래 → 내 입력).
-4. 검사기 고의 손상(ID 중복 · 끝점 없음 · 관계 방향 · 계약 어긋남, 내 입력 포함). 5. 완성본을 새 폴더에 풀어 다시 실행. 6. 학생 폴더 경계 · 가이드 명령 · 토글.
+사용: HYD_MAIN_ROOT=<main 체크아웃> python project_trials.py <네 프로젝트와 완성본이 든 --dest 폴더> --out <판정 폴더>
+통합반 두 랩(action-criteria-lab · judgement-lab, v5-lab — build_session3_lab.py)의 판정은 lab_trials.py에 있다: 제공 설비 모델 바이트 대조, 적용 범위 · 견줄 후보 갈래마다
+학생 경로로 실행해 손으로 정한 기대 판정 · 1위와 견주고 갈래마다 답과 다음 행동이 달라지는지, 빈 결정 줄에서 멈추는지, 랩 사슬, 검사기 고의 손상, 완성본 새 폴더 실행, 경계 · 가이드.
+실전반 두 랩(condition-table-lab · action-review-lab)의 판정은 이 파일의 옛 구조 대조 그대로다: 같은 생성기 정의로 임시 폴더에 기존 구조 랩을 만들고, 같은 갈래를
+기존 엔진(criteria.py · judge_actions.py · 기존 제공 코드)과 새 프로젝트의 학생 경로로 각각 돌려 경로 · 파일 이름 변환 말고는 결과가 같은지 본다
+(옛 판 대조 · 조건표 갈래 3 · 판정 갈래 4 · 랩 사슬 · 검사기 고의 손상 · 완성본 새 폴더 · 경계와 가이드).
 어긋나면 「불일치」 줄을 찍고 종료 코드 1 — 결과를 맞추지 말고 원인을 고친다.
 """
 from __future__ import annotations
@@ -38,6 +37,7 @@ _ns = {}
 exec(N.SHORT_SRC, _ns)
 short = _ns['short']          # 새 결과 화면의 판정 한 칸 표기(기존 condition_tools.short의 뜻 그대로, 사유 낱말 겹침만 뺌)
 CANDIDATES = ['SOP-COOL-11', 'SOP-COOL-12', 'SOP-COOL-13', 'SOP-COOL-14']
+PRACTICAL = {k: v for k, v in N.PROJECT.items() if k.startswith('practical')}   # 옛 구조 대조는 실전반 두 랩만
 
 
 def fail(msg):
@@ -132,54 +132,11 @@ def parity(dest, olds, files):
         r['검사기 본문'] = {'기존 본문 변환이 새 check.py에 그대로 있음': body in (folder/'app/utils/check.py').read_text(encoding='utf-8'), '본문 줄 수': len(body.splitlines())}
         if not r['검사기 본문']['기존 본문 변환이 새 check.py에 그대로 있음']:
             fail(f'{folder.name}: 검사기 본문이 기존 알고리즘의 변환과 다름')
-        if key == 'integrated-03-criteria':
-            graph_lab = N.F.OUT/'통합반/실습/02회차/랩/graph-lab/data/model'
-            r['설비 모델'] = {n: {'sha256': sha((folder/'data/model'/n).read_bytes())[:16],
-                                 '통합02 graph-lab 제공 모델과 같은 바이트': (graph_lab/n).is_file() and (graph_lab/n).read_bytes() == (folder/'data/model'/n).read_bytes()}
-                             for n in ('schema.json', 'graph.json')}
-            old_graph = json.loads((old/'입력/graph.json').read_text(encoding='utf-8'))
-            r['설비 모델']['기존 입력/graph.json과 노드 · 관계 수'] = [len(old_graph['nodes']), len(old_graph['rels'])]
     report['옛_판_대조'] = rec
 
 
 # ───────────── 2. 조치 기준 · 조건표 갈래 ─────────────
 def criteria_branches(dest, olds, tmp):
-    key = 'integrated-03-criteria'
-    conv, starter, (old0, _) = N.converter(key), dest/N.PROJECT[key], olds[key]
-    rec = {}
-    for p1 in CR.P1:
-        for p2 in CR.P2:
-            name = f'{p1}-{p2}'
-            raw = {'결과/조건_분류.csv': CR.csv_text(CR.CLASS_HEADER, CR.classify_rows(p2)), '결과/관계.csv': CR.csv_text(CR.REL_HEADER, CR.relation_rows()),
-                   '결과/설비_연결_기준.csv': CR.csv_text(CR.LINK_HEADER, CR.link_rows(p1)), '결과/조건표.csv': CR.table_csv(p2)}
-            new = fresh(starter, tmp, f'criteria_{name}')
-            old = Path(tmp)/f'criteria_old_{name}'/old0.name
-            shutil.copytree(old0, old)
-            for rel, text in raw.items():
-                write(new/conv(rel), conv(text))
-                write(old/rel, text)
-            feature(new, 'classify')
-            got = RR.sop_meaning(json.loads((new/'output/sop.json').read_text(encoding='utf-8')))
-            want = RR.sop_meaning(json.loads(conv(json.dumps(CR.sop_doc(p1, p2), ensure_ascii=False))))
-            diff = [k for k in want if got.get(k) != want[k]]
-            if diff:
-                fail(f'조치 기준 갈래 {name}: 새 sop.json의 뜻이 criteria.sop_doc과 다름 {diff}')
-            blocks = feature(new, 'provenance')
-            doc, _, _ = SOP.build(old)
-            by = {s['id']: s for s in doc['sops']}
-            kinds = {c: (by[c]['kind'], by[c]['codes']) if c in by else (None, []) for c in CANDIDATES}
-            want_rows = [[c, s, conv(short(v))] for (c, s), v in cases_judged(old, kinds).items()]
-            got_rows = table_rows(blocks, '사례 · 후보마다 판정')
-            if got_rows != want_rows:
-                fail(f'조치 기준 갈래 {name}: 사례 판정이 기존 엔진과 다름 {[(a, b) for a, b in zip(got_rows, want_rows) if a != b][:3]}')
-            code, out = check(new)
-            if code:
-                fail(f'조치 기준 갈래 {name}: 검사기 exit {code}\n{out[:1500]}')
-            st = [r[2].split(' ')[0] for r in got_rows]
-            rec[name] = {'sop 뜻 다름': diff, '사례 판정 기존과 같음': got_rows == want_rows, '판정 수': {w: sum(x.startswith(w) for x in st) for w in ('유지', '제외', '보류')},
-                         '검사기': f'exit {code}'}
-    report['조치_기준_갈래'] = rec
-
     key = 'practical-02-conditions'
     conv, starter, (old0, _) = N.converter(key), dest/N.PROJECT[key], olds[key]
     rec = {}
@@ -218,7 +175,7 @@ def judge_branches(dest, olds, tmp):
     sop_doc = json.loads(CR.sop_json(*CR.BASE))
     for pol in RR.POLICIES:
         name = '-'.join(pol)
-        for key, cmd in (('integrated-03-judge', 'write'), ('practical-03-review', 'compare')):
+        for key, cmd in (('practical-03-review', 'compare'),):
             conv, starter, (old, _) = N.converter(key), dest/N.PROJECT[key], olds[key]
             res = J.run(old, policy=RR.jp(pol))
             new = fresh(starter, tmp, f'{key}_{name}')
@@ -244,7 +201,7 @@ def judge_branches(dest, olds, tmp):
 
 def chain(dest, olds, tmp):
     rec = {}
-    pairs = [('integrated-03-judge', p1, p2) for p1 in CR.P1 for p2 in CR.P2] + [('practical-03-review', None, p2) for p2 in CR.P2]
+    pairs = [('practical-03-review', None, p2) for p2 in CR.P2]
     for key, p1, p2 in pairs:
         conv, starter, (old0, _) = N.converter(key), dest/N.PROJECT[key], olds[key]
         name = f'{p1}-{p2}' if p1 else p2
@@ -292,40 +249,12 @@ def edit_csv(path, fn):
     path.write_text(''.join(head) + buf.getvalue(), encoding='utf-8')
 
 
-def swap_first(d, kind):
-    r = next(r for r in d['relations'] if r['type'] == kind)
-    r['from'], r['to'] = r['to'], r['from']
-
-
-def first_kept(d):
-    return next(c for e in d['events'] for c in e['candidates'] if c.get('comparison'))
-
-
 def damages():
-    def cut_node(path):
-        def fn(d):
-            d['nodes'] = [n for n in d['nodes'] if n['props']['id'] != 'HYD-01:fan']
-        return fn
     return {
-        'action-criteria-lab': [
-            ('고장 유형 ID 중복', lambda f: edit_json(f/'output/sop.json', lambda d: d['failure_modes'].append(dict(d['failure_modes'][0]))), '번 있습니다'),
-            ('SOP ID 중복', lambda f: edit_json(f/'output/sop.json', lambda d: d['sops'].append(copy.deepcopy(d['sops'][0]))), '1번이어야 합니다'),
-            ('관계 끝점 없음', lambda f: edit_json(f/'output/sop.json', lambda d: d['relations'][0].update(to='cause:none')), '에 없습니다'),
-            ('관계 방향 거꾸로', lambda f: edit_json(f/'output/sop.json', lambda d: swap_first(d, 'MITIGATED_BY')), '시작'),
-            ('모델에 없는 ID', lambda f: edit_json(f/'output/sop.json', lambda d: d['sops'][0]['model_refs']['assets'].append('HYD-99')), '모델에 없는 ID'),
-            ('조건표 경계 표시 어긋남', lambda f: edit_csv(f/'app/features/condition_table.csv', lambda rs: [rs[0]] + [[*r[:8], '아니오' if r[5] in ('>=', '<=') else r[8], *r[9:]] for r in rs[1:]]), 'boundary_included'),
-            ('내 모델에서 쓰인 ID가 빠짐', lambda f: (shutil.copytree(f/'data/model', f/'app/features/model'), edit_json(f/'app/features/model/graph.json', cut_node(None))), '모델에 없는 ID HYD-01:fan'),
-        ],
         'condition-table-lab': [
             ('승인 후보 중복', lambda f: edit_csv(f/'app/features/approvals.csv', lambda rs: rs + [rs[1]]), '두 줄 이상'),
             ('계약에 없는 입력', lambda f: edit_csv(f/'app/features/condition_table.csv', lambda rs: [rs[0], [*rs[1][:4], 'forecast_ts9', *rs[1][5:]], *rs[2:]]), '계약에 없는 input'),
             ('조건표 경계 표시 어긋남', lambda f: edit_csv(f/'app/features/condition_table.csv', lambda rs: [rs[0]] + [[*r[:8], '아니오' if r[5] in ('>=', '<=') else r[8], *r[9:]] for r in rs[1:]]), 'boundary_included'),
-        ],
-        'judgement-lab': [
-            ('경보 중복', lambda f: edit_json(f/'output/judgement.json', lambda d: d['events'].append(copy.deepcopy(d['events'][0]))), 'RAISE 행과 사례'),
-            ('후보 순서 바뀜', lambda f: edit_json(f/'output/judgement.json', lambda d: d['events'][0]['candidates'].reverse()), '후보 목록 · 순서'),
-            ('합계 어긋남', lambda f: edit_json(f/'output/judgement.json', lambda d: first_kept(d)['comparison'].update(total=first_kept(d)['comparison']['total'] + 5)), '합계 total'),
-            ('내 조건표의 규칙 이름이 다름', lambda f: write(f/'app/features/criteria/condition_table.csv', (f/'data/criteria/condition_table.csv').read_text(encoding='utf-8').replace('R1,', 'R1x,')), '기준 조건표에 없는 규칙'),
         ],
         'action-review-lab': [
             ('경보 절 제목 없음', lambda f: write(f/'output/action_review.md', re.sub(r'^## .*$', '## 절', (f/'output/action_review.md').read_text(encoding='utf-8'), flags=re.M)), '절 제목이 없습니다'),
@@ -358,7 +287,7 @@ def checker_trials(done, tmp):
 # ───────────── 5. 완성본 새 폴더 실행 ─────────────
 def completed_runs(dest, tmp):
     done, rec = {}, {}
-    for key, project in N.PROJECT.items():
+    for key, project in PRACTICAL.items():
         archive = dest/(project + '-completed.zip')
         target = Path(tmp)/'completed_fresh'
         with zipfile.ZipFile(archive) as z:
@@ -392,7 +321,7 @@ def completed_runs(dest, tmp):
 # ───────────── 6. 학생 폴더 경계 · 가이드 · 사람 분 ─────────────
 def boundary_and_guide(dest, olds):
     rec = {}
-    for key, project in N.PROJECT.items():
+    for key, project in PRACTICAL.items():
         folder, r = dest/project, {}
         hits = []
         for p in sorted(folder.rglob('*')):
@@ -447,7 +376,7 @@ def main():
     with tempfile.TemporaryDirectory(dir=N.WORK, prefix='trials-') as tmp:
         tmp = Path(tmp)
         olds = {}
-        for key in N.PROJECT:
+        for key in PRACTICAL:
             old = tmp/'old'/BJ.LABS[key].name
             olds[key] = (old, N.old_lab(key, files, old))
         parity(dest, olds, files)
@@ -457,6 +386,8 @@ def main():
         done = completed_runs(dest, tmp)
         checker_trials(done, tmp)
         boundary_and_guide(dest, olds)
+        import lab_trials
+        lab_trials.run_all(dest, tmp, fail, report)
     report['불일치'] = failures
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out/'project_trials.json').write_text(json.dumps(report, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')

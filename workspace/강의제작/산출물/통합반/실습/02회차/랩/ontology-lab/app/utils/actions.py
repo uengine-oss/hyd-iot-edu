@@ -120,7 +120,7 @@ def design(previous):
                    note='카디널리티는 시작 쪽 수:끝 쪽 수이고 1은 많아야 하나입니다. 만든 연결이 적은 수를 넘으면 그 단계에서 멈추고 relations.csv 줄과 원자료 줄을 짚습니다.')]
     out.append(R.counts('원자료 행마다 내 식별자를 지으면 — 서로 다른 식별자 수', [(k, v['개수']) for k, v in prev.items()]))
     clash = [(k, i, ', '.join(f"{v['파일']}:{n}" for n in lines)) for k, v in prev.items() for i, lines in v['겹침'].items()]
-    out.append(R.table('식별자가 겹치는 원자료 행(이름 묶기 전)', ['대상', '식별자', '행'], clash,
+    out.append(R.table('식별자가 겹치는 원자료 행(이름을 맞추기 전)', ['대상', '식별자', '행'], clash,
                        note='겹친 식별자 하나는 대상 하나가 됩니다. 같은 대상의 겹침인지, 다른 대상을 한 식별자로 짓는 것인지는 그 원자료 줄로 봅니다.'))
     return out
 
@@ -129,10 +129,11 @@ def names(previous):
     info, _ = guarded(M.build, '이름')
     rows = [(code, made_from, made) for code, (made_from, made) in info['구성 요소'].items()]
     n = info['이름']
-    out = [R.table('내 규칙(same_device · group_name)으로 묶인 이름', ['이름', '행 수', '원자료 이름(설비)'], n['묶음'],
-                   note='묶음마다 원자료 이름과 설비를 보고, 같은 장치가 아닌 것이 섞였는지 봅니다.'),
-           R.table('다른 행과 묶이지 않은 원자료 이름(그대로 씀)', ['원자료 행', '설비', '계통', '원자료 이름'], n['그대로'],
-                   note='같은 장치인데 규칙이 묶지 못한 이름이 여기 있으면 app/features/name_rules.py의 기준을 고칩니다.'),
+    out = [R.table('같은 모델의 설비끼리 하나로 맞춘 구성 요소 이름(제공 코드)', ['맞춘 이름', '모델', '설비 수', '원자료 이름(설비)'], n['묶음'],
+                   note='같은 모델의 설비에서 사람마다 다르게 적은 구성 요소 이름을 구성 요소 목록에 먼저 나온 이름 하나로 맞췄습니다. 맞추기 전 원자료 이름은 그 구성 요소의 다른 이름으로 남습니다. '
+                        '이름을 맞춰도 설비마다 구성 요소는 따로 하나씩입니다.'),
+           R.table('원자료 이름 그대로 둔 구성 요소(그 모델의 설비가 하나)', ['원자료 행', '설비', '모델', '계통', '원자료 이름'], n['그대로'],
+                   note='모델이 다른 설비의 구성 요소는 이름이 비슷해도 맞추지 않습니다.'),
            R.table('설비별 구성 요소 — 원자료 행 수와 만든 대상 수', ['설비', '원자료 행', '만든 구성 요소'], rows)]
     if info['실물'] is not None:
         out.append(R.table('구성 요소 자리마다 실물(일련번호)', ['구성 요소 식별자', '일련번호', '지금 · 지난', '원자료 행'], info['실물'],
@@ -162,8 +163,8 @@ def parts(previous):
     usage = {}
     for _, code, cname, cell, pid, how in info['이은_부품']:
         usage.setdefault(pid, set()).add(code)
-    return [R.table('부품의 식별자(사내 품번)와 다른 표기', ['사내 품번', '품명', '다른 표기'], info['다른_표기'],
-                    note='식별자는 사내 품번 하나이고, 예전 품번 · 줄여 쓴 표기 · 제조사 품번은 그 부품을 찾는 다른 이름으로 남깁니다.'),
+    return [R.table('부품의 식별자와 사내 품번 · 다른 표기', ['식별자', '사내 품번', '품명', '다른 표기'], info['다른_표기'],
+                    note='사내 품번 하나에 부품 하나이고, 예전 품번 · 줄여 쓴 표기 · 제조사 품번은 그 부품을 찾는 다른 이름으로 남깁니다.'),
             R.table('교체부품 칸마다 찾은 사내 품번', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '사내 품번', '찾은 법'], info['이은_부품']),
             R.table('사내 품번을 찾지 못한 교체부품 칸(잇지 않음)', ['원자료 행', '설비', '구성 요소', '교체부품 칸'], info['못_찾은_칸'],
                     note='품번 교차표에 없는 표기는 짐작해 잇지 않습니다. 여기 줄이 있으면 그 칸의 글을 품번 교차표와 견줍니다.'),
@@ -177,6 +178,11 @@ def parts(previous):
 def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
     got = guarded(M.answers, list(dict.fromkeys((r['질문'], r['물을_값']) for r in rows)))   # 같은 설비를 여러 줄에 적어도 한 번만 묻는다
+    other = {(str(g['질문']), g['물을_값'], a): g['항목'] for g in got for a in g.get('다른_이름', [])}
+    have = {(str(g['질문']), g['물을_값'], g['항목']) for g in got}
+    for r in rows:      # 질문 1의 항목을 원자료 이름으로 적었으면 그 구성 요소의 다른 이름으로 찾아 모델의 이름으로 견준다(모델에 그 이름의 항목이 있으면 그대로)
+        k = (str(r['질문']).strip(), r['물을_값'], r.get('항목', ''))
+        r['항목'] = k[2] if k in have else other.get(k, k[2])
     key = lambda r: f"{r['질문']} | {r['물을_값']} | {r.get('항목', '')}"
     picked = {}      # 질문 1 · 2는 기대 답에 적은 항목만 견준다(모델이 더 돌려준 구성 요소 · 센서는 표에 넣지 않음)
     for r in rows:
@@ -186,7 +192,8 @@ def ask(previous):
     value = lambda r: str(r['질문']).strip() == '2' and bool(r.get('항목'))   # 질문 2 센서 값은 차례까지 같아야 한다
     exact = lambda e, a: [x.strip() for x in str(e).split('·')] == [x.strip() for x in str(a).split('·')]
     note = (f'기대 답에 적은 항목만 견줍니다(모델이 더 돌려준 {len(got) - len(keep)}줄은 표에 넣지 않음). '
-            '「실제 없음」은 기대 답의 항목 이름이 모델의 이름과 다르거나 모델에 없는 것입니다. 「기대 밖」은 모델이 더 돌려준 항목입니다. '
+            '물을 값과 답은 설비 코드 · 사내 품번처럼 현장이 쓰는 값이라 식별자를 어떻게 지었든 같은 값으로 묻습니다. 질문 1의 항목은 원자료 이름으로 적어도 그 구성 요소의 다른 이름으로 찾습니다. '
+            '「실제 없음」은 기대 답의 항목이 모델에 없는 것입니다(이름을 다르게 적었거나 모델이 그 대상을 만들지 않음). 「기대 밖」은 모델이 더 돌려준 항목입니다. '
             '모델의 답 「없음」은 물은 품번 · 표기 · 설비 · 물리량이 모델에 없다는 뜻이고, 「쓰는 설비 없음」은 부품은 모델에 있지만 그 부품에 이은 구성 요소가 없다는 뜻입니다. ' + SAME_NOTE)
     out = [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', [{'짝': key(r), '답': r['기대_답']} for r in rows if not value(r)],
                      [{'짝': key(r), '답': r['답']} for r in keep if not value(r)], ['답'], same=same, note=note)]
@@ -204,7 +211,7 @@ COMMANDS = {
     'sources': ('원자료', sources),
     'expected': ('기대 답', expected),
     'design': ('식별자와 관계', design),
-    'names': ('같은 장치와 실물', names),
+    'names': ('구성 요소 이름과 실물', names),
     'quantities': ('물리량과 센서', sensors),
     'parts': ('부품과 모델', parts),
     'query': ('질문별 대조', ask),
