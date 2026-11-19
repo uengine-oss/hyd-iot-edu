@@ -224,10 +224,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "Cypher로 그래프를 생성·조회·수정·삭제하고 설비 관계 탐색하기",
-      "version": "2026-11-06-relations-marked",
+      "version": "2026-11-19-relations-cells",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "881a37c06b21da0e4d2b89701aa92e3c51aa31532670b1d247d9825ba682a7bf",
+      "sha256": "0fea5bf014504f60dbd8008d93f11cd79686c78a2bc106539124a48b2b334d21",
       "entry": "neo4j"
     },
     {

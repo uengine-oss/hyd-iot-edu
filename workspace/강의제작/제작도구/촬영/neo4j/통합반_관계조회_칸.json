@@ -1,0 +1,82 @@
+{
+  "course": "통합반",
+  "source": "산출물/통합반/실습/02회차/대본/04_실습_관계조회.md 제작 확인용 「안내 문서 칸(새 차례)과 실행 결과」 표가 정본이다. 칸 id의 앞 숫자가 안내 문서의 절 번호, 뒤 숫자가 그 절 안의 차례다.",
+  "cells": [
+    {
+      "id": "2-1",
+      "query": "CREATE (a:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (b:연습장치 {id:'basic-B', name:'연습 팬', score:70});"
+    },
+    {
+      "id": "3-1",
+      "query": "MATCH (n:연습장치)\nRETURN n;"
+    },
+    {
+      "id": "3-2",
+      "query": "MATCH (n:연습장치)\nRETURN n.name AS 이름, n.score AS 점수\nORDER BY 점수;"
+    },
+    {
+      "id": "4-1",
+      "query": "MATCH (n:연습장치)\nWHERE n.score >= 50\nRETURN n;"
+    },
+    {
+      "id": "5-1",
+      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;"
+    },
+    {
+      "id": "5-2",
+      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;"
+    },
+    {
+      "id": "5-3",
+      "query": "MATCH (p:연습장치 {id:'basic-A'})\nMATCH (s:연습센서 {id:'basic-S1'})\nMERGE (p)-[r:감시된다]->(s)\nRETURN p, r, s;"
+    },
+    {
+      "id": "6-1",
+      "query": "MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 유온 센서'\nRETURN p, r, s;"
+    },
+    {
+      "id": "7-1",
+      "query": "MATCH (p:연습장치 {id:'basic-A'})\nDETACH DELETE p;"
+    },
+    {
+      "id": "7-2",
+      "query": "MATCH (n:연습장치|연습센서)\nRETURN n;"
+    },
+    {
+      "id": "7-3",
+      "query": "MATCH (n:연습장치|연습센서)\nDELETE n;"
+    },
+    {
+      "id": "7-4",
+      "query": "MATCH (n:연습장치|연습센서)\nRETURN count(n) AS 남은수;"
+    },
+    {
+      "id": "8-1",
+      "query": "MATCH (n)\nRETURN labels(n) AS 레이블, count(n) AS 개수\nORDER BY 개수 DESC;"
+    },
+    {
+      "id": "9-1",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\nRETURN c.name AS 구성요소;"
+    },
+    {
+      "id": "10-1",
+      "query": "MATCH path = (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART]->(:Part)\nRETURN path;"
+    },
+    {
+      "id": "10-2",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p:Part)\nWHERE c.name = '오일 쿨러'\nRETURN c.name AS 구성요소, p.name AS 부품, p.partNo AS 품번;"
+    },
+    {
+      "id": "11-1",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;"
+    },
+    {
+      "id": "11-2",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nWHERE s.virtual = false\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;"
+    },
+    {
+      "id": "11-3",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, count(s) AS 센서수, collect(s.name) AS 센서목록\nORDER BY 센서수 DESC, 구성요소;"
+    }
+  ]
+}
