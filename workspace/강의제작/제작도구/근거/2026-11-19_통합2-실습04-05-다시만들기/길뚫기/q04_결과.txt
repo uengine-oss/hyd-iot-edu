@@ -1,0 +1,189 @@
+MATCH (n) RETURN count(n) 
+  -> {"cols": ["count(n)"], "rows": [[20]]}
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component) RETURN c.name 
+  -> {"cols": ["c.name"], "rows": [["작동유 탱크"], ["구동 모터"], ["예비 펌프 (B)"], ["주 펌프 (A)"], ["쿨러 팬"], ["오일 쿨러"]]}
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component) WHERE c.name='오일 쿨러' RETURN c.id 
+  -> {"cols": ["c.id"], "rows": [["comp:cooler"]]}
+MATCH p=(:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part) RETURN c.name, pt.name 
+  -> {"cols": ["c.name", "pt.name"], "rows": [["오일 쿨러", "쿨러 코어"], ["주 펌프 (A)", "펌프 축 씰 키트"], ["쿨러 팬", "팬 베어링"]]}
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part) WHERE c.name='오일 쿨러' RETURN c.name, pt.name, pt.partNo 
+  -> {"cols": ["c.name", "pt.name", "pt.partNo"], "rows": [["오일 쿨러", "쿨러 코어", "P-CLR-CORE"]]}
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor) RETURN c.name, s.name, s.tag, s.virtual ORDER BY c.name, s.tag 
+  -> {"cols": ["c.name", "s.name", "s.tag", "s.virtual"], "rows": [["오일 쿨러", "냉각 효율 (가상)", "CE", true], ["오일 쿨러", "유온 센서", "TS1", false], ["주 펌프 (A)", "유량 센서", "FS1", false], ["주 펌프 (A)", "토출 압력 센서", "PS1", false], ["쿨러 팬", "팬 진동 센서", "VS1", false]]}
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor) WHERE s.virtual = false RETURN c.name, s.name, s.tag ORDER BY c.name, s.tag 
+  -> {"cols": ["c.name", "s.name", "s.tag"], "rows": [["오일 쿨러", "유온 센서", "TS1"], ["주 펌프 (A)", "유량 센서", "FS1"], ["주 펌프 (A)", "토출 압력 센서", "PS1"], ["쿨러 팬", "팬 진동 센서", "VS1"]]}
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor) RETURN c.name, count(s) AS sensors, collect(s.tag) AS tags ORDER BY sensors DESC, c.name 
+  -> {"cols": ["c.name", "sensors", "tags"], "rows": [["오일 쿨러", 2, ["CE", "TS1"]], ["주 펌프 (A)", 2, ["FS1", "PS1"]], ["쿨러 팬", 1, ["VS1"]]]}
+MATCH (n) RETURN labels(n) AS 레이블, count(n) AS 개수 ORDER BY 개수 DESC
+[{'code': 'Neo.ClientError.Request.InvalidFormat', 'message': 'Could not parse the incoming JSON'}]
+MATCH ()-[r]->() RETURN type(r) AS 관계유형, count(r) AS 개수 ORDER BY 개수 DESC
+[{'code': 'Neo.ClientError.Request.InvalidFormat', 'message': 'Could not parse the incoming JSON'}]
+MATCH (n) RETURN labels(n) AS 레이블, count(n) AS 개수 ORDER BY 개수 DESC 
+  -> [[["Component"], 6], [["Sensor"], 5], [["StateVariable"], 5], [["Part"], 3], [["Asset"], 1]]
+MATCH ()-[r]->() RETURN type(r) AS 관계유형, count(r) AS 개수 ORDER BY 개수 DESC 
+  -> [["HAS_COMPONENT", 6], ["MONITORED_BY", 5], ["OBSERVES", 5], ["USES_PART", 3]]
+
+==== 새 차례(대본 g판) 쿼리 실행 — q04c.py ====
+[처음 수]
+MATCH (n) RETURN count(n) AS 노드수
+  -> {"칸이름": ["노드수"], "행": [[20]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[처음 관계 수]
+MATCH ()-[r]->() RETURN count(r) AS 관계수
+  -> {"칸이름": ["관계수"], "행": [[19]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[2-1]
+CREATE (a:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),
+       (b:연습장치 {id:'basic-B', name:'연습 팬', score:70});
+  -> {"칸이름": [], "행": [], "그림": {"노드": 0, "관계": 0}, "통계": {"nodes_created": 2, "properties_set": 6, "labels_added": 2}}
+[3-1]
+MATCH (n:연습장치)
+RETURN n;
+  -> {"칸이름": ["n"], "행": [[{"score": 40, "name": "연습 펌프", "id": "basic-A"}], [{"score": 70, "name": "연습 팬", "id": "basic-B"}]], "그림": {"노드": 2, "관계": 0}, "통계": {}}
+[3-2]
+MATCH (n:연습장치)
+RETURN n.name AS 이름, n.score AS 점수
+ORDER BY 점수;
+  -> {"칸이름": ["이름", "점수"], "행": [["연습 펌프", 40], ["연습 팬", 70]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[4-1]
+MATCH (n:연습장치)
+WHERE n.score >= 50
+RETURN n;
+  -> {"칸이름": ["n"], "행": [[{"score": 70, "name": "연습 팬", "id": "basic-B"}]], "그림": {"노드": 1, "관계": 0}, "통계": {}}
+[5-1]
+MERGE (s:연습센서 {id:'basic-S1'})
+SET s.name = '연습 온도 센서', s.unit = '℃'
+RETURN s;
+  -> {"칸이름": ["s"], "행": [[{"unit": "℃", "name": "연습 온도 센서", "id": "basic-S1"}]], "그림": {"노드": 1, "관계": 0}, "통계": {"nodes_created": 1, "properties_set": 3, "labels_added": 1}}
+[5-2(같은 쿼리 다시)]
+MERGE (s:연습센서 {id:'basic-S1'})
+SET s.name = '연습 온도 센서', s.unit = '℃'
+RETURN s;
+  -> {"칸이름": ["s"], "행": [[{"unit": "℃", "name": "연습 온도 센서", "id": "basic-S1"}]], "그림": {"노드": 1, "관계": 0}, "통계": {"properties_set": 2}}
+[센서 수 확인(대본에 없음)]
+MATCH (s:연습센서) RETURN count(s) AS 센서수
+  -> {"칸이름": ["센서수"], "행": [[1]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[5-3 후보A EXPLAIN(쉼표 한 MATCH)]
+EXPLAIN MATCH (p:연습장치 {id:'basic-A'}), (s:연습센서 {id:'basic-S1'})
+MERGE (p)-[r:감시된다]->(s)
+RETURN p, r, s
+  -> {"칸이름": ["p", "r", "s"], "행": [], "그림": {"노드": 0, "관계": 0}, "통계": {}, "알림": ["This query builds a cartesian product between disconnected patterns."]}
+[5-3 후보B EXPLAIN(MATCH 두 줄)]
+EXPLAIN MATCH (p:연습장치 {id:'basic-A'})
+MATCH (s:연습센서 {id:'basic-S1'})
+MERGE (p)-[r:감시된다]->(s)
+RETURN p, r, s
+  -> {"칸이름": ["p", "r", "s"], "행": [], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[5-3]
+MATCH (p:연습장치 {id:'basic-A'})
+MATCH (s:연습센서 {id:'basic-S1'})
+MERGE (p)-[r:감시된다]->(s)
+RETURN p, r, s;
+  -> {"칸이름": ["p", "r", "s"], "행": [[{"score": 40, "name": "연습 펌프", "id": "basic-A"}, {}, {"unit": "℃", "name": "연습 온도 센서", "id": "basic-S1"}]], "그림": {"노드": 2, "관계": 1}, "통계": {"relationships_created": 1}}
+[6-1]
+MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})
+SET s.name = '연습 유온 센서'
+RETURN p, r, s;
+  -> {"칸이름": ["p", "r", "s"], "행": [[{"score": 40, "name": "연습 펌프", "id": "basic-A"}, {}, {"unit": "℃", "name": "연습 유온 센서", "id": "basic-S1"}]], "그림": {"노드": 2, "관계": 1}, "통계": {"properties_set": 1}}
+[6-1 뒤 센서 속성(대본에 없음 — 정보 칸 값)]
+MATCH (s:연습센서 {id:'basic-S1'}) RETURN s.id, s.name, s.unit
+  -> {"칸이름": ["s.id", "s.name", "s.unit"], "행": [["basic-S1", "연습 유온 센서", "℃"]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[그냥 DELETE 시도(대본에서는 말로만)]
+MATCH (p:연습장치 {id:'basic-A'})
+DELETE p;
+  -> {"오류": [{"code": "Neo.ClientError.Schema.ConstraintValidationFailed", "message": "Failed to commit transaction \"bolt-15\""}]}
+[7-1]
+MATCH (p:연습장치 {id:'basic-A'})
+DETACH DELETE p;
+  -> {"칸이름": [], "행": [], "그림": {"노드": 0, "관계": 0}, "통계": {"nodes_deleted": 1, "relationship_deleted": 1}}
+[7-2]
+MATCH (n:연습장치|연습센서)
+RETURN n;
+  -> {"칸이름": ["n"], "행": [[{"score": 70, "name": "연습 팬", "id": "basic-B"}], [{"unit": "℃", "name": "연습 유온 센서", "id": "basic-S1"}]], "그림": {"노드": 2, "관계": 0}, "통계": {}}
+[7-2 이름(대본에 없음)]
+MATCH (n:연습장치|연습센서) RETURN n.name ORDER BY n.name
+  -> {"칸이름": ["n.name"], "행": [["연습 유온 센서"], ["연습 팬"]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[7-3]
+MATCH (n:연습장치|연습센서)
+DELETE n;
+  -> {"칸이름": [], "행": [], "그림": {"노드": 0, "관계": 0}, "통계": {"nodes_deleted": 2}}
+[7-4]
+MATCH (n:연습장치|연습센서)
+RETURN count(n) AS 남은수;
+  -> {"칸이름": ["남은수"], "행": [[0]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[8-1]
+MATCH (n)
+RETURN labels(n) AS 레이블, count(n) AS 개수
+ORDER BY 개수 DESC;
+  -> {"칸이름": ["레이블", "개수"], "행": [[["Component"], 6], [["Sensor"], 5], [["StateVariable"], 5], [["Part"], 3], [["Asset"], 1]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[9-1]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)
+RETURN c.name AS 구성요소;
+  -> {"칸이름": ["구성요소"], "행": [["작동유 탱크"], ["구동 모터"], ["예비 펌프 (B)"], ["주 펌프 (A)"], ["쿨러 팬"], ["오일 쿨러"]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[10-1]
+MATCH path = (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART]->(:Part)
+RETURN path;
+  -> {"칸이름": ["path"], "행": [[[{"code": "HYD-01", "name": "HYD-01 유압 파워팩", "id": "asset:hyd-01"}, {}, {"name": "오일 쿨러", "id": "comp:cooler"}, {}, {"name": "쿨러 코어", "id": "part:cooler-core", "partNo": "P-CLR-CORE"}]], [[{"code": "HYD-01", "name": "HYD-01 유압 파워팩", "id": "asset:hyd-01"}, {}, {"name": "주 펌프 (A)", "id": "comp:pump-a"}, {}, {"name": "펌프 축 씰 키트", "id": "part:pump-seal", "partNo": "P-PMP-SEAL"}]], [[{"code": "HYD-01", "name": "HYD-01 유압 파워팩", "id": "asset:hyd-01"}, {}, {"name": "쿨러 팬", "id": "comp:fan"}, {}, {"name": "팬 베어링", "id": "part:fan-bearing", "partNo": "P-FAN-BRG"}]]], "그림": {"노드": 7, "관계": 6}, "통계": {}}
+[10-2]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p:Part)
+WHERE c.name = '오일 쿨러'
+RETURN c.name AS 구성요소, p.name AS 부품, p.partNo AS 품번;
+  -> {"칸이름": ["구성요소", "부품", "품번"], "행": [["오일 쿨러", "쿨러 코어", "P-CLR-CORE"]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[11-1]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
+RETURN c.name AS 구성요소, s.name AS 센서, s.tag AS 태그, s.virtual AS 가상
+ORDER BY 구성요소, 태그;
+  -> {"칸이름": ["구성요소", "센서", "태그", "가상"], "행": [["오일 쿨러", "냉각 효율 (가상)", "CE", true], ["오일 쿨러", "유온 센서", "TS1", false], ["주 펌프 (A)", "유량 센서", "FS1", false], ["주 펌프 (A)", "토출 압력 센서", "PS1", false], ["쿨러 팬", "팬 진동 센서", "VS1", false]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[11-2]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
+WHERE s.virtual = false
+RETURN c.name AS 구성요소, s.name AS 센서, s.tag AS 태그, s.virtual AS 가상
+ORDER BY 구성요소, 태그;
+  -> {"칸이름": ["구성요소", "센서", "태그", "가상"], "행": [["오일 쿨러", "유온 센서", "TS1", false], ["주 펌프 (A)", "유량 센서", "FS1", false], ["주 펌프 (A)", "토출 압력 센서", "PS1", false], ["쿨러 팬", "팬 진동 센서", "VS1", false]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[11-3]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
+RETURN c.name AS 구성요소, count(s) AS 센서수, collect(s.tag) AS 태그목록
+ORDER BY 센서수 DESC, 구성요소;
+  -> {"칸이름": ["구성요소", "센서수", "태그목록"], "행": [["오일 쿨러", 2, ["CE", "TS1"]], ["주 펌프 (A)", 2, ["FS1", "PS1"]], ["쿨러 팬", 1, ["VS1"]]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[끝 수]
+MATCH (n) RETURN count(n) AS 노드수
+  -> {"칸이름": ["노드수"], "행": [[20]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[끝 관계 수]
+MATCH ()-[r]->() RETURN count(r) AS 관계수
+  -> {"칸이름": ["관계수"], "행": [[19]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+[끝 연습 레이블]
+MATCH (n:연습장치|연습센서) RETURN count(n) AS 남은수
+  -> {"칸이름": ["남은수"], "행": [[0]], "그림": {"노드": 0, "관계": 0}, "통계": {}}
+
+==== 검토 뒤 바꾼 쿼리(칸 11-3 — 태그 목록 대신 센서 이름 목록) ====
+[11-3 새 판]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
+RETURN c.name AS 구성요소, count(s) AS 센서수, collect(s.name) AS 센서목록
+ORDER BY 센서수 DESC, 구성요소;
+  -> {"칸이름": ["구성요소", "센서수", "센서목록"], "행": [["오일 쿨러", 2, ["냉각 효율 (가상)", "유온 센서"]], ["주 펌프 (A)", 2, ["유량 센서", "토출 압력 센서"]], ["쿨러 팬", 1, ["팬 진동 센서"]]]}
+[끝 수]
+MATCH (n) RETURN count(n) AS 노드수
+  -> {"칸이름": ["노드수"], "행": [[20]]}
+[끝 관계 수]
+MATCH ()-[r]->() RETURN count(r) AS 관계수
+  -> {"칸이름": ["관계수"], "행": [[19]]}
+[끝 연습 레이블]
+MATCH (n:연습장치|연습센서) RETURN count(n) AS 남은수
+  -> {"칸이름": ["남은수"], "행": [[0]]}
+
+==== 검토 뒤 바꾼 쿼리(칸 11-1 · 11-2 — 태그 열을 뺌) ====
+[11-1 새 판]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
+RETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상
+ORDER BY 구성요소, 센서;
+  -> {"칸이름": ["구성요소", "센서", "가상"], "행": [["오일 쿨러", "냉각 효율 (가상)", true], ["오일 쿨러", "유온 센서", false], ["주 펌프 (A)", "유량 센서", false], ["주 펌프 (A)", "토출 압력 센서", false], ["쿨러 팬", "팬 진동 센서", false]]}
+[11-2 새 판]
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
+WHERE s.virtual = false
+RETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상
+ORDER BY 구성요소, 센서;
+  -> {"칸이름": ["구성요소", "센서", "가상"], "행": [["오일 쿨러", "유온 센서", false], ["주 펌프 (A)", "유량 센서", false], ["주 펌프 (A)", "토출 압력 센서", false], ["쿨러 팬", "팬 진동 센서", false]]}
+[끝 수]
+MATCH (n) RETURN count(n) AS 노드수
+  -> {"칸이름": ["노드수"], "행": [[20]]}
+[끝 관계 수]
+MATCH ()-[r]->() RETURN count(r) AS 관계수
+  -> {"칸이름": ["관계수"], "행": [[19]]}
