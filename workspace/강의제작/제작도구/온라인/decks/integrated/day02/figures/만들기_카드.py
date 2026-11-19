@@ -1940,23 +1940,24 @@ def u08a(name="카드_식별자_기록.svg", tail=""):
 
 
 def u08b():
-    """8장 둘째 장: 오일 쿨러 인스턴스 카드 하나. 이름과 다른 이름 둘이 「이름 쪽」 한 묶음(왼쪽 묶음 줄)에 들고, 식별자 줄은
-    그 아래에 따로 있다. 다른 이름 두 줄만 파랗다(이 장에서 푸는 용어)."""
+    """8장 둘째 장: 오일 쿨러 인스턴스 카드 하나. 이름과 다른 이름(열교환기) 두 줄이 「이름 쪽」 한 묶음(왼쪽 묶음 줄)에 들고,
+    식별자 줄은 그 아래에 따로 있다. 다른 이름 줄만 파랗다(이 장에서 푸는 용어)."""
     f = Fig2("카드_다른이름.svg")
     cx, w, r = 620, 520, 46
     dcy, y = 16 + r, 16 + 2 * r + 12
-    rows = (("이름", "오일 쿨러", False), ("다른 이름", "쿨러", True), ("다른 이름", "열교환기", True))
+    rows = (("이름", "오일 쿨러", False), ("다른 이름", "열교환기", True))
     y0 = y + 28 + 12
-    bot = y0 + 3 * 56 + 14 + 56 + 6
+    yid = y0 + len(rows) * 56 + 14
+    bot = yid + 56 + 6
     f.add(box(cx - w / 2, 0, w, bot) + disc(cx, dcy, r, "cooler"))
     f.lab("", "**구성 요소**", cx, y, w - 24)
     for i, (item, val, hot) in enumerate(rows):
         prow(f, cx - w / 2 + 16, y0 + i * 56, w - 32, item, val, hot=hot, item_w=140)
-    y1 = y0 + 3 * 56 - 10
+    y1 = y0 + len(rows) * 56 - 10
     bx = cx - w / 2 - 22
     f.add([path(f"M {bx + 12},{y0} L {bx},{y0} L {bx},{y1} L {bx + 12},{y1}", sw=3)])
     f.lab("이름 쪽", "", bx - 70, (y0 + y1) / 2 - 19, 120)
-    prow(f, cx - w / 2 + 16, y0 + 3 * 56 + 14, w - 32, "식별자", "EQ-02-COOLER", item_w=140)
+    prow(f, cx - w / 2 + 16, yid, w - 32, "식별자", "EQ-02-COOLER", item_w=140)
     return f.fin(0, foot(f, "어느 이름으로 불러도 오일 쿨러이고, 그중 하나를 가리키는 것은 식별자다", bot + 16))
 
 
@@ -2242,7 +2243,7 @@ def u2_24():
         hcard(f, 200, y, 320, 100, kind, "새 대상", nm)
         dcard(f, 870, y - 64, 580, cls, ({"item": "의미", "val": mean, "hot": True},), item_w=84)
         f.add(arrow([(368, y), (572, y)]))
-    return f.fin(0, foot(f, "의미 문장에 대어 보고 클래스를 고른다", ys[1] + 64 + 14))
+    return f.fin(0, foot(f, "의미 문장과 견주어 보고 클래스를 고른다", ys[1] + 64 + 14))
 
 
 def u2_25():
@@ -2717,8 +2718,12 @@ FIGS = [f05, f06, f07, f08, f09, f10, f11, f12, f13, f14, f16, f17, f18, f19, f2
 
 def fit_deck(md: Path, labels: dict[str, list[str]]) -> int:
     """덱 MD에서 `- 그림: <폴더>/<이 생성기가 만든 그림>`인 장의 `- 요소:` 목록을 이 생성기의 라벨 줄로 바꿔 쓴다.
-    그 장에 `- 요소:` 줄이 없으면 오류로 멈춘다. 돌려주는 값: 바꾼 장 수."""
-    lines = md.read_text(encoding="utf-8").split("\n")
+    그 장에 `- 요소:` 줄이 없으면 오류로 멈춘다. 줄 끝은 그 파일이 쓰던 것(CRLF 또는 LF)을 따른다. 돌려주는 값: 바꾼 장 수."""
+    text = md.read_bytes().decode("utf-8")
+    nl = "\r\n" if "\r\n" in text else "\n"
+    if nl == "\r\n" and text.count("\r\n") != text.count("\n"):
+        raise SystemExit(f"{md}: 줄 끝이 CRLF와 LF로 섞여 있다. 한 가지로 맞춘 뒤 다시 돌린다")
+    lines = text.split(nl)
     out, i, n, cur = [], 0, 0, None
     starts = [k for k, s in enumerate(lines) if s.startswith("## SLIDE")] + [len(lines)]
     out = lines[:starts[0]]
@@ -2735,7 +2740,7 @@ def fit_deck(md: Path, labels: dict[str, list[str]]) -> int:
             block = block[:k + 1] + [f"  {m}. {s}".replace(" |  | ", " | | ").rstrip() for m, s in enumerate(labels[pic], 1)] + block[j:]
             n += 1
         out += block
-    md.write_bytes("\n".join(out).encode("utf-8"))
+    md.write_bytes(nl.join(out).encode("utf-8"))
     return n
 
 
