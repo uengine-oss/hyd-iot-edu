@@ -587,7 +587,7 @@ function kgApplyState() {
   const fmtN = v => Number(v).toLocaleString('ko-KR'), word = ent.search.trim();
   $('#ontoHint').textContent = s.sel != null ? '왼쪽은 고른 항목을 가리키는 것, 오른쪽은 고른 항목이 가리키는 것입니다. 빈 곳을 누르면 제자리로 돌아갑니다'
     : path ? `「${cy.getElementById(ent.focus).data('name') || ''}」 경보에서 증상 · 고장 유형 · 원인 · 조치 방법으로 가는 길입니다. 항목을 누르면 그 항목에 이어진 것이 보입니다`
-    : q ? (match.size ? `이름에 「${word}」이 든 항목 ${fmtN(match.size)}개가 밝게 보입니다. Enter 를 누르면 차례로 고릅니다` : `이름에 「${word}」이 든 항목이 없습니다`)
+    : q ? (match.size ? `이름이나 ID에 「${word}」 글자가 든 항목 ${fmtN(match.size)}개가 밝게 보입니다. Enter 를 누르면 차례로 고릅니다` : `이름이나 ID에 「${word}」 글자가 든 항목이 없습니다`)
     : ent.group ? `「${ONTO_GROUPS.find(x => x.key === ent.group).title}」 묶음만 밝게 보입니다. 확대하면 이름이 더 보이고, 묶음 이름을 다시 누르면 전체로 돌아갑니다`
     : '점을 누르면 이어진 것이 그 둘레에 모이고 속성이 오른쪽에 열립니다. 묶음 이름을 누르면 그 묶음만 크게 봅니다';      // 아무것도 고르지 않았을 때: 무엇을 누르면 되는지(오른쪽 판은 닫혀 있다)
   $('#ontoStats').textContent = `항목 ${fmtN(kg.of.nodes.length)} · 연결 ${fmtN(kg.of.edges.length)}` + (path ? ` · 강조 경로 ${fmtN(path.size)}개` : '') + (q ? ` · 검색 결과 ${fmtN(match.size)}개` : '');

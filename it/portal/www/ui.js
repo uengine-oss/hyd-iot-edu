@@ -217,7 +217,7 @@ const UI = {
   // 「타이머」는 여기서 바꾸지 않는다: 「경계 타이머」처럼 그대로 쓰는 말이 있어 문장을 가리지 않고 바꾸면 틀린 말이 된다(에이전트 화면의 역할 설명에서만 agents.js 가 바꾼다)
   // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 진행 상황 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
   words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
-    .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/PLC 명령\s*발행(\s*\(Incident 경로\))?/g, '설비에 명령').replace(/작업지시/g, '정비 요청').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
+    .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/PLC 명령\s*발행(\s*\(Incident 경로\))?/g, '설비에 명령').replace(/(정비\s*)?작업지시/g, '정비 요청').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
     try {
