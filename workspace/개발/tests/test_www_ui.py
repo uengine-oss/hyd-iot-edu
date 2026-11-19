@@ -122,3 +122,6 @@ def test_서버가_준_글의_작업지시와_PLC_명령_발행은_어느_화면
     got = run(FILES, "out([UI.words(DATA[0]), UI.idText(DATA[1]), UI.words(DATA[2])])",
               ['PLC 명령 발행 (Incident 경로)만 발행 · 작업지시 등록', 'enterprise 시스템 (작업지시)', '경계 타이머가 붙은 단계'])
     assert got == ['설비에 명령만 발행 · 정비 요청 등록', 'enterprise 시스템 (정비 요청)', '경계 타이머가 붙은 단계']
+    # 지식 지도의 노드 이름 「정비 작업지시」(instances.cypher)는 앞의 「정비」까지 한 말로 바꾼다 — 「작업지시」만 바꾸면 「정비 정비 요청」이 됐다
+    got = run(FILES, "out(DATA.map(x => UI.words(x)))", ['정비 작업지시', '정비 작업지시 발행', '정비작업지시'])
+    assert got == ['정비 요청', '정비 요청 발행', '정비 요청']
