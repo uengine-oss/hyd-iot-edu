@@ -326,7 +326,66 @@ def p20():
     return f.fin(0, end)
 
 
-FIGS = [p06, p07, p10, p12, p13, p15, p16, p17, p19, p20]
+# ───────────────────────── 2단원(21~31장) ─────────────────────────
+
+def p22():
+    """22장: 통합 28장 격자를 전후 두 칸으로 넓혔다. 줄 하나가 시스템 하나이고, 가운데 칸은 스키마 없이 적은 기록(기준 줄과 다른 값만
+    파란 글, 정비 기록의 쓴다만 파랗게 거꾸로, 줄 끝 ✓ ✕ ✕), 오른쪽 칸은 스키마대로 적은 기록(셋이 같고 줄 끝 ✓ 셋)이다.
+    두 칸 사이의 온톨로지 스키마 카드(파란 테두리 · 연하늘)에서 파란 점선 셋이 오른쪽 칸의 세 줄로 간다."""
+    f = Fig2("카드_의미불일치_스키마전후.svg")
+    NX, MX, SX, RX, PW, H, SW = 85, 170, 550, 818, 332, 72, 238        # 이름 칸 가운데, 가운데 칸 왼쪽, 스키마 카드 왼쪽, 오른쪽 칸 왼쪽, 칸 폭, 줄 높이
+    f.lab("의미 불일치", "이름을 맞춰도 값의 꼴과 방향이 갈린다", MX + (PW + 42) / 2, 0, 350, strong=True)
+    f.lab("인스턴스 데이터", "Instance Data · 스키마대로 적은 기록", RX + (PW + 42) / 2, 0, 360, strong=True)
+    f.lab("", "쓴다의 방향 · 품번 · 교체 주기", SX + SW / 2, 64, 300)
+    ys = (140, 228, 316)
+
+    def pane(x0, cy, pno, cyc, rev, ok, hot):
+        f.add([rect(x0, cy - H / 2, PW, H, 18, fill=WHITE, stroke=NAVY, sw=3)] + disc(x0 + 30, cy, 21, "cooler") + disc(x0 + 122, cy, 21, "core"))
+        a0, a1 = x0 + 57, x0 + 96
+        f.add(arrow([(a1, cy), (a0, cy)] if rev else [(a0, cy), (a1, cy)], BLUE if rev else NAVY, sw=4.5, size=15))
+        f.lab(" · ".join(f"**{v}**" if k in hot else v for k, v in ((1, pno), (2, cyc))), "", x0 + 146 + (PW - 152) / 2, cy - 19, PW - 152)
+        f.add((K.check_badge if ok else K.cross_badge)(x0 + PW + 24, cy, 18))
+
+    for cy, (name, _, pno, cyc, rev, ok, hot), i in zip(ys, K.ROWS22, (1, 2, 3)):
+        f.add([rect(NX - 77, cy - H / 2, 154, H, 18, fill=LIGHT, stroke="none", sw=0)])
+        f.lab(name, f"EQ-0{i}-COOLER", NX, cy - (LH_T + LH_D) / 2 - 6, 152)
+        pane(MX, cy, pno, cyc, rev, ok, hot)
+        pane(RX, cy, "CC-2040", "12", False, True, ())
+    ct, cr = ys[1] - 97, 38                                     # 스키마 카드: 큰 원판 아래 이름과 뜻(작은 줄 두 줄로 접힌다)
+    f.add(box(SX, ct, SW, 194, hot=True) + disc(SX + SW / 2, ct + 16 + cr, cr, "sheet", hot=True))
+    f.lab("온톨로지 스키마", "Schema · 온톨로지를 실제로 적어 둔 공통 정의", SX + SW / 2, ct + 16 + 2 * cr + 12, SW - 12, strong=True)
+    bx = SX + SW + 14
+    f.add(dash_line(SX + SW + 6, ys[1], bx, ys[1], BLUE, 4, 8, 6) + dash_line(bx, ys[0], bx, ys[2], BLUE, 4, 8, 6))
+    for y in ys:
+        f.add(dash_arrow([(bx, y), (RX - 6, y)], BLUE, 4, 13, 8, 6))
+    return f.fin(0, foot(f, "CC-2040을 쓰는 구성 요소를 물으면 셋 가운데 하나만 나오던 것이 셋 다 나온다", ys[2] + H / 2 + 18))
+
+
+def p27():
+    """27장: 통합 38장 그림(역량 질문의 낱말 칩 다섯 → 낱말마다 정해진 자리, 2호기 · 오일 쿨러 두 자리를 가는 남색 선으로 묶어 나온 관계
+    가진다)을 아래로 내리고, 칩 줄 전체를 덮는 가는 꺾쇠 위에 그 줄의 이름(역량 질문)을 얹는다. 파란 글은 그 이름과 정해진 자리의 이름뿐이다."""
+    f = Fig2("카드_역량질문_낱말에서정의로.svg")
+    xs, w, c0 = (130, 365, 600, 835, 1070), 190, 100
+    f.lab("역량 질문", "Competency Question · 정의는 여기서 시작해 이 질문으로 확인한다", 600, 0, 720, strong=True)
+    f.add([K.path(f"M {xs[0] - w / 2},{c0 - 8} L {xs[0] - w / 2},{c0 - 18} L {xs[4] + w / 2},{c0 - 18} L {xs[4] + w / 2},{c0 - 8}", sw=2),
+           line(600, c0 - 18, 600, c0 - 28, sw=2)])
+    words = (("2호기", "클래스", "설비"), ("오일 쿨러에", "클래스", "구성 요소"), ("갈아 끼울", "관계", "쓴다"), ("부품의", "클래스", "부품"), ("품번은", "속성", "품번"))
+    b0 = c0 + 104
+    for x, (word, kind, name) in zip(xs, words):
+        f.add(box(x - w / 2, c0, w, 60, r=30))
+        f.lab(word, "", x, c0 + 30 - 19, w - 20)
+        f.add(arrow([(x, c0 + 66), (x, b0 - 6)]))
+        f.add(box(x - w / 2, b0, w, 84, r=18))
+        f.lab(kind, f"**{name}**", x, b0 + 42 - (LH_T + LH_D) / 2 - 6, w - 20)
+    gx, ly, gy = (xs[0] + xs[1]) / 2, b0 + 84 + 26, b0 + 84 + 26 + 20 + 42
+    f.add([line(xs[0], b0 + 90, xs[0], ly, sw=2), line(xs[1], b0 + 90, xs[1], ly, sw=2), line(xs[0], ly, xs[1], ly, sw=2), line(gx, ly, gx, gy - 48, sw=2)])
+    f.add(box(gx - w / 2, gy - 42, w, 84, r=18))
+    f.lab("관계", "**가진다**", gx, gy - (LH_T + LH_D) / 2 - 6, w - 20)
+    f.lab("2호기의 오일 쿨러라는 이어짐", "", gx + w / 2 + 180, gy - 19, 320)
+    return f.fin(0, foot(f, "클래스 셋 · 관계 둘 · 속성 하나를 정의하면 이 질문에 답한다", gy + 42 + 16))
+
+
+FIGS = [p06, p07, p10, p12, p13, p15, p16, p17, p19, p20, p22, p27]
 
 
 # ───────────────────────── 덱 맞춤 ─────────────────────────
