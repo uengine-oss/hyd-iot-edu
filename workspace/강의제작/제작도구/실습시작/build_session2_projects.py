@@ -24,7 +24,8 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v37-lab', 'graph-lab': 'v37-lab'}
+VERSIONS = {'ontology-lab': 'v38-lab', 'graph-lab': 'v38-lab'}
+# v38-lab(2026-11-20, 사용자 「가이드에 글이 너무 많은데..? 가이드의 원칙 모름?」): 가이드 P-5대로 단계 글을 핵심 설명 한두 줄 · Codex에게 부탁할 것 · 명령 블록 · 확인할 결과 화면으로 줄이고, 결과가 학생마다 같지 않아도 된다는 것을 첫 단계에 밝힘. 랩 폴더 · AGENTS.md는 v37과 같다.
 # v37-lab(2026-11-20): v36 독립 검토 두 건(작업 폴더 판정/검토_통합2_ontology_v36.json · 검토_통합2_graph_v36.json) 고침 — Codex의 첫 파일 쓰기 단계로 승인 창 안내를 옮김,
 #   역량 질문을 Codex에게 붙여 넣게 하고 정답 토글에 질문 문장을, 요령 「묻게 하기」를 첫 결정 자리로(TIP_ASK 문장도 「짐작」 되풀이를 피해 고침), Codex가 채운 design.csv · quantity_rules.py를 열어 역할 짚기,
 #   그래프 10단계는 compare 명령을 먼저(Codex는 포털 표를 못 봄), 09단계 질문 3 기대 답도 Codex에게, 손으로 쓰는 것처럼 읽히는 문장 · 토글 속 단계 번호 · `$` 자리 풀이 · 새 대화 여는 법.
