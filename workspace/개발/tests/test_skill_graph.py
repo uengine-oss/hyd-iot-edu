@@ -41,7 +41,7 @@ def test_쓸_수_없는_관계는_학생이_고를_말로_거절한다(session):
     s, graph = session
     with pytest.raises(ValueError) as refused:
         skill_graph.write(s, SKILL_Q, 'skill:test-rel', dict(VALUES, failureMode=fm_id(graph), relation='CAUSED_BY'), create=True, by='user:me')
-    assert "관계 'CAUSED_BY'" in str(refused.value) and '근본 조치 · 즉시 완화 · 예방 조치' in str(refused.value)
+    assert "관계 'CAUSED_BY'" in str(refused.value) and '근본 조치 · 완화 조치 · 예방 조치' in str(refused.value)
 
 
 def test_없는_스킬을_고치면_그_스킬_이름으로_KeyError(session):
