@@ -176,7 +176,7 @@ OPS = {
            B(WITH(HAS('쿨러 팬'), HAS('오일 쿨러')), '그리고 쿨러 팬과')],
  'g1204': [U({'head': '-[:HAS_COMPONENT]->'}, '관계를 한 번 건너서')],
  # 13. 두 단계 경로
- 'g1301': PUT('10-1', '이번에는'),
+ 'g1301': PUT('10-1', '구성 요소가 쓰는'),
  'g1302': [U(ED('-[:USES_PART]->(:Part)'), '화살표와 괄호가'), U(ED(PATH_10_1), '줄줄이 이어진 길을')],
  'g1303': [U(WITH(ED('(:Component)'), ED('(:Part)')), '괄호 안에 변수가 없고'), U(ED('path ='), '패턴 맨 앞에'), U(ED('RETURN path'), 'RETURN에 그 변수를'), RUN(graph=True, nodes=7, edges=6)],
  'g1304': [X(NODE('HYD-01'), '설비에서'), X(WITH(*map(NODE, COMPS)), '구성 요소 셋으로'), X(WITH(*map(NODE, PARTS)), '부품 셋으로')],
@@ -190,7 +190,7 @@ OPS = {
  'g1403': [B(WITH(ROW(1), ROW(2)), '오일 쿨러가 두 행'), B(WITH(ROW(3), ROW(4)), '주 펌프가 두 행'), B(ROW(5), '쿨러 팬이 한 행')],
  'g1404': [B(COL('가상')), B(ROW(1), '냉각 효율은')],
  'g1405': [B(ROW(1), '첫 행 하나가'), B(WITH(ROW(2), ROW(3), ROW(4), ROW(5)), '아래 네 행이')],
- 'g1406': [*PUT('11-2', '방금 쿼리에'), U(EL(2), '가상이 false인'), RUN(rows=4)],
+ 'g1406': [*PUT('11-2', '방금 돌린 쿼리에'), U(EL(2), '가상이 false인'), RUN(rows=4)],
  'g1407': [B(WITH(ROW(1), ROW(2), ROW(3), ROW(4)), '네 행이 나왔고'), B(COL('가상'), '가상 열이'), B(ROW(1, card=1), '맨 위 냉각 효율')],
  'g1408': PUT('11-3', '다음은 세는 쿼리'),
  'g1409': [U(WITH(ED('c.name AS 구성요소'), ED('count(s)')), '구성 요소 이름과 count를'), U(ED('collect(s.name)'), '옆의 collect는'), RUN(rows=3)],
