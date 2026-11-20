@@ -1,0 +1,3553 @@
+{
+ "voice_id": "tlxL9ilynpbOVf9sZXKh",
+ "model_id": "eleven_v4",
+ "note": "통합반 3회차 실습 04 조치 결과 비교(새 포털 main 305a5405). 04_실습_조치결과비교.md에서 통합_03_04_조치결과비교_큐만들기.py로 만든다 — 손으로 고치지 않는다. 모듈 segs/act04.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14, 앞 큐 조작 칸의 「쉼:」).",
+ "cues": [
+  {
+   "id": "t0101",
+   "segment": 1,
+   "section": "1. 여는 말",
+   "text": "이번에는 이론에서 배운 것을 포털에서 눈으로 확인해 보겠습니다. 조치 후보를 승인하려면 세 가지가 정해져 있어야 한다고 했죠. 어떻게 하는지를 적은 절차, 지금 해도 되는지를 가리는 규칙, 무엇이 나은지를 견주는 성과 기준이에요. 이 셋이 포털 어디에 들어 있는지 찾아보고, 조건이나 기준을 직접 바꿔 가면서 결과가 어떻게 달라지는지도 보겠습니다.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-value",
+      "contains": "0건 처리 완료"
+     },
+     20
+    ]
+   ]
+  },
+  {
+   "id": "t0102",
+   "segment": 1,
+   "section": "1. 여는 말",
+   "text": "오늘은 고장을 내지 않고 승인도 하지 않습니다. 넣어 보는 값은 모두 계산에만 쓰이고, 설비로는 아무것도 내려가지 않아요. 정말 그런지도 직접 확인해 보겠습니다. 포털은 1회차에 켰던 대로 켜서 홈을 열어 두시면 됩니다. 왼쪽 메뉴의 지식을 펼쳐서 조치 방법을 열게요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList summary[data-menu=\"knowledge\"]"
+     },
+     {
+      "at": "펼쳐서"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"skills\"]"
+     },
+     {
+      "at": "열게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#skillList .row:first-child[aria-current=\"true\"] .row-title",
+      "exact": "팬 최대 운전"
+     },
+     15
+    ],
+    [
+     "wait",
+     {
+      "css": "#skillDetail[data-key=\"skill:sop-cool-11\"] .pane-title h2",
+      "contains": "팬 최대 운전"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "t0201",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "여기가 조치 방법 화면이에요. 왼쪽 목록의 한 줄이 조치 방법 하나이고, 이론에서 본 SOP 한 편이 이 한 줄로 들어와 있습니다. SOP는 누가 하든 같은 조건과 차례, 끝 기준으로 하게 적어 둔 문서였죠. 경보가 오면 AI는 이 목록에서 조치 후보를 꺼내요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#view-skills .page-head h1",
+      "anchor": "after",
+      "dy": -8
+     },
+     {
+      "at": "여기가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillList .row:first-child .row-title",
+      "also": [
+       {
+        "css": "#skillList .row:first-child"
+       },
+       {
+        "css": "#skillList .row:nth-child(8)"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "왼쪽 목록의"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillList .row:first-child",
+      "hl": "band"
+     },
+     {
+      "at": "한 줄이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0202",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "줄마다 이름 밑에 작은 글씨가 두 가지 붙어 있어요. 앞의 것은 조치의 종류이고, 뒤의 것은 그 조치를 어느 고장 유형에 쓰는지를 적은 거예요. 쿨러 냉각 성능 상실이라고 적힌 줄들이 1회차에 본 쿨러 고장에 쓰는 조치입니다. 오른쪽에는 맨 위 조치가 먼저 열려 있는데, 목록에서 쿨러 핀 세척을 누를게요. 이론에서 이름 한 줄만 적어 두 사람에게 맡겨 봤던 그 정비예요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillList .row:first-child .row-meta",
+      "phrase": "설비 제어",
+      "anchor": "margin",
+      "hl": "underline"
+     },
+     {
+      "at": "앞의 것은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillList .row:first-child .row-meta",
+      "phrase": "쿨러 냉각 성능 상실",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "뒤의 것은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-title h2",
+      "phrase": "팬 최대 운전",
+      "hl": "band"
+     },
+     {
+      "at": "오른쪽에는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#skillList .row[data-skill=\"skill:sop-cool-14\"] .row-title",
+      "exact": "쿨러 핀 세척",
+      "anchor": "after"
+     },
+     {
+      "at": "누를게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#skillDetail[data-key=\"skill:sop-cool-14\"] .pane-title h2",
+      "contains": "쿨러 핀 세척"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "t0203",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "그때는 설비를 세울지, 어떻게 닦을지, 언제 끝낼지가 사람마다 갈렸죠. 여기에는 그 셋이 적혀 있습니다. 이름 아래 번호 붙은 줄 셋이 SOP의 수행 단계예요. SOP는 원래 시작 전, 하는 동안, 끝낼 때 구역으로 나뉘는데, 이 화면은 구역을 따로 두지 않고 단계 문장 안에 담아 놨어요. 문장을 읽으면서 어느 구역의 내용인지 찾아보겠습니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps",
+      "hl": "box"
+     },
+     {
+      "at": "번호 붙은 줄 셋이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0204",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "1번은 설비를 세우고, 운전 모드를 LOCAL, 그러니까 현장 제어로 바꾼 뒤 잠금을 건다는 문장이에요. 사람이 다치지 않을 상태부터 갖추라는 거니까, 시작 전에 맞추는 안전 조건이 이 줄에 들어 있습니다. 현장 제어로 바꾸는 것과 잠금이 따로 적혀 있죠. 운전 모드를 바꿔도 전기와 압력은 남아 있어서, 에너지를 끊는 잠금은 따로 해야 한다고 했던 대로예요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1)",
+      "also": [],
+      "text": true,
+      "contains": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+      "hl": "band"
+     },
+     {
+      "at": "1번은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1)",
+      "phrase": "LOCAL",
+      "anchor": "margin",
+      "dx": -18,
+      "hl": "underline"
+     },
+     {
+      "at": "LOCAL,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1)",
+      "phrase": "잠금(LOTO)",
+      "anchor": "margin",
+      "dx": -18,
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "잠금이 따로"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0205",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "2번은 쿨러 핀을 압축공기로 닦는다는 문장인데, 뒤에 고압수, 그러니까 세게 쏘는 물은 쓰지 않는다는 말이 붙어 있어요. 하는 동안 지켜야 할 금지 사항이죠. 3번은 다시 돌린 뒤 냉각 효율이 기준 이상으로 돌아왔는지 확인하라는 문장입니다. 끝낼 때 보는 완료 확인 기준이에요. 눈으로 보고 끝내지 않고, 다시 잰 값을 보고 끝났다고 판정하는 거죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(2)",
+      "phrase": "고압수는 쓰지 않는다.",
+      "anchor": "margin",
+      "dx": -18,
+      "hl": "underline"
+     },
+     {
+      "at": "세게 쏘는 물은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(3)",
+      "also": [],
+      "text": true,
+      "contains": "재가동 후 냉각 효율 CE가",
+      "hl": "band"
+     },
+     {
+      "at": "3번은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(3)",
+      "phrase": "80 % 이상",
+      "anchor": "margin",
+      "dx": -18,
+      "hl": "underline"
+     },
+     {
+      "at": "기준 이상으로"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0206",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "문장 끝마다 작은 글씨로 번호가 붙어 있죠. 이 문장이 매뉴얼의 어느 대목에서 나왔는지를 적어 둔 거예요. 보고서 문장마다 각주를 달듯, 작업 단계마다 근거 문서를 이어 둔다고 한 게 이 번호입니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1) .sk-ref",
+      "exact": "HM-8.7",
+      "hl": "underline"
+     },
+     {
+      "at": "작은 글씨로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1) .sk-ref",
+      "also": [
+       {
+        "css": "#skillDetail ol.sk-steps li:nth-child(2) .sk-ref"
+       },
+       {
+        "css": "#skillDetail ol.sk-steps li:nth-child(3) .sk-ref"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "작업 단계마다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0207",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "번호 줄 아래 두 줄은 SOP 머리에 적는 내용이에요. 첫 줄은 이 절차를 어떤 고장에 쓰는지 적은 줄로, 적용 대상에 해당해요. 그 아래 승인 역할은 담당 역할 가운데 승인을 맡는 쪽이고요. 설비보전팀장이라고 적혀 있는데, 이론에서 보전 책임자라고 부른 역할이에요. 핀 세척은 설비를 세워야 하는 정비라서 그 책임자가 승인합니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail .panel-sec:not(.pane-fold) > dl.kv dt",
+      "exact": "대상 고장 유형",
+      "also": [
+       "next"
+      ],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "첫 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .panel-sec:not(.pane-fold) > dl.kv dt",
+      "exact": "승인 역할",
+      "also": [
+       "next"
+      ],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "승인 역할은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .panel-sec:not(.pane-fold) > dl.kv dd",
+      "exact": "설비보전팀장",
+      "hl": "underline"
+     },
+     {
+      "at": "설비보전팀장이라고"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0208",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "수행하는 쪽은 이름 옆에 붙은 조치의 종류로 알 수 있어요. 정비 요청이라고 적혀 있죠. 정비하는 사람에게 일을 맡기는 조치라는 뜻이에요. 고장 유형 옆 괄호 안의 근본 조치는 원인을 없애는 조치라는 표시예요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-title h2 .tag",
+      "exact": "정비 요청",
+      "anchor": "after",
+      "dy": -10,
+      "hl": "box"
+     },
+     {
+      "at": "이름 옆에 붙은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .panel-sec:not(.pane-fold) > dl.kv dd .muted",
+      "exact": "(근본 조치)",
+      "hl": "underline"
+     },
+     {
+      "at": "괄호 안의"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0209",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "같은 고장에 쓰는 조치를 하나 더 볼게요. 목록 맨 위에 있는 팬 최대 운전입니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#skillList .row:first-child .row-title",
+      "exact": "팬 최대 운전",
+      "anchor": "after"
+     },
+     {
+      "at": "팬 최대 운전입니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#skillDetail[data-key=\"skill:sop-cool-11\"] .pane-title h2",
+      "contains": "팬 최대 운전"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "t0210",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "이 조치는 종류가 설비 제어예요. 승인하면 명령이 설비로 내려가는 조치죠. 그래서 1번 단계가 다릅니다. 운전 모드가 REMOTE_AUTO인지 확인한다는 문장이에요. REMOTE_AUTO가 원격 자동, 승인 뒤 자동으로 내려오는 명령을 설비가 받아들이는 운전 모드입니다. 원격 자동일 때만 이 조치를 하라는 거니까, 이론에서 조건 문장이라고 한 것이 이 줄이에요. 그때의 설비 상태가 맞을 때만 하라는 문장이었죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-title h2 .tag",
+      "exact": "설비 제어",
+      "anchor": "after",
+      "dy": -10,
+      "hl": "box"
+     },
+     {
+      "at": "종류가 설비 제어예요"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1)",
+      "also": [],
+      "text": true,
+      "contains": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+      "hl": "band"
+     },
+     {
+      "at": "1번 단계가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(1)",
+      "phrase": "REMOTE_AUTO",
+      "anchor": "margin",
+      "dx": -18,
+      "hl": "underline"
+     },
+     {
+      "at": "REMOTE_AUTO인지"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0211",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "2번에는 팬을 최대로 돌리되 스물네 시간을 넘기지 않는다는 말이 붙어 있어요. 3번은 조치 뒤에 다시 재서 회복 판정을 한다는 문장이니, 이 조치도 마지막 단계가 완료 확인 기준입니다. 아래 고장 유형 옆 괄호에는 완화 조치라고 적혀 있어요. 증상을 우선 낮추는 조치라는 뜻이에요. 승인 역할도 운전원으로 다르고요. 같은 고장에 쓰는 조치인데도 맞춰야 할 조건과 승인하는 역할이 조치마다 다릅니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(2)",
+      "phrase": "100 % 연속 운전은 24시간 이내로 한다.",
+      "anchor": "margin",
+      "dx": -18,
+      "hl": "underline"
+     },
+     {
+      "at": "2번에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail ol.sk-steps li:nth-child(3)",
+      "also": [],
+      "text": true,
+      "contains": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+      "hl": "band"
+     },
+     {
+      "at": "3번은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .panel-sec:not(.pane-fold) > dl.kv dd .muted",
+      "exact": "(완화 조치)",
+      "hl": "underline"
+     },
+     {
+      "at": "완화 조치라고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .panel-sec:not(.pane-fold) > dl.kv dd",
+      "exact": "운전원",
+      "hl": "underline"
+     },
+     {
+      "at": "승인 역할도 운전원으로"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0212",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "승인 역할 아래에는 줄이 하나 접혀 있어요. 연결된 지식이라고 적힌 줄인데, 펼쳐 보겠습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold > summary",
+      "phrase": "연결된 지식",
+      "hl": "band"
+     },
+     {
+      "at": "줄이 하나 접혀"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#skillDetail .pane-fold details.fold > summary",
+      "phrase": "연결된 지식",
+      "anchor": "after"
+     },
+     {
+      "at": "펼쳐 보겠습니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "phrase": "제외 — PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치 SOP-COOL-11~13을 쓰지 않는다."
+     },
+     5
+    ],
+    [
+     "scroll",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "bottom": 90
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0213",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "펼쳐진 줄 가운데 적용 규칙을 보세요. 제외라는 말로 시작하는 줄이 있죠. 운전 모드가 원격 자동이 아니면 이 조치를 쓰지 않는다는 규칙이에요. 방금 절차 1번에서 본 조건이 판단 규칙으로도 따로 적혀 있는 겁니다. 감점으로 시작하는 줄에는 2번에 있던 스물네 시간이 들어 있어요. 그 시간을 넘겨 팬을 최대로 돌려 왔으면 감점한다는 규칙이에요. 이론의 결정표에서 본 제외 행과 감점 행이 이 두 줄입니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dt",
+      "exact": "적용 규칙",
+      "hl": "underline"
+     },
+     {
+      "at": "적용 규칙을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "phrase": "제외 — PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치 SOP-COOL-11~13을 쓰지 않는다.",
+      "anchor": "margin",
+      "hl": "band"
+     },
+     {
+      "at": "제외라는 말로 시작하는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "phrase": "감점 — 팬 100 % 연속 운전이 이미 24시간을 넘긴 경우 팬 수명 손실 20만 원 감점. 감점 지표는 원문에 특정되지 않아 보전비를 검토용으로 연결함.",
+      "anchor": "margin",
+      "hl": "band"
+     },
+     {
+      "at": "감점으로 시작하는 줄에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "phrase": "제외 — PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치 SOP-COOL-11~13을 쓰지 않는다.",
+      "anchor": "margin",
+      "hl": "band"
+     },
+     {
+      "at": "이론의 결정표에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "phrase": "감점 — 팬 100 % 연속 운전이 이미 24시간을 넘긴 경우 팬 수명 손실 20만 원 감점. 감점 지표는 원문에 특정되지 않아 보전비를 검토용으로 연결함.",
+      "anchor": "margin",
+      "hl": "band",
+      "keep": true
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0214",
+   "segment": 2,
+   "section": "2. 조치 방법에서 SOP 찾기",
+   "text": "절차는 사람이 따를 차례이고, 판단 규칙은 지금 해도 되는지를 값으로 가리는 데 씁니다. 이론에서 허용 조건이라고 부른 것을 결정표로 적은 게 판단 규칙이었죠. 이 규칙이 실제로 조치를 가리는 모습을 보러 가겠습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#skillDetail .pane-fold details.fold dl.kv dd",
+      "contains": "제외 — PLC 운전 모드가",
+      "phrase": "제외 — PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치 SOP-COOL-11~13을 쓰지 않는다.",
+      "anchor": "margin",
+      "dx": -6
+     },
+     {
+      "at": "절차는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0301",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "왼쪽 메뉴에서 판단 실험을 누르고, 그 안의 규칙 판단을 열게요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList summary[data-menu=\"trial\"]"
+     },
+     {
+      "at": "누르고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"decision\"]"
+     },
+     {
+      "at": "열게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decAsset:has(option[value=\"HYD-01\"]:checked)"
+     },
+     15
+    ],
+    [
+     "wait",
+     {
+      "css": "#decPattern:has(option[value=\"COOLER_DEGRADATION\"]:checked)"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .empty"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0302",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "여기는 어떤 설비에 어떤 경보가 왔다고 치고, 판단을 계산만 해 보는 곳이에요. 실제 경보가 아니라서 처리 건이 열리지 않고, 승인으로 이어지지도 않습니다. 왼쪽 위 설비 칸에는 첫 번째 설비가, 그 아래 이상 패턴 칸에는 쿨러 성능 저하가 골라져 있어요. 이상 패턴은 경보의 종류를 고르는 칸입니다. 둘 다 그대로 두고, 아래에 있는 모의 판단 단추를 누릅니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#view-decision .page-head h1",
+      "anchor": "after",
+      "dy": -8
+     },
+     {
+      "at": "여기는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decForm label[for=\"decAsset\"]",
+      "also": [
+       {
+        "css": "#decAsset"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "설비 칸에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decForm label[for=\"decPattern\"]",
+      "also": [
+       {
+        "css": "#decPattern"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "이상 패턴 칸에는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decRun"
+     },
+     {
+      "at": "누릅니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .panel-sec > p.muted",
+      "contains": "없음 — 설비의 지금 값으로 판단했습니다."
+     },
+     10
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult table.opts tbody tr[data-pick] .opts-name b",
+      "exact": "팬 최대 운전"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .turn-facts > div:nth-child(3) dd",
+      "exact": "4개 가능"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0303",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "오른쪽에 결과가 나왔습니다. 원인을 가리는 쪽은 1회차에 봤으니, 오늘은 가운데 있는 조치 후보 표를 봅니다. 승인 카드에서 근거를 열었을 때 본 후보 비교가 이런 계산에서 나와요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#decResult .panel-sec:has(table.opts) > h3",
+      "top": 76
+     },
+     {
+      "at": "오늘은 가운데"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts",
+      "hl": "box"
+     },
+     {
+      "at": "조치 후보 표를"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0305",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "표의 줄마다 조치 이름과 종류, 점수, 승인 역할이 있죠. 종류와 승인 역할은 조치 방법 화면에서 본 것이 따라온 거예요. 점수는 조치마다 좋은 점은 더하고 나쁜 점은 빼서 매긴 값이라, 높을수록 앞 순위예요. 표 위 숫자 칸 가운데 조치 후보 칸에는 네 개가 모두 가능이라고 적혀 있어요. 조금 전에 제외 규칙을 봤는데 여기서는 아무것도 제외되지 않았죠. 까닭은 판단에 쓴 값에 있습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult table.opts thead tr",
+      "hl": "band"
+     },
+     {
+      "at": "표의 줄마다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr:first-child .badge",
+      "hl": "underline"
+     },
+     {
+      "at": "종류와 승인 역할은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr:first-child td.opts-role",
+      "hl": "underline",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult .turn-facts > div:nth-child(3)",
+      "hl": "box"
+     },
+     {
+      "at": "조치 후보 칸에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0306",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "표 아래로 내려가면 자세히 보기라는 줄이 접혀 있죠. 펼치면 판단에 쓴 값이 표로 나와요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more > summary",
+      "phrase": "자세히 보기",
+      "hl": "band"
+     },
+     {
+      "at": "접혀 있죠"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decResult details.dec-more > summary",
+      "phrase": "자세히 보기",
+      "anchor": "after"
+     },
+     {
+      "at": "펼치면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table"
+     },
+     5
+    ],
+    [
+     "scroll",
+     {
+      "css": "#decResult details.dec-more > summary",
+      "top": 64
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0307",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "이 표가 결정표의 입력 데이터, 판단의 답을 정하는 데 쓰는 값이에요. 맨 아래 운전 모드 줄을 보면 값이 원격 자동이고, 옆에 출처가 적혀 있어요. 설비 곁에서 설비를 제어하는 PLC에서 지금 값을 읽어 온 겁니다. 위쪽의 팬 연속 운전 시간 줄은 팬을 최대로 돌린 지 얼마나 됐는지인데, 값이 영이고 뒤에 시간이라는 단위가 붙어 있죠. 조금 전에 본 제외 규칙과 감점 규칙이 견주는 값이 이 둘이에요. 값마다 얼마인지와 어디서 읽어 왔는지가 함께 남습니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table",
+      "top": 66
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table",
+      "hl": "box"
+     },
+     {
+      "at": "이 표가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table tbody tr",
+      "contains": "PLC 운전 모드",
+      "hl": "band"
+     },
+     {
+      "at": "운전 모드 줄을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table tbody td",
+      "exact": "SCADA · PLC (설비 제어)",
+      "hl": "underline"
+     },
+     {
+      "at": "옆에 출처가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table tbody tr",
+      "contains": "팬 100 % 연속 운전 시간",
+      "hl": "band"
+     },
+     {
+      "at": "팬 연속 운전 시간 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table tbody td",
+      "exact": "0 시간",
+      "hl": "underline"
+     },
+     {
+      "at": "시간이라는 단위가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table tbody tr",
+      "contains": "PLC 운전 모드",
+      "hl": "band"
+     },
+     {
+      "at": "이 둘이에요"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table tbody tr",
+      "contains": "팬 100 % 연속 운전 시간",
+      "hl": "band",
+      "keep": true
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0308",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "표 위에 적용한 규칙이라고 적힌 곳을 누르면, 규칙마다 이번 판단에서 조건에 걸렸는지가 나옵니다. 줄 맨 앞의 문장이 규칙이에요. 결정표의 한 행, 안내판의 한 줄에 해당하죠. 가운데 칸은 그 규칙을 어느 조치에 적용했는지이고, 그래서 같은 규칙이 조치마다 한 줄씩 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#decResult details.dec-more [data-dec-pane=\"rules\"]"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table"
+     },
+     5
+    ],
+    [
+     "scroll",
+     {
+      "css": "#decResult details.dec-more > summary",
+      "top": 64
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table thead th:nth-child(1)",
+      "also": [
+       {
+        "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table tbody tr:nth-child(6) td:nth-child(1)"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "줄 맨 앞의 문장이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table thead th:nth-child(2)",
+      "also": [
+       {
+        "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table tbody tr:nth-child(6) td:nth-child(2)"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "가운데 칸은"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0310",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "가운데 칸이 팬 최대 운전인 줄에서 원격 자동이 아니면 쓰지 않는다는 규칙을 찾아보면, 끝의 결과 칸에 해당 없음이라고 적혀 있어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table tbody tr",
+      "exact": "PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치 SOP-COOL-11~13을 쓰지 않는다.규정 적합성팬 최대 운전해당 없음",
+      "hl": "band"
+     },
+     {
+      "at": "가운데 칸이 팬 최대 운전인"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table tbody tr",
+      "phrase": "해당 없음",
+      "exact": "PLC 운전 모드가 REMOTE_AUTO가 아니면 원격 조치 SOP-COOL-11~13을 쓰지 않는다.규정 적합성팬 최대 운전해당 없음",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "해당 없음이라고"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0309",
+   "segment": 3,
+   "section": "3. 규칙 판단 — 입력값 · 적용 규칙 · 조치 후보",
+   "text": "이 규칙은 운전 모드가 원격 자동이 아닐 때만 걸려요. 지금은 원격 자동이라 걸리지 않았고, 그래서 제외된 후보가 없었던 겁니다. 그러면 운전 모드가 원격 자동이 아닐 때는 어떻게 되는지 바꿔 보겠습니다.",
+   "gap": 0.6,
+   "ops": []
+  },
+  {
+   "id": "t0401",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "왼쪽으로 돌아가서 모의 판단 단추 바로 위를 보면, 조건 바꿔 보기라고 적힌 줄이 접혀 있어요. 펼치면 칸이 넷 나오는데, 모두 지금 값 그대로라고 되어 있습니다. 아까는 넷 다 지금 값으로 판단했던 거죠.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decForm details.io-more > summary",
+      "phrase": "조건 바꿔 보기"
+     },
+     {
+      "at": "왼쪽으로 돌아가서"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decForm details.io-more > summary",
+      "phrase": "조건 바꿔 보기",
+      "anchor": "after"
+     },
+     {
+      "at": "펼치면"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decForm details.io-more .fold-body",
+      "hl": "box"
+     },
+     {
+      "at": "칸이 넷"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decMode",
+      "also": [],
+      "hl": "box"
+     },
+     {
+      "at": "지금 값 그대로라고"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0402",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "여기서 운전 모드를 원격 수동으로 바꿔 볼게요. 누군가 관제 화면에서 설비를 직접 조작하고 있다고 가정하는 겁니다. 설비의 운전 모드를 실제로 바꾸는 게 아니고, 판단에 넣는 값만 바꾸는 거예요. 바꿨으면 모의 판단 단추를 다시 누릅니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decForm label[for=\"decMode\"]",
+      "also": [
+       {
+        "css": "#decMode"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "여기서"
+     }
+    ],
+    [
+     "select",
+     {
+      "css": "#decMode"
+     },
+     "원격 수동",
+     {
+      "at": "바꿔 볼게요"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decRun"
+     },
+     {
+      "at": "다시 누릅니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .turn-facts > div:nth-child(3) dd",
+      "exact": "1개 가능 · 3개 제외"
+     },
+     10
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult p[data-dec-change]",
+      "contains": "1순위가 팬 최대 운전에서 쿨러 핀 세척(으)로 바뀌었습니다"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0403",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "결과가 달라졌죠. 표 위 조치 후보 칸에 이번에는 제외된 수가 함께 적혔습니다. 표에서는 종류에 설비 제어가 들어 있는 조치 셋이 순위 없이 아래로 내려갔고, 점수 자리에 제외라고 적혀 있어요. 이름 아래에는 어느 규칙에 걸렸는지도 나옵니다. 조금 전에 본 원격 자동 규칙이에요. 사람이 직접 조작하고 있는데 자동 명령이 끼어들면, 둘이 같은 설비를 서로 다르게 움직이려 하겠죠. 그래서 설비가 받아들이지 않을 조치를 후보에서 미리 뺀 겁니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult .turn-facts > div:nth-child(3)",
+      "hl": "box"
+     },
+     {
+      "at": "조치 후보 칸에"
+     }
+    ],
+    [
+     "scroll",
+     {
+      "css": "#decResult table.opts thead",
+      "top": 70
+     },
+     {
+      "at": "표에서는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr[data-out]:nth-child(2)",
+      "also": [
+       {
+        "css": "#decResult table.opts tbody tr[data-out]:nth-child(4)"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "설비 제어가 들어 있는"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult table.opts tbody tr:nth-child(2) .opts-name b",
+      "exact": "팬 최대 운전"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr:nth-child(2) td.num",
+      "exact": "제외",
+      "hl": "underline"
+     },
+     {
+      "at": "제외라고 적혀"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr:nth-child(2) .opts-why small",
+      "contains": "제외 — PLC 운전 모드가",
+      "hl": "underline"
+     },
+     {
+      "at": "어느 규칙에 걸렸는지도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0404",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "남은 건 쿨러 핀 세척 하나예요. 설비로 명령을 내리지 않고 사람이 가서 하는 정비라 운전 모드 규칙에 걸리지 않습니다. 설비가 돌고 있는데 세워야 하는 정비가 가능이라니 이상해 보일 수 있어요. 여기서 가능, 그러니까 허용은 고를 수 있다는 뜻이에요. 세우고 잠갔는지는 고르기 전이 아니라 손대기 직전에 확인한다고 했죠.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr[data-pick]",
+      "contains": "쿨러 핀 세척",
+      "hl": "band"
+     },
+     {
+      "at": "남은 건"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult .turn-facts > div:nth-child(3) dd small",
+      "phrase": "개 가능",
+      "hl": "underline"
+     },
+     {
+      "at": "가능이라니"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0410",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "표 위에는 무엇을 가정한 결과인지도 남아 있어요. 가정한 조건이라고 적힌 줄에 운전 모드 원격 수동이 있죠. 그 아래 줄에는 앞 판단과 견줘서 1순위가 쿨러 핀 세척으로 바뀌었다고 적혀 있고요. 조건 하나를 바꿨더니 허용되는 조치도, 1순위도 달라졌습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult .panel-sec > p.muted",
+      "also": [],
+      "text": true,
+      "contains": "가정한 조건 운전 모드 원격 수동",
+      "hl": "band"
+     },
+     {
+      "at": "가정한 조건이라고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult p[data-dec-change]",
+      "also": [],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "그 아래 줄에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0409",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "운전 모드 칸에서 지금 값 그대로를 골라 처음대로 돌려놓고, 모의 판단 단추를 다시 누르면 빠졌던 조치들이 후보로 돌아옵니다. 다음 조건을 넣기 전에 이렇게 돌려놓는 건, 조건을 한 번에 하나씩만 바꿔야 무엇 때문에 결과가 달라졌는지 알 수 있어서예요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "select",
+     {
+      "css": "#decMode"
+     },
+     "지금 값 그대로",
+     {
+      "at": "돌려놓고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decRun"
+     },
+     {
+      "at": "다시 누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .panel-sec > p.muted",
+      "contains": "없음 — 설비의 지금 값으로 판단했습니다."
+     },
+     10
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .turn-facts > div:nth-child(3) dd",
+      "exact": "4개 가능"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts",
+      "hl": "box"
+     },
+     {
+      "at": "후보로 돌아옵니다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0405",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "다음은 감점입니다. 맨 아래에 보이는 칸은 팬을 최대로 돌린 지 몇 시간째인지를 넣는 칸이에요. 아까 입력 데이터 표에서 영이던 값이고, 단위는 칸 이름 끝에 적힌 대로 시간입니다. 감점 규칙은 이 값이 스물네 시간을 넘었을 때 걸리죠. 스물네 시간이 이 규칙의 임계치, 판정을 가르는 경계값이에요. 그래서 그보다 큰 삼십을 넣고, 모의 판단 단추를 누릅니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decForm label[for=\"decFan\"]",
+      "also": [
+       {
+        "css": "#decFan"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "맨 아래에 보이는 칸은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decForm label[for=\"decFan\"]",
+      "phrase": "(시간)",
+      "hl": "underline"
+     },
+     {
+      "at": "단위는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decFan",
+      "anchor": "center"
+     },
+     {
+      "at": "삼십을 넣고"
+     }
+    ],
+    [
+     "type",
+     "30"
+    ],
+    [
+     "click",
+     {
+      "css": "#decRun"
+     },
+     {
+      "at": "누릅니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult p[data-dec-change]",
+      "contains": "1순위가 팬 최대 운전에서 부하 70 %와 야간 핀 세척(으)로 바뀌었습니다"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "t0406",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "팬을 최대로 돌리는 조치가 이번에는 빠지지 않고 남아 있어요. 대신 이름 아래에 감점이라고 적힌 글이 붙었습니다. 조치 방법 화면에서 본 스물네 시간 규칙이에요. 그보다 오래 돌리면 팬 수명이 줄어들어서 점수를 깎는 겁니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#decResult table.opts thead",
+      "top": 70
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr",
+      "contains": "SOP-COOL-11",
+      "hl": "band"
+     },
+     {
+      "at": "빠지지 않고 남아"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr",
+      "contains": "SOP-COOL-12",
+      "hl": "band",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr:nth-child(2) .opts-why small",
+      "contains": "감점 — 팬 100 % 연속 운전이 이미 24시간을 넘긴 경우",
+      "hl": "underline"
+     },
+     {
+      "at": "감점이라고 적힌 글이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0411",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "제외는 후보에서 아예 빼는 것이고, 감점은 남겨 두되 견줄 때 불리하게 셈하는 것이라고 했죠. 자취방을 고를 때 시끄러운 집을 빼지는 않고 그만큼 손해로 쳐 둔 것과 같아요. 표 위 줄을 보면, 그렇게 셈한 결과로 1순위도 다른 조치로 넘어갔습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr",
+      "contains": "SOP-COOL-11",
+      "hl": "band"
+     },
+     {
+      "at": "제외는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr",
+      "contains": "SOP-COOL-12",
+      "hl": "band",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decResult p[data-dec-change]",
+      "also": [],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "표 위 줄을 보면"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0407",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "넣어 본 값을 지우고 처음으로 돌아가 볼게요. 맨 아래 칸을 비우고 모의 판단 단추를 누르면, 다시 설비의 지금 값으로 판단합니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decForm label[for=\"decFan\"]",
+      "also": [
+       {
+        "css": "#decFan"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "맨 아래 칸을"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#decFan",
+      "anchor": "center"
+     },
+     {
+      "at": "비우고"
+     }
+    ],
+    [
+     "clear"
+    ],
+    [
+     "key",
+     "Delete"
+    ],
+    [
+     "click",
+     {
+      "css": "#decRun"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#decResult .panel-sec > p.muted",
+      "contains": "없음 — 설비의 지금 값으로 판단했습니다."
+     },
+     10
+    ],
+    [
+     "wait",
+     {
+      "css": "#decPast h3 .num",
+      "exact": "5"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0408",
+   "segment": 4,
+   "section": "4. 조건 바꿔 보기 — 제외와 감점",
+   "text": "처음과 같은 결과가 나왔죠. 왼쪽 아래 지난 판단 목록에는 모의 판단을 누를 때마다 한 줄씩 쌓였어요. 줄마다 무엇을 가정했고 1순위가 무엇이었는지 적혀 있습니다. 지금 값 그대로인 줄은 1순위가 모두 같죠. 같은 입력에는 같은 답이 나오고, 입력을 바꾸면 어느 규칙 때문에 답이 달라졌는지까지 따라갈 수 있습니다. 판단을 결정표로 정해 두어서 얻는 것이 이 두 가지예요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#decResult table.opts tbody tr[data-pick]",
+      "contains": "팬 최대 운전",
+      "hl": "band"
+     },
+     {
+      "at": "처음과 같은 결과가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decPast",
+      "hl": "box"
+     },
+     {
+      "at": "지난 판단 목록에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decPast .row[data-dec-past=\"5\"]",
+      "hl": "band"
+     },
+     {
+      "at": "지금 값 그대로인 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decPast .row[data-dec-past=\"3\"]",
+      "hl": "band",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#decPast .row[data-dec-past=\"1\"]",
+      "hl": "band",
+      "keep": true
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0501",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "규칙으로 거르고도 남는 후보가 여럿이면, 그 가운데 무엇이 나은지를 견줘야 하죠. 이론에서는 체로 거른 후보를 저울에 올린다고 했어요. 규칙 판단이 그 체였고, 이제 저울, 그러니까 선택 근거 쪽을 봅니다. 왼쪽 메뉴에서 규칙 판단 바로 아래에 있는 조건별 손익을 열게요.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"whatif\"]"
+     },
+     {
+      "at": "열게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#wiLoad",
+      "exact": "기준 계산"
+     },
+     15
+    ],
+    [
+     "wait",
+     {
+      "css": "#wiAsset:has(option:first-child:checked)"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "#wiPattern:has(option[value=\"COOLER_DEGRADATION\"]:checked)"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0502",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "설비와 이상 패턴은 여기도 아까와 같은 값으로 골라져 있어요. 그대로 두고 기준 계산 단추를 누릅니다. 판단을 한 번 계산해서 기준으로 잡아 두고, 거기서 값을 바꿔 가며 견주겠다는 거예요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView label[for=\"wiAsset\"]",
+      "also": [
+       {
+        "css": "#wiAsset"
+       },
+       {
+        "css": "#wiPattern"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "설비와 이상 패턴은"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#wiLoad"
+     },
+     {
+      "at": "누릅니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-head h2",
+      "exact": "판단 순위와 손익 순위 모두 「팬 최대 운전」이 1순위입니다.",
+      "long": true
+     },
+     30
+    ]
+   ]
+  },
+  {
+   "id": "t0503",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "결과 표에는 순위가 두 가지 있어요. 맨 앞의 순위는 규칙 판단에서 본 점수로 매긴 겁니다. 그 점수가 여기서는 정책 점수라고 적혀 있어요. 오른쪽의 손익 순위는 조치마다 득실을 원으로 바꿔 더한 예상 손익으로 매긴 순위고요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts",
+      "hl": "box"
+     },
+     {
+      "at": "결과 표에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th:nth-child(1)",
+      "also": [
+       {
+        "css": "#whatifView .io-out table.opts tbody tr:last-child td:nth-child(1)"
+       }
+      ],
+      "anchor": "center",
+      "hl": "band"
+     },
+     {
+      "at": "맨 앞의 순위는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th",
+      "exact": "정책 점수",
+      "hl": "underline"
+     },
+     {
+      "at": "정책 점수라고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th:nth-child(5)",
+      "also": [
+       {
+        "css": "#whatifView .io-out table.opts tbody tr:last-child td:nth-child(5)"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "오른쪽의 손익 순위는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th:nth-child(6)",
+      "also": [
+       {
+        "css": "#whatifView .io-out table.opts tbody tr:last-child td:nth-child(6)"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "예상 손익으로"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0520",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "생산은 개수로, 전력은 원으로 재니 득실을 그대로는 견줄 수 없어서, 점수로 매기거나 원으로 바꿔야 한다고 했죠. 그 두 길이 이 두 순위예요. 추천은 앞의 점수 순위로 정하고, 손익 순위는 돈으로 따져 봐도 같은 답이 나오는지 견줘 보는 데 씁니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th:nth-child(1)",
+      "also": [
+       {
+        "css": "#whatifView .io-out table.opts tbody tr:last-child td:nth-child(1)"
+       }
+      ],
+      "anchor": "center",
+      "hl": "band"
+     },
+     {
+      "at": "그 두 길이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th:nth-child(5)",
+      "also": [
+       {
+        "css": "#whatifView .io-out table.opts tbody tr:last-child td:nth-child(5)"
+       }
+      ],
+      "hl": "band",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:first-child td.opts-rank .rank",
+      "exact": "1",
+      "hl": "underline"
+     },
+     {
+      "at": "추천은 앞의"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0504",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "맨 위 결론에 그 답이 있어요. 앞의 순위를 여기서는 판단 순위라고 부르는데, 지금은 판단 순위와 손익 순위 모두 팬 최대 운전이 1순위라고 적혀 있죠. 예상 손익 앞의 빼기 표시는 그만큼 돈이 든다는 뜻이라, 덜 드는 조치가 손익 순위에서 앞에 옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-head h2",
+      "also": [],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "맨 위 결론에"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .turn-facts dt",
+      "exact": "판단 1순위",
+      "hl": "underline"
+     },
+     {
+      "at": "판단 순위라고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:nth-child(1) td:nth-child(6)",
+      "hl": "underline"
+     },
+     {
+      "at": "빼기 표시는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0505",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "이 금액이 어떻게 나왔는지는 아래 손익 내역에 있어요. 조치를 고르면 항목마다 금액이 나오고, 맨 아래 줄이 합계입니다. 지금은 1순위인 팬 최대 운전이 골라져 있어요. 에너지비와 고장 위험이라는 항목에 금액이 있죠. 팬을 더 돌리느라 드는 전력비와, 원인이 남아 있는 동안 고장이 날 수 있는 위험을 돈으로 친 겁니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > h3",
+      "top": 70
+     },
+     {
+      "at": "이 금액이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table",
+      "hl": "box"
+     },
+     {
+      "at": "항목마다 금액이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table tbody tr:last-child",
+      "contains": "합계",
+      "hl": "band"
+     },
+     {
+      "at": "합계입니다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) .seg button[data-wi-card=\"skill:sop-cool-11\"][aria-pressed=\"true\"]",
+      "exact": "팬 최대 운전",
+      "anchor": "below",
+      "hl": "box"
+     },
+     {
+      "at": "팬 최대 운전이 골라져"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table tbody tr",
+      "contains": "에너지비(팬)",
+      "hl": "band"
+     },
+     {
+      "at": "에너지비와"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table tbody tr",
+      "contains": "고장 위험",
+      "hl": "band",
+      "keep": true
+     },
+     {
+      "at": "고장 위험이라는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0506",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "쿨러 핀 세척으로 바꿔 보면 금액이 다른 항목에 있어요. 생산 감소와 납기 지연 위약금, 정비 작업비입니다. 정비하는 동안 설비가 서 있으니 그만큼 만들지 못하고, 그 바람에 납기에 늦으면 거래처에 무는 위약금까지 붙는 거예요. 한쪽은 생산을 이어 가는 대신 전력과 위험을 안고, 다른 쪽은 원인을 없애는 대신 생산과 납기를 잃죠. 두 조치의 금액이 이렇게 서로 다른 항목에 있으니, 성과 하나만 보고 고르면 다른 성과에서 잃는 것을 놓치게 됩니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) .seg button[data-wi-card=\"skill:sop-cool-14\"]",
+      "exact": "쿨러 핀 세척"
+     },
+     {
+      "at": "바꿔 보면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) .seg button[data-wi-card=\"skill:sop-cool-14\"][aria-pressed=\"true\"]"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table tbody tr",
+      "contains": "생산 감소",
+      "hl": "band"
+     },
+     {
+      "at": "생산 감소와"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table tbody tr",
+      "contains": "납기 지연 위약금",
+      "hl": "band",
+      "keep": true
+     },
+     {
+      "at": "납기 지연 위약금,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) > .table-container table tbody tr",
+      "contains": "정비 작업비",
+      "hl": "band",
+      "keep": true
+     },
+     {
+      "at": "정비 작업비입니다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0507",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "표 아래 접힌 줄을 펼치면 항목마다 계산과 출처가 나옵니다. 납기 지연 위약금은 한 시간 늦을 때마다 무는 돈에 늦어지는 시간을 곱한 값이에요. 출처 칸에는 그 값들을 어디서 읽어 왔는지가 적혀 있고요. 업무 DB라고 적힌 것이 업무 시스템에 들어 있는 값입니다. 금액마다 어떤 값으로 계산했는지 이렇게 확인할 수 있어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) details.fold:not(.raw) > summary",
+      "phrase": "항목별 계산식과 출처",
+      "anchor": "after"
+     },
+     {
+      "at": "펼치면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) details.fold table"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) details.fold table tbody td:first-child",
+      "also": [],
+      "text": true,
+      "exact": "납기 지연 위약금",
+      "hl": "band"
+     },
+     {
+      "at": "납기 지연 위약금은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) details.fold table tbody td:nth-child(2)",
+      "phrase": "위약금 120만원/시간 × 지연",
+      "contains": "위약금 120만원/시간 × 지연",
+      "anchor": "margin",
+      "hl": "underline"
+     },
+     {
+      "at": "한 시간 늦을 때마다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) details.fold table tbody td:nth-child(3)",
+      "contains": "납기 지연 위약금 120 만원/시간",
+      "hl": "box"
+     },
+     {
+      "at": "출처 칸에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(> .seg[aria-label=\"내역을 볼 조치\"]) details.fold table tbody td:nth-child(3) div",
+      "exact": "데이터 · 업무 DB ERP · 납기 지연 위약금 120 만원/시간",
+      "phrase": "업무 DB",
+      "anchor": "margin",
+      "hl": "underline"
+     },
+     {
+      "at": "업무 DB라고"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0508",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "이제 이론에서 What-if 분석이라고 한 것을 해 보겠습니다. 다른 조건은 그대로 두고 값 하나만 바꿔서, 그 값에 따라 답이 달라지는지 보는 거예요. 왼쪽에 바꿔 볼 것이라고 적힌 곳이 있죠. 그 아래에서 업무 값을 누릅니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#wiForm legend",
+      "exact": "바꿔 볼 것",
+      "hl": "underline"
+     },
+     {
+      "at": "바꿔 볼 것이라고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#whatifView [data-wi-tab=\"values\"]"
+     },
+     {
+      "at": "누릅니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) [data-wi-bound]",
+      "long": true
+     },
+     40
+    ],
+    [
+     "scroll",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) > h3",
+      "top": 99
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(2)",
+      "exact": "납기 지연 위약금"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(5)",
+      "exact": "쿨러 핀 세척"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0509",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "칸이 여러 개 나왔죠. 칸 이름 옆 괄호가 단위이고, 칸 아래 작은 글씨는 그 값을 어디서 읽어 왔고 지금 얼마인지를 알려 줘요. 칸을 비워 두면 그 값으로 계산합니다. 이 가운데 둘째 칸, 납기 지연 위약금을 볼게요. 방금 계산에서 본, 한 시간 늦을 때마다 무는 돈이에요. 칸 아래를 보면 지금은 한 시간에 백이십만 원입니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"due_h\"]) label",
+      "also": [
+       {
+        "css": "#wiForm .field:has([data-wi-var=\"due_h\"])"
+       },
+       {
+        "css": "#wiForm .field:has([data-wi-var=\"mtbf_h\"])"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "칸이 여러 개"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"due_h\"]) label",
+      "phrase": "(시간)",
+      "hl": "underline"
+     },
+     {
+      "at": "칸 이름 옆 괄호가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"due_h\"]) .field-hint",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "칸 아래 작은 글씨는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"]) label",
+      "also": [
+       {
+        "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"])"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "납기 지연 위약금을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"]) .field-hint",
+      "phrase": "120 만원/시간",
+      "hl": "underline"
+     },
+     {
+      "at": "백이십만 원입니다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0510",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "오른쪽 아래에는 1순위가 바뀌는 값이라는 표가 있어요. 값을 얼마로 바꾸면 1순위가 다른 조치로 넘어가는지 미리 찾아 준 겁니다. 납기 지연 위약금 줄을 보면 지금 값과 바뀌는 값이 나란히 있고, 그 옆에 바뀐 1순위가 쿨러 핀 세척이라고 적혀 있죠. 위약금이 그 값 아래로 내려가면 1순위가 쿨러 핀 세척으로 넘어간다는 뜻이에요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) > h3",
+      "also": [
+       {
+        "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table"
+       }
+      ],
+      "phrase": "1순위가 바뀌는 값",
+      "hl": "box"
+     },
+     {
+      "at": "1순위가 바뀌는 값이라는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2)",
+      "contains": "납기 지연 위약금",
+      "hl": "band"
+     },
+     {
+      "at": "납기 지연 위약금 줄을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(3)",
+      "hl": "underline",
+      "keep": 1
+     },
+     {
+      "at": "지금 값과 바뀌는 값이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(4)",
+      "hl": "underline",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(5)",
+      "hl": "underline",
+      "keep": 1
+     },
+     {
+      "at": "바뀐 1순위가"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0517",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "줄 맨 앞에는 판단 순위라고 적혀 있어요. 두 순위 가운데 점수로 매긴 쪽, 그러니까 추천이 바뀐다는 표시예요. 이론 그림에서 두 선이 엇갈리던 곳이 이 줄의 바뀌는 값입니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(1)",
+      "exact": "판단 순위",
+      "hl": "underline",
+      "keep": 1
+     },
+     {
+      "at": "줄 맨 앞에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(4)",
+      "hl": "underline",
+      "keep": 1
+     },
+     {
+      "at": "두 선이 엇갈리던 곳이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0519",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "이론 그림에서는 생산 한 시간의 값을 바꿔 봤죠. 왼쪽에 그 값인 시간당 생산 가치 칸도 있는데, 이 표에는 그 줄이 없어요. 이 화면이 넣어 본 범위에서는 그 값을 올리거나 내려도 1순위가 그대로라는 뜻입니다. 바꿔도 답이 그대로인 값이 있고, 바꾸면 답이 뒤집히는 값이 있는 거예요. 지금은 납기 지연 위약금이 답을 뒤집는 값이고요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"hour_value\"]) label",
+      "also": [
+       {
+        "css": "#wiForm .field:has([data-wi-var=\"hour_value\"])"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "시간당 생산 가치 칸도"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) > h3",
+      "also": [
+       {
+        "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table"
+       }
+      ],
+      "phrase": "1순위가 바뀌는 값",
+      "hl": "box"
+     },
+     {
+      "at": "이 표에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2)",
+      "contains": "납기 지연 위약금",
+      "hl": "band"
+     },
+     {
+      "at": "납기 지연 위약금이 답을"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0514",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "숫자는 제 화면과 달라도 괜찮습니다. 줄 끝에 있는 단추, 이 값으로 계산이라고 적힌 단추를 누르면 왼쪽 칸에 그 값이 들어가고, 그 값으로 다시 계산합니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) [data-wi-bound]",
+      "anchor": "right",
+      "hl": "box"
+     },
+     {
+      "at": "줄 끝에 있는 단추"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) [data-wi-bound]"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#wiReset"
+     },
+     15
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-head h2",
+      "contains": "판단 1순위는 「쿨러 핀 세척」, 손익 1순위는 「팬 최대 운전」입니다"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"]) label",
+      "also": [
+       {
+        "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"])"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "왼쪽 칸에 그 값이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0511",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "위쪽 결과 표를 보면, 칸에 값이 둘씩 나란히 나온 곳이 있죠. 화살표 앞이 기준이고, 뒤가 넣은 값으로 다시 계산한 결과예요. 쿨러 핀 세척이 맨 위로 올라왔습니다. 설비를 세우는 조치라 납기에 늦게 되는데, 늦어도 무는 돈이 줄어든 거죠. 그래서 예상 손익의 손해가 작아졌고, 점수도 올라서 1순위가 됐습니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(table.opts) > h3",
+      "top": 70
+     },
+     {
+      "at": "위쪽 결과 표를"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec > h3 .muted",
+      "exact": "기준 → 시험값",
+      "hl": "underline"
+     },
+     {
+      "at": "화살표 앞이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:first-child td.opts-name",
+      "also": [],
+      "text": true,
+      "contains": "쿨러 핀 세척",
+      "hl": "band"
+     },
+     {
+      "at": "맨 위로 올라왔습니다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:nth-child(1) td:nth-child(6)",
+      "anchor": "below",
+      "hl": "underline"
+     },
+     {
+      "at": "예상 손익의 손해가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:nth-child(1) td:nth-child(3)",
+      "anchor": "below",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "점수도 올라서"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0518",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "그런데 오른쪽 손익 순위는 그대로예요. 돈으로만 따지면 여전히 팬 최대 운전이 가장 덜 드니까요. 맨 위 결론에도 두 순위가 서로 다른 조치를 골랐다고 나옵니다. 점수에는 온도를 얼마나 내리는지처럼 원으로 바꾸기 어려운 것까지 들어 있어서, 두 순위가 늘 같지는 않아요. 바꾼 건 값 하나뿐이니, 추천이 달라진 까닭도 그 값입니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts thead th:nth-child(5)",
+      "also": [
+       {
+        "css": "#whatifView .io-out table.opts tbody tr:last-child td:nth-child(5)"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "손익 순위는 그대로"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:nth-child(2) .opts-name b",
+      "exact": "팬 최대 운전"
+     },
+     5
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts tbody tr:nth-child(2) td:nth-child(5)",
+      "exact": "1위",
+      "hl": "underline"
+     },
+     {
+      "at": "팬 최대 운전이 가장"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-head h2",
+      "also": [],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "맨 위 결론에도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0512",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "아래 표에서 지금 값과 바뀌는 값이 얼마나 떨어져 있는지도 보세요. 여기서는 꽤 떨어져 있어서, 위약금이 조금 달라지는 정도로는 추천이 바뀌지 않아요. 반대로 둘이 가까우면 값이 조금만 달라도 결론이 뒤집힙니다. 그럴 때는 그 값이 지금 사정과 맞는지부터 확인해야 해요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(3)",
+      "hl": "underline"
+     },
+     {
+      "at": "지금 값과 바뀌는 값이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(4)",
+      "hl": "underline",
+      "keep": true
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0513",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "결과 위쪽에는 안내가 한 줄 떠 있어요. 시험값을 넣어 계산한 결과이고, 업무 DB와 지식의 값은 그대로라고 적혀 있습니다. 그 줄 끝의 원래대로 단추를 누를게요. 안내가 사라지고 표가 기준 값으로 돌아왔죠. 왼쪽 칸도 다시 비었습니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(#wiReset) [role=\"status\"]",
+      "hl": "band"
+     },
+     {
+      "at": "안내가 한 줄"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#wiReset"
+     },
+     {
+      "at": "누를게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-head h2",
+      "exact": "판단 순위와 손익 순위 모두 「팬 최대 운전」이 1순위입니다."
+     },
+     10
+    ],
+    [
+     "scroll",
+     {
+      "css": "#whatifView .io-out table.opts",
+      "top": 150
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#whatifView .io-out table.opts",
+      "hl": "box"
+     },
+     {
+      "at": "표가 기준 값으로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"]) label",
+      "also": [
+       {
+        "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"])"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "왼쪽 칸도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0515",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "업무 시스템의 값이 정말 그대로인지도 확인해 볼게요. 왼쪽 위에 있는 기준 다시 계산 단추를 누르면, 업무 시스템에서 값을 새로 읽어 와서 처음부터 다시 계산합니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#wiLoad",
+      "exact": "기준 다시 계산",
+      "anchor": "right",
+      "hl": "box"
+     },
+     {
+      "at": "기준 다시 계산 단추를"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#wiLoad"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) [data-wi-bound]",
+      "long": true
+     },
+     40
+    ],
+    [
+     "wait",
+     {
+      "css": "#whatifView .io-out .panel-head h2",
+      "exact": "판단 순위와 손익 순위 모두 「팬 최대 운전」이 1순위입니다."
+     },
+     5
+    ],
+    [
+     "scroll",
+     {
+      "css": "#whatifView .io-out table.opts",
+      "top": 150
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0516",
+   "segment": 5,
+   "section": "5. 조건별 손익 — 값 하나를 바꿔 손익과 순위 보기",
+   "text": "납기 지연 위약금 칸 아래를 보세요. 새로 읽어 온 값도 백이십만 원 그대로죠. 넣어 본 값은 계산에만 쓰였고, 업무 시스템에는 적히지 않았습니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"]) .field-hint",
+      "phrase": "120 만원/시간",
+      "hl": "underline"
+     },
+     {
+      "at": "칸 아래를"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0601",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "여기까지는 조치의 득실을 점수와 원으로 견줘 봤습니다. 그 득실은 생산이나 안전 같은 성과에서 생기죠. 이런 성과는 평소에 하나하나 KPI로 재서 목표에 닿았는지를 봐요. 그 KPI가 지금 얼마인지도 포털에 있습니다. 왼쪽 메뉴 맨 아래에 있는 시스템을 펼치고, 성과 지표를 엽니다.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList summary[data-menu=\"system\"]"
+     },
+     {
+      "at": "펼치고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"kpi\"]"
+     },
+     {
+      "at": "엽니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView .kpi-stats",
+      "long": true
+     },
+     40
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView [data-kpi-period=\"24h\"][aria-pressed=\"true\"]"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView [data-kpi-group=\"missed\"] .stat-value",
+      "exact": "0개"
+     },
+     5
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView [data-kpi-group=\"met\"][aria-pressed=\"true\"]"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0602",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "여기 카드 하나가 KPI 하나, 목표에 얼마나 가까운지 재는 값 하나예요. 카드들이 내부 프로세스라는 이름 아래 모여 있는데, 이 이름이 BSC의 네 관점 가운데 하나입니다. 일이 잘 돌아가는지를 보는 관점이었죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"]",
+      "hl": "box"
+     },
+     {
+      "at": "카드 하나가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-persp .sec-head h2",
+      "exact": "내부 프로세스",
+      "hl": "underline"
+     },
+     {
+      "at": "내부 프로세스라는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0611",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "위쪽 숫자 네 칸은 KPI를 판정에 따라 센 거예요. 앞의 두 칸이 목표에 못 미친 KPI와 목표에 닿은 KPI의 수이고, 나머지 두 칸은 목표를 정해 두지 않았거나 아직 잴 기록이 없는 KPI입니다. 지금 눌려 있는 달성 칸의 KPI가 아래에 보여요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-stats",
+      "hl": "box"
+     },
+     {
+      "at": "위쪽 숫자 네 칸은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView [data-kpi-group=\"missed\"]",
+      "anchor": "below",
+      "hl": "box"
+     },
+     {
+      "at": "앞의 두 칸이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView [data-kpi-group=\"met\"]",
+      "anchor": "below",
+      "hl": "box",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView [data-kpi-group=\"open\"]",
+      "anchor": "below",
+      "hl": "box"
+     },
+     {
+      "at": "나머지 두 칸은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView [data-kpi-group=\"dead\"]",
+      "anchor": "below",
+      "hl": "box",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView [data-kpi-group=\"met\"]",
+      "anchor": "below",
+      "hl": "box"
+     },
+     {
+      "at": "지금 눌려 있는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0603",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "설비 가동률 카드를 볼게요. 큰 숫자가 실제값이고 옆의 퍼센트가 단위예요. 그 아래에는 목표값이 적혀 있어요. 이론에서 든 예와 같은 구십오 퍼센트입니다. 실제값이 목표보다 높아서 오른쪽 위에 달성이라고 붙었어요. 실제값과 목표의 차이로 달성했는지를 보는 거죠. 카드의 이름을 누르면 이 값을 어떻게 쟀는지가 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"] .stat-value",
+      "hl": "underline"
+     },
+     {
+      "at": "큰 숫자가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"] .stat-note",
+      "phrase": "목표 95 %",
+      "hl": "underline"
+     },
+     {
+      "at": "그 아래에는 목표값이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"] .stat-pill .tag",
+      "exact": "달성",
+      "hl": "box"
+     },
+     {
+      "at": "달성이라고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"] .kpi-name",
+      "anchor": "after"
+     },
+     {
+      "at": "누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "dialog[data-kpi-sheet][open] .sheet-head h2",
+      "contains": "설비 가동률"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "t0604",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "오른쪽에 열린 판에서 맨 위 작은 글씨에는 관점과, 이 KPI가 재는 전략 목표가 적혀 있어요. 설비 가용성 확보, 이론에서 설비를 멈추지 않고 돌린다고 한 목표예요. 지표 종류는 선행 지표, 결과보다 먼저 움직이는 지표입니다. 그 아래 받치는 목표에는 납기 신뢰가 적혀 있어요. 설비가 멈추지 않아야 주문을 제때 낸다는, 전략맵의 화살표 하나예요. 설비가 자주 서면 가동률이 먼저 떨어지고 납기는 그 뒤에 밀린다고 했죠.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "dialog[data-kpi-sheet][open] .sheet-head p.muted",
+      "exact": "내부 프로세스 › 설비 가용성 확보",
+      "hl": "underline"
+     },
+     {
+      "at": "맨 위 작은 글씨에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[data-kpi-sheet][open] .sheet-body > dl.kv dt",
+      "exact": "지표 종류",
+      "also": [
+       "next"
+      ],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "지표 종류는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[data-kpi-sheet][open] .sheet-body > dl.kv dt",
+      "exact": "받치는 목표",
+      "also": [
+       "next"
+      ],
+      "text": true,
+      "hl": "band",
+      "keep": true
+     },
+     {
+      "at": "받치는 목표에는"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0605",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "아래 계산 근거에는 식과 원천이 있어요. 식이 이 KPI의 정의입니다. 여기서는 설비를 지켜본 시간에서 보호 정지로 서 있던 시간을 빼고, 남은 시간이 전체의 몇 퍼센트인지로 가동률을 재요. 원천은 그 시간을 어느 기록에서 읽었는지를 알려 주고요. 이론에서 든 정의와는 재는 법이 조금 다르죠. 이렇게 공장마다 다를 수 있어서, 정의를 적어 두어야 누가 재도 같은 값이 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "dialog[data-kpi-sheet][open] .kpi-sheet-sec dl.kv dt",
+      "exact": "식",
+      "also": [
+       "next"
+      ],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "식과 원천이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[data-kpi-sheet][open] .kpi-sheet-sec dl.kv dt",
+      "exact": "원천",
+      "also": [
+       "next"
+      ],
+      "text": true,
+      "hl": "band",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[data-kpi-sheet][open] .kpi-sheet-sec dl.kv dd",
+      "contains": "Σ(관측 분",
+      "phrase": "보호 정지 분",
+      "anchor": "margin",
+      "hl": "underline"
+     },
+     {
+      "at": "보호 정지로"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0606",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "옆 판을 닫으면 카드들 아래에 목표값 바꿔 보기라는 줄이 접혀 있어요. 펼치면 KPI마다 원래 목표와 시험 목표 칸이 나옵니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "dialog[data-kpi-sheet][open] [data-kpi-sheet-close]"
+     },
+     {
+      "at": "닫으면"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView details.kpi-trial > summary",
+      "phrase": "목표값 바꿔 보기",
+      "hl": "band"
+     },
+     {
+      "at": "목표값 바꿔 보기라는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#kpiView details.kpi-trial > summary",
+      "phrase": "목표값 바꿔 보기",
+      "anchor": "after"
+     },
+     {
+      "at": "펼치면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView details.kpi-trial table"
+     },
+     5
+    ],
+    [
+     "scroll",
+     {
+      "css": "#kpiView details.kpi-trial > summary",
+      "top": 70
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView details.kpi-trial table thead th",
+      "exact": "원래 목표",
+      "hl": "underline"
+     },
+     {
+      "at": "원래 목표와"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView details.kpi-trial table thead th",
+      "exact": "시험 목표",
+      "hl": "underline",
+      "keep": true
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0607",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "목표값은 공장이 자기 사정에 맞게 정해 두는 값이죠. 그 값을 다르게 잡으면 판정이 어떻게 되는지 볼게요. 이번에는 안전을 재는 KPI로 해 보겠습니다. 표 아래쪽에서 인터록 여유 줄을 찾으세요. 기름 온도가 인터록이 걸리는 값까지 얼마나 남았는지를 재는 KPI예요. 원래 목표는 십 도이고 지금 판정은 달성입니다. 시험 목표 칸에 이십을 넣고, 아래에 있는 시험 판정 단추를 누릅니다.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView details.kpi-trial table tbody tr:has([data-kpi-target=\"msr:safety-margin\"])",
+      "contains": "인터록 여유",
+      "hl": "band"
+     },
+     {
+      "at": "인터록 여유 줄을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView details.kpi-trial table tbody tr:has([data-kpi-target=\"msr:safety-margin\"]) td:nth-child(2)",
+      "exact": "10 ℃",
+      "hl": "underline"
+     },
+     {
+      "at": "원래 목표는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView details.kpi-trial table tbody tr:has([data-kpi-target=\"msr:safety-margin\"]) td:nth-child(4)",
+      "exact": "달성",
+      "hl": "underline"
+     },
+     {
+      "at": "지금 판정은"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#kpiView details.kpi-trial table tbody tr:has([data-kpi-target=\"msr:safety-margin\"]) input",
+      "anchor": "center"
+     },
+     {
+      "at": "이십을 넣고"
+     }
+    ],
+    [
+     "key",
+     "2"
+    ],
+    [
+     "key",
+     "0"
+    ],
+    [
+     "click",
+     {
+      "css": "#kpiView [data-kpi-trial-run]"
+     },
+     {
+      "at": "누릅니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) h2",
+      "exact": "시험 목표 1개를 적용해 판정한 결과입니다",
+      "long": true
+     },
+     30
+    ]
+   ]
+  },
+  {
+   "id": "t0608",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "위쪽에 안내가 떴어요. 인터록 여유가 달성에서 미달로 바뀌었다고 적혀 있죠. 실제값은 그대로인데 목표를 십에서 이십으로 올렸더니 판정이 달라진 겁니다. 위쪽 숫자 칸의 미달도 하나 늘었고요. 달성인지 미달인지는 잰 값과 목표값을 견줘서 정하니까, 목표값을 어디에 두느냐에 따라 같은 실제값도 다르게 판정됩니다. 어떤 조치가 성과를 지켰다, 못 지켰다고 말할 때도 그 바탕에는 이렇게 정해 둔 목표값이 있는 거예요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) h2",
+      "also": [
+       {
+        "css": "#kpiView .alert:has([data-kpi-trial-reset])"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "안내가 떴어요"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) .kpi-why li",
+      "phrase": "달성 →",
+      "anchor": "margin",
+      "hl": "underline"
+     },
+     {
+      "at": "달성에서 미달로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) .kpi-why li b:last-child",
+      "exact": "미달",
+      "hl": "underline",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) .kpi-why li",
+      "phrase": "목표 10 →",
+      "anchor": "margin",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "목표를 십에서 이십으로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) .kpi-why li b:nth-of-type(2)",
+      "exact": "20",
+      "hl": "underline",
+      "keep": true
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView [data-kpi-group=\"missed\"]",
+      "anchor": "below",
+      "hl": "box"
+     },
+     {
+      "at": "숫자 칸의 미달도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0609",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "안내에는 지식에 적힌 목표값은 읽기만 했고 그대로라는 말도 있습니다. 정말 그런지, 안내 끝에 있는 원래대로 단추를 눌러 볼게요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) section p:first-child",
+      "phrase": "지식 그래프의 목표값(Measure.target)은 읽기만 했고 그대로입니다",
+      "hl": "underline"
+     },
+     {
+      "at": "읽기만 했고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#kpiView .alert:has([data-kpi-trial-reset]) [data-kpi-trial-reset]"
+     },
+     {
+      "at": "눌러 볼게요"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView [data-kpi-group=\"missed\"] .stat-value",
+      "exact": "0개",
+      "long": true
+     },
+     30
+    ],
+    [
+     "wait",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:safety-margin\"]"
+     },
+     5
+    ]
+   ]
+  },
+  {
+   "id": "t0610",
+   "segment": 6,
+   "section": "6. 성과 지표 — KPI 목표를 바꿔 판정 보기",
+   "text": "미달로 넘어갔던 인터록 여유가 달성으로 돌아왔고, 카드에 적힌 목표도 십 도 그대로죠. 이 화면은 되돌릴 때 지식에서 목표값을 다시 읽어 옵니다. 그렇게 다시 읽어 온 값이 십 도이니, 지식에 든 목표값은 바뀌지 않은 거예요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:safety-margin\"]",
+      "hl": "box"
+     },
+     {
+      "at": "달성으로 돌아왔고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:safety-margin\"] .stat-note",
+      "phrase": "목표 10 ℃",
+      "hl": "underline"
+     },
+     {
+      "at": "목표도 십 도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0701",
+   "segment": 7,
+   "section": "7. 설비는 그대로인지 확인하기",
+   "text": "지금까지 세 화면에서 값을 바꿔 봤습니다. 위약금과 KPI 목표는 되돌린 자리에서 그대로인 걸 확인했죠. 남은 건 원격 수동으로 넣어 봤던 운전 모드예요. 설비의 운전 모드가 실제로 어떤지 보러 가겠습니다. 왼쪽 메뉴에서 유압 설비를 눌러 펼치고, 실시간 모니터링을 엽니다.",
+   "gap": 2.3,
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#menuList summary[data-menu=\"plant\"]"
+     },
+     {
+      "at": "눌러 펼치고"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#menuList a[data-tab=\"trends\"]"
+     },
+     {
+      "at": "엽니다"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#monUnits .unit[data-asset=\"HYD-01\"] .unit-head b",
+      "exact": "HYD-01"
+     },
+     15
+    ],
+    [
+     "settle",
+     null,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "t0702",
+   "segment": 7,
+   "section": "7. 설비는 그대로인지 확인하기",
+   "text": "첫 번째 설비 카드의 맨 위 줄을 보세요. 이름 옆에 운전 중이라고 적혀 있고, 그 옆의 운전 모드는 원격 자동입니다. 아까 원격 수동은 판단에 넣는 값으로만 썼고, 설비의 운전 모드는 바뀌지 않았어요.",
+   "gap": 2.0,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#monUnits .unit[data-asset=\"HYD-01\"] .unit-head",
+      "also": [],
+      "text": true,
+      "hl": "band"
+     },
+     {
+      "at": "맨 위 줄을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#monUnits .unit[data-asset=\"HYD-01\"] .unit-head [data-f=\"state\"] .tag",
+      "exact": "운전 중",
+      "hl": "box"
+     },
+     {
+      "at": "운전 중이라고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#monUnits .unit[data-asset=\"HYD-01\"] .unit-head [data-f=\"mode\"]",
+      "exact": "원격 자동",
+      "hl": "underline"
+     },
+     {
+      "at": "운전 모드는 원격 자동입니다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0704",
+   "segment": 7,
+   "section": "7. 설비는 그대로인지 확인하기",
+   "text": "왼쪽 메뉴의 처리 건 옆에 새로 붙은 숫자도 없어요. 1회차에 고장을 냈을 때는 처리 건이 열리면서 여기에 숫자가 붙었죠. 설비에 실제로 조치가 가려면 그때처럼 경보가 나서 처리 건이 열리고, 담당자가 승인해야 합니다. 오늘 바꿔 본 건 그 길에 오르지 않는 What-if, 만약 이렇다면 하고 해 본 계산이었어요.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#menuList a[data-menu=\"instances\"]",
+      "anchor": "right",
+      "dx": 44,
+      "hl": "box"
+     },
+     {
+      "at": "처리 건 옆에"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "t0705",
+   "segment": 7,
+   "section": "7. 설비는 그대로인지 확인하기",
+   "text": "오늘은 조치 하나가 추천되기까지 쓰이는 절차와 판단 규칙, 성과 기준을 포털에서 하나씩 찾아봤습니다. 운전 모드나 위약금, 목표값을 하나 바꿀 때마다 허용되는 조치와 순위, 판정이 달라졌죠. 그래서 추천안을 받으면 어떤 조건과 기준으로 계산한 결과인지를 근거에서 함께 확인해야 합니다.",
+   "gap": 1.3,
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#view-trends .page-head p"
+     },
+     {
+      "at": "오늘은"
+     }
+    ]
+   ]
+  }
+ ]
+}

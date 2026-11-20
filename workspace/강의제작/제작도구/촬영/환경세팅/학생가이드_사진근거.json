@@ -2209,7 +2209,7 @@
         ]
       ],
       "redactions": [],
-      "caption": "왼쪽 파란 단추. 다른 PC 화면이라 폴더 이름이 다릅니다.",
+      "caption": "왼쪽 파란 단추",
       "sha256": "8afb91b22b962c169a4bcdd71039f36ae40a2f17b059b52dbea85614814e0720",
       "raw_frame_sha256": "ba63e087138e8e3bc06dd5c62ad6e323ff1fa8df9c8b700650056ea09bd31c0b"
     },
@@ -2237,7 +2237,7 @@
         ]
       ],
       "redactions": [],
-      "caption": "위쪽 제한 모드 줄과 왼쪽 아래 Restricted Mode. 다른 PC 화면입니다.",
+      "caption": "위쪽 제한 모드 줄과 왼쪽 아래 Restricted Mode",
       "sha256": "42fc11c7baeb6c85c2c0a05252bfeb4bae1f2fab09e5259a5f8f02bcdd13fa4c",
       "raw_frame_sha256": "6c7f3cb8ff06594f23a5b69a39c1e6887ed7b16d3bdec2167a0f5ccb8cfff8cc",
       "erase": [
@@ -2279,7 +2279,7 @@
         ]
       ],
       "redactions": [],
-      "caption": "왼쪽 칸의 Trust. 다른 PC 화면입니다.",
+      "caption": "왼쪽 칸의 Trust",
       "sha256": "d7b3123d2278f8ece2b3cf238ee57026d07a8323cfba10c4328d28c9677897bb",
       "raw_frame_sha256": "4607d9174151c1dd049b69039c27c2e011ed8c0d1a9083d3c5814fd5f0126b7e"
     },
