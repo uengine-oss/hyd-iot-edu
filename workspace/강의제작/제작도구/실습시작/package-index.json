@@ -235,17 +235,17 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v49-lab",
+      "version": "v50-lab",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "af6abd44d9f05c457aced97d4f492d915cfb295763c8f9fc72a7fa34990d5e70",
+      "sha256": "8898790d082933bdfb6b4a66fbf8a488a9f82943ac3db867d186440bebc9271b",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
         "Codex에게 물어 제공 모델 파악하기",
         "역량 질문과 기대 답 정하기",
         "그래프에 남길지 정하기: 불용 결정 설비",
-        "스키마를 그래프로 옮기기: 적재와 다시 적재",
+        "스키마를 그래프로 옮기기: 넣기와 다시 넣기",
         "역량 질문을 쿼리로 묻기: 질문 1 구성 요소별 센서",
         "질문 2: 구성 요소마다 교체 부품",
         "질문 3: 다른 표기로 부품 찾기와 사용 설비",
@@ -256,7 +256,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab_guide.html",
-        "sha256": "c2ea739968df4743517f68a16caebdbca1329efcd763a98c22959ed4a704aa87"
+        "sha256": "1eaf991617f67eec58ac1e698be9dd6011e9d8e16875587a96964b197693f7b5"
       }
     },
     {
@@ -264,10 +264,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v49-lab",
+      "version": "v50-lab",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "bbad8076058724b53729acd1baa578a26f3cf2511c93d5259b30b205992ac0dd",
+      "sha256": "b2ffa6ac88db56f18b094ad5a452989ee6e318fb269e8b233b8044c9ae9d38e7",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 자료 파악하기",
@@ -282,7 +282,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "3ce2f0135533d09bb28e8135ecb419846005b2474f477ad0f7dc7d2b96a81d53"
+        "sha256": "4c225abcccfa6be90291030b9cb069585806822e3c6bedc598f6c636b3327050"
       }
     },
     {
