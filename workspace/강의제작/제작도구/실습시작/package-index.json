@@ -293,7 +293,7 @@
       "version": "v7-lab",
       "folder": "action-criteria-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab.zip",
-      "sha256": "23b8e61e66149a89fcec8a1d5f5bfbecab2ec468e489f3b3acd4777c5085b7a3",
+      "sha256": "72d62c925a4e233d690a161435bb9d9ca4144762a5ae2836d3c1c847540bee47",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 매뉴얼과 결정표 파악하기",
@@ -308,7 +308,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab_guide.html",
-        "sha256": "07e7017bd4422e553638228a2bc90179a5a04a5bce984be7642ee276764bb075"
+        "sha256": "9c75e41344c3784c57dc85ab486bed7ee1b4c2e7d34d8ae6e03a2c318f2de029"
       }
     },
     {
