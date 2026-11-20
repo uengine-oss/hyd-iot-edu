@@ -197,6 +197,8 @@ export async function makeUI(ctx){
   if(name.startsWith('node:')){const n=await node(name.slice(5));return{...n,hl:circleBox(n)};}
   // 원을 짚을 때는 테두리에서 18px 떨어진 오른쪽 아래를 짚는다(테두리 바깥 4~12px는 띠라서, 거기에 커서를 대면 띠가 진해져 끌어낼 자리처럼 보인다).
   if(name.startsWith('look:')){const n=await node(name.slice(5)),d=(n.r+18)*Math.SQRT1_2;return{x:n.x+d,y:n.y+d,hl:circleBox(n)};}
+  // 원 안쪽(원을 잡아 옮기는 자리) — 이름 글자를 덮지 않게 가운데에서 왼쪽 아래로 비킨 자리를 짚는다.
+  if(name.startsWith('inner:')){const n=await node(name.slice(6));return{x:n.x-n.r*0.45,y:n.y+n.r*0.5,hl:circleBox(n)};}
   // 원 둘레의 하늘색 띠(테두리 바로 바깥 — 새 원을 끌어낼 때 잡는 자리)를 오른쪽 아래에서 짚는다.
   if(name.startsWith('ring:')){const n=await node(name.slice(5));return{x:n.x+n.r*1.09*Math.SQRT1_2,y:n.y+n.r*1.09*Math.SQRT1_2,hl:circleBox(n)};}
   // 화살표의 두 끝: edgeFrom:가>나는 가 원의 테두리에서 나가는 자리, edgeTo:가>나는 나 원의 테두리에 닿는 자리(화살표를 따라 짚을 때 앞뒤로 쓴다 — 가운데의 관계 이름은 덮지 않는다).
