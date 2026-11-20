@@ -20,7 +20,7 @@ OUT = HERE / '통합_01_06_전체과정관찰_큐.json'
 VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
 # 2026-11-20: v0614(따로 뽑는 까닭)는 고장 유형 · 원인 줄이 보이는 v0617 뒤로 옮겼다(적대 검토 지적 2)
 ORDER = ([f'v06{n:02d}' for n in range(1, 13)] + ['v0658', 'v0613', 'v0615', 'v0616', 'v0617', 'v0614'] + [f'v06{n:02d}' for n in range(18, 36)] + ['v0656']
-         + [f'v06{n:02d}' for n in range(38, 54)] + ['v0657', 'v0654', 'v0655'])
+         + [f'v06{n:02d}' for n in range(38, 53)] + ['v0657', 'v0654', 'v0655', 'v0659'])
 GAP_JOIN, GAP_CUE, GAP_RESULT, GAP_SEG = 0.6, 1.3, 2.0, 2.3      # 영상 V-14 실습 값(잇기 · 큐 사이 · 조작 결과가 뜬 뒤 · 구간이 바뀌는 곳)
 
 
@@ -175,13 +175,12 @@ OPS = {
  'v0652': [P(T('#instDetail .case-progress > header h3', exact='진행 상황'), '진행 상황을'), P(STEP('원인 진단 · 냉각 조치 제안'), 'AI의 추천은'),
            P(STEP('운전원 승인'), '사람의 승인은'), P(STEP('냉각 명령'), '설비로 간 명령은'),
            P(SUB('추천안 그대로 승인했습니다', phrase='추천안 그대로 승인했습니다'), '승인 줄에는')],
- 'v0653': [P(STEP('가지 않은 단계'), '맨 아래에 가지'), C(T('#instRecord details.cr-skipped:not([open]) > summary'), '펼쳐 보면'), W(T(SKIP), 5),
-           P(T(SKIP, phrase='결과 보고: 반려'), '반려 단추로'), P(T(SKIP, phrase='결과 보고: 미달'), '미달로'), P(T(SKIP, phrase='정비 수행'), '정비를 마친')],
  # 홈에서 마무리
  'v0657': [C(T('#menuList a[data-tab="main"]'), '홈으로'), W(T('#mainStages a.stat')), P(T('#view-main .page-head p'), '맨 위 한 줄을')],
  # 「2건」: 쿨러 처리 건과 함께 v0612의 AI 추출도 처리 건 하나(「… 추출 제안」, 흐름 manual_source_extraction)로 끝나 세어진다 — 대본 v0654 「하나 세어져」와 어긋남(보고)
  'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='2건 처리 완료'), 10), P(T('#mainStages a.stat:nth-child(4) .stat-value'), '아래 결과 보기')],
  'v0655': [P(T('#mainStages a.stat[data-go-tab="scenario"] .go'), '결함 시뮬레이션에서')],
+ 'v0659': [],
 }
 
 
