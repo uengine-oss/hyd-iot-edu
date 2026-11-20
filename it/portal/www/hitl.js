@@ -716,6 +716,7 @@
     const readWarnings = r.warnings.length && !(stage === 3 && r.extraction.cache) ? UI.fold(`${stage === 3 ? '추출 경고' : '문서 읽기 확인'}<span class="muted num">${r.warnings.length}건</span>`, `<ol class="doc-issues">${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`) : '';
     const sourceFold = UI.fold('원문<span class="muted">보관한 원본 · AI가 읽는 글</span>', `<div class="doc-links"><a class="btn" data-variant="outline" data-size="sm" href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">${icon('download')}보관한 원본 내려받기</a>` +
       `<button type="button" class="btn" data-variant="outline" data-size="sm" id="manualFullSource">${icon('file-text')}추출 원문 전체 보기</button></div><div id="manualSourceText"></div>`);
+    // 이 문서의 이전 추출 결과: 지금 화면에 연 결과 말고 열 결과가 있을 때만 보인다(처음에는 숨겨 두고 loadExtractions 가 목록을 읽은 뒤 정한다) — 처음 추출한 학생에게 빈 접기를 두지 않는다
     const history = UI.fold('이 문서의 이전 추출 결과', `<div class="doc-links">${UI.field({ label: '추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}` +
       `<button type="button" class="btn" data-variant="outline" data-size="sm" id="manualAgentResult">선택한 결과 열기</button><button type="button" class="btn" data-variant="ghost" data-size="sm" id="manualExtractionMore" hidden>이전 추출 작업 더 보기</button></div>`);
     const another = `<button type="button" class="btn" data-variant="ghost" id="manualAnother">다른 문서 올리기</button>`;
@@ -740,7 +741,7 @@
             : '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.'}</p></div>
         <section class="doc-live" id="manualLive" aria-label="AI 추출 과정" hidden><div data-live-trail></div><div class="doc-progress" data-live-progress hidden></div><div data-live-host></div><div data-live-fail></div></section>
         <footer class="form-foot"><span id="manualAgentStatus" role="status" class="muted"></span>${another}<button type="button" class="btn" ${twin ? 'data-variant="outline" ' : ''}id="manualAgentExtract" ${ready ? '' : 'disabled'}>${icon('sparkles')}AI 추출 시작</button>${twin ? `<button type="button" class="btn" id="manualReviseSame">${icon('pencil')}${esc(UI.t('kn.revise'))}</button>` : ''}</footer>
-        <div class="doc-folds">${readWarnings}${sourceFold}${history}</div></div>`;
+        <div class="doc-folds">${readWarnings}${sourceFold}${history.replace('<details', '<details hidden data-runs')}</div></div>`;
     } else {
       const k = r.knowledge || {}, groups = KNOW_GROUPS.filter(([g]) => (k[g] || []).length);
       const cachedRun = !!(r.extraction && r.extraction.cache);      // 제공 문서 — 과정 접기에 절마다 뽑힌 것을, 결과 요약 아래에 서버가 한 일을 둔다
@@ -781,8 +782,8 @@
           <div class="doc-valid"><p>${UI.chipText(v.tag, { ok: 'success', warn: 'warning', danger: 'danger' }[v.tone])}<span>${esc(v.line)}</span></p>${v.more}</div>
           <div class="doc-folds">${manualExecutionHtml(r.validation, r, { ...H.catalog, ...H.manualCatalog })}${readWarnings}
             <details class="fold" id="manualProcess"><summary>추출 과정 보기<span class="muted">${cachedRun ? '절마다 뽑힌 것' : 'AI가 읽은 구간과 도구 호출'}</span></summary><div class="fold-body"><div class="doc-live" id="manualLive">${cachedRun ? cachedProcessHtml(r) : ''}<div data-live-host${cachedRun ? ' hidden' : ''}></div><div data-live-fail></div></div></div></details>
-            ${sourceFold}${history}
-            ${r.page_reviews ? UI.fold('쪽별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join('')) : ''}</div>
+            ${sourceFold}${history.replace('<details', '<details hidden data-runs')}
+            ${r.page_reviews && !cachedRun ? UI.fold('쪽별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join('')) : ''}</div>
         </div>
         <div class="panel-sec doc-review">
           <div class="doc-review-bar">${UI.tabs(kinds, '', 'data-review-kind')}<span class="muted">제안을 고르면 오른쪽에 원문 인용과 고칠 칸이 나옵니다.</span></div>
@@ -862,6 +863,9 @@
         else if (!select.value && select.options.length > 1) select.selectedIndex = 1;
         extractionOffset = page.next_offset;
         $('#manualExtractionMore').hidden = page.next_offset === null;
+        // 지금 연 결과(3단계) 말고 고를 결과가 하나라도 있으면 접기를 보인다
+        const here = r.extraction?.instance;
+        select.closest('details').hidden = !Array.from(select.options).some(o => o.value && o.value !== here) && page.next_offset === null;
         // 이 문서를 AI가 읽은 결과가 이미 있는데(다른 화면에 다녀왔거나 창을 새로 열었을 때) 「아직 읽기 전」이라고 말하지 않는다 — 있는 결과와 여는 길을 말하고 그 접기를 편다
         const noteEl = $('#manualStageNote'), last = page.items[0];
         if (!append && last && noteEl && noteEl.dataset.fresh !== undefined) {
@@ -1075,14 +1079,14 @@
         [...box.querySelectorAll('[data-know-drop]:checked')].map(i => [i.dataset.knowDrop, i.value]), by);
       if (built.stop) { stop(built.stop, built.at); return; }
       const request = built.request;
-      // 적재는 요청 둘 · 셋이 차례로 간다 — 4단계 자리에서 지금 어느 요청을 기다리는지 단계 목록이 하나씩 채워진다(서버가 주지 않는 진행률은 그리지 않는다)
+      // 적재는 요청 하나 · 둘이 차례로 간다(개정이면 빠지는 항목 확인 먼저) — 4단계 자리에서 지금 어느 요청을 기다리는지 단계 목록이 하나씩 채워진다(서버가 주지 않는 진행률은 그리지 않는다)
       msg(''); $('#manualDone').innerHTML = '';
       commitView(true, { busy: true });
       $('#manualCommitTitle').textContent = '검토한 내용을 지식 지도에 적재하는 중입니다';
       const flow = hydLive.steps($('#manualCommitSteps'), [...(r.previous_batch ? [{ key: 'changes', label: '개정으로 빠지는 항목 확인', hint: '이전 판본과 새 판본을 대조하는 중입니다.' }] : []),
         { key: 'commit', label: `검토한 내용을 지식 지도에 적재 — 매뉴얼 절 ${r.sections.length}개 · 조치 방법 ${r.procedures.length}개 · 단계 ${r.procedures.reduce((n, p) => n + p.steps.length, 0)}개` +
             (KNOW_GROUPS.some(([g]) => ((r.knowledge || {})[g] || []).length) ? ' · ' + KNOW_GROUPS.filter(([g]) => ((r.knowledge || {})[g] || []).length).map(([g, title]) => `${title} ${r.knowledge[g].length - box.querySelectorAll(`[data-know-drop="${g}"]:checked`).length}개`).join(' · ') : ''), hint: '절 · 조치 방법 · 단계 · 규칙 연결을 한 번에 넣는 중입니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
-        { key: 'reload', label: '적재한 문서 목록과 지식 지도 다시 읽기' }], { label: '적재 단계' });
+      ], { label: '적재 단계' });
       // 적재하지 않고 검토로 돌아갈 때: 단계 줄은 3단계로, 까닭은 그 아래 한 줄로
       const back = (text, bad) => { commitView(false); msg(text, bad); };
       let at = '';
@@ -1105,15 +1109,13 @@
         flow.start(at = 'commit');
         const out = await postJ(API.process + '/api/kg/manuals/commit', request);
         if (H.preview !== r) return;
-        flow.done('commit', { note: `절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}` });
+        flow.done('commit');      // 넣은 수는 이 줄 이름이 이미 말한다 — 같은 수를 아래 한 줄 · 메모로 또 적지 않는다
         // 서버 영수증의 candidate_activation = 이 적재가 실제로 기존 후보 규칙에 이어 붙인 조치 방법 {절차 번호: [규칙 id]}(manual_graph.candidate_joins) — 없으면 덧붙일 말이 없다
         const joined = Object.keys(out.candidate_activation || {}).map(id => (request.procedures.find(p => p.id === id) || {}).name || id);
-        msg(`적재 완료: 절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}.` + (joined.length ? ` 이미 있던 판단 규칙이 이 문서의 조치 방법 ${joined.join(' · ')}도 후보로 냅니다.` : ''));
+        msg(joined.length ? `이미 있던 판단 규칙이 이 문서의 조치 방법 ${joined.join(' · ')}도 후보로 냅니다.` : '');
         H.skills = [];
-        flow.start(at = 'reload');
-        await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
+        await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);      // 적재한 문서 목록 · 지식 지도를 다시 읽는다(화면 안의 일이라 단계 줄로 그리지 않는다)
         if (H.preview !== r) return;
-        flow.done('reload');
         renderManualSteps(4, { done: true });
         $('#manualCommitTitle').textContent = '지식 지도에 적재했습니다';
         $('#manualDone').innerHTML = `<footer class="form-foot doc-next"><button type="button" class="btn" data-variant="outline" id="manualNext">다른 문서 올리기</button>${UI.goLink('ontology', '지식 지도에서 보기')}${UI.goLink('scenario', '결함 시뮬레이션으로')}</footer>`;
@@ -1469,20 +1471,18 @@
       renderDdlSteps(3, { busy: true });
       // 적재는 요청 하나다 — 그동안 무엇을 지식 지도에 쓰는지(실제로 보내는 수)를 말하고, 끝나면 쓴 것이 그 줄에 남는다
       const sysN = new Set(p.inputs.map(i => i.system)).size;
-      const flow = hydLive.steps($('#ddlDone'), [{ key: 'commit', label: `시스템 ${sysN}개 · 입력 데이터 ${p.inputs.length}개를 지식 지도에 쓰는 중`, hint: '표마다 고른 출처 시스템과 판단 입력으로 쓸 열을 한 번에 넣습니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
-        { key: 'reload', label: '적재한 표 정의 목록과 지식 지도 다시 읽기' }], { label: '적재 단계' });
+      const flow = hydLive.steps($('#ddlDone'), [{ key: 'commit', label: `시스템 ${sysN}개 · 입력 데이터 ${p.inputs.length}개를 지식 지도에 쓰는 중`, hint: '표마다 고른 출처 시스템과 판단 입력으로 쓸 열을 한 번에 넣습니다. 도중에 실패하면 아무것도 들어가지 않습니다.' }], { label: '적재 단계' });
       flow.start('commit');
       try {
         const out = await postJ(API.process + '/api/kg/ddl/commit', { ...p, by: manualActor() });
         H.ddlDone = p;
-        flow.done('commit', { label: '지식 지도에 썼습니다', note: `시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개` }); flow.start('reload');
+        flow.done('commit', { label: '지식 지도에 썼습니다', note: `시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개` });
         end(true); c.textContent = '적재 완료';
         renderDdlSteps(3, { done: true });
         ddlSay(`적재했습니다. 시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개. 되돌리려면 아래 「적재한 표 정의」의 더 보기에서 되돌립니다.`);
         await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true);
-        flow.done('reload');
         $('#ddlDone').insertAdjacentHTML('beforeend', `<footer class="form-foot doc-next">${UI.goLink('fabric', '데이터 원천에서 보기')}${UI.goLink('ontology', '지식 지도에서 보기')}</footer>`);
-      } catch (e) { end(false); ['commit', 'reload'].forEach(k => { if (flow.state(k) === 'run') flow.fail(k, { note: e.message }); }); renderDdlSteps(2); ddlSay('적재하지 못했습니다: ' + e.message, true); }
+      } catch (e) { end(false); if (flow.state('commit') === 'run') flow.fail('commit', { note: e.message }); renderDdlSteps(2); ddlSay('적재하지 못했습니다: ' + e.message, true); }
     });
   }
   // 표 정의 읽기 요청 하나 — 내 파일이든 제공 예시든 같다: POST /api/kg/ddl/preview { filename, text, catalog }

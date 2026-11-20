@@ -18,8 +18,8 @@
   --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, "Pretendard Variable", monospace;
 
   /* 2-2 상태의 색(본: process-gpt-lite 밝은 테마). 틀과 단추는 무채색이고, 색은 이 다섯 상태에만 쓴다 */
-  --st-mine: #e0613f;       /* 내 차례 — 점 · 테 · 섞은 바탕 */
-  --st-mine-fill: #c74a2a;  /* 내 차례 알약의 채움(흰 글과 대비 4.5 이상이 되게 한 단계 짙다) */
+  --st-mine: #e0613f;       /* 내가 할 일 — 점 · 테 · 섞은 바탕 */
+  --st-mine-fill: #c74a2a;  /* 내가 할 일 알약의 채움(흰 글과 대비 4.5 이상이 되게 한 단계 짙다) */
   --st-fail: #d64545;       /* 실패 · 멈춤 · 위험 — 점 · 테 · 섞은 바탕 */
   --st-fail-fill: #c93a3a;  /* 실패 알약의 채움(흰 글과 대비 4.5 이상) */
   --st-fail-ink: #b93333;   /* 흰 바탕 위의 실패 글 */
@@ -132,7 +132,7 @@ select:not(:disabled):hover, input:is([type="checkbox"], [type="radio"]):not(:di
 .sidebar ul ul a { height: 28px; font-weight: 400; color: var(--muted-foreground); }      /* 딸린 화면 줄: 28px + 사이 4px(키트 sidebar-07 의 SidebarMenuSub) */
 .sidebar ul ul a:hover, .sidebar ul ul a[aria-current="page"] { color: var(--sidebar-foreground); }
 .sidebar ul ul a[aria-current="page"] { font-weight: 500; }
-/* 처리 건 곁의 건수 점: 내 차례가 있을 때만 주황 원에 흰 숫자 */
+/* 처리 건 곁의 건수 점: 내가 할 일이 있을 때만 주황 원에 흰 숫자 */
 .nav-count { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-pill); background: var(--st-mine-fill); color: #fff; font-size: var(--fs-xs); font-weight: 600; line-height: 18px; text-align: center; }
 .nav-count:empty { display: none; }
 .nav-count.unknown { background: none; color: var(--muted-foreground); box-shadow: inset 0 0 0 1px var(--input); }
@@ -274,7 +274,7 @@ main:focus { outline: none; }
 @keyframes ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.5); opacity: 0; } }
 
 /* 4-5 상태 알약(UI.chip · UI.chipText → .tag): 높이 22px · 좌우 8px · 알약 · 12px/500. 앞에 점을 그리지 않는다. 색은 2-2:
-   내 차례 = 채운 주황 · 흰 글 │ 실패 = 채운 빨강 · 흰 글 │ 진행 = 파랑 22 % 바탕 │ 정상 = 초록 26 % 바탕 │ 주의 = 주황 16 % 바탕 · 주황 글 │ 보통 = --muted 바탕 */
+   내가 할 일 = 채운 주황 · 흰 글 │ 실패 = 채운 빨강 · 흰 글 │ 진행 = 파랑 22 % 바탕 │ 정상 = 초록 26 % 바탕 │ 주의 = 주황 16 % 바탕 · 주황 글 │ 보통 = --muted 바탕 */
 .tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: 500; line-height: 1; white-space: nowrap; flex: none;
   color: var(--pill-ink); background: var(--muted); }
 .tag[data-tone="mine"] { color: #fff; background: var(--st-mine-fill); }
@@ -324,7 +324,7 @@ main:focus { outline: none; }
 .view-tabs[data-size="sm"] > [role="tablist"] > [role="tab"] { height: 32px; font-size: var(--fs-sm); }
 /* 4-13 목록 줄(.rows > .row): 높이 56px 안팎 · 이름(14px/500) 아래 보조 줄(13px), 오른쪽 끝 상태 알약. 올리면 · 고르면 --accent, 고른 줄은 이름 600. 끝난 줄([data-done])은 이름이 옅다 */
 .rows { display: grid; gap: 2px; align-content: start; }      /* 목록은 상자에 넣지 않는다 — 줄마다 둥근 면 하나 */
-.rows-group { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 12px 4px; font-size: var(--fs-sm); line-height: 20px; font-weight: 500; color: var(--muted-foreground); }      /* 묶음 머리(4-8): 내 차례 · 진행 중 · 처리 완료 */
+.rows-group { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 12px 4px; font-size: var(--fs-sm); line-height: 20px; font-weight: 500; color: var(--muted-foreground); }      /* 묶음 머리(4-8): 내가 할 일 · 진행 중 · 처리 완료 */
 .rows-group:first-child { padding-top: 0; }
 :is(.rows, .row-act) > .row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 12px; align-items: center; width: 100%; min-height: 56px; padding: 8px 12px; text-align: left; cursor: pointer;
   border-radius: var(--r-in); position: relative; transition: background .12s; }
@@ -448,7 +448,7 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); fo
 .prose th, .prose td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
 .prose th { background: var(--muted); font-weight: 600; }
 
-/* ───────── 내가 할 일(.turn): 내 차례일 때만 뜨는 카드. 배치는 case.css ───────── */
+/* ───────── 내가 할 일(.turn): 내가 할 일이 있을 때만 뜨는 카드. 배치는 case.css ───────── */
 .turn { border: 1px solid color-mix(in srgb, var(--st-mine) 45%, transparent); border-radius: var(--r-card); background: var(--card); overflow: hidden; }
 .turn-head { display: flex; align-items: flex-start; gap: 16px; padding: var(--pad-card) var(--pad-card) 16px; }
 .turn-eyebrow { font-size: var(--fs-xs); font-weight: 600; color: var(--st-warn-ink); display: flex; align-items: center; gap: 8px; }
@@ -515,7 +515,7 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); fo
 .doc-bar .mono { min-width: 0; overflow-wrap: anywhere; }
 
 /* 4-11 단계 타임라인(UI.timeline · 처리 건의 진행 상황 → .steps > .step): 세로 목록, 칸 24px(점) + 나머지, 줄 아래 14px.
-   점(.step-mark) 24px 원 — data-state: done 끝남 = 초록 채움 + 흰 체크 │ now 지금 = 2px --primary 테([data-busy] 기계가 일하는 중이면 1.6초 맥박) │ mine 내 차례 = 주황 채움
+   점(.step-mark) 24px 원 — data-state: done 끝남 = 초록 채움 + 흰 체크 │ now 지금 = 2px --primary 테([data-busy] 기계가 일하는 중이면 1.6초 맥박) │ mine 내가 할 일 = 주황 채움
    │ fail 실패 = 빨강 채움 │ todo 남음 = --muted 바탕 + 2px --border 테 │ skip 가지 않은 단계 = 흐리게. [data-kind="gateway"] 갈림길은 45° 돌린 사각.
    이음선은 점 가운데의 2px --border(끝난 단계 아래는 초록 55 %). 이름 14px/500, 아래 한 줄 13px 보조, 오른쪽 끝 시각(본: lite StepTimeline) */
 .steps { position: relative; display: grid; gap: 0; }

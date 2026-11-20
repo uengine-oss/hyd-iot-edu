@@ -221,7 +221,7 @@ def inbox_view(rt, user_id: str, now=None) -> dict:
         raise LookupError(f"없는 사람 사용자입니다: {user_id}")
     my_roles = roles_of(repo, tenant, user_id)
     mine = set(my_roles) | {user_id}
-    # 진행 중인 처리 건 · 열린 작업 전부(자르지 않는다 — 자르면 오래된 내 차례 작업이 말없이 사라진다). 열린 것만 읽으므로 크기는 지금 열린 일의 수다
+    # 진행 중인 처리 건 · 열린 작업 전부(자르지 않는다 — 자르면 오래된 「내가 할 일」 작업이 말없이 사라진다). 열린 것만 읽으므로 크기는 지금 열린 일의 수다
     instances = {i["proc_inst_id"]: i for i in repo.list_instances(status="RUNNING", limit=None, tenant_id=tenant)}
     rows = repo.list_workitems(status="IN_PROGRESS", limit=None, tenant_id=tenant)
     tasks, asked, unassigned = [], [], {}

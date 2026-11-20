@@ -63,7 +63,7 @@ window.hydMenu = { list: MENU, screens: SCREENS, of: menuOf, name: tabName };
   if (lost.length || ghost.length) throw new Error(`주 메뉴 표(index.html data-tabs)와 화면 구역이 다릅니다 — 메뉴에 없는 화면: ${lost.join(', ') || '없음'} · 화면이 없는 메뉴 항목: ${ghost.join(', ') || '없음'}`);
 }
 /* 메뉴 줄(키트의 sidebar 마크업): 화면이 하나인 메뉴는 그 화면으로 가는 줄 하나, 둘 이상인 메뉴는 접기(details) — 펼치면 그 안의 화면이 들여쓰기로 보인다.
-   줄마다 주소(#/<화면>)를 가진 링크라 새 탭으로도 열린다. 「처리 건」 곁의 건수 점(#navTodo — 내 차례인 처리 건 수)은 refreshTodoCount 가 채우고, 비어 있으면 CSS 가 그리지 않는다.
+   줄마다 주소(#/<화면>)를 가진 링크라 새 탭으로도 열린다. 「처리 건」 곁의 건수 점(#navTodo — 내가 할 일이 있는 처리 건 수)은 refreshTodoCount 가 채우고, 비어 있으면 CSS 가 그리지 않는다.
    이름 툴팁(data-tooltip)은 메뉴 줄을 접어 아이콘만 보일 때만 뜬다(portal-kit.css). */
 const miniRail = () => document.documentElement.dataset.rail === 'mini' && matchMedia('(min-width: 768px)').matches;
 function renderMenu() {
@@ -735,7 +735,7 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 요청을 보내는 중`);
   try {
-    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 주입 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`); followFault(); await refreshBiz(); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 주입 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`, false, null, !!anchorNote(r)); followFault(); await refreshBiz(); }
     else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록했습니다' : ' · 이어진 처리 건이 없어 감사 기록에만 남겼습니다'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const off = bizStartOff(b);
@@ -772,7 +772,8 @@ async function unitAction(asset, act, mode, button) {
   refreshFast();
 }
 // 이 화면에서 누른 단추의 결과: 카드 아래 한 줄(#scenarioMsg)과 「조작 기록」 접기에 남는다
-function logLine(s, failed = false, go = null) { state.log.unshift({ t: new Date(), text: s, failed }); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(s, failed, go); }
+// show=false: 그 결과를 다른 칸이 이미 보이는 조작(쿨러 열화 주입 — 바로 아래 「주입에서 처리 건까지」 과정 칸이 첫 줄 「결함이 들어갔습니다」부터 말한다)은 한 줄을 비우고 조작 기록에만 남긴다
+function logLine(s, failed = false, go = null, show = true) { state.log.unshift({ t: new Date(), text: s, failed }); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(show ? s : '', failed, go); }
 function scenarioMessage(text, failed = false, go = null) {
   const box = $('#scenarioMsg'); box.textContent = text; if (failed) box.dataset.tone = 'danger'; else delete box.dataset.tone;
   if (go) box.insertAdjacentHTML('beforeend', ` <a class="go" href="${esc(go.href)}">${esc(go.label)}</a>`);
@@ -1038,7 +1039,7 @@ async function refreshFast() {
     if (state.tab === 'trends') renderTrends();
   } finally { refreshFast.busy = false; }
 }
-// 메뉴 「처리 건」 곁의 건수 점: 내 차례의 수 — 처리 건 화면의 「내 차례」 묶음과 같은 셈(ui.js hydCases.groups).
+// 메뉴 「처리 건」 곁의 건수 점: 「내가 할 일」의 수 — 처리 건 화면의 「내가 할 일」 묶음과 같은 셈(ui.js hydCases.groups).
 // 0 이면 그리지 않는다. 못 읽었으면 지난 수를 지우고 까닭을 메뉴 줄의 title 에 둔다(0 건으로 읽히지 않게 「?」를 보인다)
 async function refreshTodoCount() {
   const dot = $('#navTodo'), button = dot.closest('a');

@@ -19,11 +19,12 @@
      누르면 입력 · 출력 펼침; status.tsx — 맨 위 상태 · 걸린 시간 · 단계 수 요약 (github.com/langgenius/dify)
    - n8n 실행 화면 https://docs.n8n.io/workflows/executions/ — 실행 한 건의 노드 순서 · 노드마다 성공 표시 · 들어간 값 / 나온 값(표 ↔ 원문 JSON 전환) */
 /* 2026-11-16 process-gpt-lite 의 StepTimeline · AgentActivity 를 본으로: 이 파일이 처리 건 한 건의 「진행 상황 › 목록」(단계 타임라인 — 디자인기준 4-11)과 단계 한 줄의 옆 판(4-19)을 그린다.
-   단계 한 줄 = 점(끝남 · 지금 · 내 차례 · 실패 · 남음) · 단계 이름 · (그 상태일 때만) 알약 · 오른쪽 끝 시각, 아래 한 줄 「누가 · 결론 한 마디」. 줄을 누르면 옆 판이 열린다.
+   단계 한 줄 = 점(끝남 · 지금 · 내가 할 일 · 실패 · 남음) · 단계 이름 · (그 상태일 때만) 알약 · 오른쪽 끝 시각, 아래 한 줄 「누가 · 결론 한 마디」. 줄을 누르면 옆 판이 열린다.
    옆 판의 보기: AI 단계는 판단(결론 · 근거 · 후보 비교) · 실행 기록 · 받은 일 · 데이터와 지식 · 받은 값과 넘긴 값 · 원문, 그 밖의 단계는 내용 · 받은 값과 넘긴 값 · 원문.
    기계가 일하는 중인 단계는 그 줄 아래에 지금 하는 일 한 줄과 방금 한 일이 한 줄씩 흘러나오고(7절), 줄을 누르면 그 호출의 요청 · 결과 원문이 펼쳐진다. 사람을 기다리는 단계는 멈춘 모양이다.
-   남은 단계는 이름만 선 줄로, 길이 갈리는 곳은 갈림 한 줄(접기 안에 가지마다의 길)로 둔다. 끝난 건의 가지 않은 길은 그리지 않는다 — 흐름 그림을 아는 사람이 확인할 정보라
-   학생 이야기에 쓰이지 않는다(사용자 2026-11-20 「가지않은 단계를 표시를 해야하는 이유」 · 「다 처리해줘」). 흐름 그림 보기는 그 갈래를 흐리게 그대로 보인다.
+   남은 단계는 정해진 데까지만 이름만 선 줄로 둔다. 길이 갈리는 곳 뒤의 길(아직 나지 않은 결과가 정할 가지)과 지금 단계에 걸린 기한이 먼저 오면 가는 길, 끝난 건의 가지 않은 길은
+   그리지 않는다 — 흐름 그림을 아는 사람이 확인할 정보라 학생 이야기에 쓰이지 않는다(사용자 2026-11-20 「가지않은 단계를 표시를 해야하는 이유」 · 「다 처리해줘」).
+   흐름 그림 보기는 그 갈래를 흐리게 그대로 보이고, 기한은 「내가 할 일」 카드가 말한다.
    세는 숫자 · 스킬 전달 표 · 해시 · 단서 조항 · 원문 JSON · 「기록에 없는 것」은 모두 옆 판 안에 있다. */
 (function () {
   const W = () => window.hydWords;
@@ -708,7 +709,7 @@
     }
     if (b.rows.length) sections.push(sec(`시스템 기록 ${b.rows.length}줄`, sysRowsHtml(b), { open: b.live }));
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
-    return Object.assign(b, { type: 'check', lane: 'system', icon, title: b.name, actor: /^(incident:reobserve|plant:test-run)$/.test(w.tool) ? '설비 · 센서' : '구매 · 재고 관리', sentence, chips, sections, verdict,
+    return Object.assign(b, { type: 'check', lane: 'system', icon, title: b.name, actor: /^(incident:reobserve|plant:test-run)$/.test(w.tool) ? '센서' : '구매 · 재고 관리', sentence, chips, sections, verdict,
       state: w.status === 'DONE' && verdict === false ? 'bad' : undefined, now: b.live ? '확인하는 중' : '', ids: [w.tool] });
   }
 
@@ -1152,14 +1153,15 @@
     !kinds ? [r.text] : r.parts ? r.parts.filter(p => kinds.includes(p.kind)).map(p => p.text) : kinds.includes(r.noticeKind) ? [r.text] : []))];
   const noticeHtml = rows => { const xs = noticeTexts(rows); return xs.length ? `<div class="cr-notices">${xs.map(t => `<p class="cr-notice">${UI.icon('info')}<span>${e(t)}</span></p>`).join('')}</div>` : ''; };
   /* 한 단계의 줄: 점의 상태 · 머리(이름 · 알약 · 시각) · 보조 줄(누가 · 결론 한 마디) · 줄 아래(기계가 일하는 중일 때만 흘러나오는 줄).
-     점: 끝남 done · 지금 now(기계가 실제로 일하는 중이면 busy — 맥박) · 내 차례 mine(멈춘 모양) · 실패 fail · 남음 todo. 알약은 그 상태일 때만(내 차례 · 실패 · 기준 밖 · 멈춤 · 보류) */
+     점: 끝남 done · 지금 now(기계가 실제로 일하는 중이면 busy — 맥박) · 내가 할 일 mine(멈춘 모양) · 실패 fail · 남음 todo. 알약은 그 상태일 때만(실패 · 기준 밖 · 멈춤 · 보류) —
+     내가 할 단계에는 알약을 달지 않는다: 보조 줄이 「위의 「내가 할 일」에서 …」로 말하고, 같은 말이 처리 건 머리 · 카드 · 목록에 이미 있다 */
   function rowParts(s, m, mine, seen, stuck) {
     const failed = ['fail', 'stop', 'bad'].includes(s.state);
     const myTurn = !!(mine && s.w && mine.has(s.w.id)) && !failed;
     const state = myTurn ? 'mine' : PIN[s.state] || 'todo';
     const busy = s.state === 'run' && s.lane !== 'person' && !myTurn;
     const hold = s.state === 'wait' && s.w && s.w.status === 'PENDING';
-    const pill = myTurn ? UI.chipText('내 차례', 'mine') : s.state === 'bad' ? UI.chipText('기준 밖', 'danger') : s.state === 'fail' ? UI.chipText('실패', 'danger')
+    const pill = myTurn ? '' : s.state === 'bad' ? UI.chipText('기준 밖', 'danger') : s.state === 'fail' ? UI.chipText('실패', 'danger')
       : s.state === 'stop' ? UI.chipText('멈춤', 'danger') : s.state === 'cancel' ? UI.chipText('취소', 'neutral') : hold ? UI.chipText('보류', 'warning') : '';
     const names = [...new Set(String(s.actor || '').split(' · ').filter(Boolean))];
     const who = (names.length ? names : [LANE[s.lane]]).join(' · ') + (s.gen ? ` · ${s.gen + 1}${UI.t('inst.gen')}` : '');
@@ -1189,17 +1191,6 @@
     const body = s.type === 'agent' && (s.live || handing) && !failed ? liveHtml(s, seen) : s.liveBox || '';
     return { state, busy, row, body };
   }
-  /* 갈림 뒤의 길: 정해진 남은 단계는 타임라인의 남음 줄로 서고(draw), 길이 갈리는 곳부터는 가지마다 한 줄씩 적는다 — 어느 가지로 갈지는 아직 나지 않은 결과가 정하므로
-     한 길(「… → 결과 보고: 정상」)을 미리 골라 적지 않는다. 가지 안에서 또 갈리면 거기까지만 적고 그 갈림의 이름을 댄다. 지금 단계에 걸린 기한(경계 타이머 — 납기 초과 · 승인 지연)이 먼저 오면 가는 길도 함께 적는다 */
-  function forkHtml(fork, timers = []) {
-    const arrow = UI.icon('arrow-right'), chain = names => names.map(n => `<span>${e(UI.flowName(n))}</span>`).join(arrow);
-    const tailOf = b => b.more ? `<span class="muted">「${e(UI.flowName(b.more))}」에서 다시 갈림</span>` : b.end != null ? `<span class="muted">${UI.plainEnd(b.end) ? '처리 완료' : `처리 완료(${e(UI.flowName(b.end))})`}</span>` : '';
-    const branch = (b, label) => { const parts = [b.steps.length ? chain(b.steps) : '', tailOf(b)].filter(Boolean).join(arrow); return `<li><b>${e(label)}</b>${parts ? arrow + parts : ''}</li>`; };
-    const forked = fork ? `<ul class="rest-branches">${fork.branches.map(b => branch(b, UI.flowSeq(b.label) || b.label || '조건에 맞으면')).join('')}</ul>` : '';
-    const timed = timers.length ? `<p class="rest-fork">지금 단계에 걸린 기한이 먼저 오면</p><ul class="rest-branches">${timers.map(b => branch(b, UI.flowName(b.label))).join('')}</ul>` : '';
-    return forked + timed;
-  }
-
   // 「기록에 없는 것」을 그 단계의 접기 안으로 보낸다: 종류별로 그 말이 가리키는 단계(없으면 마지막 단계)
   function gapsByStep(m) {
     const uniq = [...new Map(m.gaps.map(g => [g.key, g])).values()].sort((a, b) => (b.strong ? 1 : 0) - (a.strong ? 1 : 0));
@@ -1221,7 +1212,7 @@
   }
 
   /* ================================================================ 컨트롤러: mount(host, opts) → { update(view), ingest(event), openSheet(key, tab) }
-     opts.mine()  — 지금 내가 처리할 작업 id 묶음(그 단계의 점과 알약이 「내 차례」가 된다)
+     opts.mine()  — 지금 내가 처리할 작업 id 묶음(그 단계의 점과 알약이 「내가 할 일」 모양이 된다)
      opts.planned(activityId) — 아직 시작하지 않은 단계의 옆 판에 넣을 것({ title, sub, html }) · 없으면 그 줄은 눌리지 않는다
      opts.onDraw(model, host) — 그린 뒤 부른다. 단계마다 [data-step-slot] 칸이 있고 그 안은 부른 쪽이 채운다(멈춘 단계의 복구 단추 등) — 다시 그려도 그 칸은 건드리지 않는다
      옆 판(dialog.sheet)은 문서 몸에 하나 붙인다 — 목록이 가려진 때(흐름 그림 보기)에도 그림의 상자를 눌러 열 수 있게 */
@@ -1360,10 +1351,10 @@
       // 아직 울리지 않은 기한 타이머는 일어난 일이 아니다 — 단계 줄로 그리지 않는다(기한은 「내가 할 일」 카드와 「자세한 기록」의 단계 표에 있다)
       const shown = m.steps.filter(s => !(s.type === 'timer' && s.w && s.w.status !== 'DONE'));
       const mine = opts.mine ? opts.mine() : null;
-      // 남은 단계: 정해진 데까지는 이름만 선 남음 줄(흐름 그림의 남은 상자와 같은 차례), 길이 갈리는 곳은 갈림 한 줄
+      // 남은 단계: 정해진 데까지만 이름만 선 남음 줄(흐름 그림의 남은 상자와 같은 차례) — 갈림 뒤의 길은 흐름 그림이 보인다
       const path = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst) : null;
-      const rest = path ? path.nodes.filter(n => n.state === 'todo') : [], fork = path ? path.fork : null, timers = path ? path.timers || [] : [];
-      const want = shown.map(s => s.key).concat(rest.map(n => 'todo:' + n.id), fork || timers.length ? ['next'] : []);
+      const rest = path ? path.nodes.filter(n => n.state === 'todo') : [];
+      const want = shown.map(s => s.key).concat(rest.map(n => 'todo:' + n.id));
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
       // 줄 하나: 점 · 누르는 줄(머리 + 보조 줄 — 옆 판을 연다. open 이 없으면 눌리지 않는 글) · 줄 아래(흘러나오는 줄 · 접기) · 부른 쪽이 채우는 칸
       const place = (key, i, parts) => {
@@ -1375,7 +1366,6 @@
         }
         li.dataset.state = parts.state;
         li.toggleAttribute('data-busy', !!parts.busy);
-        if (parts.gateway) li.dataset.kind = 'gateway'; else delete li.dataset.kind;
         const mark = li.querySelector('.step-mark'), icon = MARK[parts.state] || '';
         if (mark._icon !== icon) { mark.innerHTML = icon ? UI.icon(icon) : ''; mark._icon = icon; }
         const rowBox = li.querySelector('[data-step-row]');
@@ -1415,13 +1405,6 @@
       const roleOf = n => n.who === 'agent' ? LANE.agent : n.who === 'human' ? (n.role || LANE.person) : LANE.system;
       rest.forEach(n => place('todo:' + n.id, at++, { state: 'todo', row: `<span class="step-head"><span class="step-title">${e(UI.flowName(n.name))}</span></span><span class="step-sub">${e(roleOf(n))}</span>`,
         open: opts.planned ? 'act:' + n.id : '' }));
-      // 길이 갈리는 곳(과 지금 단계에 걸린 기한이 먼저 오면 가는 길): 갈림 한 줄 — 가지마다의 길은 접기 안에
-      if (fork || timers.length) {
-        const q = fork ? String(fork.name || '').replace(/\?$/, '').trim() : '';
-        place('next', at++, { state: 'todo', gateway: !!fork,
-          row: `<span class="step-head"><span class="step-title">${fork ? e(q ? UI.flowName(q) + '?' : '갈림') : '기한'}</span></span><span class="step-sub">${fork ? '아직 나지 않은 결과에 따라 길이 갈립니다' : '지금 단계에 걸린 기한이 먼저 오면 다른 길로 갑니다'}</span>`,
-          body: `<details class="fold" data-plain data-k="next"><summary>갈림 뒤의 길</summary><div class="fold-body">${forkHtml(fork, timers)}</div></details>` });
-      }
       tickWatch();
       drawSheet();
       if (opts.onDraw) opts.onDraw(m, host);
@@ -1436,5 +1419,5 @@
   wireBus();
   window.addEventListener('hyd-tool-payload',redrawAll);
 
-  window.hydRecord = { mount, build, rowsOf, lineOf, noticeTexts, mounted, altHtml, knowledgeHtml, agentFront, rowParts, detailGroups, forkHtml };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
+  window.hydRecord = { mount, build, rowsOf, lineOf, noticeTexts, mounted, altHtml, knowledgeHtml, agentFront, rowParts, detailGroups };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
 })();

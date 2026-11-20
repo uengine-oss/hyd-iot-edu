@@ -371,8 +371,8 @@ const UI = {
   status(value) { return this.states[value] || value || "–"; },
   toneOf(value) { for (const [tone, list] of Object.entries(this.tones)) if (list.includes(value)) return tone; return 'neutral'; },
   /* 상태 알약(디자인기준 4-5 — portal-kit.css .tag): 점 없는 알약. 색은 2-2 의 다섯 상태뿐이다.
-     tone 은 neutral(보통) · accent(진행 중) · success(정상 · 완료) · warning(주의) · danger(실패 · 멈춤) · mine(내 차례 — 내가 할 일이 있을 때만)으로 받아 data-tone 으로 바꾼다. 보통은 속성이 없다.
-     어디서 쓰는가: 상세 머리의 이름 바로 뒤 · 목록 줄의 오른쪽 끝 · 카드 머리 줄의 이름 뒤. 예: UI.chip('FAILED') · UI.chipText('내 차례 2', 'mine') */
+     tone 은 neutral(보통) · accent(진행 중) · success(정상 · 완료) · warning(주의) · danger(실패 · 멈춤) · mine(내가 할 일이 있을 때만)으로 받아 data-tone 으로 바꾼다. 보통은 속성이 없다.
+     어디서 쓰는가: 상세 머리의 이름 바로 뒤 · 목록 줄의 오른쪽 끝 · 카드 머리 줄의 이름 뒤. 예: UI.chip('FAILED') · UI.chipText('내가 할 일 2', 'mine') */
   toneAttr(tone) { const t = { accent: 'run', success: 'ok', warning: 'warn', danger: 'danger', mine: 'mine' }[tone]; return t ? ` data-tone="${t}"` : ''; },
   chip(value, label, tone) {
     return `<span class="tag"${this.toneAttr(tone || this.toneOf(value))} data-status="${esc(value || '')}">${esc(label != null ? label : this.status(value))}</span>`;
@@ -748,7 +748,7 @@ const UI = {
                          예: UI.timeline([{ state: 'done', name: '올리기', time: '10:02' }, { state: 'now', busy: true, name: 'AI 추출', sub: '절 3/8을 읽는 중' }, { state: 'todo', name: '검토' }])
      statCard(o)         숫자 카드(4-17): o = { label(설명), value(큰 숫자 — 글), unit, note(아래 한 줄), pill(오른쪽 위 상태 알약 HTML), tone('warn'|'danger'|'ok' — 숫자 색), tab(누르면 갈 화면),
                          go(아래 고정 줄의 링크 글 — tab 이 있을 때), title(까닭 툴팁), attrs }. 성과 지표 요약 · 홈 단계 카드. 여럿은 <div class="stats"> 안에 둔다.
-                         예: UI.statCard({ label: '진행 중인 처리 건', value: '2', unit: '건', pill: UI.chipText('내 차례 1', 'mine'), tab: 'instances', go: '처리 건' })
+                         예: UI.statCard({ label: '진행 중인 처리 건', value: '2', unit: '건', pill: UI.chipText('내가 할 일 1', 'mine'), tab: 'instances', go: '처리 건' })
      settingRow(o)       설정 줄(4-16): o = { title(굵은 이름), desc(한 줄 설명), action(오른쪽 끝 동작 하나 — 단추 HTML), attrs }. 여럿은 <div class="settings"> 안에 둔다. 관리 › 내 설정 · 도구 연결의 비밀 값.
                          예: `<div class="settings">${UI.settingRow({ title: '내보내기', desc: '내가 만든 것을 파일 하나로 받습니다.', action: UI.btn('export', { variant: 'outline' }) })}</div>` */
   goLink(tab, label, attrs = '') { return `<a class="go" href="#/${esc(tab)}" data-go-tab="${esc(tab)}"${attrs ? ' ' + attrs : ''}>${esc(label || this.t('nav.' + tab))}</a>`; },
@@ -1121,14 +1121,14 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 // [data-go-tab="화면 이름"] 단추: 다음 할 일이 있는 화면으로 옮긴다(빈 화면 · 완료 안내 · 사본을 지운 자리의 「이제 어디서 하는가」 링크가 함께 쓴다 — UI.emptyGo)
 if (typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go-tab]'); if (b && typeof selectTab === 'function') selectTab(b.dataset.goTab); });
 
-/* 처리 건 목록의 묶음 셋(내 차례 · 진행 중 · 처리 완료)을 세는 곳 — 정본은 여기 하나다. 처리 건 화면의 목록(instances.js renderList), 홈의 단계 카드(main.js · app.js refreshCases),
-   메뉴 「처리 건」 곁의 건수 점(app.js refreshTodoCount)이 모두 이 함수로 센다. 같은 이름(「내 차례」 · 「진행 중」 · 「처리 완료」)이 화면마다 다른 수를 내지 않게, 세는 식의 사본을 다른 파일에 두지 않는다.
+/* 처리 건 목록의 묶음 셋(내가 할 일 · 진행 중 · 처리 완료)을 세는 곳 — 정본은 여기 하나다. 처리 건 화면의 목록(instances.js renderList), 홈의 단계 카드(main.js · app.js refreshCases),
+   메뉴 「처리 건」 곁의 건수 점(app.js refreshTodoCount)이 모두 이 함수로 센다. 같은 이름(「내가 할 일」 · 「진행 중」 · 「처리 완료」)이 화면마다 다른 수를 내지 않게, 세는 식의 사본을 다른 파일에 두지 않는다.
      all · running: GET /api/instances?limit=50 과 그 status=RUNNING(서버가 거른 것), done: 「더 보기」로 편 뒤 서버가 상태로 거른 끝난 건(없으면 null), todo: GET /api/todolist?status=IN_PROGRESS 의 행.
-   돌려주는 값: mine(내 차례 — 사람이 처리할 단계 하나가 한 줄, 에이전트의 질문 먼저) · open(진행 중 — 내 차례 묶음에 있는 건은 또 세지 않는다) · done(끝난 건)
+   돌려주는 값: mine(내가 할 일 — 사람이 처리할 단계 하나가 한 줄, 에이전트의 질문 먼저) · open(진행 중 — 내가 할 일 묶음에 있는 건은 또 세지 않는다) · done(끝난 건)
    · doneText(묶음 머리의 수 — 한 번에 읽는 건수를 채웠으면 「50+」) · jobs(시스템 작업 — 진행 중이든 끝났든 한 묶음, 최근 것부터).
    진행 중 · 처리 완료와 그 수는 사건 처리 건만 센다. 사건이 아닌 시스템 작업(질문하기 · 문서 추출처럼 다른 화면이 여는 흐름의 처리 건)은 jobs 한 묶음으로 따로 낸다 —
-   문서 한 건을 추출하고 사건 한 건을 처리한 사람에게 홈이 「2건 처리 완료」라고 말하지 않게(사용자 2026-11-20). 내 차례는 사람이 할 일이라 시스템 작업 안의 차례(에이전트가
-   사람에게 되묻는 질문 등)도 세고 그 건은 내 차례 묶음에만 둔다 — 할 일이 수에서 숨지 않게. 가르는 기준은 서버가 준 흐름 정의 id 하나다(isSystemJob). */
+   문서 한 건을 추출하고 사건 한 건을 처리한 사람에게 홈이 「2건 처리 완료」라고 말하지 않게(사용자 2026-11-20). 「내가 할 일」은 사람이 할 일이라 시스템 작업 안의 차례(에이전트가
+   사람에게 되묻는 질문 등)도 세고 그 건은 내가 할 일 묶음에만 둔다 — 할 일이 수에서 숨지 않게. 가르는 기준은 서버가 준 흐름 정의 id 하나다(isSystemJob). */
 const CASE_WINDOW = 50;      // 목록 한 번에 읽는 건수
 // 사람이 처리할 단계인가. 맡은 쪽이 AI 에이전트(agent:…)나 시스템(sys:…)인 작업 행은 워커가 아직 가져가기 전(agent_orch 가 비어 있는 순간)에도 사람 단계가 아니다
 const isHumanTask = t => UI.doerOf(t) === 'human' && !/^(agent:|sys:)/.test(String(t.user_id || ''));

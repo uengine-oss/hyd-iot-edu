@@ -254,7 +254,7 @@ def desired(plan):
                 edge(st, 'DOCUMENTS', target) if existing else edge(target, 'HAS_STEP', st)
             continue
         skill = node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'], kind=p['kind'],
-                     description=f"제공 문서 {plan['filename']}에서 검토해 넣은 조치 방법", source_id=plan['source_id'],
+                     description=f"문서 {plan['filename']}에서 검토해 넣은 조치 방법", source_id=plan['source_id'],
                      citation=canonical(p['anchor']), **{k: p[k] for k in ('scope', 'executable', 'supplier_policy') if k in p},
                      **({'maintenance_policy':canonical(p['maintenance_policy'])} if p.get('maintenance_policy') else {}),
                      **({'purchase_comparison_policy':canonical(p['purchase_comparison_policy'])} if p.get('purchase_comparison_policy') else {}))

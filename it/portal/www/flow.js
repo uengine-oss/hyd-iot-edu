@@ -31,7 +31,7 @@
     const nodes = passed.map(w => ({ id: w.activity_id, wid: w.id, name: acts.get(w.activity_id).name, state: rowState(w), who: who(acts.get(w.activity_id)), role: acts.get(w.activity_id).role || '' }));
     // 남은 길: 지금 단계(없으면 마지막으로 지나온 단계)에서 **정해진 데까지만** 잇는다. 길이 갈리는 곳(나가는 선이 둘 이상인 갈림)을 만나면 거기서 멈추고,
     // 그 뒤는 가지마다 따로 적는다(fork) — 어느 가지로 갈지는 아직 나지 않은 결과(승인 · 반려, 효과 확인의 판정)가 정한다. 한 길을 골라 끝까지 지어 적지 않는다
-    let end = null, fork = null, timers = [];
+    let end = null, fork = null;
     const gwName = new Map((def.gateways || []).map(g => [g.id, g.name || '']));
     const outsOf = id => (next.get(id) || []).filter(q => !(events.get(q.target) || {}).attachedTo);
     // 한 점에서 앞으로: 단계 이름을 모으다가 갈림(more) · 끝 이벤트(end) · 이미 지나온 곳에서 멈춘다
@@ -57,16 +57,13 @@
       const ahead = at ? walk(at, seen) : { steps: [], more: null, end: null };
       ahead.steps.filter(x => x.id !== at).forEach(x => nodes.push(x));
       end = ahead.end;
-      // 지금 단계에 붙은 기한(경계 타이머)이 먼저 오면 가는 길 — 남은 단계 줄이 이 가지도 말한다(납기 초과 → 결과 보고: 지연)
-      timers = (def.events || []).filter(x => x.attachedTo === at && live.length).map(x => { const b = walk(x.id, new Set(seen));
-        return { label: x.name || '기한', steps: b.steps.map(s => s.name), more: b.more ? b.more.name : null, end: b.end ? b.end.name || '' : null }; });
       if (ahead.more) fork = { name: ahead.more.name, branches: ahead.more.outs.map(q => {
         const b = walk(q.target, new Set(seen));
         return { label: q.name || (q.condition ? '' : '그 밖'), steps: b.steps.map(x => x.name), more: b.more ? b.more.name : null, end: b.end ? b.end.name || '' : null };
       }) };
     }
     const start = (def.events || []).find(x => x.type === 'startEvent') || null;
-    return { nodes, start, end, fork, timers, finished, started: latest.size > 0 };
+    return { nodes, start, end, fork, finished, started: latest.size > 0 };
   }
   function latestRows(workitems, known) {
     const latest = new Map();
@@ -189,11 +186,11 @@
   const MARKERS = ['is-done', 'is-now', 'is-todo', 'is-fail', 'is-hold'];
   const skip = el => !el || el.type === 'label' || el.type === 'bpmn:Lane' || el.type === 'bpmn:Participant' || el.type === 'bpmn:Process' || el.type === 'bpmn:Collaboration' || !el.parent;
   const isBox = el => /Task$|SubProcess$|CallActivity$/.test(el.type || '');
-  // 지금 단계의 꼬리표: 누구 차례인지(내 차례 · AI 판단 중 · 시스템 처리 중) — 멈춤 · 보류는 그 말로
+  // 지금 단계의 꼬리표: 누가 하는지(내가 할 일 · AI 판단 중 · 시스템 처리 중) — 멈춤 · 보류는 그 말로
   function tipText(view, id, state, mine) {
     if (state === 'fail') return '멈춤';
     if (state === 'hold') return '보류';
-    if ((mine || []).includes(id)) return '지금 · 내 차례';
+    if ((mine || []).includes(id)) return '지금 · 내가 할 일';
     const def = view.definition || {}, a = (def.activities || []).find(x => x.id === id) || {};
     const ep = a.agent || ((def.roles || []).find(r => r.name === a.role) || {}).endpoint || '';
     if (ep === 'sys:agent' || /^agent:/.test(ep) || a.orchestration === 'cliagents') return '지금 · AI 판단 중';

@@ -165,15 +165,15 @@
     }
     const failed = (why, what) => ({ value: '읽기 실패', tone: 'danger', note: what, title: why });
     /* 단계 카드 넷 — 이야기 차례. 카드 하나 = 그 단계의 지금 값 하나 + 그 화면으로 가는 길. 읽지 못한 값은 0 이나 「없음」이 아니라 「읽기 실패」다(까닭은 title).
-       설비 수(늘 3기)는 값이 아니라서 두지 않는다. 내 차례가 있으면 「판단과 승인」 카드가 주황 알약을 단다.
-       「진행 중」 · 「처리 완료」 · 「내 차례」의 수는 카드를 누르면 가는 처리 건 화면의 그 묶음 수와 같다 — 같은 목록을 같은 함수(ui.js hydCases.groups)로 센다 */
+       설비 수(늘 3기)는 값이 아니라서 두지 않는다. 내가 할 일이 있으면 「판단과 승인」 카드가 주황 알약을 단다.
+       「진행 중」 · 「처리 완료」 · 「내가 할 일」의 수는 카드를 누르면 가는 처리 건 화면의 그 묶음 수와 같다 — 같은 목록을 같은 함수(ui.js hydCases.groups)로 센다 */
     const c = state.cases, caseCard = (value, unit, note) => state.caseError ? failed(state.caseError, '처리 건 목록을 읽지 못했습니다.') : { value: c ? value(c) : '–', unit: c ? unit : '', note };
     const cards = [
       { label: '1  지식 넣기', tab: 'knowledge', ...(graphCount ? { value: n(graphCount.n), unit: '개 지식 항목', note: `연결 ${n(graphCount.e)}개. 매뉴얼을 올리면 AI가 판단에 쓰는 지식이 늘어납니다.` }
         : graphError ? failed(graphError, '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.') : { value: '–', note: UI.t('loading') }) },
       { label: '2  고장 내기', tab: 'scenario', ...(alarms == null ? failed(state.plantError || '', `${UI.t('main.noConn')} — ${UI.t('plant.noConnSub')}`)
         : { value: String(alarms), unit: '기 유온 주의', tone: alarms ? 'warn' : '', note: '설비에 결함을 넣으면 경보가 나고 처리 건이 열립니다.' }) },
-      { label: '3  판단과 승인', tab: 'instances', pill: c && !state.caseError && c.mine.length ? UI.chipText(`내 차례 ${c.mine.length}`, 'mine') : '',
+      { label: '3  판단과 승인', tab: 'instances', pill: c && !state.caseError && c.mine.length ? UI.chipText(`내가 할 일 ${c.mine.length}`, 'mine') : '',
         ...caseCard(g => String(g.open.length), '건 진행 중', 'AI 판단을 읽고 승인하거나 반려합니다.') },
       { label: '4  결과 보기', tab: 'instances', go: '처리 완료한 건',
         ...caseCard(g => g.doneText, '건 처리 완료', '실행 결과와 업무 시스템에 남은 기록을 확인합니다.') },
