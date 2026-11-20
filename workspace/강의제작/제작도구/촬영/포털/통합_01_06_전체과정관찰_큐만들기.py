@@ -91,8 +91,8 @@ OPS = {
            P(T(ITEM('proc:SOP-FAN-11') + ' .row-meta', phrase='쿨러 냉각 성능 상실'), '줄마다'),
            P(T('#manualReview button[data-review-kind="know"]'), '목록 위에 있는'), C(T('#manualReview button[data-review-kind="know"]', anchor='center'), '누르면'),
            W(T(FM))],
- 'v0616': [P(T(FM + ' .row-title'), '맨 위 줄을'), P(T(FM + ' .row-meta', phrase='유온 상승, 냉각 효율 저하'), '밑에 작은'),
-           P(T(FM + ' .row-title'), '맨 위의 쿨러'), P(T(FM + ' .row-meta', phrase='고장 유형'), '이론에서 본')],
+ 'v0616': [P(T(FM + ' .row-title'), '맨 위 줄을'), P(T(FM + ' .row-meta', phrase='유온 상승, 냉각 효율 저하'), '이름 밑에'),
+           P(T(FM + ' .row-title'), '쿨러 냉각 성능 상실이라는'), P(T(FM + ' .row-meta', phrase='고장 유형'), '이론에서 본')],
  'v0617': [P(T(ITEM('know:causes:cause:cooler-fin-fouling') + ' .row-title'), '아래 세 줄은'), P(T(ITEM('know:causes:cause:ambient-temperature-rise') + ' .row-title'), '일으킬 수'),
            P(T(ITEM('know:causes:cause:fan-drive-fault') + ' .row-title'), '원인입니다')],
  # 고장 유형 한 줄과 원인 세 줄이 따로 놓인 화면에서 「이렇게 따로따로」를 말한다(2026-11-20에 v0613 뒤에서 옮김 — 말은 그대로)
@@ -164,7 +164,7 @@ OPS = {
  'v0647': [P(SUB('(안전 연동 통과)', phrase='(안전 연동 통과)'), '괄호 안의 안전')],
  # 말이 끝나면 효과 확인이 끝날 때까지(승인 뒤 약 66초) 말 없이 기다린다 — 처리 건이 끝나며 맨 위에 결과 칸이 끼어드니 화면이 멈춘 뒤 다음 말
  'v0648': [P(STEP('효과 확인'), '지금은 효과 확인'), W(SUB('(설비 시간 15분)', phrase='(설비 시간 15분)'), 30),
-           P(SUB('(설비 시간 15분)', phrase='(설비 시간 15분)'), '괄호 안의 설비'), P(T('#railScale'), '왼쪽 아래 이십'),
+           P(SUB('(설비 시간 15분)', phrase='(설비 시간 15분)'), '괄호 안에는'), P(T('#railScale'), '왼쪽 아래 이십'),
            LONG(SUB('회복으로 판정했습니다'), 180), W(T('#caseTop .case-result'), 20), SETTLE(10),
            # 다음 말(v0649)을 시작하기 전에 효과 확인 줄이 보이게 굴려 둔다 — 게시본은 말이 시작할 때 맨 위 결과 카드가 보이고 말 가운데에야 내려갔다(적대 검토 지적 9)
            ['scroll', {**SUB('회복으로 판정했습니다'), 'top': 220}], SETTLE(4)],
