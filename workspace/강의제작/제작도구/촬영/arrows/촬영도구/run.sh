@@ -41,8 +41,8 @@ case "$cmd" in
     alive && { echo "STILL UP :$port"; exit 1; } || echo "down"; exit 0;;
   open)
     $pw || { echo "open은 cloud · pc 전용"; exit 2; }
-    url=${1:-https://arrows.app}
-    js="const {taskSpace}=await import('$pre$here/pw.mjs?$stamp');const p=(await taskSpace()).page();await p.goto('$url',{waitUntil:'load',timeout:60000});if((await p.url()).includes('arrows.app'))await p.waitForSelector('canvas');await p.waitForTimeout(1500);console.log(JSON.stringify({url:await p.url(),text:(await p.evaluate(()=>document.body.innerText)).slice(0,80)}));"
+    url=${1:-https://arrows.app}   # bing.com이면 첫 화면 설정의 「피드 표시」를 꺼서 뉴스 칸(사람 사진 · 기사 제목)을 없앤 뒤 다시 연다
+    js="const {taskSpace}=await import('$pre$here/pw.mjs?$stamp');const p=(await taskSpace()).page();await p.goto('$url',{waitUntil:'load',timeout:60000});if((await p.url()).includes('arrows.app'))await p.waitForSelector('canvas');if((await p.url()).includes('bing.com')){const f=p.locator('[aria-label=\"홈페이지 사용자 지정, 피드 표시\"]').first();const m=p.locator('[aria-label=\"설정 및 빠른 링크\"]').first();await m.waitFor({state:'visible',timeout:30000});await p.waitForTimeout(2000);for(let i=0;i<3&&!(await f.count());i++){await m.click();await p.waitForTimeout(2000);}await f.waitFor({state:'attached',timeout:5000});if((await f.getAttribute('aria-checked'))==='true'){await f.click();await p.waitForTimeout(800);}await p.goto('$url',{waitUntil:'load',timeout:60000});if((await p.evaluate(()=>!!document.querySelector('#qs_news_trending_ctrl[aria-checked=true]'))))throw new Error('Bing 첫 화면 뉴스 피드를 끄지 못함 (run.sh open)');}await p.waitForTimeout(1500);console.log(JSON.stringify({url:await p.url(),text:(await p.evaluate(()=>document.body.innerText)).slice(0,80)}));"
     log="$work/open-$stamp.log";;
   rec)
     n=$1; seg=$2; from=${3:-}; st=${4:-}; relax=false; [ -n "${5:-}" ] && relax=true
