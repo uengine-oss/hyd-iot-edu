@@ -60,6 +60,8 @@ KIND = dict(NODES)
 # 낭독 글은 대본원고.md(사용자가 확정한 대본의 발화 칸 그대로, 큐 id도 그대로)이고, 여기 MAP이 큐 id마다 그 글의 ▸ 자리 차례대로 조작을 단다.
 # MAP의 한 칸 = ('A', 조작들): 큐 끝의 ▸ — 그 말이 끝날 때 한다 · ('P', 조작들): 바로 뒤 낱말을 말할 때 짚는다
 #             · ('T', 조작들): 말 속 그 자리에서 바로 한다(말하면서 하는 누르기 · 적기 · Ctrl로 함께 고르기).
+# 짚기에는 강조(영상 V-14 · V-11 — 합성 때 그리는 밑줄 · 띠 · 테두리 · 동그라미)가 붙는다. 모양은 대상 종류마다 기본값(hl_default)이고,
+# P(대상, hl='underline' | 'band' | 'box' | 'circle')로 바꾸거나 hl='none'으로 뺀다. 큐에는 ['point', 대상, 모양]으로 나가고, 강조가 없으면 ['point', 대상]이다.
 # 쉼은 큐 글과 조작으로 정한다(GAP과 gap_before) — 원고에 쉼 표시를 두지 않는다.
 # 원은 처음부터 끝 자리에 놓는다: POS = 첫 원(HYD-01)을 (0, 0)으로 둔 끝 그림의 그림 좌표다(직각 격자 — 열 0 · 330 · 630 · 936 · 1260, 줄 −452 · −228 · 0 · 220 · 440).
 # 첫 원은 새 그림의 빈 원을 원 안쪽을 잡고 왼쪽으로 끌어 옮긴 것이고(FIRST_X), 새 원을 놓는 자리는 그 첫 원의 화면 자리에서 잰다(촬영도구 ui.mjs growTo).
@@ -96,10 +98,33 @@ def sop(a, b, v):
     return [['edge', a, b], ['click', 'propPlus']] + pv('절차', v)
 def color(v):
     return [['click', 'style:node-color'], ['key', 'ControlOrMeta+A'], ['type', v], ['key', 'Tab']]
+HL_SHAPES = ('underline', 'band', 'box', 'circle')   # 포털 촬영도구 hl.mjs SHAPES
+HL_BOX = {'caption', 'type', 'labelInput', 'propKey', 'propVal', 'customize', 'reverse', 'labelPlus', 'propPlus', 'export', 'done'}
+
+
+def hl_default(t):
+    """짚기 대상의 기본 강조 모양. 화살표 끝 · 넓은 자리 · 메뉴 줄처럼 여기 없는 대상은 강조가 없다(None)."""
+    if t.startswith(('look:', 'ring:', 'node:')):
+        return 'circle'       # 원 둘레의 동그라미
+    if t.startswith(('ctext:', 'ctextL:', 'ctextR:', 'props:')) or t in ('selCount', 'cypherHead'):
+        return 'underline'    # 그림판 글자(관계 이름 · Label 띠 · 절차 번호) · 증거 줄 · 개수 줄 · Cypher 첫 낱말
+    if t.startswith('noteLine:') or t == 'cypherText':
+        return 'band'         # 글상자 줄 · Cypher 글
+    if t in HL_BOX or t.startswith(('style:', 'styleSel:', 'tab:')):
+        return 'box'          # 오른쪽 칸의 입력칸 · 단추
+    return None
+
+
+def P(t, hl=None):
+    shape = hl_default(t) if hl is None else None if hl == 'none' else hl
+    if shape is not None and shape not in HL_SHAPES:
+        raise SystemExit(f"P({t!r}): 모르는 강조 모양 {hl!r} — {' | '.join(HL_SHAPES)} | none (build_ontology.py)")
+    return ('P', [['point', t] + ([shape] if shape else [])])
+
+
 A = lambda *ops: ('A', [o for x in ops for o in x])
 T = lambda *ops: ('T', [o for x in ops for o in x])
-P = lambda t: ('P', [['point', t]])
-L = lambda c: P('look:' + c)                       # 원(테두리 오른쪽 아래)
+L = lambda c, hl=None: P('look:' + c, hl)          # 원(테두리 오른쪽 아래)
 EF = lambda a, b: P(f'edgeFrom:{a}>{b}')           # 화살표가 나가는 끝
 ET = lambda a, b: P(f'edgeTo:{a}>{b}')             # 화살표가 닿는 끝
 N = lambda text: ('P', [['note', text, 'tr']])     # 글상자 띄우기
@@ -178,7 +203,7 @@ MAP = {
  'e136': [P('menu:New'), P('menu:Open'), A([['point', 'menu:New'], ['click', 'menu:newLocal']])], 'e137': [L(''), A(ck('blank'))],
  'e138': [A([['click', 'logo'], ['click', 'menu:Import']])], 'e139': [A([['choose', 'json']])], 'e140': [A(ck('importButton'))],
  # e141: 다시 연 그림은 관계 글이 화살표를 따라 서서 세로 화살표의 절차 번호 셋이 원에 가려 잘린다 — 온전히 보이는 가로 화살표의 번호를 짚는다
- 'e141': [P('selCount'), P('props:' + PO), P('ctext:SOP-FAN-11'), L(PC)], 'e142': [L(F), P('ctext:LEADS_TO')],
+ 'e141': [P('selCount'), P('props:' + PO), P('ctext:SOP-FAN-11'), L(PC)], 'e142': [L(F), P('ctext:LEADS_TO', hl='box')],   # 다시 연 그림의 LEADS_TO는 세로 화살표를 따라 서 있어 밑줄을 그을 수 없다
  'e143': [A([['click', 'blank'], ['click', 'node:'], ['click', 'text:Delete'], ['verify']])],
  # 12구간 — Cypher
  'e145': [A(ck('export'))], 'e146': [A(ck('tab:Cypher'))], 'e147': [P('cypherText'), P('cypherHead'), A(ck('done'))],

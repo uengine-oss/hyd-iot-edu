@@ -15,10 +15,15 @@
   조각 프레임 수 = round(사용 ms × 30 / 1000). 큐 음성 · 자막 · 시각표는 앞 조각 실제 프레임 합 / 30 위에 놓는다(구간이 늘어도 소리가 밀리지 않는다).
 화살표: 구간마다 pointer-start.json mode로 정한다. overlay(페이지 화살표 투명 녹화)면 기록된 이동(출발 · 도착 · 시작 · 계획 길이)으로 30fps마다
   화살표를 그린다(기록된 위치 · 시각 그대로, 두 화살표 없음). 그 도구 config pointer가 overlay인데 overlay가 아닌 구간이면 멈춘다. 화면 내용은 그 시각까지
-  받은 마지막 원본 프레임이다 — 원본에 없는 화면을 만들지 않는다. 출력 크기는 첫 원본 JPEG 크기, config viewport · deviceScaleFactor는 화살표 · 강조 배율에만 쓴다.
+  받은 마지막 원본 프레임이다 — 원본에 없는 화면을 만들지 않는다. 출력 크기는 첫 원본 JPEG 크기다.
+  끌기(이동에 path가 있다 — [[시각 ms, x, y], …], 녹화기가 마우스를 누른 채 단계마다 실제로 보낸 자리와 시각): 곡선 대신 그 경로를 따라 그린다. 끌리는 물체는 원본 프레임이
+  받은 마우스 자리에 그려져 있으므로, 화살표도 지금 보이는 원본 프레임의 시각에 있던 자리에 둔다(물체와 화살표가 같은 순간의 것). 경로가 끝나고 PATH_SETTLE_MS가 지나도록
+  새 프레임이 없으면 도착 자리에 둔다. path의 시각이 뒤로 가거나, 이동 시작보다 이르거나, 끝 점이 도착 자리와 다르면 인코딩 전에 take · 이동 번호 · 값을 대며 멈춘다.
+  배율(CSS px → 프레임 px) · 화살표 크기: pointer-start.json에 scale과 viewport([CSS 폭, 높이] — 녹화기가 잰 값)가 있으면 그 값을 먼저 쓰고(viewport × scale이 프레임 크기와
+  1px 넘게 다르면 멈춘다), 없으면 config viewport · deviceScaleFactor를 쓴다. arrow([폭, 높이] CSS px)가 있으면 화살표를 그 크기로, 없으면 20×27로 그린다.
 강조(영상 V-14 · V-11): timing.json의 highlights(녹화기가 hl.mjs로 남긴 {cue, shape, rects(CSS px), start, end})를 화살표와 같은 자리에서 그 시각 동안 그린다(화살표가 위).
   start ≤ 프레임 시각 < end인 프레임에만 그리므로, 강조는 시작 프레임에 나타나고 다음 강조의 시작 프레임에 지워진다. 모양은 underline(글자 상자 아래 선) · band(반투명 노랑 띠) ·
-  box(둘레 선)이고 색 · 굵기는 이론 영상 강조표시.py와 같다(빨강 229,57,53 굵기 5px, 노랑 255,214,0 투명도 0.42 — 프레임 px). 강조가 걸친 조각만 키에 강조가 들어가 다시 만들어지고,
+  box(둘레 선) · circle(상자에 내접하는 둥근 둘레 선 — 그림판의 원, 상자마다 하나)이고 색 · 굵기는 이론 영상 강조표시.py와 같다(빨강 229,57,53 굵기 5px, 노랑 255,214,0 투명도 0.42 — 프레임 px). 강조가 걸친 조각만 키에 강조가 들어가 다시 만들어지고,
   강조가 없는 조각의 키와 프레임은 그대로다. 쓰는 범위에 걸친 강조가 모르는 모양이거나, 끝이 없거나 시작보다 이르거나 같거나, 상자 크기가 0이거나, 그릴 자리(모양 여백 포함)가 프레임 밖이거나,
   overlay가 아닌 구간에 있으면 인코딩 전에 take · 큐 id · 강조 번호 · 값을 대며 멈춘다(빼거나 잘라 그리지 않는다).
 고친 음성: 캐시의 글 · 길이가 녹화 때와 다르면(녹화 뒤 대사만 고쳐 다시 만든 음성) 원래 말이 끝나던 자리에 끝나도록 오른쪽에 맞춘다(조작이 말 직후 그대로).
@@ -49,9 +54,11 @@ KEY_VERSION = 1
 SAME_PCT = 0.5          # 같은 화면: 값이 12 넘게 바뀐 화소가 이만큼(%) 이하
 ONSET = 0.02            # 소리 시작 문턱(전체 크기 비)
 ARROW_PTS = [(1, 1), (1, 25), (7, 20), (12, 31), (17, 29), (12, 18), (22, 18)]   # ui.mjs 화살표(SVG viewBox 25x34 → CSS 20x27)
+ARROW_CSS = (20, 27)    # 화살표 크기(CSS px). pointer-start.json arrow가 있으면 그 값
+PATH_SETTLE_MS = 200    # 끌기 경로가 끝난 뒤 이만큼 지나도록 새 원본 프레임이 없으면 화살표를 도착 자리에 둔다
 # 강조 모양(프레임 px). 색 · 굵기는 이론 영상 강조표시.py(RED · YELLOW · 선 굵기 5 · 띠 투명도 0.42 · 모서리 4)와 같다.
 HL = {'red': (229, 57, 53), 'yellow': (255, 214, 0), 'band_alpha': 107, 'line': 5, 'under': 2, 'under_side': (4, 6), 'box_pad': 6, 'radius': 4}
-HL_SHAPES = ('underline', 'band', 'box')
+HL_SHAPES = ('underline', 'band', 'box', 'circle')
 _FF = None
 
 
@@ -182,10 +189,10 @@ def cue_segments(T, take):
     return {}
 
 
-def arrow(scale):
-    """화살표를 8배 크게 그려 줄인다(후광 없음, 흰 채움 · 얇은 검은 테두리)."""
+def arrow(scale, css=ARROW_CSS):
+    """화살표를 8배 크게 그려 줄인다(후광 없음, 흰 채움 · 얇은 검은 테두리). css = 화살표 크기(CSS px)."""
     from PIL import Image, ImageDraw
-    k = 8; sx, sy = 20 / 25 * scale * k, 27 / 34 * scale * k
+    k = 8; sx, sy = css[0] / 25 * scale * k, css[1] / 34 * scale * k
     im = Image.new('RGBA', (round(25 * sx) + 4, round(34 * sy) + 4), (0, 0, 0, 0))
     ImageDraw.Draw(im).polygon([(x * sx, y * sy) for x, y in ARROW_PTS], fill=(255, 255, 255, 255), outline=(17, 17, 17, 255), width=round(1.7 * sx))
     return im.resize((round(im.width / k), round(im.height / k)), Image.LANCZOS)
@@ -195,17 +202,77 @@ def smooth(t):
     return t * t * (3 - 2 * t)
 
 
-def pointer_at(ms, motions, start):
-    """그 시각의 화살표 위치(CSS px). 이동 중이면 기록된 시작 시각 · 계획 길이로 페이지 애니메이션과 같은 곡선을 따른다."""
+def path_at(ms, path):
+    """끌기 경로 [[시각, x, y], …]의 그 시각 자리(점 사이는 곧게 잇는다)."""
+    if ms <= path[0][0]:
+        return (path[0][1], path[0][2])
+    for (t0, x0, y0), (t1, x1, y1) in zip(path, path[1:]):
+        if ms < t1:
+            u = (ms - t0) / (t1 - t0) if t1 > t0 else 1.0
+            return (x0 + (x1 - x0) * u, y0 + (y1 - y0) * u)
+    return (path[-1][1], path[-1][2])
+
+
+def pointer_at(ms, motions, start, frame_ms=None):
+    """그 시각의 화살표 위치(CSS px). 이동 중이면 기록된 시작 시각 · 계획 길이로 페이지 애니메이션과 같은 곡선을 따른다.
+    path가 있는 이동(끌기)은 그 경로를 따르고, frame_ms(지금 보이는 원본 프레임의 시각)를 주면 경로가 끝나고 PATH_SETTLE_MS가 지나기 전에는 그 프레임 시각의 자리에 둔다."""
     pos = start
     for m in motions:
         g = m.get('glide', m['start'])
         if ms < g:
             break
+        if m.get('path'):
+            late = frame_ms is None or ms >= m['path'][-1][0] + PATH_SETTLE_MS
+            pos = path_at(ms if late else min(ms, frame_ms), m['path'])
+            continue
         u = min(1.0, (ms - g) / m['planned_ms']) if m.get('planned_ms') else 1.0
         a = m['from']
         pos = (a['x'] + (m['x'] - a['x']) * smooth(u), a['y'] + (m['y'] - a['y']) * smooth(u))
     return pos
+
+
+def check_paths(take, motions):
+    """끌기 경로(path)가 있는 이동을 검사한다. 어긋나면 take · 이동 번호(녹화 차례, 1부터) · 값을 대며 멈춘다."""
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    for i, m in enumerate(motions, 1):
+        path = m.get('path')
+        if path is None:
+            continue
+        at = f'{take}: 이동 {i}번의 끌기 경로(path)'
+        if not isinstance(path, list) or len(path) < 2 or any(not (isinstance(q_, list) and len(q_) == 3 and all(num(v) for v in q_)) for q_ in path):
+            raise RuntimeError(f'{at} — [[시각 ms, x, y], …] 꼴의 점 둘 이상이어야 한다: {str(path)[:120]}')
+        g = m.get('glide', m['start'])
+        if path[0][0] < g - 1:
+            raise RuntimeError(f'{at} — 첫 점의 시각 {path[0][0]}ms가 이동 시작 {g}ms보다 이르다')
+        for a, b in zip(path, path[1:]):
+            if b[0] < a[0]:
+                raise RuntimeError(f'{at} — 시각이 뒤로 간다({a[0]} → {b[0]}ms)')
+        if math.hypot(path[0][1] - m['from']['x'], path[0][2] - m['from']['y']) > 0.5:
+            raise RuntimeError(f"{at} — 첫 점 {path[0][1:]}이 출발 자리 {[m['from']['x'], m['from']['y']]}와 다르다")
+        if math.hypot(path[-1][1] - m['x'], path[-1][2] - m['y']) > 0.5:
+            raise RuntimeError(f"{at} — 끝 점 {path[-1][1:]}이 도착 자리 {[m['x'], m['y']]}와 다르다")
+
+
+def pointer_setup(take, ps, cfg, W, H):
+    """overlay 구간의 (배율, 화살표 크기 CSS px | None). pointer-start.json의 scale · viewport · arrow가 먼저, 없으면 config viewport(화살표는 기본 크기 = None)."""
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v > 0
+    at = f'{take}: pointer-start.json'
+    if 'scale' in ps:
+        s, vp = ps['scale'], ps.get('viewport')
+        if not num(s):
+            raise RuntimeError(f'{at} scale {s!r} — 0보다 큰 수여야 한다')
+        if not (isinstance(vp, list) and len(vp) == 2 and all(num(v) for v in vp)):
+            raise RuntimeError(f'{at} — scale을 적었으면 viewport([CSS 폭, 높이], 녹화기가 잰 값)도 적는다: {vp!r}')
+        if abs(vp[0] * s - W) > 1 or abs(vp[1] * s - H) > 1:
+            raise RuntimeError(f'{at} — viewport {vp} × scale {s} = {vp[0] * s:.1f}x{vp[1] * s:.1f}가 프레임 {W}x{H}와 다르다')
+        scale = s
+    else:
+        vp = cfg.get('viewport') or {}
+        scale = vp.get('deviceScaleFactor') or (W / vp['width'] if vp.get('width') else 1.0)
+    css = ps.get('arrow')
+    if css is not None and not (isinstance(css, list) and len(css) == 2 and all(num(v) for v in css)):
+        raise RuntimeError(f'{at} arrow {css!r} — [폭, 높이] CSS px(0보다 큰 수 둘)')
+    return scale, css
 
 
 def mark_extent(shape, rects, s):
@@ -216,6 +283,8 @@ def mark_extent(shape, rects, s):
     if shape == 'underline':   # 글자 상자 아래 변 바로 밑의 선, 양옆으로 조금 나간다
         return [(x1 - HL['under_side'][0], y2 + HL['under'] - HL['line'] / 2, x2 + HL['under_side'][1], y2 + HL['under'] + HL['line'] / 2) for x1, y1, x2, y2 in px]
     p = HL['box_pad'] + HL['line'] / 2   # 줄이 여럿이면 모두를 두르는 상자 하나
+    if shape == 'circle':   # 상자마다 그 상자에서 box와 같은 만큼 띄운 둥근 선 하나
+        return [(x1 - p, y1 - p, x2 + p, y2 + p) for x1, y1, x2, y2 in px]
     return [(min(r[0] for r in px) - p, min(r[1] for r in px) - p, max(r[2] for r in px) + p, max(r[3] for r in px) + p)]
 
 
@@ -234,6 +303,8 @@ def mark_patch(shape, rects, s):
             d.rounded_rectangle(box, radius=HL['radius'] * k, fill=HL['yellow'] + (HL['band_alpha'],))
         elif shape == 'underline':
             d.rounded_rectangle(box, radius=HL['line'] / 2 * k, fill=HL['red'] + (255,))
+        elif shape == 'circle':
+            d.ellipse(box, outline=HL['red'] + (255,), width=HL['line'] * k)
         else:
             d.rounded_rectangle(box, radius=HL['radius'] * k, outline=HL['red'] + (255,), width=HL['line'] * k)
     return im.resize((x1 - x0, y1 - y0), Image.LANCZOS), (x0, y0)
@@ -297,10 +368,10 @@ def plan_spec(spec, default, root, crf, ffv):
     tc = t.get('clicks') or []
     timed = len(tc) == len(clicks) and all('time' in c for c in tc)
     W, H = Image.open(d / fr[0]['file']).size
-    scale = None
+    scale = arrow_css = None
     if mode == 'overlay':
-        vp = T.cfg.get('viewport') or {}
-        scale = vp.get('deviceScaleFactor') or (W / vp['width'] if vp.get('width') else 1.0)
+        scale, arrow_css = pointer_setup(take, ps, T.cfg, W, H)
+        check_paths(take, t['motions'])
     marks = check_highlights(take, t.get('highlights') or [], start, end, mode, scale, W, H)
     chunks = []
     for i, (f, e) in enumerate(zip(cuts, cuts[1:])):
@@ -322,12 +393,14 @@ def plan_spec(spec, default, root, crf, ffv):
                 'runs': [(fr[j]['file'], c, (d / fr[j]['file']).stat().st_size) for j, c in runs]}
         if mode == 'overlay':
             body.update(scale=scale, arrow=ARROW_PTS, pstart=[ps['x'], ps['y']], motions=[m for m in t['motions'] if m.get('glide', m['start']) < e])
+            if arrow_css:   # 화살표 크기를 따로 적은 녹화만 키가 달라진다
+                body.update(arrow_css=arrow_css)
         hl = [h for h in marks if h['start'] < e and h['end'] > f]
         if hl:   # 강조가 걸친 조각만 키가 달라진다
             body.update(highlights=hl, hl_style=HL)
         chunks.append(SimpleNamespace(highlights=hl,
             key=hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:24], tool=T, take=take, dir=d,
-            from_ms=f, to_ms=e, frames=n, mode=mode, scale=scale, W=W, H=H, runs=[(fr[j]['file'], c) for j, c in runs], idx=idx, times=times, fr=fr,
+            from_ms=f, to_ms=e, frames=n, mode=mode, scale=scale, arrow_css=arrow_css, W=W, H=H, runs=[(fr[j]['file'], c) for j, c in runs], idx=idx, times=times, fr=fr,
             all_motions=t['motions'], pstart=(ps['x'], ps['y']) if ps else None,
             part=seg(acts[0]) if acts else None, audio=T.audio, error=t['error'] if last else None, recorded_ms=t['duration'],
             end_url=st.get('url') if last else None, end_tab=st.get('tab') if last else None,
@@ -354,7 +427,7 @@ def encode_chunk(c, crf, cache, log):
            '-chroma_sample_location', 'left', '-video_track_timescale', TB, '-frames:v', c.frames, '-an', tmp]
     if c.mode == 'overlay':
         from PIL import Image
-        ARROW = arrow(c.scale)
+        ARROW = arrow(c.scale, c.arrow_css or ARROW_CSS)
         marks = [(h['start'], h['end'], *mark_patch(h['shape'], h['rects'], c.scale)) for h in c.highlights]
         p = subprocess.Popen([str(x) for x in [ff(), '-y', '-v', 'warning', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{c.W}x{c.H}', '-r', FPS, '-i', '-',
                                                '-vf', 'setsar=1'] + enc], stdin=subprocess.PIPE)
@@ -368,7 +441,7 @@ def encode_chunk(c, crf, cache, log):
             for s, e, patch, at in marks:
                 if s <= ms < e:
                     im.paste(patch, at, patch)
-            x, y = pointer_at(ms, c.all_motions, c.pstart)
+            x, y = pointer_at(ms, c.all_motions, c.pstart, c.times[j])
             im.paste(ARROW, (round(x * c.scale), round(y * c.scale)), ARROW)
             p.stdin.write(im.tobytes())
         p.stdin.close()
@@ -718,7 +791,8 @@ def self_test():
     tmp = Path(tempfile.mkdtemp(prefix='합성시험-'))
     root = tmp / '촬영'
     for nm, cfg in [('포털', {'work': '../../work/포털', 'audio': '../음성', 'viewport': {'width': 1280, 'height': 720, 'deviceScaleFactor': 1.5}, 'pointer': 'overlay'}),
-                    ('vscode', {'work': '../../work/vscode', 'audio': '../음성', 'viewport': {'width': 2304, 'height': 1296}})]:
+                    ('vscode', {'work': '../../work/vscode', 'audio': '../음성', 'viewport': {'width': 2304, 'height': 1296}}),
+                    ('arrows', {'work': '../../work/arrows', 'audio': '../음성', 'pointer': 'overlay'})]:   # viewport 없음 — 배율은 pointer-start.json이 준다
         (root / nm / '촬영도구').mkdir(parents=True)
         (root / nm / '음성').mkdir()
         (root / nm / '촬영도구' / 'config.json').write_text(json.dumps(cfg), encoding='utf-8')
@@ -959,7 +1033,7 @@ def self_test():
         check(px[0] > 170 and px[1] < 110 and px[2] < 110, f'밑줄이 빨갛지 않다 {px}')
         # 깨뜨린 입력 넷: 프레임 밖 · 크기 0 · 끝이 시작보다 이르거나 같음 · 모르는 모양 → 인코딩 전에 큐 id와 강조 번호를 대며 멈춘다
         for label, bad_h, word in [('프레임 밖', {**hs[0], 'rects': [[1200, 100, 200, 20]]}, '프레임'), ('크기 0', {**hs[0], 'rects': [[100, 100, 0, 20]]}, '크기가 0'),
-                                   ('끝 ≤ 시작', {**hs[0], 'end': 400}, '이르거나 같다'), ('모르는 모양', {**hs[0], 'shape': 'circle'}, '모르는 모양')]:
+                                   ('끝 ≤ 시작', {**hs[0], 'end': 400}, '이르거나 같다'), ('모르는 모양', {**hs[0], 'shape': 'star'}, '모르는 모양')]:
             take(P, 'hx-' + label, 3, hcues, True, seed=6, pstart=(1000, 600), highlights=[hs[2], bad_h])
             try:
                 encode('시험HX-' + label, ['hx-' + label], root=root, silent=True, log=lambda m: None)
@@ -967,6 +1041,110 @@ def self_test():
             except RuntimeError as e:
                 check('큐 A1 강조 2번' in str(e) and word in str(e), f'깨진 강조({label}) 오류 글 {e}')
             check(not (Path(P.work) / ('시험HX-' + label)).exists(), f'깨진 강조({label})인데 출력 폴더가 생겼다')
+
+        from PIL import ImageChops
+
+        def diff_box(fa, fb, k, crop=None):
+            a, b = decode_frames(fa, k, 1, 1920, 1080)[0], decode_frames(fb, k, 1, 1920, 1080)[0]
+            d = ImageChops.difference(a, b).convert('L').point(lambda v: 255 if v > 40 else 0)
+            return (d.crop(crop) if crop else d).getbbox()
+
+        def arrow_rect(x, y, s, css=ARROW_CSS, pad=3):
+            return (math.floor(x * s) - pad, math.floor(y * s) - pad, math.ceil(x * s + css[0] * s) + pad + 2, math.ceil(y * s + css[1] * s) + pad + 2)
+
+        def only_in(box, rects):
+            if box is None:
+                return False
+            x1, y1, x2, y2 = (min(r[0] for r in rects), min(r[1] for r in rects), max(r[2] for r in rects), max(r[3] for r in rects))
+            return x1 <= box[0] and y1 <= box[1] and box[2] <= x2 and box[3] <= y2
+
+        def rewrite(d, **kw):
+            tj = d / 'timing.json'; t = read(tj); t.update(kw); tj.write_text(json.dumps(t), encoding='utf-8')
+            return t
+
+        # 10. 끌기 경로(path): 같은 화면 · 같은 프레임 시각의 두 녹화(이동 없음 pp0 · 꺾인 경로 pp)를 합성해 견준다. 화살표는 곡선(출발 → 도착 직선)이 아니라 경로 위에,
+        #     그리고 지금 보이는 원본 프레임의 시각에 있던 자리에 있다(원본 프레임이 0.5초 비는 동안 화살표도 그 자리). 경로가 끝나고 PATH_SETTLE_MS 뒤에는 도착 자리.
+        gap_times = [float(x) for x in list(range(0, 1201, 50)) + list(range(1700, 1901, 50)) + list(range(2400, 2951, 50))]
+        path = [[1000, 200, 200], [1500, 200, 500], [2000, 800, 200]]
+        pm = {'start': 1000, 'end': 2000, 'glide': 1000, 'planned_ms': 1000, 'from': {'x': 200, 'y': 200}, 'x': 800, 'y': 200, 'path': path}
+        for nm, mots in [('pp0', []), ('pp', [pm])]:
+            dpp, fpp, _ = take(P, nm, 3, [('A1', 6, 300, 'A1 문장')], True, seed=7, pstart=(200, 200))
+            st0 = read(dpp / 'timing.json')['start']
+            rewrite(dpp, motions=mots, clicks=[], frames=[{**f, 'time': x, 'sourceTimestamp': (st0 + x) / 1000} for f, x in zip(fpp, gap_times)])
+            (dpp / 'end-state.json').write_text(json.dumps({'url': 'http://시험/', 'tab': 'home', 'clicks': []}), encoding='utf-8')
+            encode('시험' + nm.upper(), [nm], root=root, silent=True, log=lambda m: None)
+        PP0, PP = (Path(P.work) / n / f'{n}_1080p.mp4' for n in ('시험PP0', '시험PP'))
+        home = arrow_rect(200, 200, 1.5)
+        for ms, src_ms, label in [(1100, 1100, '경로 위'), (1600, 1200, '원본 프레임이 빈 동안은 보이는 프레임의 시각'), (2100, 1900, '경로 끝 뒤 새 프레임 전'), (2300, 2300, '경로 끝 뒤 도착 자리')]:
+            k = F(ms)
+            want = arrow_rect(*path_at(src_ms, path), 1.5)
+            check(only_in(diff_box(PP0, PP, k), [home, want]), f'끌기 경로({label}): {ms}ms 프레임 {k}에서 화살표가 {want} 밖에 있다 — 달라진 화소 {diff_box(PP0, PP, k)}')
+            check(diff_box(PP0, PP, k, want) is not None, f'끌기 경로({label}): {ms}ms 프레임 {k}의 {want}에 화살표가 없다')
+        check(path_at(1600, path) != path_at(1200, path) and pointer_at(1600, [pm], (200, 200)) == path_at(1600, path), 'pointer_at이 frame_ms 없이 경로의 그 시각 자리를 주지 않는다')
+        check(pointer_at(1600, [{k_: v for k_, v in pm.items() if k_ != 'path'}], (200, 200)) == (200 + 600 * smooth(.6), 200), 'path 없는 이동의 곡선이 달라졌다')
+        for label, bad_path, word in [('시각이 뒤로', [[1000, 200, 200], [1500, 200, 500], [1400, 500, 300], [2000, 800, 200]], '뒤로 간다'),
+                                      ('끝 점이 도착 자리와 다름', [[1000, 200, 200], [2000, 700, 200]], '도착 자리'),
+                                      ('첫 점이 출발 자리와 다름', [[1000, 250, 200], [2000, 800, 200]], '출발 자리'),
+                                      ('시작보다 이름', [[900, 200, 200], [2000, 800, 200]], '이동 시작'),
+                                      ('꼴이 틀림', [[1000, 200], [2000, 800, 200]], '꼴')]:
+            dpx, _, _ = take(P, 'px-' + label, 3, [('A1', 6, 300, 'A1 문장')], True, seed=7, pstart=(200, 200))
+            rewrite(dpx, motions=[{**pm, 'path': bad_path}], clicks=[])
+            (dpx / 'end-state.json').write_text(json.dumps({'clicks': []}), encoding='utf-8')
+            try:
+                encode('시험PX-' + label, ['px-' + label], root=root, silent=True, log=lambda m: None)
+                check(False, f'깨진 끌기 경로({label})가 멈추지 않았다')
+            except RuntimeError as e:
+                check('이동 1번' in str(e) and word in str(e), f'깨진 끌기 경로({label}) 오류 글 {e}')
+            check(not (Path(P.work) / ('시험PX-' + label)).exists(), f'깨진 끌기 경로({label})인데 출력 폴더가 생겼다')
+
+        # 11. 둥근 강조(circle): 상자에 내접하는 둥근 선만 그린다 — 달라진 화소는 그릴 자리 안에만, 선 위는 빨갛고 원 안은 그대로다.
+        hc = [{'cue': 'A1', 'shape': 'circle', 'rects': [[700, 300, 120, 120]], 'start': 400, 'end': 1200}]
+        take(P, 'hc', 3, hcues, True, seed=6, pstart=(1000, 600), highlights=hc)
+        encode('시험HC', ['hc'], root=root, silent=True, log=lambda m: None)
+        HC = Path(P.work) / '시험HC' / '시험HC_1080p.mp4'
+        check(diff_box(H0, HC, F(400) - 1) is None and diff_box(H0, HC, F(1200)) is None, '둥근 강조가 시작 전이나 끝난 뒤 프레임에 있다')
+        check(inside(diff_box(H0, HC, F(800)), 'circle', hc[0]['rects']), f"둥근 강조 자리 밖이 달라졌거나 강조가 없다 {diff_box(H0, HC, F(800))}")
+        top = round(300 * 1.5 - HL['box_pad'] - HL['line'] / 2)
+        px = decode_frames(HC, F(800), 1, 1920, 1080)[0].getpixel((round(760 * 1.5), top))
+        check(px[0] > 170 and px[1] < 110 and px[2] < 110, f'둥근 선이 빨갛지 않다 {px}')
+        check(diff_box(H0, HC, F(800), (1140 - 60, 540 - 60, 1140 + 60, 540 + 60)) is None, '둥근 강조가 원 안을 덮었다')
+        corner = (round(700 * 1.5) - 8, round(300 * 1.5) - 8, round(700 * 1.5) + 12, round(300 * 1.5) + 12)
+        check(diff_box(H0, HC, F(800), corner) is None, '둥근 강조가 상자 모서리까지 그려졌다(둥글지 않다)')
+        take(P, 'hcx', 3, hcues, True, seed=6, pstart=(1000, 600), highlights=[{**hc[0], 'rects': [[1200, 100, 200, 200]]}])
+        try:
+            encode('시험HCX', ['hcx'], root=root, silent=True, log=lambda m: None)
+            check(False, '프레임 밖 둥근 강조가 멈추지 않았다')
+        except RuntimeError as e:
+            check('큐 A1 강조 1번(circle)' in str(e) and '프레임' in str(e), f'프레임 밖 둥근 강조 오류 글 {e}')
+
+        # 12. 배율 · 화살표 크기: config에 viewport가 없는 도구(arrows)에서 pointer-start.json의 scale · viewport · arrow를 쓴다. 값이 없으면 지금처럼 config(없으면 1.0) · 20×27이다.
+        Aw = tool_of('arrows', root)
+        voice(Aw, 'A1', 'A1 문장', .6, 300)
+        SC = 0.9022556
+        for nm, extra in [('s0', {}), ('s1', {'scale': SC, 'viewport': [2128, 1197], 'arrow': [25, 34]})]:
+            dsx, _, _ = take(Aw, nm, 2, [], True, seed=8, pstart=(1000, 600))
+            (dsx / 'pointer-start.json').write_text(json.dumps({'x': 1000, 'y': 600, 'mode': 'overlay', **extra}), encoding='utf-8')
+            encode('시험' + nm.upper(), [nm], tool_name='arrows', root=root, silent=True, log=lambda m: None)
+        c0, c1 = (plan_spec(n, Aw, root, 18, ffv)[0] for n in ('s0', 's1'))
+        check((c0.scale, c0.arrow_css) == (1.0, None) and (c1.scale, c1.arrow_css) == (SC, [25, 34]), f'배율 · 화살표 크기 {(c0.scale, c0.arrow_css)} · {(c1.scale, c1.arrow_css)}')
+        S0, S1 = (Path(Aw.work) / n / f'{n}_1080p.mp4' for n in ('시험S0', '시험S1'))
+        r0_, r1_ = arrow_rect(1000, 600, 1.0), arrow_rect(1000, 600, SC, (25, 34))
+        check(only_in(diff_box(S0, S1, 10), [r0_, r1_]) and diff_box(S0, S1, 10, r0_) is not None and diff_box(S0, S1, 10, r1_) is not None,
+              f'배율: 화살표가 {r0_}(값 없음) · {r1_}(pointer-start 값)에 있지 않다 — 달라진 화소 {diff_box(S0, S1, 10)}')
+        a0, a1 = arrow(SC), arrow(SC, (25, 34))
+        check(abs(a1.width - 25 * SC) <= 2 and abs(a1.height - 34 * SC) <= 2 and abs(a0.width - 20 * SC) <= 2 and abs(a0.height - 27 * SC) <= 2,
+              f'화살표 크기 {a0.size} · {a1.size} ≠ 약 {(round(20 * SC), round(27 * SC))} · {(round(25 * SC), round(34 * SC))}')
+        for label, extra, word in [('viewport × scale이 프레임과 다름', {'scale': 1.5, 'viewport': [2128, 1197]}, '프레임 1920x1080와 다르다'),
+                                   ('scale 0', {'scale': 0, 'viewport': [2128, 1197]}, '0보다 큰 수'),
+                                   ('viewport 없음', {'scale': SC}, 'viewport'),
+                                   ('arrow 꼴이 틀림', {'scale': SC, 'viewport': [2128, 1197], 'arrow': [25]}, 'arrow')]:
+            dsx, _, _ = take(Aw, 'sx-' + label, 2, [], True, seed=8, pstart=(1000, 600))
+            (dsx / 'pointer-start.json').write_text(json.dumps({'x': 1000, 'y': 600, 'mode': 'overlay', **extra}), encoding='utf-8')
+            try:
+                encode('시험SX-' + label, ['sx-' + label], tool_name='arrows', root=root, silent=True, log=lambda m: None)
+                check(False, f'깨진 배율 값({label})이 멈추지 않았다')
+            except RuntimeError as e:
+                check('pointer-start.json' in str(e) and word in str(e), f'깨진 배율 값({label}) 오류 글 {e}')
     except Exception as e:
         import traceback
         traceback.print_exc()
