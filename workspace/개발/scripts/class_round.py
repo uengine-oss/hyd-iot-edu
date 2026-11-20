@@ -859,7 +859,7 @@ def kg_pick(r: Round, node_id: str, name: str) -> bool:
 
 
 def select_instance(r: Round, pid: str) -> bool:
-    """처리 건 목록(묶음: 내 차례 → 진행 중 → 처리 완료 3건)에서 그 처리 건 줄(#instList .row[data-inst] — instances.js renderList)을 누른다. 목록은 스스로 다시 읽힌다(2초).
+    """처리 건 목록(묶음: 내가 할 일 → 진행 중 → 처리 완료 3건)에서 그 처리 건 줄(#instList .row[data-inst] — instances.js renderList)을 누른다. 목록은 스스로 다시 읽힌다(2초).
     처리 완료 묶음에 접혀 있으면 「처리 완료 N건 더 보기」(#instList [data-done-more])로 편다. 그래도 목록에 없으면 알림 링크와 같은 주소로 연다.
     열렸는지는 화면이 고른 처리 건(hydInstances.I.sel · I.view)과 한 건의 틀(#casePath)로 본다(처리 건 id 글자는 접힌 「자세한 기록 › 처리 건 값」에만 있다)."""
     r.tab("instances")
@@ -876,7 +876,7 @@ def select_instance(r: Round, pid: str) -> bool:
 
 
 def open_task(r: Round, pid: str, task_id: str):
-    """처리 건 화면 목록의 「내 차례」 묶음에서 그 단계 줄(#instList .row[data-todo-task] — instances.js renderList)을 누른다. 한 건 맨 위에
+    """처리 건 화면 목록의 「내가 할 일」 묶음에서 그 단계 줄(#instList .row[data-todo-task] — instances.js renderList)을 누른다. 한 건 맨 위에
     「내가 할 일」 판(#todoPanel section.turn — todoCard)이 열린다. 줄이 아직 없으면 같은 주소로 연다 — 알림 링크와 같은 길."""
     r.tab("instances")
     link = r.page.locator(f"#instList .row[data-todo-task='{task_id}']")
@@ -944,6 +944,12 @@ def unit_button(r: Round, asset: str, act: str) -> str:
     r.page.locator(f"#units .unit[data-asset='{asset}'] button[data-act='{act}']").first.click()
     if act == "biz-reset" and not confirm_ok(r):                          # [초기화]는 되돌릴 수 없어 화면이 먼저 묻는다(app.js — UI.confirm)
         raise ScreenMissing(f"{asset} [초기화]의 확인 창이 뜨지 않음")
+    if act == "degrade":      # 주입의 결과는 카드 아래 한 줄이 아니라 「주입에서 처리 건까지」 과정 칸이 말한다(app.js logLine show=false — 실패만 한 줄로 온다)
+        r.wait(30, lambda: r.page.locator("#labFollow .lv-step[data-step='inject']").count() > 0
+               or ((t := r.page.locator("#scenarioMsg").inner_text().strip()) and t != before and not t.endswith("보내는 중")), every=0.5)
+        if r.page.locator("#labFollow .lv-step[data-step='inject']").count():
+            return r.page.locator("#labFollow .lv-step[data-step='inject']").inner_text().strip()
+        return r.page.locator("#scenarioMsg").inner_text().strip()
     r.wait(30, lambda: (t := r.page.locator("#scenarioMsg").inner_text().strip()) and t != before and not t.endswith("보내는 중"), every=0.5)
     return r.page.locator("#scenarioMsg").inner_text().strip()
 
@@ -1242,8 +1248,8 @@ def commit_manual(r: Round, key: str) -> tuple[bool, str]:
     page = r.page
     page.check("#manualReviewed")
     page.click("#manualCommit")
-    ended = ("적재 완료", "적재하지 못했습니다")                              # hitl.js manualCommit — 완료 · 서버 거절 문구
-    r.wait(90, lambda: page.locator('.confirm-dialog[open]').count() or page.locator("#manualMsg").inner_text().startswith(ended), every=1)
+    ended = ("지식 지도에 적재했습니다", "적재하지 못했습니다")                 # hitl.js manualCommit — 4단계 제목(#manualCommitTitle)의 완료 · 서버 거절 문구
+    r.wait(90, lambda: page.locator('.confirm-dialog[open]').count() or page.locator("#manualCommitTitle").inner_text().startswith(ended), every=1)
     dialog = page.locator('.confirm-dialog[open]')
     if dialog.count():
         text = dialog.inner_text()
@@ -1252,9 +1258,10 @@ def commit_manual(r: Round, key: str) -> tuple[bool, str]:
         dialog.locator('button[value="cancel"]' if lost else 'button[value="ok"]').click()
         if lost:
             return False, '개정 누락을 확인해 적재하지 않음: ' + text
-    r.wait(90, lambda: page.locator("#manualMsg").inner_text().startswith(ended), every=1)
-    msg = page.locator("#manualMsg").inner_text().strip()
-    return msg.startswith("적재 완료"), msg
+    r.wait(90, lambda: page.locator("#manualCommitTitle").inner_text().startswith(ended), every=1)
+    title = page.locator("#manualCommitTitle").inner_text().strip()
+    msg = " ".join(x for x in (title, page.locator("#manualCommitSteps").inner_text().strip(), page.locator("#manualMsg").inner_text().strip()) if x)
+    return title.startswith(ended[0]), msg
 
 
 def ingest_manual(r: Round, key: str, label: str) -> dict | None:
@@ -2339,8 +2346,10 @@ def lab_11_human(r: Round):
         seen = r.wait(20, lambda: row.count() > 0, every=1)
         row_text = row.first.inner_text() if seen else txt(r, "#instList")
         role_name = next((x.get("name") for x in board["roles"] if x["id"] == card.get("approver")), None)
-        # 「내 차례」 묶음의 한 줄 = 사람이 처리할 단계 하나: 처리 건 이름 · 「내 차례」 · 둘째 줄에 그 단계 이름과 그 일을 맡는 역할(단계 이름에 역할이 들어 있으면 한 번만 — instances.js rowHtml)
-        r.check("승인 대기 건이 처리 건 목록의 「내 차례」 묶음에 「내 차례」 줄로 보이고, 그 줄에 승인 단계 이름과 맡는 역할이 있다", bool(seen) and "내 차례" in row_text
+        # 「내가 할 일」 묶음의 한 줄 = 사람이 처리할 단계 하나: 처리 건 이름 · 둘째 줄에 그 단계 이름과 그 일을 맡는 역할(단계 이름에 역할이 들어 있으면 한 번만 — instances.js rowHtml).
+        # 그 줄에는 상태 알약이 없다(묶음 머리가 「내가 할 일」이라고 말한다)
+        in_mine = bool(seen) and page.evaluate("row => { let g = row.previousElementSibling; while (g && !g.classList.contains('rows-group')) g = g.previousElementSibling; return !!g && g.firstChild.textContent === '내가 할 일'; }", row.first.element_handle()) if seen else False
+        r.check("승인 대기 건이 처리 건 목록의 「내가 할 일」 묶음에 있고, 그 줄에 승인 단계 이름과 맡는 역할이 있다", in_mine
                 and str(task.get("activity_name")) in row_text and bool(role_name) and role_name in row_text, f"역할 {role_name} · {row_text[:200]}")
         r.not_measure("권한 없는 사람이 승인 → 막힘 · 사람을 고르지 않았을 때의 안내",
                       "화면에 사람 · 역할 고르기가 없다(쓰는 사람은 담당자 한 명이고 모든 역할의 구성원 — www/inbox.js 머리말). 화면에서 만들 수 없는 길이라 "

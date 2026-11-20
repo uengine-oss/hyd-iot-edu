@@ -127,7 +127,7 @@ def _wi(wid, act, status, minute, **more):
 
 REPORT = {'outcome': '정상', 'level': 'ok', 'title': 'HYD-01 긴급 대응 결과', 'summary': '유온 정상 · 경보 해제', 'refs': {'work_order': 'WO-1'}}
 ROWS = [_row('mine', '냉각 긴급 대응 HYD-01', 'RUNNING', 40, current_activity_ids=['T_approve']),
-        _row('ai', '냉각 긴급 대응 HYD-02 — 이름이 아주 긴 처리 건도 목록 줄에서 상태 알약을 밀어내지 않는다', 'RUNNING', 41, current_activity_ids=['T_agent']),
+        _row('ai', '냉각 긴급 대응 HYD-02 — 이름이 아주 긴 처리 건도 목록 줄에서 상태 알약을 밀어내지 않는다', 'RUNNING', 41, current_activity_ids=['T_agent'], proc_def_version='2'),
         _row('q1', '질문에 답하기', 'COMPLETED', 39, proc_def_id='ask_agent'),
         *[_row(f'd{i}', f'끝난 건 {i}', 'COMPLETED', 30 - i, variables_data=[{'key': 'result_report', 'value': REPORT}]) for i in range(1, 6)],
         _row('cx', '승인 전에 닫힌 건', 'COMPLETED', 10, end_label='조치 전 해소')]
@@ -216,20 +216,23 @@ def _pick(page, pid):
     page.wait_for_timeout(400)
 
 
-def test_목록은_거르기_단추_없이_내_차례_진행_중_처리_완료_세_묶음이고_처리_완료는_세_건과_더_보기다():
+def test_목록은_거르기_단추_없이_내가_할_일_진행_중_처리_완료_세_묶음이고_처리_완료는_세_건과_더_보기다():
     """lite ProjectList(L-7): 묶음의 차례가 거르기를 대신한다. 처리 완료는 3건만 보이고 나머지는 숨은 건수를 단 「더 보기」 뒤에 있다.
     질문 · 문서 추출 같은 시스템 작업은 사건이 아니라 「처리 완료」에 세지 않고 맨 아래 접힌 「시스템 작업」 묶음에 있다(2026-11-20 — 사건 한 건을 처리한 학생에게 「2건 처리 완료」로 보였다).
-    줄 = 이름 · 오른쪽 끝 상태 알약 · 그 아래 보조 줄, 끝난 줄은 옅게."""
+    줄 = 이름 · 오른쪽 끝 상태 알약 · 그 아래 보조 줄, 끝난 줄은 옅게. 「내가 할 일」 묶음의 줄에는 알약이 없다 — 묶음 머리가 같은 말을 한다(사용자 2026-11-20 「내 차례..? 이런표현도 체크해야하나?」)."""
     with _case_page() as page:
         got = page.evaluate("""() => { const box = document.getElementById('instList'), r = e => e.getBoundingClientRect();
           const kids = [...box.children].map(k => k.classList.contains('rows-group') ? 'G:' + k.firstChild.textContent : k.classList.contains('row') ? 'R:' + k.dataset.inst : 'M:' + k.innerText.trim());
-          const rows = [...box.querySelectorAll('.row')].map(row => { const t = r(row.querySelector('.row-title')), c = r(row.querySelector('.tag')), m = r(row.querySelector('.row-meta')), b = r(row);
+          const rows = [...box.querySelectorAll('.row')].map(row => { if (!row.querySelector('.tag')) return { id: row.dataset.inst, noTag: true };
+            const t = r(row.querySelector('.row-title')), c = r(row.querySelector('.tag')), m = r(row.querySelector('.row-meta')), b = r(row);
             return { id: row.dataset.inst, done: 'done' in row.dataset, pillRight: Math.round(b.right - c.right), sameLine: Math.abs((t.top + t.bottom) / 2 - (c.top + c.bottom) / 2) < 3, metaBelow: m.top >= t.bottom - 1, noOverlap: t.right <= c.left,
               ink: getComputedStyle(row.querySelector('.row-title')).color }; });
           return { kids, rows, filters: document.querySelectorAll('#view-instances .case-side .seg, #instTabs').length }; }""")
         assert got['filters'] == 0
-        assert got['kids'] == ['G:내 차례', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 3건 더 보기', 'M:시스템 작업 1건 더 보기'], got['kids']
+        assert got['kids'] == ['G:내가 할 일', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 3건 더 보기', 'M:시스템 작업 1건 더 보기'], got['kids']
         assert page.locator('#instList .rows-group', has_text='처리 완료').locator('.num').inner_text().strip() == '6'      # 끝난 사건 6건(d1~d5 · cx) — 질문 처리 건 q1 은 세지 않는다
+        assert [r['id'] for r in got['rows'] if r.get('noTag')] == ['mine'], got['rows']             # 「내가 할 일」 묶음의 줄만 알약이 없다
+        got['rows'] = [r for r in got['rows'] if not r.get('noTag')]
         assert all(r['sameLine'] and r['metaBelow'] and r['noOverlap'] for r in got['rows']), got['rows']
         assert len({r['pillRight'] for r in got['rows']}) == 1, got['rows']                      # 상태 알약은 모든 줄에서 같은 세로선(오른쪽 끝)
         open_ink = {r['ink'] for r in got['rows'] if not r['done']}; done_ink = {r['ink'] for r in got['rows'] if r['done'] and r['id'] != page.evaluate('hydInstances.I.sel')}
@@ -256,21 +259,26 @@ def test_다른_화면의_처리_건에서_보기로_온_시스템_작업은_접
         assert page.locator('#instDetail .case-title').inner_text().startswith('질문에 답하기')
 
 
-def test_한_건의_머리는_이름과_알약_보조_줄_진행_막대이고_내_차례일_때만_내가_할_일이_뜨며_끝난_건에는_결과와_다음_할_일_링크가_있다():
-    """lite InstanceHeader(L-3 · L-6 · L-13): 상태일 때만 나타난다 — 내 차례가 아니면 「내가 할 일」을 그리지 않고, 끝나지 않았으면 결과 카드를 그리지 않는다.
-    진행 막대는 센 값만큼만 찬다(시간으로 차오르지 않는다)."""
+def test_한_건의_머리는_이름과_알약_보조_줄_진행_막대이고_할_일이_있을_때만_내가_할_일이_뜨며_끝난_건에는_결과와_다음_할_일_링크가_있다():
+    """lite InstanceHeader(L-3 · L-6 · L-13): 상태일 때만 나타난다 — 할 일이 없으면 「내가 할 일」을 그리지 않고, 끝나지 않았으면 결과 카드를 그리지 않는다.
+    진행 막대는 센 값만큼만 찬다(시간으로 차오르지 않는다). 할 일이 있는 건의 머리 알약은 그 건이 어디까지 왔는지(진행 중)다 — 바로 아래 「내가 할 일」 카드와
+    같은 말을 되풀이하지 않는다. 진행 상황 목록은 일어난 일과 정해진 남은 단계만 적는다 — 아직 나지 않은 결과에 따라 갈릴 길(「승인? — 아직 나지 않은 결과에 따라
+    길이 갈립니다 · 갈림 뒤의 길」)은 흐름 그림이 보이고 목록에 적지 않는다. 흐름의 첫 판(판본 1)은 판본을 적지 않고, 고쳐 다시 배포한 판(2부터)만 적는다(사용자 2026-11-20 「다 처리해줘」)."""
     with _case_page() as page:
         probe = """() => { const q = s => document.querySelector('#instDetail ' + s), r = e => e.getBoundingClientRect();
           const title = r(q('.case-title > span')), pill = r(q('.case-title .tag')), meta = r(q('.case-meta')), bar = r(q('.case-bar .pbar')), fill = r(q('.case-bar .pbar > i')), menu = r(q('#caseMenu-trigger')), head = r(q('.case-head'));
           return { pillAfterName: pill.left >= title.right && Math.abs((pill.top + pill.bottom) - (title.top + title.bottom)) < 8, metaUnder: meta.top >= title.bottom - 1, barUnder: bar.top >= meta.bottom, barWide: Math.round(bar.width) === Math.round(head.width),
             fill: Math.round(fill.width / bar.width * 100), menuRight: Math.round(head.right - menu.right) <= 1, meta: q('.case-meta').innerText, pill: q('.case-title .tag').innerText,
             turn: !!q('#todoPanel .turn'), result: !!q('#caseTop .case-result'), links: [...document.querySelectorAll('#instDetail a.go')].map(a => a.dataset.goTab),
+            record: q('#instRecord').innerText, foot: q('.case-progress > footer').innerText, stepTags: [...document.querySelectorAll('#instRecord .step .tag')].map(t => t.innerText),
             order: ['.case-head', '#todoPanel', '#caseTop', '.case-progress'].map(s => Math.round(r(q(s)).top)) }; }"""
         _pick(page, 'mine')
         page.wait_for_selector('#todoPanel .turn #tdGo')
         a = page.evaluate(probe)
         assert a['pillAfterName'] and a['metaUnder'] and a['barUnder'] and a['barWide'] and a['menuRight'], a
-        assert a['pill'] == '내 차례' and a['turn'] and not a['result'], a
+        assert a['pill'] == '진행 중' and a['turn'] and not a['result'], a
+        assert a['stepTags'] == [] and '아직 나지 않은' not in a['record'] and '갈림' not in a['record'] and '승인?' not in a['record'], a      # 갈림 줄 · 내가 할 일 알약 없음
+        assert '판본' not in a['foot'] and a['foot'].startswith('흐름 「'), a
         assert '1단계 끝남' in a['meta'] and '/' not in a['meta'].split('시작')[1], a      # 갈림 뒤가 정해지지 않았으면 「n/m」이라 하지 않는다
         assert 0 < a['fill'] < 100, a
         _pick(page, 'd1')
@@ -279,6 +287,8 @@ def test_한_건의_머리는_이름과_알약_보조_줄_진행_막대이고_�
         assert '4/4 단계' in b['meta'] and '걸림' in b['meta'] and b['fill'] == 100, b
         assert b['links'] == ['process', 'flows'], b                                     # 다음 할 일: 업무 시스템 기록 · 흐름
         assert b['order'][2] < b['order'][3], b                                          # 결과가 진행 상황보다 위
+        _pick(page, 'ai')
+        assert page.evaluate(probe)['foot'].split('\n')[0].endswith('· 판본 2'), page.evaluate(probe)['foot']      # 고쳐 다시 배포한 판에서 연 건은 판본을 적는다
 
 
 def test_진행_상황의_단계_줄은_점이_한_세로선에_서고_줄을_누르면_옆_판이_열리며_흐름_그림은_세그먼트_뒤에서_위아래가_비지_않는다():
@@ -654,7 +664,7 @@ def test_승인할_안이_없을_때의_반려하고_이_건_닫기는_사유를
         page.wait_for_function("document.body.innerText.includes('반려했습니다. 승인 뒤 조치는 실행하지 않습니다.')", timeout=8000)      # 결과 알림
         page.wait_for_function("hydInstances.I.view && hydInstances.I.view.instance.status === 'COMPLETED'", timeout=8000)
         assert page.locator('#todoPanel #tdRejectOpen, #todoPanel [data-case-act="recover"]').count() == 0      # 내가 할 일이 걷혔다
-        assert '내 차례' not in page.inner_text('#instDetail .case-title')
+        assert '내가 할 일' not in page.inner_text('#instDetail .case-title')
 
 
 def test_승인할_안이_없을_때의_새_판단_요청하기는_다시_수행_폼을_창_안에_펴고_거기서_영향_확인과_요청이_그_단계로_나간다():
@@ -777,7 +787,7 @@ def _answer_more(route):
     return _answer(route)
 
 
-def test_홈_카드의_내_차례_진행_중_처리_완료_수는_그_카드를_눌러_가는_처리_건_화면의_묶음_수와_같다():
+def test_홈_카드의_내가_할_일_진행_중_처리_완료_수는_그_카드를_눌러_가는_처리_건_화면의_묶음_수와_같다():
     """대역(2026-11-16): 홈 「4 결과 보기 — 10건 처리 완료」와 처리 건 목록의 「처리 완료 13」이 달랐다. 홈은 사건(GET /api/incidents)을, 목록은 처리 건(질문 · 문서 추출 포함)을 셌다.
     같은 이름은 같은 것을 센다: 홈 카드의 수를 읽고, 그 카드를 눌러 간 처리 건 화면의 묶음 머리 수와 견준다(대역의 사건 목록은 처리 건 목록과 건수가 다르다)."""
     with _case_page(answer=_answer_more, start='#/main') as page:
@@ -789,7 +799,7 @@ def test_홈_카드의_내_차례_진행_중_처리_완료_수는_그_카드를_
         page.wait_for_selector('#instList .row', timeout=20000)
         groups = page.evaluate("Object.fromEntries([...document.querySelectorAll('#instList .rows-group')].map(g => [g.firstChild.textContent, g.querySelector('.num').textContent.trim()]))")
         assert home['open'] == [groups['진행 중'], '건 진행 중'] and home['done'] == [groups['처리 완료'], '건 처리 완료'], (home, groups)
-        assert home['mine'] == f"내 차례 {groups['내 차례']}" and home['nav'] == groups['내 차례'], (home, groups)
+        assert home['mine'] == f"내가 할 일 {groups['내가 할 일']}" and home['nav'] == groups['내가 할 일'], (home, groups)
         # 사건 처리 건만 센다(2026-11-20): 끝난 처리 건 9건 가운데 질문 처리 건(q1 — 시스템 작업) 하나를 뺀 8건. 문서 한 건을 추출하고 사건 한 건을 처리한 학생에게 홈이 「2건 처리 완료」라고 했다
         ended = [r for r in ROWS + CLOSED_ROWS if r['status'] != 'RUNNING']
         assert len(ended) == 9 and home['done'][0] == str(len([r for r in ended if r['proc_def_id'] != 'ask_agent'])) == '8', (home, len(ended))
@@ -799,7 +809,7 @@ def test_홈_카드의_내_차례_진행_중_처리_완료_수는_그_카드를_
         assert page.locator('#instList .row[data-done]').count() == int(groups['처리 완료'])
 
 
-def test_시스템_작업_안의_사람_차례는_내_차례로_세고_그_건을_시스템_작업_묶음에_또_두지_않는다():
+def test_시스템_작업_안의_사람_차례는_내가_할_일로_세고_그_건을_시스템_작업_묶음에_또_두지_않는다():
     """처리 완료 · 진행 중의 수는 사건 처리 건만 세지만(2026-11-20), 사람이 할 일은 숨기지 않는다: 질문하기 처리 건에서 에이전트가 사람에게 되물은 차례도
     메뉴 곁 수와 「내 차례」 묶음에 들고, 그 건은 시스템 작업 묶음에 한 번 더 나오지 않는다. 세는 곳 하나(hydCases.groups)를 실제 페이지에서 부른다."""
     with _case_page() as page:

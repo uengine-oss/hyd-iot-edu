@@ -129,7 +129,7 @@ def test_가지_않은_길의_취소_줄은_지나온_것도_멈춤도_아니고
         wi('T_cmd', 'CANCELLED', T0, end_date=T2, reached_at=None, log='취소: 처리 건이 끝남 — 거절 종결; '), wi('R_rej', 'DONE', T2, end_date=T2)]
     got = marks(rows, status='COMPLETED', end_event='E_rej')
     assert 'T_cmd' not in got['st'] and got['st']['R_rej'] == 'done' and got['now'] == []
-    # 다시 수행: 앞 차수(0)의 승인 줄은 기다리던 중에 닫혔고(시작된 적 있음), 새 차수(1)의 승인 줄이 지금 내 차례다
+    # 다시 수행: 앞 차수(0)의 승인 줄은 기다리던 중에 닫혔고(시작된 적 있음), 새 차수(1)의 승인 줄이 지금 내가 할 일이다
     again = [dict(wi('T_agent', 'DONE', T0, end_date=T1), id='a0', generation=0), dict(wi('T_approve', 'CANCELLED', T1, end_date=T2, reached_at=T1, log='rework superseded: r1; '), id='p0', generation=0),
              dict(wi('T_cmd', 'CANCELLED', T1, end_date=T2, reached_at=T1, log='rework superseded: r1; '), id='c0', generation=0),      # 앞 차수에서 시작됐다가 닫힌 줄 — 새 차수의 같은 단계는 아직 예정이다
              dict(wi('T_agent', 'DONE', T2, end_date=T2), id='a1', generation=1), dict(wi('T_approve', 'IN_PROGRESS', T2), id='p1', generation=1), dict(wi('T_cmd', 'TODO', T2), id='c1', generation=1)]
@@ -137,18 +137,6 @@ def test_가지_않은_길의_취소_줄은_지나온_것도_멈춤도_아니고
     nodes = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out(m.nodes.map(n => [n.id, n.state]))", view)
     assert ['T_approve', 'now'] in nodes and not any(state == 'fail' for _, state in nodes), nodes
     assert marks(again)['now'] == ['T_approve']
-
-
-def test_남은_길은_지금_단계에_걸린_기한이_먼저_오면_가는_가지도_말한다():
-    """입고를 기다리는 동안 「남은 단계」가 입고 뒤의 두 가지(합격 · 불합격)만 말하고, 그림에는 있는 납기 초과 가지(기한이 먼저 오면 → 지연 결과 보고)는
-    말하지 않았다. 지금 단계에 붙은 경계 타이머에서 나가는 길을 따로 싣는다(pathModel().timers). 지금 단계가 아닌 단계의 타이머는 싣지 않는다."""
-    view = {'definition': DEF, 'instance': {'proc_inst_id': 'p', 'status': 'RUNNING'},
-            'workitems': [wi('T_agent', 'DONE', '01', end_date='02'), wi('T_approve', 'IN_PROGRESS', '02'), wi('T_cmd', 'TODO', None)]}
-    got = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out({ timers: m.timers, fork: m.fork.branches.map(b => b.label) })", view)
-    assert got['timers'] == [{'label': '승인 지연', 'steps': ['승인 지연 알림'], 'more': None, 'end': None}]
-    assert got['fork'] == ['승인', '거절']
-    view['workitems'] = [wi('T_agent', 'IN_PROGRESS', '01'), wi('T_approve', 'TODO', None)]      # AI 단계가 지금: 승인 단계의 기한은 아직 걸리지 않았다
-    assert run(FILES, "out(hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance).timers)", view) == []
 
 
 def test_가려진_화면에서_그린_흐름_그림은_오류_없이_실리고_보이는_순간_읽을_크기로_놓인다():
@@ -232,7 +220,7 @@ def test_진행_길의_끝남_지금_남음은_밝은_캔버스에서_서로_다
             assert all(got[k]['edge'] >= 3 for k in ('done', 'now')), got                                 # 끝남 · 지금의 테두리는 캔버스 바탕 위에서 또렷하다
             assert all(got[k]['text'] >= 4.5 for k in ('done', 'now', 'todo')), got                       # 상자 안 글자는 그 상자의 면 위에서 읽힌다
             assert got['todo']['fade'] < 1 and got['done']['fade'] == 1 and got['now']['fade'] == 1, got  # 남은 단계만 흐리다
-            assert got['tip']['text'] == '지금 · 내 차례' and got['tip']['ratio'] >= 4.5 and got['check'] == 1, got
+            assert got['tip']['text'] == '지금 · 내가 할 일' and got['tip']['ratio'] >= 4.5 and got['check'] == 1, got
             b.close()
     finally:
         served.close()

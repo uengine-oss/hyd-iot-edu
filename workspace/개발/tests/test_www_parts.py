@@ -166,8 +166,8 @@ def _contrast(a, b):
 
 
 def test_상태_알약은_점_없는_알약이고_상태마다_색이_다르며_글이_읽힌다(portal):
-    """상태 알약(디자인기준 4-5 · 2-2): 앞에 점을 그리지 않는다. 보통 · 진행 중 · 정상 · 주의 · 실패 · 내 차례의 바탕이 서로 다르고, 글과 바탕의 대비가 4.5 이상이다.
-    내 차례와 실패는 채운 알약(짙은 바탕 · 흰 글)이고 나머지는 옅은 바탕이다. 상태 코드는 UI.tones 표대로 색이 정해진다."""
+    """상태 알약(디자인기준 4-5 · 2-2): 앞에 점을 그리지 않는다. 보통 · 진행 중 · 정상 · 주의 · 실패 · 내가 할 일의 바탕이 서로 다르고, 글과 바탕의 대비가 4.5 이상이다.
+    내가 할 일과 실패는 채운 알약(짙은 바탕 · 흰 글)이고 나머지는 옅은 바탕이다. 상태 코드는 UI.tones 표대로 색이 정해진다."""
     page = portal
     box = draw(page, "['neutral', 'accent', 'success', 'warning', 'danger', 'mine'].map(t => UI.chipText('상태 글 12', t)).join(' ') + UI.chip('FAILED') + UI.chip('IN_PROGRESS') + UI.chip('DONE') + UI.chip('PENDING') + UI.chip('TODO')")
     pills = box.locator('.tag').evaluate_all("""ns => ns.map(n => { const cs = getComputedStyle(n), dot = getComputedStyle(n, '::before');
@@ -175,11 +175,11 @@ def test_상태_알약은_점_없는_알약이고_상태마다_색이_다르며_
                kids: n.children.length, size: parseFloat(cs.fontSize) }; })""")
     assert all(p['dot'] in ('none', 'normal') and p['kids'] == 0 for p in pills), f'알약 앞에 점이 없다: {[p["dot"] for p in pills]}'
     assert all(p['round'] and p['h'] == pills[0]['h'] and p['size'] == pills[0]['size'] for p in pills), pills
-    tone = {name: (_paint(page, p['bg']), _paint(page, p['ink'])) for name, p in zip(['보통', '진행', '정상', '주의', '실패', '내 차례'], pills[:6])}
+    tone = {name: (_paint(page, p['bg']), _paint(page, p['ink'])) for name, p in zip(['보통', '진행', '정상', '주의', '실패', '내가 할 일'], pills[:6])}
     assert len({tuple(bg) for bg, _ in tone.values()}) == 6, f'상태마다 바탕이 다르다: {tone}'
     low = {name: round(_contrast(bg, ink), 2) for name, (bg, ink) in tone.items() if _contrast(bg, ink) < 4.5}
     assert not low, f'글과 바탕의 대비가 4.5 아래인 알약: {low}'
-    for name in ('실패', '내 차례'):                                           # 채운 알약: 바탕이 짙고 글이 희다
+    for name in ('실패', '내가 할 일'):                                           # 채운 알약: 바탕이 짙고 글이 희다
         assert sum(tone[name][0]) < sum(tone[name][1]), (name, tone[name])
     for name in ('보통', '진행', '정상', '주의'):                              # 옅은 알약: 바탕이 밝고 글이 짙다
         assert sum(tone[name][0]) > sum(tone[name][1]) and min(tone[name][0]) >= 190, (name, tone[name])
@@ -211,8 +211,8 @@ def test_긴_글_접기는_140px에서_잘려_아래가_흐려지고_둥근_꺾�
 
 
 def test_단계_타임라인은_상태마다_점이_다르고_이음선이_점_가운데를_지나며_기계가_일할_때만_맥박친다(portal):
-    """단계 타임라인(디자인기준 4-11 — UI.timeline): 점은 같은 크기의 원이고 끝남 · 지금 · 내 차례 · 실패 · 남음의 모양이 서로 다르다. 이음선은 점의 가운데 세로선을 지난다.
-    맥박은 기계가 일하는 중(busy)인 지금 단계에만 있고, 사람을 기다리는 내 차례는 멈춘 모양이다. 갈림길은 돌린 사각이고 가지 않은 단계는 흐리다. 시각은 줄의 오른쪽 끝에 선다."""
+    """단계 타임라인(디자인기준 4-11 — UI.timeline): 점은 같은 크기의 원이고 끝남 · 지금 · 내가 할 일 · 실패 · 남음의 모양이 서로 다르다. 이음선은 점의 가운데 세로선을 지난다.
+    맥박은 기계가 일하는 중(busy)인 지금 단계에만 있고, 사람을 기다리는 내가 할 일은 멈춘 모양이다. 갈림길은 돌린 사각이고 가지 않은 단계는 흐리다. 시각은 줄의 오른쪽 끝에 선다."""
     page = portal
     box = draw(page, """UI.timeline([{ state: 'done', name: '올리기', sub: '담당자 · HM-8 매뉴얼', time: '10:02' }, { state: 'now', busy: true, name: 'AI 추출', sub: '절 3/8을 읽는 중' },
       { state: 'mine', name: '조치 선택 · 승인', sub: '설비보전팀장' }, { state: 'fail', name: '설비에 명령' }, { state: 'done', gateway: true, name: '유온 정상?' }, { state: 'skip', name: '책임자 확인' }, { state: 'todo', name: '결과 보고' },
@@ -224,7 +224,7 @@ def test_단계_타임라인은_상태마다_점이_다르고_이음선이_점_�
                titleLeft: title.left, timeRight: t ? Math.round(row.right - t.getBoundingClientRect().right) : null, icon: m.querySelectorAll('svg').length }; })""")
     assert all((s['w'], s['h']) == (steps[0]['w'], steps[0]['h']) for s in steps) and steps[0]['w'] == steps[0]['h'], steps
     looks = {s['state']: s['look'] for s in steps[:4]} | {'todo': steps[6]['look']}
-    assert len(set(looks.values())) == 5, f'끝남 · 지금 · 내 차례 · 실패 · 남음의 점이 서로 다르다: {looks}'
+    assert len(set(looks.values())) == 5, f'끝남 · 지금 · 내가 할 일 · 실패 · 남음의 점이 서로 다르다: {looks}'
     assert [s['pulse'] != 'none' for s in steps] == [False, True, False, False, False, False, False, False], f'맥박은 기계가 일하는 지금 단계에만: {[s["pulse"] for s in steps]}'
     assert all(abs(s['lineMid'] - s['markMid']) < 0.6 for s in steps[:-1] if s['lineShown']) and steps[-1]['lineShown'] is False, steps
     assert steps[4]['turn'] not in ('none', '0deg') and steps[4]['radius'] != steps[0]['radius'], f'갈림길은 돌린 사각이다: {steps[4]}'
@@ -251,7 +251,7 @@ def test_숫자_카드와_설정_줄과_더_보기는_정한_자리에_선다(po
     """숫자 카드(4-17 — UI.statCard): 설명 → 큰 숫자 → 아래 한 줄, 상태 알약은 오른쪽 위, 다른 화면으로 가는 카드는 맨 아래 고정 줄의 오른쪽 끝에 링크. 높이가 다른 글이 들어도 나란한 카드의 아래 줄은 같은 자리다.
     설정 줄(4-16 — UI.settingRow): 왼쪽 이름과 설명, 오른쪽 끝 동작 하나, 줄 사이에 선. 「N개 더 보기」(4-14 — UI.moreButton): 숨은 개수가 문구에 있다."""
     page = portal
-    box = draw(page, """'<div class="stats" style="grid-template-columns:repeat(2,300px)">' + UI.statCard({ label: '진행 중인 처리 건', value: '2', unit: '건', note: '짧은 한 줄', pill: UI.chipText('내 차례 1', 'mine'), tab: 'instances', go: '처리 건' })
+    box = draw(page, """'<div class="stats" style="grid-template-columns:repeat(2,300px)">' + UI.statCard({ label: '진행 중인 처리 건', value: '2', unit: '건', note: '짧은 한 줄', pill: UI.chipText('내가 할 일 1', 'mine'), tab: 'instances', go: '처리 건' })
       + UI.statCard({ label: '지식 항목', value: '336', unit: '개', note: '두 줄이 되는 긴 설명입니다. 매뉴얼을 올리면 AI가 판단에 쓰는 지식이 되고 지식 지도에 놓입니다.', tab: 'knowledge' }) + '</div>'
       + '<div class="settings" style="width:600px">' + UI.settingRow({ title: '내보내기', desc: '내가 만든 것을 파일 하나로 받습니다.', action: UI.btn('export', { variant: 'outline' }) }) + UI.settingRow({ title: '불러오기', desc: '받아 둔 파일을 올립니다.', action: UI.btn('load', { variant: 'outline' }) }) + '</div>'
       + UI.moreButton(12, 'data-probe-more', { what: '처리 완료', unit: '건' }) + UI.moreButton(0)""")
@@ -496,7 +496,7 @@ def test_공통_부품의_누르는_것은_모두_누를_수_있게_보인다(po
       + UI.tabs([['a', '전체', 3], ['b', '내가 할 일', 1]], 'a') + UI.viewTabs([['a', '거래 기록', 3], ['b', '지금 기록', 2]], 'a')
       + '<select class="select"><option>하나</option><option>둘</option></select><label class="pane-opt"><input type="checkbox" class="input"> 고르기</label><label><input type="radio" class="input" name="pr"> 예</label>'
       + '<p class="muted">지우려면 <a href="#/admin">관리 › 내 설정에서 되돌리기</a></p><button type="button" class="btn">주 단추</button><button type="button" class="btn" data-variant="outline">보통 단추</button><button type="button" class="btn" disabled>꺼진 단추</button>'
-      + UI.chipText('내 차례 2', 'mine') + UI.scope('가상 설비 3기의 지금 값으로 계산합니다.') + '<div class="sec-head"><h2>구역 머리</h2></div>'""")
+      + UI.chipText('내가 할 일 2', 'mine') + UI.scope('가상 설비 3기의 지금 값으로 계산합니다.') + '<div class="sec-head"><h2>구역 머리</h2></div>'""")
     box.locator('.row').first.wait_for(state='visible')
     page.evaluate("() => UI.fitLongText && UI.fitLongText(document.getElementById('partsProbe'))")
     flaws, tried, n = pressable_flaws(page, '#partsProbe')

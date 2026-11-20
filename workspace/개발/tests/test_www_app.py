@@ -119,6 +119,10 @@ def test_결함_주입_뒤의_과정은_사실이_올_때만_다음_줄로_넘�
     assert not page.is_visible('#labFollowPanel')                       # 누르기 전에는 과정 판이 없다
     page.click("#units .unit[data-asset='HYD-01'] button[data-act='degrade']")
     wait_step(page, 'inject', 'run')
+    # 주입의 결과는 이 과정 칸이 말한다 — 카드 아래 한 줄로 「HYD-01 쿨러 열화 주입 · 담당자 · 시각」을 또 적지 않고, 조작 기록에만 남긴다(사용자 2026-11-20 「다 처리해줘」)
+    page.wait_for_function("!document.querySelector('#scenarioMsg').textContent.includes('보내는 중')", timeout=8000)
+    assert page.inner_text('#scenarioMsg').strip() == ''
+    assert 'HYD-01 쿨러 열화 주입 · ' in page.text_content('#gwLog'), page.text_content('#gwLog')
     page.wait_for_timeout(3500)                                           # 사실이 없으면 시간이 지나도 넘어가지 않는다
     assert steps(page) == [['inject', 'run'], ['rise', 'wait'], ['detect', 'wait'], ['alert', 'wait'], ['case', 'wait']]
     w.units['HYD-01'] = unit('HYD-01', ts1=49.0, health=0.9, faults=['cooler_degradation'])

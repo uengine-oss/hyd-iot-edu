@@ -154,9 +154,9 @@ def test_표_정의를_적재하는_동안_지식_지도에_쓰는_것을_말하
             page.locator('#ddlCommit').wait_for(timeout=15000)
             page.wait_for_function("!document.querySelector('#ddlCommit').disabled")
             page.locator('#ddlCommit').click()
-            page.wait_for_function(f"() => JSON.stringify(({steps})()) === JSON.stringify(['run:시스템 1개 · 입력 데이터 2개를 지식 지도에 쓰는 중', 'wait:적재한 표 정의 목록과 지식 지도 다시 읽기'])", timeout=1000)
+            page.wait_for_function(f"() => JSON.stringify(({steps})()) === JSON.stringify(['run:시스템 1개 · 입력 데이터 2개를 지식 지도에 쓰는 중'])", timeout=1000)
             hold.release(page)
-            page.wait_for_function(f"() => JSON.stringify(({steps})()) === JSON.stringify(['ok:지식 지도에 썼습니다', 'ok:적재한 표 정의 목록과 지식 지도 다시 읽기'])", timeout=8000)
+            page.wait_for_function(f"() => JSON.stringify(({steps})()) === JSON.stringify(['ok:지식 지도에 썼습니다'])", timeout=8000)
             first = page.locator('#ddlDone .lv-step').first
             assert '시스템 1개 · 입력 데이터 2개' in first.inner_text() and first.locator('.lv-time').inner_text().strip(), first.inner_text()
             assert page.locator('#ddlDone .doc-next a.go').count() == 2      # 다음 할 일 링크는 단계 아래에 그대로 있다

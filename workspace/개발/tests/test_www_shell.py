@@ -57,7 +57,7 @@ def problems(html):
     if sorted(screens) != sorted(p.views):
         out.append(f'메뉴에 없는 화면 {sorted(set(p.views) - set(screens))} · 화면이 없는 메뉴 항목 {sorted(set(screens) - set(p.views))}')
     # 한 가지는 한 곳: 흐름을 경보에 쓰는 배포는 흐름 화면에, 내가 할 일과 알림은 처리 건 화면에
-    # (내가 할 일은 처리 건 화면의 목록 #instList 의 「내 차례」 묶음이다 — 따로 둔 #todoList 목록과 거르기 줄 #instTabs 는 없앴다)
+    # (내가 할 일은 처리 건 화면의 목록 #instList 의 「내가 할 일」 묶음이다 — 따로 둔 #todoList 목록과 거르기 줄 #instTabs 는 없앴다)
     for el, view in [('definitionDeployPanel', 'flows'), ('flowsStart', 'flows'), ('instList', 'instances'), ('noticeView', 'instances'),
                      ('sourceEventsPanel', 'admin'), ('definitionEditor', 'admin'), ('configBundlePanel', 'admin'), ('sysBoards', 'process'), ('txList', 'process'), ('scada', 'incidents')]:
         if p.where.get(el) != view:
@@ -315,10 +315,10 @@ def test_실시간_점은_연결_상태만_말하고_다시_이어지면_연결�
     assert '팬 속도를 올려도 됩니까?' in on['detail']                              # 받은 활동은 펼친 판에 남아 있다
 
 
-def test_처리_건_곁의_건수는_처리_건_목록의_내_차례_묶음과_같은_셈이고_없으면_그리지_않는다(portal):
-    """메뉴 「처리 건」 곁의 동그라미(app.js refreshTodoCount): 처리 건 목록의 「내 차례」 묶음과 같은 함수(ui.js hydCases.groups)로 센다 — 사람이 처리할 단계 하나가 한 줄이고
+def test_처리_건_곁의_건수는_처리_건_목록의_내가_할_일_묶음과_같은_셈이고_없으면_그리지_않는다(portal):
+    """메뉴 「처리 건」 곁의 동그라미(app.js refreshTodoCount): 처리 건 목록의 「내가 할 일」 묶음과 같은 함수(ui.js hydCases.groups)로 센다 — 사람이 처리할 단계 하나가 한 줄이고
     (한 건에 사람 단계가 둘이면 목록에 두 줄이 서고 수도 2다), AI 에이전트가 사람에게 물은 건이 한 줄이다. AI 에이전트나 시스템이 일하는 중인 건은 세지 않는다. 0 이면 동그라미를 그리지 않는다.
-    (2026-11-16 전에는 동그라미가 건 단위로, 목록 묶음이 줄 단위로 세어 같은 「내 차례」가 다른 수를 냈다.)"""
+    (2026-11-16 전에는 동그라미가 건 단위로, 목록 묶음이 줄 단위로 세어 같은 「내가 할 일」이 다른 수를 냈다.)"""
     page = portal
     todo = '**/svc/process/api/todolist**'
     rows = [{'id': 'w1', 'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 사람 단계
@@ -459,7 +459,7 @@ def test_홈의_단계_카드_넷은_이야기_차례로_한_줄에_서고_카�
         assert len({c['top'] for c in cards}) == 1 and len({c['bottom'] for c in cards}) == 1 and len({c['foot'] for c in cards}) == 1, f'카드 넷이 같은 줄 · 같은 높이이고 아래 고정 줄이 같은 자리다: {cards}'
         assert max(c['width'] for c in cards) - min(c['width'] for c in cards) <= 1 and [c['left'] for c in cards] == sorted(c['left'] for c in cards)
         assert cards[2]['value'].startswith('1') and cards[3]['value'].startswith('3'), f'진행 중 1건 · 처리 완료 3건: {cards}'
-        assert cards[2]['pill'] == '', '내 차례가 없으면 알약을 그리지 않는다'
+        assert cards[2]['pill'] == '', '내가 할 일이 없으면 알약을 그리지 않는다'
         assert all(c['go'] for c in cards)
         assert page.locator('#mainStats, #mainArch, #view-main .hm-steps, #view-main .sec-head').count() == 0
         assert '설비' not in ' '.join(c['label'] for c in cards)
@@ -471,15 +471,15 @@ def test_홈의_단계_카드_넷은_이야기_차례로_한_줄에_서고_카�
         page.set_viewport_size({'width': 1280, 'height': 720})
 
 
-def test_홈의_판단과_승인_카드는_내_차례가_있을_때만_주황_알약을_단다(portal):
+def test_홈의_판단과_승인_카드는_내가_할_일이_있을_때만_주황_알약을_단다(portal):
     page = portal
     todo = [{'id': 'w1', 'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None}, {'id': 'w2', 'proc_inst_id': 'inst-b', 'agent_orch': None, 'agent_mode': None}]
     running = [{'proc_inst_id': 'inst-a', 'status': 'RUNNING'}, {'proc_inst_id': 'inst-b', 'status': 'RUNNING'}, {'proc_inst_id': 'inst-c', 'status': 'RUNNING'}]
     cards = _home(page, instances=running, todo=todo)
-    assert [(c['pill'], c['pillTone']) for c in cards] == [('', ''), ('', ''), ('내 차례 2', 'mine'), ('', '')], cards
-    assert cards[2]['value'].startswith('1'), cards      # 내 차례인 두 건은 「진행 중」에 또 세지 않는다(처리 건 목록의 묶음과 같다)
+    assert [(c['pill'], c['pillTone']) for c in cards] == [('', ''), ('', ''), ('내가 할 일 2', 'mine'), ('', '')], cards
+    assert cards[2]['value'].startswith('1'), cards      # 내가 할 일이 있는 두 건은 「진행 중」에 또 세지 않는다(처리 건 목록의 묶음과 같다)
     cards = _home(page, instances=running[:1], todo=[])
-    assert [c['pill'] for c in cards] == ['', '', '', ''], '내 차례가 없어지면 알약도 없어진다'
+    assert [c['pill'] for c in cards] == ['', '', '', ''], '내가 할 일이 없어지면 알약도 없어진다'
 
 
 def test_홈의_카드는_읽지_못한_값을_0이나_없음으로_보이지_않는다(portal):
