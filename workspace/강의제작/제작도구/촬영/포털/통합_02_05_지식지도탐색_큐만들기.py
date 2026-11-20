@@ -82,12 +82,12 @@ OPS = {
  'k0203': [C(T(SEARCH), '지도 바로 위'), TYPE('유압 파워팩', '유압 파워팩이라고'), W(T('#ontoStats', contains='검색 결과 1개'), 10),
            KEY('Enter', '엔터를 누르면'), *OPENED(A1, 'head:R:HAS_COMPONENT')],
  # 3. 노드 읽기 — 클래스 · 이름 · 식별자
- 'k0301': [H(PANEL, 'box', '오른쪽에 열린'), H(CY(A1), 'box', '이 노드 하나에', keep=True)],
+ 'k0301': [H(PANEL, 'box', '오른쪽에 열린'), H(CY(A1), 'box', '방금 고른 노드', keep=True)],
  'k0302': [P(KIND('자원 · 설비'), '맨 위에'), H(KIND('설비'), 'underline', '뒤의 설비가'), H(KIND('자원', **MID), 'underline', '앞의 자원은'),
            H(NAME('HYD-01 유압 파워팩'), 'band', '큰 글씨가'), H(KIND('설비'), 'underline', '그러니까'), H(NAME('HYD-01 유압 파워팩'), 'band', keep=True)],
  'k0303': [H(NID(), 'underline', '이름 밑의'), H(NID('hyd-01'), 'underline', '쌍점 뒤에'), H(NAME('HYD-01', **MID), 'underline', '이름 앞에 붙은', keep=True),
            H(NID('asset', **MID), 'underline', '영어 낱말을')],      # 쌍점 한 글자의 밑줄은 보이지 않아 뺐다
- 'k0304': [H(NID(), 'underline', '이렇게'), H(NAME('HYD-01 유압 파워팩'), 'band', '이름은'), H(NID(), 'underline', '이 값은')],
+ 'k0304': [H(NID(), 'underline', '이렇게'), H(NAME('HYD-01 유압 파워팩'), 'band', '이름은'), H(NID(), 'underline', '식별자는 바뀌지')],
  # 4. 관계의 방향 읽기 — 지도의 화살표 묶음을 상자로 두르면 상자 선이 점 이름(「작동유 탱크」 · 가운데 「HYD-01 유압 파워팩」)을 가로지른다. 그래서 설비 점에서 건너편 점으로 화살표를 따라 옮긴 뒤 선 위 관계 이름(「→ 구성 요소」)에 밑줄을 긋는다. 화살표 하나(k0503 · k0504)는 그 선만 두른다
  'k0401': [H(LINKS, 'underline', '이어진 항목이라고'), H(GBOX('out', COOLER), 'box', '오른쪽 화살표가'), H(GBOX('in', 'proc:anomaly-response'), 'box', '왼쪽 화살표가'),
            H(GBOX('out', COOLER), 'box', '나가는 쪽부터')],
@@ -125,12 +125,12 @@ OPS = {
  'k0802': [H(GBOX('in', COOLER), 'box', '들어오는 쪽'), H(CHIPP(COOLER), 'underline', '오일 쿨러가')],
  'k0803': [H(KIND('자원', **MID), 'underline', '그 사이'), H(CHIPP(COOLER), 'underline', '이 오일 쿨러를'), C(CHIP(COOLER), '돌아가 볼게요'), *OPENED(COOLER, 'head:R:MONITORED_BY')],
  # 9. 다른 설비의 지도에서 같은 쿨러 찾기
- 'k0901': [H(NAME('오일 쿨러'), 'band', '오일 쿨러도'), H(ASSET, 'box', '오른쪽 위 이 칸에서'), H(ASSET, 'box', '첫 번째 설비의')],
+ 'k0901': [H(NAME('오일 쿨러'), 'band', '오일 쿨러도'), H(ASSET, 'box', '오른쪽 위에 보이는'), H(ASSET, 'box', '첫 번째 설비의')],
  'k0902': [H(NID(), 'underline', '이름 밑의 식별자를'), H(NAME('오일 쿨러'), 'band', '이름은 똑같이', keep=True)],
  # 설비를 바꾸면 지도를 다시 읽어 그린 뒤(이 PC 4~6.5초: 지도 응답 1~2초 + 흐름 이름 응답 약 1초 + 배치 약 2초) 판이 닫히고 지도가 전체로 돌아간다. 그동안 찾기 칸 아래 글은 「불러오는 중…」이다.
  # 찾기 칸의 「유압 파워팩」은 남아 둘째 설비의 점 하나가 밝다 — 그 안내 글이 뜰 때까지 기다린다. k0903의 둘째 문장(「몇 초 걸려요」)은 다시 그리는 동안의 말이고,
  # 판이 닫혔다는 말은 판이 닫힌 뒤의 새 큐 k0909가 한다(영상 V-2 — 길뚫기 말 제안 1)
- 'k0903': [P(ASSET, '오른쪽 위 칸에서'), SEL(T('#ontoAsset'), 'HYD-02', '두 번째 설비'), LONG(T('#ontoHint', contains='「유압 파워팩」 글자가 든 항목 1개'), 30),
+ 'k0903': [P(ASSET, '오른쪽 위 설비 고르기 칸에서'), SEL(T('#ontoAsset'), 'HYD-02', '두 번째 설비'), LONG(T('#ontoHint', contains='「유압 파워팩」 글자가 든 항목 1개'), 30),
            W(T('#ontoStats', exact='항목 334 · 연결 729 · 검색 결과 1개'), 5)],
  'k0909': [W(T('#ontoStats', exact='항목 334 · 연결 729 · 검색 결과 1개'), 5)],
  # 찾기 칸에 글이 있으면 칸 오른쪽 끝에 ✕가 뜬다(마우스를 올리거나 칸에 들어가 있을 때) — 누르기의 기본 자리(칸 오른쪽 끝에서 20px 안쪽)가 그 ✕다
@@ -138,7 +138,7 @@ OPS = {
  'k0904': [P(T(SEARCH), '지도 바로 위'), C(T(SEARCH), '지우면'), W(T('#ontoStats', exact='항목 334 · 연결 729'), 5),
            H(T(SEARCH, ph='ID', anchor='center', dx=47), 'underline', '이 ID가'), TYPE('comp:cooler', '넣고'), W(T('#ontoStats', contains='검색 결과 1개'), 10)],
  'k0905': [KEY('Enter', '누르면'), *OPENED(COOLER, 'head:L:HAS_COMPONENT')],
- 'k0906': [H(NID(), 'underline', '이 식별자를'), H(ROW('다른 이름'), 'band', '다른 이름도', keep=1), H(GBOX('out', TS1, ('out', PART)), 'box', '센서와 부품도', keep=1),
+ 'k0906': [H(NID(), 'underline', '같은 식별자를'), H(ROW('다른 이름'), 'band', '다른 이름도', keep=1), H(GBOX('out', TS1, ('out', PART)), 'box', '센서와 부품도', keep=1),
            H(CHIPP(A2), 'band', '달라진 건', keep=1)],
  'k0907': [H(NID(), 'underline', '식별자가 같으면'), H(ASSET, 'box', '세 번째 설비로'), H(NAME('오일 쿨러'), 'band', '노드 하나로'), H(GBOX('in', A2), 'box', '그 노드를 가진다고')],
  # 10. 왜 하나로 세었나
