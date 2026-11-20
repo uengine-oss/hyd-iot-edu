@@ -125,7 +125,7 @@ OPS = {
  'g0510': [B({'headRow': True}, '표 머리에는'), B(COL('점수'), '점수가 작은'), X(WITH({'tab': 'Table'}, {'tab': 'Raw'}), '그림은 노드나')],
  # 6. WHERE
  'g0601': PUT('4-1', 'WHERE 줄을'),
- 'g0602': [U(EL(2), '가운데 줄이'), U(ED('>='), '크다는 표시와'), U(ED('50'), '50 이상인'), RUN(graph=True, nodes=1, edges=0)],
+ 'g0602': [U(EL(2), '가운데 줄이'), U(ED('>='), '크다는 표시와'), U(ED('50'), '그 뒤가 50'), RUN(graph=True, nodes=1, edges=0)],
  'g0603': [X(NODE(FAN))],
  # 7. MERGE · SET
  'g0701': PUT('5-1', '센서는 여러 번'),
@@ -136,7 +136,7 @@ OPS = {
            RUN(graph=True, nodes=1, edges=0, summary='Created 1 node')],
  'g0704': [X(NODE(S_OLD), '센서 노드가'), U(FOOT('Created 1 node'), '아래 글에도')],
  'g0705': [*PUT('5-2', '방금 것과'), X({'edAll': True, 'under': True}, 'CREATE였다면'), RUN('돌려 봅니다', graph=True, nodes=1, edges=0, summary='Set 2 properties')],
- 'g0706': [U(FOOT('Set 2 properties'), '아래 글을'), X(NODE(S_OLD), '노드는 이미')],
+ 'g0706': [U(FOOT('Set 2 properties'), '아래 글을'), X(NODE(S_OLD), '노드는 그대로')],
  # 8. 관계 잇기
  'g0801': PUT('5-3', '펌프는 이 센서로'),
  'g0802': [U(WITH(EL(1), EL(2)), '위 두 줄이'), U(WITH(ED('(p:', sub=[1, 1]), ED('(s:', sub=[1, 1])), '괄호 맨 앞을 보면'), U(WITH(ED('(p)'), ED('(s)')), '양 끝 괄호에는')],
@@ -146,7 +146,7 @@ OPS = {
            X(CSS('[data-testid="frame"]', contains='Created 1 relationship', inner='감시된다(1)'), '오른쪽 목록에도'), X(WITH(NODE(PUMP), NODE(S_OLD)), '두 원의 색이')],
  # 9. SET으로 고치기
  'g0901': PUT('6-1', '고칠 때도'),
- 'g0902': [U(ED(PATH_6_1), '괄호와 화살표를'), U(EL(2), '둘째 줄 SET이'), U(ED('RETURN p, r, s'), '마지막 줄은'), RUN(graph=True, nodes=2, edges=1)],
+ 'g0902': [U(ED(PATH_6_1), '괄호와 화살표를'), U(EL(2), '둘째 줄 SET이'), U(ED('RETURN p, r, s'), '마지막 줄 RETURN은'), RUN(graph=True, nodes=2, edges=1)],
  'g0903': [X(NODE(S_NEW), '센서 이름이'), X(EDGE(PUMP, S_NEW), '펌프와 이어진 선은'), PRESS(NODE(S_NEW), '눌러 보면', {'details': 'basic-S1'}, '센서를')],
  'g0904': [B(WITH(DET('id'), DET('unit')), '아이디와 단위는'), B(DET('name'), '이름만')],
  # 10. 지우기
@@ -158,7 +158,7 @@ OPS = {
  'g1006': [U(WITH(ED('연습장치'), ED('연습센서')), '레이블을 둘'), U(ED('|'), '레이블 사이의 세로줄이'), RUN(graph=True, nodes=2, edges=0)],
  'g1007': [X(NODE(FAN), '팬과'), X(NODE(S_NEW), '센서,')],
  'g1008': PUT('7-3', '남은 둘은'),
- 'g1009': [U(ED('DELETE n'), 'DELETE를'), U(ED('연습장치|연습센서'), '레이블이 달라서'), RUN(summary='Deleted 2 nodes')],
+ 'g1009': [U(ED('DELETE n'), 'DELETE를'), U(ED('연습장치|연습센서'), '연습장치나 연습센서'), RUN(summary='Deleted 2 nodes')],
  'g1010': [U(FOOT('Deleted 2 nodes')), *PUT('7-4', '이번에도')],
  'g1011': [U(ED('count'), 'count로 세어'), U(ED('(n)'), '뒤에 붙은 괄호는'), RUN(rows=1)],
  'g1012': [B(ROW(1))],
@@ -171,18 +171,18 @@ OPS = {
  'g1105': [B(COL('개수'))],
  # 12. 한 단계
  'g1201': PUT('9-1', '어떤 구성 요소를'),
- 'g1202': [U(ED("{code:'HYD-01'}"), '첫 괄호는'), U(ED('-[:HAS_COMPONENT]->'), '가진다는 관계'), U(ED('RETURN c.name'), '구성 요소의 이름을'), U(WITH(ED('(:'), ED('[:')), '쌍점 앞이 비어'), RUN(rows=6)],
+ 'g1202': [U(ED("{code:'HYD-01'}"), '첫 괄호는'), U(ED('-[:HAS_COMPONENT]->'), '거기서 나가는 화살표는'), U(ED('RETURN c.name'), 'RETURN에는 그 구성 요소의'), U(WITH(ED('(:'), ED('[:')), '쌍점 앞이 비어'), RUN(rows=6)],
  'g1203': [B(COL('구성요소'), '여섯 행이'), B(WITH(HAS('작동유 탱크'), HAS('구동 모터')), '탱크와 모터'), B(WITH(HAS('예비 펌프 (B)'), HAS('주 펌프 (A)')), '펌프 둘'),
            B(WITH(HAS('쿨러 팬'), HAS('오일 쿨러')), '그리고 쿨러 팬과')],
  'g1204': [U({'head': '-[:HAS_COMPONENT]->'}, '관계를 한 번 건너서')],
  # 13. 두 단계 경로
  'g1301': PUT('10-1', '구성 요소가 쓰는'),
  'g1302': [U(ED('-[:USES_PART]->(:Part)'), '화살표와 괄호가'), U(ED(PATH_10_1), '줄줄이 이어진 길을')],
- 'g1303': [U(WITH(ED('(:Component)'), ED('(:Part)')), '괄호 안에 변수가 없고'), U(ED('path ='), '패턴 맨 앞에'), U(ED('RETURN path'), 'RETURN에 그 변수를'), RUN(graph=True, nodes=7, edges=6)],
+ 'g1303': [U(WITH(ED('(:Component)'), ED('(:Part)')), '괄호 안에 변수가 없고'), U(ED('path ='), '패턴 맨 앞에'), U(ED('RETURN path'), 'RETURN에는 그 변수'), RUN(graph=True, nodes=7, edges=6)],
  'g1304': [X(NODE('HYD-01'), '설비에서'), X(WITH(*map(NODE, COMPS)), '구성 요소 셋으로'), X(WITH(*map(NODE, PARTS)), '부품 셋으로')],
  'g1305': [X(CSS('[data-testid="frame"]', contains='RETURN path', inner='Component(3)'), '그림에는 셋만'), X(WITH(*map(NODE, COMPS)), '부품까지 이어진')],
  'g1306': PUT('10-2', '오일 쿨러에'),
- 'g1307': [U(WITH(ED('(c:', sub=[1, 1]), ED('(pt:', sub=[1, 2])), '변수가 하나씩'), U(EL(2), 'WHERE에는'), U(WITH(ED('pt.name AS 부품'), ED('pt.partNo AS 품번')), '부품의 이름과 품번을'), RUN(rows=1)],
+ 'g1307': [U(WITH(ED('(c:', sub=[1, 1]), ED('(pt:', sub=[1, 2])), '변수가 하나씩'), U(EL(2), 'WHERE 줄은'), U(WITH(ED('pt.name AS 부품'), ED('pt.partNo AS 품번')), '부품의 이름과 품번을'), RUN(rows=1)],
  'g1308': [B(CELL(1, '부품'), '쿨러 코어고'), B(CELL(1, '품번'), '맨 오른쪽 열에')],
  # 14. 원래 행 · 조건 · 집계
  'g1401': PUT('11-1', '그래서 여기서는'),
