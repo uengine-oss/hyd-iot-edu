@@ -957,7 +957,7 @@
       "screen": "클라우드 Playwright 헤드리스 Chromium(촬영도구 run.sh up · open, config.json cloud) — CSS 2128×1197 × 배율 0.9022556 = 1920×1080, 맑은 고딕",
       "state": "끝 그림 take r2-11 end-state를 새 그림에 가져와 radius 60 · detail-orientation horizontal로 맞춘 뒤(run.sh restore가 이 화면 값에서 오른쪽 칸을 접어 같은 일을 스크립트가 했다) Download / Export → PNG · JSON 받기 → Cypher 탭 → Done → New › Web Browser storage → Import(받은 JSON) 차례로 실제로 눌렀다",
       "result": "다시 연 그림: 원 18(빈 원 1 + 17) · 화살표 21 · 색 7 · 증거 4줄 · 절차 번호 4(SOP-COOL-11 · 14 · 15 · SOP-FAN-11), radius 50 · detail-orientation parallel(Customize 값은 따라오지 않음), 빈 원을 지운 뒤 원 17 · 화살표 21",
-      "script": "작업/2026-11-20_통합1-관계그림-가이드/따로찍기/capture.mjs · dismiss.mjs · cleanup_check.mjs(git 밖)"
+      "script": "촬영/arrows/따로찍은사진/capture.mjs · dismiss.mjs(끝 그림은 같은 폴더 끝그림.json), 빈 원을 지운 뒤 개수를 센 cleanup_check.mjs는 작업 폴더(git 밖)"
     },
     "files": [
       {
