@@ -236,7 +236,7 @@ def test_교차_조회의_기준값은_지식_그래프의_이상_패턴_임계�
 
 
 def test_지식_그래프에_임계값이_없으면_교차_조회를_하지_않는다(readers, neo4j_graph):
-    with pytest.raises(SourceUnavailable, match='ts1 임계값이 없습니다'):
+    with pytest.raises(SourceUnavailable, match='ts1 임계치가 없습니다'):
         Fabric(fabric.env_connectors(readers), neo4j_graph.query).query('HYD-01', 'hot-lots-vs-ts1')
 
 

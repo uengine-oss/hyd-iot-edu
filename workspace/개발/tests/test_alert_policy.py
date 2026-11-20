@@ -29,8 +29,8 @@ def _with(**changes):
     ({'alertPolicy': {'patterns': {}}}, '명시 경보/회복 기준'),
     (_with(op='>'), '지원 비교 연산'),
     (_with(tag=''), '지원 비교 연산'),
-    (_with(limit=float('nan')), '유한 임계값'),
-    (_with(limit=True), '유한 임계값'),
+    (_with(limit=float('nan')), '유한 임계치'),
+    (_with(limit=True), '유한 임계치'),
     (_with(requireClear=False), 'requireClear'),
     (_with(unsupported={'definition': 'alert_triage'}), '사람 검토 정의/버전'),
 ], ids=['정책 없음', '정상', '패턴 없음', '모르는 연산', '태그 없음', '한계 NaN', '한계가 참거짓', '해제 필요 아님', '사람 검토 판본 없음'])
