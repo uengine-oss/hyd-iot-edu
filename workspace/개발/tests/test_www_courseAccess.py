@@ -1,5 +1,6 @@
-"""포털의 수업 단계 표(it/portal/www/courseAccess.js) — 막힌 까닭은 서버가 준 문장만 보이고(문장 사본 없음 — W2-08 · W3-07), PBL 기한 시각에
-표를 다시 읽어 수업 단계로 돌아온 것을 보이며(W2-09), 표를 못 읽으면 「수업 단계 정보 읽기 실패」를 보이고 잠그지 않는다(G5b-22).
+"""포털의 수업 단계 표(it/portal/www/courseAccess.js) — 막힌 까닭은 서버가 준 문장만 그 단추 뒤에 보이고(문장 사본 없음 — W2-08 · W3-07), 메뉴 줄
+아래의 단계 줄은 PBL 단계와 PBL 기한이 지나 돌아온 때만 있다(제공된 것만 쓰는 단계에는 없다 — 사용자 2026-11-20 「저게뭐임?」 · 「굳이 저런게
+있으면안되는데」). PBL 기한 시각에 표를 다시 읽어 돌아온 것을 보이고(W2-09), 표를 못 읽으면 「단계 정보 읽기 실패」를 보이고 잠그지 않는다(G5b-22).
 실제 포털 파일(it/portal/www, nginx 와 같은 /svc/process 경로)과 실제 수업 경계(course_policy.mount — 판정 · 시계는 서버)를 이 PC 포트에 띄우고
 실제 브라우저(Playwright Chromium)로 index.html 을 연다. 다른 서비스(/svc/agent 등)는 띄우지 않는다 — 그 화면의 실패는 이 판정과 무관하다."""
 from datetime import datetime, timedelta, timezone
@@ -56,12 +57,9 @@ def test_수업_단계의_막힌_까닭은_서버_문장_그대로다(page):
         assert got == {'assign': reasons['assign'], 'start': reasons['start'], 'importing': reasons['import_flow'], 'document': reasons['document'],
                        'golden': cp.Policy.ACTIONS['documents.golden'], 'open': '', 'question': cp.question_max_chars(),
                        'editable': {'flow_name': True, 'agent_tasks': list(cp.HANDOVER_AGENT_TASKS)}}
-        # 메뉴 줄 아래 한 줄: 무엇이 정해져 있는지를 말하고, 누르면(키보드 · 터치도) 지금 막힌 행동의 까닭이 서버 문장 그대로 펼쳐진다
-        assert page.inner_text('#courseStatus summary').strip() == '제공된 문서 · 흐름 · 모델만 쓰는 단계'
-        assert page.get_attribute('#courseStatus', 'title') is None and not page.is_visible('#courseStatus .course-why')
-        page.focus('#courseStatus summary')
-        page.keyboard.press('Enter')
-        assert page.eval_on_selector_all('#courseStatus .course-why li', 'ns => ns.map(n => n.textContent)') == list(cp.Policy.ACTIONS.values())
+        # 제공된 것만 쓰는 단계에는 메뉴 줄 아래 단계 줄이 없다 — 늘 같은 그 상태는 학생이 읽을 것이 없고, 막힌 까닭은 그 단추 뒤 한 줄이 말한다(아래 마지막 시험)
+        assert page.inner_text('#courseStatus') == '' and not page.is_visible('#courseStatus')
+        assert page.get_attribute('#courseStatus', 'title') is None
     finally:
         served.close()
 

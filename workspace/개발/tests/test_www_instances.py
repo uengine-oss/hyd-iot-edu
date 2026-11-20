@@ -143,6 +143,8 @@ VIEWS = {
            _wi('a3', 'T_cmd', 'DONE', 29, tool='incident:command'), _wi('a4', 'R_ok', 'DONE', 29, tool='process:report', output={'result_report': REPORT}),
            _wi('a5', 'R_rej', 'CANCELLED', 29, reached_at=None, tool='process:report')],
 }
+# 지나간 단계와 이름이 같은 단계가 다른 갈래에 또 있는 건(흐름 「냉각 긴급 대응」의 정비 요청 등록 · 효과 확인 · 결과 보고: 정상처럼) — 가지 않은 단계 판정
+VIEWS['d2'] = VIEWS['d1'] + [_wi('a6', 'T_cmd', 'CANCELLED', 29, reached_at=None, tool='incident:command')]
 TASK = {'id': 'm2', 'proc_inst_id': 'mine', 'proc_inst_name': '냉각 긴급 대응 HYD-01', 'activity_id': 'T_approve', 'activity_name': '운전원 승인', 'status': 'IN_PROGRESS',
         'user_id': 'role:operator', 'tool': 'formHandler:approve', 'agent_orch': None, 'agent_mode': None, 'draft_status': None, 'inputs': {}, 'events': []}
 
@@ -292,6 +294,17 @@ def test_진행_상황의_단계_줄은_점이_한_세로선에_서고_줄을_�
         page.locator('#casePath .djs-shape[data-element-id="T_cmd"]').click()
         page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open]', timeout=5000)
         assert page.locator('dialog.sheet[data-cr-sheet-box] h2').inner_text() == '냉각 명령' and page.locator('dialog.sheet[data-cr-sheet-box]').is_visible()
+
+
+def test_가지_않은_단계에는_이_처리_건이_이미_지난_단계와_같은_이름을_다시_적지_않는다():
+    """06 화면 훑기(2026-11-20): 흐름은 다른 갈래에 같은 이름의 단계를 한 번 더 둔다(냉각 긴급 대응의 정비 요청 등록 · 효과 확인 · 결과 보고: 정상).
+    그 이름이 「가지 않은 단계」에 또 나와, 학생은 방금 지난 단계를 하지 않은 것으로 읽었다. 지나가지 않은 길에만 있는 이름만 남고, 수도 그 이름의 수다."""
+    with _case_page() as page:
+        for pid, names in (('d1', '결과 보고: 반려'), ('d2', '결과 보고: 반려')):      # d2 = d1 + 같은 이름(냉각 명령)의 닿지 않은 단계
+            _pick(page, pid)
+            row = page.locator("#instRecord .step[data-state='skip']")
+            assert row.locator('.step-sub').inner_text().strip() == '1가지 — 이 처리 건이 지나가지 않은 길에만 있는 단계입니다', pid
+            assert row.locator('details .fold-body p').text_content().strip() == names, pid      # 접기 안의 이름 줄(펴지 않아도 같은 글)
 
 
 def test_취소된_단계의_점과_알약은_실패의_빨강이_아니라_남은_단계와_같은_보통_색이고_그림도_멈춤으로_칠하지_않는다():

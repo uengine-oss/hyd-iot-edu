@@ -31,8 +31,8 @@ def test_API_로_기준_흐름으로_되돌려도_수업_흐름은_남는다(wor
     assert _class_heads(world) >= CLASS_FLOWS
 
 
-def test_출발본_불러오기의_되돌리기만_수업_흐름까지_내린다(world):
-    out = flow_deploy.deploy_reset(world.rt, 'user:me', '출발본 불러오기', include_class=True)
+def test_내_구성_파일_불러오기의_되돌리기만_수업_흐름까지_내린다(world):
+    out = flow_deploy.deploy_reset(world.rt, 'user:me', '내 구성 파일 불러오기', include_class=True)
     try:
         assert out['kept'] == [] and not (_class_heads(world) & CLASS_FLOWS)
     finally:

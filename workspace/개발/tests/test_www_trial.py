@@ -104,7 +104,7 @@ def test_규칙_판단은_설비_목록을_서버에서_읽고_결론을_응답�
         assert fold.locator('summary').first.inner_text().strip() == '자세히 보기'
         fold.locator('summary').first.click(); page.click('#decResult [data-dec-pane="raw"]')
         shown = page.inner_text('#decResult [data-dec-body="raw"]')
-        assert '판단 엔진 설명 전문' in shown and 'SOP-X-3 조치 3' in shown and page.locator('#decResult [data-dec-body="inputs"]').is_hidden()
+        assert '판단 서비스 설명 전문' in shown and 'SOP-X-3 조치 3' in shown and page.locator('#decResult [data-dec-body="inputs"]').is_hidden()
     finally:
         close()
 
@@ -206,7 +206,7 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
         assert title.startswith('두 구성 모두 판단을 보류했습니다') and '같습니다' not in title
         assert '실패가 아니라 판단하지 않은 것입니다' in body
         title, body = trial('fan')
-        assert title.startswith('B만 판단에 이르지 못했습니다') and '판단 시스템 도구 서버가 없어' in title and 'hyd-dmn' not in body
+        assert title.startswith('B만 판단에 이르지 못했습니다') and '판단 서비스 도구 서버가 없어' in title and 'hyd-dmn' not in body
         # 이 시험이 무엇을 하지 않는지: 스킬 문서의 뜻을 읽지 않는다 · 지금 이상 값이 없으면 보류한다
         # 보류 조건은 시나리오 칸 아래에 늘 보이고, 스킬 문서를 어떻게 다루는지는 스킬을 고르는 접기(「B에서 빼 보기」)를 펼치면 그 목록 아래에 있다
         form = page.inner_text('#compareView form')

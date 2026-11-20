@@ -640,12 +640,14 @@ def test_흐름_A의_실행하지_않는_조치_종류_보고는_코드_값을_�
 @pytest.mark.parametrize('action', sorted(cp.Policy.REASONS) + sorted(cp.Policy.ACTIONS))
 def test_수업_단계의_막힌_까닭은_학생이_읽는_말로_쓴다(action):
     """한바퀴 화면 순회: 흐름 화면의 막힌 까닭에 「흐름 id」가 그대로 보였다 — 서버가 내는 까닭 문장 전부를 학생 화면 말로 본다.
-    까닭은 무엇이 언제 열리는지를 대상으로 말한다(화면이 그 단계를 부르는 이름으로). 이 제품을 연습용이라 부르는 말(「수업」 · 「실습」)과
-    「강사」 · 「녹화」는 쓰지 않는다(요청문 18 · 23)."""
+    까닭은 무엇이 언제 열리는지를 대상으로 말한다(화면이 그때를 부르는 이름 「PBL 기간」으로). 이 제품을 연습용이라 부르는 말(「수업」 · 「실습」)과
+    「강사」 · 「녹화」는 쓰지 않는다(요청문 18 · 23). 까닭은 학생이 막힌 행동을 하려 할 때 그 자리에 한 줄로 보이므로 한 문장이다 —
+    지금도 되는 것을 늘어놓는 둘째 문장(「지금은 …합니다」 · 「…지금도 됩니다」)을 붙이지 않는다(사용자 2026-11-20)."""
     text = {**cp.Policy.REASONS, **cp.Policy.ACTIONS}[action]
     assert not any(w in text for w in ('흐름 id', ' id ', 'id)')), text
     assert not any(w in text for w in ('수업', '실습', '강사', '녹화')), text
-    assert cp.OPEN_PHASE in text, text
+    assert cp.OPEN_PHASE == 'PBL 기간' and f'{cp.OPEN_PHASE}에 ' in text, text
+    assert text.endswith('.') and '. ' not in text and '지금' not in text, text
 
 
 def test_제공_그림과_다른_곳을_말하는_문장은_낱말에_맞는_조사를_쓴다():

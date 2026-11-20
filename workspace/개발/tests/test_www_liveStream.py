@@ -322,15 +322,17 @@ def test_저장된_추출_결과를_쓰는_문서도_누른_순간부터_서버�
             # 누른 순간(서버가 답하기 전): 지금 하는 일이 단계 한 줄로 보인다 — 단추의 도는 고리만 있지 않다
             page.wait_for_function(f"() => JSON.stringify(({TRAIL_JS})()) === JSON.stringify(['run:원문 확인 · 추출 작업 열기'])", timeout=1000)
             world.release(page, 'start')
-            # 서버가 저장된 결과를 쓴다고 답했다 — 첫 단계가 그 사실을 말하고 끝나며, 다음 단계(대조)가 하는 중이 된다. 결과 읽기는 아직 붙들려 있다
-            page.wait_for_function(f"() => JSON.stringify(({TRAIL_JS})()) === JSON.stringify(['ok:원문 확인 · 추출 작업 열기', 'run:저장된 추출 결과를 원문 · 지금 지식과 대조', 'wait:검토 화면 준비'])", timeout=3000)
-            said = page.inner_text('#manualResult [data-live-trail] .lv-step.ok')
-            assert 'AI가 다시 읽지 않고 저장된 추출 결과를 씁니다' in said and '2026-10-27-reviewed-1' in said, said
+            # 서버가 저장된 결과를 쓴다고 답했다 — 첫 단계가 끝나고 다음 단계(대조)가 하는 중이 된다. 결과 읽기는 아직 붙들려 있다
+            page.wait_for_function(f"() => JSON.stringify(({TRAIL_JS})()) === JSON.stringify(['ok:원문 확인 · 추출 작업 열기', 'run:추출 결과를 원문 · 지금 지식과 대조', 'wait:검토 화면 준비'])", timeout=3000)
+            # 저장된 결과를 꺼내 쓰는 사정과 작업자끼리 쓰는 검토 판 번호(「2026-10-27-reviewed-1」)는 늘 보이는 줄에 알리지 않는다
+            # (CLAUDE.md 5절 · 사용자 2026-11-20 「재생모드라는건 처음에 얘기했고 앞으로 이런말이 평생 나올일이없을텐데」). 지금 AI가 읽는다고 지어 말하지도 않는다
+            said = page.inner_text('#manualResult')
+            assert not [w for w in ('저장된', '다시 읽지', '미리 추출', 'reviewed', '검토 판', 'AI가 문서를 읽') if w in said], said
             assert page.locator('#manualLive [data-lv-seg-none]').count() == 0 or not page.locator('#manualLive [data-lv-seg-none]').first.is_visible(), '빈 실행 기록 칸이 보인다'
             world.release(page, 'result')
             page.wait_for_selector('#manualCommit', timeout=8000)
             # 끝난 뒤(3단계): 거친 단계 셋이 걸린 시간과 함께 결과 요약 바로 아래에 접히지 않고 남아 있다(검토 목록보다 위)
-            assert page.evaluate(TRAIL_JS) == ['ok:원문 확인 · 추출 작업 열기', 'ok:저장된 추출 결과를 원문 · 지금 지식과 대조', 'ok:검토 화면 준비']
+            assert page.evaluate(TRAIL_JS) == ['ok:원문 확인 · 추출 작업 열기', 'ok:추출 결과를 원문 · 지금 지식과 대조', 'ok:검토 화면 준비']
             assert page.evaluate("() => { const r = s => document.querySelector(s).getBoundingClientRect(); return r('#manualResult .result').bottom <= r('#manualResult [data-live-trail]').top && r('#manualResult [data-live-trail]').bottom <= r('#manualItems').top; }")
             steps = page.locator('#manualResult [data-live-trail] .lv-step')
             assert all(steps.nth(i).locator('.lv-time').inner_text().strip() for i in range(3)), '끝난 단계에 걸린 시간이 없다'
@@ -345,8 +347,10 @@ def test_저장된_추출_결과를_쓰는_문서도_누른_순간부터_서버�
             assert got == [('X-1 점검', '조치 방법 1개(SOP-X-11)'), ('X-2 판정 기준', '원인 1개 · 규칙 1개'), ('X-3 적용 범위', '뽑힌 항목 없음 — 절 본문만 보관합니다')], got
             assert page.inner_text('#manualProcess [data-live-fail]').strip() == '', '검토 화면을 그리다 오류가 났다: ' + page.inner_text('#manualProcess [data-live-fail]')
             note = page.inner_text('#manualProcess [data-cached-note]')
-            assert '그때 AI가 부른 도구의 기록은 이 PC에 없습니다' in note, note
-            assert '저장된 추출 결과입니다' in page.inner_text('#manualAgentStatus')
+            assert '그때 AI가 부른 도구의 기록은 이 PC에 없습니다' in note and 'reviewed' not in note and '검토 판' not in note, note
+            assert page.inner_text('#manualAgentStatus').strip() == 'AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.'
+            outside = page.evaluate("() => { const r = document.querySelector('#manualResult').cloneNode(true); r.querySelector('#manualProcess')?.remove(); return r.innerText; }")
+            assert not [w for w in ('저장된', '다시 읽지', '미리 추출', 'reviewed', '검토 판') if w in outside], outside      # 추출 과정 접기 밖에는 그 사정이 없다
             assert not page.locator('#manualProcess [data-live-host]').is_visible(), '저장된 결과인데 빈 AI 실행 기록 칸이 보인다'
             b.close()
     finally:

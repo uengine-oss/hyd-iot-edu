@@ -153,7 +153,7 @@ def test_다른_화면이_여는_흐름은_시작_단추_대신_그_화면으로
             open_screen(page, 'flows')
             row = page.locator("#flowList [data-open='ask_agent']").first
             row.wait_for(timeout=15000)
-            assert row.locator('.tag').inner_text() == '질문하기가 씀'
+            assert row.locator('.tag').inner_text() == '질문하기 화면이 씀'
             row.click()
             link = page.locator('#flowHead a.go')
             link.wait_for(timeout=15000)

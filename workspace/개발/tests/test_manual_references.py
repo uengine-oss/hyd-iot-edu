@@ -13,12 +13,12 @@ def test_참고_절차는_실행_연결_없이_참고로만_남는다():
 
 
 @pytest.mark.parametrize('link, says', [
-    ({'kind': 'reference', 'executable': True}, '실행 후보에서 빼야'),
-    ({'kind': 'work_order', 'executable': False}, '일반 원문 참고 절차'),
+    ({'kind': 'reference', 'executable': True}, '사용 방식을 「원문만 보관」'),
+    ({'kind': 'work_order', 'executable': False}, '종류를 「참고 절차」'),
     (dict(REF, failureMode='fm:x'), '고장 유형'),
     (dict(REF, actions=[{'action': 'action:x'}]), '원자 조치'),
     (dict(REF, scope='purchase'), '구매'),
-], ids=['실행 후보', '종류가 참고 아님', '고장 유형', '원자 조치', '구매 범위'])
+], ids=['원문만 보관이 아님', '종류가 참고 아님', '고장 유형', '원자 조치', '구매 범위'])
 def test_참고_절차에_실행_연결을_붙이면_화면_말로_거절한다(link, says):
     with pytest.raises(ValueError, match=says):
         mr.reference_shape('SOP-HO-11', link)
@@ -37,7 +37,7 @@ def test_다시_가리키기는_대상과_대조한_지문을_함께_적는다(p
 
 
 @pytest.mark.parametrize('procedure, link, says', [
-    ({'id': 'S', 'existing_skill_id': 'skill:x', 'reference_contract_sha256': PIN}, {'kind': 'work_order'}, '일반 원문 참고 절차로만'),
+    ({'id': 'S', 'existing_skill_id': 'skill:x', 'reference_contract_sha256': PIN}, {'kind': 'work_order'}, '조치 방법은 참고 절차로만'),
     ({'id': 'S', 'existing_skill_id': 'SKILL X', 'reference_contract_sha256': PIN}, REF, '조치 방법\\(skill:…\\)을 고르세요'),
     ({'id': 'S', 'existing_skill_id': 'skill:x'}, REF, '지문이 없습니다'),
 ], ids=['참고가 아닌 연결', '대상 id 꼴', '지문 없음'])

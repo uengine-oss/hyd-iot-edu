@@ -278,7 +278,7 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert all(0 < x < box['width'] and 50 < y < box['height'] - 50 for x, y in seen), seen
     # 관계 이름은 한국어다(영문 관계 종류를 그대로 내지 않는다) — 캔버스의 관계 이름 줄과 오른쪽 칸 모두
     heads = page.evaluate("() => hydEnt.kg.cy.nodes('.rhead').map(n => n.data('name'))")
-    assert sorted(heads) == sorted(['→ 즉시 완화', '→ 근본 조치', '일으키는 고장 →', '나타내는 고장 →'])
+    assert sorted(heads) == sorted(['→ 완화 조치', '→ 근본 조치', '일으키는 고장 →', '나타내는 고장 →'])
     assert not re.search(r'[A-Z]{3,}_?[A-Z]*', ' '.join(heads) + page.inner_text('#ontoNode .node-sec:has(.rel-group)'))
     # 겹침: 고른 채로 이름을 검색한다 — 고른 것이 검색에도 걸린다. 고른 것 · 검색에 걸린 것 · 둘 다인 것의 글자가 모두 그려지고 읽힌다
     page.fill('#ontoSearch', '쿨러')

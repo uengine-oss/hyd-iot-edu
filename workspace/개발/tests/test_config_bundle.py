@@ -1,4 +1,4 @@
-"""출발본 내보내기 · 불러오기 · 기준으로 되돌리기(procsvc/config_bundle.py).
+"""내 구성 파일 받기 · 불러오기 · 기준으로 되돌리기(procsvc/config_bundle.py).
 
 파일 칸 바꾸기는 순수 함수로, 불러오기 · 되돌리기는 학생 PC 구성(world — 실제 process · DB)과 학생이 띄운 바깥 MCP 서버 자리의 작은 서버로 본다.
 """
@@ -94,7 +94,7 @@ def test_불러오기가_실패하면_학생_MCP_서버는_그_서버가_꺼져_
     assert mcp_secrets.load(world.rt.repo, TENANT) == {'MY_TOKEN': 'sk-live-0001'}     # 불러오기는 비밀 값을 지우지 않는다
 
 
-def test_다른_PC의_출발본이_이_PC_비밀_값에_없는_이름을_참조하면_아무것도_바꾸기_전에_멈춘다(world, mine):
+def test_다른_PC의_구성_파일이_이_PC_비밀_값에_없는_이름을_참조하면_아무것도_바꾸기_전에_멈춘다(world, mine):
     from procsvc.flows_api import default_base_loader
     bundle = cb.export_bundle(world.rt, default_base_loader)
     bundle['content']['mcp_servers'][0]['headers'] = {'Authorization': 'Bearer ${SECRET:OTHER_PC_TOKEN}'}
@@ -134,7 +134,7 @@ def test_기준으로_되돌리기는_비밀_값과_채점_시험_기록까지_�
     assert agent_trials.store_for(world.rt.repo).list_trials(TENANT) == []
 
 
-def test_같은_PC에서_같은_출발본을_두_번_불러와도_흐름_판본을_새로_매기고_배포까지_맞춘다(world):
+def test_같은_PC에서_같은_구성_파일을_두_번_불러와도_흐름_판본을_새로_매기고_배포까지_맞춘다(world):
     """이 PC 는 되돌린 뒤에도 한 번 쓴 판본 번호를 다시 쓰지 않는다(bpmn_store). 옛 판은 파일의 번호(1)와 다시 매긴 번호(2)가 달라
     불러오기 · 그 실패 복원이 「판본 1 대신 2 로 등록됐습니다」로 멈추고 학생 구성을 잃었다(P3-01)."""
     from procsvc import flow_deploy
@@ -169,7 +169,7 @@ def test_담당자_없이_온_되돌리기는_이름을_지어_넣지_않고_400
 
 @pytest.mark.parametrize('extra', [{}, {'by': '  '}], ids=['칸 없음', '빈 칸'])
 def test_담당자_없이_온_불러오기는_이름을_지어_넣지_않고_400_으로_거절한다(world, mine, extra):
-    """수업 단계의 불러오기 API 는 단계 문지기가 먼저 막으므로(403) 불러오기 함수로 본다 — 멀쩡한 출발본이어도 담당자가 비면 바꾸기 전에 멈춘다."""
+    """수업 단계의 불러오기 API 는 단계 문지기가 먼저 막으므로(403) 불러오기 함수로 본다 — 멀쩡한 구성 파일이어도 담당자가 비면 바꾸기 전에 멈춘다."""
     from fastapi import HTTPException
     from procsvc.flows_api import default_base_loader
     bundle = cb.export_bundle(world.rt, default_base_loader)
@@ -179,14 +179,14 @@ def test_담당자_없이_온_불러오기는_이름을_지어_넣지_않고_400
     assert _mine_kept(mine, world)
 
 
-def test_불러오기_본문은_출발본을_bundle_칸에_싣는다_본문이_곧_파일인_꼴은_받지_않는다(world, mine):
+def test_불러오기_본문은_구성_파일을_bundle_칸에_싣는다_본문이_곧_파일인_꼴은_받지_않는다(world, mine):
     """옛 판은 본문에 format 칸이 있으면 본문 전체를 파일로 읽었다(「또는 파일 그대로」). 담당자(by)가 필수가 된 뒤로 그 꼴은 파일에 by 를 끼워 넣어야만
     통과하는, 화면도 도구도 쓰지 않는 둘째 입구였다 — 입구는 {bundle, by} 하나다. 거절은 아무것도 바꾸기 전이다."""
     from procsvc.flows_api import default_base_loader
     bundle = cb.export_bundle(world.rt, default_base_loader)
     with pytest.raises(cb.BundleError) as refused:
         cb.import_bundle(world.rt, default_base_loader, {**bundle, 'by': ME})
-    assert refused.value.status == 422 and '출발본 파일이 JSON 객체가 아닙니다' in refused.value.reason
+    assert refused.value.status == 422 and '구성 파일이 JSON 객체가 아닙니다' in refused.value.reason
     assert _mine_kept(mine, world)
 
 
@@ -209,7 +209,7 @@ def test_되돌리기_전_확인은_되돌리기가_지울_흐름의_처리_건�
         [flows] = [b for b in body['detail']['blocking'] if b['step'] == 'flows_reset']
         assert [i['proc_inst_id'] for i in flows['items']] == [mine]                  # 수업 흐름의 처리 건은 세지 않는다
         assert flows['reason'].startswith('내가 가져온 흐름으로 진행 중인 처리 건 1건') and isinstance(flows['items'][0]['start_date'], str)
-        # 출발본 불러오기는 수업 흐름도 지우고 다시 세우므로 둘 다 세고, 그렇다고 말한다
+        # 구성 파일 불러오기는 수업 흐름도 지우고 다시 세우므로 둘 다 세고, 그렇다고 말한다
         [both] = [b for b in cb.blocking(world.rt, keep_class=False) if b['step'] == 'flows_reset']
         assert {i['proc_inst_id'] for i in both['items']} == {cooling, mine} and '기본 제공 흐름' in both['reason']
     finally:
@@ -290,8 +290,8 @@ def _made(world):
             'role_members': inbox.members_of(world.rt.repo, TENANT, ROLE_ID)}
 
 
-def test_학생이_만든_역할은_출발본에_담기고_불러오면_흐름보다_먼저_다시_서며_담당자가_구성원이다(world, authored):
-    """옛 출발본에는 역할 없이 「역할 ← 사람」 줄만 있었다. 같은 PC 에서 불러오면 되돌리기가 그 역할을 지운 뒤 업무분장 단계가 「그런 역할이
+def test_학생이_만든_역할은_구성_파일에_담기고_불러오면_흐름보다_먼저_다시_서며_담당자가_구성원이다(world, authored):
+    """옛 구성 파일에는 역할 없이 「역할 ← 사람」 줄만 있었다. 같은 PC 에서 불러오면 되돌리기가 그 역할을 지운 뒤 업무분장 단계가 「그런 역할이
     없습니다」로 실패하고, 이어서 불러오기 전 상태로 되돌리기까지 실패해 학생이 만든 것이 모두 지워진 채 끝났다."""
     from procsvc.flows_api import default_base_loader
     before = _made(world)
@@ -314,7 +314,7 @@ def test_학생이_만든_역할은_출발본에_담기고_불러오면_흐름�
 
 
 def test_사례_하나만_내보내면_그_사례의_흐름이_담당으로_쓰는_학생_역할만_담긴다(world, authored):
-    """사례로 고른 출발본(student_cases.select_bundle)에 역할이 통째로 빠지면 불러온 PC 에서 흐름의 레인이 가리킬 역할이 없고, 쓰지 않는 역할까지
+    """사례로 고른 구성 파일(student_cases.select_bundle)에 역할이 통째로 빠지면 불러온 PC 에서 흐름의 레인이 가리킬 역할이 없고, 쓰지 않는 역할까지
     담기면 남의 PC 에 관계없는 역할이 생긴다. 흐름에 꼬리표를 붙이고, 어느 흐름도 쓰지 않는 역할을 하나 더 만든 뒤 그 사례만 고른다."""
     from procsvc import student_cases
     from procsvc.flows_api import default_base_loader
@@ -330,7 +330,7 @@ def test_사례_하나만_내보내면_그_사례의_흐름이_담당으로_쓰�
         A.delete_role(world.rt, spare['id'], by=ME)
     assert picked['content']['roles'] == [{'id': ROLE_ID, 'name': ROLE_NAME, 'kind': 'manager'}] and picked['summary']['roles'] == 1
     assert [f['definition_id'] for f in picked['content']['flows']] == [LANE_FLOW]
-    cb.validate(world.rt, default_base_loader, picked)                  # 고른 묶음은 그대로 불러올 수 있는 출발본이다(레인의 역할이 파일 안에 있다)
+    cb.validate(world.rt, default_base_loader, picked)                  # 고른 묶음은 그대로 불러올 수 있는 구성 파일이다(레인의 역할이 파일 안에 있다)
 
 
 def test_불러오기가_중간에_실패하면_학생이_만든_역할_에이전트_스킬_흐름_도구_서버가_불러오기_전_그대로다(world, authored):
@@ -357,12 +357,12 @@ def test_불러오기가_중간에_실패하면_학생이_만든_역할_에이�
     assert list(steps)[-1] == 'restore' and steps['restore']['state'] == 'ok'
 
 
-def test_역할_없이_구성원_줄만_있는_옛_형식_출발본은_읽지_않고_다시_내보내라고_거절한다():
+def test_역할_없이_구성원_줄만_있는_옛_형식_구성_파일은_읽지_않고_다시_받으라고_거절한다():
     """판수 2 파일을 읽어 주는 길을 두지 않는다 — 형식 검사는 아무것도 읽기 전이라 처리 엔진 없이 판정된다."""
     old = {'format': cb.FORMAT, 'format_version': 2, 'content': {'role_members': [{'role_id': ROLE_ID, 'user_id': ME}]}}
     with pytest.raises(cb.BundleError) as refused:
         cb.validate(None, None, old)
-    assert refused.value.status == 422 and '옛 형식' in refused.value.reason and '다시 내보내세요' in refused.value.reason
+    assert refused.value.status == 422 and '옛 형식' in refused.value.reason and '다시 받으세요' in refused.value.reason
 
 
 @pytest.mark.parametrize('role, says', [
@@ -371,7 +371,7 @@ def test_역할_없이_구성원_줄만_있는_옛_형식_출발본은_읽지_�
     ({'id': 'role:u-x', 'name': ''}, '역할 이름 칸을 채워야 합니다'),
     ({'id': 'role:u-x', 'name': '내 역할', 'kind': 'boss'}, '역할 종류'),
 ], ids=['기본 역할 id', 'role: 없는 id', '이름 없음', '없는 종류'])
-def test_출발본의_역할_칸은_만들기와_같은_규칙으로_불러오기_전에_거절한다(world, role, says):
+def test_구성_파일의_역할_칸은_만들기와_같은_규칙으로_불러오기_전에_거절한다(world, role, says):
     from procsvc.flows_api import default_base_loader
     bundle = {'format': cb.FORMAT, 'format_version': cb.FORMAT_VERSION, 'content': {'roles': [role]}}
     with pytest.raises(cb.BundleError) as refused:
@@ -418,7 +418,7 @@ def test_기준으로_되돌리기는_내가_적재한_문서_판과_표_정의�
     assert _knowledge(world) == start
     assert world.stack.graph._run("MATCH (r:Rule) WHERE r.id STARTS WITH 'rule:cand-' RETURN count(r) AS n")[0]['n'] == 0   # 화면이 만든 후보 규칙도 없다
     # 응답은 실제로 한 일과 남긴 것을 말한다(화면이 「지우는 것 · 남는 것」을 이 목록으로 그린다)
-    assert '적재한 문서 판 1개' in out['removed'] and '화면에서 만든 조치 방법 1개' in out['removed'] and '업무 DB 표 정의 묶음 1개' in out['removed']
+    assert '적재한 문서 판본 1개' in out['removed'] and '화면에서 만든 조치 방법 1개' in out['removed'] and '업무 DB 표 정의 묶음 1개' in out['removed']
     assert any('처리 건 기록' in line for line in out['kept']) and any('[업무 데이터 초기화]' in line for line in out['kept'])
     assert out['base_missing'] == []                                          # 기본 제공 문서의 지식은 모두 제자리다
 
@@ -455,8 +455,8 @@ def test_내_도구_서버를_만들_수_없는_단계의_전체_되돌리기는
     assert any('내 도구 서버 1개와 비밀 값 1개' in line for line in out['kept']) and not any('도구 서버' in line for line in out['removed'])
 
 
-def test_출발본_요약은_내가_만든_흐름만_세고_함께_담긴_기본_제공_흐름은_따로_센다(world, authored):
-    """전에는 아무것도 만들지 않은 PC 의 출발본도 「흐름 3 · 배포 3」으로 셌고(시작할 때 설치되는 흐름을 내 것으로 셈), 파일 안 설명은 흐름을 담지
+def test_구성_파일_요약은_내가_만든_흐름만_세고_함께_담긴_기본_제공_흐름은_따로_센다(world, authored):
+    """전에는 아무것도 만들지 않은 PC 의 구성 파일도 「흐름 3 · 배포 3」으로 셌고(시작할 때 설치되는 흐름을 내 것으로 셈), 파일 안 설명은 흐름을 담지
     않는다고 했다."""
     from procsvc import student_cases
     from procsvc.flows_api import default_base_loader
@@ -471,7 +471,7 @@ def test_출발본_요약은_내가_만든_흐름만_세고_함께_담긴_기본
 
 
 def test_내_사례_목록은_자산마다_기본_제공인지_알려_준다(world, authored):
-    """화면이 흐름 목록을 한 번 더 읽어 가르지 않게 — 시작할 때 설치되는 흐름만 기본 제공이고, 출발본에 담기는 그 밖의 것은 모두 내가 만든 것이다."""
+    """화면이 흐름 목록을 한 번 더 읽어 가르지 않게 — 시작할 때 설치되는 흐름만 기본 제공이고, 구성 파일에 담기는 그 밖의 것은 모두 내가 만든 것이다."""
     from procsvc import student_cases
     from procsvc.flows_api import default_base_loader
     rows = {a['asset_id']: a['builtin'] for a in student_cases.catalog(cb.export_bundle(world.rt, default_base_loader))['assets']}

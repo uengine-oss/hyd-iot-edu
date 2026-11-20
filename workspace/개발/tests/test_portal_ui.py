@@ -192,14 +192,17 @@ def test_주_메뉴는_여덟이고_화면_22개가_빠짐없이_딸려_있으�
             assert page.eval_on_selector(f"#menuList [data-menu='{menu}']", "n => n.matches('a[aria-current=page], summary[data-active=true]')")
 
 
-def test_상단에_지금_단계가_한_줄로_보인다(tours):
+def test_메뉴_줄_아래_단계_줄은_PBL_단계와_그_기한이_지난_때만_보인다(tours):
+    """제공된 것만 쓰는 단계에는 줄이 없다(사용자 2026-11-20 「저게뭐임?」 — 막힌 까닭은 그 단추 뒤 한 줄이 말한다). PBL 이면 그 단계와 기한, 기한이 지났으면 그 사실."""
     t = tours(SIZES[0])
     assert t.access is not None, f'수업 단계 정보(GET /api/course-access)를 읽지 못했다: {t.access_error}'
     line = t.page.inner_text('#courseStatus')
-    expected = '제한 없이 쓰는 단계 (PBL)' if t.access['phase'] == 'pbl' else '제공된 문서 · 흐름 · 모델만 쓰는 단계'      # 화면은 단계를 무엇이 정해져 있는지로 말한다(courseAccess.js banner)
-    assert line.startswith(expected), line
-    if t.access.get('expired'):
-        assert 'PBL 기한 지남' in line
+    if t.access['phase'] == 'pbl':
+        assert line.startswith('제한 없이 쓰는 단계 (PBL)'), line
+    elif t.access.get('expired'):
+        assert line.startswith('제공된 문서 · 흐름 · 모델만 쓰는 단계 (PBL 기한 지남)'), line
+    else:
+        assert line == '' and not t.page.is_visible('#courseStatus'), line
 
 
 def test_도구_연결의_내_도구_서버가_잠긴_까닭은_넓은_화면에서_한_줄이고_서버가_준_까닭의_첫_문장이다(tours):

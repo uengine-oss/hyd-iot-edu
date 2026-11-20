@@ -531,6 +531,30 @@ def test_결함_시뮬레이션_카드_셋은_같은_종류의_단추가_같은_
         page.set_viewport_size({'width': 1440, 'height': 900})
 
 
+def test_결함_시뮬레이션의_단추_이름은_잘리지_않고_되돌리기는_첫_칸보다_좁아지지_않는다(world):
+    """06 화면 훑기(2026-11-20): 되돌리기 단추가 첫 칸 폭에 묶여 「업무 데이터 초…」로 잘려, 무엇을 되돌리는 단추인지 안 보였다(되돌리는 단추라 잘못 누르기 쉽다).
+    실제 브라우저에서 화면 폭 넷(1280 — 실습 영상 녹화의 CSS 폭, 1366 · 1440 · 1920)마다 단추 글이 상자보다 넓은지 재고, 되돌리기가 첫 칸(일으키기)보다
+    좁지 않으며 같은 왼쪽 선에 서는지 본다."""
+    w, page = world, world.page
+    lab_world(w)
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_selector("#units .unit[data-asset='HYD-03'] button[data-act='biz-event']")
+    page.evaluate('document.fonts.ready')
+    probe = """() => [...document.querySelectorAll('#units .unit')].map(c => { const b = a => c.querySelector(`.lab-buttons > button[data-act="${a}"]`);
+      const start = b('degrade') || b('biz-start'), undo = b('restore') || b('biz-reset'), r = e => e.getBoundingClientRect();
+      return { asset: c.dataset.asset, cut: [...c.querySelectorAll('.lab-buttons > button > span')].filter(s => s.scrollWidth > s.clientWidth + 1).map(s => s.textContent),
+               undo: undo.innerText.trim(), wide: Math.round(r(undo).width) >= Math.round(r(start).width), left: Math.round(r(undo).left) === Math.round(r(start).left) }; })"""
+    try:
+        for width in (1280, 1366, 1440, 1920):
+            page.set_viewport_size({'width': width, 'height': 900})
+            page.wait_for_timeout(300)
+            got = page.evaluate(probe)
+            assert [c['undo'] for c in got] == ['쿨러 복구', '업무 데이터 초기화', '업무 데이터 초기화'], (width, got)
+            assert all(not c['cut'] and c['wide'] and c['left'] for c in got), (width, got)
+    finally:
+        page.set_viewport_size({'width': 1440, 'height': 900})
+
+
 def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도움말은_카드의_사건_이름과_값_줄을_덮지_않는다(world):
     """화면은 읽는 곳이 아니라 보고 누르는 곳이다: 「명령 관문을 거치지 않는다」는 화면에 한 번만 보이고, 설명 문단 대신 단추마다 도움말(올리거나 초점을 주면 나온다)이 있다.
     도움말은 뜨는 조각이 아니라 단추 줄 아래의 제자리 줄에 나온다 — 위에 뜨면 카드의 사건 이름 · 값 줄을, 아래에 뜨면 「현장 패널」 줄을 덮는다. 설비의 큰 값(큰 유온 · 눈금 막대 · 값 세 칸)은 이 화면에 없다(실시간 모니터링 한 곳)."""

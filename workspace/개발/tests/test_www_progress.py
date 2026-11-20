@@ -204,7 +204,7 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             [body] = job.bodies
             assert body['by'] == 'user:me' and progress.read(body['request_id'])['state'] == 'running'      # 화면이 실은 번호의 기록을 서버가 연다
             assert [k for k, _ in plan[:4]] == ['check', 'knowledge_reset', 'deploy_reset', 'flows_reset']      # 지식을 맨 먼저 되돌린다(서버 _reset_steps)
-            job.do(lambda p: (p.done('check', '막는 처리 건 없음'), p.start('knowledge_reset'), p.done('knowledge_reset', '적재한 문서 판 1개'),
+            job.do(lambda p: (p.done('check', '막는 처리 건 없음'), p.start('knowledge_reset'), p.done('knowledge_reset', '적재한 문서 판본 1개'),
                               p.start('deploy_reset'), p.done('deploy_reset', '이미 기준 흐름입니다'), p.start('flows_reset')))
             _wait_steps(page, '#cfgResetResult', ['ok:' + names['check'], 'ok:' + names['knowledge_reset'], 'ok:' + names['deploy_reset'], 'run:' + names['flows_reset']]
                         + ['wait:' + label for key, label in plan[4:]])
@@ -220,7 +220,7 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             shown = page.inner_text('#cfgResetResult')
             for line in summary['removed'] + summary['kept']:
                 assert line in shown, line
-            assert '적재한 문서 판 1개' in shown and '화면에서 만든 조치 방법 1개' in shown and '내 도구 서버 1개와 비밀 값 1개' in shown and '지금 단계에서는 도구 서버를 등록할 수 없습니다' in shown
+            assert '적재한 문서 판본 1개' in shown and '화면에서 만든 조치 방법 1개' in shown and '내 도구 서버 1개와 비밀 값 1개' in shown and '지금 단계에서는 도구 서버를 등록할 수 없습니다' in shown
             assert 'HM-8_cooler-fan-manual.md' in page.inner_text('#cfgResetResult [data-reset-missing]') and '시작 파일을 다시 실행' in shown
             assert page.locator('#cfgResetResult details.fold').count() == 1 and not page.locator('#cfgResetResult details.fold .evid').is_visible()      # 단계별 결과는 접혀 있다
             assert page.locator('#cfgResetResult .lv-step').count() == 0 and not page.locator('#cfgReset').is_disabled()

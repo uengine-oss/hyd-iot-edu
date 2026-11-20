@@ -68,6 +68,30 @@ def test_검토본을_적재하면_그_문서가_지식을_갖고_지금_판이_
     assert shown and {r['d'] for r in shown} == {f"제공 문서 {plan['filename']}에서 검토해 넣은 조치 방법"}   # 승인 카드 설명(W1-13)
 
 
+def test_적재_영수증의_후보_규칙_연결은_그래프에_실제로_이은_절차와_규칙만_싣는다(seeded_graph, archive):
+    """06 화면 훑기(2026-11-20): 영수증(candidate_activation)이 고장 유형마다 그 유형만으로 고르는 규칙 목록을 빈 목록까지 실어, 화면이
+    「후보 규칙에 연결: 쿨러 냉각 성능 상실 → (되돌리면 함께 빠집니다)」로 화살표 뒤를 비워 찍었다. 그 목록은 실제로 이은 것과도 달랐다 — 문서가 스스로
+    후보 규칙을 적은 절차와 그 문서의 규칙은 잇지 않는다. 이제 영수증은 그래프 쓰기와 같은 판정(manual_graph.candidate_joins)으로 실제로 이은 것만 싣는다.
+    ① 고장 유형만으로 고르는 규칙이 없으면 빈 묶음 ② 그런 규칙(조치 방법 화면이 만드는 rule:cand-…)이 있고 문서 규칙 하나를 빼 그 규칙의 절차가
+    스스로 후보가 아니게 되면, 영수증의 절차 · 규칙이 그래프의 OUTPUTS 와 같고 비어 있지 않다."""
+    first = commit(seeded_graph, plan_of(archive, 'HM-8'))
+    assert first['candidate_activation'] == {}
+    plan = plan_of(archive, 'HM-8', previous=first['batch'], document_id=first['document_id'], drop_rule='rule:hm-8-7-fin-cleaning')
+    fms = sorted({p['failureMode'] for p in plan['procedures'] if p.get('failureMode')})
+    with seeded_graph.driver.session() as session:
+        for fm in fms:
+            session.execute_write(skill_graph.ensure_candidate_rule, fm)
+    receipt = commit(seeded_graph, plan)
+    own = {r['id'] for r in plan['knowledge']['rules']}
+    rows = seeded_graph.query('MATCH (r:Rule)-[:OUTPUTS]->(k:Skill) WHERE k._manual_document = $doc RETURN k.sopId AS sop, r.id AS rule', doc=plan['document'])
+    linked = {}
+    for row in rows:
+        if row['rule'] not in own:
+            linked.setdefault(row['sop'], []).append(row['rule'])
+    assert linked and receipt['candidate_activation'] == {sop: sorted(rules) for sop, rules in linked.items()}, (receipt['candidate_activation'], linked)
+    assert all(rules for rules in receipt['candidate_activation'].values())
+
+
 def test_적재한_문서를_다시_열면_응답이_이미_적재된_판을_말한다(seeded_graph, archive):
     """전수 대조(2026-11-14): 이미 적재한 문서를 「보관한 원문 다시 열기」로 열면 응답에 적재 사실이 없어 화면이 「아직 AI가 문서를 읽기 전입니다」를
     보였다. 다시 열기 응답(GET …/sources/{id}/preview)은 지금 적재된 판(loaded)을 싣는다 — 적재 전에는 None, 되돌린 뒤에도 None, 같은

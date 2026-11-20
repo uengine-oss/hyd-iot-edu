@@ -458,6 +458,55 @@ def _open_docs(p, docs, answer=None):
     return served, b, page
 
 
+class _CitedDocs(_Docs):
+    """06 화면 훑기(2026-11-20)에서 걸린 꼴을 모두 가진 문서: 절차의 원문 인용이 문서 서식의 제목 줄(「### SOP-A-01 벨트 교체」)이고, 이름 없는 규칙의
+    원문 문장에 경보 코드(COOLER_DEGRADATION)가 있으며, 적재가 기존 후보 규칙에 절차 하나(SOP-A-01)만 이었다(서버 manual_graph.candidate_joins 의 꼴)."""
+
+    def __call__(self, route):
+        path = route.request.url.split('?')[0]
+        if path.endswith('/api/ontology/patterns'):
+            return route.fulfill(json=[{'id': 'pattern:cool', 'code': 'COOLER_DEGRADATION', 'name': '쿨러 성능 저하', 'failureModes': []}])
+        if '/extractions/' in path:
+            doc = path.rsplit('/', 1)[1][len('inst-'):]
+            r = _proposal(doc, self.provided[0])
+            r['procedures'][0]['anchor'] = {'page': 1, 'quote': '### SOP-A-01 벨트 교체\n벨트가 느슨하면 교체한다.', 'located': 'exact'}
+            r['knowledge'] = {'rules': [{'id': 'rule:x-fouling', 'table': 'dt:diagnose-cause', 'effect': 'SELECT', 'outputs': [], 'anchor': None,
+                                         'annotation': 'COOLER_DEGRADATION 경보에서 냉각 효율이 70 % 미만이면 핀 오염을 1순위 원인으로 둔다.'}]}
+            return route.fulfill(json={'status': 'DONE', 'instance': 'inst-' + doc, 'segments': [], 'preview': r})
+        if path.endswith('/api/kg/manuals/commit'):
+            self.commits.append(route.request.post_data_json)
+            return route.fulfill(json={'sections': 1, 'procedures': 3, 'steps': 3, 'candidate_activation': {'SOP-A-01': ['rule:cand-x']}})
+        return super().__call__(route)
+
+
+def test_검토_화면의_원문_인용과_지식_후보_제목과_적재_완료_글은_학생이_읽는_말이다():
+    """06 화면 훑기(2026-11-20) 셋: ① 원문 인용 칸에 문서 서식의 제목 표시 「###」가 그대로 보였다(인용 글은 원문 그대로이고 그 표시만 뗀다).
+    ② 이름 없는 규칙의 제목이 원문 문장 그대로라 「COOLER_DEGRADATION 경보에서 …」로 보였다 — 다른 화면 문장처럼 경보 이름으로 읽는다.
+    ③ 적재 완료 글이 「후보 규칙에 연결: 쿨러 냉각 성능 상실 → (되돌리면 함께 빠집니다)」였다 — 서버가 고장 유형마다 고른 규칙 목록(빈 목록 포함)을 보냈고 화면이
+    그대로 찍었다. 이제 서버는 실제로 기존 규칙에 이은 절차만 보내고, 화면은 그 절차의 이름을 말한다(이은 것이 없으면 덧붙이지 않는다)."""
+    from playwright.sync_api import sync_playwright
+    name = 'HI-01_shift-inspection-supplement.md'
+    docs = _CitedDocs([name])
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            page.wait_for_function("() => UI.patterns && UI.patterns.COOLER_DEGRADATION === '쿨러 성능 저하'", timeout=8000)
+            page.click(f"#providedDocs [data-provided='{name}']")
+            page.wait_for_selector('#manualAgentExtract', timeout=15000)
+            page.click('#manualAgentExtract')
+            page.wait_for_selector('#manualReview #manualCommit', timeout=30000)
+            page.click("[data-item='proc:SOP-A-01']")
+            assert page.inner_text("[data-pane='proc:SOP-A-01'] .doc-quote blockquote").strip() == 'SOP-A-01 벨트 교체\n벨트가 느슨하면 교체한다.'
+            assert page.evaluate("() => document.querySelector(\"[data-item='know:rules:rule:x-fouling'] .row-title\").textContent") == '쿨러 성능 저하 경보에서 냉각 효율이 70 % 미만이면 핀 오염을 1순위 원인으로 둔다.'
+            page.check('#manualReviewed')
+            page.click('#manualCommit')
+            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
+            assert page.inner_text('#manualMsg').strip() == '적재 완료: 절 1 · 조치 방법 3 · 단계 3. 이미 있던 판단 규칙이 이 문서의 조치 방법 벨트 교체도 후보로 냅니다.'
+        finally:
+            b.close()
+            served.close()
+
+
 def test_여럿을_골라_한_번에_적재하면_문서마다_진행이_흐르고_검토가_필요한_문서는_멈추며_적재_요청은_검토_화면에서_손대지_않고_적재할_때와_같다():
     """2026-11-15 사용자: 「일괄로 맡길지 사람한테 맡길지 … 선택할 수 있게 process-gpt처럼」. 제공 문서를 여럿 골라 [고른 n개 한 번에 적재]를 누르면 문서마다
     올리기 → AI 추출 → 적재가 차례로 돌고(끝나기 전에 지금 읽는 구간이 줄에 보인다), 자동 검증이 「검토 필요」를 낸 문서는 적재하지 않고 멈춰 [검토 열기]로
