@@ -168,9 +168,9 @@ def test_잘려_온_도구_결과는_JSON_오류로_읽지_않고_보관된_전�
     assert 'JSON으로 읽을 수 없습니다' in got[2]                                          # 잘리지 않았는데 정말 읽을 수 없는 결과는 숨기지 않는다
 
 
-def test_가지_않은_길의_단계는_단계_기록의_본줄에_서지_않고_이름만_따로_모이며_한_일의_문장을_만들지_않는다():
+def test_가지_않은_길의_단계는_단계_기록에_서지_않고_한_일의_문장을_만들지_않는다():
     """반려로 끝난 건의 단계 기록에 「냉각 명령 — 취소: … — 설비 제어에 명령을 보냈고 …」(보내지 않았다)와 「효과 확인 … 회복으로 판정했습니다」가
-    붉은 ✕로 줄줄이 섰다. 흐름이 닿은 적 없이 닫힌 줄(서버의 reached_at 이 null)은 일어난 일이 아니다 — 본줄에서 빼고 이름만 모은다(build().skipped).
+    붉은 ✕로 줄줄이 섰다. 흐름이 닿은 적 없이 닫힌 줄(서버의 reached_at 이 null)은 일어난 일이 아니다 — 단계 기록에 세우지 않는다(이름을 따로 모은 줄도 없다 — 사용자 2026-11-20 「가지않은 단계를 표시를 해야하는 이유」).
     흐름이 닿았다가 취소된 줄(reached_at 에 시각)은 본줄에 서고 「닿았지만 시작하기 전에 취소됐다」고 말한다."""
     T0, T1 = '2026-10-30T05:40:00.000Z', T
     wis = [{'id': 'w1', 'activity_id': 'R_rej', 'activity_name': '결과 보고: 반려', 'tool': 'process:report', 'start_date': T1, 'end_date': T1},
@@ -178,13 +178,12 @@ def test_가지_않은_길의_단계는_단계_기록의_본줄에_서지_않고
            {'id': 'w3', 'activity_id': 'T_obs', 'activity_name': '효과 확인', 'tool': 'incident:reobserve', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'reached_at': None, 'log': '취소: 처리 건이 끝남 — 반려 종결; '}]
     v = view(wis, ['T_cmd', 'T_obs', 'R_rej'])
     v['workitems'].append({'id': 'w0', 'activity_id': 'T_a', 'activity_name': '원인 진단', 'status': 'DONE', 'agent_orch': 'system', 'start_date': T0, 'end_date': T1})
-    got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ titles: m.steps.map(s => s.title), skipped: m.skipped.map(x => x.name), said: m.steps.map(s => s.sentence || '').join(' ') })", v)
-    assert '냉각 명령' not in got['titles'] and '효과 확인' not in got['titles'] and got['skipped'] == ['냉각 명령', '효과 확인']
+    got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ titles: m.steps.map(s => s.title), skipped: 'skipped' in m, said: m.steps.map(s => s.sentence || '').join(' ') })", v)
+    assert '냉각 명령' not in got['titles'] and '효과 확인' not in got['titles'] and got['skipped'] is False
     assert '명령을 보냈' not in got['said'] and '판정했습니다' not in got['said']
     # 흐름이 닿았다가 취소된 줄: 가지 않은 길이 아니다 — 본줄에 서고, 한 일의 문장 대신 닿았지만 시작 전에 취소됐다고 말한다
     wis[1]['reached_at'] = T0
-    got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ steps: m.steps.map(s => [s.title, s.sentence || '']), skipped: m.skipped.map(x => x.name) })", view(wis, ['T_cmd', 'T_obs', 'R_rej']))
-    assert got['skipped'] == ['효과 확인']
+    got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ steps: m.steps.map(s => [s.title, s.sentence || '']) })", view(wis, ['T_cmd', 'T_obs', 'R_rej']))
     assert ['냉각 명령', '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 닫혔습니다 — 처리 건이 끝남 — 반려 종결.'] in got['steps']      # 한 일의 문장이 아니라 닫혔다는 것과 까닭 한 번
 
 

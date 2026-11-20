@@ -291,7 +291,7 @@ def test_진행_상황의_단계_줄은_점이_한_세로선에_서고_줄을_�
             states: steps.map(s => s.dataset.state), subs: steps.every(s => { const h = r(s.querySelector('.step-head')), b = r(s.querySelector('.step-sub')); return b.top >= h.bottom - 1; }),
             seg: [...document.querySelectorAll('#instDetail [data-case-view]')].map(b => [b.innerText.trim(), b.getAttribute('aria-pressed')]), path: document.getElementById('casePath').hidden }; }""")
         assert len(got['marks']) == 1 and len(got['times']) == 1 and got['subs'], got
-        assert got['states'] == ['done', 'done', 'done', 'done', 'done', 'skip'], got              # 시작 · 단계 넷 · 가지 않은 단계(흐리게)
+        assert got['states'] == ['done', 'done', 'done', 'done', 'done'], got              # 시작 · 단계 넷 — 가지 않은 길(반려 보고)은 그리지 않는다
         assert got['seg'] == [['목록', 'true'], ['흐름 그림', 'false']] and got['path'] is True, got
         page.locator("#instRecord .step[data-step='a3'] [data-cr-sheet]").click()
         page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open]')
@@ -315,16 +315,15 @@ def test_진행_상황의_단계_줄은_점이_한_세로선에_서고_줄을_�
         assert page.locator('dialog.sheet[data-cr-sheet-box] h2').inner_text() == '냉각 명령' and page.locator('dialog.sheet[data-cr-sheet-box]').is_visible()
 
 
-def test_가지_않은_단계에는_이_처리_건이_이미_지난_단계와_같은_이름을_다시_적지_않는다():
-    """06 화면 훑기(2026-11-20): 흐름은 다른 갈래에 같은 이름의 단계를 한 번 더 둔다(냉각 긴급 대응의 정비 요청 등록 · 효과 확인 · 결과 보고: 정상).
-    그 이름이 「가지 않은 단계」에 또 나와, 학생은 방금 지난 단계를 하지 않은 것으로 읽었다. 지나가지 않은 길에만 있는 이름만 남고, 수도 그 이름의 수다."""
+def test_끝난_처리_건의_진행_상황에는_가지_않은_길의_단계를_그리지_않는다():
+    """사용자 2026-11-20 「가지않은 단계를 표시를 해야하는 이유」 · 「다 처리해줘」: 맨 아래 「가지 않은 단계 · N단계」 줄은 흐름 그림을 아는 사람이 확인할 정보라
+    학생 이야기(지식 → 사건 → 판단 → 승인 → 결과)에 쓰이지 않고, 펼치면 이미 지난 단계와 같은 이름이 다시 나와 헷갈렸다. 닿지 않은 단계가 있는 건(d1 · 같은 이름이 더 있는 d2)도
+    진행 상황에는 지난 단계만 서고, 그 줄도 그 이름도 없다."""
     with _case_page() as page:
-        for pid, names in (('d1', '결과 보고: 반려'), ('d2', '결과 보고: 반려')):      # d2 = d1 + 같은 이름(냉각 명령)의 닿지 않은 단계
+        for pid in ('d1', 'd2'):
             _pick(page, pid)
-            row = page.locator("#instRecord .step[data-state='skip']")
-            assert row.locator('.step-sub').inner_text().strip() == '1가지 — 이 처리 건이 지나가지 않은 길에만 있는 단계입니다', pid
-            assert row.locator('details .fold-body p').text_content().strip() == names, pid      # 접기 안의 이름 줄(펴지 않아도 같은 글)
-
+            got = page.evaluate("() => ({ states: [...document.querySelectorAll('#instRecord .step')].map(s => s.dataset.state), text: document.getElementById('instRecord').innerText })")
+            assert 'skip' not in got['states'] and '가지 않은' not in got['text'] and '결과 보고: 반려' not in got['text'], (pid, got)
 
 def test_취소된_단계의_점과_알약은_실패의_빨강이_아니라_남은_단계와_같은_보통_색이고_그림도_멈춤으로_칠하지_않는다():
     """정상 취소(승인 전에 경보가 풀려 건이 닫힘)를 고장처럼 보이지 않는다 — 실제 브라우저에서 칠해진 색으로 판정한다: 취소된 단계의 점은 실패 단계의 점과 다른 색이고
