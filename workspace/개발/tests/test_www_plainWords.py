@@ -10,7 +10,7 @@ FILES = ['ui.js', 'plainWords.js', 'toolNames.js']
     # 처리 건 정의의 칸 설명(에이전트 출력 계약 문장)이 화면 사전 이름을 덮지 않는다(W1-02 — 처리 기록을 한 번 그리면 「판정한 원인 노드 id …」로 바뀌었다)
     ('cause', {'cause': '판정한 원인 노드 id (예: cause:cooler-fin-fouling)'}, '판정 원인'),
     ('asset', {'asset': '경보가 난 설비 (상관 키, 예: HYD-01)'}, '설비'),
-    ('decision_id', {'decision_id': 'submit_decision 이 돌려준 조치 카드 묶음 id'}, '조치 카드 묶음 번호'),
+    ('decision_id', {'decision_id': 'submit_decision 이 돌려준 조치 카드 묶음 id'}, '판단 기록 번호'),
     # 사전에 없는 칸(학생 흐름이 만든 칸)은 그 흐름이 붙인 화면 이름
     ('oil_iso', {'oil_iso': 'ISO 청정도'}, 'ISO 청정도'),
     ('oil_iso', {}, 'oil iso'),

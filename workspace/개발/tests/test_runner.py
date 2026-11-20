@@ -214,9 +214,10 @@ def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_이_
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert task['status'] == 'SUBMITTED', friendly(course.rt, task['id'])
     notes = [str(e['data'].get('content')) for e in events_of(course.rt, task['id'], 'task_working')]
-    said = [n for n in notes if '재생' in n or '강사' in n]
-    assert len(said) == 1 and '같은 답을 냅니다' not in said[0] and '강사' not in said[0], said
-    assert '조회 결과는 준비 당시 값' in said[0], said
+    # 그 한 줄도 재생 모드 · 준비된 글이라는 사정을 말하지 않는다 — 사실만(조회 결과는 판단 때 값이고 지금 값과 다르다, 2026-11-20)
+    assert not [n for n in notes if '재생' in n or '강사' in n or '녹화' in n or '준비된' in n], notes
+    said = [n for n in notes if '조회 결과는 판단 때 값' in n]
+    assert len(said) == 1 and '같은 답을 냅니다' not in said[0], notes
     assert relay.requests == [] and ledger_runs(course.dsn) == []        # 재생은 관문 · 중계를 부르지 않는다
 
 

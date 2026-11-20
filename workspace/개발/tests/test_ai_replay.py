@@ -97,22 +97,25 @@ def test_쓰기_자리는_녹화의_쓰기_도구를_이_PC_서버로_다시_불
     assert scope['instance'] == pid and scope['workitem'] == world.row(pid, 'T_agent')['id']
 
 
-def test_녹화와_수량만_다른_지금_계산은_멈추지_않고_어느_값이_준비_당시_값인지_처리_과정에_말한다(world):
+def test_녹화와_수량만_다른_지금_계산은_멈추지_않고_어느_값이_판단_때_값이고_지금_값은_무엇인지_처리_과정에_말한다(world):
     """전수검사 04-D3: 재고 보충 녹화는 정기 정비를 먼저 승인한 뒤(예약 3 · 필요 7개 · 총비용 420)에 떠졌다. 시작 상태(예약 2 · 필요 6개)에서
-    재생하면 AI 설명은 7개 · 420만 원, 승인 카드는 6개 · 360만 원인데 아무 말이 없었다. 권장 조치는 같으므로 멈추지 않고 그 차이를 말한다."""
+    재생하면 AI 설명은 7개 · 420만 원, 승인 카드는 6개 · 360만 원인데 아무 말이 없었다. 권장 조치는 같으므로 멈추지 않고 그 차이를 말한다.
+    2026-11-20: 그 알림이 「AI 키가 없을 때 쓰는 재생 모드에서는 … 준비된 것을 그대로 보입니다 … 준비 당시 값」으로 재생 사정을 밝혔다 — 막힌 행동을
+    한 것이 아니므로 재생 모드 · 준비된 글이라는 말 없이 사실만 말한다(글 속 값은 판단 때 값이고 지금 값은 무엇인가)."""
     pid, did = _scenario('C')(world)
     card = next(o for o in world.main.book[did]['options'] if o['id'] == world.main.book[did]['recommended'])
     now = card['economicComparison']
     assert (now['quantity'], now['total_cost']) == (6, 360)                                 # 이 PC의 지금 계산(시작 상태)
     notices = [e['data'] for e in world.events(pid) if (e.get('data') or {}).get('type') == 'notice']
     said = [d['content'] for d in notices]
-    found = next((d for d in notices if '준비 당시 값' in d['content']), None)
+    found = next((d for d in notices if '판단 때 값' in d['content']), None)
     line = found and found['content']
-    assert line and line.startswith(ai_replay.REPLAY) and '수량 7 → 6개' in line and '비교 총비용 420 → 360만 원' in line, said
+    assert line and line.startswith('AI 설명 속 값 일부는 판단 때 값입니다 — 판단 때 → 지금 값: ') and '수량 7 → 6개' in line and '비교 총비용 420 → 360만 원' in line, said
+    assert '재생' not in line and '준비' not in line, line
     assert '「순정(OEM) 공급사 표준 발주」' in line and not FORBIDDEN.search(line) and '강사' not in line and '녹화' not in line
     # 화면이 문장을 읽어 가르지 않게 종류를 싣는다: 묶음 종류와 문장마다의 종류, 문장을 이으면 content 다. 기본 제공 구성 그대로인 실행이라 스킬 안내는 없다
     kinds = [part['kind'] for part in found['parts']]
-    assert found['kind'] == 'replay' and kinds[:2] == ['prepared', 'values_differ'] and set(kinds) <= set(ai_replay.NOTICE_KINDS) - {'skills'}, found
+    assert found['kind'] == 'replay' and kinds[0] == 'values_differ' and set(kinds) <= set(ai_replay.NOTICE_KINDS) - {'skills'}, found
     assert ' '.join(part['text'] for part in found['parts']) == line
     assert '수량 7 → 6개' in next(part['text'] for part in found['parts'] if part['kind'] == 'values_differ')
 
@@ -239,8 +242,8 @@ def test_지금_넣은_글이_저장된_실행의_입력과_다르면_멈추지_
     assert play(c, wd) and (wd / 'output' / 'result.json').is_file()           # 멈추지 않는다
     text = c.notice() or ''
     if said:
-        assert text.startswith(ai_replay.REPLAY), text
-        assert f'결과 글은 준비 당시의 입력을 두고 쓴 것이고, 지금 넣은 입력과 다릅니다: 준비 당시 「{recorded}」 · 지금 「{MEMO}」.' in text, text
+        assert '재생' not in text and '준비' not in text, text          # 막힌 행동이 아니다 — 재생 사정을 말하지 않고 사실만(2026-11-20)
+        assert f'AI 설명은 지금 넣은 입력과 다른 입력을 두고 쓴 글입니다: 글이 쓰인 때 「{recorded}」 · 지금 「{MEMO}」.' in text, text
         assert not FORBIDDEN.search(text) and not WORKER_TALK.search(text) and 'work_notes' not in text, text
     else:
         assert '지금 넣은 입력' not in text, text
@@ -315,10 +318,10 @@ def test_저장된_조회가_이_PC의_지금_값과_같으면_말이_없고_다
             db.execute('DELETE FROM ent.work_orders WHERE id = %s', (order,))
             db.execute('UPDATE ent.spare_stock SET on_hand = on_hand - 1 WHERE part_no = %s', (part,))
     n = len(orders['rows'])
-    assert said and said.startswith(ai_replay.REPLAY) and '결과 글 안의 조회 결과는 준비 당시 값입니다' in said, said
+    assert said and said.startswith('결과 글 안의 조회 결과는 판단 때 값입니다') and '재생' not in said and '준비' not in said, said
     assert '같은 조회 2개를 이 PC에서 다시 해 보니 2개가 지금 값과 다릅니다' in said, said
     # 조회를 가리키는 말: 데이터 원천의 이름(정본 hydcommon.data_sources.SOURCES — 데이터 원천 화면의 이름)이 앞, 표 이름은 괄호
-    assert f'업무 DB 조회(ent.work_orders) — 준비 당시 {n}건 · 지금 {n + 1}건' in said, said
+    assert f'업무 DB 조회(ent.work_orders) — 판단 때 {n}건 · 지금 {n + 1}건' in said, said
     assert f"업무 DB 조회(ent.spare_stock) — {len(stock['rows'])}건으로 같고 값이 다름" in said and 'updated_at 조회' not in said, said
     assert '견주지 못했습니다' not in said
     assert not FORBIDDEN.search(said) and not WORKER_TALK.search(said) and 'mcp__' not in said and '{' not in said and 'query' not in said, said
@@ -330,14 +333,14 @@ def test_이_PC에서_다시_조회하지_못한_조회는_다르다고_지어�
     gone = 'SELECT part_no, on_hand FROM ent.spare_stock_of_another_pc'
     library, run = _recording_of_reads(tmp_path, [(STOCK_SQL, stock), (gone, {'columns': ['part_no', 'on_hand'], 'rows': [['P-X', 1]]})])
     said, _ = _said_after_replay(tmp_path, tool_servers, library, run)
-    assert said and said.startswith(ai_replay.REPLAY) and '조회 1개는 이 PC에서 다시 조회하지 못해 지금 값과 견주지 못했습니다' in said, said
+    assert said and said.startswith('결과 글 안의 조회 결과는 판단 때 값입니다') and '조회 1개는 이 PC에서 다시 조회하지 못해 지금 값과 견주지 못했습니다' in said, said
     assert '다릅니다' not in said and '지금 0건' not in said, said
     assert not FORBIDDEN.search(said) and not WORKER_TALK.search(said), said
 
 
 def test_교대_인계안의_조회가_이_PC의_지금과_다르면_멈추지_않고_처리_과정에_알린다(course, worker):
     """끝까지: 키 없는 PC의 교대 인수인계. 저장된 인계안은 정비 요청 두 건을 적는다. 이 PC의 정비 요청 수가 그와 달라도 인계안 작성은 제출까지 가고,
-    처리 과정에 조회 결과가 준비 당시 값이라는 것과 지금 이 PC와 다른 조회가 남는다."""
+    처리 과정에 조회 결과가 판단 때 값이라는 것과 지금 이 PC와 다른 조회가 남는다(재생 모드 · 준비된 글이라는 말 없이 — 2026-11-20)."""
     import psycopg
     from conftest import events_of, start_handover, task_of
     inst = start_handover(course.rt)
@@ -347,9 +350,9 @@ def test_교대_인계안의_조회가_이_PC의_지금과_다르면_멈추지_�
     with psycopg.connect(course.dsn) as db:
         now = db.execute("SELECT count(*) FROM ent.work_orders WHERE asset = 'HYD-01'").fetchone()[0]
     said = [e['data']['content'] for e in events_of(course.rt, task['id']) if (e.get('data') or {}).get('type') == 'notice']
-    line = next((text for text in said if '조회 결과는 준비 당시 값' in text), None)
-    assert line and line.startswith(ai_replay.REPLAY), said
-    assert ('업무 DB 조회(ent.work_orders) — ' + (f'준비 당시 2건 · 지금 {now}건' if now != 2 else '2건으로 같고 값이 다름')) in line, line
+    line = next((text for text in said if '조회 결과는 판단 때 값' in text), None)
+    assert line and '재생' not in line and '준비' not in line, said
+    assert ('업무 DB 조회(ent.work_orders) — ' + (f'판단 때 2건 · 지금 {now}건' if now != 2 else '2건으로 같고 값이 다름')) in line, line
     assert '시계열 DB 조회(public.tag_1s) — ' in line, line
     assert not FORBIDDEN.search(line) and not WORKER_TALK.search(line) and 'mcp__' not in line and '{' not in line, line
 
@@ -599,7 +602,8 @@ def test_모드에서_이어_받을_수_없는_세션이면_이어_하기_없이
 
 # ---------------------------------------------------------------- 같은 요청 저장(키 있는 PC)
 def test_같은_설정_같은_입력이면_앞선_실행을_다시_쓰고_실제_CLI_를_부르지_않는다(tmp_path, tool_servers):
-    """키 있는 PC: 같은 설정 · 같은 입력이면 앞선 실행을 다시 쓴다(새로 추론하지 않음). 읽기 자리로 — 쓰기 도구의 실제 재등록은 위 처리 건 시험이 본다."""
+    """키 있는 PC: 같은 설정 · 같은 입력이면 앞선 실행을 다시 쓴다(새로 추론하지 않음). 읽기 자리로 — 쓰기 도구의 실제 재등록은 위 처리 건 시험이 본다.
+    화면에 남는 한 줄은 저장 사정(「다시 썼습니다 · 새로 추론하지 않음 · 언제 실행」)이 아니라 사실과 할 일이다(2026-11-20)."""
     draft = COURSE_LIB.load(ai_replay.course_key('handover/draft-1', ''))
     cache = Library(tmp_path / 'cache', REUSE)
     cache.write('k' * 32, {'request': 'k' * 32, 'step': draft['step'], 'case': '', 'provider': 'claude-code',
@@ -608,7 +612,9 @@ def test_같은_설정_같은_입력이면_앞선_실행을_다시_쓰고_실제
     c = claim('live', slot='handover/draft-1', cache=cache, cli=lambda *a, **k: pytest.fail('실제 CLI 를 불렀다'))
     events = play(c, wd)
     assert events[0].session_id.startswith(REUSE)
-    assert c.notice().startswith('같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음')
+    said = c.notice()
+    assert said.startswith('같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.') and said.endswith('새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.'), said
+    assert '다시 썼습니다' not in said and '저장' not in said, said
 
 
 def _cached(tmp_path, slot):

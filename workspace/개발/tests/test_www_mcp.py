@@ -175,3 +175,70 @@ def test_도구를_써_보면_받은_결과가_모양대로_첫_화면에_보이
             b.close()
     finally:
         served.close()
+
+
+def test_등록이_막혀_있으면_까닭_줄을_늘_두지_않고_서버_등록과_읽기로_확인을_누를_때만_요청_없이_그_뒤에_서버_문장이_나온다():
+    """사용자 2026-11-20 「굳이 저런게 있으면안되는데」 — 전에는 화면 아래 설정 줄 「내 도구 서버」가 잠긴 까닭을 늘 적어 두고 머리의 [서버 등록]은 그리지 않았다
+    (학생이 하려던 일이 아닌데 제한이 떠 있고, 하려는 학생에게는 누를 단추가 없었다). 이제 막힌 단추는 초점이 가는 채로 보이고(aria-disabled), 누르면 등록 폼 ·
+    확인 폼이 열리지 않고 요청도 나가지 않으며 그 단추 뒤에 서버가 준 한 문장(course_policy.ACTIONS 그대로)이 나온다. 까닭 줄은 단추 줄을 밀어내지 않고 그 아래 온 줄로 선다."""
+    from playwright.sync_api import sync_playwright
+    from procsvc import course_policy as cp
+    why = cp.Policy.ACTIONS['tool_servers.register']
+    assert why.endswith('.') and '. ' not in why, why                      # 한 문장 — 화면은 서버 문장을 자르거나 잇지 않는다
+    tool = {'name': 'get_wear', 'callable': False, 'confirmable': True, 'refuse_reason': '읽기 전용 표시가 없습니다', 'description': '', 'input_schema': {'type': 'object', 'properties': {}}}
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    writes = []
+
+    def answer(route):
+        url = route.request.url.split('?')[0]
+        if route.request.method != 'GET':
+            writes.append((route.request.method, url))
+        if url.endswith('/api/course-access'):
+            return route.fulfill(json={'phase': 'course', 'actions': {'tool_servers.register': {'allowed': False, 'reason': why}}, 'reasons': {k: '-' for k in ('assign', 'start', 'import_flow', 'document')}})
+        if url.endswith('/api/mcp/servers/tool-wear/tools'):
+            return route.fulfill(json={'status': 'ok', 'tools': [tool]})
+        if url.endswith('/api/mcp/servers'):
+            return route.fulfill(json={'servers': [SERVER], 'list_timeout_s': 5})
+        if url.endswith('/api/mcp/secrets'):
+            return route.fulfill(json={'secrets': [], 'rule': ''})
+        if url.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'mcp')
+            page.locator("#mcpServers [data-name='tool-wear']").click()
+            page.wait_for_selector("#mcpDetail [data-confirm='get_wear'][data-course-off]", timeout=15000)
+            page.wait_for_selector('#mcpAdd[data-course-off]', timeout=8000)
+            # 누르기 전: 까닭은 어디에도 없다(설정 줄 · 단추 뒤 · 도움말). [서버 등록]은 보이고 꺼진(disabled) 것이 아니라 aria-disabled 다
+            view = page.inner_text('#view-mcp')
+            assert why not in view and 'PBL' not in view and '내 도구 서버' not in view, view
+            assert page.locator('#view-mcp [data-mcp-why], #view-mcp [data-course-why]').count() == 0 and page.locator('#mcpOperator').is_hidden()
+            add = page.locator('#mcpAdd')
+            assert add.is_visible() and add.evaluate("n => [n.disabled, n.getAttribute('aria-disabled'), n.title]") == [False, 'true', '']
+            assert page.locator('#mcpMore-trigger').count() == 0             # 고치기 · 지우기는 그리지 않는다(등록이 막혀 있으면 되살릴 길이 없다)
+            box = "n => { const r = n.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right)]; }"
+            was = add.evaluate(box)
+            add.focus()
+            page.keyboard.press('Enter')                                      # 키보드로도 닿는다
+            line = page.locator('#mcpAdd + [data-course-why]')
+            line.wait_for(state='visible', timeout=3000)
+            assert line.inner_text().strip() == why and page.inner_text('#mcpForm').strip() == '' and writes == []
+            assert add.evaluate(box) == was, '까닭 줄이 [서버 등록]을 밀어냈다'
+            assert line.evaluate("(n, b) => n.getBoundingClientRect().top >= b.getBoundingClientRect().bottom - 1", add.element_handle()), '까닭 줄이 단추 옆에 끼었다'
+            assert page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth')
+            # 도구 줄의 [읽기로 확인]: 눌러도 확인 폼이 열리지 않고 그 뒤 한 줄(다시 눌러도 한 줄)
+            confirm = page.locator("#mcpDetail [data-confirm='get_wear']")
+            confirm.click(force=True)      # force: Playwright 는 aria-disabled 단추가 눌릴 수 있게 되기를 기다린다 — 실제 마우스 누름은 그대로 간다
+            confirm.click(force=True)
+            assert page.locator('#mcpDetail [data-course-why]').all_inner_texts() == [why] and page.locator('#mcpConfirmSave').count() == 0 and writes == []
+            assert page.locator('#mcpDetail [data-course-why]').is_visible()
+            b.close()
+    finally:
+        served.close()

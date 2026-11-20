@@ -3,7 +3,8 @@
 
 메뉴마다 새 탭에서(앞 메뉴가 남긴 화면 상태 위에서 판정하지 않는다): 콘솔 오류 0 · 실패한 요청 0 · 14초 뒤에도 남은 「…하는 중」 로딩 문구 없음 ·
 내부어(설정 이름 · 영문 경보 코드 · 표 이름 · 사람 원래 id · 번역 안 된 명칭 키) 없음 · 가로 넘침 없음 · 「눌리는데 거절」 없음 — 서버 수업 경계
-(GET /api/course-access)가 막은 행동 키를 단 요소는 꺼져 있고 서버 까닭을 보인다 · 서비스 요청은 모두 포털과 같은 출처(/svc/<서비스>/ — nginx 프록시)다.
+(GET /api/course-access)가 막은 행동 키를 단 단추는 초점이 가는 채로 막혀 있고(aria-disabled), 까닭은 늘 붙어 있지 않으며, 누르면 요청이 나가지 않고 그 뒤 한 줄에
+서버 까닭이 보인다 · 서비스 요청은 모두 포털과 같은 출처(/svc/<서비스>/ — nginx 프록시)다.
 화면 목록은 index.html 의 주 메뉴 표(메뉴 정의 button[data-menu] 의 data-tabs — 메뉴 여덟, 메뉴마다 딸린 화면)에서 읽는다. 화면은 학생이 여는 길로 연다:
 왼쪽 메뉴 줄에서 메뉴를 누르고, 화면이 여럿인 메뉴면 그 메뉴 아래에 펼쳐진 화면 이름을 누른다(conftest.open_screen — 위쪽 탭 줄은 없다). 메뉴 잠금은 없다(모든 메뉴가 열린다).
 서버가 꺼져 있거나 이 판과 다르면 그 사실이 실패 문장에 그대로 나온다(조용히 건너뛰지 않는다).
@@ -25,7 +26,7 @@ from student_words import JARGON, WORKER_TALK      # 내부어 · 작업자 말 
 # 작업자 말 가운데 화면이 고칠 수 없는 것: 강사 서명 묶음의 문서 원문(HM-8 「PLC 운전 모드가 REMOTE_AUTO인지 확인한다」)이 그대로 보이는 화면.
 # 문서를 고치고 다시 서명해야 없어진다(사용자가 정할 일 — 기록.md 「사용자만 정할 수 있는 것」). 그 밖의 화면에서는 이 말도 결함이다
 DOCUMENT_WORDS = {'REMOTE_AUTO': {'skills', 'instances', 'knowledge', 'decision'}}
-# 수업 단계에서 그 메뉴에 반드시 있어야 하는 행동 키(막힌 단추가 꺼진 채 보이는지 볼 자리)
+# 수업 단계에서 그 메뉴에 반드시 있어야 하는 행동 키(막힌 단추가 화면에 있고 눌러 까닭을 볼 수 있는지 볼 자리)
 EXPECTED_ACTIONS = {'mcp': ['tool_servers.register'], 'admin': ['config.import']}
 
 
@@ -150,7 +151,21 @@ class Tour:
 
     def actions(self):
         return self.page.evaluate("""() => [...document.querySelectorAll('main .view.active [data-course-action]')]
-          .map(n => ({ key: n.dataset.courseAction, disabled: n.disabled, title: n.title, label: (n.innerText || n.value || '').trim().slice(0, 40) }))""")
+          .map((n, i) => ({ i, key: n.dataset.courseAction, disabled: n.disabled, off: n.getAttribute('aria-disabled') === 'true' && n.dataset.courseOff === '1', shown: n.getClientRects().length > 0,
+                           why: n.nextElementSibling && n.nextElementSibling.hasAttribute('data-course-why') ? n.nextElementSibling.textContent : null, label: (n.innerText || n.value || '').trim().slice(0, 40) }))""")
+
+    def press_blocked(self, i):
+        """막힌 단추(actions 의 i 번째)를 실제 마우스로 누른다 → { why: 그 뒤 한 줄의 글, lines: 그 단추 뒤 까닭 줄 수, sent: 그동안 나간 쓰기 요청 }. 막힌 단추는 요청을 보내지 않으므로 학생 상태가 바뀌지 않는다."""
+        sent = []
+        watch = lambda r: sent.append(f'{r.method} {r.url}') if r.method != 'GET' else None
+        self.page.on('request', watch)
+        node = self.page.locator('main .view.active [data-course-action]').nth(i)
+        node.scroll_into_view_if_needed()
+        node.click(force=True)      # force: Playwright 는 aria-disabled 단추가 눌릴 수 있게 되기를 기다린다 — 실제 마우스 누름은 그대로 간다
+        self.page.wait_for_timeout(400)
+        self.page.remove_listener('request', watch)
+        got = node.evaluate("n => { let k = 0, x = n.nextElementSibling; while (x && x.hasAttribute('data-course-why')) { k++; x = x.nextElementSibling; } return { why: k ? n.nextElementSibling.textContent : null, lines: k }; }")
+        return {**got, 'sent': sent}
 
 
 @pytest.fixture
@@ -192,33 +207,38 @@ def test_주_메뉴는_여덟이고_화면_22개가_빠짐없이_딸려_있으�
             assert page.eval_on_selector(f"#menuList [data-menu='{menu}']", "n => n.matches('a[aria-current=page], summary[data-active=true]')")
 
 
-def test_메뉴_줄_아래_단계_줄은_PBL_단계와_그_기한이_지난_때만_보인다(tours):
-    """제공된 것만 쓰는 단계에는 줄이 없다(사용자 2026-11-20 「저게뭐임?」 — 막힌 까닭은 그 단추 뒤 한 줄이 말한다). PBL 이면 그 단계와 기한, 기한이 지났으면 그 사실."""
+def test_메뉴_줄_아래_줄은_PBL_기간과_그것이_끝난_때만_보인다(tours):
+    """PBL 선언이 없던 때에는 줄이 없다(사용자 2026-11-20 「저게뭐임?」 — 막힌 까닭은 그 단추를 누를 때 나온다). PBL 기간이면 그 기한, 기한이 지났으면 끝났다는 사실만."""
     t = tours(SIZES[0])
     assert t.access is not None, f'수업 단계 정보(GET /api/course-access)를 읽지 못했다: {t.access_error}'
-    line = t.page.inner_text('#courseStatus')
+    line = t.page.inner_text('#courseStatus').strip()
     if t.access['phase'] == 'pbl':
-        assert line.startswith('제한 없이 쓰는 단계 (PBL)'), line
+        assert line.startswith('PBL 기간'), line
     elif t.access.get('expired'):
-        assert line.startswith('제공된 문서 · 흐름 · 모델만 쓰는 단계 (PBL 기한 지남)'), line
+        assert line.startswith('PBL 기간이 끝났습니다') and '막힌 행동' not in line, line
     else:
         assert line == '' and not t.page.is_visible('#courseStatus'), line
 
 
-def test_도구_연결의_내_도구_서버가_잠긴_까닭은_넓은_화면에서_한_줄이고_서버가_준_까닭의_첫_문장이다(tours):
-    """인수 조건 2: 범위 · 까닭을 말하는 문장은 한 화면에 한 번, 한 줄까지. 서버의 까닭은 두 문장이라 1440 폭에서도 두 줄로 꺾였다.
-    줄에는 첫 문장(무엇이 어느 단계에서 열리는가)만 적고, 실제 브라우저에서 그 글의 높이가 한 줄인지 잰다. 만들 수 있는 단계(PBL)에는 그 줄이 없다."""
+def test_도구_연결은_등록이_막혀_있어도_까닭_줄을_늘_두지_않고_서버_등록을_누를_때_그_자리에_서버_문장이_나온다(tours):
+    """전에는 화면 아래 설정 줄 「내 도구 서버」가 잠긴 까닭을 늘 적어 두고 머리의 [서버 등록]은 그리지 않았다. 사용자 2026-11-20: 막힌 까닭은 학생이 그 행동을
+    하려 할 때만 그 자리에서 말한다 — [서버 등록]은 막힌 채로 보이고, 누르면 등록 폼이 열리지 않고 그 단추 뒤에 서버가 준 한 문장이 나온다. 열려 있으면(PBL 기간) 막힘 표시가 없다."""
     t = tours(SIZES[1])
     assert t.access is not None, t.access_error
     t.open('mcp')
-    t.page.wait_for_selector('#mcpOperator', timeout=15000)
+    t.page.wait_for_selector('#mcpAdd', timeout=15000)
     reason = t.page.evaluate("() => window.hydCourseAccess.blocked('tool_servers.register') || ''")
+    assert t.page.locator('[data-mcp-why]').count() == 0 and t.page.locator('#view-mcp [data-course-why]').count() == 0
+    add = next(a for a in t.actions() if a['label'].endswith('서버 등록'))
     if not reason:
-        assert t.page.locator('[data-mcp-why]').count() == 0
+        assert not add['off'], add
         return
-    t.page.wait_for_selector('[data-mcp-why] p', timeout=15000)
-    got = t.page.evaluate("() => { const p = document.querySelector('[data-mcp-why] p'), cs = getComputedStyle(p); return { text: p.innerText.trim(), lines: Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight)) }; }")
-    assert got['lines'] == 1 and reason.startswith(got['text']) and got['text'].endswith('.') and len(got['text']) < len(reason), (got, reason)
+    assert add['off'] and add['shown'] and not add['disabled'], add
+    got = t.press_blocked(add['i'])
+    assert got == {'why': reason, 'lines': 1, 'sent': []}, got
+    assert reason.endswith('.') and '. ' not in reason, reason                     # 한 문장
+    assert t.page.locator('#mcpForm').inner_text().strip() == ''                  # 등록 폼은 열리지 않았다
+    assert not t.overflow()['pageScroll'], '까닭 한 줄이 화면을 가로로 넘겼다'
 
 
 def test_흐름의_읽기_전용_갈림_표는_조건_글이_줄마다_같은_세로선에서_시작한다(tours):
@@ -282,12 +302,27 @@ def test_메뉴를_열면_오류_로딩_내부어_넘침_눌리는데_거절이_
     problems += [f'글자 잘림: {c}' for c in ov['clipped']]
     blocked = {k: a['reason'] for k, a in ((t.access or {}).get('actions') or {}).items() if a and a.get('allowed') is False}
     present = t.actions()
+    pressed = set()
     for a in present:
-        if a['key'] in blocked and not (a['disabled'] and a['title'] == blocked[a['key']]):
-            problems.append(f"눌리는데 거절: 「{a['label']}」({a['key']}) 단추가 {'켜져' if not a['disabled'] else '까닭 없이 꺼져'} 있다")
-        if a['key'] not in blocked and a['disabled'] and a['title']:
-            problems.append(f"열린 행동인데 꺼짐: 「{a['label']}」({a['key']}) — {a['title']}")
+        if a['key'] not in blocked:
+            if a['off']:
+                problems.append(f"열린 행동인데 막힘: 「{a['label']}」({a['key']})")
+            continue
+        # 막힌 행동: 단추가 그대로 켜져 있으면 눌리는데 서버가 거절한다. 막혀 있되 초점은 가야 하고(aria-disabled — 다른 까닭으로 꺼진 단추는 그대로 둔다), 까닭은 누르기 전에 붙어 있지 않다
+        if not (a['off'] or a['disabled']):
+            problems.append(f"눌리는데 거절: 「{a['label']}」({a['key']}) 단추가 켜져 있다")
+        if a['why'] is not None:
+            problems.append(f"누르기 전부터 까닭이 붙어 있다: 「{a['label']}」({a['key']}) — {a['why']}")
+        if a['off'] and a['shown'] and not a['disabled'] and a['key'] not in pressed:      # 행동 키마다 보이는 단추 하나를 눌러 본다(막힌 단추는 요청을 보내지 않는다)
+            pressed.add(a['key'])
+            got = t.press_blocked(a['i'])
+            if got['sent']:
+                problems.append(f"막힌 단추가 요청을 보냈다: 「{a['label']}」({a['key']}) — {', '.join(got['sent'])}")
+            if got['why'] != blocked[a['key']] or got['lines'] != 1:
+                problems.append(f"막힌 단추를 눌러도 그 뒤에 서버 까닭 한 줄이 없다: 「{a['label']}」({a['key']}) — {got}")
+    if pressed and t.overflow()['pageScroll']:
+        problems.append('막힌 까닭 한 줄이 페이지를 가로로 넘겼다')
     for key in EXPECTED_ACTIONS.get(tab, []):
         if key in blocked and not any(a['key'] == key for a in present):
-            problems.append(f'수업 단계에서 막힌 행동 {key} 의 단추가 화면에 표시되지 않았다(행동 키를 단 요소 없음)')
+            problems.append(f'막힌 행동 {key} 의 단추가 화면에 표시되지 않았다(행동 키를 단 요소 없음 — 학생이 눌러 까닭을 볼 자리가 없다)')
     assert not problems, '\n'.join(problems)

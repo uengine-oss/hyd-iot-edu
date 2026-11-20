@@ -172,7 +172,7 @@ def test_긴_되돌림_고리도_빠져나갈_분기가_없다는_사유_하나�
     (f'<?xml version="1.0"?><!--{"주석" * 2600}--><!DOCTYPE x SYSTEM "http://127.0.0.1:9/x.dtd"><bpmn:definitions {NS}/>',
      'DOCTYPE · ENTITY'),                                                              # P5-15: 앞 4,096자 뒤의 DOCTYPE 도
     ('<definitions/>', r'BPMN 2\.0 흐름 그림 파일이 아닙니다 — bpmn\.io 에서'),
-    ('x' * (TEXT_MAX + 1), f'{TEXT_MAX:,}자 이하'),                                    # 수업 경계 정본의 한도 하나(가져오기 · 출발본 · 수업 판정)
+    ('x' * (TEXT_MAX + 1), f'{TEXT_MAX:,}자 이하'),                                    # 수업 경계 정본의 한도 하나(가져오기 · 내 구성 파일 · 수업 판정)
 ], ids=['잘린 파일', '닫히지 않은 태그', '빈 파일', 'DOCTYPE', '긴 주석 뒤 DOCTYPE', 'BPMN 아님', '글자 한도 넘음'])
 def test_깨진_XML은_위치와_할_일을_말하고_파서_영문을_보이지_않는다(xml, pattern):
     with pytest.raises(bpmn_import.BpmnError) as caught:

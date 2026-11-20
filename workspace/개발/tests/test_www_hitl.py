@@ -193,7 +193,7 @@ def test_적재한_파일을_새_문서로_다시_올리면_적재_사실과_이
             page.wait_for_function("document.querySelector('#manualResult .result-label')?.textContent === '이미 적재된 문서'", timeout=15000)
             assert posted == [None, loaded_doc]                   # 처음은 새 문서로, [이 문서 개정]은 그 문서의 개정으로
             again = page.inner_text('#manualResult .result')
-            assert '이 원문으로 만든 판이 지식 지도에 적재돼 있습니다' in again and page.locator('#manualReviseSame').count() == 0
+            assert '이 원문으로 만든 판본이 지식 지도에 적재돼 있습니다' in again and page.locator('#manualReviseSame').count() == 0
             assert page.locator('#manualAgentExtract').get_attribute('data-variant') is None      # 이제 주 단추는 AI 추출 시작
             b.close()
     finally:
@@ -274,10 +274,16 @@ def test_제공_문서를_목록에서_고르면_내려받지_않고_그_원문_
                     assert x['title']['l'] < x['tag']['l'] and (x['tag']['r'] - rw['l']) / rw['w'] < 0.6 and x['view']['l'] - x['tag']['r'] >= 3 * x['tag']['w'] and x['tagPill'], x      # 상태: 제목 쪽, 동작과 멀리
             assert '누르면 올라가' in page.inner_text('#manualPick .doc-review-bar')
             # 고르기 칸은 줄 위에 놓여 그것만 눌린다 — 눌러도 문서가 올라가지 않고 「한 번에 적재」 줄이 나온다
+            # 늘 보이는 안내는 줄을 누르라는 한 문장뿐이다 — 「사람 검토 대신 …한 번에 적재」는 체크 칸을 하나라도 고른 뒤에만 단추와 함께 나온다(사용자 2026-11-20:
+            # 사람 검토를 배우는 화면에 그 길이 늘 떠 있어 체크 칸을 눌러야 하는 것으로 읽혔다)
+            hint = "#manualPick .doc-review-bar [data-pick='provided']"
+            assert page.inner_text(hint).strip() == '문서를 누르면 올라가 AI 추출로 넘어갑니다.' and page.inner_text('#manualBatch').strip() == ''
+            assert '한 번에 적재' not in page.inner_text('#manualPick') and '사람 검토 대신' not in page.inner_text('#manualPick')
             page.locator(f"#providedDocs [data-batch-pick='{new}']").check(timeout=5000)
             assert posted == [] and '고른 1개 한 번에 적재' in page.inner_text('#manualBatchRun')
+            assert '한 번에 적재 — 사람 검토 대신 자동 검증을 통과한 문서만 적재합니다.' in page.inner_text('#manualBatch') and page.inner_text(hint).strip() == '문서를 누르면 올라가 AI 추출로 넘어갑니다.'
             page.locator(f"#providedDocs [data-batch-pick='{new}']").uncheck(timeout=5000)
-            assert page.locator('#manualBatchRun').count() == 0
+            assert page.locator('#manualBatchRun').count() == 0 and page.inner_text('#manualBatch').strip() == ''
             # [원문 보기]는 내려받기가 아니라 새 탭에서 글로 열린다
             assert link.get_attribute('target') == '_blank' and link.get_attribute('download') is None
             kind = page.evaluate("async href => (await fetch(href)).headers.get('content-type')", link.get_attribute('href'))
@@ -507,6 +513,130 @@ def test_검토_화면의_원문_인용과_지식_후보_제목과_적재_완료
             served.close()
 
 
+class _MemoDocs(_Docs):
+    """추출 결과에 경고가 실린 문서 둘. 첫 문서는 제공 문서의 응답 꼴이다(procsvc manual_approved_cache — 추출 요청 · 결과 · 검토본에 cache 칸이 있고, 경고는 그 추출
+    결과를 만든 사람이 서명 묶음에 남긴 작업 메모(proposal.warnings), cache.origin.review_notes 는 검토하며 고친 곳). 둘째 문서는 AI가 방금 읽은 결과다(cache 없음 — 경고는 AI가 낸 것).
+    두 문서 모두 서버가 원문에서 찾은 수치 경고(validation.source_value_warnings)가 경고 목록에 함께 실린다(manual_extraction — preview['warnings'])."""
+    MEMO, NOTE, VALUE = '후보 규칙 추가: 원인 = 팬 구동 불량 → SOP-FAN-11 (REMEDIED_BY · CMMS 작업지시)', '기존 검토본의 승인 역할/원인 연결은 유지', 'SOP-A-01: 원문 수치 80 %가 단계에 없습니다'
+
+    def __call__(self, route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        cached = lambda doc: doc == self.doc_of(self.provided[0])
+        if path.endswith('/extractions') and method == 'POST':
+            doc = path.split('/sources/')[1].split('/')[0].split('%3A')[1]
+            return route.fulfill(json={'instance': 'inst-' + doc, **({'cache': {'version': 'reviewed-1'}} if cached(doc) else {})})
+        if '/extractions/' in path:
+            doc = path.rsplit('/', 1)[1][len('inst-'):]
+            r = _proposal(doc, next(f for f in self.provided if self.doc_of(f) == doc))
+            r['warnings'] = [self.MEMO, self.VALUE]
+            r['validation']['source_value_warnings'] = [self.VALUE]
+            r['coverage'] = {'ratio': 0.76}
+            r['procedures'][0]['anchor'] = {'page': 1, 'start': 0, 'quote': '벨트를 교체한다.', 'located': 'exact'}
+            if cached(doc):
+                r['extraction']['cache'] = {'version': 'reviewed-1', 'origin': {'review_notes': [self.NOTE]}}
+            return route.fulfill(json={'status': 'DONE', 'instance': 'inst-' + doc, 'segments': [], 'preview': r, **({'cache': r['extraction']['cache']} if cached(doc) else {})})
+        return super().__call__(route)
+
+
+def test_제공_문서의_검토_화면에는_작업_메모와_인용_비율이_없고_내가_올린_문서의_AI_추출_경고는_그대로_보인다():
+    """06 화면 훑기(2026-11-20) · 사용자 답: 제공 문서의 「추출 경고 3건」을 펼치면 그 추출 결과를 만든 사람의 작업 메모(REMEDIED_BY · CMMS 작업지시 …)였고,
+    「추출 과정 보기」 안에도 「검토하며 고친 곳」과 「AI가 미리 읽고 사람이 … 검토해 둔 …」이 있었다 — 학생 화면에 내지 않는다. 그 메모와 한 목록에 실려 오던
+    서버의 원문 수치 경고는 자동 검증 줄의 「원문 수치 확인 필요」로 보인다(가려서 사실이 빠지지 않게). 대조 줄의 기준 없는 비율 「원문 글자의 76 %가 인용에
+    쓰였습니다」도 뺀다. AI가 방금 읽은 문서(cache 없음)의 추출 경고는 그대로 접기로 보인다."""
+    from playwright.sync_api import sync_playwright
+    provided, mine = 'HM-8_cooler-fan-manual.md', 'HI-01_shift-inspection-supplement.md'
+    docs = _MemoDocs([provided, mine])
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, provided)
+            page.wait_for_function("document.querySelector('#manualReview [data-live-trail]')?.textContent.includes('검토 화면에 올렸습니다')", timeout=15000)
+            page.click('#manualProcess > summary')
+            page.locator('#manualProcess [data-cached-yield] .step').first.wait_for(state='visible', timeout=3000)
+            shown = page.evaluate("() => document.querySelector('#manualReview').textContent")      # 접힌 것 안까지(원문 판 포함) 화면에 실린 글 전부
+            for hidden in ('추출 경고', docs.MEMO, 'REMEDIED_BY', '검토하며 고친', docs.NOTE, '미리', '원문 글자의', '76', '저장된', '이 PC에 없습니다'):
+                assert hidden not in shown, hidden
+            assert page.inner_text('#manualProcess [data-cached-note]').strip() == 'AI가 이 문서에서 절마다 뽑은 것입니다.'
+            trail = page.inner_text('#manualReview [data-live-trail]')
+            assert '인용 1곳이 원문의 그 자리에 있습니다 · 사람이 확인할 곳 0건' in trail, trail
+            assert '원문 수치 확인 필요' in shown and docs.VALUE in page.inner_text('#manualReview .doc-valid'), shown      # 서버가 찾은 수치 경고는 남는다
+            # AI가 방금 읽은 문서: 추출 경고 접기가 그대로 있고 그 안에 AI가 낸 경고가 있다(수치 경고는 그 접기에 이미 있어 되풀이하지 않는다)
+            page.click('#manualAnother')
+            _open_review(page, docs, mine)
+            folds = page.locator('#manualReview .doc-folds > details > summary').all_inner_texts()
+            assert any(t.replace('\n', ' ').startswith('추출 경고') and '2건' in t for t in folds), folds
+            assert docs.MEMO in page.evaluate("() => [...document.querySelectorAll('#manualReview .doc-folds > details')].find(d => d.querySelector('summary').textContent.startsWith('추출 경고')).textContent")
+            assert '원문 수치 확인 필요' not in page.inner_text('#manualReview .doc-valid')
+        finally:
+            b.close()
+            served.close()
+
+
+class _KindDocs(_Docs):
+    """구매 · 참고 절차의 서버 검사 기록(validation.execution — manual_review 의 꼴)이 실린 문서와, 참고 절차(SOP-A-03)와 번호 · 단계가 같은 등록 절차 하나가 있는 목록."""
+    CONTRACT = {'id': 'skill:sop-a-03', 'sopId': 'SOP-A-03', 'contract_sha256': 'c' * 64, 'steps': [{'order': 1, 'text': '상태를 확인한다.'}], 'sections': [], 'owner': True}
+
+    def __call__(self, route):
+        path = route.request.url.split('?')[0]
+        if '/extractions/' in path and self.polls.get(path.rsplit('/', 1)[1][len('inst-'):], 0) >= 1:
+            doc = path.rsplit('/', 1)[1][len('inst-'):]
+            r = _proposal(doc, self.provided[0])
+            r['validation'].update(executable_ready=True, execution=[{'sop': 'SOP-A-02', 'executable': True, 'ready': True, 'issues': [], 'evaluation_scope': 'structural'},
+                                                                     {'sop': 'SOP-A-03', 'executable': False, 'ready': True, 'issues': []}])
+            return route.fulfill(json={'status': 'DONE', 'instance': 'inst-' + doc, 'segments': [], 'preview': r})
+        if path.endswith('/api/kg/manuals/catalog'):
+            return route.fulfill(json={'parts': [{'id': 'part:seal', 'name': '펌프 축 씰', 'partNo': 'P-1'}], 'suppliers': [{'id': 'sup:b', 'name': 'B사'}],
+                                       'skills': [{'id': 'skill:sop-a-03', 'name': '교대 상태 확인', 'reference_contract': self.CONTRACT}],
+                                       'roles': [{'id': 'role:buyer', 'name': '구매 담당'}, {'id': 'role:operator', 'name': '운전원'}]})
+        return super().__call__(route)
+
+
+def test_절차의_선택지는_이름만이고_구매_참고_절차는_무엇이_되는지_결론_한_줄로_말한다():
+    """화면 글 검토(2026-11-20) 고칠 것 7 · 8: 고르는 이름에 검사 규칙이 붙어 있었고(「고장 조치 · 고장 유형 연결 필수」 · 「구매 원문 절차 · 구매 업무 범위」 ·
+    「일반 원문 참고 절차 · 실행 후보 제외」), 구매 · 참고 절차의 검토 칸은 「~아님 · ~확인하지 않음 · ~추정하지 않습니다」를 늘어놓고 그 절차가 무엇이 되는지는 말하지
+    않았다. 선택지는 이름만 보이고, 절차마다 결론 한 줄(승인하면 구매 요청을 만든다 / 원문만 보관하고 AI가 조치로 고르지 않는다)이 먼저 보인다. 이미 등록된 절차와
+    잇는 자리도 결론 한 줄이 먼저이고, 두 절차의 단계를 나란히 견주는 것은 접혀 있다가 단계가 달라 이을 수 없을 때만 펴진다."""
+    from playwright.sync_api import sync_playwright
+    name = 'HI-01_shift-inspection-supplement.md'
+    docs = _KindDocs([name])
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, name)
+            options = lambda sel: page.locator(sel + ' option').all_inner_texts()
+            assert options("[data-manual-scope='SOP-A-01']") == ['고장 조치', '구매 절차']
+            assert options("select[data-kind='SOP-A-01']") == ['정비 요청', '설비 제어', '참고 절차']
+            assert options("[data-manual-executable='SOP-A-02']") == ['원문을 확인하고 선택하세요', '원문만 보관', '구매 요청을 만드는 절차']
+            assert options("[data-reference-executable='SOP-A-03']") == ['원문을 확인하고 선택하세요', '원문만 보관']
+            assert page.evaluate("() => [...document.querySelectorAll('#manualItems [data-item^=\"proc:\"] .row-meta')].map(n => n.textContent.split(' · ')[1])") == ['벨트 느슨함', '구매 절차', '참고 절차']
+            # 구매 · 참고 절차의 결론은 접혀 있지 않다(펼친 접기) — 절차마다 한 줄
+            fold = page.locator('#manualReview .doc-folds > details').filter(has_text='구매 · 참고 절차')
+            assert fold.evaluate('d => d.open') and fold.locator('> summary').inner_text().replace('\n', ' ').startswith('구매 · 참고 절차')
+            assert fold.locator('ul.doc-issues > li').all_inner_texts() == ['씰 구매 (SOP-A-02) · 승인하면 구매 요청을 만드는 절차입니다(견적 · 재고는 그때 확인합니다).',
+                                                                           '상태 확인 (SOP-A-03) · 원문만 보관하고 AI가 조치로 고르지 않습니다.']
+            # 참고 절차를 이미 등록된 같은 절차와 잇는다: 결론 한 줄, 견주는 표는 접혀 있다. 단계를 고쳐 달라지면 이을 수 없는 까닭과 함께 펴진다
+            page.click("#manualItems [data-item='proc:SOP-A-03']")
+            box = "[data-reference-comparison='SOP-A-03']"
+            assert page.inner_text(box).strip() == '이미 등록된 절차와 연결하지 않고, 이 문서의 원문 단계만 보관합니다.'
+            page.select_option("[data-reference-target='SOP-A-03']", 'skill:sop-a-03')
+            assert page.inner_text(box + ' > p').strip() == '이미 등록된 「교대 상태 확인」 절차와 같은 절차로 잇습니다.'
+            assert page.locator(box + ' [data-reference-detail]').evaluate('d => d.open') is False
+            page.fill("textarea[data-manual-step='SOP-A-03']", '상태를 두 번 확인한다.')
+            assert page.inner_text(box + ' > p').strip() == '원문의 단계가 등록된 절차의 단계와 달라 연결할 수 없습니다.'
+            page.select_option("[data-reference-target='SOP-A-03']", '')
+            page.select_option("[data-reference-target='SOP-A-03']", 'skill:sop-a-03')
+            assert page.locator(box + ' [data-reference-detail]').evaluate('d => d.open') is True
+            detail = page.inner_text(box + ' [data-reference-detail]')
+            assert '상태를 두 번 확인한다.' in detail and '상태를 확인한다.' in detail and '등록된 절차의 단계 · 교대 상태 확인 (SOP-A-03)' in detail, detail
+            # 방어 문장과 내부 판정 이름은 검토 화면 어디에도 없다(접힌 원문 판 밖)
+            shown = page.evaluate("() => { const c = document.querySelector('#manualReview').cloneNode(true); c.querySelectorAll('details').forEach(d => { if (d.querySelector(':scope > summary')?.textContent.includes('원문')) d.remove(); }); return c.textContent; }")
+            for gone in ('실행 후보', '참고 보관', '일반 원문', '연결 필수', '업무 범위 ·', '추정하지', '확인하지 않음', '확인 안 됨', '완료 아님', '짐작해', '소유 문서', '고정 판본'):
+                assert gone not in shown, gone
+        finally:
+            b.close()
+            served.close()
+
+
 def test_여럿을_골라_한_번에_적재하면_문서마다_진행이_흐르고_검토가_필요한_문서는_멈추며_적재_요청은_검토_화면에서_손대지_않고_적재할_때와_같다():
     """2026-11-15 사용자: 「일괄로 맡길지 사람한테 맡길지 … 선택할 수 있게 process-gpt처럼」. 제공 문서를 여럿 골라 [고른 n개 한 번에 적재]를 누르면 문서마다
     올리기 → AI 추출 → 적재가 차례로 돌고(끝나기 전에 지금 읽는 구간이 줄에 보인다), 자동 검증이 「검토 필요」를 낸 문서는 적재하지 않고 멈춰 [검토 열기]로
@@ -519,7 +649,7 @@ def test_여럿을_골라_한_번에_적재하면_문서마다_진행이_흐르�
         try:
             for f in (good, bad):
                 page.locator(f"#providedDocs [data-batch-pick='{f}']").check(timeout=5000)
-            assert page.inner_text('#manualBatchRun') == '고른 2개 한 번에 적재' and '검토 없이 적재합니다' in page.inner_text('#manualBatch')
+            assert page.inner_text('#manualBatchRun') == '고른 2개 한 번에 적재' and '사람 검토 대신 자동 검증을 통과한 문서만 적재합니다' in page.inner_text('#manualBatch')
             page.evaluate("""() => { window.seenBatch = []; new MutationObserver(() => { const t = document.querySelector('#manualBatch').innerText.replace(/\\s+/g, ' '); if (seenBatch.at(-1) !== t) seenBatch.push(t); })
               .observe(document.querySelector('#manualBatch'), { childList: true, subtree: true, characterData: true }); }""")
             page.click('#manualBatchRun')
@@ -921,7 +1051,7 @@ def test_검토_체크_없이_적재를_누르면_까닭이_누른_단추의_줄
               return { n: why.length, text: why[0].textContent.trim(), sameRow: w.top < c.bottom && w.bottom > c.top, left: w.right <= c.left, inView: w.top >= 0 && w.bottom <= innerHeight,
                        tone: why[0].dataset.tone, foot: !!why[0].closest('footer') && why[0].closest('footer') === document.querySelector('#manualCommit').closest('footer') };
             }""")
-            assert got == {'n': 1, 'text': '원문을 대조하고 검토 완료를 표시하세요.', 'sameRow': True, 'left': True, 'inView': True, 'tone': 'danger', 'foot': True}, got
+            assert got == {'n': 1, 'text': '원문과 견준 뒤 검토 완료를 표시하세요.', 'sameRow': True, 'left': True, 'inView': True, 'tone': 'danger', 'foot': True}, got
             assert docs.commits == []
             page.check('#manualReviewed')
             page.click('#manualCommit')

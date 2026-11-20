@@ -217,7 +217,8 @@ def _pick(page, pid):
 
 
 def test_목록은_거르기_단추_없이_내_차례_진행_중_처리_완료_세_묶음이고_처리_완료는_세_건과_더_보기다():
-    """lite ProjectList(L-7): 묶음의 차례가 거르기를 대신한다. 처리 완료는 사건 3건만 보이고(질문 같은 시스템 작업은 뒤로) 나머지는 숨은 건수를 단 「더 보기」 뒤에 있다.
+    """lite ProjectList(L-7): 묶음의 차례가 거르기를 대신한다. 처리 완료는 3건만 보이고 나머지는 숨은 건수를 단 「더 보기」 뒤에 있다.
+    질문 · 문서 추출 같은 시스템 작업은 사건이 아니라 「처리 완료」에 세지 않고 맨 아래 접힌 「시스템 작업」 묶음에 있다(2026-11-20 — 사건 한 건을 처리한 학생에게 「2건 처리 완료」로 보였다).
     줄 = 이름 · 오른쪽 끝 상태 알약 · 그 아래 보조 줄, 끝난 줄은 옅게."""
     with _case_page() as page:
         got = page.evaluate("""() => { const box = document.getElementById('instList'), r = e => e.getBoundingClientRect();
@@ -227,14 +228,32 @@ def test_목록은_거르기_단추_없이_내_차례_진행_중_처리_완료_�
               ink: getComputedStyle(row.querySelector('.row-title')).color }; });
           return { kids, rows, filters: document.querySelectorAll('#view-instances .case-side .seg, #instTabs').length }; }""")
         assert got['filters'] == 0
-        assert got['kids'] == ['G:내 차례', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 4건 더 보기'], got['kids']
+        assert got['kids'] == ['G:내 차례', 'R:mine', 'G:진행 중', 'R:ai', 'G:처리 완료', 'R:d1', 'R:d2', 'R:d3', 'M:처리 완료 3건 더 보기', 'M:시스템 작업 1건 더 보기'], got['kids']
+        assert page.locator('#instList .rows-group', has_text='처리 완료').locator('.num').inner_text().strip() == '6'      # 끝난 사건 6건(d1~d5 · cx) — 질문 처리 건 q1 은 세지 않는다
         assert all(r['sameLine'] and r['metaBelow'] and r['noOverlap'] for r in got['rows']), got['rows']
         assert len({r['pillRight'] for r in got['rows']}) == 1, got['rows']                      # 상태 알약은 모든 줄에서 같은 세로선(오른쪽 끝)
         open_ink = {r['ink'] for r in got['rows'] if not r['done']}; done_ink = {r['ink'] for r in got['rows'] if r['done'] and r['id'] != page.evaluate('hydInstances.I.sel')}
         assert got['rows'][0]['done'] is False and len(done_ink) == 1 and not (open_ink & done_ink), (open_ink, done_ink)      # 끝난 줄은 옅게
         page.click('#instList [data-done-more]')
-        page.wait_for_function("() => document.querySelectorAll('#instList .row[data-done]').length === 7")
-        assert page.locator('#instList [data-done-more]').count() == 0
+        page.wait_for_function("() => document.querySelectorAll('#instList .row[data-done]').length === 6")
+        assert page.locator('#instList [data-done-more]').count() == 0 and page.locator("#instList .row[data-inst='q1']").count() == 0      # 처리 완료를 다 펴도 시스템 작업은 그 묶음에 없다
+        # 시스템 작업 묶음을 펴면 맨 아래에 그 묶음 머리와 줄이 선다 — 줄을 누르면 그 처리 건이 열린다
+        page.click('#instList [data-jobs-more]')
+        tail = page.evaluate("() => [...document.getElementById('instList').children].slice(-2).map(k => k.classList.contains('rows-group') ? 'G:' + k.firstChild.textContent + ' ' + k.querySelector('.num').textContent.trim() : 'R:' + k.dataset.inst)")
+        assert tail == ['G:시스템 작업 1', 'R:q1'], tail
+        _pick(page, 'q1')
+        assert page.locator("#instList .row[data-inst='q1']").get_attribute('aria-current') == 'true'
+
+
+def test_다른_화면의_처리_건에서_보기로_온_시스템_작업은_접힌_묶음을_편_채로_그_건을_연다():
+    """질문하기 · 문서 등록의 「처리 건에서 보기」는 주소 #/instances/<처리 건>으로 온다. 시스템 작업 묶음이 접혀 있어도 그 길은 그대로 그 건을 열고,
+    고른 줄이 접힌 묶음 안에 숨지 않게 묶음이 펴진 채로 보인다."""
+    with _case_page(start='#/instances/q1') as page:
+        page.wait_for_function("() => window.hydInstances && hydInstances.I.view && hydInstances.I.view.instance.proc_inst_id === 'q1'", timeout=20000)
+        page.wait_for_selector("#instList .row[data-inst='q1'][aria-current='true']", timeout=10000)
+        assert page.locator('#instList [data-jobs-more]').count() == 0
+        assert page.locator('#instList .rows-group', has_text='시스템 작업').locator('.num').inner_text().strip() == '1'
+        assert page.locator('#instDetail .case-title').inner_text().startswith('질문에 답하기')
 
 
 def test_한_건의_머리는_이름과_알약_보조_줄_진행_막대이고_내_차례일_때만_내가_할_일이_뜨며_끝난_건에는_결과와_다음_할_일_링크가_있다():
@@ -772,7 +791,10 @@ def test_홈_카드의_내_차례_진행_중_처리_완료_수는_그_카드를_
         groups = page.evaluate("Object.fromEntries([...document.querySelectorAll('#instList .rows-group')].map(g => [g.firstChild.textContent, g.querySelector('.num').textContent.trim()]))")
         assert home['open'] == [groups['진행 중'], '건 진행 중'] and home['done'] == [groups['처리 완료'], '건 처리 완료'], (home, groups)
         assert home['mine'] == f"내 차례 {groups['내 차례']}" and home['nav'] == groups['내 차례'], (home, groups)
-        # 묶음 머리의 수는 「더 보기」로 폈을 때 보이는 줄 수다(끝난 건 전부 — 시스템 작업 포함)
+        # 사건 처리 건만 센다(2026-11-20): 끝난 처리 건 9건 가운데 질문 처리 건(q1 — 시스템 작업) 하나를 뺀 8건. 문서 한 건을 추출하고 사건 한 건을 처리한 학생에게 홈이 「2건 처리 완료」라고 했다
+        ended = [r for r in ROWS + CLOSED_ROWS if r['status'] != 'RUNNING']
+        assert len(ended) == 9 and home['done'][0] == str(len([r for r in ended if r['proc_def_id'] != 'ask_agent'])) == '8', (home, len(ended))
+        # 묶음 머리의 수는 「더 보기」로 폈을 때 보이는 줄 수다(끝난 사건 처리 건 전부)
         page.click('#instList [data-done-more]')
         page.wait_for_function("() => !document.querySelector('#instList [data-done-more]')")
         assert page.locator('#instList .row[data-done]').count() == int(groups['처리 완료'])
@@ -793,3 +815,127 @@ def test_끝난_건의_목록_알약과_머리_알약과_결과_카드는_같은
         assert all(v['row'] == v['head'] == v['card'] for v in said.values()), said
         assert [said[k]['row'] for k in ('hc', 'cx', 'pe', 'd1')] == ['사람이 닫음', '조치 전 해소', '완료', '정상'], said
         assert not [k for k, v in said.items() if v['row'] in v['meta']], said      # 알약이 한 말을 보조 줄이 또 하지 않는다
+
+
+# ------------------------------------------------------------------ 화면 글 2026-11-20: 학생이 「저게 뭐지」 할 자리(06 화면 훑기) — 실제 브라우저에서 읽은 글과 놓인 자리로 판정한다
+def _answer_case(pid, instance, workitems, definition=None, extra=None):
+    """_answer 에 처리 건 하나(pid)의 응답을 덮는다. extra: {api 경로: 응답} — 판단 · 사건 읽기."""
+    def answer(route):
+        from urllib.parse import urlparse
+        path = urlparse(route.request.url).path
+        api = path.split('/api/', 1)[1] if '/api/' in path else ''
+        if '/svc/process/' in path and api in (extra or {}):
+            return route.fulfill(json=extra[api])
+        if '/svc/process/' in path and api == f'instances/{pid}':
+            row = next(r for r in ROWS if r['proc_inst_id'] == pid)
+            d = definition or CASE_DEF
+            return route.fulfill(json={'instance': {**row, 'end_event': 'E_end', 'variable_sources': {}, 'initial_variables': {}, **instance}, 'definition': d, 'workitems': workitems,
+                                       'events': [], 'approvals': [], 'reworks': [], 'attention': None, 'flow_order': {a['id']: i for i, a in enumerate(d['activities'])}})
+        return _answer(route)
+    return answer
+
+
+def test_끝난_단계의_오른쪽_시각은_끝난_때이고_문장에는_시각을_또_적지_않으며_진행_중인_단계는_시작_시각이다():
+    """06 화면 훑기: 「운전원 승인 02:15:54」 줄의 글이 「… 02:18:40에 … 승인했습니다」라 한 줄에 시각이 둘이었고, 오른쪽(단계가 열린 때)이 승인 시각보다 앞섰다.
+    규칙은 하나다(사용자 2026-11-20): 끝난 단계의 오른쪽 시각은 끝난 때, 문장 속 시각은 없다. 아직 끝나지 않은 단계는 시작 시각(또는 시작부터의 경과)이다."""
+    wis = [_wi('a1', 'T_agent', 'DONE', 28, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
+           # 승인 요청은 05:28:31에 올라왔고 담당자는 05:31:17에 승인했다 — 그 사이를 기다렸다
+           _wi('a2', 'T_approve', 'DONE', 28, agent_orch=None, user_id='role:operator', tool='formHandler:select_card', start_date=_iso(28, 31), end_date=_iso(31, 17)),
+           _wi('a3', 'T_cmd', 'DONE', 31, tool='incident:command', start_date=_iso(31, 18), end_date=_iso(31, 20)),
+           _wi('a4', 'R_ok', 'DONE', 31, tool='process:report', start_date=_iso(31, 21), end_date=_iso(31, 21), output={'result_report': REPORT}),
+           _wi('a5', 'R_rej', 'CANCELLED', 28, reached_at=None, tool='process:report')]
+    chosen = [{'key': 'approved_by', 'value': 'user:me'}, {'key': 'approved_role', 'value': 'role:operator'}, {'key': 'chosen_skill', 'value': 'skill:sop-cool-11'},
+              {'key': 'chosen_option', 'value': {'id': 'skill:sop-cool-11', 'name': '팬 최대 운전'}}, {'key': 'result_report', 'value': REPORT}]
+    read = """() => [...document.querySelectorAll('#instRecord .step[data-step]')].map(s => { const t = s.querySelector('.step-time');
+      return { id: s.dataset.step, time: t ? t.textContent.trim() : '', ended: !!t && 'ended' in t.dataset, since: !!t && 'since' in t.dataset, title: t ? t.title : '', sub: s.querySelector('.step-sub').innerText }; })"""
+    with _case_page(answer=_answer_case('d3', {'variables_data': chosen}, wis)) as page:
+        _pick(page, 'd3')
+        rows = {r['id']: r for r in page.evaluate(read)}
+        clock = lambda iso: page.evaluate('t => hydTrace.hhmmss(t)', iso)
+        assert rows['a2']['ended'] and rows['a2']['time'] == clock(_iso(31, 17)) != clock(_iso(28, 31)), rows['a2']      # 승인한 때(끝난 때) — 승인 요청이 올라온 때가 아니다
+        assert rows['a2']['sub'].endswith('‘팬 최대 운전’을 승인했습니다.') and not __import__('re').search(r'\d{1,2}:\d{2}', rows['a2']['sub']), rows['a2']
+        assert clock(_iso(28, 31)) in rows['a2']['title'] or '시작' in rows['a2']['title'], rows['a2']                  # 시작한 때는 올려 보는 도움말에 남는다
+        for wid, end in (('a1', _iso(28, 30)), ('a3', _iso(31, 20)), ('a4', _iso(31, 21))):                             # 모든 끝난 단계가 같은 규칙이다
+            assert rows[wid]['ended'] and rows[wid]['time'] == clock(end), (wid, rows[wid])
+        assert not [r for r in rows.values() if __import__('re').search(r'\d{1,2}:\d{2}:\d{2}', r['sub'])], rows       # 어느 줄의 글에도 시각이 또 나오지 않는다
+        # 그 단계의 옆 판 머리도 같은 규칙이다: 끝난 때 · 걸린 시간
+        page.locator("#instRecord .step[data-step='a2'] [data-cr-sheet]").click()
+        page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open] .sheet-head p', timeout=10000)
+        head = page.locator('dialog.sheet[data-cr-sheet-box] .sheet-head p').inner_text()
+        assert page.evaluate('t => UI.dateTime(t)', _iso(31, 17)) in head and '2분 46초' in head, head
+        page.click('dialog.sheet [data-cr-sheet-close]')
+        page.wait_for_function("() => !document.querySelector('dialog.sheet[data-cr-sheet-box]').open")
+        # 아직 끝나지 않은 단계(내 차례인 승인): 끝난 때가 없다 — 시작 시각이거나 시작부터의 경과다
+        _pick(page, 'mine')
+        now = {r['id']: r for r in page.evaluate(read)}
+        assert not now['m2']['ended'] and (now['m2']['since'] or now['m2']['time'] == clock(_iso(40, 1))) and now['m2']['title'].endswith('시작'), now['m2']
+        assert now['m1']['ended'] and now['m1']['time'] == clock(_iso(40, 30)), now['m1']
+
+
+_RICH_DEC = {'id': 'DEC-1', 'asset': 'HYD-01', 'recommended': 'skill:sop-cool-11', 'evaluation_mode': 'execution', 'execution_checked': True, 'scenario': {},
+             'roles': {'role:operator': {'id': 'role:operator', 'name': '운전원', 'level': 1, 'deptName': '생산팀'}},
+             'facts': {'order_due_h': 5.99, 'order_penalty_per_h': 120},
+             'explanation': "쿨러 냉각 성능 상실 — 조치 후보 2개 중 '팬 최대 운전'(SOP-COOL-11)을 권장합니다. 납기: 오더 납기까지 5시간 59분, 늦으면 시간당 120만 원 — 생산을 유지하는 조치라 순위 점수에 +0.5점이 반영됐습니다.",
+             'options': [{**_opt('skill:sop-cool-11', '팬 최대 운전', 1, 3.38, [_FAN]), 'scoreParts': {'delivery': 0.5, 'forecast': 1.73},
+                          'forecast': [{'variable': 'sv:ts1', 'name': '평형 유온', 'value': 49.8, 'unit': '℃'}, {'variable': 'sv:ps1', 'name': '토출 압력', 'value': 182, 'unit': 'bar'}],
+                          'gains': [{'name': '인터록 여유', 'weight': 1}], 'losses': [{'name': '전력 사용량', 'weight': 1}]},
+                         {**_opt('skill:sop-cool-13', '부하 낮추기', 2, 3.05, [_LOAD]), 'scoreParts': {'delivery': -0.17, 'forecast': 2.0},
+                          'forecast': [{'variable': 'sv:ts1', 'name': '평형 유온', 'value': 47.7, 'unit': '℃'}], 'gains': [], 'losses': []}]}
+
+
+def test_승인_판의_납기까지는_소수_시간이_아니라_시간과_분으로_적고_한_시간_미만은_분만_적는다(monkeypatch):
+    """06 화면 훑기: 승인 판 한가운데의 「납기까지 5.99 시간」 — 소수 시간은 낯설다(사용자 2026-11-20 「5시간 59분」, 1시간 미만은 「45분」처럼 분만).
+    판단 설명(판단 서비스가 쓰는 글)도 같은 꼴이라, 설명에 나온 값을 먼저 놓는 차례는 그대로다(납기까지 · 지연 보상이 값 칸에 있다)."""
+    import sys
+    monkeypatch.setattr(sys.modules[__name__], 'CARD_DEC', _RICH_DEC)
+    with _card_page(lambda p: {}) as page:
+        cells = page.evaluate("() => [...document.querySelectorAll('#todoPanel dl.turn-facts > div')].map(c => [c.querySelector('dt').innerText.trim(), c.querySelector('dd').innerText.trim()])")
+        assert ['납기까지', '5시간 59분'] in cells and ['조치 뒤 예측 평형 유온', '49.8℃'] in cells, cells
+        assert [k for k, _ in cells if k == '지연 보상'] and not [x for _, x in cells if '5.99' in x], cells
+        assert page.evaluate('[5.99, 0.75, 6, 0.999, 24.5].map(h => UI.hoursText(h))') == ['5시간 59분', '45분', '6시간', '1시간', '24시간 30분']
+
+
+def test_판단_근거의_결론_아래는_이름과_값이_칸으로_나뉘고_후보_비교는_무엇을_견준_축인지_말한다(monkeypatch):
+    """06 화면 훑기: 결론 밑 「예측 평형 유온 49.8 °C · 토출 압력 182 bar · 좋아지는 것 인터록 여유 · 감수할 것 전력 사용량」은 이름과 값이 구분 없이 이어졌고,
+    후보 비교의 「예측에서 앞섬」은 무엇을 견준 축인지 화면에 없었다. 값은 승인 판과 같은 값 칸(이름 위 · 값 아래, 칸마다 나란히)에 놓이고, 견준 축은 「예측 유온 여유」다."""
+    import sys
+    monkeypatch.setattr(sys.modules[__name__], 'CARD_DEC', _RICH_DEC)
+    with _card_page(lambda p: {}) as page:
+        page.wait_for_selector('#todoPanel [data-open-step]', timeout=15000)
+        page.click('#todoPanel [data-open-step]')                                   # 승인 판의 「판단 근거 · 후보 비교 보기」 — AI 단계의 옆 판 「판단」 보기
+        page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open] .cr-judge', timeout=10000)
+        page.wait_for_timeout(500)
+        got = page.evaluate("""() => { const d = document.querySelector('dialog.sheet[data-cr-sheet-box]'), r = e => e.getBoundingClientRect();
+          const cells = [...d.querySelectorAll('.cr-judge dl.turn-facts > div')].map(c => { const k = c.querySelector('dt'), v = c.querySelector('dd');
+            return { name: k.innerText.trim(), value: v.innerText.trim(), below: r(v).top >= r(k).bottom - 1, left: Math.round(r(c).left), top: Math.round(r(c).top) }; });
+          return { cells, main: d.querySelector('.cr-judge .result-main').innerText.trim(), judge: d.querySelector('.cr-judge').innerText, notes: [...d.querySelectorAll('.opts tr, .opts li')].map(x => x.innerText).join(' | ') }; }""")
+        assert [(c['name'], c['value']) for c in got['cells']] == [('예측 평형 유온', '49.8℃'), ('예측 토출 압력', '182bar'), ('좋아지는 것', '인터록 여유'), ('감수할 것', '전력 사용량')], got['cells']
+        assert all(c['below'] for c in got['cells']) and len({c['left'] for c in got['cells']}) == 4 and len({c['top'] for c in got['cells']}) == 1, got['cells']      # 이름 위 · 값 아래, 네 칸이 한 줄에 나란히
+        assert '「팬 최대 운전」을 추천합니다' in got['main'] and '49.8 ℃ · 토출 압력' not in got['judge'], got
+        assert '납기에서 뒤짐 · 예측 유온 여유에서 앞섬' in got['notes'] and '예측에서 앞섬' not in got['notes'], got['notes']
+
+
+def test_효과_확인의_판정_문장은_판정_근거인_마지막_값을_먼저_말하고_기준_안에_있던_시간은_덧붙임이다():
+    """06 화면 훑기: 「… 기준(55 ℃ 아래) 안에 있던 시간 60 % — 회복으로 판정했습니다」는 60 %인데 회복이라 의아했다. 서버의 판정은 판정 때 읽은 마지막 값이
+    기준 안이고 경보가 꺼졌는가다(procsvc service_parts._reobserve · reobs_series.inside_last) — 그 근거가 문장 앞에 서고, 기준 안에 있던 시간(inside_share)은 괄호 안이다."""
+    a, b = _iso(31, 22), _iso(32, 24)
+    inc = {'id': 'INC-9', 'asset': 'HYD-01', 'state': 'CLOSED', 'cleared': True, 'recoveryPolicy': {'criterion': ['TS1', '<', 55]},
+           'history': [{'state': 'RE_OBSERVING', 't': a, 'reobservation': {'sim_s': 900}},
+                       {'state': 'RESOLVED', 't': b, 'note': '재관측 결과 회복', 'reobservation': {'tag': 'TS1', 'op': '<', 'limit': 55, 'value': 51.4, 'cleared': True, 'recovered': True, 'sim_s': 1200}}],
+           'reobsSeries': {'tag': 'TS1', 'op': '<', 'limit': 55, 'first': 61.5, 'last': 51.4, 'min': 51.4, 'max': 61.5, 'samples': 2, 'inside_share': 0.6, 'inside_last': True, 'from': a, 'to': b,
+                           'points': [{'t': a, 'v': 61.5}, {'t': b, 'v': 51.4}]}}
+    definition = {**CASE_DEF, 'activities': CASE_DEF['activities'] + [{'id': 'T_reobs', 'name': '효과 확인', 'type': 'serviceTask', 'role': '프로세스', 'tool': 'incident:reobserve'}]}
+    wis = [_wi('a1', 'T_agent', 'DONE', 28, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'), _wi('a3', 'T_cmd', 'DONE', 31, tool='incident:command'),
+           {**_wi('a3', 'T_cmd', 'DONE', 31), 'id': 'r1', 'activity_id': 'T_reobs', 'activity_name': '효과 확인', 'tool': 'incident:reobserve', 'start_date': a, 'end_date': b, 'output': {'recovered': True}},
+           _wi('a4', 'R_ok', 'DONE', 33, tool='process:report', output={'result_report': REPORT})]
+    variables = [{'key': 'incident', 'value': 'INC-9'}, {'key': 'recovered', 'value': True}, {'key': 'asset', 'value': 'HYD-01'}, {'key': 'result_report', 'value': REPORT}]
+    with _case_page(answer=_answer_case('d3', {'variables_data': variables}, wis, definition, {'incidents/INC-9': inc})) as page:
+        _pick(page, 'd3')
+        page.wait_for_function("() => (document.querySelector(\"#instRecord .step[data-step='r1'] .step-sub\")?.innerText || '').includes('판정했습니다')", timeout=10000)
+        sub = page.locator("#instRecord .step[data-step='r1'] .step-sub").inner_text()
+        assert '유온의 마지막 값(51.4 ℃)이 기준(55 ℃ 아래) 안이고 경보도 꺼져 회복으로 판정했습니다' in sub, sub
+        page.locator("#instRecord .step[data-step='r1'] [data-cr-sheet]").click()
+        page.wait_for_selector('dialog.sheet[data-cr-sheet-box][open] .cr-say', timeout=10000)
+        say = page.locator('dialog.sheet[data-cr-sheet-box] .cr-say').inner_text()
+        assert say == '유온의 마지막 값(51.4 ℃)이 기준(55 ℃ 아래) 안이고 경보도 꺼져 회복으로 판정했습니다 (설비 시간 15분 + 연장 5분 (실제 1분 2초) 동안 61.5→51.4 ℃ · 기준 안에 있던 시간 60 %).', say
+        assert say.index('마지막 값') < say.index('회복으로 판정') < say.index('기준 안에 있던 시간 60 %'), say

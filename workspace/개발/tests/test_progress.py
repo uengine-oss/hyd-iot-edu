@@ -1,6 +1,6 @@
 """오래 걸리는 요청의 진행 기록(procsvc/progress.py) — 단계의 차례 · 실패 · 만료 · 상한, 그리고 일하는 스레드와 읽는 요청 사이.
 
-기록을 적는 네 동작(판단 채점 · 시험 비교 · 출발본 · 도구 서버 연결 검사)이 실제로 단계를 적는지는 그 동작의 시험이 본다
+기록을 적는 네 동작(판단 채점 · 시험 비교 · 내 구성 파일 · 도구 서버 연결 검사)이 실제로 단계를 적는지는 그 동작의 시험이 본다
 (test_eval_api · test_agent_trials · test_config_bundle · test_mcp_registry)."""
 import threading
 import uuid

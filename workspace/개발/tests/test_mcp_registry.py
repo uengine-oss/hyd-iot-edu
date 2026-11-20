@@ -126,7 +126,7 @@ def test_읽기_표시가_없는_도구는_강사가_읽기로_확인해야_도�
 
 
 # ---------------------------------------------------------------- 되돌리기 · 보관 · 다시 쓰기
-@pytest.mark.parametrize('secrets, left', [(True, {}), (False, {'MY_TOKEN': 'sk-1234'})], ids=['관리 되돌리기', '출발본 불러오기 안'])
+@pytest.mark.parametrize('secrets, left', [(True, {}), (False, {'MY_TOKEN': 'sk-1234'})], ids=['관리 되돌리기', '내 구성 파일 불러오기 안'])
 def test_되돌리기는_학생_서버를_지우고_비밀_값은_불러오기_안에서는_남긴다(store, student_url, secrets, left):
     mcp_secrets.put(store.repo, TENANT, 'MY_TOKEN', 'sk-1234', '강사', 'now')
     mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')

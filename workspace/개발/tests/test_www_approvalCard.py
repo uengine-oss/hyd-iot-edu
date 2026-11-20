@@ -28,20 +28,23 @@ def test_진_안의_이유는_승인_카드와_처리_기록이_같은_함수로
     o = {'id': 'b', 'scoreParts': {'delivery': -0.67, 'forecast': 0.26}}
     rec = {'id': 'a', 'scoreParts': {'delivery': 0, 'forecast': 0}}
     got = run(FILES, "out([hydApprove.partDiff(DATA.o, DATA.rec, []), hydApprove.partDiff(DATA.o, DATA.rec, [], { numbers: true })])", {'o': o, 'rec': rec})
-    assert got == ['납기에서 뒤짐 · 예측에서 앞섬', '납기 -0.67에서 뒤짐 · 예측 +0.26에서 앞섬']
+    # 점수 항목의 이름은 무엇을 견준 축인지 말한다 — 「예측에서 앞섬」은 무엇의 예측인지 화면에 없었다(06 화면 훑기 2026-11-20). 순위 식의 그 항목은 예측 유온이 한계(55 ℃)에서 떨어진 여유다
+    assert got == ['납기에서 뒤짐 · 예측 유온 여유에서 앞섬', '납기 -0.67에서 뒤짐 · 예측 유온 여유 +0.26에서 앞섬']
 
 
-def test_판단_엔진이_고른_1순위는_AI_추천이_아니라_판단_엔진_1순위와_규칙_문장으로_말한다():
-    """J4 D1(2026-11-01): 순위는 판단 엔진(DMN 결정표 + 순위 식)이 결정론으로 계산하는데 화면이 「AI 에이전트 추천」 · 「에이전트 설명 전문」이라
-    불렀다. 선례는 미리 넣은 예시 고정이라 실제 승인 이력처럼 읽히지 않게 표시한다(독립 검증 2026-11-02)."""
+def test_판단_서비스가_고른_1순위는_AI_추천이_아니라_추천안_1순위와_규칙_문장으로_말한다():
+    """J4 D1(2026-11-01): 순위는 판단 서비스(DMN 결정표 + 순위 식)가 결정론으로 계산하는데 화면이 「AI 에이전트 추천」 · 「에이전트 설명 전문」이라
+    불렀다. 선례는 지금 지식에 있는 것만 세므로(승인해도 늘지 않게 고정) 실제 승인 이력처럼 읽히지 않게 그 사실을 적는다(독립 검증 2026-11-02).
+    2026-11-20: 같은 부품을 「판단 엔진」 · 「판단 시스템」 · 「판단 서비스」 세 이름으로 부르던 것을 시스템 구성 상자의 이름 「판단 서비스」 하나로,
+    머리 「판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)」은 「추천안 (1순위)」로, 「미리 넣은 사례 기준」은 작업자 말이라 사실을 말하는 문장으로."""
     opt = {'id': 'skill:sop-cool-11', 'name': '팬 최대 운전', 'feasible': True, 'rank': 1, 'actions': [],
            'precedent': {'n': 2, 'share': 0.5, 'reasons': []}}
     d = {'id': 'D-1', 'recommended': 'skill:sop-cool-11', 'options': [opt], 'evaluation_mode': 'execution', 'execution_checked': True,
          'explanation': '1순위 팬 최대 운전.'}
     got = run(FILES, r"out(hydApprove.html(DATA, null).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '))", d)
-    assert '판단 엔진 1순위' in got and '판단 엔진 설명 전문 (규칙 문장)' in got, got
-    assert 'AI 에이전트 추천' not in got and '에이전트 설명 전문' not in got.replace('판단 엔진 설명 전문', ''), got
-    assert '과거 같은 선택 2건(미리 넣은 사례 기준)' in got, got
+    assert '추천안 (1순위)' in got and '판단 서비스 설명 전문 (규칙 문장)' in got, got
+    assert 'AI 에이전트 추천' not in got and '에이전트 설명 전문' not in got and '판단 엔진' not in got, got
+    assert '과거 같은 선택 2건(지금 지식에 있는 선례만 셉니다 — 승인해도 늘지 않습니다)' in got, got
 
 
 STALE = {'rule': 'forecast:model-unavailable', 'effect': 'EXCLUDE',

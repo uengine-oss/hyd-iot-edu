@@ -145,9 +145,9 @@ def test_성과_지표_카드를_누르면_옆_판에_계산_근거가_열리고
 CASES = {'assets': [{'kind': 'flows', 'asset_id': 'c3_cooling', 'name': '냉각 긴급 대응', 'kind_name': '흐름', 'label': ''},
                     {'kind': 'agents', 'asset_id': 'agent:u-1', 'name': '내 에이전트', 'kind_name': 'AI 에이전트', 'label': ''}]}
 FLOWS = {'versions': [{'id': 'c3_cooling', 'class_flow': True}], 'drafts': []}
-WHY = '출발본 불러오기는 제한 없이 쓰는 단계에서 엽니다 — 파일에 든 내 도구 서버와 흐름이 함께 들어오기 때문입니다.'
+WHY = '내 구성 파일 불러오기는 PBL 기간에 엽니다.'
 ACCESS = {'phase': 'course', 'actions': {'config.import': {'allowed': False, 'reason': WHY}, 'tool_servers.register': {'allowed': True}},
-          'reasons': {'assign': '-', 'start': '-', 'import_flow': '-', 'document': '-'}}      # 불러오기가 막힌 단계 — 단추가 꺼지고 까닭 한 줄이 붙는다
+          'reasons': {'assign': '-', 'start': '-', 'import_flow': '-', 'document': '-'}}      # 불러오기가 막혀 있다 — 단추를 누를 때만 까닭 한 줄이 나온다
 
 
 def test_관리의_내_설정은_설정_줄_넷이고_줄마다_동작이_하나이며_사례_이름_표는_옆_판에_있다():
@@ -162,19 +162,27 @@ def test_관리의_내_설정은_설정_줄_넷이고_줄마다_동작이_하나
         open_screen(page, 'admin')
         rows = page.locator('#configBundleView .settings > .setting')
         page.wait_for_function("document.querySelectorAll('#configBundleView .settings > .setting').length === 4", timeout=8000)
-        assert rows.locator('b').all_inner_texts() == ['내 사례', '출발본 내보내기', '출발본 불러오기', '기준으로 되돌리기']
-        page.wait_for_selector('#configBundleView [data-course-why]', timeout=8000)
+        assert rows.locator('b').all_inner_texts() == ['내 사례', '내 구성 파일 받기', '내 구성 파일 불러오기', '기준으로 되돌리기']
+        page.wait_for_selector('#cfgImport[data-course-off]', timeout=8000)
         acts = rows.evaluate_all("""xs => xs.map(x => { const b = [...x.querySelectorAll('button, select, input, a')].filter(n => n.getClientRects().length);
           return { n: b.length, right: Math.round(b[0].getBoundingClientRect().right), desc: x.querySelectorAll('p').length,
                    mid: Math.abs((b[0].getBoundingClientRect().top + b[0].getBoundingClientRect().bottom) - (x.getBoundingClientRect().top + x.getBoundingClientRect().bottom)) / 2 }; })""")
         assert [a['n'] for a in acts] == [1, 1, 1, 1], f'줄마다 보이는 동작은 하나다: {acts}'
         assert len({a['right'] for a in acts}) == 1, f'동작의 오른쪽 끝이 같은 세로선에 서지 않는다: {acts}'
         assert all(a['desc'] == 1 for a in acts), acts                                   # 설명은 한 줄씩
-        # 막힌 동작(불러오기)은 그 자리에서 꺼져 있고, 까닭 한 줄은 단추 옆에 끼지 않고 줄 아래 온 줄로 놓인다(단추의 자리는 다른 줄과 같다)
+        # 막힌 동작(불러오기)의 까닭은 늘 붙어 있지 않다(사용자 2026-11-20). 단추는 초점이 가는 채로(aria-disabled) 막혀 있고, 누르면 파일 고르기 창이 열리지 않고
+        # 까닭 한 줄이 나온다 — 단추 옆에 끼지 않고 줄 아래 온 줄로 놓인다(단추의 자리는 다른 줄과 같다)
+        assert page.locator('#configBundleView [data-course-why]').count() == 0 and page.evaluate("document.querySelector('#cfgImport').disabled") is False
+        assert page.get_attribute('#cfgImport', 'aria-disabled') == 'true' and page.get_attribute('#cfgImport', 'title') is None
+        choosers = []
+        page.on('filechooser', lambda chooser: choosers.append(chooser))
+        before = page.evaluate("Math.round(document.querySelector('#cfgImport').getBoundingClientRect().right)")
+        page.locator('#cfgImport').click(force=True)
         page.wait_for_selector('#configBundleView [data-course-why]', timeout=8000)
+        page.wait_for_timeout(300)
         why = page.evaluate("""() => { const w = document.querySelector('#configBundleView [data-course-why]').getBoundingClientRect(), b = document.querySelector('#cfgImport').getBoundingClientRect(),
-          r = document.querySelector('#cfgImport').closest('.setting').getBoundingClientRect(); return { below: w.top >= b.bottom, left: Math.abs(w.left - r.left), text: document.querySelector('#configBundleView [data-course-why]').textContent }; }""")
-        assert page.locator('#cfgImport').is_disabled() and why['text'] == WHY and why['below'] and why['left'] <= 1, why
+          r = document.querySelector('#cfgImport').closest('.setting').getBoundingClientRect(); return { below: w.top >= b.bottom, left: Math.abs(w.left - r.left), right: Math.round(b.right), text: document.querySelector('#configBundleView [data-course-why]').textContent }; }""")
+        assert choosers == [] and why['text'] == WHY and why['below'] and why['left'] <= 1 and why['right'] == before, why
         assert page.locator('#configBundleView table').count() == 0 and page.locator('#configBundleView details').count() == 0
         assert page.locator('#configBundleView .setting-more:visible').count() == 0      # 줄 아래 칸은 그 동작을 한 뒤에만 나타난다
 

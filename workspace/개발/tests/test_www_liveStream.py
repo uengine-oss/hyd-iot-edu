@@ -337,7 +337,8 @@ def test_저장된_추출_결과를_쓰는_문서도_누른_순간부터_서버�
             steps = page.locator('#manualResult [data-live-trail] .lv-step')
             assert all(steps.nth(i).locator('.lv-time').inner_text().strip() for i in range(3)), '끝난 단계에 걸린 시간이 없다'
             verify = steps.nth(1).inner_text()
-            assert '인용 7곳' in verify and '50 %' in verify and '확인할 곳 0건' in verify, verify      # 절 3 · 절차 1 · 단계 1 · 규칙 1 · 원인 1
+            assert '인용 7곳' in verify and '확인할 곳 0건' in verify, verify      # 절 3 · 절차 1 · 단계 1 · 규칙 1 · 원인 1
+            assert '%' not in verify and '원문 글자' not in verify, verify      # 기준 없는 비율(「원문 글자의 50 %가 인용에 쓰였습니다」)은 말하지 않는다(사용자 2026-11-20)
             # 「추출 과정 보기」(접힘 — 결과가 먼저)를 펴면 절마다 뽑힌 것: 절의 원문 범위 안에 인용이 놓인 조치 방법 · 지식 후보
             assert not page.evaluate("() => document.querySelector('#manualProcess').open")
             page.locator('#manualProcess > summary').click()
@@ -346,11 +347,11 @@ def test_저장된_추출_결과를_쓰는_문서도_누른_순간부터_서버�
             got = [(rows.nth(i).locator('.step-title').inner_text(), rows.nth(i).locator('.step-sub').inner_text()) for i in range(rows.count())]
             assert got == [('X-1 점검', '조치 방법 1개(SOP-X-11)'), ('X-2 판정 기준', '원인 1개 · 규칙 1개'), ('X-3 적용 범위', '뽑힌 항목 없음 — 절 본문만 보관합니다')], got
             assert page.inner_text('#manualProcess [data-live-fail]').strip() == '', '검토 화면을 그리다 오류가 났다: ' + page.inner_text('#manualProcess [data-live-fail]')
-            note = page.inner_text('#manualProcess [data-cached-note]')
-            assert '그때 AI가 부른 도구의 기록은 이 PC에 없습니다' in note and 'reviewed' not in note and '검토 판' not in note, note
-            assert page.inner_text('#manualAgentStatus').strip() == 'AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.'
-            outside = page.evaluate("() => { const r = document.querySelector('#manualResult').cloneNode(true); r.querySelector('#manualProcess')?.remove(); return r.innerText; }")
-            assert not [w for w in ('저장된', '다시 읽지', '미리 추출', 'reviewed', '검토 판') if w in outside], outside      # 추출 과정 접기 밖에는 그 사정이 없다
+            assert page.inner_text('#manualProcess [data-cached-note]').strip() == 'AI가 이 문서에서 절마다 뽑은 것입니다.'
+            assert page.inner_text('#manualAgentStatus').strip() == 'AI 추출 결과입니다. 원문과 견주어 검토한 뒤 적재하세요.'
+            # 추출 과정 접기 안에도 그 사정(미리 · 저장된 · 이 PC에 없다)과 그 결과를 만들며 남긴 메모(「검토하며 고친 곳」 — origin.review_notes)가 없다(사용자 2026-11-20)
+            whole = page.evaluate("() => document.querySelector('#manualResult').textContent")      # 접힌 것 안까지 화면에 실린 글 전부
+            assert not [w for w in ('저장된', '다시 읽지', '미리', '이 PC에 없', 'reviewed', '검토 판', '검토하며 고친', '단계 4의 인용') if w in whole], whole
             assert not page.locator('#manualProcess [data-live-host]').is_visible(), '저장된 결과인데 빈 AI 실행 기록 칸이 보인다'
             b.close()
     finally:

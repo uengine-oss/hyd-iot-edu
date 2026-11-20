@@ -39,14 +39,16 @@ def test_처리_기록을_그려도_다른_화면의_값_이름이_정의_설명
 
 @pytest.mark.parametrize('sim_s, wall, series, expected', [
     # 값은 기준 안인데 경보 해제가 늦어 한 번 늘린 판정 줄(설비 시간 20분) — 도는 동안 본 기본 창 15분과 늘린 만큼을 따로 적는다
-    (1200.0, ('05:43:42.085', '05:44:45.557'), True, '설비 시간 15분 + 연장 5분 (실제 1분 3초) 동안 유온 60.8→51.2 ℃, 기준(55 ℃ 아래) 안에 있던 시간 64 % — 회복으로 판정했습니다.'),
-    (900.0, ('05:43:42.000', '05:44:27.000'), True, '설비 시간 15분 (실제 45초) 동안 유온 60.8→51.2 ℃, 기준(55 ℃ 아래) 안에 있던 시간 64 % — 회복으로 판정했습니다.'),
+    (1200.0, ('05:43:42.085', '05:44:45.557'), True, '유온의 마지막 값(51.2 ℃)이 기준(55 ℃ 아래) 안이고 경보도 꺼져 회복으로 판정했습니다 (설비 시간 15분 + 연장 5분 (실제 1분 3초) 동안 60.8→51.2 ℃ · 기준 안에 있던 시간 64 %).'),
+    (900.0, ('05:43:42.000', '05:44:27.000'), True, '유온의 마지막 값(51.2 ℃)이 기준(55 ℃ 아래) 안이고 경보도 꺼져 회복으로 판정했습니다 (설비 시간 15분 (실제 45초) 동안 60.8→51.2 ℃ · 기준 안에 있던 시간 64 %).'),
     (1800.0, ('05:43:42.000', '05:45:12.000'), False, '설비 시간 15분 + 연장 15분 동안 지켜본 뒤 유온 51.2 ℃ — 기준 ‘유온 < 55 ℃’ 안이라 회복으로 판정했습니다.'),   # 값 흐름 없는 판정 줄 · 세 번 늘림
 ])
 def test_효과_확인_문장은_설비_시간과_실제_시간을_한_형식으로_적고_늘린_창은_기본_창과_따로_적는다(sim_s, wall, series, expected):
     """W1-03: 효과 확인 단계가 「1분 3초 동안」(실제)만 말해 같은 카드의 「설비 시간 15분」과 어긋났다. 2026-11-17 06 촬영 전: 도는 동안
     「(설비 시간 15분)」이던 같은 단계가 끝난 뒤 「설비 시간 20분 (실제 1분 2초)」로 보여 시간이 달라 보였다 — 서버가 창을 늘린 것(15분 + 5분)인데
-    늘렸다는 말 없이 합만 적었다. 판정 줄의 설비 시간이 시작 줄의 기본 창보다 길면 「기본 창 + 연장」으로 적는다."""
+    늘렸다는 말 없이 합만 적었다. 판정 줄의 설비 시간이 시작 줄의 기본 창보다 길면 「기본 창 + 연장」으로 적는다.
+    2026-11-20: 「기준 안에 있던 시간 64 % — 회복으로 판정」은 64 %가 판정 근거로 읽혀 의아했다. 서버의 판정은 판정 때 읽은 마지막 값이 기준 안이고
+    경보가 꺼졌는가(service_parts._reobserve)이므로 그것을 먼저 말하고, 지켜본 길이와 기준 안에 있던 시간은 괄호 안 덧붙임이다."""
     a, b = (f'2026-10-30T{t}Z' for t in wall)
     inc = {'id': 'INC-1', 'asset': 'HYD-01', 'state': 'CLOSED', 'recoveryPolicy': {'criterion': ['TS1', '<', 55]},
            'history': [{'state': 'RE_OBSERVING', 't': a, 'reobservation': {'sim_s': 900}},
@@ -59,7 +61,25 @@ def test_효과_확인_문장은_설비_시간과_실제_시간을_한_형식으
     got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); const s = m.steps.find(s => s.title === '효과 확인'); out([s.sentence, UI.leadRest(s.sentence, 110)[0]])",
               {'v': v, 'inc': inc})
     assert got[0] == expected, got[0]
-    assert got[1] == got[0]          # 단계 줄의 보조 글(caseRecord stepRow — 110자 넘으면 가른다)에 판정까지 다 보인다
+    assert '판정했습니다' in got[1] and got[0].startswith(got[1])          # 단계 줄의 보조 글(caseRecord rowParts — 110자 넘으면 괄호 앞에서 가른다)에 판정 근거와 판정까지 다 보인다
+
+
+@pytest.mark.parametrize('value, last, inside, cleared, expected', [
+    (53.0, 53.0, True, False, '유온의 마지막 값(53 ℃)이 기준(55 ℃ 아래) 안이지만 경보가 꺼지지 않아 미회복으로 판정했습니다 (설비 시간 15분 (실제 45초) 동안 60.8→53 ℃ · 기준 안에 있던 시간 20 %).'),
+    (57.3, 57.3, False, False, '유온의 마지막 값(57.3 ℃)이 기준(55 ℃ 아래) 밖이라 미회복으로 판정했습니다 (설비 시간 15분 (실제 45초) 동안 60.8→57.3 ℃ · 기준 안에 있던 시간 20 %).'),
+], ids=['값은 기준 안인데 경보가 꺼지지 않음', '마지막 값이 기준 밖'])
+def test_미회복_판정_문장도_판정_때_읽은_마지막_값과_경보_해제로_까닭을_말한다(value, last, inside, cleared, expected):
+    """서버의 판정(service_parts._reobserve)은 판정 때 읽은 마지막 값이 기준 안이고 경보가 꺼졌는가다. 미회복의 까닭이 둘(값이 기준 밖 · 값은 기준 안인데 경보가
+    꺼지지 않음)이라 문장이 그 둘을 가른다 — 기준 안에 있던 시간의 몫은 판정에 쓰이지 않으므로 어느 쪽에서도 괄호 안 덧붙임이다."""
+    a, b = '2026-10-30T05:43:42.000Z', '2026-10-30T05:44:27.000Z'
+    inc = {'id': 'INC-1', 'asset': 'HYD-01', 'state': 'ESCALATED', 'recoveryPolicy': {'criterion': ['TS1', '<', 55]},
+           'history': [{'state': 'RE_OBSERVING', 't': a, 'reobservation': {'sim_s': 900}},
+                       {'state': 'ESCALATED', 't': b, 'note': '회복 미달', 'reobservation': {'tag': 'TS1', 'op': '<', 'limit': 55, 'value': value, 'cleared': cleared, 'recovered': False, 'sim_s': 900.0}}],
+           'reobsSeries': {'tag': 'TS1', 'op': '<', 'limit': 55, 'first': 60.8, 'last': last, 'inside_share': 0.2, 'inside_last': inside, 'from': a, 'to': b, 'points': [{'t': a, 'v': 60.8}, {'t': b, 'v': last}]}}
+    wis = [{'id': 'w1', 'activity_id': 'T_reobs', 'activity_name': '재관측', 'tool': 'incident:reobserve', 'start_date': a, 'end_date': b, 'output': {'recovered': False}}]
+    v = view(wis, ['T_reobs'], variables=[('incident', 'INC-1'), ('recovered', False)])
+    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); out(m.steps.find(s => s.title === '효과 확인').sentence)", {'v': v, 'inc': inc})
+    assert got == expected, got
 
 
 def test_발주_단계의_공급사는_승인_때_확정한_업무_DB_공급사_이름으로_보인다():
@@ -211,10 +231,10 @@ def test_AI_결론의_근거_줄은_조사를_바로_앞_낱말에_맞추고_주
             {'id': 'skill:b', 'name': '대체 공급사 발주', 'sopId': 'SOP-PUR-12', 'score': -475, 'feasible': True, 'rank': 2}]
     data = {'s': {'w': {'id': 'w1', 'output': {}}, 'type': 'agent'},
             'm': {'v': {}, 'inst': {'variable_sources': {}}, 'steps': [{'type': 'agent'}], 'decision': {'id': 'D1', 'recommended': 'skill:a', 'options': opts, 'facts': {}}}}
-    got = run(FILES, "const f = hydRecord.agentFront(DATA.s, DATA.m); out({ sub: f.sub, evid: f.evid.map(x => x[1].replace(/<[^>]+>/g, '')) })", data)
+    got = run(FILES, "const f = hydRecord.agentFront(DATA.s, DATA.m); out({ facts: f.facts, evid: f.evid.map(x => x[1].replace(/<[^>]+>/g, '')) })", data)
     line = next(x for x in got['evid'] if '순위 식' in x)
     assert 'SOP-PUR-11이 −420점으로 가장 높았습니다' in line and 'SOP-PUR-11가' not in line
-    assert '주의 발주안에 전결 기준 초과를 표시한다.' in got['evid'] and '주의' not in got['sub']
+    assert '주의 발주안에 전결 기준 초과를 표시한다.' in got['evid'] and '주의' not in str(got['facts'])
     opts[0]['sopId'] = 'SOP-PUR-12'                                  # 번호가 「이」로 끝나면 「가」
     got = run(FILES, "out(hydRecord.agentFront(DATA.s, DATA.m).evid.map(x => x[1].replace(/<[^>]+>/g, '')).join(' '))", data)
     assert 'SOP-PUR-12가 −420점으로' in got

@@ -103,6 +103,17 @@ def test_설명_문장은_이어_붙인_사유의_마침표를_겹치지_않고_
     assert '.;' not in text and '..' not in text and '예측 유온은 48.0 ℃입니다.' in text and '(점수 1.54)' in text
 
 
+@pytest.mark.parametrize('due, said', [(5.99, '오더 납기까지 5시간 59분, 늦으면'), (0.75, '오더 납기까지 45분, 늦으면'), (6, '오더 납기까지 6시간, 늦으면')])
+def test_설명_문장의_납기까지는_소수_시간이_아니라_시간과_분이고_선례는_지금_지식에_있는_것만_센다고_말한다(due, said):
+    """06 화면 훑기(2026-11-20): 승인 판의 「납기까지 5.99 시간」과 같은 값이 판단 설명에 「납기까지 5.99시간」으로 나왔다 — 화면과 같은 꼴(5시간 59분, 1시간
+    미만은 분만)로 적는다. 선례 문장의 「미리 넣은 사례 기준」은 작업자 말이다: 지금 지식에 있는 선례만 세고 승인해도 늘지 않는다는 사실로 말한다."""
+    rec = {'id': 'a', 'sopId': 'SOP-COOL-11', 'name': '팬 최대 운전', 'score': 3.38, 'feasible': True, 'gains': [], 'losses': [], 'forecast': [],
+           'precedent': {'n': 2, 'share': 0.5, 'reasons': []}, 'scoreParts': {'delivery': 0.5}, 'production': 'keep'}
+    text = cards.explain([rec], rec, {'failure_mode_name': '쿨러 냉각 성능 상실', 'order_due_h': due, 'order_penalty_per_h': 120})
+    assert said in text and '5.99' not in text and '0.75' not in text, text
+    assert '선례는 2건입니다(50 % — 지금 지식에 있는 선례만 셉니다. 승인해도 늘지 않습니다).' in text and '미리 넣은' not in text, text
+
+
 def test_설명_문장은_같은_제외_까닭을_한_번만_적고_권장하는_조치를_첫_문장에서_말한다():
     """규칙 판단 · 처리 건 · 시험 비교의 설명문이 「… 후보 4장 중 'SOP-COOL-14 쿨러 핀 세척'을 권한다」였고, 같은 규칙이 세 후보를 막으면
     그 까닭 문장(「PLC 운전 모드가 …가 아니면 원격 조치 …을 쓰지 않는다」)이 한 문단에 세 번 되풀이됐다."""
