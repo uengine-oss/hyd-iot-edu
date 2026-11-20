@@ -800,6 +800,16 @@ def test_홈_카드의_내_차례_진행_중_처리_완료_수는_그_카드를_
         assert page.locator('#instList .row[data-done]').count() == int(groups['처리 완료'])
 
 
+def test_시스템_작업_안의_사람_차례는_내_차례로_세고_그_건을_시스템_작업_묶음에_또_두지_않는다():
+    """처리 완료 · 진행 중의 수는 사건 처리 건만 세지만(2026-11-20), 사람이 할 일은 숨기지 않는다: 질문하기 처리 건에서 에이전트가 사람에게 되물은 차례도
+    메뉴 곁 수와 「내 차례」 묶음에 들고, 그 건은 시스템 작업 묶음에 한 번 더 나오지 않는다. 세는 곳 하나(hydCases.groups)를 실제 페이지에서 부른다."""
+    with _case_page() as page:
+        got = page.evaluate("""() => { const q = { proc_inst_id: 'q9', proc_def_id: 'ask_agent', status: 'RUNNING' }, x = { proc_inst_id: 'x1', proc_def_id: 'manual_source_extraction', status: 'COMPLETED' };
+          const g = hydCases.groups({ all: [q, x], running: [q], todo: [{ id: 't9', proc_inst_id: 'q9', proc_def_id: 'ask_agent', draft_status: 'HUMAN_ASKED', user_id: 'role:operator', agent_orch: null }] });
+          return { mine: g.mine.map(t => t.proc_inst_id), jobs: g.jobs.map(r => r.proc_inst_id), open: g.open.length, done: g.done.length }; }""")
+        assert got == {'mine': ['q9'], 'jobs': ['x1'], 'open': 0, 'done': 0}, got
+
+
 def test_끝난_건의_목록_알약과_머리_알약과_결과_카드는_같은_말을_하고_사람이_닫은_건을_완료라고_하지_않는다():
     """대역(2026-11-16): 사람이 닫은 건이 목록 · 머리에서 「완료」 알약인데 결과 카드는 「사람이 닫음 — 결과 보고가 남지 않은 처리 건」이었다. 한 건의 끝을 세 자리가 같은 말로 한다:
     결과 보고가 있으면 그 보고의 말(정상), 없으면 끝 이벤트의 이름(사람이 닫음 · 조치 전 해소), 그 이름이 뜻 없는 「처리 완료」일 때만 「완료」."""
