@@ -7,9 +7,13 @@
 // 대상: {css, contains, exact, nth, anchor, dx, dy} — 보이는 요소가 정확히 하나여야 한다(아니면 멈춘다). 가리키는 자리는 글을 가리지 않게 aim()이 고른다. after는 글 마지막 줄의 끝 바로 뒤다.
 //   phrase: 그 요소 안 구절 하나(한 번만 나와야 한다)를 기준으로 anchor를 잡는다 — after(구절 끝 바로 뒤) · below(구절 밑) · center.
 //   pathAt: SVG 선(path) 위의 길이 비율 자리. cy: 지식 지도 캔버스(Cytoscape, window.hydEnt.kg.cy)의 항목 id — 이름표가 보이면 이름표 끝, 아니면 점 오른쪽.
-//     '@node' · '@edge'는 캔버스 가운데에 가장 가까운 항목 · 선이다. long: wait에서 6초 넘는 기다림을 실패로 치지 않는다(주입 뒤 경보 · 효과 확인처럼 일부러 기다리는 자리).
+//     '@node' · '@edge'는 캔버스 가운데에 가장 가까운 항목 · 선이다. '출발 id>도착 id'는 그 두 항목을 잇는 선 하나다(화살표는 도착 쪽 끝을 짚는다). long: wait에서 6초 넘는 기다림을 실패로 치지 않는다(주입 뒤 경보 · 효과 확인처럼 일부러 기다리는 자리).
 //   hl: point 대상에 강조 모양('underline' | 'band' | 'box')을 주면 화살표가 닿은 때 그 대상(구절이 있으면 그 구절)의 화면 상자와 시각을 기록하고 encode.py가 그린다(../hl.mjs).
 //     강조는 다음 강조가 시작할 때, 누르기 · 굴리기 · 입력이 시작할 때, 강조 없는 다른 대상으로 화살표가 떠날 때, 구간이 끝날 때 지워진다.
+//     keep: 앞 강조를 지우지 않고 함께 둔다(말이 두 대상을 함께 가리켜 견주는 자리 — true는 떠 있는 강조 모두, N은 먼저 뜬 N개만). also: [대상 …]을 주면 강조 상자를 대상과 그것들을 함께 두르는 하나로 잰다 —
+//       'next'(대상 바로 다음 형제 요소 — 속성 이름 dt와 값 dd 한 줄), {css}(보이는 요소 하나), {cy}(지식 지도 항목). text: 요소 상자 대신 그 안 글자 상자로 잰다(줄 전체가 칸인 속성 줄에 글만 칠하는 띠).
+//       bare: 지식 지도 항목의 상자를 이름표 없이 점 · 선만으로 잰다(점과 점 사이 화살표를 두르는 테두리).
+//   ph: 입력칸의 자리 글(placeholder) 안 구절 하나. 자리 글은 DOM 글자가 아니라 칸의 글꼴로 너비를 재어 상자를 만든다(칸이 비어 있어야 한다).
 // 화면 밖 대상: 안쪽 스크롤 영역(지도 #ontoMap)부터 바깥(본문 main#content, 본문이 굴러가지 않는 판은 문서 자체)까지 페이지 안 애니메이션으로 굴린다. 굴리기는 화살표를 움직이지 않으므로 이동 기록에 넣지 않는다.
 // 리허설(take.sh rehearse)이면 조작마다 ① 대상이 하나로 찾아지는가 ② 화살표가 덮는 글자 ③ 입력 시간(2.5초 이하) ④ 결과를 기다린 시간(6초 이하, long 제외)을 <take>/dry-<구간>.json에 남기고, 하나라도 어기면 멈춘다.
 // 구간 1은 녹화 밖에서 포털 홈을 새로 열고 브라우저 저장값을 비운다(「서비스 N/N」의 앞뒤 숫자가 같고, 「나」 칸이 있는 판이면 「선택 안 함」인지 확인). 쉬는 화살표 자리는 ctx.rest(대상)가 있으면 그 대상, 없으면 REST다.
@@ -49,7 +53,10 @@ function aim(t, kind) {
 function locateInPage(t) {
  const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && e.checkVisibility({checkVisibilityCSS: true}); };
  const norm = (e) => e.textContent.trim().replace(/\s+/g, ' ');
- let e, x, y, b;
+ let e, x, y, b, main = null;
+ const cyOf = (id) => { const cy = window.hydEnt.kg.cy; if (!id.includes('>')) return cy.getElementById(id); const [s, d] = id.split('>'); return cy.edges().filter((ed) => ed.data('source') === s && ed.data('target') === d); };
+ const textRects = (el) => { const g = document.createRange(); g.selectNodeContents(el); return [...g.getClientRects()].filter((q) => q.width > 0 && q.height > 0); };
+ const rectsOf = (el) => { const q = t.text ? textRects(el) : []; return q.length ? q : [el.getBoundingClientRect()]; };
  if (t.cy) {
   // 지식 지도 캔버스: 항목은 DOM이 아니라 Cytoscape가 그린다. 좌표는 캔버스 안 렌더 좌표 + 캔버스 상자 자리
   const cy = window.hydEnt?.kg?.cy;
@@ -59,6 +66,7 @@ function locateInPage(t) {
   const near = (els, at) => els.reduce((m, el) => { const p = at(el), d = Math.hypot(p.x - W / 2, p.y - H / 2); return !m || d < m.d ? {el, d, p} : m; }, null);
   let p;
   if (t.cy === '@edge') { const m = near(cy.edges().filter((ed) => ed.visible() && !ed.hasClass('dim')), (ed) => ed.renderedMidpoint()); if (!m) return {error: '보이는 선 없음'}; p = m.p; }
+  else if (t.cy.includes('>')) { const ed = cyOf(t.cy); if (ed.length !== 1 || !ed.visible()) return {error: `지식 지도 선 ${ed.length}개 · 안 보임: ${t.cy}`}; p = ed.renderedTargetEndpoint(); }
   else {
    const n = t.cy === '@node' ? near(cy.nodes().filter(live), (nd) => nd.renderedPosition())?.el : cy.getElementById(t.cy);
    if (!n || !n.length || !n.visible()) return {error: `지식 지도 항목 없음 · 안 보임: ${t.cy}`};
@@ -67,7 +75,8 @@ function locateInPage(t) {
   }
   if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) return {error: `지식 지도 항목이 캔버스 밖: ${t.cy}`};
   x = b.left + p.x; y = b.top + p.y;
-  const hb = (t.cy === '@edge' ? near(cy.edges().filter((ed) => ed.visible() && !ed.hasClass('dim')), (ed) => ed.renderedMidpoint()).el : t.cy === '@node' ? near(cy.nodes().filter(live), (nd) => nd.renderedPosition()).el : cy.getElementById(t.cy)).renderedBoundingBox({includeLabels: true});
+  const hbEl = (t.cy === '@edge' ? near(cy.edges().filter((ed) => ed.visible() && !ed.hasClass('dim')), (ed) => ed.renderedMidpoint()).el : t.cy === '@node' ? near(cy.nodes().filter(live), (nd) => nd.renderedPosition()).el : cyOf(t.cy)), hb = hbEl.renderedBoundingBox({includeLabels: !t.bare});
+  main = [{left: b.left + hb.x1, top: b.top + hb.y1, right: b.left + hb.x2, bottom: b.top + hb.y2}];
   window.__hlTarget = {box: [b.left + hb.x1, b.top + hb.y1, hb.w, hb.h]};      // 강조가 잴 상자(hl.mjs)
  } else {
   let es = [...document.querySelectorAll(t.css)].filter(vis);
@@ -78,6 +87,16 @@ function locateInPage(t) {
   e = es[0]; b = e.getBoundingClientRect();
   window.__hlTarget = e;      // 강조가 잴 요소(hl.mjs)
   let r = b, rs = null;
+  if (t.ph) {
+   // 자리 글 안 구절: 칸의 글꼴로 앞 글과 구절의 너비를 재어 상자를 만든다
+   const cs = getComputedStyle(e), c = document.createElement('canvas').getContext('2d'), k = (e.placeholder || '').indexOf(t.ph);
+   if (k < 0 || e.value) return {error: `자리 글에 「${t.ph}」이 없거나 칸에 글이 있음: ${t.css}`};
+   c.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; c.letterSpacing = cs.letterSpacing;
+   const h = parseFloat(cs.fontSize) * 1.2, x0 = b.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft) + c.measureText(e.placeholder.slice(0, k)).width;
+   r = new DOMRect(x0, b.top + (b.height - h) / 2, c.measureText(t.ph).width, h); rs = [r];
+   window.__hlTarget = {box: [r.x, r.y, r.width, r.height]};
+  }
+  if (t.also) main = rectsOf(e);
   if (t.phrase) {
    // 구절 하나의 글자 상자를 기준으로 삼는다(줄이 꺾이면 마지막 줄 조각)
    const hits = [], w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
@@ -98,6 +117,22 @@ function locateInPage(t) {
    x = last.right + (t.phrase ? 4 : 12); y = last.top + last.height / 2;
   }
   else if (t.anchor === 'below') { x = r.x + Math.min(r.width / 2, 30); y = r.bottom + 6; }
+ }
+ if (t.also) {
+  // 강조 상자를 대상과 also의 것들을 함께 두르는 하나로 잰다
+  const boxes = [...main], cy = window.hydEnt?.kg?.cy;
+  for (const a of t.also) {
+   if (a === 'next') { const n = !t.cy && e.nextElementSibling; if (!n) return {error: `함께 두를 다음 형제 요소 없음: ${t.css}`}; boxes.push(...rectsOf(n)); }
+   else if (a.cy) {
+    const n = cy && cyOf(a.cy); if (!n || n.length !== 1 || !n.visible()) return {error: `함께 두를 지식 지도 항목 없음 · 안 보임: ${a.cy}`};
+    const c = cy.container().getBoundingClientRect(), h = n.renderedBoundingBox({includeLabels: !t.bare}); boxes.push({left: c.left + h.x1, top: c.top + h.y1, right: c.left + h.x2, bottom: c.top + h.y2});
+   } else {
+    const es = [...document.querySelectorAll(a.css)].filter(vis); if (es.length !== 1) return {error: `함께 두를 대상 ${a.css} — 보이는 요소 ${es.length}개`};
+    boxes.push(...rectsOf(es[0]));
+   }
+  }
+  const l = Math.min(...boxes.map((q) => q.left)), tp = Math.min(...boxes.map((q) => q.top));
+  window.__hlTarget = {box: [l, tp, Math.max(...boxes.map((q) => q.right)) - l, Math.max(...boxes.map((q) => q.bottom)) - tp]};
  }
  x += t.dx || 0; y += t.dy || 0;
  const sc = [];
@@ -229,7 +264,7 @@ function layer(ctx, report) {
   if (t.hl && !ctx.hl) throw Error('강조(hl)는 take.mjs로 찍을 때만 기록한다: ' + JSON.stringify(t));
   // 강조: 화살표가 출발하기 전에 대상 상자를 재고(바로 앞의 find가 대상을 잡아 둔다), 닿은 뒤 같은 상자인지 다시 재어 그때를 시작으로 남긴다
   const arrive = async (r, at) => {
-   const o = t.hl ? {shape: t.hl, phrase: t.phrase} : null, before = o ? (await find(at), await ctx.hl.read(run, o)) : null;
+   const o = t.hl ? {shape: t.hl, phrase: t.phrase, keep: t.keep ?? false} : null, before = o ? (await find(at), await ctx.hl.read(run, o)) : null;
    await move(r.x, r.y, !!o);
    if (o) { await find(at); await ctx.hl.mark(run, sleep, o, before); }
   };

@@ -8,6 +8,12 @@
 // 강조(영상 V-14 · V-11): 짚기 조작에 hl('underline' | 'band' | 'box')을 주면 화살표가 닿은 때 그 대상의 화면 상자와 시각을 timing.json의 highlights에 남기고 포털 encode.py가 그린다(포털 촬영도구 hl.mjs).
 //   줄 수 있는 자리: point의 points[] 항목 · pointText · detailsTour의 points[] 항목. 글로 찾은 대상(contains · text)은 그 글 구절을, css로 찾은 대상은 그 요소를 잰다(phrase를 주면 그 구절).
 //   그 밖의 조작에 hl을 주면 멈춘다. 강조는 다음 강조가 시작할 때, 누르기 · 탭 바꾸기가 시작할 때, 강조 없는 다른 자리로 화살표가 떠날 때, 녹화가 끝날 때 지워진다.
+// 표로 쓴 대본의 큐(통합_02_04_관계조회_큐만들기.py)가 쓰는 조작 — 대상 꼴은 mark_targets.mjs 머리말:
+//   mark {points: [{대상, at, hl?}]}  대상을 차례로 짚는다. hl을 주면 그 대상(함께 짚는 also 포함)의 상자에 강조를 건다 — 입력칸 조각 · 표의 행과 열 · 그림의 원과 선 · 단추 묶음 모두
+//   press {대상, at, point_at?, expect?}  대상에 미리 가 있다가 at에서 누르고, expect(mark_targets.mjs expectInPage)가 될 때까지 기다린다
+//   runCard {at, summary?, graph?, nodes?, edges?, rows?}  입력칸 옆 Run을 누르고, 맨 위에 새 결과 카드가 생겨 그 결과를 담을 때까지 기다린다(이 판은 앞 카드가 펼쳐진 채 남아 run의 화면 전체 검사가 옛 카드에 걸린다)
+//   gShow {block, query, at, top?} · gCopy {block, at, point_at?}  안내 문서 탭으로 가서 그 칸(위에서부터 센 번호 — 글이 같은 칸이 둘이라 번호로 고른다)이 보이게 굴리고, 그 칸의 복사를 누른다
+//   paste에 rest: {x, y}를 주면 붙여 넣은 뒤 화살표를 그 자리에 둔다(붙여 넣은 글을 가리지 않는 빈 곳)
 // 설정(globalThis.HYD_RECORDING): take(새 이름) · cues(큐 파일) · host(연결 창 주소) · segments(찍을 구간 번호들, 없으면 전부) · only(큐 id들) ·
 //   continue(앞 구간 끝 화면에서 이어 찍기) · pointer({x,y} 시작 위치) · silent(음성 없이 글 길이로 시험 — 숫자면 그 배로 빠르게) · gap(기본 큐 쉼 ms) ·
 //   guide(안내 문서 주소의 끝부분, 예: 안내.html).
@@ -15,6 +21,8 @@
 import {focusReadableGraph} from './readable_graph.mjs';
 import {installGraphObserver,graphTarget} from './graph_targets.mjs';
 import {highlighter} from '../포털/촬영도구/hl.mjs';
+import {resolveInPage,cardState,expectInPage} from './mark_targets.mjs';
+const GSRC=graphTarget.toString();
 import fs from 'node:fs/promises';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import path from 'node:path';
@@ -158,14 +166,14 @@ try{
  const editor={css:'[aria-label="Cypher Editor"]'};
  const runButton={css:'[data-testid="run-button"]'};
  // 입력칸을 비우고 글을 넣는다. paste:true면 붙여넣기(안내 문서에서 복사한 글)로 넣고, 들어간 글이 기대한 문장과 같은지 본다.
- async function input(text,{paste=false}={}){
+ async function input(text,{paste=false,rest=null}={}){
   // 이 판 Neo4j Browser는 돌린 글이 입력칸에 남는다. 학생과 같이 전부 고른 뒤(컨트롤 A) 그 위에 붙이거나 적어 바꾼다.
   await act(editor);await clickHere();await serial(()=>p.keyboard.press('ControlOrMeta+A'));
   if(paste){await serial(()=>p.keyboard.press('ControlOrMeta+V'));}
   else{await move({x:650,y:135});await serial(()=>p.keyboard.insertText(text));}
   const got=await serial(()=>p.evaluate(()=>{const e=Array.from(document.querySelectorAll('[aria-label="Cypher Editor"]')).find(e=>e.getBoundingClientRect().height>0);return e?.querySelector('.cm-content')?.innerText??e?.innerText;}));
   if(paste&&got.replace(/\s+/g,' ').trim()!==text.replace(/\s+/g,' ').trim())throw Error('붙여 넣은 글이 다름: '+JSON.stringify(got));
-  if(paste)await move({x:650,y:135});
+  if(paste)await move(rest||{x:650,y:135});
   await serial(()=>p.keyboard.press('Escape'));
  }
  const resultPoint=async()=>act({css:'[role="table"] [role="cell"]'});
@@ -183,12 +191,38 @@ try{
  const visibleText=(contains,within)=>p.evaluate(({contains,within})=>{const root=within?Array.from(document.querySelectorAll(within)).find(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;}):document;if(!root)throw Error('화면에 그 칸이 없다: '+within);const e=Array.from(root.querySelectorAll('*')).filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.y>=0&&r.bottom<=innerHeight&&e.textContent.trim().includes(contains)&&![...e.children].some(k=>k.textContent.includes(contains));})[0];if(!e)throw Error('화면에 그 글이 없다: '+contains);window.__hlTarget=e;const r=e.getBoundingClientRect();return {x:r.x+Math.min(r.width/2,90),y:r.y+r.height/2,w:r.width};},{contains,within});
  const pointAt=async q=>{const locate=q.css?()=>point(q):()=>visibleText(q.contains??q.text,q.within);const t=await serial(locate);await arriveAt({x:t.x+(q.dx??14),y:t.y+(q.dy??8)},q,locate,q.css?undefined:(q.contains??q.text));};
  const clickText=async(text,css='button')=>{await act({css,text},true);};
+ // mark · press의 대상 찾기(mark_targets.mjs). 150ms 간격으로 두 번 읽어 자리가 같을 때의 값을 쓴다 — 그림의 원은 배치가 멎은 뒤에 짚는다.
+ const resolve=(q,shape)=>p.evaluate(resolveInPage,{q,shape,gsrc:GSRC}).catch(e=>{throw Error(`${current}: ${String(e.message||e).split('\n')[0]}`);});
+ async function settled(q,shape){let b=await serial(()=>resolve(q,shape));for(let i=0;i<25;i++){await sleep(150);const n=await serial(()=>resolve(q,shape));if(Math.hypot(n.anchor.x-b.anchor.x,n.anchor.y-b.anchor.y)<1&&JSON.stringify(n.rects)===JSON.stringify(b.rects))return n;b=n;}throw Error(`${current}: 대상이 멈추지 않음 `+JSON.stringify(q));}
+ const blockAt=i=>p.evaluate(i=>{const b=document.querySelectorAll('.block')[i];if(!b)throw Error('안내 문서에 그 칸이 없다: '+i);const r=b.getBoundingClientRect(),c=b.querySelector('.copy').getBoundingClientRect();return {top:r.top,bottom:r.bottom,text:b.querySelector('pre').innerText,copy:{x:c.x+c.width/2,y:c.y+c.height/2}};},i);
  async function doOp(c,g,a){
    a.op=(a.op?a.op+'+':'')+c.op;
-   if(c.hl&&c.op!=='pointText')throw Error(`${c.id}: 조작 ${c.op}에는 hl을 줄 수 없다 — point · detailsTour는 points[] 항목에, pointText는 조작에 준다`);
-   if(c.op!=='point'&&c.op!=='detailsTour'&&(c.points||[]).some(q=>q&&q.hl))throw Error(`${c.id}: 조작 ${c.op}의 points[]에는 hl을 줄 수 없다`);
+   if(c.hl&&c.op!=='pointText')throw Error(`${c.id}: 조작 ${c.op}에는 hl을 줄 수 없다 — point · detailsTour · mark는 points[] 항목에, pointText는 조작에 준다`);
+   if(c.op!=='point'&&c.op!=='detailsTour'&&c.op!=='mark'&&(c.points||[]).some(q=>q&&q.hl))throw Error(`${c.id}: 조작 ${c.op}의 points[]에는 hl을 줄 수 없다`);
    switch(c.op){
     case 'none':break;
+    case 'mark':for(const q of c.points){await g(q.at??.1);const t=await settled(q,q.hl);if(q.hl)await arriveAt(t.anchor,{hl:q.hl},()=>resolve(q,q.hl));else await move(t.anchor);}break;
+    case 'press':{await g(c.point_at??Math.max(0,(c.at??.8)-.15));let t=await settled(c);await move(t.click);await g(c.at??.8);t=await serial(()=>resolve(c));if(Math.hypot(t.click.x-pos.x,t.click.y-pos.y)>2)await move(t.click);await clickHere();a.clickAt=Date.now()-start;
+     if(c.expect)await serial(()=>p.waitForFunction(expectInPage,c.expect,{timeout:15000})).catch(()=>{throw Error(`${c.id}: 누른 뒤 기다린 화면이 오지 않음 `+JSON.stringify(c.expect));});
+     break;}
+    case 'runCard':{const n0=(await serial(()=>p.evaluate(cardState,null))).count;await g(c.at??.95);await act(runButton,true);a.runAt=Date.now()-start;
+     const want={n0,summary:c.summary,graph:!!c.graph,nodes:c.nodes,edges:c.edges,rows:c.rows??null};
+     await serial(()=>p.waitForFunction(cardState,want,{timeout:15000})).catch(()=>{throw Error(`${c.id}: Run 뒤 기대한 결과 카드가 오지 않음 `+JSON.stringify(want));});
+     a.resultVerified=true;a.nodes=c.nodes;a.edges=c.edges;a.rows=c.rows;a.summary=c.summary;a.resultReady=Date.now()-start;graph=!!c.graph;break;}
+    case 'gShow':{
+     if(!P.guide)throw Error('안내 문서 탭이 없다(cfg.guide)');
+     await g(c.at??.1);await show(P.guide);
+     let b=await serial(()=>blockAt(c.block));
+     if(b.text.replace(/\s+/g,' ').trim()!==c.query.replace(/\s+/g,' ').trim())throw Error(`${c.id}: 안내 문서 ${c.block}번째 칸의 글이 칸 원고와 다르다 — ${JSON.stringify(b.text.slice(0,60))}`);
+     if(b.top<90||b.bottom>P.view.height-60){
+      const y=await serial(()=>p.evaluate(({i,top})=>{const r=document.querySelectorAll('.block')[i].getBoundingClientRect();const y=Math.max(0,Math.min(r.top+scrollY-top,document.documentElement.scrollHeight-innerHeight));window.scrollTo({top:y,behavior:'smooth'});return y;},{i:c.block,top:c.top??300}));
+      await serial(()=>p.waitForFunction(y=>Math.abs(scrollY-y)<2,y,{timeout:6000}));await sleep(200);
+      b=await serial(()=>blockAt(c.block));if(b.top<60||b.bottom>P.view.height-20)throw Error(`${c.id}: 안내 문서의 그 칸이 화면 안에 들어오지 않음 `+JSON.stringify(b));}
+     break;}
+    case 'gCopy':{
+     await g(c.point_at??Math.max(0,(c.at??.8)-.15));let b=await serial(()=>blockAt(c.block));await move(b.copy);
+     await g(c.at??.8);b=await serial(()=>blockAt(c.block));if(Math.hypot(b.copy.x-pos.x,b.copy.y-pos.y)>2)await move(b.copy);await clickHere();
+     await serial(()=>p.waitForFunction(i=>document.querySelectorAll('.block')[i].querySelector('.copied')?.textContent.startsWith('복사했습니다'),c.block,{timeout:5000}));a.copied=true;break;}
     // 결과 카드(그림 · 표)를 위에서부터 센 n번째(0 = 맨 위 새 카드)의 윗부분을 짚는다. 화면 안에 없으면 멈춘다.
     case 'pointCard':{await g(c.at??.2);const r=await serial(()=>p.evaluate(n=>{const hs=[...document.querySelectorAll('*')].filter(e=>e.children.length===0&&/^neo4j\$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);const e=hs[n];if(!e)throw Error('그 카드가 없다: '+n);const r=e.getBoundingClientRect();if(r.bottom>innerHeight-4)throw Error('그 카드 머리 줄이 화면 아래에 있다: '+n);return {x:r.x+90,y:r.y+r.height/2};},c.n));await move(r);break;}
     case 'point':for(const q of c.points){await g(q.at??.1);await pointAt(q);}break;
@@ -219,7 +253,7 @@ try{
      await serial(()=>p.waitForFunction(()=>Array.from(document.querySelectorAll('.copied')).some(e=>e.textContent.startsWith('복사했습니다')),undefined,{timeout:5000}));a.copied=true;break;}
     case 'mainShow':await g(c.at??.6);await show(P.main);break;
     case 'fileShow':await g(c.at??.6);await show(P.file);break;
-    case 'paste':await g(c.at??.5);await input(c.query,{paste:true});a.query=c.query;a.pasted=true;break;
+    case 'paste':await g(c.at??.5);await input(c.query,{paste:true,rest:c.rest});a.query=c.query;a.pasted=true;break;
     // 받은 그림 파일을 새 탭으로 연다(학생이 내려받기 표시에서 여는 것과 같은 그림). 녹화 밖에서 열어 두지 않고 그 자리에서 연다.
     case 'openFile':{await g(c.at??.4);if(!lastDownload)throw Error('열 파일이 없다(앞 png 조작)');
      const pg=await P.newPage();await P.attach(pg);await pg.goto(pathToFileURL(lastDownload).href);await serial(()=>metrics(pg));await installPointer(pg,pos);P.file=pg;await show(pg);break;}

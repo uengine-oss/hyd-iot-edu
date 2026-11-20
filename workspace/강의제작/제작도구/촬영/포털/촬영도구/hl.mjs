@@ -3,9 +3,9 @@
 //   {cue(큐 id), shape, rects([[x, y, w, h], …] CSS px · 뷰포트 기준, 줄마다 하나), start · end(녹화 시계 ms), endBy(끝난 까닭)}
 // 모양(hl): underline = 글자 아래 선(낱말 · 값 하나), band = 반투명 노랑 띠(화면 글을 읽거나 「이 줄 · 이 행」), box = 둘레 선(칸 · 상자 하나). 고르는 기준은 영상 V-11.
 // 잴 상자: 구절(phrase)이 있으면 그 구절의 글자 상자(대상 요소 안에 한 번만 나와야 한다, 줄이 꺾이면 줄마다), underline은 대상 요소의 글자 상자, band · box는 대상 요소의 상자,
-//   캔버스 항목은 녹화기가 잰 상자다. 대상 요소는 녹화기의 대상 찾기가 window.__hlTarget에 둔다(요소, 또는 {box:[x, y, w, h]}).
+//   캔버스 항목은 녹화기가 잰 상자다. 대상 요소는 녹화기의 대상 찾기가 window.__hlTarget에 둔다(요소, {box:[x, y, w, h]}, 또는 녹화기가 여러 대상을 함께 잰 {rects:[[x, y, w, h], …]}).
 // 시각: 150ms 간격으로 두 번 재어 같을 때의 상자를 쓴다(화살표가 출발하기 전에 잰 것과 닿은 뒤 잰 것이 같으면 닿은 때가 시작이다).
-// 끝: 다음 강조가 시작할 때, 그 전에 화면을 바꾸는 조작(누르기 · 굴리기 · 입력 · 붙여넣기 · 탭 바꾸기)이 시작할 때, 강조 없는 다른 대상으로 화살표가 떠날 때, 구간이 끝날 때 가운데 가장 이른 때 —
+// 끝: 다음 강조가 시작할 때(다음 강조에 keep이 있으면 함께 둔다 — 말이 두 대상을 함께 가리켜 견주는 자리, 영상 V-11. keep: true는 떠 있는 강조를 모두, keep: N은 먼저 뜬 N개만 남긴다), 그 전에 화면을 바꾸는 조작(누르기 · 굴리기 · 입력 · 붙여넣기 · 탭 바꾸기)이 시작할 때, 강조 없는 다른 대상으로 화살표가 떠날 때, 구간이 끝날 때 가운데 가장 이른 때 —
 //   녹화기가 그 자리에서 end(까닭)를 부른다.
 // 멈춤: 모르는 모양, 잡히지 않는 대상, 크기 0, 그릴 자리가 화면 밖(모양마다 둘레 여백 MARGIN), 멈추지 않는 대상은 큐 id와 값을 대며 그 큐에서 멈춘다(리허설에서도 같다).
 export const SHAPES=['underline','band','box'];
@@ -22,6 +22,7 @@ export function measureInPage({shape,phrase}){
   return lines.map(l=>[l.l,l.t,l.r-l.l,l.b-l.t].map(round));};
  let rects;
  if(Array.isArray(t.box))rects=[t.box.map(round)];
+ else if(Array.isArray(t.rects))rects=t.rects.map(r=>r.map(round));
  else if(!t.isConnected)return {error:'강조 대상이 화면에서 사라짐'};
  else if(phrase){
   // 구절이 글자 조각 여럿(쿼리 입력칸의 낱말 조각 등)에 걸쳐도 찾는다
@@ -40,9 +41,9 @@ export function measureInPage({shape,phrase}){
 
 // clock() = 녹화 시계 ms, cue() = 지금 큐 id. read · mark의 run(fn, arg)는 그 녹화기의 직렬 큐로 페이지에서 fn을 돌린다.
 export function highlighter({clock,cue}){
- const list=[];let open=null;
+ const list=[];let open=[];
  const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
- const end=why=>{if(!open)return;open.end=clock();open.endBy=why;open=null;};
+ const end=why=>{for(const h of open){h.end=clock();h.endBy=why;}open=[];};
  async function read(run,{shape,phrase}){
   if(!SHAPES.includes(shape))throw Error(`${cue()}: 모르는 강조 모양 「${shape}」 — ${SHAPES.join(' | ')}`);
   const r=await run(measureInPage,{shape,phrase});
@@ -59,8 +60,8 @@ export function highlighter({clock,cue}){
   let m=await read(run,o);
   if(!same(m,before)){let ok=false;for(let i=0;i<10&&!ok;i++){await sleep(150);const n=await read(run,o);ok=same(m,n);m=n;}
    if(!ok)throw Error(`${cue()}: 강조 대상이 멈추지 않음`);}
-  end('다음 강조');
-  open={cue:cue(),shape:o.shape,...(o.phrase?{phrase:o.phrase}:{}),rects:m,start:clock(),end:null,endBy:null};list.push(open);
+  if(o.keep!==true){const stay=open.slice(0,o.keep||0);for(const h of open.slice(stay.length)){h.end=clock();h.endBy='다음 강조';}open=stay;}
+  const h={cue:cue(),shape:o.shape,...(o.phrase?{phrase:o.phrase}:{}),rects:m,start:clock(),end:null,endBy:null};open.push(h);list.push(h);
  }
  return {list,end,read,mark};
 }

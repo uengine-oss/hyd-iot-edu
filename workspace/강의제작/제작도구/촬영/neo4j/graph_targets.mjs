@@ -1,8 +1,13 @@
+// 그림(캔버스)에 그려지는 글과 원을 기록한다. 화면 좌표(x · y · r)는 그릴 때의 값이 아니라 읽을 때의 캔버스 자리로 낸다 —
+// 입력칸 줄 수가 바뀌어 카드가 밀려도(다시 그리지 않아도) 맞는다. 글은 그 글자 상자(bx: 캔버스 안 비율 [x0, y0, x1, y1])도 남긴다(선 위 글의 강조 상자).
 export function installGraphObserver(){
- if(window.__forestRead?.version===3)return;
- window.__forestRead={version:3,texts:[],circles:[],targets:new Map()};
+ if(window.__forestRead?.version===4)return;
+ if(window.__forestRead)throw Error('옛 그림 관찰기가 걸린 페이지다 — 페이지를 새로 연 뒤 다시 한다');
+ window.__forestRead={version:4,texts:[],circles:[],targets:new Map()};
  for(const name of ['fillText','arc']){const orig=CanvasRenderingContext2D.prototype[name];CanvasRenderingContext2D.prototype[name]=function(...args){
-  if(this.canvas.matches?.('[data-testid="nvl-c2d-canvas"]')){const m=this.getTransform(),r=this.canvas.getBoundingClientRect(),x=name==='fillText'?args[1]:args[0],y=name==='fillText'?args[2]:args[1];const item={text:name==='fillText'?args[0]:null,wx:x,wy:y,x:r.x+(m.a*x+m.c*y+m.e)*r.width/this.canvas.width,y:r.y+(m.b*x+m.d*y+m.f)*r.height/this.canvas.height,r:name==='arc'?args[2]*Math.abs(m.a)*r.width/this.canvas.width:null,t:Date.now(),canvas:this.canvas};const a=window.__forestRead[name==='fillText'?'texts':'circles'];a.push(item);if(a.length>5000)a.splice(0,2000);if(name==='fillText'){
+  if(this.canvas.matches?.('[data-testid="nvl-c2d-canvas"]')){const m=this.getTransform(),r=this.canvas.getBoundingClientRect(),x=name==='fillText'?args[1]:args[0],y=name==='fillText'?args[2]:args[1];const cw=this.canvas.width,ch=this.canvas.height,fx=(m.a*x+m.c*y+m.e)/cw,fy=(m.b*x+m.d*y+m.f)/ch,fr=name==='arc'?args[2]*Math.hypot(m.a,m.b)/cw:null;
+   let bx=null;if(name==='fillText'){const tm=this.measureText(args[0]),xs=[x-tm.actualBoundingBoxLeft,x+tm.actualBoundingBoxRight],ys=[y-tm.actualBoundingBoxAscent,y+tm.actualBoundingBoxDescent],px=[],py=[];for(const u of xs)for(const v of ys){px.push((m.a*u+m.c*v+m.e)/cw);py.push((m.b*u+m.d*v+m.f)/ch);}bx=[Math.min(...px),Math.min(...py),Math.max(...px),Math.max(...py)];}
+   const item={text:name==='fillText'?args[0]:null,wx:x,wy:y,fx,fy,fr,bx,t:Date.now(),canvas:this.canvas,get x(){const q=this.canvas.getBoundingClientRect();return q.x+this.fx*q.width;},get y(){const q=this.canvas.getBoundingClientRect();return q.y+this.fy*q.height;},get r(){return this.fr===null?null:this.fr*this.canvas.getBoundingClientRect().width;}};const a=window.__forestRead[name==='fillText'?'texts':'circles'];a.push(item);if(a.length>5000)a.splice(0,2000);if(name==='fillText'){
  const q=window.__forestRead,cs=q.circles.filter(c=>c.canvas===this.canvas&&c.wx!==undefined&&Math.abs(c.t-item.t)<35&&c.r>5);
  const c=cs.sort((a,b)=>Math.hypot(a.x-item.x,a.y-item.y)-Math.hypot(b.x-item.x,b.y-item.y))[0];
  if(c&&Math.hypot(c.x-item.x,c.y-item.y)<c.r*1.4){const map=q.targets.get(this.canvas)||new Map();map.set(item.text,{wx:c.wx,wy:c.wy,t:item.t});q.targets.set(this.canvas,map);}
