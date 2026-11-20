@@ -59,13 +59,14 @@ OPS = {
  # 홈에서 보는 목표와 방향
  'v0603': [P(T('#healthDots', anchor='center', dy=14), '왼쪽 아래를')],
  'v0604': [P(T('#view-main .page-head p'), '맨 위 한 줄에는')],
- 'v0605': [P(T(f'{HERO} svg.m-hero-svg', anchor='center'), '아래 그림은'), P(T(f'{HERO} text.m-zone', exact='OT · 현장 설비'), '왼쪽 설비에서'),
-           P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '가운데를'), P(T(f'{HERO} g.m-agent text.m-agent-s'), '오른쪽 AI')],
- 'v0606': [P(T(f'{HERO} g.m-node', contains='증상 · 유온 상승', anchor='left'), 'AI 둘레의'),      # 증상 점은 글 끝 오른쪽이 아래 「원인 · 쿨러 핀 오염」을 덮어 점 왼쪽을 짚는다
-           P(T(f'{HERO} g.m-node text', exact='고장 유형 · 냉각 상실'), '점들은'),
-           P(T(f'{HERO} g.m-node text', exact='원인 · 쿨러 핀 오염'), 'AI가 아는')],
+ 'v0605': [P(T(f'{HERO} svg.m-hero-svg', anchor='center'), '아래 그림은'), P(T(f'{HERO} text.m-zone', exact='OT · 현장 설비'), '왼쪽이 공장'),
+           P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '가운데 칸을'), P(T(f'{HERO} g.m-agent text.m-agent-s'), '오른쪽 AI'),
+           P(T(f'{HERO} text.hm-zone-tag', exact='OT'), 'OT, DMZ'), P(T(f'{HERO} text.hm-zone-tag', exact='DMZ'), '중간 구역'), P(T(f'{HERO} text.hm-zone-tag', exact='IT'), '사무실 쪽')],      # 영역 꼬리표 셋(main.js BUS의 zone) — 2026-11-20 이론의 세 보안 영역을 화면에서 짚는다
+ 'v0606': [P(T(f'{HERO} g.m-agent text.m-agent-s'), '오른쪽 한가운데가'), P(T(f'{HERO} g.m-node', contains='증상 · 유온 상승', anchor='left'), '둘레의 점들은'),      # 증상 점은 글 끝 오른쪽이 아래 「원인 · 쿨러 핀 오염」을 덮어 점 왼쪽을 짚는다
+           P(T(f'{HERO} g.m-node text', exact='고장 유형 · 냉각 상실'), '고장 유형,'),
+           P(T(f'{HERO} g.m-node text', exact='원인 · 쿨러 핀 오염'), '원인 같은')],
  'v0607': [P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '거꾸로 설비'), P(T(f'{HERO} path.m-loop', pathAt=0.97), '위에 있는 점선'),
-           P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '사람이 승인한'), P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '올라가는 길과'),
+           P(T(f'{HERO} text.m-loop-t', exact='사람이 승인한 조치'), '사람이 승인한'), P(T(f'{HERO} text.m-loop-t', exact='명령 관문 · DMZ'), '가는 길에'), P(T(f'{HERO} text.m-zone', exact='값이 지나는 길'), '올라가는 길과'),
            P(T(f'{HERO} path.m-loop', pathAt=0.4), '내려가는 길,')],
  'v0608': [SC(T('#mainStages', bottom=12), '아래 네 칸은'), P(LABEL(1), '지식을 넣어'), P(LABEL(2), '설비에 고장이'), P(LABEL(3), 'AI의 판단과'), P(LABEL(4), '결과가 남죠'),
            P(T('#menuList summary[data-menu="knowledge"] > span'), '지식,'), P(T('#menuList summary[data-menu="plant"] > span'), '유압 설비,'),
@@ -94,7 +95,7 @@ OPS = {
  'v0616': [P(T(FM + ' .row-title'), '맨 위 줄을'), P(T(FM + ' .row-meta', phrase='유온 상승, 냉각 효율 저하'), '이름 밑에'),
            P(T(FM + ' .row-title'), '쿨러 냉각 성능 상실이라는'), P(T(FM + ' .row-meta', phrase='고장 유형'), '이론에서 본')],
  'v0617': [P(T(ITEM('know:causes:cause:cooler-fin-fouling') + ' .row-title'), '아래 세 줄은'), P(T(ITEM('know:causes:cause:ambient-temperature-rise') + ' .row-title'), '일으킬 수'),
-           P(T(ITEM('know:causes:cause:fan-drive-fault') + ' .row-title'), '원인입니다')],
+           P(T(ITEM('know:causes:cause:fan-drive-fault') + ' .row-title'), '원인 후보입니다')],
  # 고장 유형 한 줄과 원인 세 줄이 따로 놓인 화면에서 「이렇게 따로따로」를 말한다(2026-11-20에 v0613 뒤에서 옮김 — 말은 그대로)
  'v0614': [P(T(FM + ' .row-title'), '무슨 고장인지'), P(T(ITEM('know:causes:cause:cooler-fin-fouling') + ' .row-title'), '그 고장의 원인을')],
  'v0618': [P(T(PANE('know:failure_modes:fm:cooler-cooling-loss') + ' blockquote'), '그 원문이')],
@@ -133,8 +134,9 @@ OPS = {
            W(T('#labFollow li[data-step="inject"].ok')), SC(T('#labFollowPanel', bottom=6))],
  'v0634': [W(T(RISE, contains='지금 유온'), 10), P(T(RISE, phrase='지금 유온'), '유온이 조금씩')],
  # 말이 끝나면 「처리 건이 열렸습니다」까지(주입 뒤 약 44초) 말 없이 기다린다 — 합성 뒤 cut.py로 가운데를 줄인다
- 'v0635': [P(T(RISE, phrase='경보 조건 55 ℃'), '오십오 도를'), LONG(T('#labFollow li[data-step="case"].ok'), 180)],
- 'v0656': [P(T('#labFollow li[data-step="alert"] .line-text b'), '경보가 나고'), P(T('#labFollow li[data-step="case"] .line-text b'), '처리 건이 열렸다고'),
+ 'v0635': [P(T(RISE, phrase='경보 조건 55 ℃'), '경보 조건 오십오'), LONG(T('#labFollow li[data-step="case"].ok'), 180)],
+ 'v0656': [P(T('#labFollow li[data-step="rise"] .line-text b'), '유온이 오십오'), P(T('#labFollow li[data-step="detect"] .lv-note'), '조건이 이어지는지'),
+           P(T('#labFollow li[data-step="alert"] .line-text b'), '경보가 났죠'), P(T('#labFollow li[data-step="case"] .line-text b'), '처리 건이 열렸다고'),
            P(T(U(1) + ' [data-f="state"] .tag', exact='경보 발생'), '경보 한 건이'), W(T('#navTodo', exact='1'), 30), P(T('#navTodo'), '숫자가 하나'),
            C(T('#labFollow [data-lv-go="case"]'), '눌러 들어가'), W(T('#todoPanel .turn-head h3'), 60), SETTLE(8)],
  # 처리 건에서 AI 판단 읽기 — 추천안이 대본과 같은지 확인(영상 V-13)
@@ -169,7 +171,7 @@ OPS = {
            # 다음 말(v0649)을 시작하기 전에 효과 확인 줄이 보이게 굴려 둔다 — 게시본은 말이 시작할 때 맨 위 결과 카드가 보이고 말 가운데에야 내려갔다(적대 검토 지적 9)
            ['scroll', {**SUB('회복으로 판정했습니다'), 'top': 220}], SETTLE(4)],
  # 효과 확인 줄은 main 39e93119a부터 판정 글이 줄 가운데다(「… 경보도 꺼져 회복으로 판정했습니다 (설비 시간 … 동안 …).」) — 줄 끝이 아니라 그 구절을 짚는다
- 'v0649': [P(SUB('회복으로 판정했습니다', phrase='회복으로 판정했습니다'), '효과 확인이 끝나면서'), P(STEP('정비 요청 등록'), '정비 요청 등록과'), P(STEP('결과 보고: 정상'), '결과 보고까지')],
+ 'v0649': [P(SUB('회복으로 판정했습니다', phrase='회복으로 판정했습니다'), '회복으로 판정했다고'), P(STEP('정비 요청 등록'), '정비 요청 등록과'), P(STEP('결과 보고: 정상'), '결과 보고까지')],
  'v0650': [P(T('#caseTop .case-result header .tag', exact='정상'), '맨 위로'), P(T('#caseTop .case-result .result-main', phrase='유온 정상 · 경보 해제'), '유온이 기준')],
  'v0651': [P(T('#caseTop .case-result .result-main'), '그 줄 끝에는')],
  'v0652': [P(T('#instDetail .case-progress > header h3', exact='진행 상황'), '진행 상황을'), P(STEP('원인 진단 · 냉각 조치 제안'), 'AI의 추천은'),

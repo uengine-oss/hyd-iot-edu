@@ -86,14 +86,15 @@ OPS = {
  'k0302': [P(KIND('자원 · 설비'), '맨 위에'), H(KIND('설비'), 'underline', '뒤의 설비가'), H(KIND('자원', **MID), 'underline', '앞의 자원은'),
            H(NAME('HYD-01 유압 파워팩'), 'band', '큰 글씨가'), H(KIND('설비'), 'underline', '그러니까'), H(NAME('HYD-01 유압 파워팩'), 'band', keep=True)],
  'k0303': [H(NID(), 'underline', '이름 밑의'), H(NID('hyd-01'), 'underline', '쌍점 뒤에'), H(NAME('HYD-01', **MID), 'underline', '이름 앞에 붙은', keep=True),
-           H(NID('asset', **MID), 'underline', '영어 낱말을')],      # 쌍점 한 글자의 밑줄은 보이지 않아 뺐다
- 'k0304': [H(NID(), 'underline', '이렇게'), H(NAME('HYD-01 유압 파워팩'), 'band', '이름은'), H(NID(), 'underline', '식별자는 바뀌지')],
+           H(NID('asset', **MID), 'underline', '쌍점 앞의')],      # 쌍점 한 글자의 밑줄은 보이지 않아 뺐다
+ 'k0304': [H(NID(), 'underline', '그러니까'), H(NAME('HYD-01 유압 파워팩'), 'band', '이름은'), H(NID(), 'underline', '식별자는 바뀌지')],
  # 4. 관계의 방향 읽기 — 지도의 화살표 묶음을 상자로 두르면 상자 선이 점 이름(「작동유 탱크」 · 가운데 「HYD-01 유압 파워팩」)을 가로지른다. 그래서 설비 점에서 건너편 점으로 화살표를 따라 옮긴 뒤 선 위 관계 이름(「→ 구성 요소」)에 밑줄을 긋는다. 화살표 하나(k0503 · k0504)는 그 선만 두른다
  'k0401': [H(LINKS, 'underline', '이어진 항목이라고'), H(GBOX('out', COOLER), 'box', '오른쪽 화살표가'), H(GBOX('in', 'proc:anomaly-response'), 'box', '왼쪽 화살표가'),
            H(GBOX('out', COOLER), 'box', '나가는 쪽부터')],
  'k0402': [H(GHEAD('out', COOLER, '구성 요소'), 'underline', '구성 요소라고'), H(CHIPS('out', COOLER), 'box', '그 아래 여섯 개가'),
            P(CY(A1), '가진다라고'), P(CY('comp:motor')), H(CY('head:R:HAS_COMPONENT'), 'underline'),
-           H(CHIPS('out', COOLER), 'box', '가진다의 건너편에')],
+           H(CHIPS('out', COOLER), 'box', '설비가 가진 것이')],
+ 'k0404': [H(CHIPS('out', COOLER), 'box', '여섯 개 모두'), P(CY(A1), '지도에서도'), P(CY('comp:motor')), H(CY('head:R:HAS_COMPONENT'), 'underline')],
  'k0403': [H(GBOX('out', COOLER), 'box', '그러니'), C(CHIP(COOLER), '가 볼게요'), *OPENED(COOLER, 'head:R:MONITORED_BY')],
  # 5. 구성 요소 — 오일 쿨러
  'k0501': [H(KIND('구성 요소'), 'underline', '오일 쿨러의'), H(NID(), 'underline', '이름 밑의 식별자도'), H(NID('comp', **MID), 'underline', '쌍점 앞이'),
@@ -102,15 +103,15 @@ OPS = {
            H(GBOX('out', TS1), 'box', '관측 센서 묶음은'), H(GBOX('out', PART), 'box', '교체 부품 묶음은'),
            H(GBOX('out', TS1), 'box', '이 쿨러는 센서'), H(GBOX('out', PART), 'box', '부품 하나를')],
  'k0503': [H(GBOX('in', A1), 'box', '이번에는'), H(GHEAD('in', A1, '설비'), 'underline', '설비라고'), H(CHIPP(A1), 'underline', '유압 파워팩이'),
-           P(CY(A1), '가진다라는 관계를'), H(EDGE(A1, COOLER), 'box')],
+           H(GNOTE('in', A1), 'underline', '오른쪽 끝에는'), P(CY(A1), '가진다라는 관계를'), H(EDGE(A1, COOLER), 'box')],
  'k0504': [P(CY(A1), '이 화살표는'), H(EDGE(A1, COOLER), 'box'), H(CHIPP(A1), 'underline', '설비가 이 쿨러를'), H(GBOX('in', A1), 'box', '들어오는 묶음은')],
  'k0505': [H(ROW('다른 이름'), 'band', '쿨러의 판에는'), H(GBOX('out', TS1), 'box', '감시된다라는 관계를'), C(CHIP(TS1), '누를게요'), *OPENED(TS1, 'head:R:OBSERVES')],
  # 6. 센서 — 속성값과 관계
  'k0602': [H(ROW('단위'), 'band', '단위 칸에'), H(GBOX('in', COOLER), 'box', '관계를 건너'), H(ROW('단위'), 'band', '이 노드의 칸에서')],
  'k0601': [H(T(KV), 'box', '나머지 칸도'), H(ROW('가상 값'), 'band', '가상 값 칸에'), H(ROW('태그'), 'band', '태그는'), H(NID(), 'underline', '식별자와는')],
  'k0603': [H(NAME('유온 센서'), 'band', '센서 값이'), H(GBOX('in', SYM), 'box', '증상 묶음이에요'), H(GHEAD('in', SYM, '증상'), 'underline', '건너편 증상이'), H(CHIPP(SYM), 'underline', '유온 상승은')],
- 'k0605': [H(GBOX('in', COOLER), 'box', '바로 위'), H(GBOX('in', SYM), 'box', '둘 다 이 센서에', keep=True),
-           H(GNOTE('in', COOLER), 'underline', '오른쪽 끝에는'), H(GNOTE('in', SYM), 'underline', keep=True)],
+ 'k0605': [H(GBOX('in', COOLER), 'box', '바로 위'), H(GBOX('in', SYM), 'box', '둘 다 이 센서에', keep=True)],
+ 'k0606': [H(GNOTE('in', COOLER), 'underline', '오른쪽 끝의'), H(GNOTE('in', SYM), 'underline', keep=True)],
  'k0604': [P(CHIPP(SYM), '여기서부터'), C(CHIP(SYM), '누릅니다'), *OPENED(SYM, 'head:R:INDICATES')],
  # 7. 증상에서 부품까지 — 1회차에 본 길
  'k0701': [H(KIND('설비 진단', **MID), 'underline', '판 맨 위'), H(GBOX('out', FM), 'box', '나가는 쪽에는'), C(CHIP(FM), '누를게요'), *OPENED(FM, 'head:R:OCCURS_IN')],
@@ -120,8 +121,8 @@ OPS = {
            C(CHIP(CAUSE), '가 볼게요'), *OPENED(CAUSE, 'head:R:INVOLVES_PART')],
  'k0704': [H(NAME('쿨러 핀 오염'), 'band', '쿨러 핀 오염에서'), H(GBOX('out', PART), 'box', '관련 부품이라는'), C(CHIP(PART), '누릅니다'), *OPENED(PART, 'head:R:SUPPLIED_BY')],
  # 8. 부품 — 품번, 그리고 다시 쿨러로
- 'k0801': [H(KIND('부품'), 'underline', '쿨러 코어의'), H(ROW('부품 번호'), 'band', '부품 번호가'), H(NID(), 'underline', '여기서는 식별자가'),
-           H(ROW('부품 번호'), 'band', '품번은 속성으로'), H(GBOX('out', 'sup:c'), 'box', '공급사와'), H(GBOX('in', 'skill:sop-pur-11'), 'box', '조치 방법 묶음은')],
+ 'k0801': [H(KIND('부품'), 'underline', '쿨러 코어의'), H(ROW('부품 번호'), 'band', '부품 번호가')],
+ 'k0804': [H(NID(), 'underline', '여기서는 식별자가'), H(ROW('부품 번호'), 'band', '품번은 속성 칸에'), H(GBOX('out', 'sup:c'), 'box', '공급사와'), H(GBOX('in', 'skill:sop-pur-11'), 'box', '조치 방법 묶음은')],
  'k0802': [H(GBOX('in', COOLER), 'box', '들어오는 쪽'), H(CHIPP(COOLER), 'underline', '오일 쿨러가')],
  'k0803': [H(KIND('자원', **MID), 'underline', '그 사이'), H(CHIPP(COOLER), 'underline', '이 오일 쿨러를'), C(CHIP(COOLER), '돌아가 볼게요'), *OPENED(COOLER, 'head:R:MONITORED_BY')],
  # 9. 다른 설비의 지도에서 같은 쿨러 찾기
@@ -140,7 +141,8 @@ OPS = {
  'k0905': [KEY('Enter', '누르면'), *OPENED(COOLER, 'head:L:HAS_COMPONENT')],
  'k0906': [H(NID(), 'underline', '같은 식별자를'), H(ROW('다른 이름'), 'band', '다른 이름도', keep=1), H(GBOX('out', TS1, ('out', PART)), 'box', '센서와 부품도', keep=1),
            H(CHIPP(A2), 'band', '달라진 건', keep=1)],
- 'k0907': [H(NID(), 'underline', '식별자가 같으면'), H(ASSET, 'box', '세 번째 설비로'), H(NAME('오일 쿨러'), 'band', '노드 하나로'), H(GBOX('in', A2), 'box', '그 노드를 가진다고')],
+ 'k0907': [H(NID(), 'underline', '같은 식별자를 가진'), H(ASSET, 'box', '세 번째 설비로')],
+ 'k0910': [H(NAME('오일 쿨러'), 'band', '노드 하나로'), H(GBOX('in', A2), 'box', '그 노드를 가진다고')],
  # 10. 왜 하나로 세었나
  'k1001': [H(NAME('오일 쿨러'), 'band', '이론과 다르게')],
  'k1002': [H(GBOX('out', TS1), 'box', '어떤 센서가'), H(GBOX('in', FM), 'box', '어떤 고장이'), H(GBOX('out', PART), 'box', '갈아 끼울 부품이')],

@@ -4,51 +4,51 @@
   "cells": [
     {
       "id": "2-1",
-      "query": "CREATE (:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (:연습장치 {id:'basic-B', name:'연습 팬', score:70});"
+      "query": "CREATE (:PracticeDevice {id:'basic-A', name:'연습 펌프', score:40}),\n       (:PracticeDevice {id:'basic-B', name:'연습 팬', score:70});"
     },
     {
       "id": "3-1",
-      "query": "MATCH (n:연습장치)\nRETURN n;"
+      "query": "MATCH (n:PracticeDevice)\nRETURN n;"
     },
     {
       "id": "3-2",
-      "query": "MATCH (n:연습장치)\nRETURN n.name AS 이름, n.score AS 점수\nORDER BY 점수;"
+      "query": "MATCH (n:PracticeDevice)\nRETURN n.name AS 이름, n.score AS 점수\nORDER BY 점수;"
     },
     {
       "id": "4-1",
-      "query": "MATCH (n:연습장치)\nWHERE n.score >= 50\nRETURN n;"
+      "query": "MATCH (n:PracticeDevice)\nWHERE n.score >= 50\nRETURN n;"
     },
     {
       "id": "5-1",
-      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;"
+      "query": "MERGE (s:PracticeSensor {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;"
     },
     {
       "id": "5-2",
-      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;"
+      "query": "MERGE (s:PracticeSensor {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;"
     },
     {
       "id": "5-3",
-      "query": "MATCH (p:연습장치 {id:'basic-A'})\nMATCH (s:연습센서 {id:'basic-S1'})\nMERGE (p)-[r:감시된다]->(s)\nRETURN p, r, s;"
+      "query": "MATCH (p:PracticeDevice {id:'basic-A'})\nMATCH (s:PracticeSensor {id:'basic-S1'})\nMERGE (p)-[r:MONITORED_BY]->(s)\nRETURN p, r, s;"
     },
     {
       "id": "6-1",
-      "query": "MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 유온 센서'\nRETURN p, r, s;"
+      "query": "MATCH (p:PracticeDevice {id:'basic-A'})-[r:MONITORED_BY]->(s:PracticeSensor {id:'basic-S1'})\nSET s.name = '연습 유온 센서'\nRETURN p, r, s;"
     },
     {
       "id": "7-1",
-      "query": "MATCH (p:연습장치 {id:'basic-A'})\nDETACH DELETE p;"
+      "query": "MATCH (p:PracticeDevice {id:'basic-A'})\nDETACH DELETE p;"
     },
     {
       "id": "7-2",
-      "query": "MATCH (n:연습장치|연습센서)\nRETURN n;"
+      "query": "MATCH (n:PracticeDevice|PracticeSensor)\nRETURN n;"
     },
     {
       "id": "7-3",
-      "query": "MATCH (n:연습장치|연습센서)\nDELETE n;"
+      "query": "MATCH (n:PracticeDevice|PracticeSensor)\nDELETE n;"
     },
     {
       "id": "7-4",
-      "query": "MATCH (n:연습장치|연습센서)\nRETURN count(n) AS 남은수;"
+      "query": "MATCH (n:PracticeDevice|PracticeSensor)\nRETURN count(n) AS 남은수;"
     },
     {
       "id": "8-1",
