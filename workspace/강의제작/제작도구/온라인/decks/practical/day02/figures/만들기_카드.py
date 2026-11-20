@@ -8,7 +8,8 @@
 라벨 글은 원고(덱 MD)가 정본이다. 이 파일의 라벨 글은 자리를 계산하려고 원고와 같게 적어 둔 것이고, `--덱맞춤`은 원고의 글과
 이 파일의 글이 한 글자라도 다르면 장과 다른 줄을 찍고 멈춘다(원고의 글 · 차례 · 번호는 건드리지 않는다).
 
-그림체 · 색 · 선 굵기 · 카드 · 아이콘은 통합반 2회차 생성기(`../../../integrated/day02/figures/만들기_카드.py`)의 것을 불러 쓴다.
+그림체 · 색 · 선 굵기 · 카드 · 아이콘은 통합반 2회차 생성기(`../../../integrated/day02/figures/만들기_카드.py`)와, 4단원은 통합반 3회차
+생성기(`../../../integrated/day03/figures/만들기_카드.py`)의 것을 불러 쓴다.
 이 파일에는 실전 장에만 있는 그림 함수만 둔다. 그림은 모두 1200 × 510이고 라벨 좌표는 x ÷ 12, y ÷ 5.1(%)이다.
 """
 from __future__ import annotations
@@ -31,6 +32,7 @@ def _불러오기(이름: str, 경로: Path):
 
 
 K = _불러오기("통합2_만들기_카드", HERE.parents[2] / "integrated" / "day02" / "figures" / "만들기_카드.py")
+K3 = _불러오기("통합3_만들기_카드", HERE.parents[2] / "integrated" / "day03" / "figures" / "만들기_카드.py")   # 4단원 그림의 조각 · 아이콘
 NAVY, BLUE, PALE, GREY, LIGHT, WHITE = K.NAVY, K.BLUE, K.PALE, K.GREY, K.LIGHT, K.WHITE
 LH_T, LH_D = K.LH_T, K.LH_D
 Fig2, hcard, hs, icard, prow, chip, rel, foot = K.Fig2, K.hcard, K.hs, K.icard, K.prow, K.chip, K.rel, K.foot
@@ -508,7 +510,129 @@ def p43():
     return f.fin(0, ys[1] + 38 + 16 + 5 + LH_T + 2 * LH_D)
 
 
-FIGS = [p06, p07, p10, p12, p13, p15, p16, p17, p19, p20, p22, p27, p36, p40, p42, p43]
+# ───────────────────────── 4단원(56~81장) — 통합 3회차 생성기(K3)의 그림 틀과 조각을 쓴다 ─────────────────────────
+
+def p59():
+    """59장: 왼쪽은 통합 3회차 7장(SOP 한 편의 네 부분에서 가는 선으로 이어진 같은 폭의 구역 띠 넷), 오른쪽 열은 8장의 세 사람 카드
+    (같은 꼴 · 같은 폭 · 같은 무게)이고 구역 띠에서 세 카드로 화살표가 갈라진다. 세 사람을 아래 한 줄로 두면 높이가 그림을 넘는다."""
+    f = K3.Fig("카드_SOP_구역과쓰는사람.svg")
+    DX, DW, BX, BW, T, BH, P = 115, 190, 258, 372, 64, 72, 86
+    x0 = DX - DW / 2
+    f.lab("SOP", "Standard Operating Procedure", DX + 40, 0, 300)
+    parts, c0 = K3.sop_paper(DW, BH, P)
+    f.add(K3.g(x0, T, 1, parts, boost=1.0))
+    c = [T + y for y in c0]
+    names = (("머리", "누구에게 쓰고 누가 하나"), ("시작 전", "무엇이 맞아야 시작하나"), ("하는 동안", "어떤 차례로 하고 무엇을 하지 않나"),
+             ("끝낼 때", "무엇을 보고 끝났다고 하나"))
+    for y, (nm, q) in zip(c, names):
+        f.add([line(x0 + DW + 8, y, BX - 10, y, sw=2.5), circle(x0 + DW + 8, y, 4.5, fill=NAVY, sw=1)])
+        K3.tcard(f, BX + BW / 2, y, BW, BH, nm, q)
+    PX, PW, PH = 960, 440, 96
+    my, bus = (c[0] + c[3]) / 2, BX + BW + 44
+    pys = (c[0] + 12, my, c[3] - 12)
+    f.add([line(BX + BW + 8, my, bus, my, sw=5), line(bus, pys[0], bus, pys[2], sw=5)])
+    for y, kind, nm, d in zip(pys, ("worker", "owner", "person"), ("작업자", "담당자", "처음 맡은 사람"),
+                              ("차례대로 따른다", "조건과 끝 기준으로 확인한다", "그대로 배운다")):
+        K3.hcard(f, PX, y, PW, PH, kind, nm, d)
+        f.add(arrow([(bus, y), (PX - PW / 2 - 8, y)]))
+    return f.fin(0, K3.foot(f, "사람이 바뀌어도 같은 일이 같은 기준으로 끝난다", T + 3 * P + BH + 22))
+
+
+def p65():
+    """65장: 맨 위 조치 하나(승인 뒤 자동으로 내려오는 명령)에서 내려온 줄이 같은 꼴 · 같은 폭의 장면 칸 셋 위로 갈라진다. 칸마다
+    조작이 오는 곳 → 같은 설비. 원격 자동 칸에는 화살표가 닿고(✓), 사람이 조작하는 두 칸 위에서는 줄이 ✕에서 끊긴다.
+    장면 칸은 가로 꼴이다(통합 14장의 세로 칸으로는 조치 카드 · 칸 · 글 다섯 줄의 높이가 그림을 넘는다)."""
+    f = K3.Fig("카드_운전모드_세장면과명령.svg")
+    W, H, T, by, XS = 320, 112, 160, 100, K3.XS3
+    K3.hcard(f, 600, 42, 470, 84, "fan", "팬 최대 운전", "승인 뒤 자동으로 내려오는 명령")
+    f.add([line(600, 92, 600, by, sw=5), line(XS[0], by, XS[2], by, sw=5)])
+    descs = ("승인 뒤 위에서 자동으로 / 내려오는 명령을 받는다", "관제 화면에서 / 사람이 조작한다", "설비 옆 패널에서 / 사람이 조작한다")
+    for cx, (mode, nm), d in zip(XS, K3.MODES, descs):
+        ok = mode == "auto"
+        f.add(K3.box(cx - W / 2, T, W, H))
+        if ok:
+            f.add(arrow([(cx, by), (cx, T - 8)]) + K3.check_badge(cx, by + 30, 16))
+        else:
+            f.add([line(cx, by, cx, by + 14, sw=5)] + K3.cross_badge(cx, by + 30, 16))
+        K3.source(f, cx - 62, T + H / 2, mode, 0.74)
+        f.add(arrow([(cx + 14, T + H / 2), (cx + 40, T + H / 2)], sw=4, size=13) + K3.disc(cx + 90, T + H / 2, 40, "equip"))
+        f.lab(nm, d, cx, T + H + 6, W)
+        f.lab("", "받아들인다" if ok else "받아들이지 않는다", cx, T + H + 6 + 5 + LH_T + 2 * LH_D + 12, W)
+    y = T + H + 6 + 5 + LH_T + 2 * LH_D + 12 + 5 + LH_D + 22
+    f.lab("운전 모드를 바꾸는 것은 에너지를 끊는 잠금이 아니다", "", 600, y, 1100)
+    f.lab("", "사람이 조작하는 동안 자동으로 내려오는 명령이 끼어들면, 둘이 같은 설비를 서로 다르게 움직인다", 600, y + 5 + LH_T + 8, 1100)
+    return f.fin(0, y + 5 + LH_T + 8 + 5 + LH_D)
+
+
+def p68():
+    """68장: 통합 3회차 19장의 한 방향 흐름(조치 후보 셋 → 체 → 남은 둘 → 저울 → 고른 하나 → 담당자). 왼쪽 후보 카드마다 작은 SOP
+    꼬리표(작업 단계 줄과 조건 줄)가 붙고, 꼬리표의 조건 줄(파랑)만 빠져나와 한 줄로 모여 체로 들어간다."""
+    f = K3.Fig("카드_후보SOP_체와저울.svg")
+    xs, cy, r, hw = (60, 430, 615, 790, 955, 1120), 170, 64, 52
+    for i in range(3):                                           # 후보 카드와 SOP 꼬리표
+        y = cy + (i - 1) * 58
+        f.add([rect(xs[0] - hw, y - 21, 2 * hw, 42, 10, fill=WHITE, sw=3), line(xs[0] - 32, y, xs[0] + 26, y, stroke=GREY, sw=6),
+               line(xs[0] + hw, y, 126, y, sw=3), rect(126, y - 21, 110, 42, 8, fill=WHITE, sw=2.5),
+               circle(140, y - 9, 4, fill=NAVY, sw=1), line(152, y - 9, 222, y - 9, stroke=GREY, sw=5), line(140, y + 9, 262, y + 9, stroke=BLUE, sw=5)])
+    f.add([line(262, cy - 58 + 9, 262, cy + 58 + 9, stroke=BLUE, sw=5)] + arrow([(262, cy + 9), (xs[1] - r - 12, cy + 9)], BLUE))
+    for x, n in ((xs[2], 2), (xs[4], 1)):
+        for i in range(n):
+            y = cy + (i - (n - 1) / 2) * 58
+            f.add([rect(x - hw, y - 21, 2 * hw, 42, 10, fill=WHITE, sw=3), line(x - 32, y, x + 26, y, stroke=GREY, sw=6)])
+    for x, kind in zip(xs[1::2], ("sieve", "scale", "owner")):
+        f.add(K3.disc(x, cy, r, kind))
+    for i, (a_, b_) in enumerate(zip(xs[1:], xs[2:]), 1):
+        ga, gb = (hw + 10, r + 12) if i % 2 == 0 else (r + 12, hw + 10)
+        f.add(arrow([(a_ + ga, cy), (b_ - gb, cy)]))
+    ty = cy - r - 50 - 5 - LH_T - LH_D                          # 용어 덩어리는 원판 위로 띄워, 왼쪽 작은 글(꼬리표 바로 위)과 높이가 엇갈리게 둔다
+    f.lab("허용 조건", "SOP의 조건으로 지금 해도 되나", xs[1], ty, 310, strong=True)
+    f.lab("선택 근거", "무엇이 나은가", xs[3], ty, 240, strong=True)
+    f.lab("", "조건 문장이 판단의 재료", 148, cy - 58 - 21 - 12 - 5 - LH_D, 230)
+    f.lab("조치 후보", "후보마다 SOP가 이어진다", 148, cy + 58 + 21 + 10, 280)
+    f.lab("", "허용 · 제외 · 감점", xs[1], cy + r + 22, 240)
+    f.lab("담당자", "", xs[5], cy + r + 20, 150)
+    return f.fin(ty, K3.foot(f, "운전 모드는 고르기 전에, 세우고 잠그는 것은 손대기 직전에 본다", cy + 58 + 21 + 10 + 5 + LH_T + LH_D + 26))
+
+
+def p69():
+    """69장: 왼쪽은 통합 3회차 21장을 세로로 줄인 것(SOP 한 장의 조건 문장 한 줄(파란 테두리)에서 내려간 가는 선 셋이 같은 폭의 물음 칸
+    셋에 닿는다 — 답은 빈 점선 칸), 오른쪽은 22장의 결정표 생김새(머리 띠 판정할 물음, 입력 열 둘 · 출력 열 하나, 빈 행 셋).
+    화살표 하나가 조건 문장을 표로 옮기는 것을 잇는다."""
+    f = K3.Fig("카드_조건문장_DMN.svg")
+    PX, PW, T = 30, 500, 34
+    f.add([rect(PX, T, PW, 118, 12, fill=WHITE, sw=3.5)])
+    for y, cut in ((T + 18, 150), (T + 100, 220)):
+        f.add([circle(PX + 30, y, 5, fill=GREY, stroke="none", sw=0), line(PX + 50, y, PX + PW - cut, y, stroke=GREY, sw=5)])
+    by = T + 59
+    f.add([rect(PX + 20, by - 26, PW - 40, 52, 14, fill=PALE, stroke=BLUE, sw=4.5)])
+    f.lab("설비를 세우고 잠근 뒤에만", "", PX + PW / 2, by - 19, PW - 70)
+    CX0, CW_, CH, bus = PX + 60, PW - 60, 56, PX + 30
+    ys = tuple(T + 118 + 28 + 28 + i * 68 for i in range(3))
+    f.add([line(bus, T + 118 + 6, bus, ys[2], sw=2.5), circle(bus, T + 118 + 6, 4.5, fill=NAVY, sw=1)])
+    for y, q in zip(ys, ("세웠다는 어느 값으로 보나", "잠갔다는 무엇으로 아나", "무엇을 보고 정했나")):
+        f.add([line(bus, y, CX0 - 8, y, sw=2.5)] + K3.box(CX0, y - CH / 2, CW_, CH, r=16) + K3.dash_rect(CX0 + CW_ - 126, y - 18, 110, 36, GREY, 3, 8, 6))
+        f.lab(q, "", CX0 + (CW_ - 136) / 2, y - 19, CW_ - 146)
+    lb = ys[2] + CH / 2 + 12
+    f.lab("", "적혀 있지 않은 뜻은 컴퓨터가 알 수 없고 AI는 짐작할 뿐이다", PX + PW / 2, lb, 540)
+    x, w, ow = 650, 520, 180                                     # 결정표
+    iw = w - ow
+    f.lab("DMN", "Decision Model and Notation", x + w / 2, 0, 400, strong=True)
+    t0 = 66
+    f.add([rect(x, t0, w, 56, 14, fill=LIGHT, sw=3)])
+    f.lab("판정할 물음", "", x + w / 2, t0 + 28 - 19, 300)
+    f.add([rect(x, t0 + 68, iw - 4, 48, 10, fill=GREY, stroke="none", sw=0), rect(x + iw + 4, t0 + 68, ow - 4, 48, 10, fill=GREY, stroke="none", sw=0)])
+    f.lab("입력", "", x + iw / 2, t0 + 92 - 19, 200)
+    f.lab("출력", "", x + iw + ow / 2, t0 + 92 - 19, 150)
+    y = t0 + 126
+    for _ in range(3):
+        f.add([rect(x, y, w, 50, 12, fill=WHITE, sw=2.5), line(x + iw / 2, y + 9, x + iw / 2, y + 41, stroke=GREY, sw=2), line(x + iw, y, x + iw, y + 50, sw=3)])
+        y += 58
+    f.lab("같은 입력이면 누가 보든 같은 출력이 나온다", "", x + w / 2, y + 6, 600)
+    f.add(arrow([(PX + PW + 14, by), (x - 14, by)]))
+    return f.fin(0, max(lb + 5 + LH_D, y + 6 + 5 + LH_T))
+
+
+FIGS = [p06, p07, p10, p12, p13, p15, p16, p17, p19, p20, p22, p27, p36, p40, p42, p43, p59, p65, p68, p69]
 
 
 # ───────────────────────── 덱 맞춤 ─────────────────────────
