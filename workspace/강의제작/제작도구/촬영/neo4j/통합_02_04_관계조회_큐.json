@@ -75,7 +75,7 @@
    "id": "g0105",
    "segment": 1,
    "section": "1. 여는 말",
-   "text": "아직 띄우지 않으셨으면 여기서 잠깐 멈추고, 띄운 다음에 돌아오세요. 오늘 넣을 쿼리도 그 문서에 차례대로 들어 있으니, 옆 탭에 열어 두시고요.",
+   "text": "아직 띄우지 않으셨으면 여기서 잠깐 멈추고, 띄운 다음에 돌아오세요.",
    "gap": 1300,
    "ops": [
     {
@@ -353,36 +353,23 @@
    "id": "g0401",
    "segment": 4,
    "section": "4. 노드 만들기 — CREATE",
-   "text": "이제 노드를 만들어 볼게요. 쿼리는 손으로 치지 않고 안내 문서에서 복사해 옵니다. 따옴표 하나만 빠져도 돌지 않거든요. 옆 탭의 안내 문서에서 2번 칸 아래에 있는 복사 단추를 누르고,",
+   "text": "이제 노드를 만들어 볼게요. 쿼리는 위쪽 입력칸에 넣습니다.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 2,
+     "op": "query",
      "query": "CREATE (:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (:연습장치 {id:'basic-B', name:'연습 팬', score:70});",
-     "at": 0.6538
+     "at": 0.6061
     },
     {
      "op": "mark",
      "points": [
       {
-       "css": "#s2 h2",
-       "at": 0.7788,
-       "hl": "box"
-      },
-      {
-       "css": ".block pre",
-       "nth": 2,
-       "at": 0.8077,
-       "hl": "box"
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.6061
       }
      ]
-    },
-    {
-     "op": "gCopy",
-     "block": 2,
-     "at": 0.9615,
-     "point_at": 0.8077
     }
    ]
   },
@@ -390,21 +377,11 @@
    "id": "g0402",
    "segment": 4,
    "section": "4. 노드 만들기 — CREATE",
-   "text": "Neo4j Browser 탭으로 돌아와 위쪽 입력칸에 붙여 넣으세요.",
-   "gap": 600,
+   "text": "오늘 넣는 쿼리는 모두 안내 문서에 차례대로 들어 있어요. 따라 하실 때는 손으로 치지 말고 거기서 복사해 붙여 넣으세요. 따옴표 하나만 빠져도 쿼리가 돌지 않거든요.",
+   "gap": 1300,
    "ops": [
     {
-     "op": "mainShow",
-     "at": 0.0
-    },
-    {
-     "op": "paste",
-     "query": "CREATE (:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (:연습장치 {id:'basic-B', name:'연습 팬', score:70});",
-     "at": 0.5789,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "none"
     }
    ]
   },
@@ -577,33 +554,23 @@
    "id": "g0501",
    "segment": 5,
    "section": "5. 찾아서 돌려받기 — MATCH · RETURN, 그림과 표",
-   "text": "정말 들어갔는지 찾아볼게요. 안내 문서 3번의 첫 칸을 가져옵니다. 앞으로도 쿼리는 이렇게 문서의 다음 칸을 복사해 와서 돌리면 돼요.",
+   "text": "정말 들어갔는지 찾아볼게요. 찾는 쿼리는 두 줄입니다.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 3,
+     "op": "query",
      "query": "MATCH (n:연습장치)\nRETURN n;",
-     "at": 0.2133
+     "at": 0.5333
     },
     {
-     "op": "gCopy",
-     "block": 3,
-     "at": 0.4133,
-     "point_at": 0.2133
-    },
-    {
-     "op": "mainShow",
-     "at": 0.5067
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n:연습장치)\nRETURN n;",
-     "at": 0.5067,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.5333
+      }
+     ]
     }
    ]
   },
@@ -879,33 +846,23 @@
    "id": "g0508",
    "segment": 5,
    "section": "5. 찾아서 돌려받기 — MATCH · RETURN, 그림과 표",
-   "text": "그런데 속성 값 몇 개만 필요할 때는 노드를 통째로 받을 까닭이 없죠. 다음 칸은 같은 노드에서 이름과 점수만 돌려받는 쿼리입니다.",
+   "text": "그런데 속성 값 몇 개만 필요할 때는 노드를 통째로 받을 까닭이 없죠. 같은 노드에서 이름과 점수만 돌려받는 쿼리를 넣어 볼게요.",
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 4,
+     "op": "query",
      "query": "MATCH (n:연습장치)\nRETURN n.name AS 이름, n.score AS 점수\nORDER BY 점수;",
-     "at": 0.5479
+     "at": 0.5556
     },
     {
-     "op": "gCopy",
-     "block": 4,
-     "at": 0.6301,
-     "point_at": 0.5479
-    },
-    {
-     "op": "mainShow",
-     "at": 0.7397
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n:연습장치)\nRETURN n.name AS 이름, n.score AS 점수\nORDER BY 점수;",
-     "at": 0.7397,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.5556
+      }
+     ]
     }
    ]
   },
@@ -1010,33 +967,23 @@
    "id": "g0601",
    "segment": 6,
    "section": "6. 조건 더하기 — WHERE",
-   "text": "찾은 것 가운데 일부만 받고 싶을 때는 WHERE로 조건을 더한다고 했죠. 4번 칸을 가져올게요.",
+   "text": "찾은 것 가운데 일부만 받고 싶을 때는 WHERE로 조건을 더한다고 했죠. 그 WHERE를 한 줄 넣은 쿼리입니다.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 5,
+     "op": "query",
      "query": "MATCH (n:연습장치)\nWHERE n.score >= 50\nRETURN n;",
-     "at": 0.7778
+     "at": 0.6562
     },
     {
-     "op": "gCopy",
-     "block": 5,
-     "at": 0.7778,
-     "point_at": 0.7778
-    },
-    {
-     "op": "mainShow",
-     "at": 0.7778
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n:연습장치)\nWHERE n.score >= 50\nRETURN n;",
-     "at": 0.7778,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.6562
+      }
+     ]
     }
    ]
   },
@@ -1099,33 +1046,23 @@
    "id": "g0701",
    "segment": 7,
    "section": "7. 있으면 찾고 없으면 만들기 — MERGE · SET",
-   "text": "이제 펌프에 센서를 하나 달아 볼게요. 센서 노드를 먼저 만들고, 그다음에 펌프와 관계로 이으면 됩니다. 센서는 여러 번 돌려도 하나만 남게, CREATE 대신 MERGE로 만들어 볼게요. 5번의 첫 칸입니다.",
+   "text": "이제 펌프에 센서를 하나 달아 볼게요. 센서 노드를 먼저 만들고, 그다음에 펌프와 관계로 이으면 됩니다. 센서는 여러 번 돌려도 하나만 남게, CREATE 대신 MERGE로 만들어 볼게요.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 6,
+     "op": "query",
      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;",
-     "at": 0.906
+     "at": 0.5619
     },
     {
-     "op": "gCopy",
-     "block": 6,
-     "at": 0.906,
-     "point_at": 0.906
-    },
-    {
-     "op": "mainShow",
-     "at": 0.906
-    },
-    {
-     "op": "paste",
-     "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;",
-     "at": 0.906,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.5619
+      }
+     ]
     }
    ]
   },
@@ -1271,48 +1208,33 @@
    "id": "g0705",
    "segment": 7,
    "section": "7. 있으면 찾고 없으면 만들기 — MERGE · SET",
-   "text": "다음 칸은 방금 것과 글자 하나 다르지 않은 쿼리예요. CREATE였다면 센서가 둘이 됐을 텐데, MERGE는 어떤지 한 번 더 돌려 봅니다.",
+   "text": "방금 것과 글자 하나 다르지 않은 쿼리를 다시 넣습니다. CREATE였다면 센서가 둘이 됐을 텐데, MERGE는 어떤지 한 번 더 돌려 봅니다.",
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 7,
+     "op": "query",
      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;",
      "at": 0.0
-    },
-    {
-     "op": "gCopy",
-     "block": 7,
-     "at": 0.0,
-     "point_at": 0.0
-    },
-    {
-     "op": "mainShow",
-     "at": 0.0
-    },
-    {
-     "op": "paste",
-     "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;",
-     "at": 0.0,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
     },
     {
      "op": "mark",
      "points": [
       {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.02
+      },
+      {
        "edAll": true,
        "under": true,
-       "at": 0.3924,
+       "at": 0.4,
        "hl": "box"
       }
      ]
     },
     {
      "op": "runCard",
-     "at": 0.9114,
+     "at": 0.9125,
      "graph": true,
      "nodes": 1,
      "edges": 0,
@@ -1348,33 +1270,23 @@
    "id": "g0801",
    "segment": 8,
    "section": "8. 관계 잇기",
-   "text": "센서 노드가 생겼으니, 이번에는 펌프와 센서를 이을 차례예요. 펌프는 이 센서로 감시된다, 이 문장대로 펌프에서 센서로 관계를 긋습니다. 5번의 마지막 칸이에요.",
+   "text": "센서 노드가 생겼으니, 이번에는 펌프와 센서를 이을 차례예요. 펌프는 이 센서로 감시된다, 이 문장대로 펌프에서 센서로 관계를 긋습니다.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 8,
+     "op": "query",
      "query": "MATCH (p:연습장치 {id:'basic-A'})\nMATCH (s:연습센서 {id:'basic-S1'})\nMERGE (p)-[r:감시된다]->(s)\nRETURN p, r, s;",
-     "at": 0.8556
+     "at": 0.4605
     },
     {
-     "op": "gCopy",
-     "block": 8,
-     "at": 0.8556,
-     "point_at": 0.8556
-    },
-    {
-     "op": "mainShow",
-     "at": 0.8556
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (p:연습장치 {id:'basic-A'})\nMATCH (s:연습센서 {id:'basic-S1'})\nMERGE (p)-[r:감시된다]->(s)\nRETURN p, r, s;",
-     "at": 0.8556,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.4605
+      }
+     ]
     }
    ]
   },
@@ -1542,33 +1454,23 @@
    "id": "g0901",
    "segment": 9,
    "section": "9. 고치기 — SET",
-   "text": "이번에는 센서 이름을 고쳐 보겠습니다. 온도 센서라고만 적었는데, 재는 것이 기름 온도니까 유온 센서로 바꿀게요. 고칠 때도 SET을 씁니다. 6번 칸이에요.",
+   "text": "이번에는 센서 이름을 고쳐 보겠습니다. 온도 센서라고만 적었는데, 재는 것이 기름 온도니까 유온 센서로 바꿀게요. 고칠 때도 SET을 씁니다.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 9,
+     "op": "query",
      "query": "MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 유온 센서'\nRETURN p, r, s;",
-     "at": 0.9091
+     "at": 0.8101
     },
     {
-     "op": "gCopy",
-     "block": 9,
-     "at": 0.9091,
-     "point_at": 0.9091
-    },
-    {
-     "op": "mainShow",
-     "at": 0.9091
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 유온 센서'\nRETURN p, r, s;",
-     "at": 0.9091,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.8101
+      }
+     ]
     }
    ]
   },
@@ -1698,33 +1600,23 @@
    "id": "g1002",
    "segment": 10,
    "section": "10. 지우기 — DETACH DELETE · DELETE, 그리고 다시 찾기",
-   "text": "펌프부터 지웁니다. 7번의 첫 칸이에요.",
+   "text": "펌프부터 지웁니다.",
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 10,
+     "op": "query",
      "query": "MATCH (p:연습장치 {id:'basic-A'})\nDETACH DELETE p;",
-     "at": 0.5
+     "at": 0.0
     },
     {
-     "op": "gCopy",
-     "block": 10,
-     "at": 0.5,
-     "point_at": 0.5
-    },
-    {
-     "op": "mainShow",
-     "at": 0.5
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (p:연습장치 {id:'basic-A'})\nDETACH DELETE p;",
-     "at": 0.5,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.02
+      }
+     ]
     }
    ]
   },
@@ -1807,29 +1699,19 @@
      ]
     },
     {
-     "op": "gShow",
-     "block": 11,
+     "op": "query",
      "query": "MATCH (n:연습장치|연습센서)\nRETURN n;",
      "at": 0.7938
     },
     {
-     "op": "gCopy",
-     "block": 11,
-     "at": 0.7938,
-     "point_at": 0.7938
-    },
-    {
-     "op": "mainShow",
-     "at": 0.7938
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n:연습장치|연습센서)\nRETURN n;",
-     "at": 0.7938,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.7938
+      }
+     ]
     }
    ]
   },
@@ -1901,29 +1783,19 @@
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 12,
+     "op": "query",
      "query": "MATCH (n:연습장치|연습센서)\nDELETE n;",
      "at": 0.0
     },
     {
-     "op": "gCopy",
-     "block": 12,
-     "at": 0.0,
-     "point_at": 0.0
-    },
-    {
-     "op": "mainShow",
-     "at": 0.0
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n:연습장치|연습센서)\nDELETE n;",
-     "at": 0.0,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.02
+      }
+     ]
     }
    ]
   },
@@ -1974,29 +1846,19 @@
      ]
     },
     {
-     "op": "gShow",
-     "block": 13,
+     "op": "query",
      "query": "MATCH (n:연습장치|연습센서)\nRETURN count(n) AS 남은수;",
      "at": 0.4815
     },
     {
-     "op": "gCopy",
-     "block": 13,
-     "at": 0.4815,
-     "point_at": 0.4815
-    },
-    {
-     "op": "mainShow",
-     "at": 0.4815
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n:연습장치|연습센서)\nRETURN count(n) AS 남은수;",
-     "at": 0.4815,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.4815
+      }
+     ]
     }
    ]
   },
@@ -2064,33 +1926,23 @@
    "id": "g1102",
    "segment": 11,
    "section": "11. 처음부터 있던 설비 데이터 — 레이블마다 세기",
-   "text": "먼저, 지우고 난 뒤에도 이 데이터가 처음과 같은지부터 확인할게요. 어떤 종류가 몇 개씩 들었는지도 함께 보려고, 8번 칸은 노드를 레이블마다 묶어서 셉니다.",
+   "text": "먼저, 지우고 난 뒤에도 이 데이터가 처음과 같은지부터 확인할게요. 어떤 종류가 몇 개씩 들었는지도 함께 보려고, 이번 쿼리는 노드를 레이블마다 묶어서 셉니다.",
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 14,
+     "op": "query",
      "query": "MATCH (n)\nRETURN labels(n) AS 레이블, count(n) AS 개수\nORDER BY 개수 DESC;",
-     "at": 0.7273
+     "at": 0.7191
     },
     {
-     "op": "gCopy",
-     "block": 14,
-     "at": 0.7273,
-     "point_at": 0.7273
-    },
-    {
-     "op": "mainShow",
-     "at": 0.7273
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (n)\nRETURN labels(n) AS 레이블, count(n) AS 개수\nORDER BY 개수 DESC;",
-     "at": 0.7273,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.7191
+      }
+     ]
     }
    ]
   },
@@ -2238,33 +2090,23 @@
    "id": "g1201",
    "segment": 12,
    "section": "12. 관계를 한 번 건너기 — 한 단계",
-   "text": "이 설비가 어떤 구성 요소를 가졌는지부터, 9번 칸으로 물어볼게요.",
+   "text": "이 설비가 어떤 구성 요소를 가졌는지부터 물어볼게요.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 15,
+     "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\nRETURN c.name AS 구성요소;",
-     "at": 0.6486
+     "at": 0.2069
     },
     {
-     "op": "gCopy",
-     "block": 15,
-     "at": 0.6486,
-     "point_at": 0.6486
-    },
-    {
-     "op": "mainShow",
-     "at": 0.6486
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\nRETURN c.name AS 구성요소;",
-     "at": 0.6486,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.2069
+      }
+     ]
     }
    ]
   },
@@ -2384,33 +2226,23 @@
    "id": "g1301",
    "segment": 13,
    "section": "13. 관계를 두 번 건너기 — 여러 단계 경로",
-   "text": "한 번 더 건너 볼게요. 10번 첫 칸은 구성 요소가 쓰는 부품까지 가는 길입니다.",
+   "text": "한 번 더 건너 볼게요. 이번에는 구성 요소가 쓰는 부품까지 가는 길입니다.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 16,
+     "op": "query",
      "query": "MATCH path = (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART]->(:Part)\nRETURN path;",
-     "at": 0.3043
+     "at": 0.3333
     },
     {
-     "op": "gCopy",
-     "block": 16,
-     "at": 0.3043,
-     "point_at": 0.3043
-    },
-    {
-     "op": "mainShow",
-     "at": 0.3043
-    },
-    {
-     "op": "paste",
-     "query": "MATCH path = (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART]->(:Part)\nRETURN path;",
-     "at": 0.3043,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.3333
+      }
+     ]
     }
    ]
   },
@@ -2566,29 +2398,19 @@
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 17,
+     "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part)\nWHERE c.name = '오일 쿨러'\nRETURN c.name AS 구성요소, pt.name AS 부품, pt.partNo AS 품번;",
      "at": 0.5306
     },
     {
-     "op": "gCopy",
-     "block": 17,
-     "at": 0.5306,
-     "point_at": 0.5306
-    },
-    {
-     "op": "mainShow",
-     "at": 0.5306
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part)\nWHERE c.name = '오일 쿨러'\nRETURN c.name AS 구성요소, pt.name AS 부품, pt.partNo AS 품번;",
-     "at": 0.5306,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.5306
+      }
+     ]
     }
    ]
   },
@@ -2678,33 +2500,23 @@
    "id": "g1401",
    "segment": 14,
    "section": "14. 답을 믿는 법 — 원래 행, 조건, 집계",
-   "text": "마지막은 센서까지 가는 경로입니다. 쿼리는 조건을 잘못 적거나 엉뚱한 것을 세어도 오류를 내지 않고, 그럴듯한 표를 내놓아요. 그래서 여기서는 나온 표가 내가 물으려던 것에 맞는 답인지 확인하는 법까지 볼게요. 11번의 첫 칸이에요.",
+   "text": "마지막은 센서까지 가는 경로입니다. 쿼리는 조건을 잘못 적거나 엉뚱한 것을 세어도 오류를 내지 않고, 그럴듯한 표를 내놓아요. 그래서 여기서는 나온 표가 내가 물으려던 것에 맞는 답인지 확인하는 법까지 볼게요.",
    "gap": 2300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 18,
+     "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;",
-     "at": 0.9077
+     "at": 0.6068
     },
     {
-     "op": "gCopy",
-     "block": 18,
-     "at": 0.9077,
-     "point_at": 0.9077
-    },
-    {
-     "op": "mainShow",
-     "at": 0.9077
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;",
-     "at": 0.9077,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.6068
+      }
+     ]
     }
    ]
   },
@@ -2844,40 +2656,25 @@
    "id": "g1406",
    "segment": 14,
    "section": "14. 답을 믿는 법 — 원래 행, 조건, 집계",
-   "text": "다음 칸은 같은 쿼리에 WHERE 한 줄을 더한 겁니다. 가상이 false인 것만 받는다는 조건이에요.",
+   "text": "방금 쿼리에 WHERE 한 줄을 더했습니다. 가상이 false인 것만 받는다는 조건이에요.",
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 19,
+     "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nWHERE s.virtual = false\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;",
      "at": 0.0
-    },
-    {
-     "op": "gCopy",
-     "block": 19,
-     "at": 0.0,
-     "point_at": 0.0
-    },
-    {
-     "op": "mainShow",
-     "at": 0.0
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nWHERE s.virtual = false\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;",
-     "at": 0.0,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
     },
     {
      "op": "mark",
      "points": [
       {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.02
+      },
+      {
        "edLine": 2,
-       "at": 0.5614,
+       "at": 0.5,
        "hl": "underline"
       }
      ]
@@ -2938,29 +2735,19 @@
    "gap": 1300,
    "ops": [
     {
-     "op": "gShow",
-     "block": 20,
+     "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, count(s) AS 센서수, collect(s.name) AS 센서목록\nORDER BY 센서수 DESC, 구성요소;",
      "at": 0.0
     },
     {
-     "op": "gCopy",
-     "block": 20,
-     "at": 0.0,
-     "point_at": 0.0
-    },
-    {
-     "op": "mainShow",
-     "at": 0.0
-    },
-    {
-     "op": "paste",
-     "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, count(s) AS 센서수, collect(s.name) AS 센서목록\nORDER BY 센서수 DESC, 구성요소;",
-     "at": 0.0,
-     "rest": {
-      "x": 1180,
-      "y": 113
-     }
+     "op": "mark",
+     "points": [
+      {
+       "css": "[data-testid=\"run-button\"]",
+       "under": true,
+       "at": 0.02
+      }
+     ]
     }
    ]
   },

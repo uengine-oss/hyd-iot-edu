@@ -177,7 +177,9 @@ def trials(starter, work):
             assert usage[change] != before, (change, '수정본을 반영해도 사용 설비 조회의 답이 그대로')
             records.append({'change': change, 'initial_nodes': len(initial['nodes']), 'after_nodes': len(after['nodes']), 'after_rels': len(after['rels']),
                             'per_asset_after': per_asset(after), 'usage_before': before, 'usage_after': usage[change]})
-            result(folder, 'compare')
+            reference = json.loads((folder / 'data/reference_map.json').read_text(encoding='utf-8'))['관계']
+            shown = [b for b in result(folder, 'compare') if b['kind'] == 'table' and b['title'].startswith('기준 지도')]
+            assert len(shown) == 1 and len(shown[0]['rows']) == len(reference), '비교 화면에 기준 지도 표가 관계 수만큼 보여야 한다'
             result(folder, 'export')
             result(folder, 'check')
             if change == '남김':

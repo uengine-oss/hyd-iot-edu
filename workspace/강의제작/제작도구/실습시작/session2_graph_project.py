@@ -99,7 +99,23 @@ def actions_source(L):
     text = text.replace("    d = C.diff_graphs(before, after)",
                         "    save_json('before_update.json', before)\n    save_json('after_update.json', after)\n    d = C.diff_graphs(before, after)")
     text = text.replace("'수정 전 → 수정 뒤(적재 직후와 견줌)'", "'수정 전 → 수정 뒤'")
-    return renamed(text, ACTION_TERMS) + EXTRA_ACTIONS
+    return renamed(text, ACTION_TERMS + COMPARE_TERMS) + EXTRA_ACTIONS
+
+
+# 비교 기능은 내 그래프 아래에 기준 지도(data/reference_map.json — build_labs.portal_reference)를 함께 띄운다. 영상은 가이드를 띄우지 않으므로
+# 견줄 표가 결과 화면에 있어야 한다(사용자 2026-11-20 「결과 화면에 띄워」). 실전반 랩은 이 바꿈을 거치지 않는다.
+COMPARE_TERMS = [
+    ("""                    note='가이드 이 단계의 포털 기준 지도 표와 나란히 놓고 식별자와 방향을 견줍니다.')]""",
+     """                    note='아래 기준 지도 표와 식별자 · 관계 방향을 견줍니다.'),
+            reference_map()]
+
+
+def reference_map():
+    ref = json.loads((HERE / 'data/reference_map.json').read_text(encoding='utf-8'))
+    name = {x['id']: f"{x['id']}({x['알아볼 값']})" for x in ref['대상']}
+    return R.table('기준 지도 — 포털 지식 지도의 같은 길(시작 → 끝)', ['시작 id', '관계', '끝 id'],
+                   [(name[r['시작']], f"{r['관계']}({r['화면 이름']})", name[r['끝']]) for r in ref['관계']], note=ref['설명'])"""),
+]
 
 
 EXTRA_ACTIONS = '''
