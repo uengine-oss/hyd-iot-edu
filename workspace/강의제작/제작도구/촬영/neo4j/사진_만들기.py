@@ -2,7 +2,7 @@
 사진의 녹화 시각 · 표시 좌표는 이 파일 한 곳이다.
 
 python3 workspace/강의제작/제작도구/촬영/neo4j/사진_만들기.py
-    → 두 과정 `02회차/랩/02일차_실습1_관계조회/images/<이름>.jpg`(같은 바이트)와 `실습시작/capture-provenance.json`의 그 사진 항목.
+    → `촬영/neo4j/가이드사진/images/<이름>.jpg`(가이드 생성기가 두 과정 guide.html 안에 넣는다)와 `실습시작/capture-provenance.json`의 그 사진 항목.
 - 원본은 영상 「관계조회-04」를 만든 녹화 take(TAKE — 설명 창을 덮고 강조를 고친 사본, 근거 폴더 `고침/손본_take.py`)의 프레임이다. 영상에 그려 넣은 화살표 · 강조가 없는 화면이고,
   그 밖은 영상 화면과 같다. 시각은 take 시계(ms)이고, 그 시각까지 받은 마지막 프레임을 쓴다. 표시는 늘 그 원본에 다시 그린다.
 - 표시 자리는 영상에서 말이 짚은 대상의 상자(timing.json highlights)와 Neo4j Browser에서 잰 단추 상자(Connect · Dismiss · 원통 단추 · 패널 접기)에서 왔고,
@@ -20,7 +20,8 @@ from PIL import Image, ImageDraw
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
 TAKE = '작업/촬영/neo4j/rec-04-01q'      # 영상 관계조회-04(합본4 → 최종)를 만든 take. 녹화 원본이라 커밋하지 않고, 근거에는 프레임 해시가 남는다
-LABS = [f'workspace/강의제작/산출물/{c}/실습/02회차/랩/02일차_실습1_관계조회/images' for c in ('통합반', '실전반')]
+LABS = ['workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images']   # 가이드 생성기(build_common.py)가 이 사진을 guide.html 안에 넣는다 — 두 과정이 같은 사진
+OLD_LABS = [f'workspace/강의제작/산출물/{c}/실습/02회차/랩/02일차_실습1_관계조회/images' for c in ('통합반', '실전반')]   # 옛 사진 자리(근거 기록을 지울 때만 본다)
 PROVENANCE = HERE.parent.parent/'실습시작/capture-provenance.json'
 ORIGINALS = HERE/'사진원본'
 RED, WIDTH = '#d32f2f', 4
@@ -30,10 +31,10 @@ RED, WIDTH = '#d32f2f', 4
 PHOTOS = [
     ('q01-connect', 100173, '예제 준비하고 연결하기', [[902, 469, 1224, 523], [696, 624, 1224, 678], [696, 724, 1224, 778], [800, 933, 1120, 1003]]),
     ('q01-dismiss', 106000, '예제 준비하고 연결하기', [[849, 286, 960, 342]]),
-    ('q01-address', 139819, '예제 준비하고 연결하기', [[47, 9, 279, 29]]),
+    ('q01-address', 139819, '예제 준비하고 연결하기', [[22, 3, 300, 37]]),
     ('q01-overview', 215114, '예제 준비하고 연결하기', [[5, 40, 55, 95], [8, 144, 122, 193], [8, 276, 178, 325]]),
     ('q01-collapse', 242800, '예제 준비하고 연결하기', [[494, 34, 552, 91]]),
-    ('q02-paste', 262000, '노드 만들기: CREATE', [[38, 97, 746, 152], [1851, 90, 1916, 137]]),
+    ('q02-paste', 262000, '노드 만들기: CREATE', [[36, 93, 752, 156], [1851, 90, 1916, 137]]),
     ('q02-created', 379592, '노드 만들기: CREATE', [[57, 221, 405, 246]]),
     ('q03-graph', 469742, '찾아서 돌려받기: MATCH · RETURN', [[657, 674, 763, 780], [657, 375, 763, 481]]),
     ('q03-details', 493003, '찾아서 돌려받기: MATCH · RETURN', [[1419, 329, 1576, 371], [1419, 485, 1890, 631]]),
@@ -49,7 +50,7 @@ PHOTOS = [
     ('q07-zero', 1193498, '지우고 다시 찾기: DETACH DELETE · DELETE', [[12, 312, 1908, 371]]),
     ('q08-labels', 1287309, '설비 데이터를 레이블마다 세기', [[12, 312, 1908, 575]]),
     ('q09-one-hop', 1375241, '관계를 한 번 건너기: 한 단계', [[12, 312, 1908, 626]]),
-    ('q10-path', 1466861, '관계를 두 번 건너기: 경로', [[390, 246, 1006, 771]]),
+    ('q10-path', 1466861, '관계를 두 번 건너기: 경로', [[390, 246, 1006, 771], [1482, 372, 1828, 407]]),
     ('q10-part', 1554183, '관계를 두 번 건너기: 경로', [[654, 318, 1422, 364]]),
     ('q11-rows', 1635295, '답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계', [[10, 310, 1910, 577]]),
     ('q11-where', 1686146, '답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계', [[10, 310, 1910, 526]]),
@@ -61,7 +62,8 @@ LINE = '한 줄짜리 결과 글을 감싼 상자라 줄 높이 안에 6px 여�
 UNCHECKED = {
     'q01-connect': '입력칸 둘레(Password 칸은 커서가 든 짙은 테두리)와 칸 이름 글이 6px 안에 있어, 칸을 감싼 상자가 그 테두리에 붙는다(칸 안 글자는 가리지 않는다)',
     'q01-dismiss': '안내 창이 짙은 보라색이라 Dismiss 둘레 어디에 선을 그어도 어두운 화소에 닿는다',
-    'q01-address': '맨 위 막대의 Instance 글이 막대 높이에 꽉 차서 6px 여백을 둘 자리가 없다(초록 점과 주소 글자 사이에 선을 두었다)',
+    'q01-address': '맨 위 막대의 Instance 칸(초록 점과 주소가 든 회색 둥근 칸)이 막대 높이에 꽉 차서 6px 여백을 둘 자리가 없다(그 칸 둘레에 선을 두어 글자는 가리지 않는다)',
+    'q10-path': '오른쪽 목록의 레이블 단추(Asset · Component · Part)가 짙은 색이라 단추 줄을 두른 선이 6px 안에 닿는다(단추 글자는 가리지 않는다)',
     'q02-paste': '입력칸이 쿼리 두 줄 높이뿐이고 Run 단추는 짙은 파랑이라, 상자가 쿼리 글 · 단추에 6px 안으로 붙는다(줄 번호와 글자는 가리지 않는다)',
     'q02-created': LINE, 'q05-merge-new': LINE, 'q05-merge-again': LINE, 'q07-detach': LINE,
     'q06-set': '속성 표의 <id> 값이 두 줄로 접혀 그 아래 id 행 위로 6px을 비울 자리가 없다',
@@ -155,9 +157,9 @@ def main():
             if old.stem not in {n for n, *_ in PHOTOS + SCREENS}:
                 old.unlink()
     old = json.loads(PROVENANCE.read_text(encoding='utf-8'))
-    keep = [x for x in old if not any(x['target'].removeprefix('workspace/').startswith(lab.removeprefix('workspace/') + '/') for lab in LABS)]
+    keep = [x for x in old if not any(x['target'].removeprefix('workspace/').startswith(lab.removeprefix('workspace/') + '/') for lab in LABS + OLD_LABS)]
     PROVENANCE.write_text(json.dumps(keep + records, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(len(PHOTOS) + len(SCREENS), '사진 × 두 과정. 눈으로 본 뒤 가이드를 만든다.')
+    print(len(PHOTOS) + len(SCREENS), '사진. 눈으로 본 뒤 가이드를 만든다.')
 
 
 if __name__ == '__main__':

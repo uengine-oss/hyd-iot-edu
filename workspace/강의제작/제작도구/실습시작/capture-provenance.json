@@ -2131,7 +2131,7 @@
     "sha256": "79a9e24a1c5b44120f8d939a824fe904f6f3f1525019e6a56abfc89db368a78c"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-connect.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q01-connect.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000214.jpg",
@@ -2169,45 +2169,7 @@
     "sha256": "bc7d265e2398e0a6fa2e83adf68b278a027868fc22c829c4d776e57f18318b5f"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-connect.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000214.jpg",
-    "source_sha256": "77d1484e83df29a054d44468bbd22fe9b66b2b07605beae60ae8fcce32d0a432",
-    "take_ms": 100173,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        902,
-        469,
-        1224,
-        523
-      ],
-      [
-        696,
-        624,
-        1224,
-        678
-      ],
-      [
-        696,
-        724,
-        1224,
-        778
-      ],
-      [
-        800,
-        933,
-        1120,
-        1003
-      ]
-    ],
-    "unchecked": "입력칸 둘레(Password 칸은 커서가 든 짙은 테두리)와 칸 이름 글이 6px 안에 있어, 칸을 감싼 상자가 그 테두리에 붙는다(칸 안 글자는 가리지 않는다)",
-    "sha256": "bc7d265e2398e0a6fa2e83adf68b278a027868fc22c829c4d776e57f18318b5f"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-dismiss.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q01-dismiss.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000309.jpg",
@@ -2227,27 +2189,7 @@
     "sha256": "243702b49deb2c07f1b073fbdf068b9ac11dd612444e836a805386e6ff182f3e"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-dismiss.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000309.jpg",
-    "source_sha256": "b337b400ccb6a9b6fc7c35ad0b62ee8c2a0897ace83a71d609287c8a0169775d",
-    "take_ms": 106000,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        849,
-        286,
-        960,
-        342
-      ]
-    ],
-    "unchecked": "안내 창이 짙은 보라색이라 Dismiss 둘레 어디에 선을 그어도 어두운 화소에 닿는다",
-    "sha256": "243702b49deb2c07f1b073fbdf068b9ac11dd612444e836a805386e6ff182f3e"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-address.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q01-address.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000401.jpg",
@@ -2257,37 +2199,17 @@
     "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
     "rectangles": [
       [
-        47,
-        9,
-        279,
-        29
+        22,
+        3,
+        300,
+        37
       ]
     ],
-    "unchecked": "맨 위 막대의 Instance 글이 막대 높이에 꽉 차서 6px 여백을 둘 자리가 없다(초록 점과 주소 글자 사이에 선을 두었다)",
-    "sha256": "cd3105b4fd8e041a387ce401abbc6871936d8224a6278a15e7d4faf3ca3fd24c"
+    "unchecked": "맨 위 막대의 Instance 칸(초록 점과 주소가 든 회색 둥근 칸)이 막대 높이에 꽉 차서 6px 여백을 둘 자리가 없다(그 칸 둘레에 선을 두어 글자는 가리지 않는다)",
+    "sha256": "963a7a7af2d688a88acc59152c5d6ac2200792d2eb00a976115726ca1c60e345"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-address.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000401.jpg",
-    "source_sha256": "ebd8cd3aa3e509e9574357a6588bfd35f01d2774216e574ebe8d08d781ceee65",
-    "take_ms": 139819,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        47,
-        9,
-        279,
-        29
-      ]
-    ],
-    "unchecked": "맨 위 막대의 Instance 글이 막대 높이에 꽉 차서 6px 여백을 둘 자리가 없다(초록 점과 주소 글자 사이에 선을 두었다)",
-    "sha256": "cd3105b4fd8e041a387ce401abbc6871936d8224a6278a15e7d4faf3ca3fd24c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-overview.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q01-overview.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000416.jpg",
@@ -2318,38 +2240,7 @@
     "sha256": "2b51e03e721d1d561ff6dfb04b3d9801576f61b2ee30c40d92689a460973cb0e"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-overview.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000416.jpg",
-    "source_sha256": "c21a30d594224c5095ad2a447a7d780dbd01d8ce180cab91a2c73f7f82056292",
-    "take_ms": 215114,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        5,
-        40,
-        55,
-        95
-      ],
-      [
-        8,
-        144,
-        122,
-        193
-      ],
-      [
-        8,
-        276,
-        178,
-        325
-      ]
-    ],
-    "sha256": "2b51e03e721d1d561ff6dfb04b3d9801576f61b2ee30c40d92689a460973cb0e"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-collapse.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q01-collapse.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000435.jpg",
@@ -2368,26 +2259,7 @@
     "sha256": "a1d0646194f6cad372ac238cbcd31db7561fc6cfefb6ebaef7a37665953ad773"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q01-collapse.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000435.jpg",
-    "source_sha256": "17b4358d63dd109374d69655cfd2e16895ab6c1ffd64dc221110824b3adb90e2",
-    "take_ms": 242800,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        494,
-        34,
-        552,
-        91
-      ]
-    ],
-    "sha256": "a1d0646194f6cad372ac238cbcd31db7561fc6cfefb6ebaef7a37665953ad773"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q02-paste.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q02-paste.jpg",
     "kind": "학생 실습 화면",
     "section": "노드 만들기: CREATE",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000448.jpg",
@@ -2397,10 +2269,10 @@
     "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
     "rectangles": [
       [
-        38,
-        97,
-        746,
-        152
+        36,
+        93,
+        752,
+        156
       ],
       [
         1851,
@@ -2410,36 +2282,10 @@
       ]
     ],
     "unchecked": "입력칸이 쿼리 두 줄 높이뿐이고 Run 단추는 짙은 파랑이라, 상자가 쿼리 글 · 단추에 6px 안으로 붙는다(줄 번호와 글자는 가리지 않는다)",
-    "sha256": "26ba71ec25f6f220db72de13bcfdda3651dc30ab0c76788195d7cba269e37d76"
+    "sha256": "d241408446c8be7d049ccde0c0e6fd0338aadfdbf6af249dadf23588a271e468"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q02-paste.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들기: CREATE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000448.jpg",
-    "source_sha256": "50a534178c8153e8bd5c776c70227c3b8be708881f3046adcf85c40ec516e41a",
-    "take_ms": 262000,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        38,
-        97,
-        746,
-        152
-      ],
-      [
-        1851,
-        90,
-        1916,
-        137
-      ]
-    ],
-    "unchecked": "입력칸이 쿼리 두 줄 높이뿐이고 Run 단추는 짙은 파랑이라, 상자가 쿼리 글 · 단추에 6px 안으로 붙는다(줄 번호와 글자는 가리지 않는다)",
-    "sha256": "26ba71ec25f6f220db72de13bcfdda3651dc30ab0c76788195d7cba269e37d76"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q02-created.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q02-created.jpg",
     "kind": "학생 실습 화면",
     "section": "노드 만들기: CREATE",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/000895.jpg",
@@ -2459,27 +2305,7 @@
     "sha256": "b68bf7b878221027473b125cdb8b59ca7800c370655772c06a849ead20ad8ecd"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q02-created.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들기: CREATE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/000895.jpg",
-    "source_sha256": "2c044a4eef9d5862e4edf7c00c9c98bb6840f70028fcc772624c311739254a0b",
-    "take_ms": 379592,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        57,
-        221,
-        405,
-        246
-      ]
-    ],
-    "unchecked": "한 줄짜리 결과 글을 감싼 상자라 줄 높이 안에 6px 여백과 선을 둘 자리가 없다(선이 글자에 닿지 않는 것은 키워 보았다)",
-    "sha256": "b68bf7b878221027473b125cdb8b59ca7800c370655772c06a849ead20ad8ecd"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-graph.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q03-graph.jpg",
     "kind": "학생 실습 화면",
     "section": "찾아서 돌려받기: MATCH · RETURN",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/001171.jpg",
@@ -2504,32 +2330,7 @@
     "sha256": "5185ca2e09a0e752878aec004a9d2afeeb23176a76e9e5eaa3b950a45e8fca21"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-graph.jpg",
-    "kind": "학생 실습 화면",
-    "section": "찾아서 돌려받기: MATCH · RETURN",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/001171.jpg",
-    "source_sha256": "487f854920f0c62dd66b2450155ce574f1274c4a6711607b669b94b1c6c72fa7",
-    "take_ms": 469742,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        657,
-        674,
-        763,
-        780
-      ],
-      [
-        657,
-        375,
-        763,
-        481
-      ]
-    ],
-    "sha256": "5185ca2e09a0e752878aec004a9d2afeeb23176a76e9e5eaa3b950a45e8fca21"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-details.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q03-details.jpg",
     "kind": "학생 실습 화면",
     "section": "찾아서 돌려받기: MATCH · RETURN",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/001185.jpg",
@@ -2554,32 +2355,7 @@
     "sha256": "8b2b14c664440586035387dd8b1028eddbd782c34a9a37b6550720e4135a51de"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-details.jpg",
-    "kind": "학생 실습 화면",
-    "section": "찾아서 돌려받기: MATCH · RETURN",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/001185.jpg",
-    "source_sha256": "2fb60bec61f214ade8afc6b13afeb587ea35f0909b7f841b3cc42693caccc198",
-    "take_ms": 493003,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        1419,
-        329,
-        1576,
-        371
-      ],
-      [
-        1419,
-        485,
-        1890,
-        631
-      ]
-    ],
-    "sha256": "8b2b14c664440586035387dd8b1028eddbd782c34a9a37b6550720e4135a51de"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-table.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q03-table.jpg",
     "kind": "학생 실습 화면",
     "section": "찾아서 돌려받기: MATCH · RETURN",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/001191.jpg",
@@ -2604,32 +2380,7 @@
     "sha256": "28e243e22e3dd2fc731d4f26c824175c6abd9d772f2b6ac5c18d4bc9fe578bfe"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-table.jpg",
-    "kind": "학생 실습 화면",
-    "section": "찾아서 돌려받기: MATCH · RETURN",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/001191.jpg",
-    "source_sha256": "27d6c3d7c5f3604e04d7a1258d0c40338395c9205d3e634541c7e7852cef2d54",
-    "take_ms": 512207,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        101,
-        214,
-        176,
-        274
-      ],
-      [
-        4,
-        304,
-        1416,
-        447
-      ]
-    ],
-    "sha256": "28e243e22e3dd2fc731d4f26c824175c6abd9d772f2b6ac5c18d4bc9fe578bfe"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-values.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q03-values.jpg",
     "kind": "학생 실습 화면",
     "section": "찾아서 돌려받기: MATCH · RETURN",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/001540.jpg",
@@ -2648,26 +2399,7 @@
     "sha256": "aad721a4f1c419148fd1025e0c848e1c709eee192f6967c3f473dac3c179f0a0"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q03-values.jpg",
-    "kind": "학생 실습 화면",
-    "section": "찾아서 돌려받기: MATCH · RETURN",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/001540.jpg",
-    "source_sha256": "50c1e125a435593fe7419e5358e2767197f59fe1251d22431cca45ef8ab05427",
-    "take_ms": 604748,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        422
-      ]
-    ],
-    "sha256": "aad721a4f1c419148fd1025e0c848e1c709eee192f6967c3f473dac3c179f0a0"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q04-where.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q04-where.jpg",
     "kind": "학생 실습 화면",
     "section": "조건 더하기: WHERE",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/001685.jpg",
@@ -2686,26 +2418,7 @@
     "sha256": "9be8caae4a1ca97d6d81e48f0835871f2c7f6f59f5fe128bfef2ae7c474a018b"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q04-where.jpg",
-    "kind": "학생 실습 화면",
-    "section": "조건 더하기: WHERE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/001685.jpg",
-    "source_sha256": "8d5bae3a2f3bcb753783cadbb35eab54eb126a09484fa8b597c116cfe73d8ba9",
-    "take_ms": 651031,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        619,
-        487,
-        801,
-        668
-      ]
-    ],
-    "sha256": "9be8caae4a1ca97d6d81e48f0835871f2c7f6f59f5fe128bfef2ae7c474a018b"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q05-merge-new.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q05-merge-new.jpg",
     "kind": "학생 실습 화면",
     "section": "있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/002217.jpg",
@@ -2731,33 +2444,7 @@
     "sha256": "b4abadacb1a1d8ae4958ddc39b58308a0f14c862c17f69270ab5f76b8484df9e"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q05-merge-new.jpg",
-    "kind": "학생 실습 화면",
-    "section": "있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/002217.jpg",
-    "source_sha256": "b27e03f7f8721aea8282d726f5c2e7ccfdca610b496a002c774908e464638a49",
-    "take_ms": 780976,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        57,
-        897,
-        384,
-        921
-      ],
-      [
-        619,
-        487,
-        801,
-        668
-      ]
-    ],
-    "unchecked": "한 줄짜리 결과 글을 감싼 상자라 줄 높이 안에 6px 여백과 선을 둘 자리가 없다(선이 글자에 닿지 않는 것은 키워 보았다)",
-    "sha256": "b4abadacb1a1d8ae4958ddc39b58308a0f14c862c17f69270ab5f76b8484df9e"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q05-merge-again.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q05-merge-again.jpg",
     "kind": "학생 실습 화면",
     "section": "있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/002341.jpg",
@@ -2783,33 +2470,7 @@
     "sha256": "a71183778fd1b17147ffd566d72924fee49ca142b92892af2d5b4399f4b55427"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q05-merge-again.jpg",
-    "kind": "학생 실습 화면",
-    "section": "있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/002341.jpg",
-    "source_sha256": "f8d743662cab2ae1e02bfc489eacfb08ead85279fa650975004b2f989dbb9c99",
-    "take_ms": 819327,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        57,
-        897,
-        176,
-        922
-      ],
-      [
-        619,
-        487,
-        801,
-        668
-      ]
-    ],
-    "unchecked": "한 줄짜리 결과 글을 감싼 상자라 줄 높이 안에 6px 여백과 선을 둘 자리가 없다(선이 글자에 닿지 않는 것은 키워 보았다)",
-    "sha256": "a71183778fd1b17147ffd566d72924fee49ca142b92892af2d5b4399f4b55427"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q05-linked.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q05-linked.jpg",
     "kind": "학생 실습 화면",
     "section": "있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/002799.jpg",
@@ -2834,32 +2495,7 @@
     "sha256": "b55dff11879d73d95d72fe6b242142dd10a779c7f74e3c4d00e06ee678f5391c"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q05-linked.jpg",
-    "kind": "학생 실습 화면",
-    "section": "있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/002799.jpg",
-    "source_sha256": "95ee3488f846f0d6373562c0987bc88643c384d690e94fa8922c47a625c8720d",
-    "take_ms": 945023,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        682,
-        487,
-        738,
-        668
-      ],
-      [
-        1488,
-        448,
-        1670,
-        489
-      ]
-    ],
-    "sha256": "b55dff11879d73d95d72fe6b242142dd10a779c7f74e3c4d00e06ee678f5391c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q06-set.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q06-set.jpg",
     "kind": "학생 실습 화면",
     "section": "속성 고치기: SET",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/003033.jpg",
@@ -2885,33 +2521,7 @@
     "sha256": "9ddf04ccab711bcc5ec260152658bdc872c6e6580c7946bc23e96e09aa347869"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q06-set.jpg",
-    "kind": "학생 실습 화면",
-    "section": "속성 고치기: SET",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/003033.jpg",
-    "source_sha256": "54dd3f1c851533b4259fa82133ec62db98bb580fecc42f7ff8aa07abb2b50109",
-    "take_ms": 1013836,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        656,
-        391,
-        764,
-        499
-      ],
-      [
-        1419,
-        485,
-        1890,
-        631
-      ]
-    ],
-    "unchecked": "속성 표의 <id> 값이 두 줄로 접혀 그 아래 id 행 위로 6px을 비울 자리가 없다",
-    "sha256": "9ddf04ccab711bcc5ec260152658bdc872c6e6580c7946bc23e96e09aa347869"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q07-detach.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q07-detach.jpg",
     "kind": "학생 실습 화면",
     "section": "지우고 다시 찾기: DETACH DELETE · DELETE",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/003268.jpg",
@@ -2931,27 +2541,7 @@
     "sha256": "3cbd42015e389af3fa28bd5da9c18c2a93707f990194cbc2f83e8c0167787c6f"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q07-detach.jpg",
-    "kind": "학생 실습 화면",
-    "section": "지우고 다시 찾기: DETACH DELETE · DELETE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/003268.jpg",
-    "source_sha256": "c39de21d6518d2833ae89592ba28986f5a5a29b7c51296e6cf7070b863df501d",
-    "take_ms": 1086954,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        57,
-        221,
-        322,
-        246
-      ]
-    ],
-    "unchecked": "한 줄짜리 결과 글을 감싼 상자라 줄 높이 안에 6px 여백과 선을 둘 자리가 없다(선이 글자에 닿지 않는 것은 키워 보았다)",
-    "sha256": "3cbd42015e389af3fa28bd5da9c18c2a93707f990194cbc2f83e8c0167787c6f"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q07-left.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q07-left.jpg",
     "kind": "학생 실습 화면",
     "section": "지우고 다시 찾기: DETACH DELETE · DELETE",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/003414.jpg",
@@ -2976,184 +2566,90 @@
     "sha256": "3cac9ae57d8e4fa02b5762202e626f26291347d32b7e05155fb6d07bf3573239"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q07-left.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q07-zero.jpg",
     "kind": "학생 실습 화면",
     "section": "지우고 다시 찾기: DETACH DELETE · DELETE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/003414.jpg",
-    "source_sha256": "18c773c8e7fd32d0065a6d1ae4f629486fab0e27804416ceb716d577063711b8",
-    "take_ms": 1125069,
+    "source": "작업/촬영/neo4j/rec-04-01q/frames/003707.jpg",
+    "source_sha256": "202f4e0068f58b69f546e2ab5dafdbadd47f9ffb23f01e526e9f47d45bec37b7",
+    "take_ms": 1193498,
     "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
     "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
     "rectangles": [
       [
-        657,
-        674,
-        763,
-        780
+        12,
+        312,
+        1908,
+        371
+      ]
+    ],
+    "sha256": "0e4b4aa0f2c53c3fa264f322f0f20a8ba58c6c211ae76a331688328a9e0463e9"
+  },
+  {
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q08-labels.jpg",
+    "kind": "학생 실습 화면",
+    "section": "설비 데이터를 레이블마다 세기",
+    "source": "작업/촬영/neo4j/rec-04-01q/frames/004000.jpg",
+    "source_sha256": "55ac327abad922d854162ddb10e8d0a4d8ea19cecb40021a52cf659c234a6c17",
+    "take_ms": 1287309,
+    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
+    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
+    "rectangles": [
+      [
+        12,
+        312,
+        1908,
+        575
+      ]
+    ],
+    "sha256": "73af929923611fb95217369a6334c8140c95e6115222157b6afaf9dd5135d7e3"
+  },
+  {
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q09-one-hop.jpg",
+    "kind": "학생 실습 화면",
+    "section": "관계를 한 번 건너기: 한 단계",
+    "source": "작업/촬영/neo4j/rec-04-01q/frames/004225.jpg",
+    "source_sha256": "c22b3ac76e09d21d9c3688c19471411a264547d85c43cfccee45b545232ec357",
+    "take_ms": 1375241,
+    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
+    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
+    "rectangles": [
+      [
+        12,
+        312,
+        1908,
+        626
+      ]
+    ],
+    "sha256": "b55d4394b564ef4d0756e2041b8234a9a4f1b2211d4a61c08b8b1a285201e3b1"
+  },
+  {
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q10-path.jpg",
+    "kind": "학생 실습 화면",
+    "section": "관계를 두 번 건너기: 경로",
+    "source": "작업/촬영/neo4j/rec-04-01q/frames/004541.jpg",
+    "source_sha256": "c445f5562ba24f66fa77ec86921f729ec79ea88bb905e5d7cd250b52b3834570",
+    "take_ms": 1466861,
+    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
+    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
+    "rectangles": [
+      [
+        390,
+        246,
+        1006,
+        771
       ],
       [
-        657,
-        375,
-        763,
-        481
+        1482,
+        372,
+        1828,
+        407
       ]
     ],
-    "sha256": "3cac9ae57d8e4fa02b5762202e626f26291347d32b7e05155fb6d07bf3573239"
+    "unchecked": "오른쪽 목록의 레이블 단추(Asset · Component · Part)가 짙은 색이라 단추 줄을 두른 선이 6px 안에 닿는다(단추 글자는 가리지 않는다)",
+    "sha256": "2a21209b0d92db9a3045e2c4c543cdf5c4ba19b9437c328d390a87c92c89571f"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q07-zero.jpg",
-    "kind": "학생 실습 화면",
-    "section": "지우고 다시 찾기: DETACH DELETE · DELETE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/003707.jpg",
-    "source_sha256": "202f4e0068f58b69f546e2ab5dafdbadd47f9ffb23f01e526e9f47d45bec37b7",
-    "take_ms": 1193498,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        371
-      ]
-    ],
-    "sha256": "0e4b4aa0f2c53c3fa264f322f0f20a8ba58c6c211ae76a331688328a9e0463e9"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q07-zero.jpg",
-    "kind": "학생 실습 화면",
-    "section": "지우고 다시 찾기: DETACH DELETE · DELETE",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/003707.jpg",
-    "source_sha256": "202f4e0068f58b69f546e2ab5dafdbadd47f9ffb23f01e526e9f47d45bec37b7",
-    "take_ms": 1193498,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        371
-      ]
-    ],
-    "sha256": "0e4b4aa0f2c53c3fa264f322f0f20a8ba58c6c211ae76a331688328a9e0463e9"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q08-labels.jpg",
-    "kind": "학생 실습 화면",
-    "section": "설비 데이터를 레이블마다 세기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004000.jpg",
-    "source_sha256": "55ac327abad922d854162ddb10e8d0a4d8ea19cecb40021a52cf659c234a6c17",
-    "take_ms": 1287309,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        575
-      ]
-    ],
-    "sha256": "73af929923611fb95217369a6334c8140c95e6115222157b6afaf9dd5135d7e3"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q08-labels.jpg",
-    "kind": "학생 실습 화면",
-    "section": "설비 데이터를 레이블마다 세기",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004000.jpg",
-    "source_sha256": "55ac327abad922d854162ddb10e8d0a4d8ea19cecb40021a52cf659c234a6c17",
-    "take_ms": 1287309,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        575
-      ]
-    ],
-    "sha256": "73af929923611fb95217369a6334c8140c95e6115222157b6afaf9dd5135d7e3"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q09-one-hop.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계를 한 번 건너기: 한 단계",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004225.jpg",
-    "source_sha256": "c22b3ac76e09d21d9c3688c19471411a264547d85c43cfccee45b545232ec357",
-    "take_ms": 1375241,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        626
-      ]
-    ],
-    "sha256": "b55d4394b564ef4d0756e2041b8234a9a4f1b2211d4a61c08b8b1a285201e3b1"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q09-one-hop.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계를 한 번 건너기: 한 단계",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004225.jpg",
-    "source_sha256": "c22b3ac76e09d21d9c3688c19471411a264547d85c43cfccee45b545232ec357",
-    "take_ms": 1375241,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        12,
-        312,
-        1908,
-        626
-      ]
-    ],
-    "sha256": "b55d4394b564ef4d0756e2041b8234a9a4f1b2211d4a61c08b8b1a285201e3b1"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q10-path.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계를 두 번 건너기: 경로",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004541.jpg",
-    "source_sha256": "c445f5562ba24f66fa77ec86921f729ec79ea88bb905e5d7cd250b52b3834570",
-    "take_ms": 1466861,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        390,
-        246,
-        1006,
-        771
-      ]
-    ],
-    "sha256": "acf1aa4802e73d2223abdcb7092d5391e8a9fded6fb81ce94fa68cb45059036a"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q10-path.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계를 두 번 건너기: 경로",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004541.jpg",
-    "source_sha256": "c445f5562ba24f66fa77ec86921f729ec79ea88bb905e5d7cd250b52b3834570",
-    "take_ms": 1466861,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        390,
-        246,
-        1006,
-        771
-      ]
-    ],
-    "sha256": "acf1aa4802e73d2223abdcb7092d5391e8a9fded6fb81ce94fa68cb45059036a"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q10-part.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q10-part.jpg",
     "kind": "학생 실습 화면",
     "section": "관계를 두 번 건너기: 경로",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/004779.jpg",
@@ -3172,26 +2668,7 @@
     "sha256": "22401ef42795449141c0504281b7198ef3be6652cab751d344c7825237a92269"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q10-part.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계를 두 번 건너기: 경로",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/004779.jpg",
-    "source_sha256": "1406f8547f710f32b6e2d0afd8338fefa6ee9a2bc46956dcc3ad0f1934d3f82e",
-    "take_ms": 1554183,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        654,
-        318,
-        1422,
-        364
-      ]
-    ],
-    "sha256": "22401ef42795449141c0504281b7198ef3be6652cab751d344c7825237a92269"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q11-rows.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q11-rows.jpg",
     "kind": "학생 실습 화면",
     "section": "답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/005027.jpg",
@@ -3210,26 +2687,7 @@
     "sha256": "2a9c3aeadaa5df82d053a4ac0ba9f4dbbdc3b0ea8c489b6db8c8576e85706ec2"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q11-rows.jpg",
-    "kind": "학생 실습 화면",
-    "section": "답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/005027.jpg",
-    "source_sha256": "c44cf5910a381217833881dcaf88f9084f89afe7fe4dcecc37ec60707f6731cb",
-    "take_ms": 1635295,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        10,
-        310,
-        1910,
-        577
-      ]
-    ],
-    "sha256": "2a9c3aeadaa5df82d053a4ac0ba9f4dbbdc3b0ea8c489b6db8c8576e85706ec2"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q11-where.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q11-where.jpg",
     "kind": "학생 실습 화면",
     "section": "답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/005133.jpg",
@@ -3248,26 +2706,7 @@
     "sha256": "5e8b40209dfaacb755a6f432d3c7f780dfa89712d0ad1831bec61845762aad74"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q11-where.jpg",
-    "kind": "학생 실습 화면",
-    "section": "답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/005133.jpg",
-    "source_sha256": "35bf6f4c65946bbfe449e5712859a639321c2e2267e429b5a7fbcc5e200c4a8f",
-    "take_ms": 1686146,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        10,
-        310,
-        1910,
-        526
-      ]
-    ],
-    "sha256": "5e8b40209dfaacb755a6f432d3c7f780dfa89712d0ad1831bec61845762aad74"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/q11-aggregate.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/q11-aggregate.jpg",
     "kind": "학생 실습 화면",
     "section": "답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계",
     "source": "작업/촬영/neo4j/rec-04-01q/frames/005364.jpg",
@@ -3286,26 +2725,7 @@
     "sha256": "f589d8202c9d9d793deb852ef667b75498e392ae00d6ec096a0ad59dc61f49a2"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/q11-aggregate.jpg",
-    "kind": "학생 실습 화면",
-    "section": "답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계",
-    "source": "작업/촬영/neo4j/rec-04-01q/frames/005364.jpg",
-    "source_sha256": "a51b6cfeb1a5c4c2edb1fa4a0864594ec086a8e5deaf031357980cde53535377",
-    "take_ms": 1752975,
-    "video": "작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4",
-    "video_sha256": "f6824e4864b6a1eda055b7a2db953c62f3a6a1d001c62f1ee04d9ecdfa721362",
-    "rectangles": [
-      [
-        639,
-        259,
-        1908,
-        475
-      ]
-    ],
-    "sha256": "f589d8202c9d9d793deb852ef667b75498e392ae00d6ec096a0ad59dc61f49a2"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/00-explorer.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source_type": "image",
@@ -3330,57 +2750,7 @@
     "sha256": "e86a67b91a683e2e22b92fc0ebfec8c5489c50a73b8258599eb1c8e12f42a2d0"
   },
   {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source_type": "image",
-    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
-    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
-    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
-    "crop_box": [
-      0,
-      0,
-      983,
-      130
-    ],
-    "rectangles": [
-      [
-        208,
-        47,
-        743,
-        80
-      ]
-    ],
-    "pointer": null,
-    "sha256": "e86a67b91a683e2e22b92fc0ebfec8c5489c50a73b8258599eb1c8e12f42a2d0"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source_type": "image",
-    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
-    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
-    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
-    "crop_box": [
-      0,
-      0,
-      1499,
-      440
-    ],
-    "rectangles": [
-      [
-        10,
-        119,
-        1205,
-        415
-      ]
-    ],
-    "pointer": null,
-    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
+    "target": "workspace/강의제작/제작도구/촬영/neo4j/가이드사진/images/00-powershell.jpg",
     "kind": "학생 실습 화면",
     "section": "예제 준비하고 연결하기",
     "source_type": "image",

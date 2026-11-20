@@ -206,6 +206,23 @@ def page_bytes(folder):
     return page.replace('</body>', ''.join(docs) + PAGE_JS + '</body>').encode('utf-8')
 
 
+def inline_images(page, base):
+    """가이드 HTML의 사진(<img src="images/…">)을 data: 주소로 넣고 「크게 보기」를 쪽 안의 창으로 바꾼 HTML.
+    실행 파일이 함께 있어 ZIP으로 내는 도구 실습(Neo4j 관계 조회)의 guide.html용 — 학생이 ZIP을 풀지 않고 그 안에서 가이드를 열어도 사진이 깨지지 않는다
+    (가이드 「함정」 1회차 ZIP). 사진은 base 아래 경로로 찾고, 넣은 뒤 로컬 사진 주소가 남으면 멈춘다."""
+    base = Path(base)
+    for r in sorted(set(re.findall(r'src="(images/[^"]+)"', page))):
+        page = re.sub(rf'<a href="{re.escape(r)}"(?: target="_blank")?(?: rel="noopener")?>(?=<img )', '<a href="#" class="zoom">', page)
+        full = ' class="full"' if _is_full_screen(base/r) else ''
+        page = page.replace(f'src="{r}"', f'src="{_image_uri(base/r)}"{full}')
+    left = sorted(set(re.findall(r'''(?:src|href)=["'](images/[^"']+)["']''', page)))
+    if left:
+        raise ValueError(f'가이드에 넣지 못한 사진 주소가 남았다 — {left}')
+    if page.count('</html>') != 1:
+        raise ValueError('가이드에 </html>이 하나가 아니다')
+    return page.replace('</html>', PAGE_JS + '</html>')
+
+
 def pack_page(folder):
     """도구 실습 랩 폴더 → 옆의 <랩>.html 한 파일(가이드 P-13 — 2026-11-11 사용자 「가이드만 받고 싶은 학생」 · 「권고대로」).
     학생은 파일 하나를 받아 두 번 눌러 연다. 옆에 옛 <랩>.zip이 있으면 지운다(같은 자료로 가는 길을 둘 두지 않는다)."""
