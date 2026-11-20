@@ -1,59 +1,59 @@
-// 안내 문서의 쿼리를 절 번호 · 칸 차례대로 담았습니다. Neo4j Browser 입력칸에서 한 칸씩 돌립니다.
+// 가이드의 쿼리를 절 번호 · 칸 차례대로 담았습니다. Neo4j Browser 입력칸에서 한 칸씩 돌립니다.
 // 2-1의 CREATE는 한 번만 돌립니다. 다시 돌리면 같은 노드가 둘 더 생깁니다.
 
 // 2-1
-CREATE (a:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),
-       (b:연습장치 {id:'basic-B', name:'연습 팬', score:70});
+CREATE (:PracticeDevice {id:'basic-A', name:'연습 펌프', score:40}),
+       (:PracticeDevice {id:'basic-B', name:'연습 팬', score:70});
 
 // 3-1
-MATCH (n:연습장치)
+MATCH (n:PracticeDevice)
 RETURN n;
 
 // 3-2
-MATCH (n:연습장치)
+MATCH (n:PracticeDevice)
 RETURN n.name AS 이름, n.score AS 점수
 ORDER BY 점수;
 
 // 4-1
-MATCH (n:연습장치)
+MATCH (n:PracticeDevice)
 WHERE n.score >= 50
 RETURN n;
 
 // 5-1
-MERGE (s:연습센서 {id:'basic-S1'})
+MERGE (s:PracticeSensor {id:'basic-S1'})
 SET s.name = '연습 온도 센서', s.unit = '℃'
 RETURN s;
 
 // 5-2
-MERGE (s:연습센서 {id:'basic-S1'})
+MERGE (s:PracticeSensor {id:'basic-S1'})
 SET s.name = '연습 온도 센서', s.unit = '℃'
 RETURN s;
 
 // 5-3
-MATCH (p:연습장치 {id:'basic-A'})
-MATCH (s:연습센서 {id:'basic-S1'})
-MERGE (p)-[r:감시된다]->(s)
+MATCH (p:PracticeDevice {id:'basic-A'})
+MATCH (s:PracticeSensor {id:'basic-S1'})
+MERGE (p)-[r:MONITORED_BY]->(s)
 RETURN p, r, s;
 
 // 6-1
-MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})
+MATCH (p:PracticeDevice {id:'basic-A'})-[r:MONITORED_BY]->(s:PracticeSensor {id:'basic-S1'})
 SET s.name = '연습 유온 센서'
 RETURN p, r, s;
 
 // 7-1
-MATCH (p:연습장치 {id:'basic-A'})
+MATCH (p:PracticeDevice {id:'basic-A'})
 DETACH DELETE p;
 
 // 7-2
-MATCH (n:연습장치|연습센서)
+MATCH (n:PracticeDevice|PracticeSensor)
 RETURN n;
 
 // 7-3
-MATCH (n:연습장치|연습센서)
+MATCH (n:PracticeDevice|PracticeSensor)
 DELETE n;
 
 // 7-4
-MATCH (n:연습장치|연습센서)
+MATCH (n:PracticeDevice|PracticeSensor)
 RETURN count(n) AS 남은수;
 
 // 8-1
@@ -70,9 +70,9 @@ MATCH path = (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART
 RETURN path;
 
 // 10-2
-MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p:Part)
+MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part)
 WHERE c.name = '오일 쿨러'
-RETURN c.name AS 구성요소, p.name AS 부품, p.partNo AS 품번;
+RETURN c.name AS 구성요소, pt.name AS 부품, pt.partNo AS 품번;
 
 // 11-1
 MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)
