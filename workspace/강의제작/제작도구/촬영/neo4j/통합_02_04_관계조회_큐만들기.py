@@ -6,7 +6,7 @@
 # 대본 「## 절」 하나가 구간 하나이고, 표의 한 줄(| gNNNN | 발화 | 조작 |)이 큐 하나다. 글은 발화 칸 그대로다.
 # 쉼(gap, ms — 앞 말과 앞 조작이 끝난 뒤 이 말을 시작할 때까지, 영상 V-14)은 앞 큐 조작 칸의 「쉼: <이름> <초>」이고 첫 큐는 0.3초다.
 #   앞 큐의 글이 끝맺음 없이 끝났는데 「잇기」가 아니거나, 절의 마지막 큐인데 「구간」이 아니면 멈춘다.
-# 조작은 아래 표(OPS: 큐 id → 걸음들)이고, 붙여 넣는 쿼리는 칸 원고 통합반_관계조회_칸.json에서 읽는다(안내 문서의 칸 번호 = 칸 원고의 차례 + 앞의 PowerShell 칸 둘).
+# 조작은 아래 표(OPS: 큐 id → 걸음들)이고, 붙여 넣는 쿼리는 칸 원고 통합반_관계조회_칸.json에서 읽는다(안내 문서의 칸 번호 = 칸 원고의 차례 + 앞의 명령 칸 둘).
 #   걸음의 시점은 발화 속 구절이다(그 구절이 시작하는 글자 비율 — 녹화기가 큐 시작 + 말 길이 × 비율에 한다). 구절을 주지 않은 걸음은 앞 걸음에 바로 잇는다.
 #   발화에 없는 구절, 거꾸로 된 시점, 표에 없는 큐, 대본에 없는 큐의 조작이 있으면 그 큐 id를 대며 멈춘다.
 # 강조(영상 V-14 · V-11): 조작 칸에서 짚는 대상 뒤의 (밑줄) · (띠) · (테두리)마다 그 짚기에 hl(underline · band · box)을 준다.
@@ -27,7 +27,7 @@ VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
 GAP_NAMES = {'잇기': 0.6, '큐': 1.3, '결과 뒤': 2.0, '구간': 2.3}      # 영상 V-14 실습 값
 SHAPES = {'밑줄': 'underline', '띠': 'band', '테두리': 'box'}
 FIRST_GAP = 300
-SHELL_BLOCKS = 2      # 안내 문서에서 쿼리 칸 앞에 오는 PowerShell 칸 수
+SHELL_BLOCKS = 2      # 안내 문서에서 쿼리 칸 앞에 오는 명령 칸(prepare_example.py · lab_db.py) 수
 REST = {'x': 1180, 'y': 113}      # 붙여 넣은 뒤 화살표를 두는 자리(입력칸 첫 줄 오른쪽 빈 곳 — 가장 긴 쿼리 줄도 여기까지 오지 않는다)
 
 _cells = json.loads(CELLS_FILE.read_text(encoding='utf-8'))['cells']
@@ -39,6 +39,9 @@ INST = '[data-testid="instance-menu-button"]'
 DBB = '[data-testid="database-menu-button"]'
 RUNB = '[data-testid="run-button"]'
 PORT = {'css': INST, 'inner': 'bolt://', 'match': r'\d+$'}      # 연결 주소 끝 숫자(PC마다 다르다)
+ADDR = {'css': INST, 'inner': 'bolt://', 'match': r'bolt://[\d.:]+'}      # 맨 위 Instance 옆 연결 주소 전체
+DIALOG_ADDR = {'css': '[role="dialog"]', 'inner': 'bolt://127.0.0.1:'}      # 연결 창 제목 아래에 크게 적힌 주소(lab_db.py가 늘 127.0.0.1로 연다)
+HEADING = 'h1,h2,h3,h4,h5,h6,[role="heading"]'
 DBNAME = {'css': DBB, 'inner': 'Database:neo4j'}
 
 
@@ -80,38 +83,41 @@ PATH_10_1 = "(:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART
 
 OPS = {
  # 1. 여는 말 — 연결 창. 화살표는 연결 창 오른쪽 빈 곳(설정의 pointer)
- 'g0104': [X(CSS('[role="dialog"]', clip=True), '이 연결 창')],
+ 'g0106': [X(CSS('[role="dialog"]', clip=True), '이 연결 창이')],
  # 2. 연결
- 'g0201': [X(WITH(CSS('input[name="hostname"]'), CSS('input[name="username"]')), '주소와 사용자 이름은'), X(CSS('input[name="password"]'), '비밀번호는'),
+ 'g0201': [X(WITH(CSS('input[name="hostname"]'), CSS('input[name="username"]')), '주소와 사용자 이름이'), U(DIALOG_ADDR, '위쪽에 크게 적힌'), X(CSS('input[name="password"]'), '비밀번호 칸은'),
            PRESS(CSS('button', text='Connect'), '누르세요', {'css': '[data-testid="connection-status-indicator-success"]', 'button': 'Dismiss'}, 'Connect를')],
  'g0202': [OP('tour', '닫으시면', button='Dismiss')],
  'g0203': [MV(CSS(INST, under=True))],
- 'g0204': [X(WITH(CSS(INST, inner='Instance:bolt://'), DBNAME, union=True, clip=True), '맨 위에'), U(DBNAME, 'Database 옆의'), U(PORT, '주소 끝의 숫자는')],
+ 'g0204': [X(CSS(INST, inner='Instance:bolt://'), '맨 위, Instance라고'), U(PORT, '끝의 숫자는')],
+ 'g0206': [U(DBNAME, '그 옆에 Database라고'), U(ADDR, '주소로 구분합니다')],
  'g0205': [X(CSS('[data-testid="frame"]', contains=':welcome', clip=True))],
  # 3. 무엇이 들어 있나 — 왼쪽 패널
- 'g0301': [PRESS(CSS('button[aria-label="Database overview"]'), '누르시면', {'css': 'button[aria-label="All Nodes"]'}, '왼쪽 맨 위')],
+ 'g0301': [X(CSS(HEADING, text='Queries'), '왼쪽에는 Queries라고'), PRESS(CSS('button[aria-label="Database overview"]'), '누르시면', {'css': 'button[aria-label="All Nodes"]'}, '맨 왼쪽')],
  'g0302': [X(CSS('h3', contains='Nodes (20)'), '노드가'), X(CSS('h3', contains='(19)'), '관계가')],
  'g0303': [X(CSS('[aria-label="Run query for node labels"]'), '색깔 단추들이'), X(CSS('button[title="Asset"]'), '설비가 Asset'), X(CSS('button[title="Component"]'), '구성 요소가 Component'),
            X(CSS('[aria-label="Run query for relationship types"]'), '그 아래 단추들은'), X(CSS('[aria-label="Run query for property keys"]'), '맨 아래 단추들은')],
  'g0304': [PRESS(CSS('button[title="Collapse Sidebar"]'), '이 단추로', {'css': 'button[title="Open Sidebar"]'}, 'Stream이라고')],
  # 4. CREATE
- 'g0401': [('gshow', '2-1', '옆 탭의'), X(CSS('#s2 h2'), '2번'), X(CSS('.block pre', nth=BLOCK['2-1']), '첫 칸'), ('gcopy', '2-1', '누르고')],
+ 'g0401': [('gshow', '2-1', '옆 탭의'), X(CSS('#s2 h2'), '2번'), X(CSS('.block pre', nth=BLOCK['2-1']), '칸 아래'), ('gcopy', '2-1', '누르고')],
  'g0402': [OP('mainShow', '이쪽으로'), ('paste', '2-1', '위쪽 입력칸에')],
  'g0403': [U(ED('CREATE'), '맨 앞의 CREATE'), U(ED(PAREN_A), '둥근 괄호가'), U(ED(PAREN_B), '괄호 하나가')],
- 'g0404': [U(ED(':연습장치', line=1), '쌍점이 있고'), U(ED(':연습장치', line=2), '우리 것은')],
+ 'g0404': [U(ED(':연습장치', line=1), '쌍점이 있죠'), U(ED(':연습장치', line=2), '우리 것은')],
  'g0407': [U(ED("{id:'basic-A', name:'연습 펌프', score:40}"), '중괄호 안이'), U(ED("name:'연습 펌프'"), '쌍점 왼쪽이'), U(ED("id:'basic-A', name:'연습 펌프', score:40"), '아이디와 이름'),
-           U(ED("'연습 펌프'"), '글자로 된 값은'), U(ED('40'), '숫자는'), U(ED(';'), '맨 끝의 세미콜론은')],
+           U(ED('score:40'), '점수는 조금')],
+ 'g0408': [U(ED("'연습 펌프'"), '글자로 된 값은'), U(ED('40'), '숫자는'), U(ED(';'), '맨 끝의 세미콜론은')],
  'g0405': [MV(CSS(RUNB), '입력칸 오른쪽 끝의'), RUN('누르면', summary='Created 2 nodes')],
  'g0406': [U(FOOT('Created 2 nodes'), '노드 두 개를'), U(FOOT('set 6 properties, added 2 labels'), '속성 여섯 개를')],
  # 5. MATCH · RETURN, 그림과 표
- 'g0501': [*PASTE('3-1', '안내 문서 3번의', '가져옵니다', '앞으로도'), X(CSS(RUNB, under=True), '입력칸 옆의'), X({'cardRun': True, 'under': True}, '아래 결과마다')],
+ 'g0501': PASTE('3-1', '안내 문서 3번의', '가져옵니다', '앞으로도'),
  'g0502': [U(ED('MATCH'), '첫 줄 MATCH는'), U(ED('연습장치'), '쌍점 뒤에'), U(ED('(n:', sub=[1, 1]), '글자가 하나 있죠')],
- 'g0511': [U(ED('RETURN'), '둘째 줄 RETURN은'), U(ED('RETURN n', sub=[7, 1]), '변수 하나만'), RUN(graph=True, nodes=2, edges=0)],
+ 'g0511': [U(ED('RETURN'), '둘째 줄 RETURN은'), U(ED('RETURN n', sub=[7, 1]), '변수 하나만')],
+ 'g0513': [X(CSS(RUNB, under=True), '입력칸 옆의'), X({'cardRun': True, 'under': True}, '아래 결과에'), RUN(graph=True, nodes=2, edges=0)],
  'g0503': [X(NODE(PUMP), '방금 만든 펌프와'), X(NODE(FAN), '팬이고'), MV({'mid': [PUMP, FAN]}, '선은 없어요')],
  'g0504': [X(NODE(PUMP), '원 안에는'), PRESS(NODE(PUMP), '눌러 보세요', {'details': 'basic-A'}, '펌프를')],
  'g0505': [X({'detChip': True}, '맨 위 색깔 이름표가'), B(WITH(DET('id'), DET('name'), DET('score')), '아이디와 이름'), B(DET('<id>'), '표 맨 윗줄')],
  'g0506': [X(WITH({'tab': 'Graph'}, {'tab': 'Table'}), 'Graph와 Table이'), PRESS({'tab': 'Table'}, '누르면', {'tab': 'Table', 'rows': 2}, 'Table을 누르면')],
- 'g0507': [B(ROW(1), '노드 하나가'), B(ROW(2), '그 안에'), B({'colHead': 'n'}, '표 머리의 글자는'), U({'head': 'RETURN n'}, 'RETURN에 적은'),
+ 'g0507': [B(WITH(ROW(1), ROW(2)), '찾은 노드 하나가'), B({'colHead': 'n'}, '표 머리의 글자는'), U({'head': 'RETURN n'}, 'RETURN에 적은'),
            PRESS({'tab': 'Graph'}, 'Graph를 누르면', {'tab': 'Graph', 'css': '[data-testid="nvl-c2d-canvas"]'})],
  'g0508': PASTE('3-2', '다음 칸은', '같은 노드에서', '이름과 점수만'),
  'g0509': [U(EL(2), 'RETURN 줄이'), U(ED('n.name'), '변수에 점을 찍고'), U(ED('n.score'), '찾은 노드의 점수')],
@@ -125,25 +131,26 @@ OPS = {
  'g0701': PASTE('5-1', '5번의 첫 칸'),
  'g0702': [U(ED('MERGE'), 'MERGE는 적은'), U(ED("(s:연습센서 {id:'basic-S1'})"), '패턴은 괄호로')],
  'g0708': [U(ED(':연습센서'), '레이블은 센서용으로'), U(ED("id:'basic-S1'"), '중괄호 안에는')],
- 'g0707': [U(ED('SET'), '맨 앞의 SET은'), U(ED("s.name = '연습 온도 센서'"), '변수에 점을 찍어'), U(ED("s.unit = '℃'"), '쉼표 뒤는')],
+ 'g0707': [U(ED('SET'), '맨 앞에 적힌 SET이'), U(ED("s.name = '연습 온도 센서'"), '변수에 점을 찍어'), U(ED("s.unit = '℃'"), '쉼표 뒤는')],
  'g0703': [U(ED("id:'basic-S1'"), '괄호 안에 적은 것이 전부'), U(ED("'연습 온도 센서'"), '이름까지 넣어 두면'), U(ED("id:'basic-S1'"), '아이디만 적어 두면'),
            RUN(graph=True, nodes=1, edges=0, summary='Created 1 node')],
  'g0704': [X(NODE(S_OLD), '센서 노드가'), U(FOOT('Created 1 node'), '아래 글에도')],
  'g0705': [*PASTE('5-2', '다음 칸은'), X({'edAll': True, 'under': True}, 'CREATE였다면'), RUN('돌려 봅니다', graph=True, nodes=1, edges=0, summary='Set 2 properties')],
- 'g0706': [U(FOOT('Set 2 properties'), '아래 글을')],
+ 'g0706': [U(FOOT('Set 2 properties'), '아래 글을'), X(NODE(S_OLD), '노드는 이미')],
  # 8. 관계 잇기
  'g0801': PASTE('5-3', '5번의 마지막 칸'),
  'g0802': [U(WITH(EL(1), EL(2)), '위 두 줄이'), U(WITH(ED('(p:', sub=[1, 1]), ED('(s:', sub=[1, 1])), '괄호 맨 앞을 보면'), U(WITH(ED('(p)'), ED('(s)')), '양 끝 괄호에는')],
  'g0805': [U(ED('-[r:감시된다]->'), '빼기 표시와'), U(ED('[r:', sub=[1, 1]), '쌍점 앞은'), U(ED(':감시된다'), '쌍점 뒤가')],
  'g0803': [U(ED('MERGE'), '관계도 MERGE로'), U(ED('RETURN p, r, s'), '마지막 줄 RETURN에는'), RUN(graph=True, nodes=2, edges=1)],
- 'g0804': [X(EDGE(PUMP, S_OLD), '화살표가 하나'), X({'edgeLabel': '감시된다'}, '선 위에'), X(WITH(NODE(PUMP), NODE(S_OLD)), '두 원의 색이'), X(NODE(PUMP), '아래쪽 원이'), OP('fit', '누르면')],
+ 'g0804': [X(EDGE(PUMP, S_OLD), '화살표가 하나'), X({'edgeLabel': '감시된다'}, '선 위에'),
+           X(CSS('[data-testid="frame"]', contains='Created 1 relationship', inner='감시된다(1)'), '오른쪽 목록에도'), X(WITH(NODE(PUMP), NODE(S_OLD)), '두 원의 색이')],
  # 9. SET으로 고치기
  'g0901': PASTE('6-1', '6번 칸이에요'),
- 'g0902': [U(ED(PATH_6_1), '첫 줄이'), U(EL(2), '둘째 줄 SET이'), U(ED('RETURN p, r, s'), '마지막 줄은'), RUN(graph=True, nodes=2, edges=1)],
+ 'g0902': [U(ED(PATH_6_1), '괄호와 화살표를'), U(EL(2), '둘째 줄 SET이'), U(ED('RETURN p, r, s'), '마지막 줄은'), RUN(graph=True, nodes=2, edges=1)],
  'g0903': [X(NODE(S_NEW), '센서 이름이'), X(EDGE(PUMP, S_NEW), '펌프와 이어진 선은'), PRESS(NODE(S_NEW), '눌러 보면', {'details': 'basic-S1'}, '센서를')],
  'g0904': [B(WITH(DET('id'), DET('unit')), '아이디와 단위는'), B(DET('name'), '이름만')],
  # 10. 지우기
- 'g1001': [U(PORT, '맨 위 주소')],
+ 'g1001': [U(ADDR, '맨 위 주소가')],
  'g1002': PASTE('7-1', '7번의 첫 칸'),
  'g1003': [U(ED('DELETE'), '지우는 절은 DELETE'), U(ED('DETACH'), '앞에 DETACH가'), X(EDGE(PUMP, S_NEW), '센서로 가는 관계가'), X(NODE(PUMP), '펌프만 지우면')],
  'g1004': [U(ED('DETACH DELETE'), 'DETACH DELETE는'), RUN(summary='Deleted 1 node, deleted 1 relationship')],
@@ -157,7 +164,7 @@ OPS = {
  'g1012': [B(ROW(1))],
  # 11. 설비 데이터 — 레이블마다 세기
  'g1102': PASTE('8-1', '8번 칸은'),
- 'g1103': [U(ED('MATCH (n)'), 'MATCH의 괄호에'), U(ED('count(n)'), 'count 앞에'), U(ED('labels(n)'), '낱말이 하나 더')],
+ 'g1103': [U(ED('MATCH (n)'), 'MATCH의 괄호에'), U(ED('count(n)'), 'count 앞에'), U(ED('labels(n)'), 'labels가')],
  'g1106': [U(WITH(ED('labels(n)'), ED('count(n)')), '옆에 레이블을 함께'), U(ED('DESC'), 'DESC를 붙이면'), RUN(rows=5)],
  'g1107': [B(COL('레이블'))],
  'g1104': [B(HAS('Component'), '구성 요소인'), B(HAS('Sensor'), '센서가 다섯'), B(HAS('Part'), '부품인 Part'), B(HAS('Asset'), '설비인 Asset'), B(HAS('StateVariable'), 'StateVariable은')],
@@ -165,14 +172,15 @@ OPS = {
  # 12. 한 단계
  'g1201': PASTE('9-1', '9번 칸으로'),
  'g1202': [U(ED("{code:'HYD-01'}"), '첫 괄호는'), U(ED('-[:HAS_COMPONENT]->'), '가진다는 관계'), U(ED('RETURN c.name'), '구성 요소의 이름을'), U(WITH(ED('(:'), ED('[:')), '쌍점 앞이 비어'), RUN(rows=6)],
- 'g1203': [B(HAS('오일 쿨러'), '오일 쿨러와'), B(HAS('쿨러 팬'), '쿨러 팬,'), B(HAS('주 펌프 (A)'), '주 펌프에'), B(WITH(HAS('작동유 탱크'), HAS('구동 모터')), '탱크와 모터까지')],
+ 'g1203': [B(COL('구성요소'), '여섯 행이'), B(WITH(HAS('작동유 탱크'), HAS('구동 모터')), '탱크와 모터'), B(WITH(HAS('예비 펌프 (B)'), HAS('주 펌프 (A)')), '펌프 둘'),
+           B(WITH(HAS('쿨러 팬'), HAS('오일 쿨러')), '그리고 쿨러 팬과')],
  'g1204': [U({'head': '-[:HAS_COMPONENT]->'}, '관계를 한 번 건너서')],
  # 13. 두 단계 경로
  'g1301': PASTE('10-1', '10번 첫 칸은'),
  'g1302': [U(ED('-[:USES_PART]->(:Part)'), '화살표와 괄호가'), U(ED(PATH_10_1), '줄줄이 이어진 길을')],
  'g1303': [U(WITH(ED('(:Component)'), ED('(:Part)')), '괄호 안에 변수가 없고'), U(ED('path ='), '패턴 맨 앞에'), U(ED('RETURN path'), 'RETURN에 그 변수를'), RUN(graph=True, nodes=7, edges=6)],
  'g1304': [X(NODE('HYD-01'), '설비에서'), X(WITH(*map(NODE, COMPS)), '구성 요소 셋으로'), X(WITH(*map(NODE, PARTS)), '부품 셋으로')],
- 'g1305': [X(WITH(*map(NODE, COMPS)), '그림에는 셋만')],
+ 'g1305': [X(CSS('[data-testid="frame"]', contains='RETURN path', inner='Component(3)'), '그림에는 셋만'), X(WITH(*map(NODE, COMPS)), '부품까지 이어진')],
  'g1306': PASTE('10-2', '오일 쿨러에'),
  'g1307': [U(WITH(ED('(c:', sub=[1, 1]), ED('(pt:', sub=[1, 2])), '변수가 하나씩'), U(EL(2), 'WHERE에는'), U(WITH(ED('pt.name AS 부품'), ED('pt.partNo AS 품번')), '부품의 이름과 품번을'), RUN(rows=1)],
  'g1308': [B(CELL(1, '부품'), '쿨러 코어고'), B(CELL(1, '품번'), '이 값이에요')],
@@ -183,11 +191,11 @@ OPS = {
  'g1404': [B(COL('가상')), B(ROW(1), '냉각 효율은')],
  'g1405': [B(ROW(1), '첫 행 하나가'), B(WITH(ROW(2), ROW(3), ROW(4), ROW(5)), '아래 네 행이')],
  'g1406': [*PASTE('11-2', '다음 칸은'), U(EL(2), '가상이 false인'), RUN(rows=4)],
- 'g1407': [B(WITH(ROW(1), ROW(2), ROW(3), ROW(4)), '네 행이 나왔고'), B(COL('가상'), '가상 열이'), B(ROW(1), '오일 쿨러는'), B(ROW(1, card=1), '빠져야 할 것만')],
+ 'g1407': [B(WITH(ROW(1), ROW(2), ROW(3), ROW(4)), '네 행이 나왔고'), B(COL('가상'), '가상 열이'), B(ROW(1, card=1), '맨 위 냉각 효율')],
  'g1408': PASTE('11-3', '다음은 세는 쿼리'),
  'g1409': [U(WITH(ED('c.name AS 구성요소'), ED('count(s)')), '구성 요소 이름과 count를'), U(ED('collect(s.name)'), '옆의 collect는'), RUN(rows=3)],
- 'g1410': [B(COL('센서수')), B(COL('센서목록'), '오른쪽 목록에는'), B(ROW(1), '이름의 수가')],
- 'g1411': [B(CELL(1, '센서수'), '오일 쿨러의 2를'), B(CELL(1, '센서목록', phrase='냉각 효율 (가상)'), '냉각 효율까지')],
+ 'g1410': [B(COL('센서수')), B(COL('센서목록'), '오른쪽 목록에는'), B(ROW(1), '이름을 세어 보면')],
+ 'g1411': [B(CELL(1, '센서수'), '오일 쿨러 행의 숫자'), B(CELL(1, '센서목록', phrase='냉각 효율 (가상)'), '냉각 효율까지')],
  'g1412': [B(COL('구성요소'))],
 }
 
