@@ -28,6 +28,7 @@ VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
 GAP_NAMES = {'잇기': 0.6, '큐': 1.3, '결과 뒤': 2.0, '구간': 2.3}      # 영상 V-14 실습 값
 SHAPES = {'밑줄': 'underline', '띠': 'band', '테두리': 'box'}
 FIRST_GAP = 300
+REST = {'x': 1180, 'y': 113}      # 쿼리를 넣는 동안 화살표를 두는 자리(입력칸 첫 줄 오른쪽 빈 곳 — 가장 긴 쿼리 줄도 여기까지 오지 않는다)
 
 _cells = json.loads(CELLS_FILE.read_text(encoding='utf-8'))['cells']
 QUERY = {c['id']: c['query'] for c in _cells}
@@ -69,7 +70,7 @@ def OP(op, at=None, **k): return ('op', op, at, k)
 
 def PUT(cell, at):
     """맨 위 입력칸을 누르고 칸 원고의 그 쿼리를 바로 넣는다. at = 그 걸음을 시작할 발화 속 구절.
-    넣은 뒤 화살표는 입력칸 옆 Run 밑(쿼리 글이 닿지 않는 빈 곳)에 둔다 — 넣은 글을 가리지 않는다(영상 V-14)."""
+    넣는 동안 화살표는 REST에, 넣은 뒤에는 입력칸 옆 Run 밑(쿼리 글이 닿지 않는 빈 곳)에 둔다 — 넣은 글을 가리지 않는다(영상 V-14)."""
     return [('query', cell, at), MV(CSS(RUNB, under=True))]
 
 
@@ -88,7 +89,8 @@ OPS = {
            PRESS(CSS('button', text='Connect'), '누르세요', {'css': '[data-testid="connection-status-indicator-success"]', 'button': 'Dismiss'}, 'Connect를')],
  'g0202': [OP('tour', '닫으시면', button='Dismiss')],
  'g0203': [MV(CSS(INST, under=True))],
- 'g0204': [X(CSS(INST, inner='Instance:bolt://'), '맨 위, Instance라고'), U(PORT, '끝의 숫자는')],
+ # g0204의 Instance 글은 화면 위 끝에서 CSS 5.6px 아래라 테두리 여백이 화면 밖으로 나간다 — clip으로 화면 안 10px까지 줄인다(클라우드 실측)
+ 'g0204': [X(CSS(INST, inner='Instance:bolt://', clip=True), '맨 위, Instance라고'), U(PORT, '끝의 숫자는')],
  'g0206': [U(DBNAME, '그 옆에 Database라고'), U(ADDR, '주소로 구분합니다')],
  'g0205': [X(CSS('[data-testid="frame"]', contains=':welcome', clip=True))],
  # 3. 무엇이 들어 있나 — 왼쪽 패널
@@ -248,7 +250,7 @@ def steps_to_ops(cid, text, steps):
             _, at, want = s
             ops.append({'op': 'runCard', 'at': frac(at, 0.97), **want})
         elif kind == 'query':
-            ops.append({'op': 'query', 'query': QUERY[s[1]], 'at': frac(s[2])})
+            ops.append({'op': 'query', 'query': QUERY[s[1]], 'at': frac(s[2]), 'rest': REST})
         elif kind == 'op':
             _, op, at, k = s
             ops.append({'op': op, 'at': frac(at), **k})
