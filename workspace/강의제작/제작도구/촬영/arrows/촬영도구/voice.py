@@ -1,7 +1,8 @@
 """강사 복제 음성 생성(구간 단위). 사용: python voice.py <구간번호...> | --큐 <id,…>  [--견적]
 큐는 common.CUES(기본 work/cues.json, 목소리 · 모델도 거기서), 음성은 common.AUDIO(config audio, 커밋함)에 쓴다. 키는 common.elevenlabs_key()로만 읽고 출력하지 않는다.
-- 같은 큐 id의 캐시 글이 큐 글과 같으면 다시 만들지 않는다.
-- 큐 id는 달라도 글이 글자 하나까지 같은 캐시가 있으면(옛 판의 큐) 사지 않고 그 mp3 · json을 새 id로 복사한다.
+- 같은 큐 id의 캐시가 글 · 목소리 · 모델 모두 큐 파일과 같으면 다시 만들지 않는다.
+- 큐 id는 달라도 글이 글자 하나까지 같고 목소리 · 모델이 같은 캐시가 있으면(옛 판의 큐) 사지 않고 그 mp3 · json을 새 id로 복사한다.
+  목소리가 다른 캐시(옛 계정 목소리 — 영상 V-4)는 글이 같아도 쓰지 않는다. 한 편 안에서 목소리가 섞이면 안 되기 때문이다.
 - --견적: 사지 않고(키 · ffmpeg도 읽지 않는다) 고른 큐의 재사용 수와 새로 살 큐 · 글자 수만 찍는다. 크레딧 단가는 영상.md V-4."""
 import json, shutil, subprocess, sys, urllib.request, urllib.error
 from common import AUDIO, CUES, ffmpeg, elevenlabs_key
@@ -14,10 +15,12 @@ segs = {int(s) for s in args if s.isdigit()}
 if only and only - {c['id'] for c in cfg['cues']}:
     raise SystemExit(f"--큐에 큐 파일에 없는 id가 있다: {sorted(only - {c['id'] for c in cfg['cues']})} ({CUES})")
 audio = AUDIO; audio.mkdir(exist_ok=True)
-by_text = {}   # 글 → 그 글의 음성이 있는 캐시 id
+same_voice = lambda m: m.get('voice_id') == cfg['voice_id'] and m.get('model_id') == cfg['model_id']
+by_text = {}   # 글 → 같은 목소리 · 모델로 그 글의 음성이 있는 캐시 id
 for j in sorted(audio.glob('*.json')):
-    if j.with_suffix('.mp3').exists():
-        by_text.setdefault(json.loads(j.read_text(encoding='utf-8'))['text'], j.stem)
+    m = json.loads(j.read_text(encoding='utf-8'))
+    if j.with_suffix('.mp3').exists() and same_voice(m):
+        by_text.setdefault(m['text'], j.stem)
 if not estimate:
     ff, key = ffmpeg(), elevenlabs_key()
 made = same = copied = spent = chars = 0
@@ -26,7 +29,7 @@ for c in cfg['cues']:
     if (only and c['id'] not in only) or (not only and c['segment'] not in segs):
         continue
     mp3, meta = audio / (c['id'] + '.mp3'), audio / (c['id'] + '.json')
-    if meta.exists() and mp3.exists() and json.loads(meta.read_text(encoding='utf-8'))['text'] == c['text']:
+    if meta.exists() and mp3.exists() and (lambda m: m['text'] == c['text'] and same_voice(m))(json.loads(meta.read_text(encoding='utf-8'))):
         same += 1
         continue
     src = by_text.get(c['text'])
