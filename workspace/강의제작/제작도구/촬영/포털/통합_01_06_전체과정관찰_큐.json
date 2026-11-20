@@ -1,7 +1,7 @@
 {
  "voice_id": "tlxL9ilynpbOVf9sZXKh",
  "model_id": "eleven_v4",
- "note": "1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main 39e93119a). 06_실습_전체과정관찰.md에서 통합_01_06_전체과정관찰_큐만들기.py로 만든다 — 손으로 고치지 않는다. 모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).",
+ "note": "1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main 305a5405). 06_실습_전체과정관찰.md에서 통합_01_06_전체과정관찰_큐만들기.py로 만든다 — 손으로 고치지 않는다. 모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).",
  "cues": [
   {
    "id": "v0601",
@@ -25,6 +25,29 @@
       "contains": "0건 진행 중"
      },
      5
+    ],
+    [
+     "point",
+     {
+      "css": "#brandHome .brand-name",
+      "anchor": "below",
+      "dy": 4,
+      "hl": "underline"
+     },
+     {
+      "at": "이름은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#pageLocation",
+      "anchor": "after",
+      "dx": 56
+     },
+     {
+      "at": "설비에 고장을"
+     }
     ]
    ]
   },
@@ -48,10 +71,23 @@
      {
       "css": "#healthDots",
       "anchor": "center",
-      "dy": 14
+      "dy": 14,
+      "hl": "underline"
      },
      {
       "at": "왼쪽 아래를"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#healthDots b.num",
+      "anchor": "center",
+      "dy": 14,
+      "hl": "underline"
+     },
+     {
+      "at": "앞뒤 숫자가"
      }
     ]
    ]
@@ -66,7 +102,10 @@
     [
      "point",
      {
-      "css": "#view-main .page-head p"
+      "css": "#view-main .page-head p",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "맨 위 한 줄에는"
@@ -85,7 +124,8 @@
      "point",
      {
       "css": "#mainHero svg.m-hero-svg",
-      "anchor": "center"
+      "anchor": "center",
+      "hl": "box"
      },
      {
       "at": "아래 그림은"
@@ -95,7 +135,10 @@
      "point",
      {
       "css": "#mainHero text.m-zone",
-      "exact": "OT · 현장 설비"
+      "also": [],
+      "text": true,
+      "exact": "OT · 현장 설비",
+      "hl": "underline"
      },
      {
       "at": "왼쪽이 공장"
@@ -105,7 +148,14 @@
      "point",
      {
       "css": "#mainHero text.m-zone",
-      "exact": "값이 지나는 길"
+      "also": [
+       {
+        "css": "#mainHero g.m-bus"
+       }
+      ],
+      "exact": "값이 지나는 길",
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "가운데 칸을"
@@ -114,7 +164,14 @@
     [
      "point",
      {
-      "css": "#mainHero g.m-agent text.m-agent-s"
+      "css": "#mainHero g.m-agent text.m-agent-s",
+      "also": [
+       {
+        "css": "#mainHero g.m-agent"
+       }
+      ],
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "오른쪽 AI"
@@ -124,7 +181,10 @@
      "point",
      {
       "css": "#mainHero text.hm-zone-tag",
-      "exact": "OT"
+      "also": [],
+      "text": true,
+      "exact": "OT",
+      "hl": "underline"
      },
      {
       "at": "OT, DMZ"
@@ -134,7 +194,52 @@
      "point",
      {
       "css": "#mainHero text.hm-zone-tag",
-      "exact": "DMZ"
+      "also": [],
+      "text": true,
+      "exact": "DMZ",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "DMZ, IT가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.hm-zone-tag",
+      "also": [],
+      "text": true,
+      "exact": "IT",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "IT가 차례로"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.hm-zone-tag",
+      "also": [],
+      "text": true,
+      "exact": "OT",
+      "hl": "underline"
+     },
+     {
+      "at": "공장 안 OT에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.hm-zone-tag",
+      "also": [],
+      "text": true,
+      "exact": "DMZ",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "중간 구역"
@@ -144,10 +249,27 @@
      "point",
      {
       "css": "#mainHero text.hm-zone-tag",
-      "exact": "IT"
+      "also": [],
+      "text": true,
+      "exact": "IT",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "사무실 쪽"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero text.m-zone",
+      "also": [],
+      "text": true,
+      "exact": "값이 지나는 길",
+      "hl": "underline"
+     },
+     {
+      "at": "값이 올라가는 길이라고"
      }
     ]
    ]
@@ -162,7 +284,13 @@
     [
      "point",
      {
-      "css": "#mainHero g.m-agent text.m-agent-s"
+      "css": "#mainHero g.m-agent text.m-agent-s",
+      "also": [
+       {
+        "css": "#mainHero g.m-agent"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "오른쪽 한가운데가"
@@ -173,7 +301,8 @@
      {
       "css": "#mainHero g.m-node",
       "contains": "증상 · 유온 상승",
-      "anchor": "left"
+      "anchor": "left",
+      "hl": "box"
      },
      {
       "at": "둘레의 점들은"
@@ -182,8 +311,10 @@
     [
      "point",
      {
-      "css": "#mainHero g.m-node text",
-      "exact": "고장 유형 · 냉각 상실"
+      "css": "#mainHero g.m-node",
+      "contains": "고장 유형 · 냉각 상실",
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "고장 유형,"
@@ -192,11 +323,28 @@
     [
      "point",
      {
-      "css": "#mainHero g.m-node text",
-      "exact": "원인 · 쿨러 핀 오염"
+      "css": "#mainHero g.m-node",
+      "contains": "원인 · 쿨러 핀 오염",
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "원인 같은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainHero g.m-agent text.m-agent-s",
+      "also": [
+       {
+        "css": "#mainHero g.m-agent"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "AI 에이전트는"
      }
     ]
    ]
@@ -222,7 +370,8 @@
      "point",
      {
       "css": "#mainHero path.m-loop",
-      "pathAt": 0.97
+      "pathAt": 0.97,
+      "hl": "box"
      },
      {
       "at": "위에 있는 점선"
@@ -232,7 +381,10 @@
      "point",
      {
       "css": "#mainHero text.m-loop-t",
-      "exact": "사람이 승인한 조치"
+      "also": [],
+      "text": true,
+      "exact": "사람이 승인한 조치",
+      "hl": "band"
      },
      {
       "at": "사람이 승인한"
@@ -242,7 +394,10 @@
      "point",
      {
       "css": "#mainHero text.m-loop-t",
-      "exact": "명령 관문 · DMZ"
+      "also": [],
+      "text": true,
+      "exact": "명령 관문 · DMZ",
+      "hl": "underline"
      },
      {
       "at": "가는 길에"
@@ -252,7 +407,13 @@
      "point",
      {
       "css": "#mainHero text.m-zone",
-      "exact": "값이 지나는 길"
+      "also": [
+       {
+        "css": "#mainHero g.m-bus"
+       }
+      ],
+      "exact": "값이 지나는 길",
+      "hl": "box"
      },
      {
       "at": "올라가는 길과"
@@ -262,7 +423,9 @@
      "point",
      {
       "css": "#mainHero path.m-loop",
-      "pathAt": 0.4
+      "pathAt": 0.4,
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "내려가는 길,"
@@ -290,7 +453,20 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat:nth-child(1) .stat-label"
+      "css": "#mainStages a.stat:nth-child(1) .stat-label",
+      "also": [
+       {
+        "css": "#mainStages"
+       }
+      ],
+      "hl": "box"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(1) .stat-label",
+      "hl": "underline"
      },
      {
       "at": "지식을 넣어"
@@ -299,7 +475,9 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat:nth-child(2) .stat-label"
+      "css": "#mainStages a.stat:nth-child(2) .stat-label",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "설비에 고장이"
@@ -308,7 +486,9 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat:nth-child(3) .stat-label"
+      "css": "#mainStages a.stat:nth-child(3) .stat-label",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "AI의 판단과"
@@ -317,7 +497,9 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat:nth-child(4) .stat-label"
+      "css": "#mainStages a.stat:nth-child(4) .stat-label",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "결과가 남죠"
@@ -326,7 +508,8 @@
     [
      "point",
      {
-      "css": "#menuList summary[data-menu=\"knowledge\"] > span"
+      "css": "#menuList summary[data-menu=\"knowledge\"] > span",
+      "hl": "underline"
      },
      {
       "at": "지식,"
@@ -335,7 +518,9 @@
     [
      "point",
      {
-      "css": "#menuList summary[data-menu=\"plant\"] > span"
+      "css": "#menuList summary[data-menu=\"plant\"] > span",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "유압 설비,"
@@ -345,7 +530,9 @@
      "point",
      {
       "css": "#menuList a[data-menu=\"instances\"] > span",
-      "exact": "처리 건"
+      "exact": "처리 건",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "처리 건이"
@@ -363,7 +550,13 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat:nth-child(1) .stat-label"
+      "css": "#mainStages a.stat:nth-child(1) .stat-label",
+      "also": [
+       {
+        "css": "#mainStages a.stat:nth-child(1)"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "이런 지식은"
@@ -372,7 +565,8 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat[data-go-tab=\"knowledge\"] .go"
+      "css": "#mainStages a.stat[data-go-tab=\"knowledge\"] .go",
+      "hl": "underline"
      },
      {
       "at": "첫 칸 아래"
@@ -407,7 +601,24 @@
      "point",
      {
       "css": "#manualSteps .phase",
-      "exact": "올리기"
+      "exact": "올리기",
+      "also": [
+       {
+        "css": "#manualSteps"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "위쪽에 단계가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "올리기",
+      "hl": "underline"
      },
      {
       "at": "올리기,"
@@ -417,7 +628,9 @@
      "point",
      {
       "css": "#manualSteps .phase",
-      "exact": "AI 추출"
+      "exact": "AI 추출",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "AI 추출,"
@@ -427,7 +640,9 @@
      "point",
      {
       "css": "#manualSteps .phase",
-      "exact": "검토"
+      "exact": "검토",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "검토,"
@@ -437,10 +652,23 @@
      "point",
      {
       "css": "#manualSteps .phase",
-      "exact": "적재"
+      "exact": "적재",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "적재 순서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "적재",
+      "hl": "underline"
+     },
+     {
+      "at": "적재라고"
      }
     ]
    ]
@@ -457,7 +685,8 @@
      {
       "css": "#manualPick button[data-pick-mode=\"file\"]",
       "anchor": "center",
-      "dy": -18
+      "dy": -18,
+      "hl": "box"
      },
      {
       "at": "여기, 내 파일"
@@ -467,7 +696,8 @@
      "point",
      {
       "css": "#providedDocs .doc-prov",
-      "anchor": "margin"
+      "anchor": "margin",
+      "hl": "box"
      },
      {
       "at": "그 아래 목록"
@@ -476,7 +706,13 @@
     [
      "point",
      {
-      "css": "#providedDocs button.row[data-provided=\"HM-8_cooler-fan-manual.md\"] .row-title"
+      "css": "#providedDocs button.row[data-provided=\"HM-8_cooler-fan-manual.md\"] .row-title",
+      "also": [
+       {
+        "css": "#providedDocs button.row[data-provided=\"HM-8_cooler-fan-manual.md\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "쿨러 팬 정비"
@@ -512,8 +748,11 @@
      "point",
      {
       "css": "#manualResult .result-label",
+      "also": [],
+      "text": true,
       "exact": "이미 적재된 문서",
-      "anchor": "margin"
+      "anchor": "margin",
+      "hl": "band"
      },
      {
       "at": "이미 적재된"
@@ -523,10 +762,23 @@
      "point",
      {
       "css": "#manualStageNote",
-      "anchor": "margin"
+      "phrase": "이 원문으로 만든 판본이 지식 지도에 적재돼 있습니다",
+      "anchor": "margin",
+      "hl": "band"
      },
      {
       "at": "이 매뉴얼은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualAgentExtract",
+      "anchor": "center",
+      "hl": "box"
+     },
+     {
+      "at": "그 과정을"
      }
     ],
     [
@@ -567,7 +819,15 @@
     [
      "point",
      {
-      "css": ".doc-trail li[data-step=\"verify\"] .line-text > b"
+      "css": ".doc-trail li[data-step=\"open\"] .line-text > b",
+      "hl": "band"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": ".doc-trail li[data-step=\"verify\"] .line-text > b",
+      "hl": "band"
      },
      {
       "at": "대조하는"
@@ -585,7 +845,10 @@
     [
      "point",
      {
-      "css": "#manualReview .result-main"
+      "css": "#manualReview .result-main",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "결과가 나왔습니다"
@@ -613,7 +876,16 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"proc:SOP-FAN-11\"] .row-title"
+      "css": "#manualItems [data-item=\"proc:SOP-FAN-11\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"proc:SOP-FAN-11\"]"
+       },
+       {
+        "css": "#manualItems [data-item=\"proc:SOP-COOL-15\"]"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "처음 보이는"
@@ -623,7 +895,8 @@
      "point",
      {
       "css": "#manualItems [data-item=\"proc:SOP-FAN-11\"] .row-meta",
-      "phrase": "쿨러 냉각 성능 상실"
+      "phrase": "쿨러 냉각 성능 상실",
+      "hl": "underline"
      },
      {
       "at": "줄마다"
@@ -632,7 +905,8 @@
     [
      "point",
      {
-      "css": "#manualReview button[data-review-kind=\"know\"]"
+      "css": "#manualReview button[data-review-kind=\"know\"]",
+      "hl": "box"
      },
      {
       "at": "목록 위에 있는"
@@ -667,7 +941,13 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title"
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "맨 위 줄을"
@@ -677,7 +957,8 @@
      "point",
      {
       "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-meta",
-      "phrase": "유온 상승, 냉각 효율 저하"
+      "phrase": "유온 상승, 냉각 효율 저하",
+      "hl": "band"
      },
      {
       "at": "이름 밑에"
@@ -686,7 +967,33 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title"
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-meta",
+      "phrase": "유온 상승",
+      "hl": "underline"
+     },
+     {
+      "at": "기름 온도는 오르고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-meta",
+      "phrase": "냉각 효율 저하",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "냉각 효율은 떨어져"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "쿨러 냉각 성능 상실이라는"
@@ -696,7 +1003,8 @@
      "point",
      {
       "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-meta",
-      "phrase": "고장 유형"
+      "phrase": "고장 유형",
+      "hl": "underline"
      },
      {
       "at": "이론에서 본"
@@ -714,7 +1022,13 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"] .row-title"
+      "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "아래 세 줄은"
@@ -723,7 +1037,14 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:causes:cause:ambient-temperature-rise\"] .row-title"
+      "css": "#manualItems [data-item=\"know:causes:cause:ambient-temperature-rise\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:causes:cause:ambient-temperature-rise\"]"
+       }
+      ],
+      "hl": "band",
+      "keep": true
      },
      {
       "at": "일으킬 수"
@@ -732,7 +1053,14 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:causes:cause:fan-drive-fault\"] .row-title"
+      "css": "#manualItems [data-item=\"know:causes:cause:fan-drive-fault\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:causes:cause:fan-drive-fault\"]"
+       }
+      ],
+      "hl": "band",
+      "keep": true
      },
      {
       "at": "원인 후보입니다"
@@ -750,7 +1078,31 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title"
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+       },
+       {
+        "css": "#manualItems [data-item=\"know:causes:cause:fan-drive-fault\"]"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "고장과 원인,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "무슨 고장인지"
@@ -759,10 +1111,46 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"] .row-title"
+      "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:causes:cause:cooler-fin-fouling\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "그 고장의 원인을"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualReview button[data-review-kind=\"proc\"]",
+      "anchor": "center",
+      "dy": -18,
+      "hl": "box"
+     },
+     {
+      "at": "원인에 맞는 조치를"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+       },
+       {
+        "css": "#manualItems [data-item=\"know:causes:cause:fan-drive-fault\"]"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "하나씩 뽑아서"
      }
     ]
    ]
@@ -777,10 +1165,52 @@
     [
      "point",
      {
-      "css": "#manualPanes [data-pane=\"know:failure_modes:fm:cooler-cooling-loss\"] blockquote"
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "지금 고른 줄이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualPanes [data-pane=\"know:failure_modes:fm:cooler-cooling-loss\"] blockquote",
+      "hl": "box"
      },
      {
       "at": "그 원문이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:failure_modes:fm:cooler-cooling-loss\"]"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "줄마다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualPanes [data-pane=\"know:failure_modes:fm:cooler-cooling-loss\"] blockquote",
+      "hl": "box",
+      "keep": true
+     },
+     {
+      "at": "이 원문 한 문장과"
      }
     ]
    ]
@@ -805,7 +1235,13 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title"
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "팬 진동 줄이"
@@ -814,19 +1250,44 @@
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:evidence:evd:fan-drive-vibration-high\"] .row-title"
+      "css": "#manualItems [data-item=\"know:evidence:evd:fan-drive-vibration-high\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:evidence:evd:fan-drive-vibration-high\"]"
+       }
+      ],
+      "hl": "band",
+      "keep": true
      },
      {
-      "at": "둘 있는데"
+      "at": "팬 진동 줄이"
      }
     ],
     [
      "point",
      {
-      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title"
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"]"
+       }
+      ],
+      "hl": "band"
      },
      {
       "at": "위쪽,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title",
+      "phrase": "정상 범위",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "이름이 정상"
      }
     ],
     [
@@ -860,7 +1321,8 @@
      "point",
      {
       "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-meta",
-      "phrase": "진동 평균 120초 < 0.9 → 쿨러 핀 오염"
+      "phrase": "진동 평균 120초 < 0.9 → 쿨러 핀 오염",
+      "hl": "band"
      },
      {
       "at": "이 줄은"
@@ -869,8 +1331,32 @@
     [
      "point",
      {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title",
+      "phrase": "정상 범위",
+      "hl": "underline"
+     },
+     {
+      "at": "팬 진동이 정상"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-meta",
+      "phrase": "쿨러 핀 오염",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "쿨러 핀 오염으로 봅니다"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] blockquote",
-      "phrase": "팬은 정상"
+      "phrase": "팬은 정상",
+      "hl": "underline"
      },
      {
       "at": "오른쪽 원문에도"
@@ -880,10 +1366,23 @@
      "point",
      {
       "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] blockquote",
-      "phrase": "핀 오염으로 판정한다"
+      "phrase": "핀 오염으로 판정한다",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "같은 말이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-meta",
+      "phrase": "진동 평균 120초 < 0.9 → 쿨러 핀 오염",
+      "hl": "band"
+     },
+     {
+      "at": "이 줄은 맞게"
      }
     ]
    ]
@@ -899,7 +1398,8 @@
      "point",
      {
       "css": "#manualPanes [data-pane=\"know:evidence:evd:cooler-fouling-vs1-normal\"] label.doc-check",
-      "anchor": "margin"
+      "anchor": "margin",
+      "hl": "box"
      },
      {
       "at": "여기, 적재에서"
@@ -917,8 +1417,24 @@
     [
      "point",
      {
+      "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"] .row-title",
+      "also": [
+       {
+        "css": "#manualItems [data-item=\"know:evidence:evd:cooler-fouling-vs1-normal\"]"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "이 줄은 원문과"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#manualReview .doc-confirm label.doc-check",
-      "anchor": "margin"
+      "anchor": "margin",
+      "hl": "box"
      },
      {
       "at": "맨 아래로"
@@ -963,7 +1479,8 @@
     [
      "point",
      {
-      "css": "#manualCommitSteps li[data-step=\"commit\"] b"
+      "css": "#manualCommitSteps li[data-step=\"commit\"] b",
+      "hl": "band"
      }
     ],
     [
@@ -987,10 +1504,60 @@
     [
      "point",
      {
-      "css": "#manualCommitTitle"
+      "css": "#manualCommitTitle",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "지식 지도에 적재했다고"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "올리기",
+      "hl": "underline"
+     },
+     {
+      "at": "올리고,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "AI 추출",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "뽑고,"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "검토",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "검토해서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#manualSteps .phase",
+      "exact": "적재",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "넣는 순서로"
      }
     ]
    ]
@@ -1005,7 +1572,8 @@
     [
      "point",
      {
-      "css": "#manualDone a.go[data-go-tab=\"ontology\"]"
+      "css": "#manualDone a.go[data-go-tab=\"ontology\"]",
+      "hl": "underline"
      },
      {
       "at": "밑에 있는 지식 지도에서"
@@ -1051,7 +1619,19 @@
     [
      "point",
      {
-      "cy": "@node"
+      "css": "#view-ontology .page-head h1",
+      "anchor": "below",
+      "hl": "underline"
+     },
+     {
+      "at": "이렇게 지식 지도에"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "pattern:fan-vibration",
+      "hl": "box"
      },
      {
       "at": "점 하나가"
@@ -1060,10 +1640,22 @@
     [
      "point",
      {
-      "cy": "@edge"
+      "cy": "pattern:fan-vibration>sym:vs1-rise",
+      "hl": "box"
      },
      {
       "at": "선은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoStats",
+      "anchor": "below",
+      "hl": "underline"
+     },
+     {
+      "at": "점과 선이"
      }
     ]
    ]
@@ -1078,7 +1670,8 @@
     [
      "point",
      {
-      "css": "#ontoFocus"
+      "css": "#ontoFocus",
+      "hl": "box"
      },
      {
       "at": "위에 보이는"
@@ -1119,7 +1712,8 @@
     [
      "point",
      {
-      "cy": "head:B:이상 패턴"
+      "cy": "head:B:이상 패턴",
+      "hl": "underline"
      },
      {
       "at": "왼쪽부터"
@@ -1128,7 +1722,8 @@
     [
      "point",
      {
-      "cy": "pattern:cooler-degradation"
+      "cy": "pattern:cooler-degradation",
+      "hl": "box"
      },
      {
       "at": "쿨러 성능 저하는"
@@ -1137,7 +1732,8 @@
     [
      "point",
      {
-      "cy": "sym:ce-drop"
+      "cy": "sym:ce-drop",
+      "hl": "box"
      },
      {
       "at": "냉각 효율 저하와"
@@ -1146,7 +1742,9 @@
     [
      "point",
      {
-      "cy": "sym:ts1-rise"
+      "cy": "sym:ts1-rise",
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "유온 상승이고"
@@ -1155,16 +1753,29 @@
     [
      "point",
      {
-      "cy": "fm:cooler-cooling-loss"
+      "cy": "fm:cooler-cooling-loss",
+      "hl": "box"
      },
      {
-      "at": "쿨러 냉각 성능 상실입니다"
+      "at": "가리키는 고장 유형이"
      }
     ],
     [
      "point",
      {
-      "cy": "head:R:원인"
+      "cy": "head:R:원인",
+      "also": [
+       {
+        "cy": "cause:cooler-fin-fouling"
+       },
+       {
+        "cy": "cause:ambient-temperature-rise"
+       },
+       {
+        "cy": "cause:fan-drive-fault"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "원인 셋과"
@@ -1173,7 +1784,32 @@
     [
      "point",
      {
-      "cy": "head:R:조치 방법"
+      "cy": "head:R:조치 방법",
+      "also": [
+       {
+        "cy": "skill:sop-fan-11"
+       },
+       {
+        "cy": "skill:sop-fan-12"
+       },
+       {
+        "cy": "skill:sop-cool-11"
+       },
+       {
+        "cy": "skill:sop-cool-12"
+       },
+       {
+        "cy": "skill:sop-cool-13"
+       },
+       {
+        "cy": "skill:sop-cool-14"
+       },
+       {
+        "cy": "skill:sop-cool-15"
+       }
+      ],
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "조치들이"
@@ -1191,7 +1827,40 @@
     [
      "point",
      {
-      "cy": "fm:cooler-cooling-loss"
+      "cy": "fm:cooler-cooling-loss",
+      "also": [
+       {
+        "cy": "head:B:이상 패턴"
+       },
+       {
+        "cy": "pattern:cooler-degradation"
+       },
+       {
+        "cy": "head:R:원인"
+       },
+       {
+        "cy": "skill:sop-fan-11"
+       },
+       {
+        "cy": "skill:sop-fan-12"
+       },
+       {
+        "cy": "skill:sop-cool-11"
+       },
+       {
+        "cy": "skill:sop-cool-12"
+       },
+       {
+        "cy": "skill:sop-cool-13"
+       },
+       {
+        "cy": "skill:sop-cool-14"
+       },
+       {
+        "cy": "skill:sop-cool-15"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "그 길이 이렇게"
@@ -1200,7 +1869,30 @@
     [
      "point",
      {
-      "cy": "cause:cooler-fin-fouling"
+      "cy": "fm:cooler-cooling-loss",
+      "hl": "box"
+     },
+     {
+      "at": "고장 하나에"
+     }
+    ],
+    [
+     "point",
+     {
+      "cy": "head:R:원인",
+      "also": [
+       {
+        "cy": "cause:cooler-fin-fouling"
+       },
+       {
+        "cy": "cause:ambient-temperature-rise"
+       },
+       {
+        "cy": "cause:fan-drive-fault"
+       }
+      ],
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "원인도"
@@ -1209,7 +1901,32 @@
     [
      "point",
      {
-      "cy": "skill:sop-fan-11"
+      "cy": "head:R:조치 방법",
+      "also": [
+       {
+        "cy": "skill:sop-fan-11"
+       },
+       {
+        "cy": "skill:sop-fan-12"
+       },
+       {
+        "cy": "skill:sop-cool-11"
+       },
+       {
+        "cy": "skill:sop-cool-12"
+       },
+       {
+        "cy": "skill:sop-cool-13"
+       },
+       {
+        "cy": "skill:sop-cool-14"
+       },
+       {
+        "cy": "skill:sop-cool-15"
+       }
+      ],
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "조치도"
@@ -1261,7 +1978,10 @@
     [
      "point",
      {
-      "css": "#view-scenario .page-head p"
+      "css": "#view-scenario .page-head p",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "결함 시뮬레이션은"
@@ -1270,7 +1990,13 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-01\"] h3"
+      "css": "#units [data-asset=\"HYD-01\"] h3",
+      "also": [
+       {
+        "css": "#units [data-asset=\"HYD-01\"]"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "설비 세 대는"
@@ -1279,7 +2005,14 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-02\"] h3"
+      "css": "#units [data-asset=\"HYD-02\"] h3",
+      "also": [
+       {
+        "css": "#units [data-asset=\"HYD-02\"]"
+       }
+      ],
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "컴퓨터 안에서"
@@ -1288,7 +2021,14 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-03\"] h3"
+      "css": "#units [data-asset=\"HYD-03\"] h3",
+      "also": [
+       {
+        "css": "#units [data-asset=\"HYD-03\"]"
+       }
+      ],
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "가상 설비예요"
@@ -1297,7 +2037,8 @@
     [
      "point",
      {
-      "css": "#view-scenario p.scope span"
+      "css": "#view-scenario p.scope span",
+      "hl": "band"
      },
      {
       "at": "이 화면에서 누르는"
@@ -1323,8 +2064,10 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"state\"] .tag",
-      "exact": "운전 중"
+      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"fact\"]",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "첫 번째 설비는"
@@ -1333,17 +2076,22 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"fact\"]"
+      "css": "#units [data-asset=\"HYD-01\"] [data-f=\"state\"] .tag",
+      "exact": "운전 중",
+      "hl": "box",
+      "keep": true
      },
      {
-      "at": "유온 사십팔"
+      "at": "퍼센트로 잘"
      }
     ],
     [
      "point",
      {
       "css": "#units [data-asset=\"HYD-02\"] .lab-what > span",
-      "exact": "업무 사건 · 정기 정비"
+      "exact": "업무 사건 · 정기 정비",
+      "phrase": "정기 정비",
+      "hl": "underline"
      },
      {
       "at": "옆의 두 대에서는"
@@ -1353,7 +2101,10 @@
      "point",
      {
       "css": "#units [data-asset=\"HYD-03\"] .lab-what > span",
-      "exact": "업무 사건 · 예비품 구매"
+      "exact": "업무 사건 · 예비품 구매",
+      "phrase": "예비품 구매",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "예비품 구매"
@@ -1364,7 +2115,8 @@
      {
       "css": "#units [data-asset=\"HYD-02\"] .biz-alert .tag",
       "anchor": "center",
-      "dy": -15
+      "dy": -15,
+      "hl": "box"
      },
      {
       "at": "빨간 표시는"
@@ -1375,7 +2127,9 @@
      {
       "css": "#units [data-asset=\"HYD-03\"] .biz-alert .tag",
       "anchor": "center",
-      "dy": -15
+      "dy": -15,
+      "hl": "box",
+      "keep": true
      },
      {
       "at": "그 업무를"
@@ -1384,7 +2138,13 @@
     [
      "point",
      {
-      "css": "#units [data-asset=\"HYD-01\"] h3"
+      "css": "#units [data-asset=\"HYD-01\"] h3",
+      "also": [
+       {
+        "css": "#units [data-asset=\"HYD-01\"]"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "오늘은 첫 번째"
@@ -1403,7 +2163,8 @@
      "point",
      {
       "css": "#units [data-asset=\"HYD-01\"] button[data-act=\"degrade\"]",
-      "anchor": "center"
+      "anchor": "center",
+      "hl": "box"
      },
      {
       "at": "여기 쿨러"
@@ -1454,10 +2215,21 @@
      "point",
      {
       "css": "#labFollow li[data-step=\"rise\"] .lv-note",
-      "phrase": "지금 유온"
+      "phrase": "지금 유온",
+      "hl": "underline"
      },
      {
       "at": "유온이 조금씩"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"rise\"] .line-text b",
+      "hl": "band"
+     },
+     {
+      "at": "유온 상승이 지금"
      }
     ]
    ]
@@ -1473,10 +2245,31 @@
      "point",
      {
       "css": "#labFollow li[data-step=\"rise\"] .lv-note",
-      "phrase": "경보 조건 55 ℃"
+      "phrase": "경보 조건 55 ℃",
+      "hl": "underline"
      },
      {
       "at": "경보 조건 오십오"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"detect\"] .line-text b",
+      "hl": "band"
+     },
+     {
+      "at": "쿨러가 식히는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#labFollow li[data-step=\"rise\"] .line-text b",
+      "anchor": "margin"
+     },
+     {
+      "at": "그 상태가 얼마간"
      }
     ],
     [
@@ -1499,7 +2292,8 @@
     [
      "point",
      {
-      "css": "#labFollow li[data-step=\"rise\"] .line-text b"
+      "css": "#labFollow li[data-step=\"rise\"] .line-text b",
+      "hl": "band"
      },
      {
       "at": "유온이 오십오"
@@ -1508,7 +2302,8 @@
     [
      "point",
      {
-      "css": "#labFollow li[data-step=\"detect\"] .lv-note"
+      "css": "#labFollow li[data-step=\"detect\"] .lv-note",
+      "hl": "band"
      },
      {
       "at": "조건이 이어지는지"
@@ -1517,7 +2312,8 @@
     [
      "point",
      {
-      "css": "#labFollow li[data-step=\"alert\"] .line-text b"
+      "css": "#labFollow li[data-step=\"alert\"] .line-text b",
+      "hl": "band"
      },
      {
       "at": "경보가 났죠"
@@ -1526,7 +2322,8 @@
     [
      "point",
      {
-      "css": "#labFollow li[data-step=\"case\"] .line-text b"
+      "css": "#labFollow li[data-step=\"case\"] .line-text b",
+      "hl": "band"
      },
      {
       "at": "처리 건이 열렸다고"
@@ -1536,7 +2333,8 @@
      "point",
      {
       "css": "#units [data-asset=\"HYD-01\"] [data-f=\"state\"] .tag",
-      "exact": "경보 발생"
+      "exact": "경보 발생",
+      "hl": "box"
      },
      {
       "at": "경보 한 건이"
@@ -1553,10 +2351,21 @@
     [
      "point",
      {
-      "css": "#navTodo"
+      "css": "#navTodo",
+      "hl": "box"
      },
      {
-      "at": "숫자가 하나"
+      "at": "처리 건 옆에도"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#labFollow [data-lv-go=\"case\"]",
+      "hl": "underline"
+     },
+     {
+      "at": "아래쪽에 있는"
      }
     ],
     [
@@ -1600,7 +2409,10 @@
     [
      "point",
      {
-      "css": "#instList button.row[data-todo-task] .row-title"
+      "css": "#instList .rows-group",
+      "contains": "내가 할 일",
+      "phrase": "내가 할 일",
+      "hl": "underline"
      },
      {
       "at": "왼쪽 목록 맨 위"
@@ -1609,8 +2421,35 @@
     [
      "point",
      {
+      "css": "#instList button.row[data-todo-task] .row-title",
+      "also": [
+       {
+        "css": "#instList button.row[data-todo-task]"
+       }
+      ],
+      "hl": "band"
+     },
+     {
+      "at": "방금 생긴"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instList button.row[data-todo-task] .row-title",
+      "phrase": "냉각 긴급 대응",
+      "hl": "underline"
+     },
+     {
+      "at": "이름은 냉각"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#instDetail .case-title > span",
-      "exact": "냉각 긴급 대응 HYD-01"
+      "exact": "냉각 긴급 대응 HYD-01",
+      "hl": "band"
      },
      {
       "at": "오른쪽에 그 내용이"
@@ -1620,10 +2459,28 @@
      "point",
      {
       "css": "#todoPanel .turn-eyebrow",
-      "phrase": "내가 할 일 · 승인"
+      "phrase": "내가 할 일 · 승인",
+      "also": [
+       {
+        "css": "#todoPanel section.turn"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "맨 위 카드를"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#todoPanel .turn-eyebrow",
+      "phrase": "내가 할 일 · 승인",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "지금 할 일이"
      }
     ]
    ]
@@ -1638,7 +2495,10 @@
     [
      "point",
      {
-      "css": "#todoPanel .turn-head h3"
+      "css": "#todoPanel .turn-head h3",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "카드 제목에"
@@ -1647,8 +2507,27 @@
     [
      "point",
      {
+      "css": "#todoPanel .turn-head h3",
+      "phrase": "팬 최대 운전",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "팬 최대 운전을"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#todoPanel .turn-ai p b",
-      "exact": "AI 판단"
+      "exact": "AI 판단",
+      "also": [
+       {
+        "css": "#todoPanel .turn-ai p"
+       }
+      ],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "밑의 AI 판단"
@@ -1658,7 +2537,9 @@
      "point",
      {
       "css": "#todoPanel .turn-ai p",
-      "phrase": "쿨러 핀 오염"
+      "phrase": "쿨러 핀 오염",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "원인을 쿨러"
@@ -1667,7 +2548,8 @@
     [
      "point",
      {
-      "css": "#todoPanel [data-open-tab=\"judge\"]"
+      "css": "#todoPanel [data-open-tab=\"judge\"]",
+      "hl": "box"
      },
      {
       "at": "바로 밑의 판단 근거"
@@ -1710,7 +2592,13 @@
      "point",
      {
       "css": "dialog[open] [data-cr-sheet-body] h4.cr-h",
-      "exact": "근거"
+      "exact": "근거",
+      "also": [
+       {
+        "css": "dialog[open] [data-cr-sheet-body] ul.evid"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "결론 밑의"
@@ -1721,7 +2609,8 @@
      {
       "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
       "nth": 0,
-      "anchor": "margin"
+      "anchor": "margin",
+      "hl": "band"
      },
      {
       "at": "첫 줄은"
@@ -1731,7 +2620,34 @@
      "point",
      {
       "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
-      "nth": 1
+      "nth": 1,
+      "anchor": "margin",
+      "hl": "band"
+     },
+     {
+      "at": "그 밑 두 줄에"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 2,
+      "anchor": "margin",
+      "hl": "band",
+      "keep": true
+     },
+     {
+      "at": "그 밑 두 줄에"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 1,
+      "phrase": "정상 범위",
+      "hl": "underline"
      },
      {
       "at": "팬 진동은"
@@ -1741,10 +2657,38 @@
      "point",
      {
       "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
-      "nth": 2
+      "nth": 2,
+      "phrase": "평균 저하",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "냉각 효율은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 1,
+      "phrase": "맞음",
+      "hl": "underline"
+     },
+     {
+      "at": "둘 다 핀 오염일"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
+      "nth": 2,
+      "phrase": "맞음",
+      "hl": "underline",
+      "keep": true
+     },
+     {
+      "at": "둘 다 핀 오염일"
      }
     ]
    ]
@@ -1761,7 +2705,9 @@
      {
       "css": "dialog[open] [data-cr-sheet-body] ul.evid > li",
       "nth": 1,
-      "anchor": "margin"
+      "phrase": "최근 2분 팬 진동 평균 정상 범위",
+      "anchor": "margin",
+      "hl": "band"
      },
      {
       "at": "아까 원문과"
@@ -1804,7 +2750,9 @@
      "point",
      {
       "css": "dialog[open] [data-cr-sheet-body] h4.cr-h",
-      "contains": "후보 비교"
+      "contains": "후보 비교",
+      "phrase": "후보 비교",
+      "hl": "underline"
      },
      {
       "at": "밑의 후보 비교는"
@@ -1813,7 +2761,8 @@
     [
      "point",
      {
-      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(1) .opts-name b"
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(1) .opts-name b",
+      "hl": "underline"
      },
      {
       "at": "팬 최대 운전을 추천"
@@ -1822,7 +2771,8 @@
     [
      "point",
      {
-      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-name b"
+      "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-name b",
+      "hl": "underline"
      },
      {
       "at": "쿨러 핀 세척은"
@@ -1832,7 +2782,8 @@
      "point",
      {
       "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-why",
-      "phrase": "정비하는 동안 설비 정지"
+      "phrase": "정비하는 동안 설비 정지",
+      "hl": "underline"
      },
      {
       "at": "정비하는 동안"
@@ -1842,10 +2793,24 @@
      "point",
      {
       "css": "dialog[open] [data-cr-sheet-body] table.opts tbody tr:nth-child(4) .opts-why",
-      "phrase": "납기에서 뒤짐"
+      "phrase": "납기에서 뒤짐",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "납기 손해가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "dialog[open] [data-cr-sheet-body] h4.cr-h",
+      "contains": "후보 비교",
+      "phrase": "후보 비교",
+      "hl": "underline"
+     },
+     {
+      "at": "조치 하나에"
      }
     ]
    ]
@@ -1870,7 +2835,8 @@
     [
      "point",
      {
-      "css": "#todoPanel .turn-foot .who"
+      "css": "#todoPanel .turn-foot .who",
+      "hl": "band"
      },
      {
       "at": "오른쪽 아래에"
@@ -1890,7 +2856,8 @@
      {
       "css": "#tdRejectOpen",
       "anchor": "center",
-      "dy": 22
+      "dy": 22,
+      "hl": "box"
      },
      {
       "at": "승인 옆의 반려는"
@@ -1901,7 +2868,8 @@
      {
       "css": "#tdMore",
       "anchor": "center",
-      "dy": 22
+      "dy": 22,
+      "hl": "box"
      },
      {
       "at": "그 옆에 보이는"
@@ -1935,7 +2903,8 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "운전원 승인"
+      "exact": "운전원 승인",
+      "hl": "band"
      },
      {
       "at": "사람이 할 일은"
@@ -1953,10 +2922,22 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "냉각 명령"
+      "exact": "냉각 명령",
+      "hl": "band"
      },
      {
       "at": "여기서부터는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instDetail .case-progress > header h3",
+      "exact": "진행 상황",
+      "hl": "underline"
+     },
+     {
+      "at": "진행 상황에 줄이"
      }
     ],
     [
@@ -1981,7 +2962,8 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "냉각 명령"
+      "exact": "냉각 명령",
+      "hl": "band"
      },
      {
       "at": "냉각 명령 줄을"
@@ -1992,7 +2974,8 @@
      {
       "css": "#instRecord [data-cr-steps] .step-sub",
       "contains": "설비가 실행 완료로 답했습니다",
-      "phrase": "설비가 실행 완료로 답했습니다"
+      "phrase": "설비가 실행 완료로 답했습니다",
+      "hl": "underline"
      },
      {
       "at": "설비가 실행했다고"
@@ -2012,7 +2995,8 @@
      {
       "css": "#instRecord [data-cr-steps] .step-sub",
       "contains": "(안전 연동 통과)",
-      "phrase": "(안전 연동 통과)"
+      "phrase": "(안전 연동 통과)",
+      "hl": "underline"
      },
      {
       "at": "괄호 안의 안전"
@@ -2031,7 +3015,8 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "효과 확인"
+      "exact": "효과 확인",
+      "hl": "band"
      },
      {
       "at": "지금은 효과 확인"
@@ -2051,7 +3036,8 @@
      {
       "css": "#instRecord [data-cr-steps] .step-sub",
       "contains": "(설비 시간 15분)",
-      "phrase": "(설비 시간 15분)"
+      "phrase": "(설비 시간 15분)",
+      "hl": "underline"
      },
      {
       "at": "괄호 안에는"
@@ -2060,10 +3046,11 @@
     [
      "point",
      {
-      "css": "#railScale"
+      "css": "#railScale",
+      "hl": "underline"
      },
      {
-      "at": "왼쪽 아래 이십"
+      "at": "실제보다 스무 배"
      }
     ],
     [
@@ -2112,9 +3099,35 @@
     [
      "point",
      {
+      "css": "#instRecord [data-cr-steps] .step-title",
+      "exact": "효과 확인",
+      "hl": "band"
+     },
+     {
+      "at": "효과 확인이 끝났습니다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] .step-sub",
+      "also": [],
+      "text": true,
+      "contains": "회복으로 판정했습니다",
+      "hl": "band"
+     },
+     {
+      "at": "유온이 기준"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#instRecord [data-cr-steps] .step-sub",
       "contains": "회복으로 판정했습니다",
-      "phrase": "회복으로 판정했습니다"
+      "phrase": "회복으로 판정했습니다",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "회복으로 판정했다고"
@@ -2124,7 +3137,8 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "정비 요청 등록"
+      "exact": "정비 요청 등록",
+      "hl": "band"
      },
      {
       "at": "정비 요청 등록과"
@@ -2134,7 +3148,9 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "결과 보고: 정상"
+      "exact": "결과 보고: 정상",
+      "hl": "band",
+      "keep": true
      },
      {
       "at": "결과 보고까지"
@@ -2153,7 +3169,13 @@
      "point",
      {
       "css": "#caseTop .case-result header .tag",
-      "exact": "정상"
+      "exact": "정상",
+      "also": [
+       {
+        "css": "#caseTop .case-result"
+       }
+      ],
+      "hl": "box"
      },
      {
       "at": "맨 위로"
@@ -2162,8 +3184,21 @@
     [
      "point",
      {
+      "css": "#caseTop .case-result header .tag",
+      "exact": "정상",
+      "hl": "box"
+     },
+     {
+      "at": "정상,"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#caseTop .case-result .result-main",
-      "phrase": "유온 정상 · 경보 해제"
+      "phrase": "유온 정상 · 경보 해제",
+      "hl": "underline",
+      "keep": true
      },
      {
       "at": "유온이 기준"
@@ -2181,7 +3216,9 @@
     [
      "point",
      {
-      "css": "#caseTop .case-result .result-main"
+      "css": "#caseTop .case-result .result-main",
+      "phrase": "정비 요청",
+      "hl": "underline"
      },
      {
       "at": "그 줄 끝에는"
@@ -2200,7 +3237,8 @@
      "point",
      {
       "css": "#instDetail .case-progress > header h3",
-      "exact": "진행 상황"
+      "exact": "진행 상황",
+      "hl": "underline"
      },
      {
       "at": "진행 상황을"
@@ -2210,7 +3248,8 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "원인 진단 · 냉각 조치 제안"
+      "exact": "원인 진단 · 냉각 조치 제안",
+      "hl": "band"
      },
      {
       "at": "AI의 추천은"
@@ -2220,7 +3259,9 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "운전원 승인"
+      "exact": "운전원 승인",
+      "hl": "band",
+      "keep": true
      },
      {
       "at": "사람의 승인은"
@@ -2230,7 +3271,9 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-title",
-      "exact": "냉각 명령"
+      "exact": "냉각 명령",
+      "hl": "band",
+      "keep": true
      },
      {
       "at": "설비로 간 명령은"
@@ -2241,7 +3284,8 @@
      {
       "css": "#instRecord [data-cr-steps] .step-sub",
       "contains": "추천안 그대로 승인했습니다",
-      "phrase": "추천안 그대로 승인했습니다"
+      "phrase": "추천안 그대로 승인했습니다",
+      "hl": "underline"
      },
      {
       "at": "승인 줄에는"
@@ -2275,7 +3319,10 @@
     [
      "point",
      {
-      "css": "#view-main .page-head p"
+      "css": "#view-main .page-head p",
+      "also": [],
+      "text": true,
+      "hl": "band"
      },
      {
       "at": "맨 위 한 줄을"
@@ -2299,12 +3346,35 @@
      10
     ],
     [
-     "point",
+     "scroll",
      {
-      "css": "#mainStages a.stat:nth-child(4) .stat-value"
+      "css": "#mainStages",
+      "bottom": 12
      },
      {
       "at": "아래 결과 보기"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-value",
+      "also": [
+       {
+        "css": "#mainStages a.stat:nth-child(4)"
+       }
+      ],
+      "hl": "box"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(4) .stat-value",
+      "hl": "underline"
+     },
+     {
+      "at": "처리 완료로"
      }
     ]
    ]
@@ -2319,7 +3389,8 @@
     [
      "point",
      {
-      "css": "#mainStages a.stat[data-go-tab=\"scenario\"] .go"
+      "css": "#mainStages a.stat[data-go-tab=\"scenario\"] .go",
+      "hl": "underline"
      },
      {
       "at": "결함 시뮬레이션에서"
@@ -2333,7 +3404,23 @@
    "section": "홈에서 마무리",
    "text": "오늘은 설비 고장 한 건이 처리되는 큰 흐름을 직접 따라가 봤습니다. 지식을 넣는 일도, AI의 판단도, 일이 흘러가는 순서도 이제부터 하나씩 자세히 배워 가겠습니다.",
    "gap": 1.3,
-   "ops": []
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#mainStages a.stat:nth-child(1) .stat-label",
+      "also": [
+       {
+        "css": "#mainStages"
+       }
+      ],
+      "hl": "box"
+     },
+     {
+      "at": "큰 흐름을"
+     }
+    ]
+   ]
   }
  ]
 }
