@@ -235,10 +235,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v50-lab",
+      "version": "v51-lab",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "8898790d082933bdfb6b4a66fbf8a488a9f82943ac3db867d186440bebc9271b",
+      "sha256": "7b37cdb3684a36ab1dfb8b723292ef06fad76d6352e68c7f4346c0b80efae62f",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
