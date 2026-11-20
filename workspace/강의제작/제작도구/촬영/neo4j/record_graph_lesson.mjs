@@ -13,7 +13,8 @@
 //   press {대상, at, point_at?, expect?}  대상에 미리 가 있다가 at에서 누르고, expect(mark_targets.mjs expectInPage)가 될 때까지 기다린다
 //   runCard {at, summary?, graph?, nodes?, edges?, rows?}  입력칸 옆 Run을 누르고, 맨 위에 새 결과 카드가 생겨 그 결과를 담을 때까지 기다린다(이 판은 앞 카드가 펼쳐진 채 남아 run의 화면 전체 검사가 옛 카드에 걸린다)
 //   gShow {block, query, at, top?} · gCopy {block, at, point_at?}  안내 문서 탭으로 가서 그 칸(위에서부터 센 번호 — 글이 같은 칸이 둘이라 번호로 고른다)이 보이게 굴리고, 그 칸의 복사를 누른다
-//   paste에 rest: {x, y}를 주면 붙여 넣은 뒤 화살표를 그 자리에 둔다(붙여 넣은 글을 가리지 않는 빈 곳)
+//   query {query, at, rest?}  입력칸을 누르고 전부 고른 뒤 쿼리를 바로 넣는다(안내 문서 탭을 오가지 않는 길 — 영상 V-13). 넣은 글이 쿼리와 다르면 멈춘다
+//   paste · query에 rest: {x, y}를 주면 화살표를 그 자리에 둔다(넣은 글을 가리지 않는 빈 곳)
 // 설정(globalThis.HYD_RECORDING): take(새 이름) · cues(큐 파일) · host(연결 창 주소) · segments(찍을 구간 번호들, 없으면 전부) · only(큐 id들) ·
 //   continue(앞 구간 끝 화면에서 이어 찍기) · pointer({x,y} 시작 위치) · silent(음성 없이 글 길이로 시험 — 숫자면 그 배로 빠르게) · gap(기본 큐 쉼 ms) ·
 //   guide(안내 문서 주소의 끝부분, 예: 안내.html).
@@ -165,14 +166,15 @@ try{
 
  const editor={css:'[aria-label="Cypher Editor"]'};
  const runButton={css:'[data-testid="run-button"]'};
- // 입력칸을 비우고 글을 넣는다. paste:true면 붙여넣기(안내 문서에서 복사한 글)로 넣고, 들어간 글이 기대한 문장과 같은지 본다.
+ // 입력칸을 비우고 글을 넣는다. paste:true면 붙여넣기(안내 문서에서 복사한 글), 아니면 insertText(강사가 붙여 넣은 것과 같은 화면 — 한 글자씩 치지 않는다)로 넣고,
+ // 들어간 글이 기대한 문장과 같은지 본다. rest는 넣은 글을 가리지 않는 빈 자리(insertText는 넣기 전에, 붙여넣기는 넣은 뒤에 화살표를 그리로 옮긴다).
  async function input(text,{paste=false,rest=null}={}){
   // 이 판 Neo4j Browser는 돌린 글이 입력칸에 남는다. 학생과 같이 전부 고른 뒤(컨트롤 A) 그 위에 붙이거나 적어 바꾼다.
   await act(editor);await clickHere();await serial(()=>p.keyboard.press('ControlOrMeta+A'));
   if(paste){await serial(()=>p.keyboard.press('ControlOrMeta+V'));}
-  else{await move({x:650,y:135});await serial(()=>p.keyboard.insertText(text));}
+  else{await move(rest||{x:650,y:135});await serial(()=>p.keyboard.insertText(text));}
   const got=await serial(()=>p.evaluate(()=>{const e=Array.from(document.querySelectorAll('[aria-label="Cypher Editor"]')).find(e=>e.getBoundingClientRect().height>0);return e?.querySelector('.cm-content')?.innerText??e?.innerText;}));
-  if(paste&&got.replace(/\s+/g,' ').trim()!==text.replace(/\s+/g,' ').trim())throw Error('붙여 넣은 글이 다름: '+JSON.stringify(got));
+  if(got.replace(/\s+/g,' ').trim()!==text.replace(/\s+/g,' ').trim())throw Error(`${current}: 입력칸에 ${paste?'붙여 넣은':'넣은'} 글이 다름 — `+JSON.stringify(got));
   if(paste)await move(rest||{x:650,y:135});
   await serial(()=>p.keyboard.press('Escape'));
  }
@@ -299,7 +301,7 @@ try{
      a.copied=true;
      await g(c.at?.[3]??.7);await show(P.main);
      await g(c.at?.[4]??.8);await input(c.query,{paste:true});a.query=c.query;a.pasted=true;break;}
-    case 'query':await g(c.at??.15);await input(c.query);a.query=c.query;break;
+    case 'query':await g(c.at??.15);await input(c.query,{rest:c.rest});a.query=c.query;break;
     case 'editorPoint':await g(.15);await move({x:700,y:110+(c.line-1)*12});break;
     case 'run':
      const previous=await serial(()=>p.evaluate(()=>document.querySelector('[role="table"]')?.innerText||''));await g(c.at??.43);await act(runButton,true);a.runAt=Date.now()-start;
