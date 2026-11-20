@@ -6,8 +6,8 @@
 #   대본을 주지 않으면 산출물/통합반/실습/01회차/대본/06_실습_전체과정관찰.md(실전반 파일과 제목 줄만 다르다)를 읽는다.
 # 대본 「## 절」 하나가 구간 하나이고, 표의 한 줄(| vNNNN | 발화 | 조작 |)이 큐 하나다. 글은 발화 칸 그대로, 조작은 아래 표(OPS), 쉼(gap, 초)은 영상 V-14.
 # 조작 형식은 촬영도구/segs/map.mjs 머리말: [조작, 대상, 시점]. 시점은 {'at': '대사 속 구절'}(그 구절이 시작하는 글자 비율 — map.mjs가 큐 시작 + 길이 × 비율 − 300ms에 한다)
-#   이거나 생략(앞 조작이 끝나면 바로). wait · settle은 시점이 없다. 대상은 길뚫기(2026-11-17, main f805fd43 포털 DOM)로 찾았다.
-# 녹화 모듈은 촬영도구/segs/one06.mjs(→ map.mjs). 영상 V-13: 추천안 이름 · 후보 비교 4번 줄 · 펼친 가지 않은 단계 이름 · 효과 확인의 설비 시간 괄호는
+#   이거나 생략(앞 조작이 끝나면 바로). wait · settle은 시점이 없다. 대상은 길뚫기(2026-11-17, main f805fd43 포털 DOM)로 찾았고, 2026-11-20 main 39e93119a(포털 화면 글 고침)의 코드로 다시 맞췄다.
+# 녹화 모듈은 촬영도구/segs/one06.mjs(→ map.mjs). 영상 V-13: 추천안 이름 · 후보 비교 4번 줄 · 효과 확인의 설비 시간 괄호는
 #   대본과 같은지 wait(정확한 글)로 확인한다 — 다르면 리허설 · 녹화가 그 큐에서 멈추고, 그때는 대본의 그 큐 말을 바꾼다.
 import json, re, sys
 from pathlib import Path
@@ -52,7 +52,6 @@ SHEET = 'dialog[open] [data-cr-sheet-body]'
 OPT = lambda n: f'{SHEET} table.opts tbody tr:nth-child({n})'
 STEP = lambda name: T('#instRecord [data-cr-steps] .step-title', exact=name)
 SUB = lambda has, **k: T('#instRecord [data-cr-steps] .step-sub', contains=has, **k)
-SKIP = '#instRecord details.cr-skipped .fold-body p'
 
 OPS = {
  # 포털 홈 — 시작 상태 확인(처리 건 0건). 화살표는 위 막대 「홈」 오른쪽 빈자리(one06.mjs의 rest)
@@ -169,7 +168,8 @@ OPS = {
            LONG(SUB('회복으로 판정했습니다'), 180), W(T('#caseTop .case-result'), 20), SETTLE(10),
            # 다음 말(v0649)을 시작하기 전에 효과 확인 줄이 보이게 굴려 둔다 — 게시본은 말이 시작할 때 맨 위 결과 카드가 보이고 말 가운데에야 내려갔다(적대 검토 지적 9)
            ['scroll', {**SUB('회복으로 판정했습니다'), 'top': 220}], SETTLE(4)],
- 'v0649': [P(SUB('회복으로 판정했습니다'), '효과 확인이 끝나면서'), P(STEP('정비 요청 등록'), '정비 요청 등록과'), P(STEP('결과 보고: 정상'), '결과 보고까지')],
+ # 효과 확인 줄은 main 39e93119a부터 판정 글이 줄 가운데다(「… 경보도 꺼져 회복으로 판정했습니다 (설비 시간 … 동안 …).」) — 줄 끝이 아니라 그 구절을 짚는다
+ 'v0649': [P(SUB('회복으로 판정했습니다', phrase='회복으로 판정했습니다'), '효과 확인이 끝나면서'), P(STEP('정비 요청 등록'), '정비 요청 등록과'), P(STEP('결과 보고: 정상'), '결과 보고까지')],
  'v0650': [P(T('#caseTop .case-result header .tag', exact='정상'), '맨 위로'), P(T('#caseTop .case-result .result-main', phrase='유온 정상 · 경보 해제'), '유온이 기준')],
  'v0651': [P(T('#caseTop .case-result .result-main'), '그 줄 끝에는')],
  'v0652': [P(T('#instDetail .case-progress > header h3', exact='진행 상황'), '진행 상황을'), P(STEP('원인 진단 · 냉각 조치 제안'), 'AI의 추천은'),
@@ -177,8 +177,8 @@ OPS = {
            P(SUB('추천안 그대로 승인했습니다', phrase='추천안 그대로 승인했습니다'), '승인 줄에는')],
  # 홈에서 마무리
  'v0657': [C(T('#menuList a[data-tab="main"]'), '홈으로'), W(T('#mainStages a.stat')), P(T('#view-main .page-head p'), '맨 위 한 줄을')],
- # 「2건」: 쿨러 처리 건과 함께 v0612의 AI 추출도 처리 건 하나(「… 추출 제안」, 흐름 manual_source_extraction)로 끝나 세어진다 — 대본 v0654 「하나 세어져」와 어긋남(보고)
- 'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='2건 처리 완료'), 10), P(T('#mainStages a.stat:nth-child(4) .stat-value'), '아래 결과 보기')],
+ # 「1건」: main 39e93119a부터 v0612의 AI 추출(「… 추출 제안」, 흐름 manual_source_extraction)은 시스템 작업이라 이 수에 들지 않고(ui.js isSystemJob) 쿨러 처리 건만 세어진다
+ 'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='1건 처리 완료'), 10), P(T('#mainStages a.stat:nth-child(4) .stat-value'), '아래 결과 보기')],
  'v0655': [P(T('#mainStages a.stat[data-go-tab="scenario"] .go'), '결함 시뮬레이션에서')],
  'v0659': [],
 }
@@ -253,7 +253,7 @@ def main():
         print(f'{PICK[0]}: 큐 {len(part)} · 구간 {sorted({c["segment"] for c in part})} · 글자 {sum(len(c["text"]) for c in part)} → {PICK[1]}')
         return
     doc = {'voice_id': VOICE, 'model_id': MODEL,
-           'note': f'1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main f805fd43). {SRC.name}에서 {Path(__file__).name}로 만든다 — 손으로 고치지 않는다. '
+           'note': f'1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main 39e93119a). {SRC.name}에서 {Path(__file__).name}로 만든다 — 손으로 고치지 않는다. '
                    '모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).',
            'cues': cues}
     with open(OUT, 'w', encoding='utf-8', newline='\n') as f:
