@@ -61,10 +61,9 @@ def hint(question, items):
 APPROVE = 'Codex가 파일을 고치려 하면 `app/features/` 안이면 **Allow once**, 밖이면 **Deny**를 누릅니다. 부탁 속 파일 이름은 백틱 기호(키보드 숫자 1 왼쪽)로 감쌉니다.'
 
 
-def setup(folder, first=True):
-    text = [f'ZIP을 풀고 VS Code **파일 → 폴더 열기**로 안쪽 `{folder}` 폴더(`run.py`가 든 폴더)를 엽니다(바깥 폴더를 열면 Codex가 정답이 든 이 가이드까지 읽습니다). '
-            '신뢰를 물으면 **예, 작성자를 신뢰합니다**를 누르고, **터미널 → 새 터미널**에 아래 명령을 복사해 붙여 넣습니다(손으로 치면 오타가 납니다).'
-            + ('' if first else ' 랩 DB를 쓰는 명령은 터미널에서만 실행합니다(02단계).')]
+def setup(folder):
+    text = [f'ZIP을 풀고 VS Code **파일 → 폴더 열기**로 안쪽 `{folder}` 폴더(`run.py`가 든 폴더)를 엽니다. '
+            '신뢰를 물으면 **예, 작성자를 신뢰합니다**를 누르고, **터미널 → 새 터미널**에 아래 명령을 복사해 붙여 넣습니다.']   # 까닭 문장은 쓰지 않는다(가이드 P-5 — 사용자 2026-11-20 「(손으로 치면 오타가 납니다). 이런ㄱ말 … 다 x 넣지마」)
     return section('폴더 열고 자료 확인하기', text, cmd='python run.py',
                    check=ok('원자료 줄 수가 보이고 결과 화면이 열리면 됩니다. 안 열리면 탐색기에서 `output/result.html`을 엽니다. 이후 명령 뒤에는 결과 화면에서 F5를 누릅니다.'))
 
@@ -79,7 +78,7 @@ def closing(step, tail):
     return dict(step, body=step['body'] + tail)
 
 
-KEEP = '학교 PC는 재부팅하면 초기화될 수 있으니 폴더를 USB나 개인 클라우드에 보관합니다.'
+KEEP = '폴더는 USB나 개인 클라우드에 보관합니다.'
 
 
 def ontology():
@@ -103,7 +102,7 @@ def ontology():
             'Codex의 추천안을 받아 클래스 다섯(설비 · 구성 요소 · 센서 · 부품 · 물리량)의 식별자와 관계를 정하고, `design.csv` · `relations.csv`에 반영하게 합니다.',
             hint('태그 TS1이 네 대에 다 있는데, 무엇을 정해야 할까?', ['**식별자**(하나를 가리키는 이름)', '관계 방향', '**카디널리티**(한쪽 하나에 반대쪽이 많아야 몇 개)', 'TS1이 설비마다 따로 되나'])],
             prompt='세 역량 질문에 답하는 모델을 만들려고 해. 지금 정한 식별자와 관계 방향 · 카디널리티를 `app/features/design.csv`와 `relations.csv`에 반영해 줘. 같은 이름의 다른 대상이 한 식별자로 합쳐지면 안 돼. 반영한 뒤 TS1이 설비마다 다른 식별자가 되는지 원자료 열로 확인해 줘. 실물 행과 구성 요소-실물 행은 내가 정할 때까지 넣지 말고, 다른 파일은 바꾸지 마.',
-            cmd='python run.py design', check=ok('「식별자가 겹치는 원자료 행(이름을 맞추기 전)」 표에 HYD-02 펌프 두 줄만 남으면 됩니다(다음 단계에서 정함).'), ai=3),
+            cmd='python run.py design', check=ok('「식별자가 겹치는 원자료 행(이름을 맞추기 전)」 표에 HYD-02 펌프 두 줄만 남으면 됩니다.'), ai=3),
         section('새 클래스를 만들지 정하기: 구성 요소 자리와 실물', [
             'HYD-02 펌프 자리의 두 줄(떼어 낸 펌프 · 지금 펌프)을 어떻게 둘지 내가 고릅니다. 정답은 없습니다. 고른 것과 이유를 Codex에게 말해 `decisions.csv`에 적게 하고, 이어서 펌프 자리 줄을 `expected.csv`에 더하게 한 뒤 표를 맞추게 합니다.',
             hint('무엇을 따져 보고 고를까?', ['일련번호를 구성 요소의 속성으로 두면 → 질문 1의 답', '실물을 클래스로 따로 두면 → 질문 1의 답', 'Codex의 추천안과 까닭', '헷갈리면 「내가 정할 것을 하나씩 물어봐 줘」'])],
@@ -155,9 +154,9 @@ def own_model():
 
 
 def graph(portal_table):
-    return [setup('graph-lab', first=False),
+    return [setup('graph-lab'),
         section('랩 DB 준비하기', [
-            'Docker Desktop을 켜고 아래 명령을 터미널에서 실행해, 이 폴더 전용 Neo4j 그래프 DB(랩 DB)를 띄웁니다. Codex가 이 명령을 실행하려 하면 **Deny**를 누릅니다(Codex는 Docker에 닿지 못합니다). 처음 한 번은 이미지를 받느라 오래 걸립니다.'],
+            'Docker Desktop을 켜고 아래 명령을 터미널에서 실행해, 이 폴더 전용 Neo4j 그래프 DB(랩 DB)를 띄웁니다. 랩 DB를 쓰는 명령은 터미널에서 실행하고, Codex가 실행하려 하면 **Deny**를 누릅니다. 처음 한 번은 오래 걸립니다.'],
             cmd='python run.py db', check=ok('「랩 DB 준비 완료」가 나오고 모델과 랩 DB 개수가 나란히 보이면 됩니다(처음은 0).')),
         section('Codex에게 물어 제공 모델 파악하기', [
             'Codex에게 제공 모델(`data/model/`)의 짜임과 개수를 물어 파악합니다. 화면의 「종류」는 클래스이고, 그래프에서는 노드의 **레이블**입니다.',
