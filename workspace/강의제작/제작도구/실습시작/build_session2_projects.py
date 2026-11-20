@@ -24,7 +24,8 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v43-lab', 'graph-lab': 'v43-lab'}
+VERSIONS = {'ontology-lab': 'v44-lab', 'graph-lab': 'v44-lab'}
+# v44-lab(2026-11-20, 사용자 「지금 현재 목표 이렇고 상황 이렇고 힌트 이렇게 이런 거 이런 걸 해야 되겠다 … 그냥 하나의 문맥으로 탕 떄려넣지말고」 · 「결과 화면에 띄워」): 가이드 단계를 목표 · 상황 · 힌트 칸(session2_project_guides.plan)으로, 그래프 랩 비교 기능이 내 그래프 아래에 기준 지도 표를 띄움(제공 입력 data/reference_map.json — build_labs.portal_reference, 가이드의 기준 지도 표는 뺌).
 # v43-lab(2026-11-20, 사용자 「(손으로 치면 오타가 납니다). 이런ㄱ말 codex가 가ㅣ드 정답까지 읽는다 는 등 다 x 넣지마」): 괄호 속 까닭(오타 · 바깥 폴더 · Docker · 재부팅)을 뺌.
 # v42-lab(2026-11-20, 사용자 「작업지시 같은 말을 빼라고 그냥 딱 행위 설명만 있어야 있어라고 왜 자꾸 막 이상 쓸데없는 말을 다 더워 군더더기 다 빼고」): 단계는 할 행동 한두 문장 → 힌트(물음 하나와 단어 목록) → 명령 → 확인 한 줄만. 「지금 · 할 일 · 요령」 꼬리표, 요령의 까닭 문장(TIP_* — 까닭은 영상과 현장이 푼다), 힌트 속 작업 지시 문구를 뺌.
 # v41-lab(2026-11-20, 사용자 「가이드는 이정표처ㅓㅁ 지금 이런 상황이고 이러 ㅇ리렇다 어떻게햐앟ㄹ가?」 · 「지금 이런이런거가지 알았다 그러면 ~~ 일떄에 어떻게행할까 -- OO -- OO … 정답을 단어형태로 알려주는건 좋은데 프롬포트 자체를 주면안됨」): 단계를 「지금(앞 단계까지 안 것과 상황) → 힌트(그러면 무엇을 물어보고 알아야 할까 + 단어 · 짧은 구 목록) → 요령 → 명령 → 확인」으로, 파악 단계에도 정답 보기(완성 부탁 글은 정답 보기에만).
@@ -190,6 +191,7 @@ def build_graph(folder):
     schema, graph = B.reference_model(False, B.GRAPH_LAB_INPUT['통합반'])
     for name, value in [('schema.json', B.student_schema(schema)), ('graph.json', graph)]:
         write(folder / 'data/model' / name, P.convert(json.dumps(value, ensure_ascii=False, indent=2) + '\n'))
+    write(folder / 'data/reference_map.json', json.dumps(B.portal_reference(), ensure_ascii=False, indent=2) + '\n')   # 비교 기능(compare)이 내 그래프 아래에 띄우는 기준 지도
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
             if name == '결과/기대_답.csv':
@@ -215,7 +217,7 @@ def build_graph(folder):
     write(folder / 'run.py', run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
     write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=GRAPH_RULE + '\n' + DB_RULE, readme_file=False)
-    steps = G.graph(B.portal_table())
+    steps = G.graph()
     F.write_guide(folder, G.render(L['title'], G.GRAPH_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
 

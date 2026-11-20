@@ -219,7 +219,15 @@ def portal(previous):
             rows.append((r['a'], r['type'], r['b']))
     rows = [x for x in rows if '쿨러' in ' '.join(x) or 'cooler' in ' '.join(x) or x[0] == hit[0]]
     return [R.table('내 그래프 — HYD-01에서 시작하는 관계(시작 → 끝)', ['시작 id', '관계', '끝 id'], sorted(set(rows)),
-                    note='가이드 이 단계의 포털 기준 지도 표와 나란히 놓고 식별자와 방향을 견줍니다.')]
+                    note='아래 기준 지도 표와 식별자 · 관계 방향을 견줍니다.'),
+            reference_map()]
+
+
+def reference_map():
+    ref = json.loads((HERE / 'data/reference_map.json').read_text(encoding='utf-8'))
+    name = {x['id']: f"{x['id']}({x['알아볼 값']})" for x in ref['대상']}
+    return R.table('기준 지도 — 포털 지식 지도의 같은 길(시작 → 끝)', ['시작 id', '관계', '끝 id'],
+                   [(name[r['시작']], f"{r['관계']}({r['화면 이름']})", name[r['끝']]) for r in ref['관계']], note=ref['설명'])
 
 
 

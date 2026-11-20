@@ -641,7 +641,7 @@ def graph_counts(change):
 
 # ───────────── 실습4(그래프 구현과 검증) — 두 과정 ─────────────
 # 통합 실습4 12단계의 입력 = 포털 실습 「설비 지식의 구조와 연결 관계 탐색하기」에서 펼쳐 본 기준 지도(설비 HYD-01 → 오일 쿨러 → 센서 → 상태 변수).
-# 랩은 포털 없이 돈다(코딩랩.md K-2) — 포털이 실제로 적재하는 main 시드와 포털 화면의 관계 이름에서 뽑아 가이드 그 단계에 표로 싣는다. 사진은 본 촬영 때 더한다.
+# 랩은 포털 없이 돈다(코딩랩.md K-2) — 포털이 실제로 적재하는 main 시드와 포털 화면의 관계 이름에서 뽑아 랩의 제공 입력(data/reference_map.json)으로 주고, 비교 기능의 결과 화면이 띄운다.
 PORTAL_SEED = 'it/neo4j/v2/instances.cypher'
 PORTAL_LABELS = 'it/portal/www/enterprise.js'     # 화면의 관계 이름(RELATION_KO)
 PORTAL_ASSET, PORTAL_COMPONENT = 'asset:hyd-01', 'comp:cooler'
@@ -679,40 +679,27 @@ def portal_map():
     return nodes, rels, ko
 
 
-def portal_table():
-    """통합 실습4 12단계 가이드의 기준 지도 표. 포털 지식 지도는 고른 설비 하나만 그린다(main `it/neo4j/templates/t0_graph_nodes.cypher` ·
-    `t0_graph_edges.cypher`의 설비 조건) — 그래서 HYD-01에서 오일 쿨러를 펼쳐 본 길(설비 → 쿨러 → 센서 → 상태 변수)의 관계만 싣고,
-    다른 설비가 같은 쿨러에 이어지는 것은 포털 실습에서 설비를 바꿔 본 한 줄로, 길 밖의 관계(교체 부품 · 증상 · 데이터 출처 등)는 싣지 않았다고 적는다."""
+def portal_reference():
+    """그래프 랩 비교 기능(compare)의 기준 지도 — 랩의 제공 입력 `data/reference_map.json`. 포털 지식 지도는 고른 설비 하나만 그린다(main `it/neo4j/templates/t0_graph_nodes.cypher` ·
+    `t0_graph_edges.cypher`의 설비 조건) — 그래서 포털 실습에서 HYD-01의 오일 쿨러를 펼쳐 본 길(설비 → 쿨러 → 센서 → 상태 변수)과, 설비 칸을 HYD-02로 바꿔 본 한 줄만 담는다.
+    결과 화면이 내 그래프 표 아래에 띄운다 — 영상은 가이드를 띄우지 않으므로 견줄 표가 가이드에만 있으면 안 된다(사용자 2026-11-20 「결과 화면에 띄워」)."""
     nodes, rels, ko = portal_map()
     sensors = list(dict.fromkeys(b for a, t, b in rels if a == PORTAL_COMPONENT and t == 'MONITORED_BY'))   # 시드 순서(유온 센서가 먼저)
     path = [PORTAL_ASSET, PORTAL_COMPONENT, *sensors, *dict.fromkeys(b for s in sensors for a, t, b in rels if a == s and t == 'OBSERVES')]
     on_path = [(a, t, b) for a, t, b in rels if a in path and b in path]      # 다른 설비(HYD-02 · 03)는 길에 없어 함께 빠진다
     switched = 'asset:hyd-02'                                                   # 포털 실습에서 설비 칸을 바꿔 본 설비(대본 05_실습_지식지도탐색 3절)
     if (switched, 'HAS_COMPONENT', PORTAL_COMPONENT) not in rels:
-        raise ValueError(f'{PORTAL_SEED}에서 {switched} → {PORTAL_COMPONENT}(HAS_COMPONENT)를 찾지 못했습니다 — 가이드의 설비 바꾸기 문장을 다시 봅니다.')
-    shown = {'Asset': ['code'], 'Component': ['name'], 'Sensor': ['tag'], 'StateVariable': ['name']}   # 이 단계는 식별자 · 방향을 견주므로 대상을 알아볼 값 하나만
+        raise ValueError(f'{PORTAL_SEED}에서 {switched} → {PORTAL_COMPONENT}(HAS_COMPONENT)를 찾지 못했습니다 — 기준 지도의 설비 바꾸기 줄을 다시 봅니다.')
+    shown = {'Asset': 'code', 'Component': 'name', 'Sensor': 'tag', 'StateVariable': 'name'}   # 대상을 알아볼 값 하나
     kind = {'Asset': '설비', 'Component': '구성 요소', 'Sensor': '센서', 'StateVariable': '상태 변수'}
+    ids = [*path, switched]
+    missing = [i for i in ids if nodes[i].get(shown[nodes[i]['label']]) is None]
+    if missing:
+        raise ValueError(f'{PORTAL_SEED}: 알아볼 값이 없는 대상 {missing}')
+    return {'설명': '포털 실습의 지식 지도에서 HYD-01의 오일 쿨러를 펼쳐 본 길(설비 → 쿨러 → 센서 → 상태 변수)과, 설비를 HYD-02로 바꾸면 같은 쿨러로 이어지는 관계',
+            '대상': [{'id': i, '종류': kind[nodes[i]['label']], '알아볼 값': str(nodes[i][shown[nodes[i]['label']]])} for i in ids],
+            '관계': [{'시작': a, '관계': t, '화면 이름': ko[t], '끝': b} for a, t, b in [*on_path, (switched, 'HAS_COMPONENT', PORTAL_COMPONENT)]]}
 
-    def value(v):
-        return ' · '.join(v) if isinstance(v, list) else ('true' if v is True else 'false' if v is False else str(v))
-
-    def links(i):
-        out = []
-        incoming = sorted({(t, a) for a, t, b in on_path if b == i})
-        outgoing = sorted({(t, b) for a, t, b in on_path if a == i})
-        for t, group in [(t, [a for tt, a in incoming if tt == t]) for t in dict.fromkeys(t for t, _ in incoming)]:
-            out.append(f'들어오는 「{ko[t]}」({t}): ' + ' · '.join(f'<code>{html.escape(a)}</code> → 이것' for a in group))
-        for t, group in [(t, [b for tt, b in outgoing if tt == t]) for t in dict.fromkeys(t for t, _ in outgoing)]:
-            out.append(f'나가는 「{ko[t]}」({t}): ' + ' · '.join(f'이것 → <code>{html.escape(b)}</code>' for b in group))
-        return '<br>'.join(out)
-    rows_ = ''.join(f'<tr><td>{kind[nodes[i]["label"]]}</td><td><code>{html.escape(i)}</code></td>'
-                    f'<td>{"<br>".join(f"<code>{k}</code> {html.escape(value(nodes[i][k]))}" for k in shown[nodes[i]["label"]] if nodes[i].get(k) is not None)}</td><td>{links(i)}</td></tr>'
-                    for i in path)
-    return ('<p><b>포털 기준 지도</b> 포털 실습에서 HYD-01의 오일 쿨러를 펼쳐 본 지식 지도 가운데 설비 → 쿨러 → 센서 → 상태 변수 길의 식별자 · 관계입니다. '
-            '「 」는 화면의 관계 이름, 괄호는 저장된 이름, →는 방향(시작 → 끝)입니다.</p>'
-            f'<table><tr><th>종류</th><th>식별자(id)</th><th>알아볼 값</th><th>관계와 방향</th></tr>{rows_}</table>'
-            f'<p>포털 실습에서 본 것처럼 설비 칸을 {html.escape(nodes[switched]["code"])}로 바꾸면 <code>{switched}</code>에서 같은 <code>{PORTAL_COMPONENT}</code>로 '
-            f'「{ko["HAS_COMPONENT"]}」 관계가 이어지고, 그 아래 센서 · 상태 변수도 이 표와 같은 노드입니다.</p>')
 
 def blank_pump_basis():
     """제공 모델이 교체부품 칸이 빈 HYD-03 주 펌프를 이은 근거 — 원자료의 다른 칸(같은 모델의 예비품 · 입고 이력 비고)으로 밝힌다(H3)."""
