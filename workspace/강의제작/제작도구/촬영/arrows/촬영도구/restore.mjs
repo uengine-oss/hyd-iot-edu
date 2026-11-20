@@ -13,6 +13,8 @@ export async function restore({take, edge, space}){
  p=p?(p.label?t.page(p.label):await t.adopt(p.page)):t.page('p1');
  await p.cdp('Emulation.setDeviceMetricsOverride',metrics());
  if(!(await p.url()).includes('arrows.app')){await p.goto('https://arrows.app');await p.waitForSelector('canvas');}
+ // 새 브라우저의 첫 안내(쿠키 알림 · 도움말 창)가 떠 있으면 닫는다 — 영상 1구간이 누르는 것과 같은 단추
+ {const ck=p.locator('text=Use necessary cookies only');if(await ck.count())await ck.first().click();const d=p.locator('.modal button:has-text("Done")');if(await d.count()){await d.first().click();await p.waitForTimeout(400);}}
  const G=()=>p.evaluate(()=>{const id=location.hash.split('id=')[1];return JSON.parse(localStorage.getItem('GRAPH|'+id)).graph;});
  // 새 그림(New ▸ Web Browser storage)
  const before=await p.url();
@@ -22,8 +24,8 @@ export async function restore({take, edge, space}){
  const pt=await p.evaluate(()=>{const n=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.startsWith('NewStore'));const r=[...n.querySelectorAll('[role=option]')].find(e=>e.textContent.trim()==='Web Browser storage').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});
  await p.mouse.move(pt.x,np.y);await p.mouse.move(pt.x,pt.y);await p.mouse.click(pt.x,pt.y);
  await p.waitForFunction(u=>location.href!==u,before,{timeout:8000});await p.waitForTimeout(500);
- // 패널이 접혀 있으면 연다
- if(await p.evaluate(()=>document.querySelector('canvas').getBoundingClientRect().width>1400)){const hb=await p.evaluate(()=>{const e=[...document.querySelectorAll('a.item')].filter(e=>{const r=e.getBoundingClientRect();return r.x>innerWidth-80&&r.y<45;}).pop();const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};});await p.mouse.click(hb.x,hb.y);await p.waitForTimeout(400);}
+ // 오른쪽 칸이 접혀 있으면(그림판이 창 폭을 다 쓰면) 연다 — 화면 값마다 다른 고정 폭을 쓰지 않는다
+ if(await p.evaluate(()=>document.querySelector('canvas').getBoundingClientRect().width>innerWidth-100)){const hb=await p.evaluate(()=>{const e=[...document.querySelectorAll('a.item')].filter(e=>{const r=e.getBoundingClientRect();return r.x>innerWidth-80&&r.y<45;}).pop();const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};});await p.mouse.click(hb.x,hb.y);await p.waitForTimeout(400);}
  // 기본 빈 원 지우기 → 가져오기
  await p.mouse.click(300,150);if((await G()).nodes.length){await p.keyboard.press('ControlOrMeta+A');await p.click('button:has-text("Delete")');}
  await p.click('css=[role=listbox] >> nth=0');await p.click('text="Import"');await p.waitForTimeout(400);
