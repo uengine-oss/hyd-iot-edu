@@ -139,7 +139,7 @@ OPS = {
            C(T('#labFollow [data-lv-go="case"]'), '눌러 들어가'), W(T('#todoPanel .turn-head h3'), 60), SETTLE(8)],
  # 처리 건에서 AI 판단 읽기 — 추천안이 대본과 같은지 확인(영상 V-13)
  'v0638': [W(T('#todoPanel .turn-head h3', exact='팬 최대 운전을 승인할까요?'), 5), P(T('#instList button.row[data-todo-task] .row-title'), '왼쪽 목록 맨 위'),
-           P(T('#instDetail .case-title > span', exact='냉각 긴급 대응 HYD-01'), '오른쪽에 그 내용이'), P(T('#todoPanel .turn-eyebrow', phrase='내가 할 일 · 승인'), '맨 위 카드가')],
+           P(T('#instDetail .case-title > span', exact='냉각 긴급 대응 HYD-01'), '오른쪽에 그 내용이'), P(T('#todoPanel .turn-eyebrow', phrase='내가 할 일 · 승인'), '맨 위 카드를')],
  'v0639': [P(T('#todoPanel .turn-head h3'), '카드 제목에'), P(T('#todoPanel .turn-ai p b', exact='AI 판단'), '밑의 AI 판단'),
            P(T('#todoPanel .turn-ai p', phrase='쿨러 핀 오염'), '원인을 쿨러'), P(T('#todoPanel [data-open-tab="judge"]'), '바로 밑의 판단 근거'),
            C(T('#todoPanel [data-open-tab="judge"]', anchor='center'), '누르면'), W(T('dialog[open] [data-cr-tab="judge"][aria-selected="true"]'), 10),
