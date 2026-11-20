@@ -1,7 +1,7 @@
 {
  "voice_id": "tlxL9ilynpbOVf9sZXKh",
  "model_id": "eleven_v4",
- "note": "1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main f805fd43). 06_실습_전체과정관찰.md에서 통합_01_06_전체과정관찰_큐만들기.py로 만든다 — 손으로 고치지 않는다. 모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).",
+ "note": "1회차 실습 06 전체과정관찰(두 과정 공통, 새 포털 main 39e93119a). 06_실습_전체과정관찰.md에서 통합_01_06_전체과정관찰_큐만들기.py로 만든다 — 손으로 고치지 않는다. 모듈 segs/one06.mjs → segs/map.mjs. gap은 앞 말이 끝나고 이 말을 시작할 때까지의 초(영상 V-14).",
  "cues": [
   {
    "id": "v0601",
@@ -2046,7 +2046,8 @@
      "point",
      {
       "css": "#instRecord [data-cr-steps] .step-sub",
-      "contains": "회복으로 판정했습니다"
+      "contains": "회복으로 판정했습니다",
+      "phrase": "회복으로 판정했습니다"
      },
      {
       "at": "효과 확인이 끝나면서"
@@ -2226,7 +2227,7 @@
      "wait",
      {
       "css": "#mainStages a.stat:nth-child(4) .stat-value",
-      "contains": "2건 처리 완료"
+      "contains": "1건 처리 완료"
      },
      10
     ],
