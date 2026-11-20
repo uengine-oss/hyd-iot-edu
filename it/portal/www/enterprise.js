@@ -45,7 +45,7 @@ const RELATION_KO = {
   IN_PERSPECTIVE: '속한 관점', SUPPORTS: '받쳐 주는 목표', MEASURES: '측정하는 목표', OWNED_BY: '담당 부서', INFLUENCES: '영향 (+/−)',
   ACHIEVES: '달성하는 조직 목표', HAS_NODE: '흐름 노드', SEQUENCE_FLOW: '다음 단계', ATTACHED_TO: '경계 이벤트', PERFORMED_BY: '수행자', READS: '읽는 데이터',
   PRODUCES: '만드는 데이터', INVOKES: '부르는 판단', EXECUTES: '실행하는 조치 방법', CORRELATES: '시작시키는 경보', ACTS_ON: '대상 설비',
-  MEMBER_OF: '소속 부서', HAS_COMPONENT: '구성 요소', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', OBSERVES: '읽는 상태 변수', MANIPULATES: '바꾸는 변수',
+  MEMBER_OF: '소속 부서', HAS_COMPONENT: '구성 요소', MONITORED_BY: '감시 센서', ACTUATED_BY: '구동 장치', OBSERVES: '읽는 상태 변수', MANIPULATES: '바꾸는 변수',
   USES_PART: '교체 부품', SUPPLIED_BY: '공급사', HAS_SKILL: '수행 가능한 조치 방법', SOURCED_FROM: '데이터 출처', REPRESENTS: '나타내는 변수 · 지표',
   DETECTS: '감지 증상', OBSERVED_BY: '관측 센서', INDICATES: '나타내는 고장', OCCURS_IN: '발생 위치', LEADS_TO: '이어지는 고장', CAUSES: '일으키는 고장',
   INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 증거', MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치',
@@ -54,6 +54,8 @@ const RELATION_KO = {
   GOVERNED_BY: '통제 출처', HAS_RULE: '규칙', TESTS: '임계치 검사', OUTPUTS: '고르는 결과', APPLIES_TO: '적용 대상', PENALIZES: '감점 지표',
   DERIVED_FROM: '근거 출처', FORECASTS: '예측 대상', ASSUMES: '가정한 조치', GIVEN: '가정한 원인', ON_ASSET: '설비', RAISED_BY: '경보 패턴',
   DIAGNOSED_AS: '판정 원인', INSTANCE_OF: '판단 정의', CHOSE: '고른 조치', DECIDED_BY: '판단한 역할', FOR_INCIDENT: '대상 사건',
+  HANDLES: '처리하는 사건', IN_INSTANCE: '속한 처리 건', ASSIGNED_TO: '맡은 담당', ROLE_BOUND: '역할을 맡은 담당', USES_VERSION: '쓰는 흐름 판본',
+  DOCUMENTS: '같은 절차의 조치 방법',
 };
 const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', patterns: null, result: null,
   decisions: [], decSel: null, decDetail: null, entState: null, tx: [], roles: null, busy: false,
