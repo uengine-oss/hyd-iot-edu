@@ -117,7 +117,7 @@ OPS = {
            H(BUS, 'box', '가운데 칸을', keep=True), H(AGENT, 'box', '오른쪽 AI', keep=True),
            H(ZTAG('OT'), 'underline', 'OT, DMZ'), H(ZTAG('DMZ'), 'underline', 'DMZ, IT가', keep=True), H(ZTAG('IT'), 'underline', 'IT가 차례로', keep=True),
            H(ZTAG('OT'), 'underline', '공장 안 OT에서'), H(ZTAG('DMZ'), 'underline', '중간 구역', keep=True), H(ZTAG('IT'), 'underline', '사무실 쪽', keep=True),
-           H(ZONE('값이 지나는 길'), 'underline', '값이 올라가는 길이라고')],      # 영역 꼬리표 셋(main.js BUS의 zone) — 2026-11-20 이론의 세 보안 영역을 화면에서 짚는다
+           H(ZONE('값이 지나는 길'), 'underline', '이론에서 올라간다고')],      # 영역 꼬리표 셋(main.js BUS의 zone) — 2026-11-20 이론의 세 보안 영역을 화면에서 짚는다
  'v0606': [H(AGENT, 'box', '오른쪽 한가운데가'), H(NODE('증상 · 유온 상승', anchor='left'), 'box', '둘레의 점들은'),      # 증상 점은 글 끝 오른쪽이 아래 「원인 · 쿨러 핀 오염」을 덮어 점 왼쪽을 짚는다
            H(NODE('고장 유형 · 냉각 상실'), 'box', '고장 유형,', keep=True), H(NODE('원인 · 쿨러 핀 오염'), 'box', '원인 같은', keep=True),
            H(AGENT, 'box', 'AI 에이전트는')],
@@ -249,7 +249,7 @@ OPS = {
  # 괄호의 밑줄은 「실제보다 스무 배」에서 왼쪽 아래 「20배속」의 밑줄로 넘긴다 — 연장이 나면 승인 뒤 약 48초에 괄호가 사라지므로 그 밑줄을 오래 두지 않는다.
  # 「20배속」은 고정된 메뉴 줄에 있어, 결과 칸이 끼어들어 진행 상황이 밀리는 기다림 동안 남아도 자리가 어긋나지 않는다
  'v0648': [['scroll', {**STEP('효과 확인'), 'top': 260}], H(STEP('효과 확인'), 'band', '지금은 효과 확인'), W(SUB('설비 시간 15분', phrase='설비 시간 15분'), 30),
-           H(SUB('설비 시간 15분', phrase='설비 시간 15분'), 'underline', '괄호 안에는'), H(T('#railScale'), 'underline', '실제보다 스무 배'),
+           H(SUB('설비 시간 15분', phrase='설비 시간 15분'), 'underline', '여기 설비 시간이라고'), H(T('#railScale'), 'underline', '스무 배 빨리'),
            LONG(SUB('회복으로 판정했습니다'), 180), W(T('#caseTop .case-result'), 20), SETTLE(10),
            # 다음 말(v0649)을 시작하기 전에 효과 확인 줄이 보이게 굴려 둔다 — 게시본은 말이 시작할 때 맨 위 결과 카드가 보이고 말 가운데에야 내려갔다(적대 검토 지적 9)
            ['scroll', {**SUB('회복으로 판정했습니다'), 'top': 220}], SETTLE(4)],
