@@ -646,7 +646,7 @@ def _none_page():
 
 def test_승인할_안이_없을_때의_반려하고_이_건_닫기는_사유를_받아_반려_요청을_보내고_건이_닫힌_것이_화면에_남는다():
     """V 보고 「못 누른 것」: 실행할 수 있는 안이 하나도 없는 판단에만 나오는 주 단추 — 아무도 누른 적이 없었다. 누르면 사유 칸이 열리고, 사유 없이는 나가지 않으며,
-    [반려 확정]이 조치 카드 반려(POST …/reject-card)를 그 판단 · 담당자 · 승인 역할 · 사유로 한 번 보낸다. 끝나면 결과 알림이 뜨고 그 건은 내 차례가 아니다."""
+    [반려 확정]이 조치 카드 반려(POST …/reject-card)를 그 판단 · 담당자 · 승인 역할 · 사유로 한 번 보낸다. 끝나면 결과 알림이 뜨고 그 건은 「내가 할 일」에서 빠진다."""
     with _none_page() as page:
         panel = page.inner_text('#todoPanel')
         assert '지금은 승인할 수 있는 안이 없습니다' in panel and page.locator('#tdGo').count() == 0      # 꺼진 [승인]을 주 단추 자리에 두지 않는다
@@ -811,7 +811,7 @@ def test_홈_카드의_내가_할_일_진행_중_처리_완료_수는_그_카드
 
 def test_시스템_작업_안의_사람_차례는_내가_할_일로_세고_그_건을_시스템_작업_묶음에_또_두지_않는다():
     """처리 완료 · 진행 중의 수는 사건 처리 건만 세지만(2026-11-20), 사람이 할 일은 숨기지 않는다: 질문하기 처리 건에서 에이전트가 사람에게 되물은 차례도
-    메뉴 곁 수와 「내 차례」 묶음에 들고, 그 건은 시스템 작업 묶음에 한 번 더 나오지 않는다. 세는 곳 하나(hydCases.groups)를 실제 페이지에서 부른다."""
+    메뉴 곁 수와 「내가 할 일」 묶음에 들고, 그 건은 시스템 작업 묶음에 한 번 더 나오지 않는다. 세는 곳 하나(hydCases.groups)를 실제 페이지에서 부른다."""
     with _case_page() as page:
         got = page.evaluate("""() => { const q = { proc_inst_id: 'q9', proc_def_id: 'ask_agent', status: 'RUNNING' }, x = { proc_inst_id: 'x1', proc_def_id: 'manual_source_extraction', status: 'COMPLETED' };
           const g = hydCases.groups({ all: [q, x], running: [q], todo: [{ id: 't9', proc_inst_id: 'q9', proc_def_id: 'ask_agent', draft_status: 'HUMAN_ASKED', user_id: 'role:operator', agent_orch: null }] });
@@ -884,7 +884,7 @@ def test_끝난_단계의_오른쪽_시각은_끝난_때이고_문장에는_시�
         assert page.evaluate('t => UI.dateTime(t)', _iso(31, 17)) in head and '2분 46초' in head, head
         page.click('dialog.sheet [data-cr-sheet-close]')
         page.wait_for_function("() => !document.querySelector('dialog.sheet[data-cr-sheet-box]').open")
-        # 아직 끝나지 않은 단계(내 차례인 승인): 끝난 때가 없다 — 시작 시각이거나 시작부터의 경과다
+        # 아직 끝나지 않은 단계(내가 할 일인 승인): 끝난 때가 없다 — 시작 시각이거나 시작부터의 경과다
         _pick(page, 'mine')
         now = {r['id']: r for r in page.evaluate(read)}
         assert not now['m2']['ended'] and (now['m2']['since'] or now['m2']['time'] == clock(_iso(40, 1))) and now['m2']['title'].endswith('시작'), now['m2']
