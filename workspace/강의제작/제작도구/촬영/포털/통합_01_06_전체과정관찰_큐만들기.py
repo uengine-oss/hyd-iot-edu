@@ -107,7 +107,7 @@ OPS = {
  'v0621': [P(T(PANE('know:evidence:evd:cooler-fouling-vs1-normal') + ' label.doc-check', anchor='margin'), '여기, 적재에서')],
  'v0622': [P(T('#manualReview .doc-confirm label.doc-check', anchor='margin'), '맨 아래로'), C(T('#manualReviewed', anchor='center'), '체크하고'),
            C(T('#manualCommit', anchor='center'), '누르겠습니다'), W(T('#manualCommitSteps li[data-step="commit"] b'), 10)],
- # 적재가 끝나 「지식 지도에 적재했습니다」가 뜬 뒤에 다음 말(v0624)을 시작한다 — 세 단계가 약 6초 흐른다
+ # 적재가 끝나 「지식 지도에 적재했습니다」가 뜬 뒤에 다음 말(v0624)을 시작한다 — 두 단계(개정으로 빠지는 항목 확인 · 적재)가 약 5초 흐른다
  'v0623': [P(T('#manualCommitSteps li[data-step="commit"] b')), LONG(T('#manualCommitTitle', exact='지식 지도에 적재했습니다'), 60)],
  'v0624': [P(T('#manualCommitTitle'), '지식 지도에 적재했다고')],
  # 지식 지도에서 이어진 길 보기

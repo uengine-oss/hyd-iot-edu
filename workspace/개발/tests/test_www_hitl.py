@@ -489,7 +489,9 @@ def test_검토_화면의_원문_인용과_지식_후보_제목과_적재_완료
     """06 화면 훑기(2026-11-20) 셋: ① 원문 인용 칸에 문서 서식의 제목 표시 「###」가 그대로 보였다(인용 글은 원문 그대로이고 그 표시만 뗀다).
     ② 이름 없는 규칙의 제목이 원문 문장 그대로라 「COOLER_DEGRADATION 경보에서 …」로 보였다 — 다른 화면 문장처럼 경보 이름으로 읽는다.
     ③ 적재 완료 글이 「후보 규칙에 연결: 쿨러 냉각 성능 상실 → (되돌리면 함께 빠집니다)」였다 — 서버가 고장 유형마다 고른 규칙 목록(빈 목록 포함)을 보냈고 화면이
-    그대로 찍었다. 이제 서버는 실제로 기존 규칙에 이은 절차만 보내고, 화면은 그 절차의 이름을 말한다(이은 것이 없으면 덧붙이지 않는다)."""
+    그대로 찍었다. 이제 서버는 실제로 기존 규칙에 이은 절차만 보내고, 화면은 그 절차의 이름을 말한다(이은 것이 없으면 아무것도 적지 않는다).
+    적재 단계 목록은 서버에 가는 일만 적고(화면이 목록을 다시 읽는 일은 단계가 아니다), 넣은 수는 적재 줄 이름 하나가 말한다 — 「적재 완료: 절 … 」 한 줄과
+    적재 줄 아래 메모로 같은 수를 되풀이하지 않는다(사용자 2026-11-20 「다 처리해줘」)."""
     from playwright.sync_api import sync_playwright
     name = 'HI-01_shift-inspection-supplement.md'
     docs = _CitedDocs([name])
@@ -506,8 +508,10 @@ def test_검토_화면의_원문_인용과_지식_후보_제목과_적재_완료
             assert page.evaluate("() => document.querySelector(\"[data-item='know:rules:rule:x-fouling'] .row-title\").textContent") == '쿨러 성능 저하 경보에서 냉각 효율이 70 % 미만이면 핀 오염을 1순위 원인으로 둔다.'
             page.check('#manualReviewed')
             page.click('#manualCommit')
-            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
-            assert page.inner_text('#manualMsg').strip() == '적재 완료: 절 1 · 조치 방법 3 · 단계 3. 이미 있던 판단 규칙이 이 문서의 조치 방법 벨트 교체도 후보로 냅니다.'
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
+            assert page.inner_text('#manualMsg').strip() == '이미 있던 판단 규칙이 이 문서의 조치 방법 벨트 교체도 후보로 냅니다.'
+            steps = page.locator('#manualCommitSteps .lv-step').all_inner_texts()
+            assert len(steps) == 1 and steps[0].startswith('검토한 내용을 지식 지도에 적재 — 매뉴얼 절 1개 · 조치 방법 3개 · 단계 3개') and '다시 읽기' not in steps[0] and '\n절 1' not in steps[0], steps
         finally:
             b.close()
             served.close()
@@ -518,6 +522,7 @@ class _MemoDocs(_Docs):
     결과를 만든 사람이 서명 묶음에 남긴 작업 메모(proposal.warnings), cache.origin.review_notes 는 검토하며 고친 곳). 둘째 문서는 AI가 방금 읽은 결과다(cache 없음 — 경고는 AI가 낸 것).
     두 문서 모두 서버가 원문에서 찾은 수치 경고(validation.source_value_warnings)가 경고 목록에 함께 실린다(manual_extraction — preview['warnings'])."""
     MEMO, NOTE, VALUE = '후보 규칙 추가: 원인 = 팬 구동 불량 → SOP-FAN-11 (REMEDIED_BY · CMMS 작업지시)', '기존 검토본의 승인 역할/원인 연결은 유지', 'SOP-A-01: 원문 수치 80 %가 단계에 없습니다'
+    PAGE = 'HM-8.3 냉각 기준표는 절 기준으로 보존하고 별도 절차로 만들지 않았습니다'      # 쪽별 추출 검토 기록(proposal.page_reviews)
 
     def __call__(self, route):
         path, method = route.request.url.split('?')[0], route.request.method
@@ -531,6 +536,7 @@ class _MemoDocs(_Docs):
             r['warnings'] = [self.MEMO, self.VALUE]
             r['validation']['source_value_warnings'] = [self.VALUE]
             r['coverage'] = {'ratio': 0.76}
+            r['page_reviews'] = [{'page': 1, 'note': self.PAGE}]
             r['procedures'][0]['anchor'] = {'page': 1, 'start': 0, 'quote': '벨트를 교체한다.', 'located': 'exact'}
             if cached(doc):
                 r['extraction']['cache'] = {'version': 'reviewed-1', 'origin': {'review_notes': [self.NOTE]}}
@@ -542,7 +548,8 @@ def test_제공_문서의_검토_화면에는_작업_메모와_인용_비율이_
     """06 화면 훑기(2026-11-20) · 사용자 답: 제공 문서의 「추출 경고 3건」을 펼치면 그 추출 결과를 만든 사람의 작업 메모(REMEDIED_BY · CMMS 작업지시 …)였고,
     「추출 과정 보기」 안에도 「검토하며 고친 곳」과 「AI가 미리 읽고 사람이 … 검토해 둔 …」이 있었다 — 학생 화면에 내지 않는다. 그 메모와 한 목록에 실려 오던
     서버의 원문 수치 경고는 자동 검증 줄의 「원문 수치 확인 필요」로 보인다(가려서 사실이 빠지지 않게). 대조 줄의 기준 없는 비율 「원문 글자의 76 %가 인용에
-    쓰였습니다」도 뺀다. AI가 방금 읽은 문서(cache 없음)의 추출 경고는 그대로 접기로 보인다."""
+    쓰였습니다」도 뺀다. AI가 방금 읽은 문서(cache 없음)의 추출 경고는 그대로 접기로 보인다. 「쪽별 추출 검토 기록」도 같은 까닭(제공 문서의 것은 추출 결과를 만든 사람의
+    메모)으로 제공 문서에서는 빼고, AI가 방금 읽은 문서에서는 접기로 보인다. 처음 추출한 문서에는 「이 문서의 이전 추출 결과」 접기가 없다 — 지금 연 결과 말고 열 결과가 없다(사용자 2026-11-20 「다 처리해줘」)."""
     from playwright.sync_api import sync_playwright
     provided, mine = 'HM-8_cooler-fan-manual.md', 'HI-01_shift-inspection-supplement.md'
     docs = _MemoDocs([provided, mine])
@@ -554,8 +561,9 @@ def test_제공_문서의_검토_화면에는_작업_메모와_인용_비율이_
             page.click('#manualProcess > summary')
             page.locator('#manualProcess [data-cached-yield] .step').first.wait_for(state='visible', timeout=3000)
             shown = page.evaluate("() => document.querySelector('#manualReview').textContent")      # 접힌 것 안까지(원문 판 포함) 화면에 실린 글 전부
-            for hidden in ('추출 경고', docs.MEMO, 'REMEDIED_BY', '검토하며 고친', docs.NOTE, '미리', '원문 글자의', '76', '저장된', '이 PC에 없습니다'):
+            for hidden in ('추출 경고', docs.MEMO, 'REMEDIED_BY', '검토하며 고친', docs.NOTE, '미리', '원문 글자의', '76', '저장된', '이 PC에 없습니다', '쪽별 추출 검토 기록', docs.PAGE):
                 assert hidden not in shown, hidden
+            assert page.evaluate("document.querySelector('#manualExtractionRuns').closest('details').hidden")      # 지금 연 결과 말고 열 결과가 없다
             assert page.inner_text('#manualProcess [data-cached-note]').strip() == 'AI가 이 문서에서 절마다 뽑은 것입니다.'
             trail = page.inner_text('#manualReview [data-live-trail]')
             assert '인용 1곳이 원문의 그 자리에 있습니다 · 사람이 확인할 곳 0건' in trail, trail
@@ -565,6 +573,7 @@ def test_제공_문서의_검토_화면에는_작업_메모와_인용_비율이_
             _open_review(page, docs, mine)
             folds = page.locator('#manualReview .doc-folds > details > summary').all_inner_texts()
             assert any(t.replace('\n', ' ').startswith('추출 경고') and '2건' in t for t in folds), folds
+            assert '쪽별 추출 검토 기록' in folds and docs.PAGE in page.text_content('#manualReview .doc-folds'), folds      # AI가 방금 읽은 문서의 쪽별 기록은 그대로
             assert docs.MEMO in page.evaluate("() => [...document.querySelectorAll('#manualReview .doc-folds > details')].find(d => d.querySelector('summary').textContent.startsWith('추출 경고')).textContent")
             assert '원문 수치 확인 필요' not in page.inner_text('#manualReview .doc-valid')
         finally:
@@ -663,7 +672,7 @@ def test_여럿을_골라_한_번에_적재하면_문서마다_진행이_흐르�
             assert '2 / 2 처리' in done and '적재 1 · 검토 필요 1' in done and '적재 완료 — 절 1 · 조치 방법 3 · 단계 3' in done
             assert '검토 필요 — 자동 검증이 「검토 필요 1건」을 냈습니다.' in done
             states = page.evaluate("() => [...document.querySelectorAll('#manualBatch .step')].map(s => s.dataset.state)")
-            assert states == ['done', 'mine'], states                                         # 끝남은 초록 체크, 사람이 볼 문서는 「내 차례」 모양(실패가 아니다)
+            assert states == ['done', 'mine'], states                                         # 끝남은 초록 체크, 사람이 볼 문서는 「내가 할 일」 모양(실패가 아니다)
             # 적재된 것은 통과한 문서 하나뿐이다. 멈춘 문서는 적재 요청이 나가지 않았다
             assert [c['filename'] for c in docs.commits] == [good] and docs.commits[0]['reviewed'] is True and docs.commits[0]['by'] == '담당자'
             links = docs.commits[0]['links']
@@ -688,7 +697,7 @@ def test_여럿을_골라_한_번에_적재하면_문서마다_진행이_흐르�
             page.wait_for_selector('#manualReview #manualCommit', timeout=30000)
             page.check('#manualReviewed')
             page.click('#manualCommit')
-            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
             assert len(docs.commits) == 2
             by_hand, at_once = dict(docs.commits[1]), dict(docs.commits[0])
             assert by_hand.pop('previous_batch') == 'b0' and at_once.pop('previous_batch') is None      # 두 번째는 방금 적재한 문서의 개정이다 — 그 밖은 글자 하나 다르지 않다
@@ -926,7 +935,8 @@ def test_AI가_이미_읽은_문서를_다시_열면_아직_읽기_전이라고_
             page.wait_for_function("document.querySelector('#manualExtractionRuns').options[0].textContent !== '' && document.querySelector('#manualExtractionRuns').options.length >= 1 && !/불러오는/.test(document.querySelector('#manualExtractionRuns').options[0].textContent)", timeout=8000)
             fresh = page.inner_text('#manualStageNote')
             fold_open = lambda: page.evaluate("document.querySelector('#manualExtractionRuns').closest('details').open")
-            assert '읽기 전' in fresh and not fold_open()                                              # 추출한 적 없는 문서: 그대로
+            fold_hidden = lambda: page.evaluate("document.querySelector('#manualExtractionRuns').closest('details').hidden")
+            assert '읽기 전' in fresh and not fold_open() and fold_hidden()                            # 추출한 적 없는 문서: 그대로, 열 결과가 없으니 접기도 없다
             page.click('#manualAnother')
             runs['items'] = [{'proc_inst_id': 'inst-doc-hm-8', 'start_date': '2026-11-16T02:00:00Z', 'status': 'COMPLETED'}]
             row.click()
@@ -936,7 +946,12 @@ def test_AI가_이미_읽은_문서를_다시_열면_아직_읽기_전이라고_
             assert page.inner_text('#manualAgentResult').strip() in said and fold_open(), said               # 여는 단추의 이름으로 길을 말하고, 그 단추가 든 접기가 펴져 있다
             # 그 순간의 한 번 보기(is_visible)는 이 파일을 통째로 돌릴 때 세 번에 한 번꼴로 거짓이었다(고치기 전 판에서도 — 접기를 편 직후의 틈). 보일 때까지 3초 기다려 판정한다
             page.locator('#manualAgentResult').wait_for(state='visible', timeout=3000)
-            assert page.input_value('#manualExtractionRuns') == 'inst-doc-hm-8'
+            assert page.input_value('#manualExtractionRuns') == 'inst-doc-hm-8' and not fold_hidden()
+            # 그 결과를 열면(3단계) 목록의 유일한 결과가 지금 연 결과라 「이전 추출 결과」 접기가 없다
+            page.click('#manualAgentResult')
+            page.wait_for_selector('#manualReview #manualCommit', timeout=15000)
+            page.wait_for_function("document.querySelector('#manualExtractionRuns')?.options.length === 2", timeout=8000)
+            assert fold_hidden()
             b.close()
         finally:
             served.close()
@@ -1023,7 +1038,7 @@ def test_검토에서_고친_이름은_목록_줄과_판_머리가_바로_따라
             page.select_option("[data-reference-executable='SOP-A-01']", 'false')
             page.check('#manualReviewed')
             page.click('#manualCommit')
-            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
             [sent] = docs.commits
             steps = {p['id']: [s['text'] for s in p['steps']] for p in sent['procedures']}
             assert steps['SOP-A-01'] == ['벨트를 교체한다.'] and steps['SOP-A-03'] == ['상태를 확인한다.'] and steps['SOP-A-02'] == ['축 씰을 순정품으로 발주한다.'], steps
@@ -1055,7 +1070,7 @@ def test_검토_체크_없이_적재를_누르면_까닭이_누른_단추의_줄
             assert docs.commits == []
             page.check('#manualReviewed')
             page.click('#manualCommit')
-            page.wait_for_function("document.querySelector('#manualMsg')?.textContent.startsWith('적재 완료')", timeout=15000)
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
             assert len(docs.commits) == 1 and page.evaluate("document.querySelector('#manualCommitWhy')?.textContent || ''") == ''
         finally:
             b.close()

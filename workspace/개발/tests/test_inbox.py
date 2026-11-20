@@ -67,10 +67,10 @@ def test_운전원의_작업함에_냉각_승인_차례가_보이고_단계로_�
     assert mine[0]['link'] == '#' + inbox.task_url(pid, mine[0]['id'])
 
 
-def test_작업함은_열린_일이_많아도_오래된_내_차례를_자르지_않는다(world):
-    """P2-18: 열린 작업을 최신 500개로 잘라 오래된 내 차례가 말없이 사라졌다."""
+def test_작업함은_열린_일이_많아도_오래된_내가_할_일을_자르지_않는다(world):
+    """P2-18: 열린 작업을 최신 500개로 잘라 오래된 내가 할 일이 말없이 사라졌다."""
     alert, pid, decision = world.start_cooling()
-    world.clock.advance(1)                       # 뒤에 연 일이 더 새 일이다(최신 순으로 자르면 내 차례가 빠진다)
+    world.clock.advance(1)                       # 뒤에 연 일이 더 새 일이다(최신 순으로 자르면 내가 할 일이 빠진다)
     for _ in range(501):
         start_handover(world.rt)
     assert len(world.rt.repo.list_workitems(status='IN_PROGRESS', limit=None, tenant_id='hyd')) > 501

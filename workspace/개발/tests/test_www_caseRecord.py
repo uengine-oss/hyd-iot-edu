@@ -58,9 +58,11 @@ def test_효과_확인_문장은_설비_시간과_실제_시간을_한_형식으
                               'points': [{'t': a, 'v': 60.8}, {'t': b, 'v': 51.2}]}
     wis = [{'id': 'w1', 'activity_id': 'T_reobs', 'activity_name': '재관측', 'tool': 'incident:reobserve', 'start_date': a, 'end_date': b, 'output': {'recovered': True}}]
     v = view(wis, ['T_reobs'], variables=[('incident', 'INC-1'), ('recovered', True)])
-    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); const s = m.steps.find(s => s.title === '효과 확인'); out([s.sentence, UI.leadRest(s.sentence, 110)[0]])",
+    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, []); const s = m.steps.find(s => s.title === '효과 확인'); out([s.sentence, UI.leadRest(s.sentence, 110)[0], hydRecord.rowParts(s, m, null, new Set()).row.replace(/<[^>]+>/g, '|')])",
               {'v': v, 'inc': inc})
     assert got[0] == expected, got[0]
+    # 단계 줄의 보조 글은 「누가 · 결론」이다. 누가가 「설비 · 센서」이면 「설비 · 센서 · 유온의 마지막 값 …」으로 읽혀 결론의 첫 낱말이 셋째 이름 같았다 — 누가는 가운뎃점 없는 한 이름
+    assert '|센서 · ' in got[2] and '설비 · 센서' not in got[2], got[2]
     assert '판정했습니다' in got[1] and got[0].startswith(got[1])          # 단계 줄의 보조 글(caseRecord rowParts — 110자 넘으면 괄호 앞에서 가른다)에 판정 근거와 판정까지 다 보인다
 
 
@@ -341,8 +343,9 @@ def test_AI가_일하는_동안_그_단계_줄에_지금_부르는_도구가_보
     assert 'judge' not in got['tabs'], got                                                 # 아직 내지 않은 결론을 옆 판에 그리지 않는다
 
 
-def test_사람을_기다리는_단계는_멈춘_내_차례이고_끝난_단계의_줄은_누가와_결론_한_마디다():
-    """디자인기준 1-5 · 4-11: 맥박은 기계가 실제로 일할 때만이다 — 사람을 기다리는 단계는 주황 점의 멈춘 「내 차례」다. 끝난 단계의 보조 줄은 「누가 · 결론 한 마디」이고,
+def test_사람을_기다리는_단계는_멈춘_내가_할_일_모양이고_알약을_달지_않으며_끝난_단계의_줄은_누가와_결론_한_마디다():
+    """디자인기준 1-5 · 4-11: 맥박은 기계가 실제로 일할 때만이다 — 사람을 기다리는 단계는 주황 점의 멈춘 「내가 할 일」 모양이다. 그 줄에는 알약을 달지 않는다 —
+    보조 줄이 「위의 「내가 할 일」에서 …」로 말하고 같은 말이 처리 건 머리 · 카드 · 목록에 있어, 한 화면에 「내 차례」가 네 번 보였다(사용자 2026-11-20 「내 차례..? 이런표현도 체크해야하나?」). 끝난 단계의 보조 줄은 「누가 · 결론 한 마디」이고,
     문장이 이미 그 이름으로 시작하면 이름을 앞에 또 적지 않는다(「설비 제어 · 설비 제어에 …」로 읽혔다)."""
     wis = [{'id': 'w1', 'activity_id': 'T_cmd', 'activity_name': '냉각 명령', 'tool': 'incident:command', 'start_date': T, 'end_date': T, 'reached_at': T},
            {'id': 'w2', 'activity_id': 'T_ok', 'activity_name': '운전원 승인', 'tool': 'formHandler:select_card', 'start_date': T, 'status': 'IN_PROGRESS', 'agent_orch': None, 'user_id': 'role:operator', 'reached_at': T}]
@@ -353,8 +356,8 @@ def test_사람을_기다리는_단계는_멈춘_내_차례이고_끝난_단계�
       const by = id => m.steps.find(x => x.w && x.w.id === id); const mine = new Set(['w2']);
       const a = hydRecord.rowParts(by('w1'), m, mine, new Set()), b = hydRecord.rowParts(by('w2'), m, mine, new Set()), c = hydRecord.rowParts(by('w2'), m, new Set(), new Set());
       out({ cmd: [a.state, a.busy, strip(a.row)], mine: [b.state, b.busy, strip(b.row)], other: [c.state, c.busy], actor: by('w1').actor })""", v)
-    assert got['mine'][:2] == ['mine', False] and '|내 차례|' in got['mine'][2], got
-    assert got['other'] == ['now', False], got                    # 내 차례인지 모를 때도 사람 단계는 맥박치지 않는다
+    assert got['mine'][:2] == ['mine', False] and got['mine'][2].startswith('|운전원 승인|') and '내가 할 일|' not in got['mine'][2] and '차례' not in got['mine'][2], got
+    assert got['other'] == ['now', False], got                    # 내가 할 일인지 모를 때도 사람 단계는 맥박치지 않는다
     assert got['cmd'][0] == 'done' and got['cmd'][2].count(got['actor']) == 1, got      # 누가는 한 번만
 
 

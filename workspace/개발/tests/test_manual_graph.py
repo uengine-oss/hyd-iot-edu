@@ -65,7 +65,7 @@ def test_검토본을_적재하면_그_문서가_지식을_갖고_지금_판이_
     [row] = [r for r in session_call(seeded_graph, manual_graph.history, 'hyd') if r['batch'] == plan['batch']]
     assert (row['current'], row['by']) == (True, plan['by'])
     shown = seeded_graph.query('MATCH (s:Skill) WHERE s._manual_document = $doc RETURN s.description AS d', doc=plan['document'])
-    assert shown and {r['d'] for r in shown} == {f"제공 문서 {plan['filename']}에서 검토해 넣은 조치 방법"}   # 승인 카드 설명(W1-13)
+    assert shown and {r['d'] for r in shown} == {f"문서 {plan['filename']}에서 검토해 넣은 조치 방법"}   # 학생이 올린 문서도 같은 판이라 「제공 문서」라 하지 않는다   # 승인 카드 설명(W1-13)
 
 
 def test_적재_영수증의_후보_규칙_연결은_그래프에_실제로_이은_절차와_규칙만_싣는다(seeded_graph, archive):
