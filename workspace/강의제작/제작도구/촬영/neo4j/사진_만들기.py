@@ -1,72 +1,77 @@
-"""2회차 관계 조회(Neo4j Browser) 학생 가이드 사진을 게시본 영상의 프레임에서 뽑고 빨간 표시를 그린다. 사진의 영상 시각 · 자르기 · 표시 좌표는 이 파일 한 곳이다.
+"""2회차 실습 04 관계 조회(Neo4j Browser) 가이드 사진(두 과정 공통 — 통합반 04 · 실전반 05가 같은 영상)을 그 영상의 녹화 프레임에서 뽑고 빨간 표시를 그린다.
+사진의 녹화 시각 · 표시 좌표는 이 파일 한 곳이다.
 
-PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/강의제작/제작도구/촬영/neo4j/사진_만들기.py --work 작업/<작업>/영상프레임
+python3 workspace/강의제작/제작도구/촬영/neo4j/사진_만들기.py
     → 두 과정 `02회차/랩/02일차_실습1_관계조회/images/<이름>.jpg`(같은 바이트)와 `실습시작/capture-provenance.json`의 그 사진 항목.
-- 원본은 영상에서 뽑은 프레임(`--work`, git 밖)이다. 표시는 늘 그 원본에 다시 그린다(표시 위에 겹쳐 그리지 않는다).
-- 시각은 11판 최종본(클라우드 녹화 · 쉼넣기 뒤)의 시각이다. 음성만 바꾼 새 판은 화면이 같으므로 같은 큐의 같은 자리에서 다시 뽑고, 앞 판 사진과 화소를 견주어 같은지 본다. 영상 판본이 바뀌면 시각을 다시 재고 이 파일을 고친다(영상 해시가 근거에 남는다).
-- 2026-11-06 이전 사진(표시 없는 촬영 프레임)은 `사진원본/`에 그대로 두었다. 같은 이름의 사진은 그 원본과 같은 시각의 영상 프레임이다.
-- 영상 밖 화면(첫 절의 파일 탐색기 · PowerShell)은 `SCREENS`이고, 그 원본 PNG도 `사진원본/`에 둔다.
-- 사진의 설명 글은 가이드 생성기(`실습시작/graph_guide.py`)가 가진다.
+- 원본은 영상 「관계조회-04」를 만든 녹화 take(TAKE — 설명 창을 덮고 강조를 고친 사본, 근거 폴더 `고침/손본_take.py`)의 프레임이다. 영상에 그려 넣은 화살표 · 강조가 없는 화면이고,
+  그 밖은 영상 화면과 같다. 시각은 take 시계(ms)이고, 그 시각까지 받은 마지막 프레임을 쓴다. 표시는 늘 그 원본에 다시 그린다.
+- 표시 자리는 영상에서 말이 짚은 대상의 상자(timing.json highlights)와 Neo4j Browser에서 잰 단추 상자(Connect · Dismiss · 원통 단추 · 패널 접기)에서 왔고,
+  글 한 줄 결과(Created … · Deleted …)는 그 줄의 글자 상자, 표는 머리 아래 행들이다.
+- 영상 밖 화면(첫 절의 파일 탐색기 · PowerShell)은 `SCREENS`이고, 원본 PNG는 `사진원본/`에 둔다. 옛 판(2026-11-06 · 11판) 사진의 원본도 `사진원본/`에 남아 있다.
+- 사진의 설명 글은 가이드 생성기(`실습시작/graph_guide.py` integrated_relations)가 가진다.
 """
 from pathlib import Path
-import argparse
+import bisect
 import hashlib
 import json
-import subprocess
 
-import imageio_ffmpeg
 from PIL import Image, ImageDraw
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-VIDEO = '작업/촬영/neo4j/관계조회-11판-합본/관계조회-11판-최종_1080p.mp4'   # 11판 최종본(클라우드 녹화). Release `영상`의 int-02-04-lab.mp4와 같은 바이트이고, 근거에는 그 해시가 남는다
+TAKE = '작업/촬영/neo4j/rec-04-01q'      # 영상 관계조회-04(합본4 → 최종)를 만든 take. 녹화 원본이라 커밋하지 않고, 근거에는 프레임 해시가 남는다
 LABS = [f'workspace/강의제작/산출물/{c}/실습/02회차/랩/02일차_실습1_관계조회/images' for c in ('통합반', '실전반')]
 PROVENANCE = HERE.parent.parent/'실습시작/capture-provenance.json'
 ORIGINALS = HERE/'사진원본'
 RED, WIDTH = '#d32f2f', 4
 
-# 이름, 영상 초, 가이드 절, 빨간 표시들, 자르기(없으면 전체), 마우스 포인터 끝(x, y — 표시 검사에서 포인터만 뺀다)
+# 이름, take 시각(ms), 가이드 절, 빨간 표시들(프레임 px [x0, y0, x1, y1])
 # 표시 규칙(P-8): 선 굵기 WIDTH, 선의 안팎 GAP px 안에 글자 · 단추 같은 어두운 화소(밝기 DARK 미만)가 없고, 한 사진의 상자끼리는 GAP px 넘게 떨어진다.
-# 이 검사는 연한 회색 글자(프롬프트 `$`, 줄 번호, 행 번호)를 세지 않는다 — DARK를 올리면 그래프 선과 노드 테두리까지 걸려 글자와 가르지 못한다. 그래서 상자 둘레의 연한 글자는 사진을 4배로 키워 눈으로 본다.
 PHOTOS = [
-    ('00-connect', 52.8, '예제 준비하고 연결하기', [[680, 442, 1229, 530], [679, 597, 1229, 688], [679, 697, 1234, 787], [800, 933, 1120, 1003]], None, (960, 660)),
-    ('00-tour', 68.47, '예제 준비하고 연결하기', [[643, 83, 1063, 446]], None, (790, 200)),
-    ('00-connected', 78.32, '예제 준비하고 연결하기', [[20, 4, 474, 37]], None, (414, 34)),
-    ('00-overview', 169.92, '예제 준비하고 연결하기', [[5, 41, 55, 95], [10, 150, 422, 551]], None, (86, 532)),
-    ('common-no-return', 245.47, '노드 만들고 RETURN으로 그래프 보기', [[512, 92, 1810, 134], [528, 212, 911, 282]], None, (750, 365)),
-    ('common-created', 297.66, '노드 만들고 RETURN으로 그래프 보기', [[900, 370, 1020, 790], [1404, 328, 1603, 410]], None, (966, 444)),
-    ('common-properties', 336.49, '노드 만들고 RETURN으로 그래프 보기', [[3, 43, 42, 83], [1260, 838, 1339, 881], [650, 668, 770, 788], [1408, 330, 1885, 644]], None, (1534, 624)),
-    ('common-table', 394.87, '같은 노드를 그래프와 표로 조회하기', [[13, 273, 1035, 412]], None, (500, 356)),
-    ('common-filtered', 430.37, '조건을 바꾸고 그래프 비교하기', [[607, 479, 801, 672], [1404, 329, 1596, 410]], None, (716, 592)),
-    ('common-conditions', 511.65, '조건을 바꾸고 그래프 비교하기', [[24, 161, 1032, 204], [646, 368, 774, 792]], None, (720, 744)),
-    ('common-linked', 651.51, '센서를 만들고 관계 연결하기', [[683, 488, 730, 668], [26, 889, 663, 985]], None, (230, 964)),
-    ('common-relationship', 670.75, '센서를 만들고 관계 연결하기', [[675, 488, 738, 668], [1404, 283, 1600, 369]], None, (1534, 480)),
-    ('common-updated', 717.47, '속성을 수정하고 연결 확인하기', [[594, 465, 814, 687], [1412, 530, 1885, 621]], None, (1534, 580)),
-    ('common-unlinked', 797.81, '관계만 삭제하고 노드는 남기기', [[646, 368, 774, 792], [28, 889, 221, 927]], None, (720, 444)),
-    ('common-remaining', 866.24, '노드 삭제와 정리 확인하기', [[646, 368, 774, 792]], None, (160, 984)),
-    ('common-clean', 911.87, '노드 삭제와 정리 확인하기', [[24, 272, 270, 362]], None, (968, 356)),
-    ('forest-layout', 983.5, '전체 설비 지도 읽기', [[1096, 789, 1390, 830], [1342, 842, 1393, 894]], None, (1376, 876)),
-    ('forest-whole', 1008.54, '전체 설비 지도 읽기', [[1340, 842, 1393, 880], [356, 322, 416, 384]], None, (110, 510)),
-    ('forest-cooler', 1038.59, '전체 설비 지도 읽기', [[646, 500, 774, 628], [1408, 330, 1885, 575]], None, (1534, 530)),
-    ('forest-sensor', 1135.76, '쿨러에 달린 센서 찾기', [[632, 491, 778, 637], [1412, 580, 1885, 713]], None, (1534, 620)),
-    ('forest-quantity', 1220.3, '센서에서 물리량까지 따라가기', [[643, 503, 768, 628], [1410, 330, 1558, 367], [1412, 578, 1885, 759]], None, (1536, 714)),
-    ('forest-filtered', 1265.28, '질문에 맞춰 조건과 반환값 바꾸기', [[672, 320, 738, 842], [1404, 329, 1835, 562]], None, (160, 984)),
-    ('forest-part', 1391.58, '교체 부품 가지 탐색하기', [[638, 498, 772, 630], [1412, 578, 1885, 644]], None, (1536, 624)),
-    ('forest-count', 1481.94, '그림에서 센 수와 집계 비교하기', [[956, 271, 1535, 462]], [0, 0, 1920, 650], (576, 464)),
-    ('forest-png', 1548.9, '전체 지도에서 정리하고 저장하기', [[1848, 214, 1900, 273]], None, (1880, 252)),
-    ('forest-queries', 1595.02, '전체 지도에서 정리하고 저장하기', [[44, 34, 100, 96], [650, 41, 692, 84]], None, (150, 610)),
-    ('forest-saved', 1642.88, '전체 지도에서 정리하고 저장하기', [[650, 45, 785, 80], [498, 93, 1811, 340], [21, 165, 312, 261]], None, (644, 134)),
-    ('forest-csv', 1666.06, '전체 지도에서 정리하고 저장하기', [[399, 103, 438, 155], [444, 103, 482, 140]], None, (424, 134)),
+    ('q01-connect', 100173, '예제 준비하고 연결하기', [[902, 469, 1224, 523], [696, 624, 1224, 678], [696, 724, 1224, 778], [800, 933, 1120, 1003]]),
+    ('q01-dismiss', 106000, '예제 준비하고 연결하기', [[849, 286, 960, 342]]),
+    ('q01-address', 139819, '예제 준비하고 연결하기', [[47, 9, 279, 29]]),
+    ('q01-overview', 215114, '예제 준비하고 연결하기', [[5, 40, 55, 95], [8, 144, 122, 193], [8, 276, 178, 325]]),
+    ('q01-collapse', 242800, '예제 준비하고 연결하기', [[494, 34, 552, 91]]),
+    ('q02-paste', 262000, '노드 만들기: CREATE', [[38, 97, 746, 152], [1851, 90, 1916, 137]]),
+    ('q02-created', 379592, '노드 만들기: CREATE', [[57, 221, 405, 246]]),
+    ('q03-graph', 469742, '찾아서 돌려받기: MATCH · RETURN', [[657, 674, 763, 780], [657, 375, 763, 481]]),
+    ('q03-details', 493003, '찾아서 돌려받기: MATCH · RETURN', [[1419, 329, 1576, 371], [1419, 485, 1890, 631]]),
+    ('q03-table', 512207, '찾아서 돌려받기: MATCH · RETURN', [[101, 214, 176, 274], [4, 304, 1416, 447]]),
+    ('q03-values', 604748, '찾아서 돌려받기: MATCH · RETURN', [[12, 312, 1908, 422]]),
+    ('q04-where', 651031, '조건 더하기: WHERE', [[619, 487, 801, 668]]),
+    ('q05-merge-new', 780976, '있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기', [[57, 897, 384, 921], [619, 487, 801, 668]]),
+    ('q05-merge-again', 819327, '있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기', [[57, 897, 176, 922], [619, 487, 801, 668]]),
+    ('q05-linked', 945023, '있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기', [[682, 487, 738, 668], [1488, 448, 1670, 489]]),
+    ('q06-set', 1013836, '속성 고치기: SET', [[656, 391, 764, 499], [1419, 485, 1890, 631]]),
+    ('q07-detach', 1086954, '지우고 다시 찾기: DETACH DELETE · DELETE', [[57, 221, 322, 246]]),
+    ('q07-left', 1125069, '지우고 다시 찾기: DETACH DELETE · DELETE', [[657, 674, 763, 780], [657, 375, 763, 481]]),
+    ('q07-zero', 1193498, '지우고 다시 찾기: DETACH DELETE · DELETE', [[12, 312, 1908, 371]]),
+    ('q08-labels', 1287309, '설비 데이터를 레이블마다 세기', [[12, 312, 1908, 575]]),
+    ('q09-one-hop', 1375241, '관계를 한 번 건너기: 한 단계', [[12, 312, 1908, 626]]),
+    ('q10-path', 1466861, '관계를 두 번 건너기: 경로', [[390, 246, 1006, 771]]),
+    ('q10-part', 1554183, '관계를 두 번 건너기: 경로', [[654, 318, 1422, 364]]),
+    ('q11-rows', 1635295, '답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계', [[10, 310, 1910, 577]]),
+    ('q11-where', 1686146, '답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계', [[10, 310, 1910, 526]]),
+    ('q11-aggregate', 1752975, '답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계', [[639, 259, 1908, 475]]),
 ]
 DARK, GAP = 140, 6
-# 상자를 띄울 자리가 없어 표시 검사를 하지 않는 사진과 그 까닭(그 사진은 4배로 키워 눈으로 본다)
-UNCHECKED = {'00-tour': '안내 창이 입력칸 글자와 6px 안쪽에 떠 있어 어느 자리에 선을 그어도 글자나 창에 닿는다'}
+# 상자를 띄울 자리가 없어 표시 검사를 하지 않는 사진과 그 까닭(그 사진은 키워 눈으로 보아, 선이 글자를 가로지르지 않음을 확인했다)
+LINE = '한 줄짜리 결과 글을 감싼 상자라 줄 높이 안에 6px 여백과 선을 둘 자리가 없다(선이 글자에 닿지 않는 것은 키워 보았다)'
+UNCHECKED = {
+    'q01-connect': '입력칸 둘레(Password 칸은 커서가 든 짙은 테두리)와 칸 이름 글이 6px 안에 있어, 칸을 감싼 상자가 그 테두리에 붙는다(칸 안 글자는 가리지 않는다)',
+    'q01-dismiss': '안내 창이 짙은 보라색이라 Dismiss 둘레 어디에 선을 그어도 어두운 화소에 닿는다',
+    'q01-address': '맨 위 막대의 Instance 글이 막대 높이에 꽉 차서 6px 여백을 둘 자리가 없다(초록 점과 주소 글자 사이에 선을 두었다)',
+    'q02-paste': '입력칸이 쿼리 두 줄 높이뿐이고 Run 단추는 짙은 파랑이라, 상자가 쿼리 글 · 단추에 6px 안으로 붙는다(줄 번호와 글자는 가리지 않는다)',
+    'q02-created': LINE, 'q05-merge-new': LINE, 'q05-merge-again': LINE, 'q07-detach': LINE,
+    'q06-set': '속성 표의 <id> 값이 두 줄로 접혀 그 아래 id 행 위로 6px을 비울 자리가 없다',
+}
 
 # 영상 밖 화면(영상이 연결 창부터 시작해 찍히지 않은 준비 단계): 이 PC에서 학생 경로대로 ZIP을 풀고 파일 탐색기 → PowerShell로 실행하며
 # 창을 그대로 찍은 원본(사진원본/<이름>.png). 이름, 원본, 가이드 절, 빨간 표시들, 자르기(없으면 전체)
 # 어두운 터미널에서는 밝기 검사(DARK)가 글자와 배경을 가르지 못해 검사하지 않고, 상자 둘레를 4배로 키워 눈으로 본다.
 SCREENS = [
-    ('00-explorer', ORIGINALS/'00-explorer.png', '예제 준비하고 연결하기', [[208, 47, 743, 80]], None),
+    ('00-explorer', ORIGINALS/'00-explorer.png', '예제 준비하고 연결하기', [[208, 47, 743, 80]], [0, 0, 983, 130]),   # 아래 파일 목록은 옛 판(안내.html이 있던 때)이라 주소 표시줄 줄만 싣는다
     ('00-powershell', ORIGINALS/'00-powershell.png', '예제 준비하고 연결하기', [[10, 119, 1205, 415]], [0, 0, 1499, 440]),
 ]
 
@@ -98,46 +103,39 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+VIDEO = '작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4'   # 이 take로 만든 최종 영상(근거에 해시를 남겨 어느 영상의 화면인지 잇는다)
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--work', type=Path, required=True)
-    args = parser.parse_args()
-    work = args.work.resolve()
-    if not work.is_relative_to((ROOT/'작업').resolve()):
-        parser.error('원본 프레임은 저장소 작업 폴더(작업/…)에 둡니다.')
-    work.mkdir(parents=True, exist_ok=True)
-    video_sha = sha(ROOT/VIDEO)
-    targets = {f'{lab}/{name}.jpg' for lab in LABS for name, *_ in PHOTOS + SCREENS}
     import numpy as np
-    frames, failures = {}, []
-    for name, seconds, section, rects, crop, cursor in PHOTOS:   # 먼저 모든 표시를 검사하고, 하나라도 어기면 아무것도 쓰지 않는다
-        frame = work/f'{video_sha[:12]}-{seconds}.png'
-        if not frame.exists():
-            subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-hide_banner', '-loglevel', 'error', '-ss', str(seconds),
-                            '-i', str(ROOT/VIDEO), '-frames:v', '1', str(frame)], check=True)
-        frames[name] = frame
+    take = ROOT/TAKE
+    timing = json.loads((take/'timing.json').read_text(encoding='utf-8'))
+    frames, times = timing['frames'], [f['time'] for f in timing['frames']]
+    video_sha = sha(ROOT/VIDEO) if (ROOT/VIDEO).exists() else None
+    picked, failures = {}, []
+    for name, ms, section, rects in PHOTOS:   # 먼저 모든 표시를 검사하고, 하나라도 어기면 아무것도 쓰지 않는다
+        frame = take/frames[max(bisect.bisect_right(times, ms) - 1, 0)]['file']
+        picked[name] = frame
         if name in UNCHECKED:
             continue
-        failures += [f'{name}: {p}' for p in mark_problems(np.asarray(Image.open(frame).convert('L')).astype(int), rects, cursor)]
+        failures += [f'{name}: {p}' for p in mark_problems(np.asarray(Image.open(frame).convert('L')).astype(int), rects, None)]
     if failures:
         raise SystemExit('표시 규칙 위반 — 사진을 쓰지 않았다:\n' + '\n'.join(failures))
     records = []
-    for name, seconds, section, rects, crop, cursor in PHOTOS:
-        frame = frames[name]
+    for name, ms, section, rects in PHOTOS:
+        frame = picked[name]
         image = Image.open(frame).convert('RGB')
         draw = ImageDraw.Draw(image)
         for rect in rects:
             draw.rectangle(rect, outline=RED, width=WIDTH)
-        if crop:
-            image = image.crop(crop)
-        original = ORIGINALS/f'{name}.jpg'
         for lab in LABS:
             target = ROOT/lab/f'{name}.jpg'
+            target.parent.mkdir(parents=True, exist_ok=True)
             image.save(target, quality=92)
             records.append({'target': f'{lab}/{name}.jpg', 'kind': '학생 실습 화면', 'section': section,
-                            'source': VIDEO, 'source_sha256': video_sha, 'seconds': seconds, 'raw_frame_sha256': sha(frame),
-                            'crop_box': crop, 'rectangles': rects, 'pointer': list(cursor) if cursor else None, 'sha256': sha(target),
-                            **({'earlier_unmarked': original.relative_to(ROOT).as_posix(), 'earlier_unmarked_sha256': sha(original)} if original.exists() else {})})
+                            'source': f'{TAKE}/{frame.relative_to(take).as_posix()}', 'source_sha256': sha(frame), 'take_ms': ms,
+                            'video': VIDEO, 'video_sha256': video_sha, 'rectangles': rects,
+                            **({'unchecked': UNCHECKED[name]} if name in UNCHECKED else {}), 'sha256': sha(target)})
     for name, source, section, rects, crop in SCREENS:
         image = Image.open(source).convert('RGB')
         draw = ImageDraw.Draw(image)
@@ -152,12 +150,12 @@ def main():
                             'source': source.relative_to(ROOT).as_posix(), 'source_sha256': sha(source),
                             'source_note': '2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음',
                             'crop_box': crop, 'rectangles': rects, 'pointer': None, 'sha256': sha(target)})
-    for lab in LABS:
-        stale = {p.name for p in (ROOT/lab).glob('*.jpg')} - {n+'.jpg' for n, *_ in PHOTOS + SCREENS}
-        if stale:
-            raise SystemExit(f'{lab}: 근거에 없는 사진 {sorted(stale)} — 이 파일에 넣거나 사진원본/으로 옮긴다')
+    for lab in LABS:   # 옛 판 사진(그 원본은 사진원본/에 있다)은 가이드가 쓰지 않으므로 지운다
+        for old in (ROOT/lab).glob('*.jpg'):
+            if old.stem not in {n for n, *_ in PHOTOS + SCREENS}:
+                old.unlink()
     old = json.loads(PROVENANCE.read_text(encoding='utf-8'))
-    keep = [x for x in old if x['target'] not in targets and x['target'].removeprefix('workspace/') not in {t.removeprefix('workspace/') for t in targets}]
+    keep = [x for x in old if not any(x['target'].removeprefix('workspace/').startswith(lab.removeprefix('workspace/') + '/') for lab in LABS)]
     PROVENANCE.write_text(json.dumps(keep + records, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(len(PHOTOS) + len(SCREENS), '사진 × 두 과정. 눈으로 본 뒤 가이드를 만든다.')
 
