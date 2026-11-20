@@ -110,8 +110,8 @@ OPS = {
  'k0602': [H(ROW('단위'), 'band', '단위 칸에'), H(GBOX('in', COOLER), 'box', '관계를 건너'), H(ROW('단위'), 'band', '이 노드의 칸에서')],
  'k0601': [H(T(KV), 'box', '나머지 칸도'), H(ROW('가상 값'), 'band', '가상 값 칸에'), H(ROW('태그'), 'band', '태그는'), H(NID(), 'underline', '식별자와는')],
  'k0603': [H(NAME('유온 센서'), 'band', '센서 값이'), H(GBOX('in', SYM), 'box', '증상 묶음이에요'), H(GHEAD('in', SYM, '증상'), 'underline', '건너편 증상이'), H(CHIPP(SYM), 'underline', '유온 상승은')],
- 'k0605': [H(GBOX('in', COOLER), 'box', '바로 위'), H(GBOX('in', SYM), 'box', '둘 다 이 센서에', keep=True),
-           H(GNOTE('in', COOLER), 'underline', '오른쪽 끝의'), H(GNOTE('in', SYM), 'underline', keep=True)],
+ 'k0605': [H(GBOX('in', COOLER), 'box', '바로 위'), H(GBOX('in', SYM), 'box', '둘 다 이 센서에', keep=True)],
+ 'k0606': [H(GNOTE('in', COOLER), 'underline', '오른쪽 끝의'), H(GNOTE('in', SYM), 'underline', keep=True)],
  'k0604': [P(CHIPP(SYM), '여기서부터'), C(CHIP(SYM), '누릅니다'), *OPENED(SYM, 'head:R:INDICATES')],
  # 7. 증상에서 부품까지 — 1회차에 본 길
  'k0701': [H(KIND('설비 진단', **MID), 'underline', '판 맨 위'), H(GBOX('out', FM), 'box', '나가는 쪽에는'), C(CHIP(FM), '누를게요'), *OPENED(FM, 'head:R:OCCURS_IN')],
