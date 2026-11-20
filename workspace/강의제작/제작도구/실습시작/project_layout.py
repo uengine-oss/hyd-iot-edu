@@ -41,15 +41,18 @@ def readme(title, purpose, command='python run.py'):
             + ('실행:\n\n```text\n' + command.strip() + '\n```\n' if '\n' in command.strip() else f'실행: `{command}`\n'))
 
 
-def write_metadata(folder, title, purpose, command='python run.py', extra_rules=''):
-    """학생 설명은 README 하나. AGENTS는 보이며 도구별 설정·캐시만 숨긴다.
+def write_metadata(folder, title, purpose, command='python run.py', extra_rules='', readme_file=True):
+    """AGENTS는 보이며 도구별 설정·캐시만 숨긴다.
 
+    readme_file=False — 랩 폴더에 규칙 · 입력 · 로직 · 실행 파일만 두고 학생 안내는 바깥 가이드 하나가 맡는 랩(코딩랩 K-5).
+    아직 다시 만들지 않은 랩의 생성기는 기본값으로 README 하나를 쓴다(남은일 「랩 폴더의 md 정리」).
     extra_rules는 랩별 작업 경계만 받는다. 정답·전체 단계표·제작 지시는 넣지 않는다.
     이미 있는 VS Code 설정은 보존하고 이 프로젝트의 파일 숨김만 합친다.
     """
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
-    (folder / 'README.md').write_text(readme(title, purpose, command), encoding='utf-8-sig', newline='\n')
+    if readme_file:
+        (folder / 'README.md').write_text(readme(title, purpose, command), encoding='utf-8-sig', newline='\n')
     rules = AI_RULES + ('\n' + extra_rules.strip() + '\n' if extra_rules.strip() else '')
     for relative in ('AGENTS.md',):
         p = folder / relative
@@ -70,7 +73,7 @@ def root_errors(name):
 def errors(files, root=None):
     """프로젝트 안 상대 경로→바이트. ZIP과 원본에 같은 검사를 적용한다."""
     out = root_errors(root) if root is not None else []
-    for name in ('README.md', 'run.py', 'AGENTS.md'):
+    for name in ('run.py', 'AGENTS.md'):   # README는 두지 않아도 된다(코딩랩 K-5) — 둔 랩은 아래에서 루트 하나만 받는다
         if name not in files:
             out.append(f'프로젝트 필수 파일 없음: {name}')
     for prefix in ('data/', 'app/features/', 'app/ui/', 'app/utils/'):

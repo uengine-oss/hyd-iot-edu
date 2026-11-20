@@ -24,7 +24,11 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v35-lab', 'graph-lab': 'v35-lab'}   # v35: 랩별 경계에 「권장안대로는 결정이 아니다」(장난감 시험 v34 two_turn)
+VERSIONS = {'ontology-lab': 'v36-lab', 'graph-lab': 'v36-lab'}
+# v36-lab(2026-11-20, 사용자 「냉정하게 그냥 헌법, 입력데이터 및 입력 문서 … , 로직 끝아님?」 · 「학생은 오로직 입력은 터미널에서 실행 및 띄워보기, 그리고 바이브코딩 codex 챗엣만」):
+#   랩 폴더에는 규칙(AGENTS.md) · 입력(data/) · 로직(app/) · 실행 파일만 둔다 — README.md · requirements.md · review.md · data/model/provenance.md를 뺐다(코드가 읽지 않는 사본 · 서류).
+#   가이드는 학생 손으로 파일을 쓰게 하지 않고 Codex에게 적게 하며, 요령 셋(TIP_ASK · TIP_PROOF · TIP_FRESH)을 처음 쓰는 단계에 싣는다. AGENTS.md와 판단 칸은 v35와 같다(장난감 시험 다시 돌리지 않음 — 코딩랩 길 6).
+# v35: 랩별 경계에 「권장안대로는 결정이 아니다」(장난감 시험 v34 two_turn)
 # v32-lab — 2026-11-18: 독립 검토 두 건(판정/검토_통합2_ontology_v31.json · 검토_통합2_graph_v31.json) 고침 — 가이드 끝의 내 말로 되짚기, 기대 답을 결정 직후 · 구현 앞에, 역량 질문을 현장 값(설비 코드 · 품번)으로 묻기(식별자 틀과 무관), 같은 모델의 구성 요소 이름 맞추기는 제공 코드로(name_rules.py 뺌), 그래프 랩의 쿼리 짚어 보기와 장부의 이름. 앞 판 v31-lab: 설비 3대는 눈으로 다 읽혀 실습 랩 규모(코딩랩 K-3)보다 작아, 공장 규모에서 2라인 한일유압 설비 5대 · 모델 셋(현장 지시계 포함)을 골라 다시 만듦 — 정할 지점은 그대로, 이론 개편의 이름을 받고 요령의 까닭은 lab_frame TIP_*. 앞 판 v30-lab: 독립 검토(판정/검토_지침과_통합2회차.json) 고침 — 작업 2026-11-17_코딩랩-원리중심-학생결정자
 WORK = ROOT / '작업/검사/session2-projects'
 
@@ -114,11 +118,6 @@ def run_source():
     return text.replace(old, new)
 
 
-# 가이드가 채우라고 하는 절만 둔다 — 같은 대상의 다른 이름은 모델이 aliases · other_codes로 남기므로 따로 적는 절을 두지 않는다(검토 지적, 2026-11-17).
-REQUIREMENTS = ('# 요구사항\n\n## 목적과 답을 쓸 사람\n\n## 역량 질문과 기준일\n\n## 지킬 조건 · 범위 밖\n\n'
-                '## 대조 결과 · 고친 점\n\n## 저장 시점 · 확인하지 못한 점\n')
-
-
 def source_data(folder):
     work = (ROOT / '작업/검사/session2-projects').resolve()
     work.mkdir(parents=True, exist_ok=True)
@@ -156,7 +155,6 @@ def build_ontology(folder):
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
             write(folder / P.convert(name), P.convert(text))
-    write(folder / 'app/features/requirements.md', REQUIREMENTS)
     utilities, ui = result_sources(strict=True)
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
@@ -170,7 +168,7 @@ def build_ontology(folder):
     write(folder / 'app/utils/actions.py', actions)
     write(folder / 'run.py', run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.ONTOLOGY_PURPOSE, extra_rules=DESIGN_RULE)
+    write_metadata(folder, L['title'], G.ONTOLOGY_PURPOSE, extra_rules=DESIGN_RULE, readme_file=False)
     steps = G.ontology()
     F.write_guide(folder, G.render(L['title'], G.ONTOLOGY_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
@@ -183,7 +181,6 @@ def build_graph(folder):
     schema, graph = B.reference_model(False, B.GRAPH_LAB_INPUT['통합반'])
     for name, value in [('schema.json', B.student_schema(schema)), ('graph.json', graph)]:
         write(folder / 'data/model' / name, P.convert(json.dumps(value, ensure_ascii=False, indent=2) + '\n'))
-    write(folder / 'data/model/provenance.md', P.convert(B.provided_basis(False)))
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
             if name == '결과/기대_답.csv':
@@ -192,7 +189,6 @@ def build_graph(folder):
                 if '쿼리 결과가 0행이면' not in text:
                     raise ValueError('그래프 랩 기대 답 틀의 값 꼴 문장이 바뀌었습니다.')
             write(folder / P.convert(name), P.convert(text).replace('python show_result.py가 실행', 'python run.py load가 실행'))
-    write(folder / 'app/features/review.md', '# 실행 기록\n\n## 역량 질문·사용할 자료·지킬 조건\n\n## 적재 전후 개수\n\n## 기대 답과 실제 결과·고친 근거\n\n## 기준 지도와 비교\n\n## 기준일·수정본 날짜·저장 시점·확인하지 못한 점\n')
     with tempfile.TemporaryDirectory(dir=WORK, prefix='changes-') as temp:
         raw = Path(temp).resolve()
         assert raw.is_relative_to(WORK.resolve()) and raw != WORK.resolve()
@@ -209,7 +205,7 @@ def build_graph(folder):
     write(folder / 'app/utils/actions.py', GP.actions_source(L))
     write(folder / 'run.py', run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=GRAPH_RULE + '\n' + DB_RULE)
+    write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=GRAPH_RULE + '\n' + DB_RULE, readme_file=False)
     steps = G.graph(B.portal_table())
     F.write_guide(folder, G.render(L['title'], G.GRAPH_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
@@ -250,7 +246,6 @@ def completed(starter, destination, work):
         files = A.integrated_design(branch)
         files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen(branch))
         files['결과/기대_답.csv'] = B.expect_design_text(branch)
-        files['결과/요구사항.md'] = A.integrated_requirements(branch)     # 가이드가 적게 하는 요구 글을 그 갈래로 채운다(빈 틀로 두면 요구 없이 완성된 것처럼 보인다)
         for name, text in files.items():
             write(folder / P.convert(name), P.convert(text))
         title, initial = '온톨로지 설계', 'python run.py parts\npython run.py query'
@@ -263,7 +258,7 @@ def completed(starter, destination, work):
         context, actions, rules = instance(folder), ('load', 'repeat', 'sensors', 'parts', 'update', 'usage', 'compare', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
-                   + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial, extra_rules=rules)   # 완성본을 Codex로 열어도 같은 랩별 경계
+                   + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial, extra_rules=rules, readme_file=False)   # 완성본을 Codex로 열어도 같은 랩별 경계
     logs = {}
     with context:
         for action in actions:
