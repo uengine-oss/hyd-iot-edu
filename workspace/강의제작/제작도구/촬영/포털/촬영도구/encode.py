@@ -21,7 +21,7 @@
   새 프레임이 없으면 도착 자리에 둔다. path의 시각이 뒤로 가거나, 이동 시작보다 이르거나, 끝 점이 도착 자리와 다르면 인코딩 전에 take · 이동 번호 · 값을 대며 멈춘다.
   배율(CSS px → 프레임 px) · 화살표 크기: pointer-start.json에 scale과 viewport([CSS 폭, 높이] — 녹화기가 잰 값)가 있으면 그 값을 먼저 쓰고(viewport × scale이 프레임 크기와
   1px 넘게 다르면 멈춘다), 없으면 config viewport · deviceScaleFactor를 쓴다. arrow([폭, 높이] CSS px)가 있으면 화살표를 그 크기로, 없으면 20×27로 그린다.
-강조(영상 V-14 · V-11): timing.json의 highlights(녹화기가 hl.mjs로 남긴 {cue, shape, rects(CSS px), start, end})를 화살표와 같은 자리에서 그 시각 동안 그린다(화살표가 위).
+강조(영상 V-14 · V-11): timing.json의 highlights(녹화기가 hl.mjs로 남긴 {cue, shape, rects(CSS px), start, end})를 화살표와 같은 자리에서 그 시각 동안 그린다(화살표가 위). 「구간 끝」(endBy)으로 끝난 강조는 그 큐의 말이 끝날 때까지 그린다.
   start ≤ 프레임 시각 < end인 프레임에만 그리므로, 강조는 시작 프레임에 나타나고 다음 강조의 시작 프레임에 지워진다. 모양은 underline(글자 상자 아래 선) · band(반투명 노랑 띠) ·
   box(둘레 선) · circle(상자에 내접하는 둥근 둘레 선 — 그림판의 원, 상자마다 하나)이고 색 · 굵기는 이론 영상 강조표시.py와 같다(빨강 229,57,53 굵기 5px, 노랑 255,214,0 투명도 0.42 — 프레임 px). 강조가 걸친 조각만 키에 강조가 들어가 다시 만들어지고,
   강조가 없는 조각의 키와 프레임은 그대로다. 쓰는 범위에 걸친 강조가 모르는 모양이거나, 끝이 없거나 시작보다 이르거나 같거나, 상자 크기가 0이거나, 그릴 자리(모양 여백 포함)가 프레임 밖이거나,
@@ -372,7 +372,12 @@ def plan_spec(spec, default, root, crf, ffv):
     if mode == 'overlay':
         scale, arrow_css = pointer_setup(take, ps, T.cfg, W, H)
         check_paths(take, t['motions'])
-    marks = check_highlights(take, t.get('highlights') or [], start, end, mode, scale, W, H)
+    # 녹화기는 구간 함수가 끝나는 때(그 구간 마지막 조작 직후) 남은 강조를 「구간 끝」으로 지운다 — 그 큐의 말은 아직 이어지는데 강조만 0.8초 만에 사라졌다
+    # (2026-11-20 05 · 04 새 판, 길게는 17.7초). 구간 끝으로 끝난 강조는 그 큐의 말이 끝날 때까지 그린다(V-14 — 다음 대상으로 넘어갈 때 지운다)
+    said_end = {a['id']: a['time'] + a['duration'] for a in t['actions'] if a.get('duration') is not None}
+    hs = [dict(h, end=max(h['end'], said_end.get(h.get('cue'), h['end']))) if h.get('endBy') == '구간 끝' and h.get('end') is not None else h
+          for h in t.get('highlights') or []]
+    marks = check_highlights(take, hs, start, end, mode, scale, W, H)
     chunks = []
     for i, (f, e) in enumerate(zip(cuts, cuts[1:])):
         n = round((e - f) * FPS / 1000)

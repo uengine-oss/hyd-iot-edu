@@ -1,0 +1,8975 @@
+{
+ "output": "04-조치결과비교-새판2_1080p.mp4",
+ "duration_s": 1589.467,
+ "source": "1920x1080 JPEG screencast",
+ "output_fps": 30,
+ "pointer": [
+  "overlay"
+ ],
+ "segments": [
+  {
+   "segment": "act04-rec1",
+   "tool": "포털",
+   "part": 1,
+   "from_ms": 0.0,
+   "used_ms": 48041.0,
+   "start_s": 0.0,
+   "frames": 1441,
+   "mode": "overlay",
+   "recorded_ms": 1580814,
+   "error": null,
+   "end_url": null,
+   "end_tab": null
+  },
+  {
+   "segment": "act04-rec1",
+   "tool": "포털",
+   "part": 2,
+   "from_ms": 48041,
+   "used_ms": 323630.0,
+   "start_s": 48.033,
+   "frames": 9709,
+   "mode": "overlay",
+   "recorded_ms": 1580814,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/trends",
+   "end_tab": null
+  },
+  {
+   "segment": "act04-rec2",
+   "tool": "포털",
+   "part": 3,
+   "from_ms": 0.0,
+   "used_ms": 179645.0,
+   "start_s": 371.667,
+   "frames": 5389,
+   "mode": "overlay",
+   "recorded_ms": 424860,
+   "error": null,
+   "end_url": null,
+   "end_tab": null
+  },
+  {
+   "segment": "act04-rec2",
+   "tool": "포털",
+   "part": 4,
+   "from_ms": 179645,
+   "used_ms": 245215.0,
+   "start_s": 551.3,
+   "frames": 7356,
+   "mode": "overlay",
+   "recorded_ms": 424860,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/decision",
+   "end_tab": null
+  },
+  {
+   "segment": "act04-rec3",
+   "tool": "포털",
+   "part": 5,
+   "from_ms": 0.0,
+   "used_ms": 441121.0,
+   "start_s": 796.5,
+   "frames": 13234,
+   "mode": "overlay",
+   "recorded_ms": 441121,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/whatif",
+   "end_tab": null
+  },
+  {
+   "segment": "act04-rec1",
+   "tool": "포털",
+   "part": 6,
+   "from_ms": 1228981.0,
+   "used_ms": 264719.0,
+   "start_s": 1237.633,
+   "frames": 7942,
+   "mode": "overlay",
+   "recorded_ms": 1580814,
+   "error": null,
+   "end_url": null,
+   "end_tab": null
+  },
+  {
+   "segment": "act04-rec1",
+   "tool": "포털",
+   "part": 7,
+   "from_ms": 1493700,
+   "used_ms": 87114.0,
+   "start_s": 1502.367,
+   "frames": 2613,
+   "mode": "overlay",
+   "recorded_ms": 1580814,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/trends",
+   "end_tab": null
+  }
+ ],
+ "speech_cues": 71,
+ "cue_timeline": [
+  {
+   "id": "t0101",
+   "speech": [
+    "00:00.016",
+    "00:25.056"
+   ],
+   "action": [
+    "00:00.017",
+    "00:00.029"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 26331
+  },
+  {
+   "id": "t0102",
+   "speech": [
+    "00:26.360",
+    "00:45.640"
+   ],
+   "action": [
+    "00:26.361",
+    "00:45.741"
+   ],
+   "commit": "00:44.093",
+   "commit_before_speech_end_ms": 1547,
+   "next_speech_after_action_ms": 2292
+  },
+  {
+   "id": "t0201",
+   "speech": [
+    "00:48.033",
+    "01:07.713"
+   ],
+   "action": [
+    "00:48.035",
+    "00:51.535"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 17485
+  },
+  {
+   "id": "t0202",
+   "speech": [
+    "01:09.020",
+    "01:37.180"
+   ],
+   "action": [
+    "01:09.024",
+    "01:32.101"
+   ],
+   "commit": "01:31.889",
+   "commit_before_speech_end_ms": 5291,
+   "next_speech_after_action_ms": 7080
+  },
+  {
+   "id": "t0203",
+   "speech": [
+    "01:39.181",
+    "02:06.141"
+   ],
+   "action": [
+    "01:39.182",
+    "01:48.788"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 18653
+  },
+  {
+   "id": "t0204",
+   "speech": [
+    "02:07.441",
+    "02:33.121"
+   ],
+   "action": [
+    "02:07.442",
+    "02:24.006"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 10414
+  },
+  {
+   "id": "t0205",
+   "speech": [
+    "02:34.420",
+    "03:01.220"
+   ],
+   "action": [
+    "02:34.423",
+    "02:49.615"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 12904
+  },
+  {
+   "id": "t0206",
+   "speech": [
+    "03:02.519",
+    "03:16.519"
+   ],
+   "action": [
+    "03:02.520",
+    "03:12.293"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5526
+  },
+  {
+   "id": "t0207",
+   "speech": [
+    "03:17.819",
+    "03:43.019"
+   ],
+   "action": [
+    "03:17.821",
+    "03:32.732"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11588
+  },
+  {
+   "id": "t0208",
+   "speech": [
+    "03:44.320",
+    "04:00.800"
+   ],
+   "action": [
+    "03:44.322",
+    "03:56.739"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5361
+  },
+  {
+   "id": "t0209",
+   "speech": [
+    "04:02.100",
+    "04:08.740"
+   ],
+   "action": [
+    "04:02.101",
+    "04:07.875"
+   ],
+   "commit": "04:07.644",
+   "commit_before_speech_end_ms": 1096,
+   "next_speech_after_action_ms": 2866
+  },
+  {
+   "id": "t0210",
+   "speech": [
+    "04:10.741",
+    "04:40.821"
+   ],
+   "action": [
+    "04:10.742",
+    "04:19.659"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 22463
+  },
+  {
+   "id": "t0211",
+   "speech": [
+    "04:42.122",
+    "05:12.282"
+   ],
+   "action": [
+    "04:42.122",
+    "05:03.814"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9768
+  },
+  {
+   "id": "t0212",
+   "speech": [
+    "05:13.582",
+    "05:20.622"
+   ],
+   "action": [
+    "05:13.583",
+    "05:20.185"
+   ],
+   "commit": "05:19.442",
+   "commit_before_speech_end_ms": 1180,
+   "next_speech_after_action_ms": 2437
+  },
+  {
+   "id": "t0213",
+   "speech": [
+    "05:22.622",
+    "05:52.302"
+   ],
+   "action": [
+    "05:22.623",
+    "05:48.878"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4723
+  },
+  {
+   "id": "t0214",
+   "speech": [
+    "05:53.601",
+    "06:09.361"
+   ],
+   "action": [
+    "05:53.612",
+    "05:54.222"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 19594
+  },
+  {
+   "id": "t0301",
+   "speech": [
+    "06:13.817",
+    "06:18.537"
+   ],
+   "action": [
+    "06:13.818",
+    "06:18.576"
+   ],
+   "commit": "06:16.267",
+   "commit_before_speech_end_ms": 2270,
+   "next_speech_after_action_ms": 2001
+  },
+  {
+   "id": "t0302",
+   "speech": [
+    "06:20.577",
+    "06:47.297"
+   ],
+   "action": [
+    "06:20.577",
+    "06:47.691"
+   ],
+   "commit": "06:47.039",
+   "commit_before_speech_end_ms": 258,
+   "next_speech_after_action_ms": 2001
+  },
+  {
+   "id": "t0303",
+   "speech": [
+    "06:49.692",
+    "07:03.132"
+   ],
+   "action": [
+    "06:49.692",
+    "06:56.507"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 7925
+  },
+  {
+   "id": "t0305",
+   "speech": [
+    "07:04.432",
+    "07:34.272"
+   ],
+   "action": [
+    "07:04.434",
+    "07:23.202"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 12369
+  },
+  {
+   "id": "t0306",
+   "speech": [
+    "07:35.571",
+    "07:42.291"
+   ],
+   "action": [
+    "07:35.573",
+    "07:40.570"
+   ],
+   "commit": "07:39.616",
+   "commit_before_speech_end_ms": 2675,
+   "next_speech_after_action_ms": 3721
+  },
+  {
+   "id": "t0307",
+   "speech": [
+    "07:44.291",
+    "08:20.051"
+   ],
+   "action": [
+    "07:44.292",
+    "08:15.759"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5593
+  },
+  {
+   "id": "t0308",
+   "speech": [
+    "08:21.352",
+    "08:42.152"
+   ],
+   "action": [
+    "08:21.356",
+    "08:35.100"
+   ],
+   "commit": "08:25.037",
+   "commit_before_speech_end_ms": 17115,
+   "next_speech_after_action_ms": 8352
+  },
+  {
+   "id": "t0310",
+   "speech": [
+    "08:43.452",
+    "08:53.452"
+   ],
+   "action": [
+    "08:43.453",
+    "08:51.496"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2556
+  },
+  {
+   "id": "t0309",
+   "speech": [
+    "08:54.052",
+    "09:09.012"
+   ]
+  },
+  {
+   "id": "t0401",
+   "speech": [
+    "09:11.300",
+    "09:27.300"
+   ],
+   "action": [
+    "09:11.301",
+    "09:21.608"
+   ],
+   "commit": "09:18.848",
+   "commit_before_speech_end_ms": 8452,
+   "next_speech_after_action_ms": 6992
+  },
+  {
+   "id": "t0402",
+   "speech": [
+    "09:28.600",
+    "09:46.280"
+   ],
+   "action": [
+    "09:28.603",
+    "09:46.145"
+   ],
+   "commit": "09:31.466",
+   "commit_before_speech_end_ms": 14814,
+   "next_speech_after_action_ms": 2138
+  },
+  {
+   "id": "t0403",
+   "speech": [
+    "09:48.283",
+    "10:21.323"
+   ],
+   "action": [
+    "09:48.284",
+    "10:04.179"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 18444
+  },
+  {
+   "id": "t0404",
+   "speech": [
+    "10:22.623",
+    "10:47.023"
+   ],
+   "action": [
+    "10:22.627",
+    "10:35.819"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 12505
+  },
+  {
+   "id": "t0410",
+   "speech": [
+    "10:48.324",
+    "11:07.764"
+   ],
+   "action": [
+    "10:48.325",
+    "10:57.078"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11989
+  },
+  {
+   "id": "t0409",
+   "speech": [
+    "11:09.067",
+    "11:26.827"
+   ],
+   "action": [
+    "11:09.073",
+    "11:17.242"
+   ],
+   "commit": "11:13.117",
+   "commit_before_speech_end_ms": 13710,
+   "next_speech_after_action_ms": 10885
+  },
+  {
+   "id": "t0405",
+   "speech": [
+    "11:28.127",
+    "11:55.807"
+   ],
+   "action": [
+    "11:28.128",
+    "11:55.986"
+   ],
+   "commit": "11:52.983",
+   "commit_before_speech_end_ms": 2824,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "t0406",
+   "speech": [
+    "11:57.986",
+    "12:14.226"
+   ],
+   "action": [
+    "11:57.992",
+    "12:04.173"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11354
+  },
+  {
+   "id": "t0411",
+   "speech": [
+    "12:15.527",
+    "12:34.967"
+   ],
+   "action": [
+    "12:15.528",
+    "12:30.098"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6170
+  },
+  {
+   "id": "t0407",
+   "speech": [
+    "12:36.268",
+    "12:46.108"
+   ],
+   "action": [
+    "12:36.270",
+    "12:43.665"
+   ],
+   "commit": "12:41.205",
+   "commit_before_speech_end_ms": 4903,
+   "next_speech_after_action_ms": 4444
+  },
+  {
+   "id": "t0408",
+   "speech": [
+    "12:48.109",
+    "13:16.109"
+   ],
+   "action": [
+    "12:48.110",
+    "13:01.851"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 15505
+  },
+  {
+   "id": "t0501",
+   "speech": [
+    "13:17.356",
+    "13:38.476"
+   ],
+   "action": [
+    "13:17.380",
+    "13:38.622"
+   ],
+   "commit": "13:38.360",
+   "commit_before_speech_end_ms": 116,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "t0502",
+   "speech": [
+    "13:40.622",
+    "13:54.302"
+   ],
+   "action": [
+    "13:40.623",
+    "13:48.218"
+   ],
+   "commit": "13:47.696",
+   "commit_before_speech_end_ms": 6606,
+   "next_speech_after_action_ms": 8085
+  },
+  {
+   "id": "t0503",
+   "speech": [
+    "13:56.303",
+    "14:12.943"
+   ],
+   "action": [
+    "13:56.304",
+    "14:11.026"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3217
+  },
+  {
+   "id": "t0520",
+   "speech": [
+    "14:14.243",
+    "14:33.363"
+   ],
+   "action": [
+    "14:14.244",
+    "14:25.693"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 8971
+  },
+  {
+   "id": "t0504",
+   "speech": [
+    "14:34.664",
+    "14:54.024"
+   ],
+   "action": [
+    "14:34.665",
+    "14:48.067"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 7257
+  },
+  {
+   "id": "t0505",
+   "speech": [
+    "14:55.324",
+    "15:18.604"
+   ],
+   "action": [
+    "14:55.325",
+    "15:08.675"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11230
+  },
+  {
+   "id": "t0506",
+   "speech": [
+    "15:19.905",
+    "15:53.585"
+   ],
+   "action": [
+    "15:19.908",
+    "15:26.776"
+   ],
+   "commit": "15:21.603",
+   "commit_before_speech_end_ms": 31982,
+   "next_speech_after_action_ms": 28108
+  },
+  {
+   "id": "t0507",
+   "speech": [
+    "15:54.884",
+    "16:18.804"
+   ],
+   "action": [
+    "15:54.898",
+    "16:10.533"
+   ],
+   "commit": "15:56.838",
+   "commit_before_speech_end_ms": 21966,
+   "next_speech_after_action_ms": 9571
+  },
+  {
+   "id": "t0508",
+   "speech": [
+    "16:20.104",
+    "16:37.144"
+   ],
+   "action": [
+    "16:20.105",
+    "16:37.686"
+   ],
+   "commit": "16:36.818",
+   "commit_before_speech_end_ms": 326,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "t0509",
+   "speech": [
+    "16:39.686",
+    "17:04.966"
+   ],
+   "action": [
+    "16:39.687",
+    "17:03.798"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2467
+  },
+  {
+   "id": "t0510",
+   "speech": [
+    "17:06.265",
+    "17:30.905"
+   ],
+   "action": [
+    "17:06.268",
+    "17:21.796"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 10409
+  },
+  {
+   "id": "t0517",
+   "speech": [
+    "17:32.205",
+    "17:46.045"
+   ],
+   "action": [
+    "17:32.206",
+    "17:42.390"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4955
+  },
+  {
+   "id": "t0519",
+   "speech": [
+    "17:47.345",
+    "18:12.625"
+   ],
+   "action": [
+    "17:47.346",
+    "18:10.036"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3891
+  },
+  {
+   "id": "t0514",
+   "speech": [
+    "18:13.927",
+    "18:25.847"
+   ],
+   "action": [
+    "18:13.928",
+    "18:22.063"
+   ],
+   "commit": "18:20.996",
+   "commit_before_speech_end_ms": 4851,
+   "next_speech_after_action_ms": 5785
+  },
+  {
+   "id": "t0511",
+   "speech": [
+    "18:27.848",
+    "18:51.528"
+   ],
+   "action": [
+    "18:27.862",
+    "18:49.347"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3481
+  },
+  {
+   "id": "t0518",
+   "speech": [
+    "18:52.828",
+    "19:18.188"
+   ],
+   "action": [
+    "18:52.857",
+    "19:01.277"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 18211
+  },
+  {
+   "id": "t0512",
+   "speech": [
+    "19:19.488",
+    "19:40.048"
+   ],
+   "action": [
+    "19:19.489",
+    "19:22.367"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 18982
+  },
+  {
+   "id": "t0513",
+   "speech": [
+    "19:41.349",
+    "20:02.469"
+   ],
+   "action": [
+    "19:41.364",
+    "19:57.898"
+   ],
+   "commit": "19:53.527",
+   "commit_before_speech_end_ms": 8942,
+   "next_speech_after_action_ms": 5874
+  },
+  {
+   "id": "t0515",
+   "speech": [
+    "20:03.772",
+    "20:15.852"
+   ],
+   "action": [
+    "20:03.774",
+    "20:18.721"
+   ],
+   "commit": "20:10.625",
+   "commit_before_speech_end_ms": 5227,
+   "next_speech_after_action_ms": 2019
+  },
+  {
+   "id": "t0516",
+   "speech": [
+    "20:20.740",
+    "20:37.220"
+   ],
+   "action": [
+    "20:20.741",
+    "20:27.027"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 10606
+  },
+  {
+   "id": "t0601",
+   "speech": [
+    "20:37.633",
+    "21:00.433"
+   ],
+   "action": [
+    "20:37.637",
+    "21:00.391"
+   ],
+   "commit": "20:58.508",
+   "commit_before_speech_end_ms": 1925,
+   "next_speech_after_action_ms": 2042
+  },
+  {
+   "id": "t0602",
+   "speech": [
+    "21:02.433",
+    "21:18.353"
+   ],
+   "action": [
+    "21:02.435",
+    "21:08.961"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 10692
+  },
+  {
+   "id": "t0611",
+   "speech": [
+    "21:19.653",
+    "21:39.093"
+   ],
+   "action": [
+    "21:19.657",
+    "21:35.595"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4798
+  },
+  {
+   "id": "t0603",
+   "speech": [
+    "21:40.393",
+    "22:05.913"
+   ],
+   "action": [
+    "21:40.395",
+    "22:03.203"
+   ],
+   "commit": "22:02.948",
+   "commit_before_speech_end_ms": 2965,
+   "next_speech_after_action_ms": 4710
+  },
+  {
+   "id": "t0604",
+   "speech": [
+    "22:07.913",
+    "22:41.593"
+   ],
+   "action": [
+    "22:07.915",
+    "22:27.151"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 15743
+  },
+  {
+   "id": "t0605",
+   "speech": [
+    "22:42.894",
+    "23:11.374"
+   ],
+   "action": [
+    "22:42.895",
+    "22:50.976"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 21697
+  },
+  {
+   "id": "t0606",
+   "speech": [
+    "23:12.673",
+    "23:22.833"
+   ],
+   "action": [
+    "23:12.676",
+    "23:21.078"
+   ],
+   "commit": "23:13.955",
+   "commit_before_speech_end_ms": 8878,
+   "next_speech_after_action_ms": 3755
+  },
+  {
+   "id": "t0607",
+   "speech": [
+    "23:24.833",
+    "23:55.233"
+   ],
+   "action": [
+    "23:24.834",
+    "23:55.191"
+   ],
+   "commit": "23:51.413",
+   "commit_before_speech_end_ms": 3820,
+   "next_speech_after_action_ms": 2041
+  },
+  {
+   "id": "t0608",
+   "speech": [
+    "23:57.232",
+    "24:29.552"
+   ],
+   "action": [
+    "23:57.234",
+    "24:09.832"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 21019
+  },
+  {
+   "id": "t0609",
+   "speech": [
+    "24:30.851",
+    "24:40.771"
+   ],
+   "action": [
+    "24:30.854",
+    "24:40.553"
+   ],
+   "commit": "24:40.292",
+   "commit_before_speech_end_ms": 479,
+   "next_speech_after_action_ms": 2218
+  },
+  {
+   "id": "t0610",
+   "speech": [
+    "24:42.771",
+    "25:00.051"
+   ],
+   "action": [
+    "24:42.773",
+    "24:47.770"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 14596
+  },
+  {
+   "id": "t0701",
+   "speech": [
+    "25:02.367",
+    "25:22.687"
+   ],
+   "action": [
+    "25:02.370",
+    "25:23.997"
+   ],
+   "commit": "25:20.305",
+   "commit_before_speech_end_ms": 2382,
+   "next_speech_after_action_ms": 1999
+  },
+  {
+   "id": "t0702",
+   "speech": [
+    "25:25.996",
+    "25:41.836"
+   ],
+   "action": [
+    "25:26.004",
+    "25:33.329"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9807
+  },
+  {
+   "id": "t0704",
+   "speech": [
+    "25:43.136",
+    "26:05.536"
+   ],
+   "action": [
+    "25:43.139",
+    "25:44.345"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 22491
+  },
+  {
+   "id": "t0705",
+   "speech": [
+    "26:06.836",
+    "26:29.076"
+   ],
+   "action": [
+    "26:06.838",
+    "26:07.428"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null
+  }
+ ],
+ "clicks": [
+  {
+   "segment": "act04-rec1",
+   "x": 228,
+   "y": 112,
+   "dx": 0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 205.0000114440918,
+   "y": 208,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 410.75,
+   "y": 402.3958435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 410.75,
+   "y": 228.39583587646484,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 712.0833740234375,
+   "y": 510.9895935058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 228,
+   "y": 400,
+   "dx": 0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 205.0000114440918,
+   "y": 304,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 435.0625,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 712.0833740234375,
+   "y": 625.7083435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 904.0000457763672,
+   "y": 313.90625,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 394.7708435058594,
+   "y": 312.8645935058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 379.0625,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 671.0625,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 427.72918701171875,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 313.72918701171875,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 428,
+   "y": 385.0625,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 449.0625,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 428,
+   "y": 548.3958740234375,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec2",
+   "x": 548,
+   "y": 612.3958740234375,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 205.0000114440918,
+   "y": 336,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 548,
+   "y": 445.1875,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 1091.791748046875,
+   "y": 117.94792175292969,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 763.4791870117188,
+   "y": 595.2083435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 358.86458587646484,
+   "y": 442.25,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 1220.0000839233398,
+   "y": 237.61459350585938,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 1220,
+   "y": 313.5833435058594,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec3",
+   "x": 548,
+   "y": 210.52084350585938,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 228,
+   "y": 432,
+   "dx": 0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 205.0000114440918,
+   "y": 368,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 379.60418701171875,
+   "y": 419.125,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 1248,
+   "y": 36,
+   "dx": 0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 406.78125,
+   "y": 578.3229370117188,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 830.6771240234375,
+   "y": 511.6458435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 1220.0000839233398,
+   "y": 616.3125,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 379.88543701171875,
+   "y": 453.625,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 228,
+   "y": 144,
+   "dx": 0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "act04-rec1",
+   "x": 205.0000114440918,
+   "y": 240,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  }
+ ],
+ "motion_summary": {
+  "count": 198,
+  "page_count": 0,
+  "max_gap_ms_max": null,
+  "start_delay_max_ms": null,
+  "over_100ms": []
+ },
+ "motions": [
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 43629,
+   "duration_ms": 278,
+   "planned_ms": 278,
+   "frames": 10,
+   "start_delay_ms": 22,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 45048,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 3,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 48229,
+   "duration_ms": 289,
+   "planned_ms": 289,
+   "frames": 11,
+   "start_delay_ms": 31,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 50466,
+   "duration_ms": 266,
+   "planned_ms": 266,
+   "frames": 10,
+   "start_delay_ms": 10,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 51186,
+   "duration_ms": 277,
+   "planned_ms": 277,
+   "frames": 11,
+   "start_delay_ms": 24,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 73019,
+   "duration_ms": 277,
+   "planned_ms": 277,
+   "frames": 6,
+   "start_delay_ms": 57,
+   "max_gap_ms": 100
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 75168,
+   "duration_ms": 274,
+   "planned_ms": 274,
+   "frames": 11,
+   "start_delay_ms": 24,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 86285,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 7,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 91394,
+   "duration_ms": 317,
+   "planned_ms": 317,
+   "frames": 12,
+   "start_delay_ms": 14,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 108282,
+   "duration_ms": 456,
+   "planned_ms": 456,
+   "frames": 12,
+   "start_delay_ms": 9,
+   "max_gap_ms": 167
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 127687,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 3,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 129929,
+   "duration_ms": 399,
+   "planned_ms": 399,
+   "frames": 19,
+   "start_delay_ms": 11,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 159881,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 166663,
+   "duration_ms": 380,
+   "planned_ms": 380,
+   "frames": 18,
+   "start_delay_ms": 25,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 169197,
+   "duration_ms": 379,
+   "planned_ms": 379,
+   "frames": 15,
+   "start_delay_ms": 8,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 183324,
+   "duration_ms": 401,
+   "planned_ms": 401,
+   "frames": 15,
+   "start_delay_ms": 14,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 201991,
+   "duration_ms": 365,
+   "planned_ms": 365,
+   "frames": 19,
+   "start_delay_ms": 13,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 208390,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 13,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 212431,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 22,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 225386,
+   "duration_ms": 314,
+   "planned_ms": 314,
+   "frames": 14,
+   "start_delay_ms": 17,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 236377,
+   "duration_ms": 313,
+   "planned_ms": 313,
+   "frames": 13,
+   "start_delay_ms": 9,
+   "max_gap_ms": 71
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 247050,
+   "duration_ms": 412,
+   "planned_ms": 412,
+   "frames": 22,
+   "start_delay_ms": 2,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 251455,
+   "duration_ms": 353,
+   "planned_ms": 353,
+   "frames": 16,
+   "start_delay_ms": 30,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 256776,
+   "duration_ms": 292,
+   "planned_ms": 292,
+   "frames": 10,
+   "start_delay_ms": 26,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 259239,
+   "duration_ms": 350,
+   "planned_ms": 350,
+   "frames": 15,
+   "start_delay_ms": 29,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 282397,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 20,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 288008,
+   "duration_ms": 338,
+   "planned_ms": 338,
+   "frames": 17,
+   "start_delay_ms": 9,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 298360,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 7,
+   "max_gap_ms": 53
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 303501,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 32,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 315029,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 4,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 323910,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 6,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 325521,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 11,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 338372,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 10,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 347931,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 17,
+   "max_gap_ms": 43
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 348559,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 6,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 353917,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 14,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 375681,
+   "duration_ms": 407,
+   "planned_ms": 407,
+   "frames": 16,
+   "start_delay_ms": 7,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 377897,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 380745,
+   "duration_ms": 315,
+   "planned_ms": 315,
+   "frames": 14,
+   "start_delay_ms": 9,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 392733,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 4,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 395712,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 9,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 406561,
+   "duration_ms": 298,
+   "planned_ms": 298,
+   "frames": 16,
+   "start_delay_ms": 9,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 415967,
+   "duration_ms": 477,
+   "planned_ms": 477,
+   "frames": 21,
+   "start_delay_ms": 3,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 424646,
+   "duration_ms": 308,
+   "planned_ms": 308,
+   "frames": 17,
+   "start_delay_ms": 7,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 428883,
+   "duration_ms": 321,
+   "planned_ms": 321,
+   "frames": 12,
+   "start_delay_ms": 20,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 429450,
+   "duration_ms": 316,
+   "planned_ms": 316,
+   "frames": 10,
+   "start_delay_ms": 3,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 442845,
+   "duration_ms": 300,
+   "planned_ms": 300,
+   "frames": 11,
+   "start_delay_ms": 24,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 457615,
+   "duration_ms": 371,
+   "planned_ms": 371,
+   "frames": 16,
+   "start_delay_ms": 3,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 465061,
+   "duration_ms": 352,
+   "planned_ms": 352,
+   "frames": 13,
+   "start_delay_ms": 7,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 473821,
+   "duration_ms": 269,
+   "planned_ms": 269,
+   "frames": 10,
+   "start_delay_ms": 13,
+   "max_gap_ms": 83
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 481698,
+   "duration_ms": 375,
+   "planned_ms": 375,
+   "frames": 17,
+   "start_delay_ms": 2,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 488246,
+   "duration_ms": 279,
+   "planned_ms": 279,
+   "frames": 11,
+   "start_delay_ms": 4,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 494672,
+   "duration_ms": 407,
+   "planned_ms": 407,
+   "frames": 17,
+   "start_delay_ms": 11,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 495375,
+   "duration_ms": 365,
+   "planned_ms": 365,
+   "frames": 13,
+   "start_delay_ms": 42,
+   "max_gap_ms": 83
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 504609,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 24,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 508716,
+   "duration_ms": 318,
+   "planned_ms": 318,
+   "frames": 16,
+   "start_delay_ms": 0,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 514681,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 20,
+   "start_delay_ms": 1,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 523721,
+   "duration_ms": 383,
+   "planned_ms": 383,
+   "frames": 13,
+   "start_delay_ms": 28,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 531216,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 16,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 552440,
+   "duration_ms": 551,
+   "planned_ms": 551,
+   "frames": 24,
+   "start_delay_ms": 12,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 559332,
+   "duration_ms": 305,
+   "planned_ms": 305,
+   "frames": 12,
+   "start_delay_ms": 3,
+   "max_gap_ms": 52
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 561249,
+   "duration_ms": 296,
+   "planned_ms": 296,
+   "frames": 13,
+   "start_delay_ms": 3,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 568933,
+   "duration_ms": 294,
+   "planned_ms": 294,
+   "frames": 14,
+   "start_delay_ms": 2,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 571010,
+   "duration_ms": 281,
+   "planned_ms": 281,
+   "frames": 12,
+   "start_delay_ms": 25,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 585116,
+   "duration_ms": 317,
+   "planned_ms": 317,
+   "frames": 11,
+   "start_delay_ms": 2,
+   "max_gap_ms": 117
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 590100,
+   "duration_ms": 460,
+   "planned_ms": 460,
+   "frames": 19,
+   "start_delay_ms": 1,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 595490,
+   "duration_ms": 265,
+   "planned_ms": 265,
+   "frames": 9,
+   "start_delay_ms": 27,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 601019,
+   "duration_ms": 271,
+   "planned_ms": 271,
+   "frames": 14,
+   "start_delay_ms": 15,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 603829,
+   "duration_ms": 295,
+   "planned_ms": 295,
+   "frames": 12,
+   "start_delay_ms": 5,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 622852,
+   "duration_ms": 385,
+   "planned_ms": 385,
+   "frames": 18,
+   "start_delay_ms": 14,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 635447,
+   "duration_ms": 322,
+   "planned_ms": 322,
+   "frames": 17,
+   "start_delay_ms": 2,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 652214,
+   "duration_ms": 363,
+   "planned_ms": 363,
+   "frames": 15,
+   "start_delay_ms": 18,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 656600,
+   "duration_ms": 433,
+   "planned_ms": 433,
+   "frames": 20,
+   "start_delay_ms": 15,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 672500,
+   "duration_ms": 452,
+   "planned_ms": 452,
+   "frames": 23,
+   "start_delay_ms": 14,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 675166,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 15,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 676604,
+   "duration_ms": 489,
+   "planned_ms": 489,
+   "frames": 24,
+   "start_delay_ms": 10,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 689676,
+   "duration_ms": 528,
+   "planned_ms": 528,
+   "frames": 20,
+   "start_delay_ms": 4,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 698653,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 10,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 712547,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 16,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 715022,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 40,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 720535,
+   "duration_ms": 475,
+   "planned_ms": 475,
+   "frames": 23,
+   "start_delay_ms": 11,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 721304,
+   "duration_ms": 293,
+   "planned_ms": 293,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 723775,
+   "duration_ms": 377,
+   "planned_ms": 377,
+   "frames": 21,
+   "start_delay_ms": 4,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 735723,
+   "duration_ms": 365,
+   "planned_ms": 365,
+   "frames": 21,
+   "start_delay_ms": 5,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 736384,
+   "duration_ms": 293,
+   "planned_ms": 293,
+   "frames": 15,
+   "start_delay_ms": 11,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 749782,
+   "duration_ms": 269,
+   "planned_ms": 269,
+   "frames": 12,
+   "start_delay_ms": 29,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 756584,
+   "duration_ms": 534,
+   "planned_ms": 534,
+   "frames": 28,
+   "start_delay_ms": 10,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 760759,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 18,
+   "max_gap_ms": 17
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 762637,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 7,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 768367,
+   "duration_ms": 469,
+   "planned_ms": 469,
+   "frames": 18,
+   "start_delay_ms": 43,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 771605,
+   "duration_ms": 488,
+   "planned_ms": 488,
+   "frames": 22,
+   "start_delay_ms": 5,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 780491,
+   "duration_ms": 290,
+   "planned_ms": 290,
+   "frames": 10,
+   "start_delay_ms": 19,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 781049,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 44,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec2",
+   "mode": "overlay",
+   "start_ms": 781568,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 817829,
+   "duration_ms": 353,
+   "planned_ms": 353,
+   "frames": 18,
+   "start_delay_ms": 4,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 820842,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 7,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 827206,
+   "duration_ms": 321,
+   "planned_ms": 321,
+   "frames": 19,
+   "start_delay_ms": 10,
+   "max_gap_ms": 17
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 836517,
+   "duration_ms": 486,
+   "planned_ms": 486,
+   "frames": 23,
+   "start_delay_ms": 15,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 838960,
+   "duration_ms": 454,
+   "planned_ms": 454,
+   "frames": 25,
+   "start_delay_ms": 5,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 844600,
+   "duration_ms": 321,
+   "planned_ms": 321,
+   "frames": 13,
+   "start_delay_ms": 48,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 846642,
+   "duration_ms": 275,
+   "planned_ms": 275,
+   "frames": 13,
+   "start_delay_ms": 6,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 850732,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 16,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 862867,
+   "duration_ms": 439,
+   "planned_ms": 439,
+   "frames": 18,
+   "start_delay_ms": 14,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 863597,
+   "duration_ms": 397,
+   "planned_ms": 397,
+   "frames": 18,
+   "start_delay_ms": 1,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 865248,
+   "duration_ms": 391,
+   "planned_ms": 391,
+   "frames": 16,
+   "start_delay_ms": 16,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 874876,
+   "duration_ms": 393,
+   "planned_ms": 393,
+   "frames": 20,
+   "start_delay_ms": 4,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 878848,
+   "duration_ms": 394,
+   "planned_ms": 394,
+   "frames": 15,
+   "start_delay_ms": 16,
+   "max_gap_ms": 62
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 887574,
+   "duration_ms": 465,
+   "planned_ms": 465,
+   "frames": 25,
+   "start_delay_ms": 6,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 900301,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 12,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 905259,
+   "duration_ms": 483,
+   "planned_ms": 483,
+   "frames": 25,
+   "start_delay_ms": 4,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 907598,
+   "duration_ms": 474,
+   "planned_ms": 474,
+   "frames": 18,
+   "start_delay_ms": 31,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 908389,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 23,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 921125,
+   "duration_ms": 308,
+   "planned_ms": 308,
+   "frames": 14,
+   "start_delay_ms": 4,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 924120,
+   "duration_ms": 273,
+   "planned_ms": 273,
+   "frames": 14,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 925043,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 35,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 926499,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 13,
+   "max_gap_ms": 17
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 956265,
+   "duration_ms": 414,
+   "planned_ms": 414,
+   "frames": 19,
+   "start_delay_ms": 12,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 960065,
+   "duration_ms": 316,
+   "planned_ms": 316,
+   "frames": 12,
+   "start_delay_ms": 45,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 960837,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 7,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 965585,
+   "duration_ms": 449,
+   "planned_ms": 449,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 100
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 970006,
+   "duration_ms": 449,
+   "planned_ms": 449,
+   "frames": 19,
+   "start_delay_ms": 4,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 992072,
+   "duration_ms": 318,
+   "planned_ms": 318,
+   "frames": 11,
+   "start_delay_ms": 4,
+   "max_gap_ms": 83
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 996372,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 20,
+   "max_gap_ms": 73
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 999881,
+   "duration_ms": 342,
+   "planned_ms": 342,
+   "frames": 14,
+   "start_delay_ms": 11,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1001380,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 12,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1003747,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 12,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1014308,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 0,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1023505,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 20,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1027040,
+   "duration_ms": 327,
+   "planned_ms": 327,
+   "frames": 13,
+   "start_delay_ms": 1,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1035722,
+   "duration_ms": 416,
+   "planned_ms": 416,
+   "frames": 23,
+   "start_delay_ms": 2,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1038014,
+   "duration_ms": 458,
+   "planned_ms": 458,
+   "frames": 21,
+   "start_delay_ms": 10,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1041352,
+   "duration_ms": 418,
+   "planned_ms": 418,
+   "frames": 22,
+   "start_delay_ms": 5,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1052598,
+   "duration_ms": 418,
+   "planned_ms": 418,
+   "frames": 17,
+   "start_delay_ms": 9,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1072249,
+   "duration_ms": 292,
+   "planned_ms": 292,
+   "frames": 11,
+   "start_delay_ms": 7,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1074697,
+   "duration_ms": 360,
+   "planned_ms": 360,
+   "frames": 15,
+   "start_delay_ms": 9,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1089498,
+   "duration_ms": 416,
+   "planned_ms": 416,
+   "frames": 21,
+   "start_delay_ms": 7,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1096687,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 1,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1101511,
+   "duration_ms": 510,
+   "planned_ms": 510,
+   "frames": 23,
+   "start_delay_ms": 10,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1112661,
+   "duration_ms": 526,
+   "planned_ms": 526,
+   "frames": 24,
+   "start_delay_ms": 10,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1118771,
+   "duration_ms": 427,
+   "planned_ms": 427,
+   "frames": 18,
+   "start_delay_ms": 16,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1126749,
+   "duration_ms": 348,
+   "planned_ms": 348,
+   "frames": 13,
+   "start_delay_ms": 5,
+   "max_gap_ms": 100
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1128992,
+   "duration_ms": 308,
+   "planned_ms": 308,
+   "frames": 15,
+   "start_delay_ms": 12,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1133868,
+   "duration_ms": 313,
+   "planned_ms": 313,
+   "frames": 10,
+   "start_delay_ms": 2,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1137577,
+   "duration_ms": 283,
+   "planned_ms": 283,
+   "frames": 12,
+   "start_delay_ms": 43,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1140997,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 6,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1161426,
+   "duration_ms": 339,
+   "planned_ms": 339,
+   "frames": 12,
+   "start_delay_ms": 26,
+   "max_gap_ms": 96
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1183293,
+   "duration_ms": 357,
+   "planned_ms": 357,
+   "frames": 17,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1193065,
+   "duration_ms": 292,
+   "planned_ms": 292,
+   "frames": 14,
+   "start_delay_ms": 3,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1195138,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 63,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1197346,
+   "duration_ms": 524,
+   "planned_ms": 524,
+   "frames": 25,
+   "start_delay_ms": 38,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1208817,
+   "duration_ms": 342,
+   "planned_ms": 342,
+   "frames": 17,
+   "start_delay_ms": 0,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1222019,
+   "duration_ms": 369,
+   "planned_ms": 369,
+   "frames": 15,
+   "start_delay_ms": 14,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec3",
+   "mode": "overlay",
+   "start_ms": 1226319,
+   "duration_ms": 560,
+   "planned_ms": 560,
+   "frames": 22,
+   "start_delay_ms": 14,
+   "max_gap_ms": 83
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1258015,
+   "duration_ms": 313,
+   "planned_ms": 313,
+   "frames": 14,
+   "start_delay_ms": 7,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1259730,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1262716,
+   "duration_ms": 318,
+   "planned_ms": 318,
+   "frames": 19,
+   "start_delay_ms": 6,
+   "max_gap_ms": 17
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1268675,
+   "duration_ms": 265,
+   "planned_ms": 265,
+   "frames": 14,
+   "start_delay_ms": 13,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1279876,
+   "duration_ms": 492,
+   "planned_ms": 492,
+   "frames": 25,
+   "start_delay_ms": 12,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1283707,
+   "duration_ms": 512,
+   "planned_ms": 512,
+   "frames": 28,
+   "start_delay_ms": 14,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1284489,
+   "duration_ms": 297,
+   "planned_ms": 297,
+   "frames": 9,
+   "start_delay_ms": 15,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1289079,
+   "duration_ms": 297,
+   "planned_ms": 297,
+   "frames": 15,
+   "start_delay_ms": 8,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1289650,
+   "duration_ms": 297,
+   "planned_ms": 297,
+   "frames": 9,
+   "start_delay_ms": 4,
+   "max_gap_ms": 100
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1295131,
+   "duration_ms": 394,
+   "planned_ms": 394,
+   "frames": 18,
+   "start_delay_ms": 6,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1302614,
+   "duration_ms": 287,
+   "planned_ms": 287,
+   "frames": 17,
+   "start_delay_ms": 6,
+   "max_gap_ms": 17
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1306313,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 7,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1315827,
+   "duration_ms": 289,
+   "planned_ms": 289,
+   "frames": 14,
+   "start_delay_ms": 9,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1322510,
+   "duration_ms": 279,
+   "planned_ms": 279,
+   "frames": 11,
+   "start_delay_ms": 26,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1329571,
+   "duration_ms": 410,
+   "planned_ms": 410,
+   "frames": 18,
+   "start_delay_ms": 31,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1341361,
+   "duration_ms": 271,
+   "planned_ms": 271,
+   "frames": 12,
+   "start_delay_ms": 8,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1346820,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 15,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1364322,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 8,
+   "start_delay_ms": 29,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1364863,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 5,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1370678,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 6,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1393313,
+   "duration_ms": 456,
+   "planned_ms": 456,
+   "frames": 18,
+   "start_delay_ms": 3,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1395075,
+   "duration_ms": 600,
+   "planned_ms": 600,
+   "frames": 28,
+   "start_delay_ms": 8,
+   "max_gap_ms": 100
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1400020,
+   "duration_ms": 379,
+   "planned_ms": 379,
+   "frames": 17,
+   "start_delay_ms": 63,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1400635,
+   "duration_ms": 415,
+   "planned_ms": 415,
+   "frames": 22,
+   "start_delay_ms": 14,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1418845,
+   "duration_ms": 390,
+   "planned_ms": 390,
+   "frames": 21,
+   "start_delay_ms": 20,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1425902,
+   "duration_ms": 349,
+   "planned_ms": 349,
+   "frames": 15,
+   "start_delay_ms": 13,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1427738,
+   "duration_ms": 349,
+   "planned_ms": 349,
+   "frames": 18,
+   "start_delay_ms": 10,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1430924,
+   "duration_ms": 323,
+   "planned_ms": 323,
+   "frames": 12,
+   "start_delay_ms": 41,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1434418,
+   "duration_ms": 361,
+   "planned_ms": 361,
+   "frames": 20,
+   "start_delay_ms": 13,
+   "max_gap_ms": 31
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1438875,
+   "duration_ms": 583,
+   "planned_ms": 583,
+   "frames": 31,
+   "start_delay_ms": 6,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1440157,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 8,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1440726,
+   "duration_ms": 335,
+   "planned_ms": 335,
+   "frames": 16,
+   "start_delay_ms": 5,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1444701,
+   "duration_ms": 335,
+   "planned_ms": 335,
+   "frames": 18,
+   "start_delay_ms": 13,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1449482,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 16,
+   "max_gap_ms": 17
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1473199,
+   "duration_ms": 434,
+   "planned_ms": 434,
+   "frames": 22,
+   "start_delay_ms": 31,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1479712,
+   "duration_ms": 413,
+   "planned_ms": 413,
+   "frames": 24,
+   "start_delay_ms": 1,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1484993,
+   "duration_ms": 363,
+   "planned_ms": 363,
+   "frames": 18,
+   "start_delay_ms": 3,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1487487,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 9,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1519668,
+   "duration_ms": 425,
+   "planned_ms": 425,
+   "frames": 23,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1522072,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 4,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1527681,
+   "duration_ms": 354,
+   "planned_ms": 354,
+   "frames": 13,
+   "start_delay_ms": 12,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1530209,
+   "duration_ms": 266,
+   "planned_ms": 266,
+   "frames": 11,
+   "start_delay_ms": 0,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1532963,
+   "duration_ms": 266,
+   "planned_ms": 266,
+   "frames": 9,
+   "start_delay_ms": 13,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1543982,
+   "duration_ms": 338,
+   "planned_ms": 338,
+   "frames": 14,
+   "start_delay_ms": 27,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "act04-rec1",
+   "mode": "overlay",
+   "start_ms": 1567075,
+   "duration_ms": 331,
+   "planned_ms": 331,
+   "frames": 10,
+   "start_delay_ms": 16,
+   "max_gap_ms": 83
+  }
+ ],
+ "decode": "passed",
+ "stream_end_s": {
+  "v": 1589.467,
+  "a": 1589.466
+ },
+ "seams": [
+  {
+   "번호": 1,
+   "시각": "00:48.033",
+   "앞": "act04-rec1@48041",
+   "뒤": "act04-rec1@48041",
+   "종류": "같은 녹화 나눔",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    15,
+    6
+   ],
+   "소리튐": false,
+   "표본차": 0.0007,
+   "기준": 0.0602,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 2,
+   "시각": "06:11.667",
+   "앞": "act04-rec1@371671",
+   "뒤": "act04-rec2@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    19,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.019,
+   "바뀐영역": [
+    20,
+    36,
+    1508,
+    1044
+   ],
+   "화면_ok": true,
+   "그림": "이음새_02.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 3,
+   "시각": "09:11.300",
+   "앞": "act04-rec2@179645",
+   "뒤": "act04-rec2@179645",
+   "종류": "같은 녹화 나눔",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    3,
+    14
+   ],
+   "소리튐": false,
+   "표본차": 0.0005,
+   "기준": 0.0446,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 4,
+   "시각": "13:16.500",
+   "앞": "act04-rec2@424860",
+   "뒤": "act04-rec3@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    107,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.252,
+   "바뀐영역": [
+    768,
+    36,
+    1696,
+    852
+   ],
+   "화면_ok": true,
+   "그림": "이음새_04.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 5,
+   "시각": "20:37.633",
+   "앞": "act04-rec3@441121",
+   "뒤": "act04-rec1@1228981",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    17,
+    10
+   ],
+   "소리튐": false,
+   "표본차": 0.0001,
+   "기준": 0.0768,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.386,
+   "바뀐영역": [
+    448,
+    92,
+    1888,
+    964
+   ],
+   "화면_ok": true,
+   "그림": "이음새_05.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 6,
+   "시각": "25:02.367",
+   "앞": "act04-rec1@1493700",
+   "뒤": "act04-rec1@1493700",
+   "종류": "같은 녹화 나눔",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    88,
+    7
+   ],
+   "소리튐": false,
+   "표본차": 0.0009,
+   "기준": 0.0781,
+   "소리시작_어긋남_ms": [
+    -0.0
+   ],
+   "소리_ok": true,
+   "허용": false,
+   "판정": "통과"
+  }
+ ],
+ "voice": "config audio 캐시",
+ "revoiced": [],
+ "not_verified": [
+  "직접 청취",
+  "사용자 재생 확인"
+ ],
+ "이름": "04-조치결과비교-새판2",
+ "도구": "포털",
+ "crf": 18,
+ "fps": 30,
+ "size": [
+  1920,
+  1080
+ ],
+ "origin": {
+  "명세": [
+   "act04-rec1:371671",
+   "act04-rec2",
+   "act04-rec3",
+   "act04-rec1@1228981"
+  ]
+ },
+ "음성교체": [],
+ "조각": [
+  {
+   "키": "567fc8f163e3dbafd205f580",
+   "도구": "포털",
+   "take": "act04-rec1",
+   "from_ms": 0.0,
+   "to_ms": 48041,
+   "frames": 1441,
+   "mode": "overlay",
+   "part": 1,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 1580814,
+   "end_url": null,
+   "end_tab": null,
+   "edge_age": [
+    0,
+    15
+   ],
+   "cues": [
+    {
+     "id": "t0101",
+     "text": "이번에는 이론에서 배운 것을 포털에서 눈으로 확인해 보겠습니다. 조치 후보를 승인하려면 세 가지가 정해져 있어야 한다고 했죠. 어떻게 하는지를 적은 절차, 지금 해도 되는지를 가리는 규칙, 무엇이 나은지를 견주는 성과 기준이에요. 이 셋이 포털 어디에 들어 있는지 찾아보고, 조건이나 기준을 직접 바꿔 가면서 결과가 어떻게 달라지는지도 보겠습니다.",
+     "time": 16,
+     "duration": 25040,
+     "actionStart": 17,
+     "actionEnd": 29,
+     "commit": null,
+     "segment": 1
+    },
+    {
+     "id": "t0102",
+     "text": "오늘은 고장을 내지 않고 승인도 하지 않습니다. 넣어 보는 값은 모두 계산에만 쓰이고, 설비로는 아무것도 내려가지 않아요. 정말 그런지도 직접 확인해 보겠습니다. 포털은 1회차에 켰던 대로 켜서 홈을 열어 두시면 됩니다. 왼쪽 메뉴의 지식을 펼쳐서 조치 방법을 열게요.",
+     "time": 26360,
+     "duration": 19280,
+     "actionStart": 26361,
+     "actionEnd": 45741,
+     "commit": 44093,
+     "segment": 1
+    }
+   ],
+   "motions": [
+    {
+     "start": 43629,
+     "end": 43907,
+     "glide": 43629,
+     "planned_ms": 278,
+     "start_delay_ms": 22,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 45048,
+     "end": 45308,
+     "glide": 45048,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 50,
+     "frames": 10
+    }
+   ],
+   "clicks": [
+    {
+     "x": 228,
+     "y": 112,
+     "dx": 0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 205.0000114440918,
+     "y": 208,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "75c7096aae20e8da925998b6",
+   "도구": "포털",
+   "take": "act04-rec1",
+   "from_ms": 48041,
+   "to_ms": 371671.0,
+   "frames": 9709,
+   "mode": "overlay",
+   "part": 2,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 1580814,
+   "end_url": "http://127.0.0.1:8088/#/trends",
+   "end_tab": null,
+   "edge_age": [
+    6,
+    19
+   ],
+   "cues": [
+    {
+     "id": "t0201",
+     "text": "여기가 조치 방법 화면이에요. 왼쪽 목록의 한 줄이 조치 방법 하나이고, 이론에서 본 SOP 한 편이 이 한 줄로 들어와 있습니다. SOP는 누가 하든 같은 조건과 차례, 끝 기준으로 하게 적어 둔 문서였죠. 경보가 오면 AI는 이 목록에서 조치 후보를 꺼내요.",
+     "time": 48041,
+     "duration": 19680,
+     "actionStart": 48043,
+     "actionEnd": 51543,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0202",
+     "text": "줄마다 이름 밑에 작은 글씨가 두 가지 붙어 있어요. 앞의 것은 조치의 종류이고, 뒤의 것은 그 조치를 어느 고장 유형에 쓰는지를 적은 거예요. 쿨러 냉각 성능 상실이라고 적힌 줄들이 1회차에 본 쿨러 고장에 쓰는 조치입니다. 오른쪽에는 맨 위 조치가 먼저 열려 있는데, 목록에서 쿨러 핀 세척을 누를게요. 이론에서 이름 한 줄만 적어 두 사람에게 맡겨 봤던 그 정비예요.",
+     "time": 69028,
+     "duration": 28160,
+     "actionStart": 69032,
+     "actionEnd": 92109,
+     "commit": 91897,
+     "segment": 2
+    },
+    {
+     "id": "t0203",
+     "text": "그때는 설비를 세울지, 어떻게 닦을지, 언제 끝낼지가 사람마다 갈렸죠. 여기에는 그 셋이 적혀 있습니다. 이름 아래 번호 붙은 줄 셋이 SOP의 수행 단계예요. SOP는 원래 시작 전, 하는 동안, 끝낼 때 구역으로 나뉘는데, 이 화면은 구역을 따로 두지 않고 단계 문장 안에 담아 놨어요. 문장을 읽으면서 어느 구역의 내용인지 찾아보겠습니다.",
+     "time": 99189,
+     "duration": 26960,
+     "actionStart": 99190,
+     "actionEnd": 108796,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0204",
+     "text": "1번은 설비를 세우고, 운전 모드를 LOCAL, 그러니까 현장 제어로 바꾼 뒤 잠금을 건다는 문장이에요. 사람이 다치지 않을 상태부터 갖추라는 거니까, 시작 전에 맞추는 안전 조건이 이 줄에 들어 있습니다. 현장 제어로 바꾸는 것과 잠금이 따로 적혀 있죠. 운전 모드를 바꿔도 전기와 압력은 남아 있어서, 에너지를 끊는 잠금은 따로 해야 한다고 했던 대로예요.",
+     "time": 127449,
+     "duration": 25680,
+     "actionStart": 127450,
+     "actionEnd": 144014,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0205",
+     "text": "2번은 쿨러 핀을 압축공기로 닦는다는 문장인데, 뒤에 고압수, 그러니까 세게 쏘는 물은 쓰지 않는다는 말이 붙어 있어요. 하는 동안 지켜야 할 금지 사항이죠. 3번은 다시 돌린 뒤 냉각 효율이 기준 이상으로 돌아왔는지 확인하라는 문장입니다. 끝낼 때 보는 완료 확인 기준이에요. 눈으로 보고 끝내지 않고, 다시 잰 값을 보고 끝났다고 판정하는 거죠.",
+     "time": 154428,
+     "duration": 26800,
+     "actionStart": 154431,
+     "actionEnd": 169623,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0206",
+     "text": "문장 끝마다 작은 글씨로 번호가 붙어 있죠. 이 문장이 매뉴얼의 어느 대목에서 나왔는지를 적어 둔 거예요. 보고서 문장마다 각주를 달듯, 작업 단계마다 근거 문서를 이어 둔다고 한 게 이 번호입니다.",
+     "time": 182527,
+     "duration": 14000,
+     "actionStart": 182528,
+     "actionEnd": 192301,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0207",
+     "text": "번호 줄 아래 두 줄은 SOP 머리에 적는 내용이에요. 첫 줄은 이 절차를 어떤 고장에 쓰는지 적은 줄로, 적용 대상에 해당해요. 그 아래 승인 역할은 담당 역할 가운데 승인을 맡는 쪽이고요. 설비보전팀장이라고 적혀 있는데, 이론에서 보전 책임자라고 부른 역할이에요. 핀 세척은 설비를 세워야 하는 정비라서 그 책임자가 승인합니다.",
+     "time": 197827,
+     "duration": 25200,
+     "actionStart": 197829,
+     "actionEnd": 212740,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0208",
+     "text": "수행하는 쪽은 이름 옆에 붙은 조치의 종류로 알 수 있어요. 정비 요청이라고 적혀 있죠. 정비하는 사람에게 일을 맡기는 조치라는 뜻이에요. 고장 유형 옆 괄호 안의 근본 조치는 원인을 없애는 조치라는 표시예요.",
+     "time": 224328,
+     "duration": 16480,
+     "actionStart": 224330,
+     "actionEnd": 236747,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0209",
+     "text": "같은 고장에 쓰는 조치를 하나 더 볼게요. 목록 맨 위에 있는 팬 최대 운전입니다.",
+     "time": 242108,
+     "duration": 6640,
+     "actionStart": 242109,
+     "actionEnd": 247883,
+     "commit": 247652,
+     "segment": 2
+    },
+    {
+     "id": "t0210",
+     "text": "이 조치는 종류가 설비 제어예요. 승인하면 명령이 설비로 내려가는 조치죠. 그래서 1번 단계가 다릅니다. 운전 모드가 REMOTE_AUTO인지 확인한다는 문장이에요. REMOTE_AUTO가 원격 자동, 승인 뒤 자동으로 내려오는 명령을 설비가 받아들이는 운전 모드입니다. 원격 자동일 때만 이 조치를 하라는 거니까, 이론에서 조건 문장이라고 한 것이 이 줄이에요. 그때의 설비 상태가 맞을 때만 하라는 문장이었죠.",
+     "time": 250749,
+     "duration": 30080,
+     "actionStart": 250750,
+     "actionEnd": 259667,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0211",
+     "text": "2번에는 팬을 최대로 돌리되 스물네 시간을 넘기지 않는다는 말이 붙어 있어요. 3번은 조치 뒤에 다시 재서 회복 판정을 한다는 문장이니, 이 조치도 마지막 단계가 완료 확인 기준입니다. 아래 고장 유형 옆 괄호에는 완화 조치라고 적혀 있어요. 증상을 우선 낮추는 조치라는 뜻이에요. 승인 역할도 운전원으로 다르고요. 같은 고장에 쓰는 조치인데도 맞춰야 할 조건과 승인하는 역할이 조치마다 다릅니다.",
+     "time": 282130,
+     "duration": 30160,
+     "actionStart": 282130,
+     "actionEnd": 303822,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0212",
+     "text": "승인 역할 아래에는 줄이 하나 접혀 있어요. 연결된 지식이라고 적힌 줄인데, 펼쳐 보겠습니다.",
+     "time": 313590,
+     "duration": 7040,
+     "actionStart": 313591,
+     "actionEnd": 320193,
+     "commit": 319450,
+     "segment": 2
+    },
+    {
+     "id": "t0213",
+     "text": "펼쳐진 줄 가운데 적용 규칙을 보세요. 제외라는 말로 시작하는 줄이 있죠. 운전 모드가 원격 자동이 아니면 이 조치를 쓰지 않는다는 규칙이에요. 방금 절차 1번에서 본 조건이 판단 규칙으로도 따로 적혀 있는 겁니다. 감점으로 시작하는 줄에는 2번에 있던 스물네 시간이 들어 있어요. 그 시간을 넘겨 팬을 최대로 돌려 왔으면 감점한다는 규칙이에요. 이론의 결정표에서 본 제외 행과 감점 행이 이 두 줄입니다.",
+     "time": 322630,
+     "duration": 29680,
+     "actionStart": 322631,
+     "actionEnd": 348886,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t0214",
+     "text": "절차는 사람이 따를 차례이고, 판단 규칙은 지금 해도 되는지를 값으로 가리는 데 씁니다. 이론에서 허용 조건이라고 부른 것을 결정표로 적은 게 판단 규칙이었죠. 이 규칙이 실제로 조치를 가리는 모습을 보러 가겠습니다.",
+     "time": 353609,
+     "duration": 15760,
+     "actionStart": 353620,
+     "actionEnd": 354230,
+     "commit": null,
+     "segment": 2
+    }
+   ],
+   "motions": [
+    {
+     "start": 48237,
+     "end": 48526,
+     "glide": 48237,
+     "planned_ms": 289,
+     "start_delay_ms": 31,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 50474,
+     "end": 50740,
+     "glide": 50474,
+     "planned_ms": 266,
+     "start_delay_ms": 10,
+     "max_gap_ms": 33,
+     "frames": 10
+    },
+    {
+     "start": 51194,
+     "end": 51471,
+     "glide": 51194,
+     "planned_ms": 277,
+     "start_delay_ms": 24,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 73027,
+     "end": 73304,
+     "glide": 73027,
+     "planned_ms": 277,
+     "start_delay_ms": 57,
+     "max_gap_ms": 100,
+     "frames": 6
+    },
+    {
+     "start": 75176,
+     "end": 75450,
+     "glide": 75176,
+     "planned_ms": 274,
+     "start_delay_ms": 24,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 86293,
+     "end": 86553,
+     "glide": 86293,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 91402,
+     "end": 91719,
+     "glide": 91402,
+     "planned_ms": 317,
+     "start_delay_ms": 14,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 108290,
+     "end": 108746,
+     "glide": 108290,
+     "planned_ms": 456,
+     "start_delay_ms": 9,
+     "max_gap_ms": 167,
+     "frames": 12
+    },
+    {
+     "start": 127695,
+     "end": 127955,
+     "glide": 127695,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 33,
+     "frames": 11
+    },
+    {
+     "start": 129937,
+     "end": 130336,
+     "glide": 129937,
+     "planned_ms": 399,
+     "start_delay_ms": 11,
+     "max_gap_ms": 33,
+     "frames": 19
+    },
+    {
+     "start": 159889,
+     "end": 160149,
+     "glide": 159889,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 166671,
+     "end": 167051,
+     "glide": 166671,
+     "planned_ms": 380,
+     "start_delay_ms": 25,
+     "max_gap_ms": 50,
+     "frames": 18
+    },
+    {
+     "start": 169205,
+     "end": 169584,
+     "glide": 169205,
+     "planned_ms": 379,
+     "start_delay_ms": 8,
+     "max_gap_ms": 67,
+     "frames": 15
+    },
+    {
+     "start": 183332,
+     "end": 183733,
+     "glide": 183332,
+     "planned_ms": 401,
+     "start_delay_ms": 14,
+     "max_gap_ms": 67,
+     "frames": 15
+    },
+    {
+     "start": 201999,
+     "end": 202364,
+     "glide": 201999,
+     "planned_ms": 365,
+     "start_delay_ms": 13,
+     "max_gap_ms": 33,
+     "frames": 19
+    },
+    {
+     "start": 208398,
+     "end": 208658,
+     "glide": 208398,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 33,
+     "frames": 11
+    },
+    {
+     "start": 212439,
+     "end": 212699,
+     "glide": 212439,
+     "planned_ms": 260,
+     "start_delay_ms": 22,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 225394,
+     "end": 225708,
+     "glide": 225394,
+     "planned_ms": 314,
+     "start_delay_ms": 17,
+     "max_gap_ms": 50,
+     "frames": 14
+    },
+    {
+     "start": 236385,
+     "end": 236698,
+     "glide": 236385,
+     "planned_ms": 313,
+     "start_delay_ms": 9,
+     "max_gap_ms": 71,
+     "frames": 13
+    },
+    {
+     "start": 247058,
+     "end": 247470,
+     "glide": 247058,
+     "planned_ms": 412,
+     "start_delay_ms": 2,
+     "max_gap_ms": 33,
+     "frames": 22
+    },
+    {
+     "start": 251463,
+     "end": 251816,
+     "glide": 251463,
+     "planned_ms": 353,
+     "start_delay_ms": 30,
+     "max_gap_ms": 33,
+     "frames": 16
+    },
+    {
+     "start": 256784,
+     "end": 257076,
+     "glide": 256784,
+     "planned_ms": 292,
+     "start_delay_ms": 26,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 259247,
+     "end": 259597,
+     "glide": 259247,
+     "planned_ms": 350,
+     "start_delay_ms": 29,
+     "max_gap_ms": 67,
+     "frames": 15
+    },
+    {
+     "start": 282405,
+     "end": 282665,
+     "glide": 282405,
+     "planned_ms": 260,
+     "start_delay_ms": 20,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 288016,
+     "end": 288354,
+     "glide": 288016,
+     "planned_ms": 338,
+     "start_delay_ms": 9,
+     "max_gap_ms": 67,
+     "frames": 17
+    },
+    {
+     "start": 298368,
+     "end": 298628,
+     "glide": 298368,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 53,
+     "frames": 12
+    },
+    {
+     "start": 303509,
+     "end": 303769,
+     "glide": 303509,
+     "planned_ms": 260,
+     "start_delay_ms": 32,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 315037,
+     "end": 315297,
+     "glide": 315037,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 323918,
+     "end": 324178,
+     "glide": 323918,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 325529,
+     "end": 325789,
+     "glide": 325529,
+     "planned_ms": 260,
+     "start_delay_ms": 11,
+     "max_gap_ms": 67,
+     "frames": 11
+    },
+    {
+     "start": 338380,
+     "end": 338640,
+     "glide": 338380,
+     "planned_ms": 260,
+     "start_delay_ms": 10,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 347939,
+     "end": 348199,
+     "glide": 347939,
+     "planned_ms": 260,
+     "start_delay_ms": 17,
+     "max_gap_ms": 43,
+     "frames": 12
+    },
+    {
+     "start": 348567,
+     "end": 348827,
+     "glide": 348567,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 67,
+     "frames": 10
+    },
+    {
+     "start": 353925,
+     "end": 354185,
+     "glide": 353925,
+     "planned_ms": 260,
+     "start_delay_ms": 14,
+     "max_gap_ms": 67,
+     "frames": 10
+    }
+   ],
+   "clicks": [
+    {
+     "x": 410.75,
+     "y": 402.3958435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 410.75,
+     "y": 228.39583587646484,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 712.0833740234375,
+     "y": 510.9895935058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ],
+   "highlights": [
+    {
+     "cue": "t0201",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       210.4,
+       280,
+       462
+      ]
+     ],
+     "start": 50798,
+     "end": 51542
+    },
+    {
+     "cue": "t0201",
+     "shape": "band",
+     "rects": [
+      [
+       288,
+       210.4,
+       280,
+       56
+      ]
+     ],
+     "start": 51542,
+     "end": 73390
+    },
+    {
+     "cue": "t0202",
+     "shape": "underline",
+     "rects": [
+      [
+       332,
+       240.4,
+       47.79,
+       16
+      ]
+     ],
+     "start": 73390,
+     "end": 86685
+    },
+    {
+     "cue": "t0202",
+     "shape": "underline",
+     "rects": [
+      [
+       389.35,
+       240.4,
+       98.76,
+       16
+      ]
+     ],
+     "start": 75492,
+     "end": 86685
+    },
+    {
+     "cue": "t0202",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       164.4,
+       94.54,
+       24
+      ]
+     ],
+     "start": 86685,
+     "end": 91205
+    },
+    {
+     "cue": "t0203",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       287.06,
+       619.33,
+       84
+      ]
+     ],
+     "start": 108796,
+     "end": 128005
+    },
+    {
+     "cue": "t0204",
+     "shape": "band",
+     "rects": [
+      [
+       642.67,
+       289.73,
+       443.82,
+       16.67
+      ]
+     ],
+     "start": 128005,
+     "end": 130365
+    },
+    {
+     "cue": "t0204",
+     "shape": "underline",
+     "rects": [
+      [
+       812.58,
+       289.73,
+       43.04,
+       16.67
+      ]
+     ],
+     "start": 130365,
+     "end": 160183
+    },
+    {
+     "cue": "t0204",
+     "shape": "underline",
+     "rects": [
+      [
+       925.98,
+       289.73,
+       68.25,
+       16.67
+      ]
+     ],
+     "start": 144014,
+     "end": 160183
+    },
+    {
+     "cue": "t0205",
+     "shape": "underline",
+     "rects": [
+      [
+       891.55,
+       320.4,
+       118.47,
+       16.67
+      ]
+     ],
+     "start": 160183,
+     "end": 167136
+    },
+    {
+     "cue": "t0205",
+     "shape": "band",
+     "rects": [
+      [
+       642.67,
+       351.06,
+       394.14,
+       16.67
+      ]
+     ],
+     "start": 167136,
+     "end": 169623
+    },
+    {
+     "cue": "t0205",
+     "shape": "underline",
+     "rects": [
+      [
+       785.44,
+       351.06,
+       59.54,
+       16.67
+      ]
+     ],
+     "start": 169623,
+     "end": 183839
+    },
+    {
+     "cue": "t0206",
+     "shape": "underline",
+     "rects": [
+      [
+       1046.58,
+       291.73,
+       39.91,
+       14
+      ]
+     ],
+     "start": 183839,
+     "end": 192301
+    },
+    {
+     "cue": "t0206",
+     "shape": "box",
+     "rects": [
+      [
+       996.9,
+       291.73,
+       89.59,
+       75.33
+      ]
+     ],
+     "start": 192301,
+     "end": 202463
+    },
+    {
+     "cue": "t0207",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       414.4,
+       269.94,
+       16.67
+      ]
+     ],
+     "start": 202463,
+     "end": 208701
+    },
+    {
+     "cue": "t0207",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       442.79,
+       180.09,
+       16.67
+      ]
+     ],
+     "start": 208701,
+     "end": 212740
+    },
+    {
+     "cue": "t0207",
+     "shape": "underline",
+     "rects": [
+      [
+       728.67,
+       442.79,
+       72.09,
+       16.67
+      ]
+     ],
+     "start": 212740,
+     "end": 225768
+    },
+    {
+     "cue": "t0208",
+     "shape": "box",
+     "rects": [
+      [
+       725.21,
+       165.4,
+       59.42,
+       22
+      ]
+     ],
+     "start": 225768,
+     "end": 236747
+    },
+    {
+     "cue": "t0208",
+     "shape": "underline",
+     "rects": [
+      [
+       838.51,
+       416.4,
+       52.09,
+       14
+      ]
+     ],
+     "start": 236747,
+     "end": 246861
+    },
+    {
+     "cue": "t0210",
+     "shape": "box",
+     "rects": [
+      [
+       725.21,
+       165.4,
+       59.42,
+       22
+      ]
+     ],
+     "start": 251875,
+     "end": 257115
+    },
+    {
+     "cue": "t0210",
+     "shape": "band",
+     "rects": [
+      [
+       642.67,
+       289.73,
+       321.17,
+       16.67
+      ]
+     ],
+     "start": 257115,
+     "end": 259667
+    },
+    {
+     "cue": "t0210",
+     "shape": "underline",
+     "rects": [
+      [
+       738.02,
+       289.73,
+       96.97,
+       16.67
+      ]
+     ],
+     "start": 259667,
+     "end": 282708
+    },
+    {
+     "cue": "t0211",
+     "shape": "underline",
+     "rects": [
+      [
+       795.21,
+       320.4,
+       220.63,
+       16.67
+      ]
+     ],
+     "start": 282708,
+     "end": 288400
+    },
+    {
+     "cue": "t0211",
+     "shape": "band",
+     "rects": [
+      [
+       642.67,
+       351.06,
+       289.43,
+       16.67
+      ]
+     ],
+     "start": 288400,
+     "end": 298688
+    },
+    {
+     "cue": "t0211",
+     "shape": "underline",
+     "rects": [
+      [
+       838.51,
+       416.4,
+       52.09,
+       14
+      ]
+     ],
+     "start": 298689,
+     "end": 303822
+    },
+    {
+     "cue": "t0211",
+     "shape": "underline",
+     "rects": [
+      [
+       728.67,
+       442.79,
+       36.05,
+       16.67
+      ]
+     ],
+     "start": 303822,
+     "end": 315346
+    },
+    {
+     "cue": "t0212",
+     "shape": "band",
+     "rects": [
+      [
+       644.67,
+       502.66,
+       63.42,
+       16.67
+      ]
+     ],
+     "start": 315346,
+     "end": 319112
+    },
+    {
+     "cue": "t0213",
+     "shape": "underline",
+     "rects": [
+      [
+       620.67,
+       475.31,
+       47.79,
+       16
+      ]
+     ],
+     "start": 324221,
+     "end": 325839
+    },
+    {
+     "cue": "t0213",
+     "shape": "band",
+     "rects": [
+      [
+       728.67,
+       587.29,
+       499.26,
+       16.67
+      ],
+      [
+       728.67,
+       609.69,
+       39.52,
+       16.67
+      ]
+     ],
+     "start": 325839,
+     "end": 338702
+    },
+    {
+     "cue": "t0213",
+     "shape": "band",
+     "rects": [
+      [
+       728.67,
+       475.31,
+       480.3,
+       16.67
+      ],
+      [
+       728.67,
+       497.71,
+       312.43,
+       16.67
+      ]
+     ],
+     "start": 338702,
+     "end": 348257
+    },
+    {
+     "cue": "t0213",
+     "shape": "band",
+     "rects": [
+      [
+       728.67,
+       587.29,
+       499.26,
+       16.67
+      ],
+      [
+       728.67,
+       609.69,
+       39.52,
+       16.67
+      ]
+     ],
+     "start": 348257,
+     "end": 353925
+    },
+    {
+     "cue": "t0213",
+     "shape": "band",
+     "rects": [
+      [
+       728.67,
+       475.31,
+       480.3,
+       16.67
+      ],
+      [
+       728.67,
+       497.71,
+       312.43,
+       16.67
+      ]
+     ],
+     "start": 348886,
+     "end": 353925
+    }
+   ]
+  },
+  {
+   "키": "01485891c93260fb35a4f58b",
+   "도구": "포털",
+   "take": "act04-rec2",
+   "from_ms": 0.0,
+   "to_ms": 179645,
+   "frames": 5389,
+   "mode": "overlay",
+   "part": 3,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 424860,
+   "end_url": null,
+   "end_tab": null,
+   "edge_age": [
+    0,
+    3
+   ],
+   "cues": [
+    {
+     "id": "t0301",
+     "text": "왼쪽 메뉴에서 판단 실험을 누르고, 그 안의 규칙 판단을 열게요.",
+     "time": 2150,
+     "duration": 4720,
+     "actionStart": 2151,
+     "actionEnd": 6909,
+     "commit": 4600,
+     "segment": 3
+    },
+    {
+     "id": "t0302",
+     "text": "여기는 어떤 설비에 어떤 경보가 왔다고 치고, 판단을 계산만 해 보는 곳이에요. 실제 경보가 아니라서 처리 건이 열리지 않고, 승인으로 이어지지도 않습니다. 왼쪽 위 설비 칸에는 첫 번째 설비가, 그 아래 이상 패턴 칸에는 쿨러 성능 저하가 골라져 있어요. 이상 패턴은 경보의 종류를 고르는 칸입니다. 둘 다 그대로 두고, 아래에 있는 모의 판단 단추를 누릅니다.",
+     "time": 8910,
+     "duration": 26720,
+     "actionStart": 8910,
+     "actionEnd": 36024,
+     "commit": 35372,
+     "segment": 3
+    },
+    {
+     "id": "t0303",
+     "text": "오른쪽에 결과가 나왔습니다. 원인을 가리는 쪽은 1회차에 봤으니, 오늘은 가운데 있는 조치 후보 표를 봅니다. 승인 카드에서 근거를 열었을 때 본 후보 비교가 이런 계산에서 나와요.",
+     "time": 38025,
+     "duration": 13440,
+     "actionStart": 38025,
+     "actionEnd": 44840,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t0305",
+     "text": "표의 줄마다 조치 이름과 종류, 점수, 승인 역할이 있죠. 종류와 승인 역할은 조치 방법 화면에서 본 것이 따라온 거예요. 점수는 조치마다 좋은 점은 더하고 나쁜 점은 빼서 매긴 값이라, 높을수록 앞 순위예요. 표 위 숫자 칸 가운데 조치 후보 칸에는 네 개가 모두 가능이라고 적혀 있어요. 조금 전에 제외 규칙을 봤는데 여기서는 아무것도 제외되지 않았죠. 까닭은 판단에 쓴 값에 있습니다.",
+     "time": 52765,
+     "duration": 29840,
+     "actionStart": 52767,
+     "actionEnd": 71535,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t0306",
+     "text": "표 아래로 내려가면 자세히 보기라는 줄이 접혀 있죠. 펼치면 판단에 쓴 값이 표로 나와요.",
+     "time": 83904,
+     "duration": 6720,
+     "actionStart": 83906,
+     "actionEnd": 88903,
+     "commit": 87949,
+     "segment": 3
+    },
+    {
+     "id": "t0307",
+     "text": "이 표가 결정표의 입력 데이터, 판단의 답을 정하는 데 쓰는 값이에요. 맨 아래 운전 모드 줄을 보면 값이 원격 자동이고, 옆에 출처가 적혀 있어요. 설비 곁에서 설비를 제어하는 PLC에서 지금 값을 읽어 온 겁니다. 위쪽의 팬 연속 운전 시간 줄은 팬을 최대로 돌린 지 얼마나 됐는지인데, 값이 영이고 뒤에 시간이라는 단위가 붙어 있죠. 조금 전에 본 제외 규칙과 감점 규칙이 견주는 값이 이 둘이에요. 값마다 얼마인지와 어디서 읽어 왔는지가 함께 남습니다.",
+     "time": 92624,
+     "duration": 35760,
+     "actionStart": 92625,
+     "actionEnd": 124092,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t0308",
+     "text": "표 위에 적용한 규칙이라고 적힌 곳을 누르면, 규칙마다 이번 판단에서 조건에 걸렸는지가 나옵니다. 줄 맨 앞의 문장이 규칙이에요. 결정표의 한 행, 안내판의 한 줄에 해당하죠. 가운데 칸은 그 규칙을 어느 조치에 적용했는지이고, 그래서 같은 규칙이 조치마다 한 줄씩 나옵니다.",
+     "time": 129685,
+     "duration": 20800,
+     "actionStart": 129689,
+     "actionEnd": 143433,
+     "commit": 133370,
+     "segment": 3
+    },
+    {
+     "id": "t0310",
+     "text": "가운데 칸이 팬 최대 운전인 줄에서 원격 자동이 아니면 쓰지 않는다는 규칙을 찾아보면, 끝의 결과 칸에 해당 없음이라고 적혀 있어요.",
+     "time": 151785,
+     "duration": 10000,
+     "actionStart": 151786,
+     "actionEnd": 159829,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t0309",
+     "text": "이 규칙은 운전 모드가 원격 자동이 아닐 때만 걸려요. 지금은 원격 자동이라 걸리지 않았고, 그래서 제외된 후보가 없었던 겁니다. 그러면 운전 모드가 원격 자동이 아닐 때는 어떻게 되는지 바꿔 보겠습니다.",
+     "time": 162385,
+     "duration": 14960,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 3
+    }
+   ],
+   "motions": [
+    {
+     "start": 4014,
+     "end": 4421,
+     "glide": 4014,
+     "planned_ms": 407,
+     "start_delay_ms": 7,
+     "max_gap_ms": 67,
+     "frames": 16
+    },
+    {
+     "start": 6230,
+     "end": 6490,
+     "glide": 6230,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 9078,
+     "end": 9393,
+     "glide": 9078,
+     "planned_ms": 315,
+     "start_delay_ms": 9,
+     "max_gap_ms": 50,
+     "frames": 14
+    },
+    {
+     "start": 21066,
+     "end": 21326,
+     "glide": 21066,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 24045,
+     "end": 24305,
+     "glide": 24045,
+     "planned_ms": 260,
+     "start_delay_ms": 9,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 34894,
+     "end": 35192,
+     "glide": 34894,
+     "planned_ms": 298,
+     "start_delay_ms": 9,
+     "max_gap_ms": 33,
+     "frames": 16
+    },
+    {
+     "start": 44300,
+     "end": 44777,
+     "glide": 44300,
+     "planned_ms": 477,
+     "start_delay_ms": 3,
+     "max_gap_ms": 67,
+     "frames": 21
+    },
+    {
+     "start": 52979,
+     "end": 53287,
+     "glide": 52979,
+     "planned_ms": 308,
+     "start_delay_ms": 7,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 57216,
+     "end": 57537,
+     "glide": 57216,
+     "planned_ms": 321,
+     "start_delay_ms": 20,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 57783,
+     "end": 58099,
+     "glide": 57783,
+     "planned_ms": 316,
+     "start_delay_ms": 3,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 71178,
+     "end": 71478,
+     "glide": 71178,
+     "planned_ms": 300,
+     "start_delay_ms": 24,
+     "max_gap_ms": 67,
+     "frames": 11
+    },
+    {
+     "start": 85948,
+     "end": 86319,
+     "glide": 85948,
+     "planned_ms": 371,
+     "start_delay_ms": 3,
+     "max_gap_ms": 50,
+     "frames": 16
+    },
+    {
+     "start": 93394,
+     "end": 93746,
+     "glide": 93394,
+     "planned_ms": 352,
+     "start_delay_ms": 7,
+     "max_gap_ms": 67,
+     "frames": 13
+    },
+    {
+     "start": 102154,
+     "end": 102423,
+     "glide": 102154,
+     "planned_ms": 269,
+     "start_delay_ms": 13,
+     "max_gap_ms": 83,
+     "frames": 10
+    },
+    {
+     "start": 110031,
+     "end": 110406,
+     "glide": 110031,
+     "planned_ms": 375,
+     "start_delay_ms": 2,
+     "max_gap_ms": 67,
+     "frames": 17
+    },
+    {
+     "start": 116579,
+     "end": 116858,
+     "glide": 116579,
+     "planned_ms": 279,
+     "start_delay_ms": 4,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 123005,
+     "end": 123412,
+     "glide": 123005,
+     "planned_ms": 407,
+     "start_delay_ms": 11,
+     "max_gap_ms": 50,
+     "frames": 17
+    },
+    {
+     "start": 123708,
+     "end": 124073,
+     "glide": 123708,
+     "planned_ms": 365,
+     "start_delay_ms": 42,
+     "max_gap_ms": 83,
+     "frames": 13
+    },
+    {
+     "start": 132942,
+     "end": 133202,
+     "glide": 132942,
+     "planned_ms": 260,
+     "start_delay_ms": 24,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 137049,
+     "end": 137367,
+     "glide": 137049,
+     "planned_ms": 318,
+     "start_delay_ms": 0,
+     "max_gap_ms": 35,
+     "frames": 16
+    },
+    {
+     "start": 143014,
+     "end": 143401,
+     "glide": 143014,
+     "planned_ms": 387,
+     "start_delay_ms": 1,
+     "max_gap_ms": 50,
+     "frames": 20
+    },
+    {
+     "start": 152054,
+     "end": 152437,
+     "glide": 152054,
+     "planned_ms": 383,
+     "start_delay_ms": 28,
+     "max_gap_ms": 67,
+     "frames": 13
+    },
+    {
+     "start": 159549,
+     "end": 159809,
+     "glide": 159549,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 50,
+     "frames": 13
+    }
+   ],
+   "clicks": [
+    {
+     "x": 228,
+     "y": 400,
+     "dx": 0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 205.0000114440918,
+     "y": 304,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 435.0625,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 712.0833740234375,
+     "y": 625.7083435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 904.0000457763672,
+     "y": 313.90625,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ],
+   "highlights": [
+    {
+     "cue": "t0302",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       206.4,
+       280,
+       60
+      ]
+     ],
+     "start": 21368,
+     "end": 24333
+    },
+    {
+     "cue": "t0302",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       282.4,
+       280,
+       60
+      ]
+     ],
+     "start": 24333,
+     "end": 34673
+    },
+    {
+     "cue": "t0303",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       108.38,
+       619.33,
+       319.82
+      ]
+     ],
+     "start": 44840,
+     "end": 53328
+    },
+    {
+     "cue": "t0305",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       108.38,
+       619.33,
+       35.53
+      ]
+     ],
+     "start": 53328,
+     "end": 57577
+    },
+    {
+     "cue": "t0305",
+     "shape": "underline",
+     "rects": [
+      [
+       860.73,
+       160.18,
+       44,
+       14
+      ]
+     ],
+     "start": 57577,
+     "end": 70424
+    },
+    {
+     "cue": "t0305",
+     "shape": "underline",
+     "rects": [
+      [
+       1161.08,
+       158.84,
+       33.46,
+       16
+      ]
+     ],
+     "start": 58154,
+     "end": 70424
+    },
+    {
+     "cue": "t0305",
+     "shape": "box",
+     "rects": [
+      [
+       930.33,
+       265.72,
+       154.83,
+       98.53
+      ]
+     ],
+     "start": 71535,
+     "end": 85125
+    },
+    {
+     "cue": "t0306",
+     "shape": "band",
+     "rects": [
+      [
+       644.67,
+       617.38,
+       63.42,
+       16.67
+      ]
+     ],
+     "start": 86347,
+     "end": 87637
+    },
+    {
+     "cue": "t0307",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       65.57,
+       619.33,
+       596.69
+      ]
+     ],
+     "start": 93790,
+     "end": 98870
+    },
+    {
+     "cue": "t0307",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       605.93,
+       619.33,
+       56.33
+      ]
+     ],
+     "start": 98870,
+     "end": 102472
+    },
+    {
+     "cue": "t0307",
+     "shape": "underline",
+     "rects": [
+      [
+       848.57,
+       615.59,
+       80.31,
+       16.67
+      ],
+      [
+       848.57,
+       635.59,
+       60.88,
+       16.67
+      ]
+     ],
+     "start": 102472,
+     "end": 110469
+    },
+    {
+     "cue": "t0307",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       162.24,
+       619.33,
+       72.35
+      ]
+     ],
+     "start": 110469,
+     "end": 116928
+    },
+    {
+     "cue": "t0307",
+     "shape": "underline",
+     "rects": [
+      [
+       777.75,
+       171.91,
+       35.72,
+       16.67
+      ]
+     ],
+     "start": 116928,
+     "end": 123483
+    },
+    {
+     "cue": "t0307",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       605.93,
+       619.33,
+       56.33
+      ]
+     ],
+     "start": 123483,
+     "end": 132225
+    },
+    {
+     "cue": "t0307",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       162.24,
+       619.33,
+       72.35
+      ]
+     ],
+     "start": 124092,
+     "end": 132225
+    },
+    {
+     "cue": "t0308",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       151.57,
+       460.19,
+       414.25
+      ]
+     ],
+     "start": 137409,
+     "end": 143433
+    },
+    {
+     "cue": "t0308",
+     "shape": "band",
+     "rects": [
+      [
+       1080.85,
+       151.57,
+       108.56,
+       414.25
+      ]
+     ],
+     "start": 143433,
+     "end": 152479
+    },
+    {
+     "cue": "t0310",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       565.82,
+       619.33,
+       75.23
+      ]
+     ],
+     "start": 152479,
+     "end": 163187
+    },
+    {
+     "cue": "t0310",
+     "shape": "underline",
+     "rects": [
+      [
+       1197.42,
+       576.16,
+       22.31,
+       16
+      ],
+      [
+       1197.42,
+       596.16,
+       22.31,
+       16
+      ]
+     ],
+     "start": 159829,
+     "end": 163187
+    }
+   ]
+  },
+  {
+   "키": "3d6fe1ee7982fa689f2f05cf",
+   "도구": "포털",
+   "take": "act04-rec2",
+   "from_ms": 179645,
+   "to_ms": 424860.0,
+   "frames": 7356,
+   "mode": "overlay",
+   "part": 4,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 424860,
+   "end_url": "http://127.0.0.1:8088/#/decision",
+   "end_tab": null,
+   "edge_age": [
+    14,
+    107
+   ],
+   "cues": [
+    {
+     "id": "t0401",
+     "text": "왼쪽으로 돌아가서 모의 판단 단추 바로 위를 보면, 조건 바꿔 보기라고 적힌 줄이 접혀 있어요. 펼치면 칸이 넷 나오는데, 모두 지금 값 그대로라고 되어 있습니다. 아까는 넷 다 지금 값으로 판단했던 거죠.",
+     "time": 179645,
+     "duration": 16000,
+     "actionStart": 179646,
+     "actionEnd": 189953,
+     "commit": 187193,
+     "segment": 4
+    },
+    {
+     "id": "t0402",
+     "text": "여기서 운전 모드를 원격 수동으로 바꿔 볼게요. 누군가 관제 화면에서 설비를 직접 조작하고 있다고 가정하는 겁니다. 설비의 운전 모드를 실제로 바꾸는 게 아니고, 판단에 넣는 값만 바꾸는 거예요. 바꿨으면 모의 판단 단추를 다시 누릅니다.",
+     "time": 196945,
+     "duration": 17680,
+     "actionStart": 196948,
+     "actionEnd": 214490,
+     "commit": 199811,
+     "segment": 4
+    },
+    {
+     "id": "t0403",
+     "text": "결과가 달라졌죠. 표 위 조치 후보 칸에 이번에는 제외된 수가 함께 적혔습니다. 표에서는 종류에 설비 제어가 들어 있는 조치 셋이 순위 없이 아래로 내려갔고, 점수 자리에 제외라고 적혀 있어요. 이름 아래에는 어느 규칙에 걸렸는지도 나옵니다. 조금 전에 본 원격 자동 규칙이에요. 사람이 직접 조작하고 있는데 자동 명령이 끼어들면, 둘이 같은 설비를 서로 다르게 움직이려 하겠죠. 그래서 설비가 받아들이지 않을 조치를 후보에서 미리 뺀 겁니다.",
+     "time": 216628,
+     "duration": 33040,
+     "actionStart": 216629,
+     "actionEnd": 232524,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t0404",
+     "text": "남은 건 쿨러 핀 세척 하나예요. 설비로 명령을 내리지 않고 사람이 가서 하는 정비라 운전 모드 규칙에 걸리지 않습니다. 설비가 돌고 있는데 세워야 하는 정비가 가능이라니 이상해 보일 수 있어요. 여기서 가능, 그러니까 허용은 고를 수 있다는 뜻이에요. 세우고 잠갔는지는 고르기 전이 아니라 손대기 직전에 확인한다고 했죠.",
+     "time": 250968,
+     "duration": 24400,
+     "actionStart": 250972,
+     "actionEnd": 264164,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t0410",
+     "text": "표 위에는 무엇을 가정한 결과인지도 남아 있어요. 가정한 조건이라고 적힌 줄에 운전 모드 원격 수동이 있죠. 그 아래 줄에는 앞 판단과 견줘서 1순위가 쿨러 핀 세척으로 바뀌었다고 적혀 있고요. 조건 하나를 바꿨더니 허용되는 조치도, 1순위도 달라졌습니다.",
+     "time": 276669,
+     "duration": 19440,
+     "actionStart": 276670,
+     "actionEnd": 285423,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t0409",
+     "text": "운전 모드 칸에서 지금 값 그대로를 골라 처음대로 돌려놓고, 모의 판단 단추를 다시 누르면 빠졌던 조치들이 후보로 돌아옵니다. 다음 조건을 넣기 전에 이렇게 돌려놓는 건, 조건을 한 번에 하나씩만 바꿔야 무엇 때문에 결과가 달라졌는지 알 수 있어서예요.",
+     "time": 297412,
+     "duration": 17760,
+     "actionStart": 297418,
+     "actionEnd": 305587,
+     "commit": 301462,
+     "segment": 4
+    },
+    {
+     "id": "t0405",
+     "text": "다음은 감점입니다. 맨 아래에 보이는 칸은 팬을 최대로 돌린 지 몇 시간째인지를 넣는 칸이에요. 아까 입력 데이터 표에서 영이던 값이고, 단위는 칸 이름 끝에 적힌 대로 시간입니다. 감점 규칙은 이 값이 스물네 시간을 넘었을 때 걸리죠. 스물네 시간이 이 규칙의 임계치, 판정을 가르는 경계값이에요. 그래서 그보다 큰 삼십을 넣고, 모의 판단 단추를 누릅니다.",
+     "time": 316472,
+     "duration": 27680,
+     "actionStart": 316473,
+     "actionEnd": 344331,
+     "commit": 341328,
+     "segment": 4
+    },
+    {
+     "id": "t0406",
+     "text": "팬을 최대로 돌리는 조치가 이번에는 빠지지 않고 남아 있어요. 대신 이름 아래에 감점이라고 적힌 글이 붙었습니다. 조치 방법 화면에서 본 스물네 시간 규칙이에요. 그보다 오래 돌리면 팬 수명이 줄어들어서 점수를 깎는 겁니다.",
+     "time": 346331,
+     "duration": 16240,
+     "actionStart": 346337,
+     "actionEnd": 352518,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t0411",
+     "text": "제외는 후보에서 아예 빼는 것이고, 감점은 남겨 두되 견줄 때 불리하게 셈하는 것이라고 했죠. 자취방을 고를 때 시끄러운 집을 빼지는 않고 그만큼 손해로 쳐 둔 것과 같아요. 표 위 줄을 보면, 그렇게 셈한 결과로 1순위도 다른 조치로 넘어갔습니다.",
+     "time": 363872,
+     "duration": 19440,
+     "actionStart": 363873,
+     "actionEnd": 378443,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t0407",
+     "text": "넣어 본 값을 지우고 처음으로 돌아가 볼게요. 맨 아래 칸을 비우고 모의 판단 단추를 누르면, 다시 설비의 지금 값으로 판단합니다.",
+     "time": 384613,
+     "duration": 9840,
+     "actionStart": 384615,
+     "actionEnd": 392010,
+     "commit": 389550,
+     "segment": 4
+    },
+    {
+     "id": "t0408",
+     "text": "처음과 같은 결과가 나왔죠. 왼쪽 아래 지난 판단 목록에는 모의 판단을 누를 때마다 한 줄씩 쌓였어요. 줄마다 무엇을 가정했고 1순위가 무엇이었는지 적혀 있습니다. 지금 값 그대로인 줄은 1순위가 모두 같죠. 같은 입력에는 같은 답이 나오고, 입력을 바꾸면 어느 규칙 때문에 답이 달라졌는지까지 따라갈 수 있습니다. 판단을 결정표로 정해 두어서 얻는 것이 이 두 가지예요.",
+     "time": 396454,
+     "duration": 28000,
+     "actionStart": 396455,
+     "actionEnd": 410196,
+     "commit": null,
+     "segment": 4
+    }
+   ],
+   "motions": [
+    {
+     "start": 180785,
+     "end": 181336,
+     "glide": 180785,
+     "planned_ms": 551,
+     "start_delay_ms": 12,
+     "max_gap_ms": 67,
+     "frames": 24
+    },
+    {
+     "start": 187677,
+     "end": 187982,
+     "glide": 187677,
+     "planned_ms": 305,
+     "start_delay_ms": 3,
+     "max_gap_ms": 52,
+     "frames": 12
+    },
+    {
+     "start": 189594,
+     "end": 189890,
+     "glide": 189594,
+     "planned_ms": 296,
+     "start_delay_ms": 3,
+     "max_gap_ms": 50,
+     "frames": 13
+    },
+    {
+     "start": 197278,
+     "end": 197572,
+     "glide": 197278,
+     "planned_ms": 294,
+     "start_delay_ms": 2,
+     "max_gap_ms": 50,
+     "frames": 14
+    },
+    {
+     "start": 199355,
+     "end": 199636,
+     "glide": 199355,
+     "planned_ms": 281,
+     "start_delay_ms": 25,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 213461,
+     "end": 213778,
+     "glide": 213461,
+     "planned_ms": 317,
+     "start_delay_ms": 2,
+     "max_gap_ms": 117,
+     "frames": 11
+    },
+    {
+     "start": 218445,
+     "end": 218905,
+     "glide": 218445,
+     "planned_ms": 460,
+     "start_delay_ms": 1,
+     "max_gap_ms": 50,
+     "frames": 19
+    },
+    {
+     "start": 223835,
+     "end": 224100,
+     "glide": 223835,
+     "planned_ms": 265,
+     "start_delay_ms": 27,
+     "max_gap_ms": 67,
+     "frames": 9
+    },
+    {
+     "start": 229364,
+     "end": 229635,
+     "glide": 229364,
+     "planned_ms": 271,
+     "start_delay_ms": 15,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 232174,
+     "end": 232469,
+     "glide": 232174,
+     "planned_ms": 295,
+     "start_delay_ms": 5,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 251197,
+     "end": 251582,
+     "glide": 251197,
+     "planned_ms": 385,
+     "start_delay_ms": 14,
+     "max_gap_ms": 33,
+     "frames": 18
+    },
+    {
+     "start": 263792,
+     "end": 264114,
+     "glide": 263792,
+     "planned_ms": 322,
+     "start_delay_ms": 2,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 280559,
+     "end": 280922,
+     "glide": 280559,
+     "planned_ms": 363,
+     "start_delay_ms": 18,
+     "max_gap_ms": 50,
+     "frames": 15
+    },
+    {
+     "start": 284945,
+     "end": 285378,
+     "glide": 284945,
+     "planned_ms": 433,
+     "start_delay_ms": 15,
+     "max_gap_ms": 33,
+     "frames": 20
+    },
+    {
+     "start": 300845,
+     "end": 301297,
+     "glide": 300845,
+     "planned_ms": 452,
+     "start_delay_ms": 14,
+     "max_gap_ms": 50,
+     "frames": 23
+    },
+    {
+     "start": 303511,
+     "end": 303771,
+     "glide": 303511,
+     "planned_ms": 260,
+     "start_delay_ms": 15,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 304949,
+     "end": 305438,
+     "glide": 304949,
+     "planned_ms": 489,
+     "start_delay_ms": 10,
+     "max_gap_ms": 33,
+     "frames": 24
+    },
+    {
+     "start": 318021,
+     "end": 318549,
+     "glide": 318021,
+     "planned_ms": 528,
+     "start_delay_ms": 4,
+     "max_gap_ms": 50,
+     "frames": 20
+    },
+    {
+     "start": 326998,
+     "end": 327258,
+     "glide": 326998,
+     "planned_ms": 260,
+     "start_delay_ms": 10,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 340892,
+     "end": 341152,
+     "glide": 340892,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 343367,
+     "end": 343627,
+     "glide": 343367,
+     "planned_ms": 260,
+     "start_delay_ms": 40,
+     "max_gap_ms": 36,
+     "frames": 12
+    },
+    {
+     "start": 348880,
+     "end": 349355,
+     "glide": 348880,
+     "planned_ms": 475,
+     "start_delay_ms": 11,
+     "max_gap_ms": 33,
+     "frames": 23
+    },
+    {
+     "start": 349649,
+     "end": 349942,
+     "glide": 349649,
+     "planned_ms": 293,
+     "start_delay_ms": 8,
+     "max_gap_ms": 50,
+     "frames": 13
+    },
+    {
+     "start": 352120,
+     "end": 352497,
+     "glide": 352120,
+     "planned_ms": 377,
+     "start_delay_ms": 4,
+     "max_gap_ms": 33,
+     "frames": 21
+    },
+    {
+     "start": 364068,
+     "end": 364433,
+     "glide": 364068,
+     "planned_ms": 365,
+     "start_delay_ms": 5,
+     "max_gap_ms": 33,
+     "frames": 21
+    },
+    {
+     "start": 364729,
+     "end": 365022,
+     "glide": 364729,
+     "planned_ms": 293,
+     "start_delay_ms": 11,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 378127,
+     "end": 378396,
+     "glide": 378127,
+     "planned_ms": 269,
+     "start_delay_ms": 29,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 384929,
+     "end": 385463,
+     "glide": 384929,
+     "planned_ms": 534,
+     "start_delay_ms": 10,
+     "max_gap_ms": 50,
+     "frames": 28
+    },
+    {
+     "start": 389104,
+     "end": 389364,
+     "glide": 389104,
+     "planned_ms": 260,
+     "start_delay_ms": 18,
+     "max_gap_ms": 17,
+     "frames": 15
+    },
+    {
+     "start": 390982,
+     "end": 391242,
+     "glide": 390982,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 396712,
+     "end": 397181,
+     "glide": 396712,
+     "planned_ms": 469,
+     "start_delay_ms": 43,
+     "max_gap_ms": 50,
+     "frames": 18
+    },
+    {
+     "start": 399950,
+     "end": 400438,
+     "glide": 399950,
+     "planned_ms": 488,
+     "start_delay_ms": 5,
+     "max_gap_ms": 50,
+     "frames": 22
+    },
+    {
+     "start": 408836,
+     "end": 409126,
+     "glide": 408836,
+     "planned_ms": 290,
+     "start_delay_ms": 19,
+     "max_gap_ms": 67,
+     "frames": 10
+    },
+    {
+     "start": 409394,
+     "end": 409654,
+     "glide": 409394,
+     "planned_ms": 260,
+     "start_delay_ms": 44,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 409913,
+     "end": 410173,
+     "glide": 409913,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 13
+    }
+   ],
+   "clicks": [
+    {
+     "x": 394.7708435058594,
+     "y": 312.8645935058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 379.0625,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 671.0625,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 427.72918701171875,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 313.72918701171875,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 428,
+     "y": 385.0625,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 449.0625,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 428,
+     "y": 548.3958740234375,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 612.3958740234375,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ],
+   "highlights": [
+    {
+     "cue": "t0401",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       335.06,
+       280,
+       304
+      ]
+     ],
+     "start": 188127,
+     "end": 189953
+    },
+    {
+     "cue": "t0401",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       363.06,
+       280,
+       32
+      ]
+     ],
+     "start": 189953,
+     "end": 197608
+    },
+    {
+     "cue": "t0402",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       335.06,
+       280,
+       60
+      ]
+     ],
+     "start": 197608,
+     "end": 199175
+    },
+    {
+     "cue": "t0403",
+     "shape": "box",
+     "rects": [
+      [
+       930.33,
+       217.05,
+       154.83,
+       98.53
+      ]
+     ],
+     "start": 218960,
+     "end": 222376
+    },
+    {
+     "cue": "t0403",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       152.03,
+       619.33,
+       399.63
+      ]
+     ],
+     "start": 224147,
+     "end": 229693
+    },
+    {
+     "cue": "t0403",
+     "shape": "underline",
+     "rects": [
+      [
+       994.77,
+       203.36,
+       22.31,
+       16
+      ]
+     ],
+     "start": 229693,
+     "end": 232524
+    },
+    {
+     "cue": "t0403",
+     "shape": "underline",
+     "rects": [
+      [
+       678.67,
+       189.16,
+       116.51,
+       14
+      ],
+      [
+       678.67,
+       207.16,
+       127.05,
+       14
+      ],
+      [
+       678.67,
+       225.16,
+       110.94,
+       14
+      ],
+      [
+       678.67,
+       243.16,
+       103.66,
+       14
+      ]
+     ],
+     "start": 232524,
+     "end": 251638
+    },
+    {
+     "cue": "t0404",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       105.36,
+       619.33,
+       46.67
+      ]
+     ],
+     "start": 251638,
+     "end": 262965
+    },
+    {
+     "cue": "t0404",
+     "shape": "underline",
+     "rects": [
+      [
+       958.23,
+       306.25,
+       33.75,
+       14
+      ]
+     ],
+     "start": 264164,
+     "end": 280957
+    },
+    {
+     "cue": "t0410",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       387.58,
+       160.7,
+       16
+      ]
+     ],
+     "start": 280957,
+     "end": 285423
+    },
+    {
+     "cue": "t0410",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       412.38,
+       546.29,
+       16
+      ]
+     ],
+     "start": 285423,
+     "end": 300644
+    },
+    {
+     "cue": "t0409",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       233.17,
+       619.33,
+       319.82
+      ]
+     ],
+     "start": 305587,
+     "end": 318636
+    },
+    {
+     "cue": "t0405",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       341.06,
+       280,
+       60
+      ]
+     ],
+     "start": 318636,
+     "end": 327347
+    },
+    {
+     "cue": "t0405",
+     "shape": "underline",
+     "rects": [
+      [
+       393.47,
+       343.06,
+       31.44,
+       16
+      ]
+     ],
+     "start": 327347,
+     "end": 340687
+    },
+    {
+     "cue": "t0406",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       171.61,
+       619.33,
+       155.46
+      ]
+     ],
+     "start": 349420,
+     "end": 352518
+    },
+    {
+     "cue": "t0406",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       392.53,
+       619.33,
+       175.92
+      ]
+     ],
+     "start": 350005,
+     "end": 352518
+    },
+    {
+     "cue": "t0406",
+     "shape": "underline",
+     "rects": [
+      [
+       678.67,
+       208.74,
+       141.93,
+       14
+      ],
+      [
+       678.67,
+       226.74,
+       128.77,
+       14
+      ],
+      [
+       678.67,
+       244.74,
+       134.48,
+       14
+      ],
+      [
+       678.67,
+       262.74,
+       132.23,
+       14
+      ],
+      [
+       678.67,
+       280.74,
+       138.15,
+       14
+      ],
+      [
+       678.67,
+       298.74,
+       107.95,
+       14
+      ]
+     ],
+     "start": 352518,
+     "end": 364496
+    },
+    {
+     "cue": "t0411",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       171.61,
+       619.33,
+       155.46
+      ]
+     ],
+     "start": 364496,
+     "end": 377318
+    },
+    {
+     "cue": "t0411",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       392.53,
+       619.33,
+       175.92
+      ]
+     ],
+     "start": 365046,
+     "end": 377318
+    },
+    {
+     "cue": "t0411",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       305.04,
+       614.96,
+       16
+      ]
+     ],
+     "start": 378442,
+     "end": 385491
+    },
+    {
+     "cue": "t0407",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       504.4,
+       280,
+       60
+      ]
+     ],
+     "start": 385491,
+     "end": 388898
+    },
+    {
+     "cue": "t0408",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       452.82,
+       619.33,
+       46.67
+      ]
+     ],
+     "start": 397241,
+     "end": 399168
+    },
+    {
+     "cue": "t0408",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       265.06,
+       280,
+       334.67
+      ]
+     ],
+     "start": 400482,
+     "end": 409199
+    },
+    {
+     "cue": "t0408",
+     "shape": "band",
+     "rects": [
+      [
+       288,
+       321.73,
+       280,
+       54
+      ]
+     ],
+     "start": 409199,
+     "end": 410996
+    },
+    {
+     "cue": "t0408",
+     "shape": "band",
+     "rects": [
+      [
+       288,
+       433.73,
+       280,
+       54
+      ]
+     ],
+     "start": 409700,
+     "end": 410996
+    },
+    {
+     "cue": "t0408",
+     "shape": "band",
+     "rects": [
+      [
+       288,
+       545.73,
+       280,
+       54
+      ]
+     ],
+     "start": 410196,
+     "end": 410996
+    }
+   ]
+  },
+  {
+   "키": "1f518c80a35b542f9d2a30e5",
+   "도구": "포털",
+   "take": "act04-rec3",
+   "from_ms": 0.0,
+   "to_ms": 441121.0,
+   "frames": 13234,
+   "mode": "overlay",
+   "part": 5,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 441121,
+   "end_url": "http://127.0.0.1:8088/#/whatif",
+   "end_tab": null,
+   "edge_age": [
+    0,
+    17
+   ],
+   "cues": [
+    {
+     "id": "t0501",
+     "text": "규칙으로 거르고도 남는 후보가 여럿이면, 그 가운데 무엇이 나은지를 견줘야 하죠. 이론에서는 체로 거른 후보를 저울에 올린다고 했어요. 규칙 판단이 그 체였고, 이제 저울, 그러니까 선택 근거 쪽을 봅니다. 왼쪽 메뉴에서 규칙 판단 바로 아래에 있는 조건별 손익을 열게요.",
+     "time": 856,
+     "duration": 21120,
+     "actionStart": 880,
+     "actionEnd": 22122,
+     "commit": 21860,
+     "segment": 5
+    },
+    {
+     "id": "t0502",
+     "text": "설비와 이상 패턴은 여기도 아까와 같은 값으로 골라져 있어요. 그대로 두고 기준 계산 단추를 누릅니다. 판단을 한 번 계산해서 기준으로 잡아 두고, 거기서 값을 바꿔 가며 견주겠다는 거예요.",
+     "time": 24122,
+     "duration": 13680,
+     "actionStart": 24123,
+     "actionEnd": 31718,
+     "commit": 31196,
+     "segment": 5
+    },
+    {
+     "id": "t0503",
+     "text": "결과 표에는 순위가 두 가지 있어요. 맨 앞의 순위는 규칙 판단에서 본 점수로 매긴 겁니다. 그 점수가 여기서는 정책 점수라고 적혀 있어요. 오른쪽의 손익 순위는 조치마다 득실을 원으로 바꿔 더한 예상 손익으로 매긴 순위고요.",
+     "time": 39803,
+     "duration": 16640,
+     "actionStart": 39804,
+     "actionEnd": 54526,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0520",
+     "text": "생산은 개수로, 전력은 원으로 재니 득실을 그대로는 견줄 수 없어서, 점수로 매기거나 원으로 바꿔야 한다고 했죠. 그 두 길이 이 두 순위예요. 추천은 앞의 점수 순위로 정하고, 손익 순위는 돈으로 따져 봐도 같은 답이 나오는지 견줘 보는 데 씁니다.",
+     "time": 57743,
+     "duration": 19120,
+     "actionStart": 57744,
+     "actionEnd": 69193,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0504",
+     "text": "맨 위 결론에 그 답이 있어요. 앞의 순위를 여기서는 판단 순위라고 부르는데, 지금은 판단 순위와 손익 순위 모두 팬 최대 운전이 1순위라고 적혀 있죠. 예상 손익 앞의 빼기 표시는 그만큼 돈이 든다는 뜻이라, 덜 드는 조치가 손익 순위에서 앞에 옵니다.",
+     "time": 78164,
+     "duration": 19360,
+     "actionStart": 78165,
+     "actionEnd": 91567,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0505",
+     "text": "이 금액이 어떻게 나왔는지는 아래 손익 내역에 있어요. 조치를 고르면 항목마다 금액이 나오고, 맨 아래 줄이 합계입니다. 지금은 1순위인 팬 최대 운전이 골라져 있어요. 에너지비와 고장 위험이라는 항목에 금액이 있죠. 팬을 더 돌리느라 드는 전력비와, 원인이 남아 있는 동안 고장이 날 수 있는 위험을 돈으로 친 겁니다.",
+     "time": 98824,
+     "duration": 23280,
+     "actionStart": 98825,
+     "actionEnd": 112175,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0506",
+     "text": "쿨러 핀 세척으로 바꿔 보면 금액이 다른 항목에 있어요. 생산 감소와 납기 지연 위약금, 정비 작업비입니다. 정비하는 동안 설비가 서 있으니 그만큼 만들지 못하고, 그 바람에 납기에 늦으면 거래처에 무는 위약금까지 붙는 거예요. 한쪽은 생산을 이어 가는 대신 전력과 위험을 안고, 다른 쪽은 원인을 없애는 대신 생산과 납기를 잃죠. 두 조치의 금액이 이렇게 서로 다른 항목에 있으니, 성과 하나만 보고 고르면 다른 성과에서 잃는 것을 놓치게 됩니다.",
+     "time": 123405,
+     "duration": 33680,
+     "actionStart": 123408,
+     "actionEnd": 130276,
+     "commit": 125103,
+     "segment": 5
+    },
+    {
+     "id": "t0507",
+     "text": "표 아래 접힌 줄을 펼치면 항목마다 계산과 출처가 나옵니다. 납기 지연 위약금은 한 시간 늦을 때마다 무는 돈에 늦어지는 시간을 곱한 값이에요. 출처 칸에는 그 값들을 어디서 읽어 왔는지가 적혀 있고요. 업무 DB라고 적힌 것이 업무 시스템에 들어 있는 값입니다. 금액마다 어떤 값으로 계산했는지 이렇게 확인할 수 있어요.",
+     "time": 158384,
+     "duration": 23920,
+     "actionStart": 158398,
+     "actionEnd": 174033,
+     "commit": 160338,
+     "segment": 5
+    },
+    {
+     "id": "t0508",
+     "text": "이제 이론에서 What-if 분석이라고 한 것을 해 보겠습니다. 다른 조건은 그대로 두고 값 하나만 바꿔서, 그 값에 따라 답이 달라지는지 보는 거예요. 왼쪽에 바꿔 볼 것이라고 적힌 곳이 있죠. 그 아래에서 업무 값을 누릅니다.",
+     "time": 183604,
+     "duration": 17040,
+     "actionStart": 183605,
+     "actionEnd": 201186,
+     "commit": 200318,
+     "segment": 5
+    },
+    {
+     "id": "t0509",
+     "text": "칸이 여러 개 나왔죠. 칸 이름 옆 괄호가 단위이고, 칸 아래 작은 글씨는 그 값을 어디서 읽어 왔고 지금 얼마인지를 알려 줘요. 칸을 비워 두면 그 값으로 계산합니다. 이 가운데 둘째 칸, 납기 지연 위약금을 볼게요. 방금 계산에서 본, 한 시간 늦을 때마다 무는 돈이에요. 칸 아래를 보면 지금은 한 시간에 백이십만 원입니다.",
+     "time": 203186,
+     "duration": 25280,
+     "actionStart": 203187,
+     "actionEnd": 227298,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0510",
+     "text": "오른쪽에는 1순위가 바뀌는 값이라는 표가 있어요. 값을 얼마로 바꾸면 1순위가 다른 조치로 넘어가는지 미리 찾아 준 겁니다. 납기 지연 위약금 줄을 보면 지금 값과 바뀌는 값이 나란히 있고, 그 옆에 바뀐 1순위가 쿨러 핀 세척이라고 적혀 있죠. 위약금이 그 값 아래로 내려가면 1순위가 쿨러 핀 세척으로 넘어간다는 뜻이에요.",
+     "time": 229765,
+     "duration": 24640,
+     "actionStart": 229768,
+     "actionEnd": 245296,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0517",
+     "text": "줄 맨 앞에는 판단 순위라고 적혀 있어요. 두 순위 가운데 점수로 매긴 쪽, 그러니까 추천이 바뀐다는 표시예요. 이론 그림에서 두 선이 엇갈리던 곳이 이 줄의 바뀌는 값입니다.",
+     "time": 255705,
+     "duration": 13840,
+     "actionStart": 255706,
+     "actionEnd": 265890,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0519",
+     "text": "이론 그림에서는 생산 한 시간의 값을 바꿔 봤죠. 왼쪽에 그 값인 시간당 생산 가치 칸도 있는데, 이 표에는 그 줄이 없어요. 이 화면이 넣어 본 범위에서는 그 값을 올리거나 내려도 1순위가 그대로라는 뜻입니다. 바꿔도 답이 그대로인 값이 있고, 바꾸면 답이 뒤집히는 값이 있는 거예요. 지금은 납기 지연 위약금이 답을 뒤집는 값이고요.",
+     "time": 270845,
+     "duration": 25280,
+     "actionStart": 270846,
+     "actionEnd": 293536,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0514",
+     "text": "숫자는 제 화면과 달라도 괜찮습니다. 줄 끝에 있는 단추, 이 값으로 계산이라고 적힌 단추를 누르면 왼쪽 칸에 그 값이 들어가고, 그 값으로 다시 계산합니다.",
+     "time": 297427,
+     "duration": 11920,
+     "actionStart": 297428,
+     "actionEnd": 305563,
+     "commit": 304496,
+     "segment": 5
+    },
+    {
+     "id": "t0511",
+     "text": "위쪽 결과 표를 보면, 칸에 값이 둘씩 나란히 나온 곳이 있죠. 화살표 앞이 기준이고, 뒤가 넣은 값으로 다시 계산한 결과예요. 쿨러 핀 세척이 맨 위로 올라왔습니다. 설비를 세우는 조치라 납기에 늦게 되는데, 늦어도 무는 돈이 줄어든 거죠. 그래서 예상 손익의 손해가 작아졌고, 점수도 올라서 1순위가 됐습니다.",
+     "time": 311348,
+     "duration": 23680,
+     "actionStart": 311362,
+     "actionEnd": 332847,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0518",
+     "text": "그런데 오른쪽 손익 순위는 그대로예요. 돈으로만 따지면 여전히 팬 최대 운전이 가장 덜 드니까요. 맨 위 결론에도 두 순위가 서로 다른 조치를 골랐다고 나옵니다. 점수에는 온도를 얼마나 내리는지처럼 원으로 바꾸기 어려운 것까지 들어 있어서, 두 순위가 늘 같지는 않아요. 바꾼 건 값 하나뿐이니, 추천이 달라진 까닭도 그 값입니다.",
+     "time": 336328,
+     "duration": 25360,
+     "actionStart": 336357,
+     "actionEnd": 344777,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0512",
+     "text": "아래 표에서 지금 값과 바뀌는 값이 얼마나 떨어져 있는지도 보세요. 여기서는 꽤 떨어져 있어서, 위약금이 조금 달라지는 정도로는 추천이 바뀌지 않아요. 반대로 둘이 가까우면 값이 조금만 달라도 결론이 뒤집힙니다. 그럴 때는 그 값이 지금 사정과 맞는지부터 확인해야 해요.",
+     "time": 362988,
+     "duration": 20560,
+     "actionStart": 362989,
+     "actionEnd": 365867,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t0513",
+     "text": "결과 위쪽에는 안내가 한 줄 떠 있어요. 시험값을 넣어 계산한 결과이고, 업무 DB와 지식의 값은 그대로라고 적혀 있습니다. 그 줄 끝의 원래대로 단추를 누를게요. 안내가 사라지고 표가 기준 값으로 돌아왔죠. 왼쪽 칸도 넣었던 값이 지워지고, 흐린 글씨로 지금 값만 보입니다.",
+     "time": 384849,
+     "duration": 21120,
+     "actionStart": 384864,
+     "actionEnd": 401398,
+     "commit": 397027,
+     "segment": 5
+    },
+    {
+     "id": "t0515",
+     "text": "업무 시스템의 값이 정말 그대로인지도 확인해 볼게요. 왼쪽 위에 있는 기준 다시 계산 단추를 누르면, 업무 시스템에서 값을 새로 읽어 와서 처음부터 다시 계산합니다.",
+     "time": 407272,
+     "duration": 12080,
+     "actionStart": 407274,
+     "actionEnd": 422221,
+     "commit": 414125,
+     "segment": 5
+    },
+    {
+     "id": "t0516",
+     "text": "납기 지연 위약금 칸 아래를 보세요. 새로 읽어 온 값도 백이십만 원 그대로죠. 표의 금액이 조금 달라진 건 그사이 시간이 흘러 납기까지 남은 시간이 줄었기 때문이에요. 넣어 본 값은 계산에만 쓰였고, 업무 시스템에는 적히지 않았습니다.",
+     "time": 424240,
+     "duration": 16480,
+     "actionStart": 424241,
+     "actionEnd": 430527,
+     "commit": null,
+     "segment": 5
+    }
+   ],
+   "motions": [
+    {
+     "start": 21329,
+     "end": 21682,
+     "glide": 21329,
+     "planned_ms": 353,
+     "start_delay_ms": 4,
+     "max_gap_ms": 33,
+     "frames": 18
+    },
+    {
+     "start": 24342,
+     "end": 24602,
+     "glide": 24342,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 30706,
+     "end": 31027,
+     "glide": 30706,
+     "planned_ms": 321,
+     "start_delay_ms": 10,
+     "max_gap_ms": 17,
+     "frames": 19
+    },
+    {
+     "start": 40017,
+     "end": 40503,
+     "glide": 40017,
+     "planned_ms": 486,
+     "start_delay_ms": 15,
+     "max_gap_ms": 50,
+     "frames": 23
+    },
+    {
+     "start": 42460,
+     "end": 42914,
+     "glide": 42460,
+     "planned_ms": 454,
+     "start_delay_ms": 5,
+     "max_gap_ms": 33,
+     "frames": 25
+    },
+    {
+     "start": 48100,
+     "end": 48421,
+     "glide": 48100,
+     "planned_ms": 321,
+     "start_delay_ms": 48,
+     "max_gap_ms": 50,
+     "frames": 13
+    },
+    {
+     "start": 50142,
+     "end": 50417,
+     "glide": 50142,
+     "planned_ms": 275,
+     "start_delay_ms": 6,
+     "max_gap_ms": 50,
+     "frames": 13
+    },
+    {
+     "start": 54232,
+     "end": 54492,
+     "glide": 54232,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 66367,
+     "end": 66806,
+     "glide": 66367,
+     "planned_ms": 439,
+     "start_delay_ms": 14,
+     "max_gap_ms": 50,
+     "frames": 18
+    },
+    {
+     "start": 67097,
+     "end": 67494,
+     "glide": 67097,
+     "planned_ms": 397,
+     "start_delay_ms": 1,
+     "max_gap_ms": 67,
+     "frames": 18
+    },
+    {
+     "start": 68748,
+     "end": 69139,
+     "glide": 68748,
+     "planned_ms": 391,
+     "start_delay_ms": 16,
+     "max_gap_ms": 67,
+     "frames": 16
+    },
+    {
+     "start": 78376,
+     "end": 78769,
+     "glide": 78376,
+     "planned_ms": 393,
+     "start_delay_ms": 4,
+     "max_gap_ms": 50,
+     "frames": 20
+    },
+    {
+     "start": 82348,
+     "end": 82742,
+     "glide": 82348,
+     "planned_ms": 394,
+     "start_delay_ms": 16,
+     "max_gap_ms": 62,
+     "frames": 15
+    },
+    {
+     "start": 91074,
+     "end": 91539,
+     "glide": 91074,
+     "planned_ms": 465,
+     "start_delay_ms": 6,
+     "max_gap_ms": 33,
+     "frames": 25
+    },
+    {
+     "start": 103801,
+     "end": 104061,
+     "glide": 103801,
+     "planned_ms": 260,
+     "start_delay_ms": 12,
+     "max_gap_ms": 67,
+     "frames": 12
+    },
+    {
+     "start": 108759,
+     "end": 109242,
+     "glide": 108759,
+     "planned_ms": 483,
+     "start_delay_ms": 4,
+     "max_gap_ms": 50,
+     "frames": 25
+    },
+    {
+     "start": 111098,
+     "end": 111572,
+     "glide": 111098,
+     "planned_ms": 474,
+     "start_delay_ms": 31,
+     "max_gap_ms": 60,
+     "frames": 18
+    },
+    {
+     "start": 111889,
+     "end": 112149,
+     "glide": 111889,
+     "planned_ms": 260,
+     "start_delay_ms": 23,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 124625,
+     "end": 124933,
+     "glide": 124625,
+     "planned_ms": 308,
+     "start_delay_ms": 4,
+     "max_gap_ms": 67,
+     "frames": 14
+    },
+    {
+     "start": 127620,
+     "end": 127893,
+     "glide": 127620,
+     "planned_ms": 273,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 128543,
+     "end": 128803,
+     "glide": 128543,
+     "planned_ms": 260,
+     "start_delay_ms": 35,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 129999,
+     "end": 130259,
+     "glide": 129999,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 17,
+     "frames": 15
+    },
+    {
+     "start": 159765,
+     "end": 160179,
+     "glide": 159765,
+     "planned_ms": 414,
+     "start_delay_ms": 12,
+     "max_gap_ms": 50,
+     "frames": 19
+    },
+    {
+     "start": 163565,
+     "end": 163881,
+     "glide": 163565,
+     "planned_ms": 316,
+     "start_delay_ms": 45,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 164337,
+     "end": 164597,
+     "glide": 164337,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 169085,
+     "end": 169534,
+     "glide": 169085,
+     "planned_ms": 449,
+     "start_delay_ms": 8,
+     "max_gap_ms": 100,
+     "frames": 13
+    },
+    {
+     "start": 173506,
+     "end": 173955,
+     "glide": 173506,
+     "planned_ms": 449,
+     "start_delay_ms": 4,
+     "max_gap_ms": 50,
+     "frames": 19
+    },
+    {
+     "start": 195572,
+     "end": 195890,
+     "glide": 195572,
+     "planned_ms": 318,
+     "start_delay_ms": 4,
+     "max_gap_ms": 83,
+     "frames": 11
+    },
+    {
+     "start": 199872,
+     "end": 200132,
+     "glide": 199872,
+     "planned_ms": 260,
+     "start_delay_ms": 20,
+     "max_gap_ms": 73,
+     "frames": 9
+    },
+    {
+     "start": 203381,
+     "end": 203723,
+     "glide": 203381,
+     "planned_ms": 342,
+     "start_delay_ms": 11,
+     "max_gap_ms": 50,
+     "frames": 14
+    },
+    {
+     "start": 204880,
+     "end": 205140,
+     "glide": 204880,
+     "planned_ms": 260,
+     "start_delay_ms": 12,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 207247,
+     "end": 207507,
+     "glide": 207247,
+     "planned_ms": 260,
+     "start_delay_ms": 12,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 217808,
+     "end": 218068,
+     "glide": 217808,
+     "planned_ms": 260,
+     "start_delay_ms": 0,
+     "max_gap_ms": 33,
+     "frames": 11
+    },
+    {
+     "start": 227005,
+     "end": 227265,
+     "glide": 227005,
+     "planned_ms": 260,
+     "start_delay_ms": 20,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 230540,
+     "end": 230867,
+     "glide": 230540,
+     "planned_ms": 327,
+     "start_delay_ms": 1,
+     "max_gap_ms": 59,
+     "frames": 13
+    },
+    {
+     "start": 239222,
+     "end": 239638,
+     "glide": 239222,
+     "planned_ms": 416,
+     "start_delay_ms": 2,
+     "max_gap_ms": 33,
+     "frames": 23
+    },
+    {
+     "start": 241514,
+     "end": 241972,
+     "glide": 241514,
+     "planned_ms": 458,
+     "start_delay_ms": 10,
+     "max_gap_ms": 50,
+     "frames": 21
+    },
+    {
+     "start": 244852,
+     "end": 245270,
+     "glide": 244852,
+     "planned_ms": 418,
+     "start_delay_ms": 5,
+     "max_gap_ms": 33,
+     "frames": 22
+    },
+    {
+     "start": 256098,
+     "end": 256516,
+     "glide": 256098,
+     "planned_ms": 418,
+     "start_delay_ms": 9,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 275749,
+     "end": 276041,
+     "glide": 275749,
+     "planned_ms": 292,
+     "start_delay_ms": 7,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 278197,
+     "end": 278557,
+     "glide": 278197,
+     "planned_ms": 360,
+     "start_delay_ms": 9,
+     "max_gap_ms": 35,
+     "frames": 15
+    },
+    {
+     "start": 292998,
+     "end": 293414,
+     "glide": 292998,
+     "planned_ms": 416,
+     "start_delay_ms": 7,
+     "max_gap_ms": 33,
+     "frames": 21
+    },
+    {
+     "start": 300187,
+     "end": 300447,
+     "glide": 300187,
+     "planned_ms": 260,
+     "start_delay_ms": 1,
+     "max_gap_ms": 50,
+     "frames": 13
+    },
+    {
+     "start": 305011,
+     "end": 305521,
+     "glide": 305011,
+     "planned_ms": 510,
+     "start_delay_ms": 10,
+     "max_gap_ms": 50,
+     "frames": 23
+    },
+    {
+     "start": 316161,
+     "end": 316687,
+     "glide": 316161,
+     "planned_ms": 526,
+     "start_delay_ms": 10,
+     "max_gap_ms": 33,
+     "frames": 24
+    },
+    {
+     "start": 322271,
+     "end": 322698,
+     "glide": 322271,
+     "planned_ms": 427,
+     "start_delay_ms": 16,
+     "max_gap_ms": 67,
+     "frames": 18
+    },
+    {
+     "start": 330249,
+     "end": 330597,
+     "glide": 330249,
+     "planned_ms": 348,
+     "start_delay_ms": 5,
+     "max_gap_ms": 100,
+     "frames": 13
+    },
+    {
+     "start": 332492,
+     "end": 332800,
+     "glide": 332492,
+     "planned_ms": 308,
+     "start_delay_ms": 12,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 337368,
+     "end": 337681,
+     "glide": 337368,
+     "planned_ms": 313,
+     "start_delay_ms": 2,
+     "max_gap_ms": 67,
+     "frames": 10
+    },
+    {
+     "start": 341077,
+     "end": 341360,
+     "glide": 341077,
+     "planned_ms": 283,
+     "start_delay_ms": 43,
+     "max_gap_ms": 33,
+     "frames": 12
+    },
+    {
+     "start": 344497,
+     "end": 344757,
+     "glide": 344497,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 364926,
+     "end": 365265,
+     "glide": 364926,
+     "planned_ms": 339,
+     "start_delay_ms": 26,
+     "max_gap_ms": 96,
+     "frames": 12
+    },
+    {
+     "start": 386793,
+     "end": 387150,
+     "glide": 386793,
+     "planned_ms": 357,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 396565,
+     "end": 396857,
+     "glide": 396565,
+     "planned_ms": 292,
+     "start_delay_ms": 3,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 398638,
+     "end": 398898,
+     "glide": 398638,
+     "planned_ms": 260,
+     "start_delay_ms": 63,
+     "max_gap_ms": 33,
+     "frames": 10
+    },
+    {
+     "start": 400846,
+     "end": 401370,
+     "glide": 400846,
+     "planned_ms": 524,
+     "start_delay_ms": 38,
+     "max_gap_ms": 67,
+     "frames": 25
+    },
+    {
+     "start": 412317,
+     "end": 412659,
+     "glide": 412317,
+     "planned_ms": 342,
+     "start_delay_ms": 0,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 425519,
+     "end": 425888,
+     "glide": 425519,
+     "planned_ms": 369,
+     "start_delay_ms": 14,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 429819,
+     "end": 430379,
+     "glide": 429819,
+     "planned_ms": 560,
+     "start_delay_ms": 14,
+     "max_gap_ms": 83,
+     "frames": 22
+    }
+   ],
+   "clicks": [
+    {
+     "x": 205.0000114440918,
+     "y": 336,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 445.1875,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1091.791748046875,
+     "y": 117.94792175292969,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 763.4791870117188,
+     "y": 595.2083435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 358.86458587646484,
+     "y": 442.25,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1220.0000839233398,
+     "y": 237.61459350585938,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1220,
+     "y": 313.5833435058594,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 548,
+     "y": 210.52084350585938,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ],
+   "highlights": [
+    {
+     "cue": "t0502",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       233.19,
+       280,
+       136
+      ]
+     ],
+     "start": 24649,
+     "end": 30534
+    },
+    {
+     "cue": "t0503",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       384.25,
+       619.33,
+       261.03
+      ]
+     ],
+     "start": 40527,
+     "end": 42959
+    },
+    {
+     "cue": "t0503",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       384.25,
+       46,
+       261.03
+      ]
+     ],
+     "start": 42959,
+     "end": 48498
+    },
+    {
+     "cue": "t0503",
+     "shape": "underline",
+     "rects": [
+      [
+       891.03,
+       394.25,
+       44,
+       14
+      ]
+     ],
+     "start": 48498,
+     "end": 50512
+    },
+    {
+     "cue": "t0503",
+     "shape": "band",
+     "rects": [
+      [
+       1067.03,
+       384.25,
+       68,
+       261.03
+      ]
+     ],
+     "start": 50512,
+     "end": 54526
+    },
+    {
+     "cue": "t0503",
+     "shape": "band",
+     "rects": [
+      [
+       1135.03,
+       384.25,
+       104.97,
+       261.03
+      ]
+     ],
+     "start": 54526,
+     "end": 66878
+    },
+    {
+     "cue": "t0520",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       384.25,
+       46,
+       261.03
+      ]
+     ],
+     "start": 66878,
+     "end": 69192
+    },
+    {
+     "cue": "t0520",
+     "shape": "band",
+     "rects": [
+      [
+       1067.03,
+       384.25,
+       68,
+       261.03
+      ]
+     ],
+     "start": 67547,
+     "end": 69192
+    },
+    {
+     "cue": "t0520",
+     "shape": "underline",
+     "rects": [
+      [
+       639.85,
+       435.51,
+       7.61,
+       14
+      ]
+     ],
+     "start": 69192,
+     "end": 78812
+    },
+    {
+     "cue": "t0504",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       187.59,
+       442.64,
+       24
+      ]
+     ],
+     "start": 78812,
+     "end": 82775
+    },
+    {
+     "cue": "t0504",
+     "shape": "underline",
+     "rects": [
+      [
+       620.67,
+       273.05,
+       50.34,
+       14
+      ]
+     ],
+     "start": 82775,
+     "end": 91567
+    },
+    {
+     "cue": "t0504",
+     "shape": "underline",
+     "rects": [
+      [
+       1166.05,
+       434.72,
+       61.95,
+       16
+      ]
+     ],
+     "start": 91567,
+     "end": 98894
+    },
+    {
+     "cue": "t0505",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       145.95,
+       619.33,
+       392
+      ]
+     ],
+     "start": 104094,
+     "end": 106644
+    },
+    {
+     "cue": "t0505",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       493.95,
+       619.33,
+       44
+      ]
+     ],
+     "start": 106644,
+     "end": 109285
+    },
+    {
+     "cue": "t0505",
+     "shape": "box",
+     "rects": [
+      [
+       622.67,
+       103.95,
+       85.94,
+       28
+      ]
+     ],
+     "start": 109285,
+     "end": 111601
+    },
+    {
+     "cue": "t0505",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       449.95,
+       619.33,
+       44
+      ]
+     ],
+     "start": 111601,
+     "end": 124451
+    },
+    {
+     "cue": "t0505",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       317.95,
+       619.33,
+       44
+      ]
+     ],
+     "start": 112175,
+     "end": 124451
+    },
+    {
+     "cue": "t0506",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       185.95,
+       619.33,
+       44
+      ]
+     ],
+     "start": 127923,
+     "end": 159560
+    },
+    {
+     "cue": "t0506",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       229.95,
+       619.33,
+       44
+      ]
+     ],
+     "start": 128865,
+     "end": 159560
+    },
+    {
+     "cue": "t0506",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       361.95,
+       619.33,
+       44
+      ]
+     ],
+     "start": 130276,
+     "end": 159560
+    },
+    {
+     "cue": "t0507",
+     "shape": "band",
+     "rects": [
+      [
+       644.67,
+       284.59,
+       51.5,
+       36.67
+      ]
+     ],
+     "start": 163967,
+     "end": 164633
+    },
+    {
+     "cue": "t0507",
+     "shape": "underline",
+     "rects": [
+      [
+       721.85,
+       284.59,
+       155.44,
+       16.67
+      ]
+     ],
+     "start": 164633,
+     "end": 169613
+    },
+    {
+     "cue": "t0507",
+     "shape": "box",
+     "rects": [
+      [
+       1007.14,
+       274.93,
+       232.86,
+       276.54
+      ]
+     ],
+     "start": 169613,
+     "end": 174033
+    },
+    {
+     "cue": "t0507",
+     "shape": "underline",
+     "rects": [
+      [
+       1058.16,
+       283.93,
+       42.29,
+       16
+      ]
+     ],
+     "start": 174033,
+     "end": 195914
+    },
+    {
+     "cue": "t0508",
+     "shape": "underline",
+     "rects": [
+      [
+       288,
+       401.46,
+       50.63,
+       16
+      ]
+     ],
+     "start": 195914,
+     "end": 199678
+    },
+    {
+     "cue": "t0509",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       85.35,
+       280,
+       596
+      ]
+     ],
+     "start": 203756,
+     "end": 205170
+    },
+    {
+     "cue": "t0509",
+     "shape": "underline",
+     "rects": [
+      [
+       386.48,
+       87.35,
+       31.44,
+       16
+      ]
+     ],
+     "start": 205170,
+     "end": 218181
+    },
+    {
+     "cue": "t0509",
+     "shape": "underline",
+     "rects": [
+      [
+       288,
+       155.35,
+       129.61,
+       14
+      ]
+     ],
+     "start": 207571,
+     "end": 218181
+    },
+    {
+     "cue": "t0509",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       187.35,
+       280,
+       86
+      ]
+     ],
+     "start": 218181,
+     "end": 227298
+    },
+    {
+     "cue": "t0509",
+     "shape": "underline",
+     "rects": [
+      [
+       367.17,
+       257.35,
+       68.3,
+       14
+      ]
+     ],
+     "start": 227298,
+     "end": 230904
+    },
+    {
+     "cue": "t0510",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       98.61,
+       619.33,
+       205.67
+      ]
+     ],
+     "start": 230904,
+     "end": 239689
+    },
+    {
+     "cue": "t0510",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       215.28,
+       619.33,
+       44.67
+      ]
+     ],
+     "start": 239689,
+     "end": 276090
+    },
+    {
+     "cue": "t0510",
+     "shape": "underline",
+     "rects": [
+      [
+       832.57,
+       224.95,
+       81.64,
+       16.67
+      ]
+     ],
+     "start": 242030,
+     "end": 245296
+    },
+    {
+     "cue": "t0510",
+     "shape": "underline",
+     "rects": [
+      [
+       931.72,
+       224.95,
+       113.94,
+       16.67
+      ]
+     ],
+     "start": 242522,
+     "end": 245296
+    },
+    {
+     "cue": "t0510",
+     "shape": "underline",
+     "rects": [
+      [
+       1061.66,
+       224.95,
+       66.94,
+       16.67
+      ]
+     ],
+     "start": 245296,
+     "end": 256546
+    },
+    {
+     "cue": "t0517",
+     "shape": "underline",
+     "rects": [
+      [
+       620.67,
+       224.95,
+       51.5,
+       16.67
+      ]
+     ],
+     "start": 256546,
+     "end": 265890
+    },
+    {
+     "cue": "t0517",
+     "shape": "underline",
+     "rects": [
+      [
+       931.72,
+       224.95,
+       113.94,
+       16.67
+      ]
+     ],
+     "start": 265890,
+     "end": 276090
+    },
+    {
+     "cue": "t0519",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       391.35,
+       280,
+       86
+      ]
+     ],
+     "start": 276090,
+     "end": 278641
+    },
+    {
+     "cue": "t0519",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       98.61,
+       619.33,
+       205.67
+      ]
+     ],
+     "start": 278641,
+     "end": 293536
+    },
+    {
+     "cue": "t0519",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       215.28,
+       619.33,
+       44.67
+      ]
+     ],
+     "start": 293536,
+     "end": 300544
+    },
+    {
+     "cue": "t0514",
+     "shape": "box",
+     "rects": [
+      [
+       1146.76,
+       223.61,
+       93.24,
+       28
+      ]
+     ],
+     "start": 300544,
+     "end": 304180
+    },
+    {
+     "cue": "t0514",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       187.35,
+       280,
+       86
+      ]
+     ],
+     "start": 305563,
+     "end": 311383
+    },
+    {
+     "cue": "t0511",
+     "shape": "underline",
+     "rects": [
+      [
+       1171.16,
+       72.92,
+       68.84,
+       14
+      ]
+     ],
+     "start": 316727,
+     "end": 322812
+    },
+    {
+     "cue": "t0511",
+     "shape": "band",
+     "rects": [
+      [
+       678.67,
+       152.11,
+       86.28,
+       98.38
+      ]
+     ],
+     "start": 322812,
+     "end": 330633
+    },
+    {
+     "cue": "t0511",
+     "shape": "underline",
+     "rects": [
+      [
+       1058.24,
+       191.91,
+       183.24,
+       16
+      ]
+     ],
+     "start": 330633,
+     "end": 337705
+    },
+    {
+     "cue": "t0511",
+     "shape": "underline",
+     "rects": [
+      [
+       788.95,
+       191.91,
+       73.29,
+       16
+      ]
+     ],
+     "start": 332847,
+     "end": 337705
+    },
+    {
+     "cue": "t0518",
+     "shape": "band",
+     "rects": [
+      [
+       978.24,
+       102.25,
+       68,
+       576.95
+      ]
+     ],
+     "start": 337705,
+     "end": 341444
+    },
+    {
+     "cue": "t0518",
+     "shape": "underline",
+     "rects": [
+      [
+       990.24,
+       316.95,
+       17.96,
+       16
+      ]
+     ],
+     "start": 341444,
+     "end": 343615
+    },
+    {
+     "cue": "t0518",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       187.59,
+       607.16,
+       52
+      ]
+     ],
+     "start": 344777,
+     "end": 363668
+    },
+    {
+     "cue": "t0512",
+     "shape": "underline",
+     "rects": [
+      [
+       832.57,
+       305.53,
+       81.64,
+       16.67
+      ]
+     ],
+     "start": 365383,
+     "end": 385672
+    },
+    {
+     "cue": "t0512",
+     "shape": "underline",
+     "rects": [
+      [
+       931.72,
+       305.53,
+       113.94,
+       16.67
+      ]
+     ],
+     "start": 365867,
+     "end": 385672
+    },
+    {
+     "cue": "t0513",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       303.19,
+       356.52,
+       20.79
+      ]
+     ],
+     "start": 387306,
+     "end": 396361
+    },
+    {
+     "cue": "t0513",
+     "shape": "box",
+     "rects": [
+      [
+       620.67,
+       149.58,
+       619.33,
+       261.03
+      ]
+     ],
+     "start": 398950,
+     "end": 401398
+    },
+    {
+     "cue": "t0513",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       540.02,
+       280,
+       86
+      ]
+     ],
+     "start": 401398,
+     "end": 412687
+    },
+    {
+     "cue": "t0515",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       194.52,
+       280,
+       32
+      ]
+     ],
+     "start": 412687,
+     "end": 413801
+    },
+    {
+     "cue": "t0516",
+     "shape": "underline",
+     "rects": [
+      [
+       367.17,
+       610.69,
+       68.3,
+       14
+      ]
+     ],
+     "start": 425946,
+     "end": 430527
+    },
+    {
+     "cue": "t0516",
+     "shape": "band",
+     "rects": [
+      [
+       620.67,
+       185.78,
+       619.33,
+       46.67
+      ]
+     ],
+     "start": 430527,
+     "end": 431327
+    }
+   ]
+  },
+  {
+   "키": "4e380c887974905d99701dd0",
+   "도구": "포털",
+   "take": "act04-rec1",
+   "from_ms": 1228981.0,
+   "to_ms": 1493700,
+   "frames": 7942,
+   "mode": "overlay",
+   "part": 6,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 1580814,
+   "end_url": null,
+   "end_tab": null,
+   "edge_age": [
+    10,
+    88
+   ],
+   "cues": [
+    {
+     "id": "t0601",
+     "text": "여기까지는 조치의 득실을 점수와 원으로 견줘 봤습니다. 그 득실은 생산이나 안전 같은 성과에서 생기죠. 이런 성과는 평소에 하나하나 KPI로 재서 목표에 닿았는지를 봐요. 그 KPI가 지금 얼마인지도 포털에 있습니다. 왼쪽 메뉴 맨 아래에 있는 시스템을 펼치고, 성과 지표를 엽니다.",
+     "time": 1228981,
+     "duration": 22800,
+     "actionStart": 1228985,
+     "actionEnd": 1251739,
+     "commit": 1249856,
+     "segment": 6
+    },
+    {
+     "id": "t0602",
+     "text": "여기 카드 하나가 KPI 하나, 목표에 얼마나 가까운지 재는 값 하나예요. 카드들이 내부 프로세스라는 이름 아래 모여 있는데, 이 이름이 BSC의 네 관점 가운데 하나입니다. 일이 잘 돌아가는지를 보는 관점이었죠.",
+     "time": 1253781,
+     "duration": 15920,
+     "actionStart": 1253783,
+     "actionEnd": 1260309,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t0611",
+     "text": "위쪽 숫자 네 칸은 KPI를 판정에 따라 센 거예요. 앞의 두 칸이 목표에 못 미친 KPI와 목표에 닿은 KPI의 수이고, 나머지 두 칸은 목표를 정해 두지 않았거나 아직 잴 기록이 없는 KPI입니다. 지금 눌려 있는 달성 칸의 KPI가 아래에 보여요.",
+     "time": 1271001,
+     "duration": 19440,
+     "actionStart": 1271005,
+     "actionEnd": 1286943,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t0603",
+     "text": "설비 가동률 카드를 볼게요. 큰 숫자가 실제값이고 옆의 퍼센트가 단위예요. 그 아래에는 목표값이 적혀 있어요. 이론에서 든 예와 같은 구십오 퍼센트입니다. 실제값이 목표보다 높아서 오른쪽 위에 달성이라고 붙었어요. 실제값과 목표의 차이로 달성했는지를 보는 거죠. 카드의 이름을 누르면 이 값을 어떻게 쟀는지가 나옵니다.",
+     "time": 1291741,
+     "duration": 25520,
+     "actionStart": 1291743,
+     "actionEnd": 1314551,
+     "commit": 1314296,
+     "segment": 6
+    },
+    {
+     "id": "t0604",
+     "text": "오른쪽에 열린 판에서 맨 위 작은 글씨에는 관점과, 이 KPI가 재는 전략 목표가 적혀 있어요. 설비 가용성 확보, 이론에서 설비를 멈추지 않고 돌린다고 한 목표예요. 지표 종류는 선행 지표, 결과보다 먼저 움직이는 지표입니다. 그 아래 받치는 목표에는 납기 신뢰가 적혀 있어요. 설비가 멈추지 않아야 주문을 제때 낸다는, 전략맵의 화살표 하나예요. 설비가 자주 서면 가동률이 먼저 떨어지고 납기는 그 뒤에 밀린다고 했죠.",
+     "time": 1319261,
+     "duration": 33680,
+     "actionStart": 1319263,
+     "actionEnd": 1338499,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t0605",
+     "text": "아래 계산 근거에는 식과 원천이 있어요. 식이 이 KPI의 정의입니다. 여기서는 설비를 지켜본 시간에서 보호 정지로 서 있던 시간을 빼고, 남은 시간이 전체의 몇 퍼센트인지로 가동률을 재요. 원천은 그 시간을 어느 기록에서 읽었는지를 알려 주고요. 이론에서 든 정의와는 재는 법이 조금 다르죠. 이렇게 공장마다 다를 수 있어서, 정의를 적어 두어야 누가 재도 같은 값이 나옵니다.",
+     "time": 1354242,
+     "duration": 28480,
+     "actionStart": 1354243,
+     "actionEnd": 1362324,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t0606",
+     "text": "옆 판을 닫으면 카드들 아래에 목표값 바꿔 보기라는 줄이 접혀 있어요. 펼치면 KPI마다 원래 목표와 시험 목표 칸이 나옵니다.",
+     "time": 1384021,
+     "duration": 10160,
+     "actionStart": 1384024,
+     "actionEnd": 1392426,
+     "commit": 1385303,
+     "segment": 6
+    },
+    {
+     "id": "t0607",
+     "text": "목표값은 공장이 자기 사정에 맞게 정해 두는 값이죠. 그 값을 다르게 잡으면 판정이 어떻게 되는지 볼게요. 이번에는 안전을 재는 KPI로 해 보겠습니다. 표 아래쪽에서 인터록 여유 줄을 찾으세요. 기름 온도가 인터록이 걸리는 값까지 얼마나 남았는지를 재는 KPI예요. 원래 목표는 십 도이고 지금 판정은 달성입니다. 시험 목표 칸에 이십을 넣고, 아래에 있는 시험 판정 단추를 누릅니다.",
+     "time": 1396181,
+     "duration": 30400,
+     "actionStart": 1396182,
+     "actionEnd": 1426539,
+     "commit": 1422761,
+     "segment": 6
+    },
+    {
+     "id": "t0608",
+     "text": "위쪽에 안내가 떴어요. 인터록 여유가 달성에서 미달로 바뀌었다고 적혀 있죠. 실제값은 그대로인데 목표를 십에서 이십으로 올렸더니 판정이 달라진 겁니다. 위쪽 숫자 칸의 미달도 하나 늘었고요. 달성인지 미달인지는 잰 값과 목표값을 견줘서 정하니까, 목표값을 어디에 두느냐에 따라 같은 실제값도 다르게 판정됩니다. 어떤 조치가 성과를 지켰다, 못 지켰다고 말할 때도 그 바탕에는 이렇게 정해 둔 목표값이 있는 거예요.",
+     "time": 1428580,
+     "duration": 32320,
+     "actionStart": 1428582,
+     "actionEnd": 1441180,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t0609",
+     "text": "안내에는 지식에 적힌 목표값은 읽기만 했고 그대로라는 말도 있습니다. 정말 그런지, 안내 끝에 있는 원래대로 단추를 눌러 볼게요.",
+     "time": 1462199,
+     "duration": 9920,
+     "actionStart": 1462202,
+     "actionEnd": 1471901,
+     "commit": 1471640,
+     "segment": 6
+    },
+    {
+     "id": "t0610",
+     "text": "미달로 넘어갔던 인터록 여유가 달성으로 돌아왔고, 카드에 적힌 목표도 십 도 그대로죠. 이 화면은 되돌릴 때 지식에서 목표값을 다시 읽어 옵니다. 그렇게 다시 읽어 온 값이 십 도이니, 지식에 든 목표값은 바뀌지 않은 거예요.",
+     "time": 1474119,
+     "duration": 17280,
+     "actionStart": 1474121,
+     "actionEnd": 1479118,
+     "commit": null,
+     "segment": 6
+    }
+   ],
+   "motions": [
+    {
+     "start": 1249363,
+     "end": 1249676,
+     "glide": 1249363,
+     "planned_ms": 313,
+     "start_delay_ms": 7,
+     "max_gap_ms": 50,
+     "frames": 14
+    },
+    {
+     "start": 1251078,
+     "end": 1251338,
+     "glide": 1251078,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 1254064,
+     "end": 1254382,
+     "glide": 1254064,
+     "planned_ms": 318,
+     "start_delay_ms": 6,
+     "max_gap_ms": 17,
+     "frames": 19
+    },
+    {
+     "start": 1260023,
+     "end": 1260288,
+     "glide": 1260023,
+     "planned_ms": 265,
+     "start_delay_ms": 13,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 1271224,
+     "end": 1271716,
+     "glide": 1271224,
+     "planned_ms": 492,
+     "start_delay_ms": 12,
+     "max_gap_ms": 67,
+     "frames": 25
+    },
+    {
+     "start": 1275055,
+     "end": 1275567,
+     "glide": 1275055,
+     "planned_ms": 512,
+     "start_delay_ms": 14,
+     "max_gap_ms": 50,
+     "frames": 28
+    },
+    {
+     "start": 1275837,
+     "end": 1276134,
+     "glide": 1275837,
+     "planned_ms": 297,
+     "start_delay_ms": 15,
+     "max_gap_ms": 50,
+     "frames": 9
+    },
+    {
+     "start": 1280427,
+     "end": 1280724,
+     "glide": 1280427,
+     "planned_ms": 297,
+     "start_delay_ms": 8,
+     "max_gap_ms": 50,
+     "frames": 15
+    },
+    {
+     "start": 1280998,
+     "end": 1281295,
+     "glide": 1280998,
+     "planned_ms": 297,
+     "start_delay_ms": 4,
+     "max_gap_ms": 100,
+     "frames": 9
+    },
+    {
+     "start": 1286479,
+     "end": 1286873,
+     "glide": 1286479,
+     "planned_ms": 394,
+     "start_delay_ms": 6,
+     "max_gap_ms": 67,
+     "frames": 18
+    },
+    {
+     "start": 1293962,
+     "end": 1294249,
+     "glide": 1293962,
+     "planned_ms": 287,
+     "start_delay_ms": 6,
+     "max_gap_ms": 17,
+     "frames": 17
+    },
+    {
+     "start": 1297661,
+     "end": 1297921,
+     "glide": 1297661,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 1307175,
+     "end": 1307464,
+     "glide": 1307175,
+     "planned_ms": 289,
+     "start_delay_ms": 9,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 1313858,
+     "end": 1314137,
+     "glide": 1313858,
+     "planned_ms": 279,
+     "start_delay_ms": 26,
+     "max_gap_ms": 33,
+     "frames": 11
+    },
+    {
+     "start": 1320919,
+     "end": 1321329,
+     "glide": 1320919,
+     "planned_ms": 410,
+     "start_delay_ms": 31,
+     "max_gap_ms": 33,
+     "frames": 18
+    },
+    {
+     "start": 1332709,
+     "end": 1332980,
+     "glide": 1332709,
+     "planned_ms": 271,
+     "start_delay_ms": 8,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 1338168,
+     "end": 1338428,
+     "glide": 1338168,
+     "planned_ms": 260,
+     "start_delay_ms": 15,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 1355670,
+     "end": 1355930,
+     "glide": 1355670,
+     "planned_ms": 260,
+     "start_delay_ms": 29,
+     "max_gap_ms": 50,
+     "frames": 8
+    },
+    {
+     "start": 1356211,
+     "end": 1356471,
+     "glide": 1356211,
+     "planned_ms": 260,
+     "start_delay_ms": 5,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 1362026,
+     "end": 1362286,
+     "glide": 1362026,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 1384661,
+     "end": 1385117,
+     "glide": 1384661,
+     "planned_ms": 456,
+     "start_delay_ms": 3,
+     "max_gap_ms": 67,
+     "frames": 18
+    },
+    {
+     "start": 1386423,
+     "end": 1387023,
+     "glide": 1386423,
+     "planned_ms": 600,
+     "start_delay_ms": 8,
+     "max_gap_ms": 100,
+     "frames": 28
+    },
+    {
+     "start": 1391368,
+     "end": 1391747,
+     "glide": 1391368,
+     "planned_ms": 379,
+     "start_delay_ms": 63,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 1391983,
+     "end": 1392398,
+     "glide": 1391983,
+     "planned_ms": 415,
+     "start_delay_ms": 14,
+     "max_gap_ms": 33,
+     "frames": 22
+    },
+    {
+     "start": 1410193,
+     "end": 1410583,
+     "glide": 1410193,
+     "planned_ms": 390,
+     "start_delay_ms": 20,
+     "max_gap_ms": 33,
+     "frames": 21
+    },
+    {
+     "start": 1417250,
+     "end": 1417599,
+     "glide": 1417250,
+     "planned_ms": 349,
+     "start_delay_ms": 13,
+     "max_gap_ms": 50,
+     "frames": 15
+    },
+    {
+     "start": 1419086,
+     "end": 1419435,
+     "glide": 1419086,
+     "planned_ms": 349,
+     "start_delay_ms": 10,
+     "max_gap_ms": 50,
+     "frames": 18
+    },
+    {
+     "start": 1422272,
+     "end": 1422595,
+     "glide": 1422272,
+     "planned_ms": 323,
+     "start_delay_ms": 41,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 1425766,
+     "end": 1426127,
+     "glide": 1425766,
+     "planned_ms": 361,
+     "start_delay_ms": 13,
+     "max_gap_ms": 31,
+     "frames": 20
+    },
+    {
+     "start": 1430223,
+     "end": 1430806,
+     "glide": 1430223,
+     "planned_ms": 583,
+     "start_delay_ms": 6,
+     "max_gap_ms": 33,
+     "frames": 31
+    },
+    {
+     "start": 1431505,
+     "end": 1431765,
+     "glide": 1431505,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 1432074,
+     "end": 1432409,
+     "glide": 1432074,
+     "planned_ms": 335,
+     "start_delay_ms": 5,
+     "max_gap_ms": 33,
+     "frames": 16
+    },
+    {
+     "start": 1436049,
+     "end": 1436384,
+     "glide": 1436049,
+     "planned_ms": 335,
+     "start_delay_ms": 13,
+     "max_gap_ms": 33,
+     "frames": 18
+    },
+    {
+     "start": 1440830,
+     "end": 1441090,
+     "glide": 1440830,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 17,
+     "frames": 15
+    },
+    {
+     "start": 1464547,
+     "end": 1464981,
+     "glide": 1464547,
+     "planned_ms": 434,
+     "start_delay_ms": 31,
+     "max_gap_ms": 33,
+     "frames": 22
+    },
+    {
+     "start": 1471060,
+     "end": 1471473,
+     "glide": 1471060,
+     "planned_ms": 413,
+     "start_delay_ms": 1,
+     "max_gap_ms": 33,
+     "frames": 24
+    },
+    {
+     "start": 1476341,
+     "end": 1476704,
+     "glide": 1476341,
+     "planned_ms": 363,
+     "start_delay_ms": 3,
+     "max_gap_ms": 33,
+     "frames": 18
+    },
+    {
+     "start": 1478835,
+     "end": 1479095,
+     "glide": 1478835,
+     "planned_ms": 260,
+     "start_delay_ms": 9,
+     "max_gap_ms": 50,
+     "frames": 13
+    }
+   ],
+   "clicks": [
+    {
+     "x": 228,
+     "y": 432,
+     "dx": 0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 205.0000114440918,
+     "y": 368,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 379.60418701171875,
+     "y": 419.125,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1248,
+     "y": 36,
+     "dx": 0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 406.78125,
+     "y": 578.3229370117188,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 830.6771240234375,
+     "y": 511.6458435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1220.0000839233398,
+     "y": 616.3125,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 379.88543701171875,
+     "y": 453.625,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ],
+   "highlights": [
+    {
+     "cue": "t0602",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       387.85,
+       306.67,
+       136.67
+      ]
+     ],
+     "start": 1254483,
+     "end": 1260309
+    },
+    {
+     "cue": "t0602",
+     "shape": "underline",
+     "rects": [
+      [
+       288,
+       357.46,
+       70.59,
+       16
+      ]
+     ],
+     "start": 1260309,
+     "end": 1271790
+    },
+    {
+     "cue": "t0611",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       210.4,
+       952,
+       112.67
+      ]
+     ],
+     "start": 1271791,
+     "end": 1275611
+    },
+    {
+     "cue": "t0611",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       210.4,
+       226,
+       112.67
+      ]
+     ],
+     "start": 1275611,
+     "end": 1280770
+    },
+    {
+     "cue": "t0611",
+     "shape": "box",
+     "rects": [
+      [
+       530,
+       210.4,
+       226,
+       112.67
+      ]
+     ],
+     "start": 1276210,
+     "end": 1280770
+    },
+    {
+     "cue": "t0611",
+     "shape": "box",
+     "rects": [
+      [
+       772,
+       210.4,
+       226,
+       112.67
+      ]
+     ],
+     "start": 1280770,
+     "end": 1286943
+    },
+    {
+     "cue": "t0611",
+     "shape": "box",
+     "rects": [
+      [
+       1014,
+       210.4,
+       226,
+       112.67
+      ]
+     ],
+     "start": 1281370,
+     "end": 1286943
+    },
+    {
+     "cue": "t0611",
+     "shape": "box",
+     "rects": [
+      [
+       530,
+       210.4,
+       226,
+       112.67
+      ]
+     ],
+     "start": 1286943,
+     "end": 1294284
+    },
+    {
+     "cue": "t0603",
+     "shape": "underline",
+     "rects": [
+      [
+       308.67,
+       439.85,
+       67.81,
+       33.33
+      ]
+     ],
+     "start": 1294284,
+     "end": 1297940
+    },
+    {
+     "cue": "t0603",
+     "shape": "underline",
+     "rects": [
+      [
+       308.67,
+       485.85,
+       55.59,
+       16
+      ]
+     ],
+     "start": 1297940,
+     "end": 1307489
+    },
+    {
+     "cue": "t0603",
+     "shape": "box",
+     "rects": [
+      [
+       537.42,
+       408.52,
+       36.58,
+       22
+      ]
+     ],
+     "start": 1307489,
+     "end": 1313665
+    },
+    {
+     "cue": "t0604",
+     "shape": "underline",
+     "rects": [
+      [
+       584,
+       52,
+       165.15,
+       16
+      ]
+     ],
+     "start": 1321385,
+     "end": 1333053
+    },
+    {
+     "cue": "t0604",
+     "shape": "band",
+     "rects": [
+      [
+       584,
+       186.65,
+       285.19,
+       16.67
+      ]
+     ],
+     "start": 1333053,
+     "end": 1355975
+    },
+    {
+     "cue": "t0604",
+     "shape": "band",
+     "rects": [
+      [
+       584,
+       215.04,
+       159.5,
+       16.67
+      ]
+     ],
+     "start": 1338499,
+     "end": 1355975
+    },
+    {
+     "cue": "t0605",
+     "shape": "band",
+     "rects": [
+      [
+       584,
+       297.44,
+       653.05,
+       39.06
+      ]
+     ],
+     "start": 1355975,
+     "end": 1362324
+    },
+    {
+     "cue": "t0605",
+     "shape": "band",
+     "rects": [
+      [
+       584,
+       348.23,
+       667.83,
+       39.06
+      ]
+     ],
+     "start": 1356565,
+     "end": 1362324
+    },
+    {
+     "cue": "t0605",
+     "shape": "underline",
+     "rects": [
+      [
+       799.4,
+       297.44,
+       66.95,
+       16.67
+      ]
+     ],
+     "start": 1362324,
+     "end": 1384448
+    },
+    {
+     "cue": "t0606",
+     "shape": "band",
+     "rects": [
+      [
+       312,
+       569.99,
+       90.78,
+       16.67
+      ]
+     ],
+     "start": 1387060,
+     "end": 1389448
+    },
+    {
+     "cue": "t0606",
+     "shape": "underline",
+     "rects": [
+      [
+       710.68,
+       146.57,
+       44,
+       14
+      ]
+     ],
+     "start": 1391781,
+     "end": 1409207
+    },
+    {
+     "cue": "t0606",
+     "shape": "underline",
+     "rects": [
+      [
+       770.68,
+       146.57,
+       44,
+       14
+      ]
+     ],
+     "start": 1392426,
+     "end": 1409207
+    },
+    {
+     "cue": "t0607",
+     "shape": "band",
+     "rects": [
+      [
+       312,
+       487.31,
+       928,
+       48.67
+      ]
+     ],
+     "start": 1410641,
+     "end": 1417644
+    },
+    {
+     "cue": "t0607",
+     "shape": "underline",
+     "rects": [
+      [
+       718.76,
+       502.98,
+       35.92,
+       16.67
+      ]
+     ],
+     "start": 1417644,
+     "end": 1419512
+    },
+    {
+     "cue": "t0607",
+     "shape": "underline",
+     "rects": [
+      [
+       1102.72,
+       502.98,
+       24.03,
+       16.67
+      ]
+     ],
+     "start": 1419512,
+     "end": 1422061
+    },
+    {
+     "cue": "t0608",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       288.4,
+       952,
+       193.9
+      ]
+     ],
+     "start": 1430839,
+     "end": 1431793
+    },
+    {
+     "cue": "t0608",
+     "shape": "underline",
+     "rects": [
+      [
+       589.51,
+       411.73,
+       37.27,
+       16
+      ]
+     ],
+     "start": 1431793,
+     "end": 1441180
+    },
+    {
+     "cue": "t0608",
+     "shape": "underline",
+     "rects": [
+      [
+       629.96,
+       411.73,
+       22.31,
+       16
+      ]
+     ],
+     "start": 1432441,
+     "end": 1441180
+    },
+    {
+     "cue": "t0608",
+     "shape": "underline",
+     "rects": [
+      [
+       505.88,
+       411.73,
+       54.92,
+       16
+      ]
+     ],
+     "start": 1436406,
+     "end": 1441180
+    },
+    {
+     "cue": "t0608",
+     "shape": "underline",
+     "rects": [
+      [
+       563.97,
+       411.73,
+       15.97,
+       16
+      ]
+     ],
+     "start": 1436829,
+     "end": 1441180
+    },
+    {
+     "cue": "t0608",
+     "shape": "box",
+     "rects": [
+      [
+       288,
+       175.73,
+       226,
+       112.67
+      ]
+     ],
+     "start": 1441180,
+     "end": 1465019
+    },
+    {
+     "cue": "t0609",
+     "shape": "underline",
+     "rects": [
+      [
+       523.48,
+       328.4,
+       372.99,
+       16.67
+      ]
+     ],
+     "start": 1465019,
+     "end": 1470859
+    },
+    {
+     "cue": "t0610",
+     "shape": "box",
+     "rects": [
+      [
+       610.67,
+       353.19,
+       306.67,
+       136.67
+      ]
+     ],
+     "start": 1476740,
+     "end": 1479117
+    },
+    {
+     "cue": "t0610",
+     "shape": "underline",
+     "rects": [
+      [
+       631.33,
+       451.19,
+       58.8,
+       16
+      ]
+     ],
+     "start": 1479117,
+     "end": 1479917
+    }
+   ]
+  },
+  {
+   "키": "e5f9406d9f278dfab9711be2",
+   "도구": "포털",
+   "take": "act04-rec1",
+   "from_ms": 1493700,
+   "to_ms": 1580814.0,
+   "frames": 2613,
+   "mode": "overlay",
+   "part": 7,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 1580814,
+   "end_url": "http://127.0.0.1:8088/#/trends",
+   "end_tab": null,
+   "edge_age": [
+    7,
+    143
+   ],
+   "cues": [
+    {
+     "id": "t0701",
+     "text": "지금까지 세 화면에서 값을 바꿔 봤습니다. 위약금과 KPI 목표는 되돌린 자리에서 그대로인 걸 확인했죠. 남은 건 원격 수동으로 넣어 봤던 운전 모드예요. 설비의 운전 모드가 실제로 어떤지 보러 가겠습니다. 왼쪽 메뉴에서 유압 설비를 눌러 펼치고, 실시간 모니터링을 엽니다.",
+     "time": 1493700,
+     "duration": 20320,
+     "actionStart": 1493703,
+     "actionEnd": 1515330,
+     "commit": 1511638,
+     "segment": 7
+    },
+    {
+     "id": "t0702",
+     "text": "첫 번째 설비 카드의 맨 위 줄을 보세요. 이름 옆에 운전 중이라고 적혀 있고, 그 옆의 운전 모드는 원격 자동입니다. 아까 원격 수동은 판단에 넣는 값으로만 썼고, 설비의 운전 모드는 바뀌지 않았어요.",
+     "time": 1517329,
+     "duration": 15840,
+     "actionStart": 1517337,
+     "actionEnd": 1524662,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t0704",
+     "text": "왼쪽 메뉴의 처리 건 옆에 새로 붙은 숫자도 없어요. 1회차에 고장을 냈을 때는 처리 건이 열리면서 여기에 숫자가 붙었죠. 설비에 실제로 조치가 가려면 그때처럼 경보가 나서 처리 건이 열리고, 담당자가 승인해야 합니다. 오늘 바꿔 본 건 그 길에 오르지 않는 What-if, 만약 이렇다면 하고 해 본 계산이었어요.",
+     "time": 1534469,
+     "duration": 22400,
+     "actionStart": 1534472,
+     "actionEnd": 1535678,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t0705",
+     "text": "오늘은 조치 하나가 추천되기까지 쓰이는 절차와 판단 규칙, 성과 기준을 포털에서 하나씩 찾아봤습니다. 운전 모드나 위약금, 목표값을 하나 바꿀 때마다 허용되는 조치와 순위, 판정이 달라졌죠. 그래서 추천안을 받으면 어떤 조건과 기준으로 계산한 결과인지를 근거에서 함께 확인해야 합니다.",
+     "time": 1558169,
+     "duration": 22240,
+     "actionStart": 1558171,
+     "actionEnd": 1558761,
+     "commit": null,
+     "segment": 7
+    }
+   ],
+   "motions": [
+    {
+     "start": 1511001,
+     "end": 1511426,
+     "glide": 1511001,
+     "planned_ms": 425,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 23
+    },
+    {
+     "start": 1513405,
+     "end": 1513665,
+     "glide": 1513405,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 1519014,
+     "end": 1519368,
+     "glide": 1519014,
+     "planned_ms": 354,
+     "start_delay_ms": 12,
+     "max_gap_ms": 50,
+     "frames": 13
+    },
+    {
+     "start": 1521542,
+     "end": 1521808,
+     "glide": 1521542,
+     "planned_ms": 266,
+     "start_delay_ms": 0,
+     "max_gap_ms": 67,
+     "frames": 11
+    },
+    {
+     "start": 1524296,
+     "end": 1524562,
+     "glide": 1524296,
+     "planned_ms": 266,
+     "start_delay_ms": 13,
+     "max_gap_ms": 50,
+     "frames": 9
+    },
+    {
+     "start": 1535315,
+     "end": 1535653,
+     "glide": 1535315,
+     "planned_ms": 338,
+     "start_delay_ms": 27,
+     "max_gap_ms": 50,
+     "frames": 14
+    },
+    {
+     "start": 1558408,
+     "end": 1558739,
+     "glide": 1558408,
+     "planned_ms": 331,
+     "start_delay_ms": 16,
+     "max_gap_ms": 83,
+     "frames": 10
+    }
+   ],
+   "clicks": [
+    {
+     "x": 228,
+     "y": 144,
+     "dx": 0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 205.0000114440918,
+     "y": 240,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    }
+   ],
+   "highlights": [
+    {
+     "cue": "t0702",
+     "shape": "band",
+     "rects": [
+      [
+       308.67,
+       183.06,
+       265.33,
+       22
+      ]
+     ],
+     "start": 1519440,
+     "end": 1521898
+    },
+    {
+     "cue": "t0702",
+     "shape": "box",
+     "rects": [
+      [
+       368.02,
+       183.06,
+       49.71,
+       22
+      ]
+     ],
+     "start": 1521898,
+     "end": 1524662
+    },
+    {
+     "cue": "t0702",
+     "shape": "underline",
+     "rects": [
+      [
+       526.21,
+       185.45,
+       47.79,
+       16
+      ]
+     ],
+     "start": 1524662,
+     "end": 1535678
+    },
+    {
+     "cue": "t0704",
+     "shape": "box",
+     "rects": [
+      [
+       8,
+       320,
+       240,
+       32
+      ]
+     ],
+     "start": 1535678,
+     "end": 1558408
+    }
+   ]
+  }
+ ],
+ "mp4": {
+  "sha256": "20435d707e94ceb38eea1864d57ebd69d869a139db7d05a889d8d0c161664140",
+  "video_packets": 47684,
+  "bytes": 71351755
+ }
+}
