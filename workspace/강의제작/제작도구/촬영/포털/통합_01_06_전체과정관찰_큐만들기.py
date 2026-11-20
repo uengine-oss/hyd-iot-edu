@@ -117,7 +117,7 @@ OPS = {
            H(BUS, 'box', '가운데 칸을', keep=True), H(AGENT, 'box', '오른쪽 AI', keep=True),
            H(ZTAG('OT'), 'underline', 'OT, DMZ'), H(ZTAG('DMZ'), 'underline', 'DMZ, IT가', keep=True), H(ZTAG('IT'), 'underline', 'IT가 차례로', keep=True),
            H(ZTAG('OT'), 'underline', '공장 안 OT에서'), H(ZTAG('DMZ'), 'underline', '중간 구역', keep=True), H(ZTAG('IT'), 'underline', '사무실 쪽', keep=True),
-           H(ZONE('값이 지나는 길'), 'underline', '이론에서 올라간다고')],      # 영역 꼬리표 셋(main.js BUS의 zone) — 2026-11-20 이론의 세 보안 영역을 화면에서 짚는다
+           H(ZONE('값이 지나는 길'), 'underline', '이론에서는 아래에서')],      # 영역 꼬리표 셋(main.js BUS의 zone) — 2026-11-20 이론의 세 보안 영역을 화면에서 짚는다
  'v0606': [H(AGENT, 'box', '오른쪽 한가운데가'), H(NODE('증상 · 유온 상승', anchor='left'), 'box', '둘레의 점들은'),      # 증상 점은 글 끝 오른쪽이 아래 「원인 · 쿨러 핀 오염」을 덮어 점 왼쪽을 짚는다
            H(NODE('고장 유형 · 냉각 상실'), 'box', '고장 유형,', keep=True), H(NODE('원인 · 쿨러 핀 오염'), 'box', '원인 같은', keep=True),
            H(AGENT, 'box', 'AI 에이전트는')],
@@ -269,7 +269,7 @@ OPS = {
  # 카드는 홈 첫 화면에서 아래가 잘려(카드 아래끝 약 778px) 테두리를 그릴 수 없으므로 v0608처럼 카드 넷이 다 보이게 굴린 뒤 두른다
  'v0654': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='1건 처리 완료'), 10), SC(T(STAGES, bottom=12), '아래 결과 보기'),
            H(T(f'{STAGE(4)} .stat-value', also=[{'css': STAGE(4)}]), 'box'), H(T(f'{STAGE(4)} .stat-value'), 'underline', '처리 완료로')],
- 'v0655': [H(T('#mainStages a.stat[data-go-tab="scenario"] .go'), 'underline', '결함 시뮬레이션에서')],
+ 'v0655': [H(T('#mainStages a.stat[data-go-tab="scenario"] .go'), 'underline', '여기 결함 시뮬레이션에')],
  # 앞 큐의 밑줄을 지우고, 「큰 흐름」을 단계 카드 넷(v0608 「지금 본 흐름을 일의 차례대로 나눠 놓은 것」)으로 두른 채 끝낸다
  'v0659': [H(CARDS, 'box', '큰 흐름을')],
 }
