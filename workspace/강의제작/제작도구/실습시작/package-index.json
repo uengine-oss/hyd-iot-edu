@@ -12,17 +12,6 @@
       "entry": "neo4j"
     },
     {
-      "id": "practical-02-map",
-      "course": "실전반",
-      "session": "온라인 02회차",
-      "title": "기준 설비 지식의 실제 연결 구조 확인하기",
-      "version": "2026-11-07-map-video",
-      "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "ab645248dc90e57b91a204c15263da0e9ed35f6e516a440efbe52ca875e66a0e",
-      "entry": "guide"
-    },
-    {
       "id": "practical-02-conditions",
       "course": "실전반",
       "session": "온라인 02회차",
@@ -95,16 +84,6 @@
         "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab_guide.html",
         "sha256": "bf96fdf2c2dea9bd68879ca2236c24201bd2489c50a22971ee7eabdab73b0a98"
       }
-    },
-    {
-      "id": "practical-03-whatif",
-      "course": "실전반",
-      "session": "온라인 03회차",
-      "title": "조건을 바꿔 조치 결과 비교하기",
-      "version": "2026-11-07-zip-only",
-      "folder": "03회차/랩/03일차_실습1_조치결과비교",
-      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
-      "sha256": "3383e5c6b2ca4bfb3c92c14a5cc5304b38056a343a9693ce9479e0eeb46189df"
     },
     {
       "id": "practical-03-manual",

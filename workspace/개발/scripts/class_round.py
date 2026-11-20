@@ -1565,7 +1565,7 @@ def onto(r: Round, asset: str = "HYD-01") -> dict:
     return {"stats": txt(r, "#ontoStats"), "nodes": len(g["nodes"]), "edges": len(g["edges"]), "labels": label_counts(g), "graph": g}
 
 
-@lab("03", [("통합", "설비 지식의 구조와 연결 관계 탐색하기"), ("실전", "기준 설비 지식의 실제 연결 구조 확인하기")])
+@lab("03", [("통합", "설비 지식의 구조와 연결 관계 탐색하기"), ("실전", "설비 지식의 구조와 연결 관계 탐색하기")])
 def lab_03_ontology(r: Round):
     resolve_rows(r, "03")
     o = onto(r)
@@ -1589,7 +1589,7 @@ def lab_03_ontology(r: Round):
     link.click(); r.page.wait_for_timeout(800)
     after = txt(r, "#ontoNode")
     r.check("연결을 누르면 오른쪽 패널이 그 노드(이름)로 바뀐다", bool(name) and name in after and after != panel, f"{target} → {name} · 패널 {after[:80]}")
-    # 실전 21: 한 부품을 사용하는 설비를 찾는다 — 화면 패널의 들어오는 연결과 그래프 API 가 같은가(연결이 있다 ≠ 재고가 있다)
+    # 부품 노드: 그 부품을 쓰는 쪽(들어오는 연결)이 화면 패널과 그래프 API 에서 같은가
     part = next((e["to"] for e in o["graph"]["edges"] if e["to"].startswith("part:") and e["type"] in ("USES_PART", "HAS_PART", "INVOLVES_PART")), None)
     if part:
         if not kg_pick(r, part, next(n["name"] for n in o["graph"]["nodes"] if n["id"] == part)):
@@ -1620,7 +1620,7 @@ def lab_03_ontology(r: Round):
             f"빠짐 {lack}" if lack else f"조치 방법 {len(want['sop'])} · 고장 유형 {len(want['fm'])}")
 
 
-# ====================================================================== 04 통합 31 · 실전 25 · 실전 32
+# ====================================================================== 04 통합 31 · 실전 31
 def decide_screen(r: Round, **facts) -> str:
     r.tab("decision")
     r.wait(20, lambda: r.page.locator("#decPattern option").count() > 0, every=1)
@@ -1637,8 +1637,7 @@ def decide_screen(r: Round, **facts) -> str:
     return txt(r, "#decResult", 5000, required=True)
 
 
-@lab("04", [("통합", "운전 조건과 성과 기준에 따른 조치 결과 비교하기"), ("실전", "포털에서 절차와 판단 조건이 나뉘어 쓰이는 모습 확인하기"),
-            ("실전", "운전 조건을 바꿔 조치의 우선순위와 성과 비교하기")])
+@lab("04", [("통합", "운전 조건과 성과 기준에 따른 조치 결과 비교하기"), ("실전", "운전 조건과 성과 기준에 따른 조치 결과 비교하기")])
 def lab_04_rules_whatif_kpi(r: Round):
     resolve_rows(r, "04")
     ent_before = ent(r)
@@ -1756,7 +1755,7 @@ def lab_04_rules_whatif_kpi(r: Round):
     r.check("시험값 · 시험 목표를 되돌린 뒤 원본(업무 DB · 지식 · KPI)이 그대로", not changed, "바뀐 곳: " + (", ".join(changed) or "없음"), kind="exception", axis=AXES[1])
 
 
-# ====================================================================== 05 통합 39 · 실전 35
+# ====================================================================== 05 통합 39 · 실전 34
 @lab("05", [("통합", "현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기"), ("실전", "현장 매뉴얼을 검토해 근거 있는 지식으로 등록하기")])
 def lab_05_manual_to_knowledge(r: Round):
     resolve_rows(r, "05")
@@ -1810,7 +1809,7 @@ def lab_05_manual_to_knowledge(r: Round):
                 break
             trail.append(link.inner_text()); link.click(); page.wait_for_timeout(400)
     r.check("지식 지도: 팬 최대 운전 → 단계 → 근거 절 → HM-8 문서(원문 출처)", len(trail) == 3 and "HM-8" in trail[-1], " → ".join(trail))
-    # 실전 35: 데이터 연결에서 설비 · 질문을 골라 질의를 직접 실행 — 문서의 기준값과 업무 DB · 시계열 현재값을 나란히
+    # 실전 34: 데이터 연결에서 설비 · 질문을 골라 질의를 직접 실행 — 문서의 기준값과 업무 DB · 시계열 현재값을 나란히
     fabric_query(r, "데이터 연결")
 
 
@@ -1927,7 +1926,7 @@ def lab_06_legacy_db(r: Round):
         r.human("옛 DB 뜻 복원(AI)은 수업에서 막히고 까닭이 사람 글로(악용 지점 아님 — PBL 기능)", meaning.get_attribute("title") or "", axis=AXES[1])
 
 
-# ====================================================================== 07 통합 50 · 실전 44
+# ====================================================================== 07 통합 50 · 실전 43
 @lab("07", [("통합", "업무 에이전트를 구성하고 질문의 도구·근거 확인하기"), ("실전", "업무 에이전트를 구성하고 질문의 도구·근거 확인하기")])
 def lab_07_first_agent(r: Round):
     resolve_rows(r, "07")
@@ -2112,7 +2111,7 @@ def lab_08_trends(r: Round):
         restore_and_close(r, pid)
 
 
-# ====================================================================== 09 통합 62 · 실전 47
+# ====================================================================== 09 통합 62 · 실전 46
 SKILL_MARK = "확인할 항목:"
 MY_SKILL = "cooler-evidence-check"
 
@@ -2205,7 +2204,7 @@ def lab_09_skill(r: Round):
                   f"{x.get('ai')} · {x.get('state')} · {x.get('message')}")
 
 
-# ====================================================================== 10 통합 63 · 실전 50
+# ====================================================================== 10 통합 63 · 실전 49
 def mcp_select(r: Round, name: str):
     r.tab("mcp")
     page = r.page
@@ -2312,7 +2311,7 @@ def lab_10_mcp_tools(r: Round):
         r.not_measure("PBL 단계 개인 도구 서버 등록 · 써 보기", "학생 랩 시작본 서버가 main 에 없음 — PBL 수업에서 확인")
 
 
-# ====================================================================== 11 통합 72 · 실전 57
+# ====================================================================== 11 통합 72 · 실전 56
 @lab("11", [("통합", "사람의 확인이 실제 업무 결과를 바꾸는 과정 확인하기"), ("실전", "사람 승인에 따라 업무가 달라지는 과정 확인하기")])
 def lab_11_human(r: Round):
     resolve_rows(r, "11")
@@ -2371,7 +2370,7 @@ def lab_11_human(r: Round):
         restore_and_close(r, pid)
 
 
-# ====================================================================== 12 통합 83 · 실전 62
+# ====================================================================== 12 통합 83 · 실전 61
 @lab("12", [("통합", "같은 입력으로 에이전트 판단을 비교하고 기대 결과로 채점하기"), ("실전", "같은 입력으로 판단을 비교하고 기대 결과로 채점하기")])
 def lab_12_compare_eval(r: Round):
     resolve_rows(r, "12")
@@ -2507,7 +2506,7 @@ def lab_12_compare_eval(r: Round):
             and len(r.get(f"{r.process}/api/eval/runs?limit=50")) == len(runs), "", axis=AXES[1])
 
 
-# ====================================================================== 13 통합 98 · 실전 76
+# ====================================================================== 13 통합 98 · 실전 75
 CLASS_STEPS = {"c3_cooling": ("T_agent", "T_approve", "T_cmd", "T_reobs"), "c3_pm": ("T_agent", "T_approve", "T_wo"), "c3_spare": ("T_agent", "T_approve", "T_po", "T_gr")}
 
 
@@ -2618,7 +2617,7 @@ def lab_13_flow_mapping(r: Round):
     r.keyless("키 없는 PC: 이 실행의 「단계 설정」이 매번 시작 · 단계의 종류를 그렸다", bool(opened) and all(opened), f"열기 {opened}")
 
 
-# ====================================================================== 14 통합 99 · 실전 78
+# ====================================================================== 14 통합 99 · 실전 77
 @lab("14", [("통합", "실제 설비 이벤트로 프로세스를 실행하고 처리 이력 확인하기"), ("실전", "실제 설비 이벤트로 프로세스의 처리 결과 검증하기")])
 def lab_14_history(r: Round):
     resolve_rows(r, "14")
@@ -2876,7 +2875,7 @@ def lab_16_spare(r: Round):
     biz_round(r, "spare", "HYD-03", effects)
 
 
-# ====================================================================== 17 통합 116~119 · 실전 95~98 교대 인수인계
+# ====================================================================== 17 통합 116~119 · 실전 94~97 교대 인수인계
 def h_submit(r: Round, pid, task, values, *, expect_done=True):
     """교대 검토는 실제 작업함 폼으로 제출한다(인계자 · 인수자 역할 모두 담당자가 맡는다 — 제출하는 사람은 화면이 싣는다)."""
     open_task(r, pid, task['id'])
