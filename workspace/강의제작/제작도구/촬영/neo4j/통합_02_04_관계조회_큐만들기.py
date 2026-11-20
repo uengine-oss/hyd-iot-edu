@@ -26,6 +26,8 @@ CELLS_FILE = HERE / '통합반_관계조회_칸.json'
 OUT = HERE / '통합_02_04_관계조회_큐.json'
 VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
 # 큐 파일 맨 위 comma_pause_before_english: 대본에서 꾸밈말 뒤 영어 낱말 앞에 둔 쉼표를 음성에 보낼 때 말줄임표로 바꾼다(포털 voice.py said() — eleven_v4는 쉼표에서 거의 쉬지 않는다, 사용자 2026-11-20 「첫줄 match 이런거 좀 쉼을 여우있게」)
+# read_as: 대본 글자는 두고 음성에 보낼 때만 그 소리로 읽힌다(DB를 「디, 비」로 끊어 읽어 — 사용자 2026-11-20 「DB를 왜 끊어서 말하지」)
+READ_AS = {'DB': '디비'}
 GAP_NAMES = {'잇기': 0.6, '큐': 1.3, '결과 뒤': 2.0, '구간': 2.3}      # 영상 V-14 실습 값
 SHAPES = {'밑줄': 'underline', '띠': 'band', '테두리': 'box'}
 FIRST_GAP = 300
@@ -316,10 +318,10 @@ def main():
         if a not in order or z not in order or order.index(a) > order.index(z):
             sys.exit(f'--고르기 범위가 큐 차례에 없다: {PICK[0]}')
         part = cues[order.index(a):order.index(z) + 1]
-        write(PICK[1], {'voice_id': VOICE, 'model_id': MODEL, 'comma_pause_before_english': True, 'note': f'{OUT.name}의 {PICK[0]} 사본(--고르기)', 'cues': part})
+        write(PICK[1], {'voice_id': VOICE, 'model_id': MODEL, 'comma_pause_before_english': True, 'read_as': READ_AS, 'note': f'{OUT.name}의 {PICK[0]} 사본(--고르기)', 'cues': part})
         print(f'{PICK[0]}: 큐 {len(part)} · 구간 {sorted({c["segment"] for c in part})} · 글자 {sum(len(c["text"]) for c in part)} → {PICK[1]}')
         return
-    write(OUT, {'voice_id': VOICE, 'model_id': MODEL, 'comma_pause_before_english': True,
+    write(OUT, {'voice_id': VOICE, 'model_id': MODEL, 'comma_pause_before_english': True, 'read_as': READ_AS,
                 'note': f'2회차 실습 04 관계조회(통합반 2회차 04 · 실전반 2회차 05 공통). {SRC.name}에서 {Path(__file__).name}로 만든다 — 손으로 고치지 않는다. '
                         '녹화기 record_graph_lesson.mjs(대상 찾기 mark_targets.mjs). gap은 앞 말과 앞 조작이 끝난 뒤 이 말을 시작할 때까지의 ms(영상 V-14).',
                 'cues': cues})
