@@ -43,7 +43,7 @@ def EDGE(a, b, *more): return {'cy': f'{a}>{b}', **({'also': [{'cy': f'{x}>{y}'}
 
 
 # 지식 지도 화면
-SUB = T('#view-ontology .page-head p', phrase='AI가 판단할 때 읽는 온톨로지입니다.', anchor='below')
+SUB = T('#view-ontology .page-head p', phrase='AI가 판단할 때 읽는 지식 그래프입니다.', anchor='below')
 STATS = lambda phrase: T('#ontoStats', phrase=phrase, anchor='below')      # 글 끝 오른쪽을 짚으면 같은 줄의 다음 숫자를 덮는다 — 구절 바로 밑
 SEARCH = '#ontoSearch'
 ASSET = T('#ontoAsset', anchor='center', dy=24)      # 누르지 않고 짚을 때는 칸 바로 밑(칸 위에 올리면 마우스 올림 테두리가 생긴다)
@@ -100,7 +100,7 @@ OPS = {
  'k0501': [H(KIND('구성 요소'), 'underline', '오일 쿨러의'), H(NID(), 'underline', '이름 밑의 식별자도'), H(NID('comp', **MID), 'underline', '쌍점 앞이'),
            H(ROW('다른 이름'), 'band', '다른 이름이라는 칸도'), H(T(f'{KV} dd', phrase='열교환기'), 'underline', '열교환기라고도')],
  'k0502': [P(CY(COOLER), '나가는 묶음은'), P(CY('sen:ce')), H(CY('head:R:MONITORED_BY'), 'underline'), H(CY('head:R:USES_PART'), 'underline', keep=True),
-           H(GBOX('out', TS1), 'box', '관측 센서 묶음은'), H(GBOX('out', PART), 'box', '교체 부품 묶음은'),
+           H(GBOX('out', TS1), 'box', '감시 센서 묶음은'), H(GBOX('out', PART), 'box', '교체 부품 묶음은'),
            H(GBOX('out', TS1), 'box', '이 쿨러는 센서'), H(GBOX('out', PART), 'box', '부품 하나를')],
  'k0503': [H(GBOX('in', A1), 'box', '이번에는'), H(GHEAD('in', A1, '설비'), 'underline', '설비라고'), H(CHIPP(A1), 'underline', '유압 파워팩이'),
            H(GNOTE('in', A1), 'underline', '오른쪽 끝에는'), P(CY(A1), '가진다라는 관계를'), H(EDGE(A1, COOLER), 'box')],
@@ -110,8 +110,8 @@ OPS = {
  'k0602': [H(ROW('단위'), 'band', '단위 칸에'), H(GBOX('in', COOLER), 'box', '관계를 건너'), H(ROW('단위'), 'band', '이 노드의 칸에서')],
  'k0601': [H(T(KV), 'box', '나머지 칸도'), H(ROW('가상 값'), 'band', '가상 값 칸에'), H(ROW('태그'), 'band', '태그는'), H(NID(), 'underline', '식별자와는')],
  'k0603': [H(NAME('유온 센서'), 'band', '센서 값이'), H(GBOX('in', SYM), 'box', '증상 묶음이에요'), H(GHEAD('in', SYM, '증상'), 'underline', '건너편 증상이'), H(CHIPP(SYM), 'underline', '유온 상승은')],
- 'k0605': [H(GBOX('in', COOLER), 'box', '바로 위'), H(GBOX('in', SYM), 'box', '둘 다 이 센서에', keep=True)],
- 'k0606': [H(GNOTE('in', COOLER), 'underline', '오른쪽 끝의'), H(GNOTE('in', SYM), 'underline', keep=True)],
+ 'k0605': [H(GBOX('in', COOLER), 'box', '바로 위'), H(GBOX('in', SYM), 'box', '둘 다 이 센서에', keep=True),
+           H(GNOTE('in', COOLER), 'underline', '관계 이름이 다릅니다'), H(GNOTE('in', SYM), 'underline', keep=True)],
  'k0604': [P(CHIPP(SYM), '여기서부터'), C(CHIP(SYM), '누릅니다'), *OPENED(SYM, 'head:R:INDICATES')],
  # 7. 증상에서 부품까지 — 1회차에 본 길
  'k0701': [H(KIND('설비 진단', **MID), 'underline', '판 맨 위'), H(GBOX('out', FM), 'box', '나가는 쪽에는'), C(CHIP(FM), '누를게요'), *OPENED(FM, 'head:R:OCCURS_IN')],

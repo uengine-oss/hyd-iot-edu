@@ -6,10 +6,12 @@
   늘 같은 자리에 놓이는지, 겹친 상태의 글자가 캔버스 바탕과 대비되는지, 관계 이름이 한국어인지를 잰다.
 
 enterprise.js 는 실릴 때 화면 요소를 찾으므로 node 시험은 브라우저 쪽만 최소 대역(요소 · 탭 표)으로 두고 실제 모듈을 싣는다."""
+import json
 import math
 import re
 
 import pytest
+from conftest import ROOT
 from www_node import run
 
 # 브라우저 대역: 어떤 요소를 찾아도 같은 빈 요소, 바깥 요청은 실패. 화면 모듈 코드는 그대로 돈다
@@ -40,6 +42,19 @@ def test_구매_카드의_공급사는_그_카드가_정한_견적의_업무_DB_
     got = run(FILES, "out([hydCards.actionLabel({ code: 'PR_CREATE', value: 'sup:c' }, DATA), hydCards.actionLabel({ code: 'PR_CREATE', value: 'sup:a' }, DATA)])",
               option, prelude=PRELUDE)
     assert got == ['구매 요청 대성유압', '구매 요청 sup:a']
+
+
+def test_관계_종류마다_따로_쓴_한국어_이름이_있어_다른_관계를_같은_이름으로_읽지_않는다():
+    """오른쪽 판은 이어진 항목을 관계 이름으로 묶어 보인다 — 유온 센서 판에서 쿨러 쪽(MONITORED_BY)과 증상 쪽(OBSERVED_BY) 묶음이 둘 다
+    「관측 센서」로 보여, 서로 다른 관계 유형을 같은 관계로 읽게 했다. 스키마의 관계 종류마다 이름이 있고, 두 종류가 한 이름을 함께 쓰지 않는다."""
+    names = run(FILES, "out(RELATION_KO)", prelude=PRELUDE)
+    types = [r['type'] for r in json.loads((ROOT / 'it' / 'neo4j' / 'v2' / 'schema.json').read_text(encoding='utf-8'))['relationships']]
+    assert [t for t in types if not names.get(t)] == []
+    shared = {}
+    for t, name in names.items():
+        shared.setdefault(name, []).append(t)
+    assert {name: ts for name, ts in shared.items() if len(ts) > 1} == {}
+    assert names['MONITORED_BY'] == '감시 센서' and names['OBSERVED_BY'] == '관측 센서'
 
 
 # ------------------------------------------------------------------ 지식 지도의 판정(DOM 없이 도는 부분)
