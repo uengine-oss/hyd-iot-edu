@@ -105,7 +105,7 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-VIDEO = '작업/촬영/neo4j/관계조회-04-합본4/관계조회-04-최종_1080p.mp4'   # 이 take로 만든 최종 영상(근거에 해시를 남겨 어느 영상의 화면인지 잇는다)
+VIDEO = '작업/촬영/neo4j/관계조회-04-말고침/관계조회-04-최종_1080p.mp4'   # 이 take로 만든 최종 영상(근거에 해시를 남겨 어느 영상의 화면인지 잇는다)
 
 
 def main():
