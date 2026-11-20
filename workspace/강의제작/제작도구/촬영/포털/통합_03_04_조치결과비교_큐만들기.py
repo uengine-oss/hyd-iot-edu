@@ -238,7 +238,7 @@ OPS = {
            H(T(WOPT), 'box', '표가 기준 값으로'), H(FVBOX(PEN), 'box', '왼쪽 칸도')],
  # [기준 다시 계산]은 결과와 왼쪽 칸을 지웠다가 다시 그린다(약 5초) — 「1순위가 바뀌는 값」의 단추가 다시 뜰 때까지 기다린다
  't0515': [H(T('#wiLoad', exact='기준 다시 계산', anchor='right'), 'box', '기준 다시 계산 단추를'), C(T('#wiLoad'), '누르면'), LONG(T(BGO), 40), W(T(WHEAD, exact=BASE_SAYS), 5), SCROLL(T(WOPT), top=150)],
- 't0516': [H(T(f'{FV(PEN)} .field-hint', phrase='120 만원/시간'), 'underline', '칸 아래를')],
+ 't0516': [H(T(f'{FV(PEN)} .field-hint', phrase='120 만원/시간'), 'underline', '칸 아래를'), H(T(f'{WOPT} tbody tr:first-child'), 'band', '표의 금액이')],
  # 6. 성과 지표 — KPI 목표를 바꿔 판정 보기
  't0601': [C(MENU('system'), '펼치고'), C(TAB('kpi'), '엽니다'), LONG(T(f'{K} .kpi-stats'), 40), W(T(f'{K} [data-kpi-period="24h"][aria-pressed="true"]'), 5),
            W(T(f'{K} [data-kpi-group="missed"] .stat-value', exact='0개'), 5), W(T(f'{K} [data-kpi-group="met"][aria-pressed="true"]'), 5)],
