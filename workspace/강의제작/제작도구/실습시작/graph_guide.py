@@ -17,20 +17,22 @@ def check(text):
     return '<p class="check">'+text+'</p>'
 
 
-def figure(name, caption):
-    return f'<figure><a href="images/{name}.jpg" target="_blank"><img src="images/{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
+def figure(name, caption, show=True):
+    """사진 하나. show=False면 설명 글을 사진 대체 글로만 두고 아래에는 「누르면 크게 보기」만 쓴다 — 바로 위 글 · 확인 줄이 이미 말한 것을 되풀이하지 않게(가이드 P-5)."""
+    return (f'<figure><a href="images/{name}.jpg" target="_blank"><img src="images/{name}.jpg" alt="{caption}"></a>'
+            f'<figcaption>{caption + " · " if show else ""}누르면 크게 보기</figcaption></figure>')
 
 
 class Shots:
-    """사진 자리. 랩 폴더 images/에 그 사진이 있으면 그림으로 싣고, 없으면 싣지 않고 missing에 남긴다.
+    """사진 자리. 사진 폴더(folder/images/)에 그 사진이 있으면 그림으로 싣고, 없으면 싣지 않고 missing에 남긴다.
     미촬영 자리가 남은 판은 게시하지 않는다(가이드 P-8) — 생성기가 끝에 그 목록을 찍는다."""
     def __init__(self, folder):
         self.folder, self.used, self.missing = folder, [], []
 
-    def __call__(self, name, caption):
+    def __call__(self, name, caption, show=True):
         if (self.folder/'images'/f'{name}.jpg').is_file():
             self.used.append(name)
-            return figure(name, caption)
+            return figure(name, caption, show)
         self.missing.append((name, caption))
         return ''
 
@@ -78,15 +80,6 @@ def sections(spec, prepare):
       ('전체 지도에서 정리하고 저장하기', '<p>처음의 전체 지도를 다시 열어 지금까지 본 가지의 자리를 확인하고, 그림과 실행한 문장을 저장합니다. '+CLEAR+'</p>'+q('전체 지도에서 정리')+''+check('오른쪽 세 구성 요소 밑이 지금까지 따라간 센서 · 물리량과 부품 가지입니다. 왼쪽의 작동유 탱크, 구동 모터, 예비 펌프 밑으로는 아무것도 없어서 센서 집계 표에도 없었습니다.')+'<p>정보 창을 닫고 '+FIT+'으로 화면을 맞춘 뒤, 쿼리 결과 오른쪽 위 내려받기 단추('+b('Download as PNG')+')를 누르세요. 받은 파일은 브라우저 위쪽 받은 파일 목록에서 눌러 열 수 있습니다.</p>'+img('png', '쿼리 결과 오른쪽 위의 내려받기 단추(Download as PNG)')+'<p>Neo4j Browser로 돌아와 왼쪽 패널을 펼치고 위에서 두 번째 단추 '+b('Queries')+'를 누릅니다. 위 입력칸에서 돌린 문장은 여기 저절로 남지 않고 새 탭에 적은 것만 보관되므로, 위 탭 줄의 '+b('+')+'로 새 쿼리 탭을 엽니다.</p>'+img('queries', '왼쪽 Queries 단추와 탭 줄의 더하기 단추')+'<p>새 탭에 다음 글을 붙여 넣습니다. 첫 줄 <code>// 설비 연결 탐색</code>이 목록에 보이는 이름이 됩니다. 둘째·셋째 줄의 개수와 식별자는 위에서 직접 확인한 값입니다.</p>'+block('cypher_tab', spec['saved_query'])+check('처음 붙이면 Discover more actions 안내 창이 뜹니다. '+b('OK, got it')+'으로 닫으면 왼쪽 '+b('Drafts')+' 아래에 설비 연결 탐색이 보입니다.')+'<p>탭 이름 옆 '+b('×')+'로 탭을 닫고, 왼쪽 목록의 설비 연결 탐색을 눌러 다시 엽니다.</p>'+check('작성한 문장과 확인 기록이 그대로 보입니다.')+img('saved', '다시 연 쿼리 탭과 Drafts 목록의 설비 연결 탐색')+'<p>이 목록은 지금 쓰는 브라우저 안에만 저장돼 다른 컴퓨터에서는 보이지 않습니다. '+b('Queries')+' 제목 오른쪽의 내려받기 단추를 눌러 CSV 파일로도 받아 두세요. 다른 컴퓨터에서는 바로 옆 올리기 단추로 이 파일을 다시 불러옵니다.</p>'+check('보관한 쿼리가 CSV 파일 하나로 받아집니다.')+img('csv', 'Queries 제목 오른쪽의 내려받기 단추와 옆 올리기 단추'))]
 
 
-def cypher_file(spec):
-    """랩 폴더의 기본문법_연습.cypher: 안내 문서의 칸을 같은 차례로 담는다."""
-    lines = ['// 가이드의 쿼리를 절 번호 · 칸 차례대로 담았습니다. Neo4j Browser 입력칸에서 한 칸씩 돌립니다.',
-             '// 2-1의 CREATE는 한 번만 돌립니다. 다시 돌리면 같은 노드가 둘 더 생깁니다.']
-    for c in spec['cells']:
-        lines += ['', f"// {c['id']}", c['query']]
-    return '\n'.join(lines) + '\n'
-
-
 def integrated_relations(spec, shot):
     """관계 조회 가이드(두 과정 공통 — 2회차 실습 04 영상 「관계조회-04」를 따른다): (여는 글, [(절 제목, HTML)]). 절 번호는 page()가 01부터 붙인다.
     01은 준비 · 연결 · 들어 있는 것 보기, 02~11은 칸 원고의 절 번호(2-1 ~ 11-3)이고 영상의 차례와 같다. 글은 「무엇을 하면 → 무엇이 나온다」와 한두 문장의 까닭만 두고,
@@ -98,28 +91,27 @@ def integrated_relations(spec, shot):
         return block('cypher', by_id[n])
     run = '입력칸 오른쪽 끝의 '+b('Run')
     intro = ('Cypher 쿼리를 Neo4j Browser에서 직접 돌려 봅니다. 예제 DB에 노드와 관계를 만들고, 찾고, 고치고, 지운 다음, '
-             '처음부터 들어 있던 설비 데이터에서 관계를 한 번, 두 번 건너 답을 꺼내고 그 답이 맞는지 원래 행과 맞춰 봅니다. 줄기 단계 가운데 온톨로지 단계입니다.')
+             '처음부터 들어 있던 설비 데이터에서 관계를 한 번, 두 번 건너 답을 꺼내고, 조건 없이 받은 행과 맞춰 그 답이 맞는지 봅니다. 온톨로지 → 에이전트 → 프로세스 가운데 온톨로지를 다루는 실습입니다.')
     prepare = ('예제 준비하고 연결하기',
         '<p>먼저 '+b('Docker Desktop')+'을 켭니다. 이 실습의 DB가 Docker에서 돌아갑니다.</p>'
-        '<p>명령과 쿼리는 칸 아래의 '+b('복사')+' 단추로 붙여 넣으세요. 손으로 옮기면 따옴표 하나만 빠져도 돌지 않습니다. '
-        '같은 쿼리가 차례대로 실습 폴더의 <a href="기본문법_연습.cypher">기본문법_연습.cypher</a>에도 들어 있습니다.</p>'
-        '<p>클래스룸 02회차 실습 자료에서 받은 ZIP의 압축을 풀고, 풀린 <code>02회차/랩/02일차_실습1_관계조회</code> 폴더를 파일 탐색기로 엽니다. 주소 표시줄에 powershell을 넣고 Enter를 누르면 그 폴더에서 PowerShell이 열립니다.</p>'
-        +shot('00-explorer', '실습 폴더 주소 표시줄에 powershell을 넣은 모습')
-        +'<p>두 명령을 차례로 실행하세요.</p>'
+        '<p>명령과 쿼리는 칸 아래 '+b('복사')+' 단추로 복사해 붙여 넣으세요. 손으로 옮기면 따옴표 하나만 빠져도 돌지 않습니다.</p>'
+        '<p>클래스룸 02회차 실습 자료에서 받은 ZIP의 압축을 풀고, prepare_example.py와 lab_db.py가 들어 있는 <code>02일차_실습1_관계조회</code> 폴더(이 가이드가 든 폴더)를 파일 탐색기로 엽니다. 주소 표시줄에 powershell을 넣고 Enter를 누르면 그 폴더에서 PowerShell이 열립니다.</p>'
+        +shot('00-explorer', '실습 폴더 주소 표시줄에 powershell을 넣은 모습', False)
+        +'<p>두 명령을 차례로 실행하세요. 첫 명령은 DB를 띄우고 예제를 넣는 동안 아무 글 없이 잠시 기다리니, 창을 닫지 말고 끝날 때까지 둡니다.</p>'
         +block('shell', 'python prepare_example.py')+check('예제 준비 완료: 노드 20개 · 관계 19개가 나옵니다.')
-        +block('shell', 'python lab_db.py')+check('랩 DB 준비 완료와 Connect URL 주소가 나오고, 브라우저에 Neo4j Browser의 연결 창이 열립니다.')
-        +shot('00-powershell', '두 명령의 출력. 포트 번호는 PC마다 다릅니다')
-        +'<p>연결 창의 주소와 사용자 이름은 이미 채워져 있습니다. '+b('Password')+'는 비워 둔 채 '+b('Connect')+'를 누르세요.</p>'
+        +block('shell', 'python lab_db.py')+check('랩 DB 준비 완료와 Connect URL 주소가 나오고, 브라우저에 Neo4j Browser의 연결 창이 열립니다. 여기서 랩 DB는 방금 띄운 예제 DB를 가리킵니다.')
+        +shot('00-powershell', '두 명령의 출력. 이 사진과 아래 연결 창 사진은 다른 때 찍어 끝 숫자가 다릅니다 — 내 화면의 두 숫자를 견주세요')
+        +'<p>연결 창의 주소와 사용자 이름은 이미 채워져 있습니다. 이 DB는 비밀번호 없이 띄웠으니(PowerShell 출력의 Password: 비워 둠) '+b('Password')+'는 비워 둔 채 '+b('Connect')+'를 누르세요.</p>'
         +shot('q01-connect', '채워진 주소 · 사용자 칸, 빈 Password 칸과 Connect 단추')
         +'<p>새 기능 안내 창('+b('Work in tabs')+')이 뜨면 '+b('Dismiss')+'로 닫습니다.</p>'
         +shot('q01-dismiss', 'Work in tabs 안내 창의 Dismiss 단추')
-        +'<p>맨 위 '+b('Instance')+' 주소의 끝 숫자가 PowerShell의 Connect URL 끝 숫자와 같은지 봅니다. 같으면 방금 띄운 예제 DB에 붙은 것입니다. '
+        +'<p>맨 위 '+b('Instance')+'(지금 연결한 DB를 가리키는 화면 글자) 주소의 끝 숫자가 PowerShell의 Connect URL 끝 숫자와 같은지 봅니다. 같으면 방금 띄운 예제 DB에 붙은 것입니다. '
         '포털의 지식 지도가 담긴 DB는 주소가 다른 DB라서, 여기서 무엇을 만들고 지워도 포털의 지식은 바뀌지 않습니다.</p>'
         +shot('q01-address', '맨 위 Instance 주소의 끝 숫자')
         +'<p>왼쪽 맨 위의 원통 모양 단추를 누르면 이 DB에 무엇이 들어 있는지 나옵니다. 색깔 단추가 레이블, 그 아래가 관계 유형, 맨 아래가 속성 이름입니다.</p>'
         +check('Nodes (20), Relationships (19)가 나옵니다.')
         +shot('q01-overview', '원통 모양 단추와 Nodes (20) · Relationships (19)')
-        +'<p>'+b('Stream')+' 바로 왼쪽 단추로 이 패널을 접어 결과 자리를 넓힙니다.</p>'
+        +'<p>'+b('Stream')+' 바로 왼쪽 단추로 이 패널을 접어 결과 자리를 넓힙니다. 아래 넓은 칸의 시작 안내 카드는 쓰지 않으니 그냥 둡니다. 쿼리는 맨 위 입력칸에만 넣습니다.</p>'
         +shot('q01-collapse', 'Stream 왼쪽의 패널 접기 단추'))
     body = [prepare,
       ('노드 만들기: CREATE',
@@ -127,33 +119,33 @@ def integrated_relations(spec, shot):
         +shot('q02-paste', '맨 위 입력칸에 붙여 넣은 CREATE 쿼리와 오른쪽 끝의 Run')
         +'<p>'+run+'을 한 번만 누르세요. 다시 누르면 같은 노드가 둘 더 생깁니다.</p>'
         +check('Created 2 nodes, set 6 properties, added 2 labels가 나옵니다.')
-        +shot('q02-created', '결과 아래 글 Created 2 nodes')),
+        +shot('q02-created', '결과 아래 글 Created 2 nodes', False)),
       ('찾아서 돌려받기: MATCH · RETURN',
         '<p>만든 노드를 찾아 돌려받습니다. 쿼리는 늘 '+run+'으로 돌립니다. 결과마다 붙은 Run은 그 쿼리를 한 번 더 돌리는 단추라, 잘못 누르면 앞의 CREATE가 또 돌아갑니다.</p>'+q('3-1')
         +check('원 둘(연습 펌프 · 연습 팬)이 그려지고 선은 없습니다.')
-        +shot('q03-graph', '원 둘, 선 없음')
+        +shot('q03-graph', '원 둘, 선 없음', False)
         +'<p>원 '+b('연습 펌프')+'를 누르면 오른쪽에 그 노드의 레이블과 속성이 나옵니다.</p>'
         +check('PracticeDevice 이름표 아래 id basic-A, name 연습 펌프, score 40이 있습니다. 맨 윗줄 &lt;id&gt;는 Neo4j가 노드마다 매기는 번호라 쿼리에 적은 id와 다릅니다.')
         +shot('q03-details', '연습 펌프를 누른 뒤 오른쪽 Node details')
-        +'<p>결과 왼쪽의 '+b('Table')+'을 누르면 같은 결과가 표로 바뀝니다. 찾은 노드 하나가 한 행입니다. '+b('Graph')+'를 누르면 그림으로 돌아옵니다.</p>'
-        +shot('q03-table', 'Table로 바꾼 두 행짜리 표')
+        +'<p>결과 칸 왼쪽 위의 '+b('Table')+'을 누르면 같은 결과가 표로 바뀝니다. 찾은 노드 하나가 한 행입니다. '+b('Graph')+'를 누르면 그림으로 돌아옵니다.</p>'
+        +shot('q03-table', '결과 칸 왼쪽 위의 Table과 두 행짜리 표')
         +'<p>이번에는 노드 대신 속성 값만 받습니다. AS 뒤 낱말이 표의 열 이름이 되고, ORDER BY가 늘어놓는 차례를 정합니다.</p>'+q('3-2')
         +check('표만 나옵니다. 이름 · 점수 열에 연습 펌프 40, 연습 팬 70 차례입니다.')
-        +shot('q03-values', '이름 · 점수 열의 두 행')),
+        +shot('q03-values', '이름 · 점수 열의 두 행', False)),
       ('조건 더하기: WHERE',
         '<p>WHERE로 점수가 50 이상인 노드만 찾습니다.</p>'+q('4-1')
         +check('연습 팬 하나만 나옵니다. 연습 펌프는 이번 결과에서 빠졌을 뿐 DB에는 남아 있습니다.')
-        +shot('q04-where', 'WHERE 결과: 연습 팬 하나')),
+        +shot('q04-where', 'WHERE 결과: 연습 팬 하나', False)),
       ('있으면 찾고 없으면 만들기: MERGE · SET, 관계 잇기',
-        '<p>펌프에 달 센서를 만듭니다. MERGE는 적은 패턴이 있으면 찾고, 없을 때만 만듭니다. 괄호 안에는 이 센서만 가리키는 아이디만 적고, 이름과 단위는 SET 줄에 적었습니다.</p>'+q('5-1')
+        '<p>펌프에 달 센서를 만듭니다. MERGE는 적은 패턴이 있으면 찾고, 없을 때만 만듭니다. 괄호 안에 적은 것이 모두 같아야 같은 노드로 보기 때문에, 괄호에는 식별자인 id만 적고 이름과 단위는 SET 줄에 적었습니다.</p>'+q('5-1')
         +check('연습 온도 센서 원 하나가 나오고, 아래 글에 Created 1 node가 있습니다. 없던 센서라 만들었습니다.')
-        +shot('q05-merge-new', '첫 MERGE 결과와 아래 글 Created 1 node')
+        +shot('q05-merge-new', '첫 MERGE 결과와 아래 글 Created 1 node', False)
         +'<p>같은 쿼리를 한 번 더 돌립니다.</p>'+q('5-2')
-        +check('아래 글이 Set 2 properties뿐이고 Created가 없습니다. 이미 있는 센서를 찾기만 했습니다.')
-        +shot('q05-merge-again', '같은 MERGE를 다시 돌린 결과: Set 2 properties')
-        +'<p>펌프와 센서를 아이디로 하나씩 찾아 MONITORED_BY 관계로 잇습니다. 관계 이름은 HAS_COMPONENT처럼 영어 대문자와 밑줄로 적습니다.</p>'+q('5-3')
-        +check('펌프에서 센서로 가는 화살표가 하나 생기고, 선 위에 MONITORED_BY가 적혀 있습니다.')
-        +shot('q05-linked', '펌프에서 센서로 가는 MONITORED_BY 화살표')),
+        +check('아래 글이 Set 2 properties뿐이고 Created가 없습니다. 새로 만들지 않고 이미 있는 센서를 찾아, SET이 같은 이름과 단위를 다시 적었습니다.')
+        +shot('q05-merge-again', '같은 MERGE를 다시 돌린 결과: Set 2 properties', False)
+        +'<p>펌프와 센서를 id로 하나씩 찾아, 펌프가 이 센서로 감시된다는 뜻의 관계 유형 MONITORED_BY로 펌프에서 센서로 잇습니다.</p>'+q('5-3')
+        +check('펌프에서 센서로 가는 화살표가 하나 생기고, 선 위에 MONITORED_BY가 적혀 있습니다. 오른쪽 목록에도 MONITORED_BY (1)이 보입니다.')
+        +shot('q05-linked', '펌프에서 센서로 가는 MONITORED_BY 화살표와 오른쪽 목록', False)),
       ('속성 고치기: SET',
         '<p>펌프에서 MONITORED_BY를 건너 닿는 센서를 찾아 이름을 연습 유온 센서로 고칩니다.</p>'+q('6-1')
         +'<p>바뀐 센서 원을 눌러 오른쪽 속성을 봅니다.</p>'
@@ -162,41 +154,42 @@ def integrated_relations(spec, shot):
       ('지우고 다시 찾기: DETACH DELETE · DELETE',
         '<p>지운 것은 되돌릴 수 없으니, 맨 위 주소의 끝 숫자가 예제 DB의 숫자인지 한 번 더 보고 시작합니다.</p>'
         '<p>펌프는 센서와 관계로 이어져 있어 DELETE만으로는 지워지지 않습니다. DETACH DELETE는 붙은 관계를 떼어 함께 지웁니다.</p>'+q('7-1')
-        +check('Deleted 1 node, deleted 1 relationship이 나옵니다.')
-        +shot('q07-detach', 'Deleted 1 node, deleted 1 relationship')
-        +'<p>무엇이 남았는지 다시 찾습니다. 레이블 사이의 세로줄은 「또는」입니다.</p>'+q('7-2')
+        +check('Deleted 1 node, deleted 1 relationship이 나옵니다. 그 아래에 아직 보이는 펌프 그림은 지우기 전에 돌린 결과가 남은 것입니다. 결과 칸은 돌릴 때마다 위에 쌓이니, 지금 무엇이 남았는지는 다음 칸으로 다시 찾습니다.')
+        +shot('q07-detach', 'Deleted 1 node, deleted 1 relationship', False)
+        +'<p>레이블 사이의 세로줄은 「또는」입니다.</p>'+q('7-2')
         +check('연습 팬과 연습 유온 센서만 남고 선은 없습니다.')
-        +shot('q07-left', '펌프를 지운 뒤 남은 둘')
+        +shot('q07-left', '펌프를 지운 뒤 남은 둘', False)
         +'<p>남은 둘은 관계가 없어 DELETE로 지워집니다.</p>'+q('7-3')
         +check('Deleted 2 nodes가 나옵니다.')
         +'<p>count로 몇 개 남았는지 셉니다.</p>'+q('7-4')
-        +check('남은수 0이 나옵니다. 아래에 아직 보이는 원은 지우기 전에 돌린 결과가 남은 것이라 지금 DB와는 상관없습니다.')
-        +shot('q07-zero', '남은수 0')),
+        +check('남은수 0이 나옵니다.')
+        +shot('q07-zero', '남은수 0', False)),
       ('설비 데이터를 레이블마다 세기',
         '<p>이제 처음부터 들어 있던 설비 데이터를 봅니다. 레이블이 같은 것끼리 묶어 셉니다.</p>'+q('8-1')
-        +check('Component 6, Sensor 5, StateVariable 5, Part 3, Asset 1의 다섯 행입니다. 더하면 20으로, 처음에 본 노드 수와 같습니다.')
-        +shot('q08-labels', '레이블마다 센 다섯 행')),
+        +check('레이블은 ["Component"]처럼 대괄호와 따옴표에 싸여 나오니 안의 낱말만 봅니다. Component 6, Sensor 5, StateVariable 5, Part 3, Asset 1의 다섯 행이고, 더하면 처음 본 노드 수 20과 같아 설비 데이터는 그대로입니다.')
+        +shot('q08-labels', '레이블마다 센 다섯 행', False)),
       ('관계를 한 번 건너기: 한 단계',
         '<p>설비 HYD-01에서 HAS_COMPONENT를 한 번 건너 구성 요소의 이름을 받습니다.</p>'+q('9-1')
         +check('작동유 탱크, 구동 모터, 예비 펌프 (B), 주 펌프 (A), 쿨러 팬, 오일 쿨러의 여섯 행입니다.')
-        +shot('q09-one-hop', '구성 요소 이름 여섯 행')),
+        +shot('q09-one-hop', '구성 요소 이름 여섯 행', False)),
       ('관계를 두 번 건너기: 경로',
         '<p>구성 요소에서 USES_PART를 한 번 더 건너 부품까지 갑니다. 맨 앞의 path = 는 길 전체를 path라는 이름으로 받는다는 뜻입니다.</p>'+q('10-1')
-        +check('설비 하나, 구성 요소 셋, 부품 셋이 이어진 그림입니다. 부품까지 이어진 구성 요소만 나와서 구성 요소가 셋입니다.')
-        +shot('q10-path', '설비 · 구성 요소 셋 · 부품 셋의 경로')
+        +check('오른쪽 목록에 Asset (1) · Component (3) · Part (3)이 나옵니다. 구성 요소는 여섯인데 셋만 나온 것은 부품까지 이어진 구성 요소만 찾았기 때문입니다.')
+        +shot('q10-path', '설비 · 구성 요소 셋 · 부품 셋의 경로와 오른쪽 목록', False)
         +'<p>같은 패턴에 오일 쿨러라는 조건을 걸고 부품의 이름과 품번을 받습니다.</p>'+q('10-2')
         +check('오일 쿨러 · 쿨러 코어 · P-CLR-CORE 한 행입니다.')
-        +shot('q10-part', '오일 쿨러의 부품과 품번')),
+        +shot('q10-part', '오일 쿨러의 부품과 품번', False)),
       ('답이 맞는지 맞춰 보기: 원래 행 · 조건 · 집계',
-        '<p>쿼리는 조건을 잘못 적어도 오류 없이 그럴듯한 표를 내놓습니다. 그래서 나온 답을 원래 행과 맞춰 봅니다. 먼저 구성 요소에 MONITORED_BY로 이어진 센서를 조건 없이 받습니다.</p>'+q('11-1')
-        +check('다섯 행이 나오고, 맨 위 오일 쿨러 · 냉각 효율 (가상)만 가상이 TRUE입니다. 이 다섯 행이 원래 행입니다.')
-        +shot('q11-rows', '원래 행 다섯, 첫 행만 TRUE')
-        +'<p>다음 칸을 돌리기 전에 답을 정해 둡니다. 가상이 false인 것만 받으면 첫 행이 빠지고 네 행이 남아야 합니다.</p>'+q('11-2')
+        '<p>쿼리는 조건을 잘못 적어도 오류 없이 그럴듯한 표를 내놓습니다. 그래서 조건을 걸거나 세기 전에 받은 행(원래 행)과 맞춰 봅니다. 먼저 구성 요소에 MONITORED_BY로 이어진 센서를 조건 없이 받습니다.</p>'+q('11-1')
+        +check('다섯 행이 원래 행입니다. 가상 열은 계산으로 낸 값이면 TRUE, 실제로 달린 센서면 FALSE이고, 맨 위 오일 쿨러 · 냉각 효율 (가상)만 TRUE입니다.')
+        +shot('q11-rows', '원래 행 다섯, 첫 행만 TRUE', False)
+        +'<p>이번에는 실제로 달린 센서만 받습니다. 돌리기 전에 답을 정해 둡니다. 가상이 false인 것만 받으면 첫 행이 빠지고 네 행이 남아야 합니다.</p>'+q('11-2')
         +check('네 행이 나오고 가상 열이 모두 FALSE입니다. 정해 둔 답과 같습니다.')
-        +shot('q11-where', '조건을 건 네 행')
+        +shot('q11-where', '조건을 건 네 행', False)
         +'<p>이번에는 구성 요소마다 센서를 셉니다. count는 묶음마다 수를 세고, collect는 그 묶음의 센서 이름을 한 줄로 모읍니다.</p>'+q('11-3')
-        +check('오일 쿨러 2, 주 펌프 (A) 2, 쿨러 팬 1이고, 오른쪽 목록의 이름 수가 왼쪽 숫자와 같습니다. 오일 쿨러의 2에는 계산값인 냉각 효율 (가상)이 들어 있어, 실제로 달린 센서만 세려면 WHERE로 가상을 뺀 뒤에 셉니다.')
-        +shot('q11-aggregate', '구성 요소마다 센서 수와 센서 목록'))]
+        +check('오일 쿨러 2, 주 펌프 (A) 2, 쿨러 팬 1이고, 오른쪽 목록의 이름 수가 왼쪽 숫자와 같습니다. 오일 쿨러의 2에는 계산값인 냉각 효율 (가상)이 들어 있어, 실제로 달린 센서 수보다 하나 많습니다. '
+               '그리고 이 표에는 센서가 달린 구성 요소 셋만 나옵니다. 센서가 없는 셋은 0인 행도 없이 빠집니다.')
+        +shot('q11-aggregate', '구성 요소마다 센서 수와 센서 목록', False))]
     ids = [c['id'] for c in spec['cells']]
     if used != ids:
         raise SystemExit(f'가이드의 칸 차례가 원고와 다르다 — 원고 {ids}, 가이드 {used}')

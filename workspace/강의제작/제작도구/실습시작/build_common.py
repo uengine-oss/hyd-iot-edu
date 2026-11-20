@@ -20,13 +20,15 @@ for course,slug in active_courses:
             for filename in ('lab_db.py', 'prepare_example.py'):
                 shutil.copy2(HERE/filename, folder/filename)
             # 두 과정 공통 영상(2회차 실습 04 = 실전반 05, 「관계조회-04」)의 칸 차례(2-1 ~ 11-3). 원고는 촬영/neo4j/통합반_관계조회_칸.json(영상이 넣은 쿼리와 같은 글),
-            # 사진은 촬영/neo4j/사진_만들기.py가 그 영상의 녹화 프레임에서 뽑아 두 과정 images/에 같은 바이트로 둔다.
-            from graph_guide import Shots, cypher_file, integrated_relations
+            # 사진은 촬영/neo4j/사진_만들기.py가 그 영상의 녹화 프레임에서 뽑아 촬영/neo4j/가이드사진/images/에 두고, guide.html 안에 data: 주소로 넣는다
+            # (lab_package.inline_images — 학생이 ZIP을 풀지 않고 그 안에서 가이드를 열어도 사진이 깨지지 않게). 랩 폴더에는 사진 파일을 두지 않는다.
+            from graph_guide import Shots, integrated_relations
+            from lab_package import inline_images
+            photos=ROOT/'workspace/강의제작/제작도구/촬영/neo4j/가이드사진'
             spec=json.loads((ROOT/'workspace/강의제작/제작도구/촬영/neo4j/통합반_관계조회_칸.json').read_text(encoding='utf-8'))
-            shot=Shots(folder)
+            shot=Shots(photos)
             relations_intro,sections=integrated_relations(spec,shot)
             shot.report()
-            write(folder/'기본문법_연습.cypher',cypher_file(spec))
             relations_version='2026-11-20-relations-04'
             # 종전 생성기의 고정 파일만 정리한다. 학생 폴더와 실제 화면 사진은 대상이 아니다.
             for filename in ('AGENTS.md','CLAUDE.md','.github/copilot-instructions.md','조회_기록.md',
@@ -226,8 +228,12 @@ for course,slug in active_courses:
             pack_page(folder)
             dropped.append(f'{slug}-02-{kind}')
             continue
-        write(folder/'guide.html',page(title,relations_intro,sections,blocks=True))
+        write(folder/'guide.html',inline_images(page(title,relations_intro,sections,blocks=True),photos))
         (folder/'안내.html').unlink(missing_ok=True)   # 옛 영상이 「안내 문서」로 부르던 같은 바이트 사본 — 새 영상은 가이드를 부르지 않아 하나만 둔다
+        for unused in ('예제_그래프.json','기본문법_연습.cypher'):
+            (folder/unused).unlink(missing_ok=True)   # 가이드도 스크립트도 읽지 않는 옛 파일(가이드 P-13 — 학생이 읽을 것만. 쿼리 모음은 통째로 돌리면 뒤 단계 결과가 가이드와 달라진다)
+        if (folder/'images').is_dir():
+            shutil.rmtree(folder/'images')   # 사진은 guide.html 안에 들었다
         pack(folder)
         built.append(entry(f'{slug}-02-{kind}',course,'온라인 02회차',title,relations_version,folder,entry='neo4j'))
 register(built,drop=dropped)

@@ -1,4 +1,4 @@
-// 교육용 별도 랩 DB에만 적용. HYD 기준 DB에 실행하지 않는다.
+// 이 실습 폴더의 랩 DB에만 적용한다. 포털이 쓰는 DB에는 실행하지 않는다.
 CREATE CONSTRAINT lab02_asset_id IF NOT EXISTS FOR (n:Asset) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT lab02_component_id IF NOT EXISTS FOR (n:Component) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT lab02_sensor_id IF NOT EXISTS FOR (n:Sensor) REQUIRE n.id IS UNIQUE;
