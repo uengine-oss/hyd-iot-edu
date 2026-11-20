@@ -316,7 +316,7 @@ def check_highlights(take, hs, lo, hi, mode, scale, W, H):
     for i, h in enumerate(hs, 1):
         at = f"{take}: 큐 {h.get('cue')} 강조 {i}번({h.get('shape')})"
         s, e = h.get('start'), h.get('end')
-        if s is None or s >= hi or (e is not None and s < e <= lo):
+        if s is None or s >= hi or (e is not None and e <= lo):      # 쓰는 범위 밖(뒤 · 앞)의 강조는 보지 않는다 — 앞쪽의 길이 0 강조도(그 구간을 다시 찍어 바꿔 끼울 때)
             continue
         if e is None or e <= s:
             raise RuntimeError(f'{at} — 끝 시각 {e}ms가 시작 {s}ms보다 이르거나 같다(끝이 없다)')
