@@ -955,13 +955,13 @@
    "id": "g0601",
    "segment": 6,
    "section": "6. 조건 더하기 — WHERE",
-   "text": "찾은 것 가운데 일부만 받고 싶을 때는 WHERE로 조건을 더한다고 했죠. 그 WHERE를 한 줄 넣은 쿼리입니다.",
+   "text": "찾은 것 가운데 일부만 받고 싶을 때는 WHERE로 조건을 더한다고 했죠. 아까 노드를 찾던 쿼리에 WHERE 줄을 하나 더해 볼게요.",
    "gap": 2300,
    "ops": [
     {
      "op": "query",
      "query": "MATCH (n:연습장치)\nWHERE n.score >= 50\nRETURN n;",
-     "at": 0.6562
+     "at": 0.7467
     },
     {
      "op": "mark",
@@ -969,7 +969,7 @@
       {
        "css": "[data-testid=\"run-button\"]",
        "under": true,
-       "at": 0.6562
+       "at": 0.7467
       }
      ]
     }
