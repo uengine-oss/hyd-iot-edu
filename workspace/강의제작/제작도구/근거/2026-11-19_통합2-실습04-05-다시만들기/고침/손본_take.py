@@ -1,9 +1,10 @@
 """녹화 take를 그대로 두고, 걸린 곳만 손본 사본 take를 만든다(공통 C-6 「합본에서 손봄」 — 다시 찍지 않는다).
-사용(클라우드 python3): python3 손본_take.py <work 폴더> <원본 take> <새 take> [--미리보기 <폴더>]
+사용(클라우드 python3): python3 손본_take.py <work 폴더> <원본 take> <새 take> [--미리보기 <폴더>] [--음성교체 <encode.py에 줄 음성교체 json>]
 하는 일 셋(이 셋 밖은 원본과 같다 — 프레임은 원본 파일을 가리키는 링크, 고친 프레임만 새 파일):
  1. 입력칸 설명 창 덮기: 큐마다 정한 상자(프레임 px) 안이 그 큐의 기준 프레임(창이 뜨기 직전)과 다른 프레임만, 그 상자를 기준 프레임의 같은 자리로 덮는다.
     창이 사라진 뒤 첫 프레임의 상자가 기준과 같아야 한다(그 사이 창 아래 글이 바뀌지 않았다는 증거) — 다르면 멈춘다.
  2. 강조 끝: 그 큐의 말 끝보다 늦게 끝나는 강조는 말 끝에서 끝낸다(다음 큐가 다른 것을 말하는 동안 남지 않게 — 영상 V-11, 녹화기는 이제 녹화 때 이렇게 한다).
+    --음성교체를 주면, 붙임 「뒤」(원래 시작에 놓는 고친 음성)인 큐의 말 끝은 새 음성 길이로 잰다(짧아진 말 뒤에 강조가 남지 않게).
  3. 빼는 강조: 0.2초도 안 떠서 번쩍임으로만 보이는 강조(큐 · 모양 · 길이로 고른다)를 뺀다.
 화살표 이동 · 클릭 · 큐 시각은 손대지 않는다."""
 import json, os, sys, shutil
@@ -79,6 +80,13 @@ def main():
         else:
             os.symlink(os.path.relpath(S / f['file'], out.parent), out)
     said_end = {a['id']: a['time'] + a['duration'] for a in t['actions']}
+    if '--음성교체' in sys.argv:
+        ovf = Path(sys.argv[sys.argv.index('--음성교체') + 1]).resolve()
+        for o in json.loads(ovf.read_text(encoding='utf-8')):
+            if o.get('붙임') == '뒤':
+                a = next(a for a in t['actions'] if abs(a['time'] - o['time']) < 5)
+                new = json.loads((ovf.parent / o['file']).resolve().with_suffix('.json').read_text(encoding='utf-8'))['duration_ms']
+                said_end[a['id']] = a['time'] + min(new, a['duration'])
     hs, cut, dropped = [], 0, []
     for h in t['highlights']:
         if any(h['cue'] == c and h['shape'] == sh and h['end'] - h['start'] < ms for c, sh, ms in DROP):
