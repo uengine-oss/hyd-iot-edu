@@ -2,6 +2,9 @@
  "voice_id": "tlxL9ilynpbOVf9sZXKh",
  "model_id": "eleven_v4",
  "comma_pause_before_english": true,
+ "read_as": {
+  "DB": "디비"
+ },
  "note": "2회차 실습 04 관계조회(통합반 2회차 04 · 실전반 2회차 05 공통). 04_실습_관계조회.md에서 통합_02_04_관계조회_큐만들기.py로 만든다 — 손으로 고치지 않는다. 녹화기 record_graph_lesson.mjs(대상 찾기 mark_targets.mjs). gap은 앞 말과 앞 조작이 끝난 뒤 이 말을 시작할 때까지의 ms(영상 V-14).",
  "cues": [
   {

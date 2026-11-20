@@ -6,7 +6,9 @@
 음성에 보내는 글은 큐 글(대본 글자 · 화면 글자 그대로)을 said()로 바꾼 것이고(대본 S-7), 보낸 글은 <큐id>.json의 said에 남긴다. 캐시는 큐 글로 맞춘다.
   밑줄로 이은 이름은 eleven_v4가 밑줄을 「underscore」로 소리 내므로(옛 Neo4j 음성 r1207 MONITORED_BY → 「Monitored underscore by」, 2026-11-20 받아쓰기) 낱말마다 띄어 보내고
   (HAS_COMPONENT → Has Component), 붙여 쓴 이름은 띄운다(StateVariable → State Variable). 대문자로만 된 낱말은 그대로 보낸다 — 같은 받아쓰기에서 CREATE · RETURN · ORDER BY ·
-  DETACH DELETE는 낱말로 읽혔고, 약어(GQL · MCP · DB)를 고치면 글자로 읽어야 할 것이 낱말이 된다. 새 목소리에서 대문자 낱말이 한 글자씩 읽히면 그 낱말을 여기에 더한다.
+  DETACH DELETE는 낱말로 읽혔고, 약어(GQL · MCP)를 고치면 글자로 읽어야 할 것이 낱말이 된다. 큐 파일 맨 위에 "read_as": {글자: 읽는 소리}가 있으면 그 낱말(앞뒤가 영문자가 아닌 자리)을
+  그 소리로 바꿔 보낸다 — 새 목소리가 DB를 「디, 비」로 끊어 읽어(사용자 2026-11-20 「DB를 왜 끊어서 말하지」) Neo4j 2회차 04 큐가 {"DB": "디비"}를 준다. 이 바꿈은 쉼표 처리보다 먼저 해서,
+  바꾼 낱말 앞 쉼표는 말줄임표가 되지 않는다. 새 목소리에서 대문자 낱말이 한 글자씩 끊겨 읽히면 그 큐 파일의 read_as에 더한다.
   큐 파일 맨 위에 "comma_pause_before_english": true가 있으면, 쉼표 바로 뒤에 영어 낱말이 오는 자리의 쉼표를 말줄임표로 바꿔 보낸다(「첫 줄을 보면, MATCH가」 → 「첫 줄을 보면... MATCH가」 — 지금은 Neo4j 2회차 04 큐만 켠다. 보통 쉼표가 많은 포털 큐에는 켜지 않는다). eleven_v4는 쉼표 · 줄표 · break 태그에서 거의 쉬지 않고(0.04~0.16초) 말줄임표에서만 0.45초쯤 쉬므로(2026-11-20 새 목소리 시험), 꾸밈말 뒤의 영어 낱말을 떼어 들리게 하려고 대본이 쉼표를 둔 자리다(대본 S-7 · 사용자 「첫줄 match 이런거 좀 쉼을 여유있게 … 매번 수식어 나오고 바로 나오지말고요」)."""
 import json, os, re, subprocess, sys, urllib.request, urllib.error
 from pathlib import Path
@@ -24,15 +26,18 @@ if folder and not only:
     sys.exit('--음성을 주면 --큐 <id,…>로 살 큐를 정한다(빈 폴더에서 큐 파일 전체를 사지 않게)')
 cfg = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 PAUSE = cfg.get('comma_pause_before_english') is True
+READ_AS = cfg.get('read_as') or {}
 
 
 def said(text, comma_pause=False):
-    """음성에 보내는 글(대본 S-7, 머리말): comma_pause면 쉼표 바로 뒤 영어 낱말 앞을 말줄임표로, 밑줄 이름은 띄어 낱말마다 첫 글자만 대문자로, 붙여 쓴 이름은 띄운다. 그 밖의 글은 그대로다."""
+    """음성에 보내는 글(대본 S-7, 머리말): read_as 낱말은 그 소리로, comma_pause면 쉼표 바로 뒤 영어 낱말 앞을 말줄임표로, 밑줄 이름은 띄어 낱말마다 첫 글자만 대문자로, 붙여 쓴 이름은 띄운다. 그 밖의 글은 그대로다."""
     def word(m):
         w = m.group(0)
         if '_' in w:
             return ' '.join(x.capitalize() for x in w.split('_') if x)
         return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', w)
+    for k, v in READ_AS.items():
+        text = re.sub(rf'(?<![A-Za-z]){re.escape(k)}(?![A-Za-z])', v, text)
     if comma_pause:
         text = re.sub(r', (?=[A-Za-z])', '... ', text)
     return re.sub(r'[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+|[A-Za-z]+', word, text)
