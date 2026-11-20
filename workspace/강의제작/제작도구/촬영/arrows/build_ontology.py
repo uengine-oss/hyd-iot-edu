@@ -372,6 +372,8 @@ def write_all():
     dur = rec['duration_s'] - cut_s
     segs = [g for g in rec['segments']]
     rows = ''.join(f"| {n} · {SEGMENT_TITLE[n]} | {g['segment']} | {g['used_ms'] / 1000:.1f} |\n" for n, g in enumerate(segs, 1))
+    cutline = (f'합성한 뒤 말 없이 화면이 서 있는 곳 {len(cuts)}곳에서 쉼 기준을 넘는 {cut_s:.1f}초를 잘라 냈다(`잘라냄_통합1-08.json`, 구간 길이는 잘라 내기 전 값).' if cuts
+               else '합성한 뒤 말도 움직임도 없이 화면이 4초 넘게 서 있는 곳이 없어 잘라 낸 곳은 없다(`잘라냄_통합1-08.json`이 빈 목록).')
     gaim = f" 낸 판은 {rec['가림']['까닭']}을 {rec['가림']['구간_s'][0]:g}~{rec['가림']['구간_s'][1]:g}초 동안 흐리게 가렸다(합성기록 「가림」)." if rec.get('가림') else ''
     timing = f'''# ARROWS 실습 시간 — 실측
 
@@ -380,7 +382,7 @@ def write_all():
 | 구간 | 녹화 조각(take) | 길이(초) |
 |---|---|---|
 ''' + rows + f'''
-합성한 뒤 말 없이 화면이 서 있는 곳 {len(cuts)}곳에서 쉼 기준을 넘는 {cut_s:.1f}초를 잘라 냈다(`잘라냄_통합1-08.json`, 구간 길이는 잘라 내기 전 값).
+{cutline}
 
 측정: 커서 화살표와 강조는 녹화 기록으로 합성 때 그렸다(overlay). `measure.py`로 잰 끌기 동안의 프레임 공백은 모든 구간에서 0.5초 아래다(가장 긴 것은 6구간 0.12초). 조작 없이 화면 전체가 바뀐 곳은 1구간(검색 결과가 뜰 때 · arrows.app이 열릴 때 · 첫 안내 창을 닫을 때)뿐이고, 모두 엔터나 클릭이 연 화면이다.{gaim}
 '''
