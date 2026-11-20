@@ -19,48 +19,15 @@ for course,slug in active_courses:
         if kind == 'relations':
             for filename in ('lab_db.py', 'prepare_example.py'):
                 shutil.copy2(HERE/filename, folder/filename)
-            if course == '통합반':
-                # 2026-11-19 확정 대본(04_실습_관계조회.md)의 새 칸 차례(2-1 ~ 11-3). 원고는 통합반만 읽는 촬영/neo4j/통합반_관계조회_칸.json이고,
-                # 실전반이 읽는 공통_Cypher_큐.json(2026-11-06 녹화본의 큐)은 건드리지 않는다. 사진은 새 영상에서 뽑기 전이라 미촬영 자리를 찍는다.
-                from graph_guide import Shots, cypher_file, integrated_relations
-                spec=json.loads((ROOT/'workspace/강의제작/제작도구/촬영/neo4j/통합반_관계조회_칸.json').read_text(encoding='utf-8'))
-                shot=Shots(folder)
-                relations_intro,sections=integrated_relations(spec,shot)
-                shot.report()
-                write(folder/'기본문법_연습.cypher',cypher_file(spec))
-                relations_version='2026-11-19-relations-cells'
-            else:
-                from graph_guide import common_basic_sections, sections as graph_sections
-                shared=json.loads((ROOT/'workspace/강의제작/제작도구/촬영/neo4j/공통_Cypher_큐.json').read_text(encoding='utf-8'))
-                from lab_frame import block
-                from graph_guide import b, check, figure
-                prepare=('예제 준비하고 연결하기', '<p>먼저 '+b('Docker Desktop')+'을 실행합니다. 이 실습의 데이터베이스가 Docker에서 돌아갑니다.</p>'
-                         '<p>명령과 질의는 손으로 치지 말고 블록의 '+b('복사')+' 단추로 붙여 넣으세요. 손으로 옮기면 따옴표나 기호 하나만 틀려도 실행되지 않습니다.</p>'
-                         '<p>클래스룸의 02회차 실습 자료에서 받은 ZIP의 압축을 풀고, 풀린 <code>02회차/랩/02일차_실습1_관계조회</code> 폴더를 파일 탐색기로 엽니다. 주소 표시줄에 powershell을 입력하고 Enter를 누르면 그 폴더에서 PowerShell 창이 열립니다.</p>'
-                         +figure('00-explorer','실습 폴더를 연 파일 탐색기의 주소 표시줄에 powershell을 넣은 모습. Enter를 누르면 이 폴더에서 PowerShell이 열립니다')
-                         +'<p>다음 명령을 실행하세요.</p>'
-                         +block('shell','python prepare_example.py')+check('예제 준비 완료: 노드 20개 · 관계 19개가 표시됩니다. 이 예제는 HYD-01 한 대의 설비 구성입니다.')
-                         +block('shell','python lab_db.py')+check('랩 DB 준비 완료와 Connect URL 주소가 표시되고, 브라우저에 연결 창이 열립니다.')
-                         +figure('00-powershell','두 명령의 출력. 첫 명령의 끝줄에 예제 준비 완료: 노드 20개 · 관계 19개, 두 번째 명령에 Connect URL이 나옵니다. 포트 번호는 PC마다 다릅니다')
-                         +'<p>열린 연결 창의 '+b('Connection URL')+'과 '+b('Database user')+'(neo4j)는 이미 채워져 있습니다. 주소 끝 숫자는 컴퓨터마다 다르니 PowerShell에 나온 주소와 같은지만 봅니다. '
-                         +b('Password')+'는 비워 둔 채 '+b('Connect')+'를 누르세요.</p>'
-                         +figure('00-connect','연결 창의 주소 · 사용자 · 비밀번호 칸과 Connect 단추. 주소는 자신의 화면에 표시된 연결 주소와 대조합니다')
-                         +'<p>들어가면 가운데에 쿼리를 탭으로 나눠 쓰는 기능을 알려 주는 안내 창이 뜹니다. 탭은 마지막 절에서 쓰므로 지금은 '+b('Dismiss')+'로 닫습니다.</p>'
-                         +figure('00-tour','연결 직후 뜨는 Work in tabs 안내 창과 Dismiss 단추')
-                         +check('맨 위에 연결한 주소와 데이터베이스 이름이 나옵니다.')
-                         +figure('00-connected','맨 위의 연결 주소와 데이터베이스 이름')
-                         +'<p>쿼리를 돌릴 때마다 결과가 위로 하나씩 쌓이므로 시작하기 전에 한 번 비웁니다. 위쪽 달러 표시 옆 입력칸에 <code>:clear</code>를 넣고 Enter를 누르세요. 화면의 결과만 치우는 명령이라 데이터베이스 안의 내용은 그대로입니다.</p>'
-                         +'<p>왼쪽 패널 맨 위의 원통 모양 단추를 누르면 이 데이터베이스에 무엇이 들어 있는지 나옵니다. 노드 밑 색깔 단추들은 레이블, 그 밑 단추들은 관계 유형, 맨 밑 단추들은 속성 이름입니다.</p>'
-                         +check('노드 20개 · 관계 19개가 나옵니다.')
-                         +figure('00-overview','원통 모양 단추를 눌러 연 데이터베이스 정보: 노드 · 관계 수와 레이블 · 관계 유형 · 속성 이름 단추')
-                         +'<p>이 주소는 지금 연 실습 전용 데이터베이스입니다. 아래에서 만든 노드와 관계는 여기에 저장됩니다. '
-                         '포털 지식 지도는 별도의 기준 데이터베이스에서 읽습니다.</p>')
-                sections=graph_sections(shared,prepare)
-                sections=sections[:1]+common_basic_sections(shared)+sections[1:]
-                queries=[c['query'] for c in shared['cues'] if 'query' in c and c['id'].startswith('common')]
-                write(folder/'기본문법_연습.cypher','// Browser 입력칸에서 한 문장씩 실행합니다. CREATE는 한 번만 실행하세요.\n\n'+'\n\n'.join(queries)+'\n')
-                relations_intro='연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.'
-                relations_version='2026-11-06-relations-marked'
+            # 두 과정 공통 영상(2회차 실습 04 = 실전반 05, 「관계조회-04」)의 칸 차례(2-1 ~ 11-3). 원고는 촬영/neo4j/통합반_관계조회_칸.json(영상이 넣은 쿼리와 같은 글),
+            # 사진은 촬영/neo4j/사진_만들기.py가 그 영상의 녹화 프레임에서 뽑아 두 과정 images/에 같은 바이트로 둔다.
+            from graph_guide import Shots, cypher_file, integrated_relations
+            spec=json.loads((ROOT/'workspace/강의제작/제작도구/촬영/neo4j/통합반_관계조회_칸.json').read_text(encoding='utf-8'))
+            shot=Shots(folder)
+            relations_intro,sections=integrated_relations(spec,shot)
+            shot.report()
+            write(folder/'기본문법_연습.cypher',cypher_file(spec))
+            relations_version='2026-11-20-relations-04'
             # 종전 생성기의 고정 파일만 정리한다. 학생 폴더와 실제 화면 사진은 대상이 아니다.
             for filename in ('AGENTS.md','CLAUDE.md','.github/copilot-instructions.md','조회_기록.md',
                              '조회_작성.cypher','결과/README.md','START.md','준비_안내.md'):
@@ -259,7 +226,8 @@ for course,slug in active_courses:
             pack_page(folder)
             dropped.append(f'{slug}-02-{kind}')
             continue
-        for file in ['guide.html','안내.html']:write(folder/file,page(title,relations_intro,sections,blocks=True))
+        write(folder/'guide.html',page(title,relations_intro,sections,blocks=True))
+        (folder/'안내.html').unlink(missing_ok=True)   # 옛 영상이 「안내 문서」로 부르던 같은 바이트 사본 — 새 영상은 가이드를 부르지 않아 하나만 둔다
         pack(folder)
         built.append(entry(f'{slug}-02-{kind}',course,'온라인 02회차',title,relations_version,folder,entry='neo4j'))
 register(built,drop=dropped)
