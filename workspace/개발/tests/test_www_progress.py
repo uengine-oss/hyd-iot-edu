@@ -90,7 +90,7 @@ def _wait_steps(page, sel, want):
 
 
 def test_진행_단계가_서버가_적는_대로_하나씩_채워지고_요청이_끝나면_읽기를_멈춘다():
-    """사용자 2026-11-14 「처리 과정이 블랙박스 X」: 채점 · 시험 비교 · 출발본 · 연결 검사는 「…하는 중 · 걸린 시간」뿐이었다."""
+    """사용자 2026-11-14 「처리 과정이 블랙박스 X」: 채점 · 시험 비교 · 내 구성 파일 · 연결 검사는 「…하는 중 · 걸린 시간」뿐이었다."""
     from playwright.sync_api import sync_playwright
     job, wire = Job(), Wire('/api/job')
     served = _serve(job, '/api/job')
@@ -233,7 +233,7 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
         served.close()
 
 
-def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서버가_적는_단계를_채우다가_멈추면_그_까닭을_보인다():
+def test_내_구성_파일_불러오기_화면은_파일과_요청_번호를_싣고_서버가_적는_단계를_채우다가_멈추면_그_까닭을_보인다():
     """관리 화면의 [파일 골라 불러오기](configBundle.js) — 길면 3분인 일이다. 파일을 고르면 무엇이 들었는지 말하고 확인을 받은 뒤 보낸다.
     도는 동안 단계가 채워지고, 서버가 멈추면 진행 목록 자리에 서버의 까닭이 남는다."""
     from playwright.sync_api import sync_playwright
@@ -255,11 +255,11 @@ def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서�
             assert row.locator('button:visible').count() == 1 and not page.locator('#cfgFile').is_visible()
             with page.expect_file_chooser() as chooser:
                 page.locator('#cfgImport').click()
-            pick = {'name': '출발본.json', 'mimeType': 'application/json', 'buffer': json.dumps(bundle, ensure_ascii=False).encode()}
+            pick = {'name': '내구성.json', 'mimeType': 'application/json', 'buffer': json.dumps(bundle, ensure_ascii=False).encode()}
             chooser.value.set_files(pick)
             page.wait_for_selector('dialog.confirm-dialog[open] form', timeout=8000)
             # 파일의 요약: 서버가 내 것(flows · deployments)과 기본 제공 흐름(provided_flows)을 갈라 센 수를 그대로 말한다 — 줄 아래와 확인 창에
-            what = '출발본.json — 역할 1개 · 함께 담긴 기본 제공 흐름 3개(지금 배포된 판본)'
+            what = '내구성.json — 역할 1개 · 함께 담긴 기본 제공 흐름 3개(지금 배포된 판본)'
             assert page.inner_text('#cfgImportMsg') == what and what in page.inner_text('dialog.confirm-dialog')
             # 취소하면 아무것도 보내지 않고, 불러오지 않았다는 것이 줄 아래에 남는다
             page.locator("dialog.confirm-dialog button[value='cancel']").click()
@@ -435,7 +435,7 @@ def test_판단_채점_화면은_항목이_끝날_때마다_서버가_적는_결
             job.do(lambda p: (p.done('golden', '항목 1개'), p.start('knowledge'), p.done('knowledge'),
                               p.plan([('item:0', item['title']), ('save', '채점 기록 저장')]), p.start('item:0')))
             _wait_steps(page, "#evalView [data-r='live']", ['ok:정답표 읽기', 'ok:지식 상태 읽기', 'run:쿨러 성능 저하', 'wait:채점 기록 저장'])
-            job.do(lambda p: (p.done('item:0', '항목 1/1 끝 · 100.0점 · 원인 맞음 · 1위 조치 맞음'), p.start('save')))
+            job.do(lambda p: (p.done('item:0', '항목 1/1 끝 · 100.0점 · 원인 맞음 · 1순위 조치 맞음'), p.start('save')))
             _wait_steps(page, "#evalView [data-r='live']", ['ok:정답표 읽기', 'ok:지식 상태 읽기', 'ok:쿨러 성능 저하', 'run:채점 기록 저장'])
             assert '항목 1/1 끝 · 100.0점' in page.inner_text("#evalView [data-r='live'] [data-step='item:0'] .lv-note")
             # 진행 막대는 서버가 적은 항목 단계를 센 값이다(항목 1개 가운데 1개 끝남) — 항목 단계가 생기기 전에는 없다

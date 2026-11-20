@@ -24,11 +24,11 @@ def judged(cause='cause:fouling', fm='fm:cooler-cooling-loss', rec='skill:sop-co
     ({'pattern': None}, '이상 패턴 칸이 비어 있습니다'),
     ({'facts': []}, '가정 사실은 이름 → 값 묶음'),
     ({'expected': {'cause': 'fouling', 'failure_mode': 'fm:x'}}, '기대 원인(cause:…)과 고장 유형(fm:…)'),
-    ({'allowed_top': []}, '1위로 허용되는 조치(skill:…)를 하나 이상'),
+    ({'allowed_top': []}, '1순위로 허용되는 조치(skill:…)를 하나 이상'),
     ({'forbidden': [{'skill': 'skill:a', 'expect': 'maybe'}]}, '빠져야 할 조치 1번째 줄은'),
-    ({'forbidden': [{'skill': 'skill:sop-cool-11', 'expect': 'excluded'}]}, '1위로 허용되는 조치에도 있습니다'),
+    ({'forbidden': [{'skill': 'skill:sop-cool-11', 'expect': 'excluded'}]}, '1순위로 허용되는 조치에도 있습니다'),
     ({'required_evidence': []}, '근거에 있어야 할 지식 id 를 하나 이상'),
-], ids=['항목 이름', '제목', '설비', '패턴', '가정 사실', '기대 원인', '허용 1위', '빠질 조치 기대', '허용과 겹침', '근거'])
+], ids=['항목 이름', '제목', '설비', '패턴', '가정 사실', '기대 원인', '허용 1순위', '빠질 조치 기대', '허용과 겹침', '근거'])
 def test_정답표_항목의_틀린_칸은_화면_이름으로_까닭을_말한다(change, says):
     with pytest.raises(ValueError) as refused:
         je.validate_item(dict(ITEM, **change))

@@ -103,7 +103,7 @@ def test_판단_엔진_도구가_없는_에이전트는_원인_진단을_할_수
                         {'scenario': SCENARIO, 'agent': {'id': 'c', 'name': 'C', 'tools': ['enterprise'], 'skills': []},
                          'tenant_servers': list(cooling.stack.tools)})
     assert status == 200 and body['trial']['status'] == 'NO_ENGINE_TOOL', body['trial']
-    assert '판단 시스템이 없어' in body['trial']['reason'] and 'hyd-dmn' not in body['trial']['reason'], body['trial']['reason']
+    assert '판단 서비스가 없어' in body['trial']['reason'] and 'hyd-dmn' not in body['trial']['reason'], body['trial']['reason']
     assert body['trial']['calls'][0]['server'] == 'hyd-dmn' and body['trial']['calls'][0]['status'] == 'BLOCKED'
 
 
