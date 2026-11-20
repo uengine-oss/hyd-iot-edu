@@ -122,7 +122,7 @@ OPS = {
  'g0512': [U(WITH(ED('AS 이름'), ED('AS 점수')), 'AS는 받은'), U(ED('ORDER BY 점수'), '마지막 줄 ORDER BY는'), RUN(rows=2)],
  'g0510': [B({'headRow': True}, '표 머리에는'), B(COL('점수'), '점수가 작은'), X(WITH({'tab': 'Table'}, {'tab': 'Raw'}), '그림은 노드나')],
  # 6. WHERE
- 'g0601': PUT('4-1', '그 WHERE를'),
+ 'g0601': PUT('4-1', 'WHERE 줄을'),
  'g0602': [U(EL(2), '가운데 줄이'), U(ED('>='), '크다는 표시와'), U(ED('50'), '50 이상인'), RUN(graph=True, nodes=1, edges=0)],
  'g0603': [X(NODE(FAN))],
  # 7. MERGE · SET

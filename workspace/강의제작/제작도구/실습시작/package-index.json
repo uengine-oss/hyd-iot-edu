@@ -235,10 +235,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v45-lab",
+      "version": "v46-lab",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "cd7db675881a23369735ae5f74821344bb8d348cd3fee00f6aa0c6b91d2253a0",
+      "sha256": "6bb243ba567fea61b93d1160f7159e87d8af460667489e60e27a0e135da940a1",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -256,7 +256,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab_guide.html",
-        "sha256": "a21c9fb04bb1be00fc9b3a24990ccc322684da20a571c583bf4b5a744c17832c"
+        "sha256": "c04f93ab5a6dc2b3f00da6a4a54bb89719cbea2782501e7eb11622b623f81b11"
       }
     },
     {
@@ -264,10 +264,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v45-lab",
+      "version": "v46-lab",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "3fc21e3605a76af3d10bcdcbf48ce5c48dd1c15a522f950ebf486af18add337c",
+      "sha256": "c83e9f5588b573b7814b0360edbc5a0b27be19fda97f04c55ac0cbe989a4e5cb",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 자료 파악하기",
@@ -282,7 +282,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "a1f742ec6ddb74a7c738f7037533693d91e012e44f6a36deb58853f4a972ece4"
+        "sha256": "8b56837d8e71b6c3cdc9a7c25285aa25d9bc31e901b2db6f577782c7b0334021"
       }
     },
     {
