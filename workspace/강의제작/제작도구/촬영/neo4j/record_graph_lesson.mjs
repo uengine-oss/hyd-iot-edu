@@ -7,7 +7,7 @@
 //   hold = 학생이 따라 할 시간(그 큐의 말과 조작이 끝난 뒤 화면을 그대로 두는 ms).
 // 강조(영상 V-14 · V-11): 짚기 조작에 hl('underline' | 'band' | 'box')을 주면 화살표가 닿은 때 그 대상의 화면 상자와 시각을 timing.json의 highlights에 남기고 포털 encode.py가 그린다(포털 촬영도구 hl.mjs).
 //   줄 수 있는 자리: point의 points[] 항목 · pointText · detailsTour의 points[] 항목. 글로 찾은 대상(contains · text)은 그 글 구절을, css로 찾은 대상은 그 요소를 잰다(phrase를 주면 그 구절).
-//   그 밖의 조작에 hl을 주면 멈춘다. 강조는 다음 강조가 시작할 때, 누르기 · 탭 바꾸기가 시작할 때, 강조 없는 다른 자리로 화살표가 떠날 때, 녹화가 끝날 때 지워진다.
+//   그 밖의 조작에 hl을 주면 멈춘다. 강조는 다음 강조가 시작할 때, 누르기 · 탭 바꾸기가 시작할 때, 강조 없는 다른 자리로 화살표가 떠날 때, 그 큐의 말이 끝날 때, 녹화가 끝날 때 지워진다.
 // 표로 쓴 대본의 큐(통합_02_04_관계조회_큐만들기.py)가 쓰는 조작 — 대상 꼴은 mark_targets.mjs 머리말:
 //   mark {points: [{대상, at, hl?}]}  대상을 차례로 짚는다. hl을 주면 그 대상(함께 짚는 also 포함)의 상자에 강조를 건다 — 입력칸 조각 · 표의 행과 열 · 그림의 원과 선 · 단추 묶음 모두
 //   press {대상, at, point_at?, expect?}  대상에 미리 가 있다가 at에서 누르고, expect(mark_targets.mjs expectInPage)가 될 때까지 기다린다. point_at이 없으면 누르기 PRESS_LEAD_MS 전에
@@ -167,6 +167,7 @@ try{
   const gate=async(fraction)=>{await sleep(Math.max(0,at+meta.duration_ms*fraction-Date.now()));if(error)throw Error(error);};
   a.actionStart=Date.now()-start;await operation(gate,a);a.actionEnd=Date.now()-start;
   await sleep(Math.max(0,at+meta.duration_ms-Date.now()));
+  hl.end('말 끝');   // 강조는 그 큐의 말이 짚는 동안만 둔다 — 다음 큐가 다른 것을 말하는 동안 남으면 학생 눈이 엉뚱한 곳에 간다(영상 V-11)
   free=Date.now()+(c.hold||0);a.hold=c.hold||0;};
 
  const editor={css:'[aria-label="Cypher Editor"]'};
