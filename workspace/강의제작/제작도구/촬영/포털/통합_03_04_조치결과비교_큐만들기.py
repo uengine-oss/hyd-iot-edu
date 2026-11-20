@@ -166,7 +166,7 @@ OPS = {
  't0305': [H(T(f'{OPTS} thead tr'), 'band', '표의 줄마다'), H(T(f'{OPTS} tbody tr:first-child .badge'), 'underline', '종류와 승인 역할은'), H(T(f'{OPTS} tbody tr:first-child td.opts-role'), 'underline', keep=True),
            H(T(FACT(3)), 'box', '조치 후보 칸에는')],
  # 펼치면 탭 넷과 「판단에 쓴 값」 표(열 줄, 높이 약 640px)가 나온다 — 접힌 줄을 위로 올려 탭과 표 머리를 보이고(t0306), 표를 두를 때는 표 머리를 위 막대 바로 밑에 둔다(t0307)
- 't0306': [H(T(f'{MORE} > summary', phrase='자세히 보기'), 'band', '접혀 있죠'), C(T(f'{MORE} > summary', phrase='자세히 보기', anchor='after'), '펼치면'), W(T(INP), 5),
+ 't0306': [H(T(f'{MORE} > summary', phrase='자세히 보기'), 'band', '자세히 보기라는'), C(T(f'{MORE} > summary', phrase='자세히 보기', anchor='after'), '펼치면'), W(T(INP), 5),
            SCROLL(T(f'{MORE} > summary'), top=64)],
  't0307': [SCROLL(T(INP), top=66), H(T(INP), 'box', '이 표가'), H(IROW('PLC 운전 모드'), 'band', '운전 모드 줄을'), H(T(f'{INP} tbody td', exact='SCADA · PLC (설비 제어)'), 'underline', '옆에 출처가'),
            H(IROW('팬 100 % 연속 운전 시간'), 'band', '팬 연속 운전 시간 줄은'), H(T(f'{INP} tbody td', exact='0 시간'), 'underline', '시간이라는 단위가'),
@@ -195,7 +195,7 @@ OPS = {
  't0406': [SCROLL(T(f'{OPTS} thead'), top=70), H(OROW('SOP-COOL-11'), 'band', '빠지지 않고 남아'), H(OROW('SOP-COOL-12'), 'band', keep=True),
            H(T(f'{OPTS} tbody tr:nth-child(2) .opts-why small', contains='감점 — 팬 100 % 연속 운전이 이미 24시간을 넘긴 경우'), 'underline', '감점이라고 적힌 글이')],
  't0411': [H(OROW('SOP-COOL-11'), 'band', '제외는'), H(OROW('SOP-COOL-12'), 'band', keep=True), H(TEXT(CHANGED), 'band', '표 위 줄을 보면')],
- 't0407': [H(FIELD('decFan'), 'box', '맨 아래 칸을'), C(FANH, '비우고'), CLEAR(), KEY('Delete'), C(RUN, '누르면'), W(ASSUMED('없음 — 설비의 지금 값으로 판단했습니다.'), 10),
+ 't0407': [H(FIELD('decFan'), 'box', '넣어 본 값을'), C(FANH, '비우고'), CLEAR(), KEY('Delete'), C(RUN, '누르면'), W(ASSUMED('없음 — 설비의 지금 값으로 판단했습니다.'), 10),
            W(T('#decPast h3 .num', exact='5'), 5)],
  't0408': [H(T(f'{OPTS} tbody tr[data-pick]', contains='팬 최대 운전'), 'band', '처음과 같은 결과가'), H(T('#decPast'), 'box', '지난 판단 목록에는'),
            H(PAST(5), 'band', '지금 값 그대로인 줄은'), H(PAST(3), 'band', keep=True), H(PAST(1), 'band', keep=True)],
