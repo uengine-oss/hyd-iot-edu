@@ -189,7 +189,7 @@ OPS = {
  'g1308': [B(CELL(1, '부품'), '쿨러 코어고'), B(CELL(1, '품번'), '맨 오른쪽 열에')],
  # 14. 원래 행 · 조건 · 집계
  'g1401': PUT('11-1', '그래서 여기서는'),
- 'g1402': [U(ED('-[:MONITORED_BY]->'), 'MONITORED_BY라고'), U(EL(2), 'RETURN에는'), U(ED('s.virtual AS 가상'), '가상이라는 속성을'), RUN(rows=5)],
+ 'g1402': [U(ED('-[:MONITORED_BY]->'), 'MONITORED_BY라고'), U(EL(2), 'RETURN에는'), U(ED('s.virtual AS 가상'), 'virtual이라는 속성을'), RUN(rows=5)],
  'g1403': [B(WITH(ROW(1), ROW(2)), '오일 쿨러가 두 행'), B(WITH(ROW(3), ROW(4)), '주 펌프가 두 행'), B(ROW(5), '쿨러 팬이 한 행')],
  'g1404': [B(COL('가상')), B(ROW(1), '냉각 효율은')],
  'g1405': [B(ROW(1), '첫 행 하나가'), B(WITH(ROW(2), ROW(3), ROW(4), ROW(5)), '아래 네 행이')],

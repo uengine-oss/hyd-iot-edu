@@ -29,7 +29,7 @@ for course,slug in active_courses:
             shot=Shots(photos)
             relations_intro,sections=integrated_relations(spec,shot)
             shot.report()
-            relations_version='2026-11-20-relations-04'
+            relations_version='2026-11-20-relations-05'
             # 종전 생성기의 고정 파일만 정리한다. 학생 폴더와 실제 화면 사진은 대상이 아니다.
             for filename in ('AGENTS.md','CLAUDE.md','.github/copilot-instructions.md','조회_기록.md',
                              '조회_작성.cypher','결과/README.md','START.md','준비_안내.md'):
