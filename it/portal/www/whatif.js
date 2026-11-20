@@ -209,7 +209,7 @@
           `<div class="panel-sec">${UI.fold('순위 식 원문', p.components.map(c => `<p>${esc(c.label)}: <code>${esc(c.expr)}</code></p>`).join(''))}</div>`;
       }
     }
-    // 평가 범위 안내(규칙 비교 · 모의 순위이고 실제 승인 준비는 확인하지 않음)는 결과 맨 아래에 둔다 — 첫 줄은 결론이다
+    // 평가 범위 안내(계산만 한 결과이고 승인 · 실행하지 않음)는 결과 맨 아래에 둔다 — 첫 줄은 결론이다
     return html + `<div class="trial-foot">${v.original && v.original.note ? note(esc(v.original.note)) : ''}${UI.evaluationHtml(v)}</div></section>`;
   }
 

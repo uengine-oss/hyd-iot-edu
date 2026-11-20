@@ -88,7 +88,7 @@
         ${noRole ? '' : s.pending ? `<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요. 같은 요청을 다시 확인하는 것이라 차수가 두 번 만들어지지 않습니다.</p> ${UI.actions(`<button type="button" class="btn" data-variant="outline" id="rwRetry" ${s.busy ? 'disabled' : ''}>요청 결과 확인</button>`, s.error)}` : `
          <label class="rework-check"><input type="checkbox" id="rwConfirm" ${s.confirmed ? 'checked' : ''} ${!p?.execution_available || s.busy ? 'disabled' : ''}> 영향 범위와 이전 승인 처리 내용을 확인했습니다.</label>
         ${UI.actions(`<button class="btn" id="rwSubmit" ${eligible() ? '' : 'disabled'}>${esc(UI.t('btn.rework'))}</button>`, s.error)}`}</div>`}
-        ${s.busy && window.hydLive ? hydLive.waitHtml('다시 수행 요청을 보내는 중', { hint: '처리 서비스가 영향 범위를 다시 확인하고 새 차수를 만듭니다.' }) : ''}${finished && s.error ? `<p class="muted" data-tone="danger" role="alert">${esc(s.error)}</p>` : ''}`;
+        ${s.busy && window.hydLive ? hydLive.waitHtml('다시 수행 요청을 보내는 중', { hint: '흐름 엔진이 영향 범위를 다시 확인하고 새 차수를 만듭니다.' }) : ''}${finished && s.error ? `<p class="muted" data-tone="danger" role="alert">${esc(s.error)}</p>` : ''}`;
       // 사람이 연 접기는 다시 그려도 열린 채다(UI.swap). 응답을 못 받은 요청이 있으면 늘 펴서 [요청 결과 확인]을 보인다
       UI.swap(host, UI.fold(esc(UI.t('inst.rework')), body, { open: !finished && (!!s.workitem || !!s.pending) }));
       if (s.pending) host.querySelector('details').open = true;

@@ -23,7 +23,7 @@ from pydantic import Field
 from .tools import EffectTools, Ledger
 
 mcp = FastMCP("hyd-effects-mcp", instructions=(
-    "사람이 승인한 처리 건의 시스템 task 가 부르는 메일 도구다(수업 메일함, 실제 발송 없음). 에이전트용이 아니다. "
+    "사람이 승인한 처리 건의 시스템 task 가 부르는 메일 도구다(시험용 메일함으로만 보낸다 — 바깥으로 나가지 않는다). 에이전트용이 아니다. "
     "idempotency_key 가 같으면 두 번째 호출은 첫 결과를 돌려준다."))
 tools = EffectTools(Ledger(os.getenv("EFFECTS_STATE_PATH", "/data/effects.sqlite3")))
 CALLER_HEADER = "X-HYD-Process-Caller"
@@ -47,7 +47,7 @@ def send_mail(to: Annotated[str | list[str], Field(description="받는 주소 (�
               body: Annotated[str, Field(description="본문 (일반 글)")],
               cc: Annotated[str | list[str] | None, Field(description="참조 주소")] = None,
               idempotency_key: Key = None) -> dict:
-    """메일 한 통을 SMTP 로 보낸다. 수업 기본은 Supabase 로컬 Inbucket(웹 http://localhost:54324) — 실제 발송 없음."""
+    """메일 한 통을 SMTP 로 보낸다. 시험용 메일함(웹 http://localhost:54324)으로만 가고 바깥으로 나가지 않는다."""
     _require_process()
     return tools.send_mail(to, subject, body, cc=cc, idempotency_key=idempotency_key)
 

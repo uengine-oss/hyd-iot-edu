@@ -152,7 +152,7 @@
     } else {
       // 읽는 차례(디자인 기준 5-1): 머리(이름 · 종류 알약 · 한 문장 · 오른쪽 끝 더 보기) → 절차 → 대상 고장 유형 · 승인 역할 → 「연결된 지식」 접기 → 고치기(손으로 더한 것만).
       // 식별자(조치 식별자 · 절차 번호)는 더 보기 메뉴에서 복사한다 — 첫 화면에 내부 번호를 펼치지 않는다
-      const RULE = { EXCLUDE: UI.t('chip.excluded'), SELECT: '후보', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') };
+      const RULE = { EXCLUDE: UI.t('chip.excluded'), SELECT: '허용', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') };
       const kv = rows => `<dl class="kv">${rows.map(([n, v]) => `<dt>${esc(n)}</dt><dd>${v}</dd>`).join('')}</dl>`;
       const first = [
         [UI.t('skill.fm'), (k.failureModes || []).map(f => `${esc(f.name)} <span class="muted">(${esc(REL_KO[f.relation] || f.relation)})</span>`).join('<br>') || esc(UI.t('skill.none'))],
@@ -299,16 +299,16 @@
       vals.set(p.id, v);
       let link = { ...sug, failureMode: v.fm || null, relation: v.rel || null, kind: v.kind, affects: parseAffects(v.affects) };
       if (link.kind === 'reference') {
-        if (v.refExecutable !== 'false') return { stop: `${p.name}: 일반 원문 참고 보관을 명시적으로 선택하세요.`, at };
+        if (v.refExecutable !== 'false') return { stop: `${p.name}: 「참고 절차의 사용 방식」에서 「원문만 보관」을 선택하세요.`, at };
         link = { kind: 'reference', executable: false, failureMode: null, relation: null, approver: null };
       } else if (v.scope === 'purchase') {
         if (!H.manualCatalog) return { stop: H.manualCatalogError || '구매 부품 · 담당 역할 목록을 먼저 확인하세요.', at };
-        if (!['true', 'false'].includes(v.executable)) return { stop: `${p.name}: 원문 참고 보관 또는 실행 후보 검토를 명시적으로 선택하세요.`, at };
+        if (!['true', 'false'].includes(v.executable)) return { stop: `${p.name}: 「원문 절차의 사용 방식」을 선택하세요.`, at };
         Object.assign(link, { scope: 'purchase', executable: v.executable === 'true', parts: v.parts, approver: v.approver || null });
         if (!link.parts.length) return { stop: `${p.name}: 원문에 명시한 구매 대상 부품을 선택하세요.`, at };
         if (link.executable && !link.approver) return { stop: `${p.name}: 원문에 명시한 구매 승인 담당 역할을 선택하세요.`, at };
         if (v.policy && !['oem', 'lowest_approved', 'fastest_quote'].includes(v.policy)) return { stop: `${p.name}: 원문 공급사 선정 기준을 확인하세요.`, at };
-        if (!link.executable && v.policy) return { stop: `${p.name}: 원문 참고 보관에는 공급사 선정 기준을 지정하지 않습니다. 기준을 「지정하지 않음」으로 바꾸세요.`, at };
+        if (!link.executable && v.policy) return { stop: `${p.name}: 「원문만 보관」에는 공급사 선정 기준을 지정하지 않습니다. 기준을 「지정하지 않음」으로 바꾸세요.`, at };
         if (v.policy) { link.supplier_policy = v.policy; link.actions = (link.actions || []).map(a => ({ ...a, value: null })); }
         else delete link.supplier_policy;
         if (!link.executable) link.actions = []; // The explicit reference choice makes no ERP request; original actions stay in the source snapshot.
@@ -317,7 +317,7 @@
       links[p.id] = link;
     }
     const missing = Object.entries(links).filter(([, v]) => v.kind !== 'reference' && v.scope !== 'purchase' && !v.failureMode).map(([k]) => k);
-    if (missing.length) return { stop: `고장 유형을 고르세요: ${missing.join(', ')} — 고장 조치가 아닌 확인 · 참고 절차면 종류를 「일반 원문 참고 절차」로 바꾸세요`, at: 'proc:' + missing[0] };
+    if (missing.length) return { stop: `고장 유형을 고르세요: ${missing.join(', ')} — 고장 조치가 아닌 확인 · 참고 절차면 종류를 「참고 절차」로 바꾸세요`, at: 'proc:' + missing[0] };
     const reviewed = structuredClone(r);
     dropped.forEach(([group, id]) => { if (reviewed.knowledge && Array.isArray(reviewed.knowledge[group])) reviewed.knowledge[group] = reviewed.knowledge[group].filter(x => x.id !== id); });
     for (const p of reviewed.procedures) { const v = vals.get(p.id); p.name = v.name; p.steps.forEach(s => { if (v.steps.has(s.order)) s.text = v.steps.get(s.order); }); }
@@ -327,7 +327,7 @@
       if (v.refTarget) {
         const target = H.manualCatalog?.skills?.find(x => x.id === v.refTarget)?.reference_contract;
         if (!target || target.id !== v.refTarget || !/^[a-f0-9]{64}$/.test(v.refPin) || v.refPin !== target.contract_sha256 || v.id.trim() !== target.sopId || JSON.stringify(p.steps.map(s => ({ order: s.order, text: s.text }))) !== JSON.stringify(target.steps))
-          return { stop: `${p.name}: 원문 번호나 단계가 연결할 등록 절차와 다릅니다. 대조 내용을 다시 확인하세요.`, at: 'proc:' + p.id };
+          return { stop: `${p.name}: 원문 번호나 단계가 연결할 등록 절차와 다릅니다. 그 절차와 견준 내용을 다시 확인하세요.`, at: 'proc:' + p.id };
         p.existing_skill_id = v.refTarget; p.reference_contract_sha256 = v.refPin;
       } else { delete p.existing_skill_id; delete p.reference_contract_sha256; }
     }
@@ -462,7 +462,7 @@
       UI.field({ label: UI.t('golden.questions'), required: true, hint: UI.t('golden.questionsHint'), error: g.msg || '', input: `<textarea rows="3" data-golden-q aria-label="${esc(UI.t('golden.questions'))}" ${dis}>${esc(g.draft || '')}</textarea>` }) +
       `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-golden-ask ${dis}${hydCourseAccess.attrs('documents.golden')}>${esc(g.busy ? UI.t('golden.asking') : UI.t('golden.ask'))}</button></footer></div>`;
   }
-  // 질문 한 건: 질문 + 판정 뱃지 하나 → 답 한 단락 → 「근거」 접기(확신도 · 인용한 지식 · 질의 · 근거를 확인하지 못한 답)
+  // 질문 한 건: 질문 + 판정 뱃지 하나 → 답 한 단락 → 「근거」 접기(확신도 · 인용한 지식 · 쿼리 · 근거를 확인하지 못한 답)
   function goldenItems(r) {
     const items = (r.report && r.report.items) || [];
     const head = `<p class="doc-q-sum">${esc(UI.t('golden.answerable'))} <b class="num">${r.answerable || 0}</b> · ${esc(UI.t('golden.partial'))} <b class="num">${r.partially_answerable || 0}</b> · ${esc(UI.t('golden.notYet'))} <b class="num">${r.not_yet_answerable || 0}</b> · ${esc(UI.t('golden.grounded'))} <b class="num">${r.grounded || 0}</b></p>` +
@@ -490,7 +490,7 @@
   }
   function renderGolden(batch) {
     const box = $('#docSheet').querySelector(`[data-golden="${CSS.escape(batch)}"]`); if (!box) return;
-    box.innerHTML = goldenSection(batch); wireGolden(box); hydCourseAccess.apply(box);   // 꺼진 까닭을 단추 옆 한 줄로(W3-07)
+    box.innerHTML = goldenSection(batch); wireGolden(box); hydCourseAccess.apply(box);   // 그린 단추의 막힘 표시를 지금 표에 맞춘다(까닭은 누를 때 — courseAccess.js press)
     goldenLive(batch, box);
   }
   // 질문을 확인하는 AI 단계(처리 건의 작업 행 r.workitem)의 실행 기록을 그 자리에서 흘려보낸다. 기록 칸은 다시 그려도 같은 것을 옮겨 쓴다
@@ -530,7 +530,7 @@
   }, 2000);
 
   /* 적재한 문서(디자인 기준 5-3): 줄마다 이름 · 넣은 내용(절 · 조치 방법 · 단계)과 적재 시각 · 더 보기(이 문서 개정 · 보관한 원본 내려받기 · 이 판본 되돌리기).
-     줄을 누르면 옆 판에 「이 문서로 답할 수 있는 질문」이 열린다. 「적재됨」 상태는 위의 제공 문서 목록 한 곳에만 있다 — 이 목록의 줄은 모두 지금 적재된 판이라 되돌려진 판일 때만 표시를 단다.
+     줄을 누르면 옆 판에 「이 문서로 답할 수 있는 질문」이 열린다. 「적재됨」 상태는 위의 제공 문서 목록 한 곳에만 있다 — 이 목록의 줄은 모두 지금 적재된 판본이라 되돌려진 판본일 때만 표시를 단다.
      보관한 원문 · 등록 이력은 구역 머리의 더 보기로 연다(옆 판) */
   async function loadUploads() {
     const history = $('#manualHistory');
@@ -580,7 +580,7 @@
     (preview.procedures || []).forEach(p => {
       if (typeof p.name === 'string' && /[가-힣]/.test(p.name) && p.name !== p.id) names.set(p.id, `${p.name} (${p.id})`);
     });
-    const kinds = {fm:'고장 유형',cause:'원인',skill:'조치 방법',rule:'규칙',action:'세부 동작',comp:'부품',part:'부품',sup:'공급사',role:'담당 역할',sv:'상태 변수',msr:'성과 지표',dt:'결정표',dec:'판단',in:'입력',sym:'증상',pat:'이상 유형',evidence:'근거'};
+    const kinds = {fm:'고장 유형',cause:'원인',skill:'조치 방법',rule:'규칙',action:'세부 동작',comp:'부품',part:'부품',sup:'공급사',role:'담당 역할',sv:'상태 변수',msr:'성과 지표',dt:'결정표',dec:'판단',in:'입력',sym:'증상',pat:'이상 유형',evidence:'증거'};
     const labelOf = id => names.get(id) || `${kinds[String(id).split(':')[0]] || '검사 대상'} 표시 이름 미등록`;
     let text = String(issue.message || '검사 설명 기록 없음');
     // Exact metadata keys only: labels never change the stored issue or proposal.
@@ -590,7 +590,7 @@
     text = text.replace(/\b[A-Za-z][A-Za-z0-9_-]*:[A-Za-z0-9_.-]+\b/g, labelOf);
     const fields = {'link.scope':'절차 업무 범위','link.parts':'구매 대상 부품','link.executable':'절차 사용 방식','link.failureMode':'고장 유형 연결','link.approver':'승인 담당자 연결','link.addresses':'관련 원인 연결','link.affects':'영향 연결','knowledge.rules.table':'규칙의 결정표','knowledge.rules.tests':'규칙 입력 조건','failure_mode':'고장 유형','leads_to':'이어지는 고장 유형','component':'대상 부품','symptoms':'증상','disturbs':'상태 영향','penalizes':'감점 지표','applies_to':'적용 대상','outputs':'출력 대상','parts':'부품','cause':'원인'};
     if (fields[issue.field]) text = text.split(issue.field).join(fields[issue.field]);
-    text = text.replace(/\b(?:failureMode|approver|relation|addresses|affects|executable|Part|Supplier)\b/g, key => ({failureMode:'고장 유형',approver:'승인 담당자',relation:'고장 유형 관계',addresses:'관련 원인',affects:'영향',executable:'실행 후보 여부',Part:'부품',Supplier:'공급사'})[key]);
+    text = text.replace(/\b(?:failureMode|approver|relation|addresses|affects|executable|Part|Supplier)\b/g, key => ({failureMode:'고장 유형',approver:'승인 담당자',relation:'고장 유형 관계',addresses:'관련 원인',affects:'영향',executable:'절차 사용 방식',Part:'부품',Supplier:'공급사'})[key]);
     text = text.replace(/\b(?:control|work_order|Action|REQUIRES_INPUT)\b/g, key => ({control:'설비 제어',work_order:'정비 요청',Action:'세부 동작',REQUIRES_INPUT:'필수 입력 연결'})[key]);
     // Action codes in diagnostic sentences resolve through the same real catalog.
     text = text.replace(/\b[A-Z][A-Z0-9_]+\b/g, key => names.get(key) || key);
@@ -598,11 +598,13 @@
   }
   // 자동 검증의 결론: { tone('ok' | 'warn' | 'danger'), tag(뱃지 글), line(한 문장), more(그 아래의 목록과 접기) }
   function manualValidation(v, preview, catalog) {
-    if (!v) return { tone: 'warn', tag: '자동 검증 없음', line: '자동 검증 결과가 없습니다. 원문과 직접 대조해 검토하세요.', more: '' };
+    if (!v) return { tone: 'warn', tag: '자동 검증 없음', line: '자동 검증 결과가 없습니다. 원문과 견주어 검토하세요.', more: '' };
     if (v.checked !== true || typeof v.technical_ready !== 'boolean' || v.needs_human_review !== true || v.can_commit !== false || !Array.isArray(v.issues))
-      return { tone: 'danger', tag: '검증 결과 읽기 실패', line: '자동 검증 응답 형식이 올바르지 않습니다. 원문과 직접 대조해 검토하세요.', more: '' };
+      return { tone: 'danger', tag: '검증 결과 읽기 실패', line: '자동 검증 응답 형식이 올바르지 않습니다. 원문과 견주어 검토하세요.', more: '' };
     const issues = v.issues;
-    const values = (v.source_value_warnings || []).filter(w => !(preview.warnings || []).includes(w));
+    // 추출 경고 접기에 이미 보인 수치 경고는 되풀이하지 않는다. 제공 문서는 추출 경고 접기가 없으므로(renderPreview) 여기서 모두 보인다
+    const shown = preview.extraction && preview.extraction.cache ? [] : preview.warnings || [];
+    const values = (v.source_value_warnings || []).filter(w => !shown.includes(w));
     const more = (issues.length ? `<ul class="doc-issues">${issues.map(x => `<li>${esc(manualIssueMessage(x, preview, catalog))}</li>`).join('')}</ul>` : '') +
       (values.length ? UI.fold(`원문 수치 확인 필요<span class="muted num">${values.length}개</span>`, `<ul class="doc-issues">${values.map(w => `<li>${esc(w)}</li>`).join('')}</ul>`, { open: true }) : '') +
       (Array.isArray(v.notices) && v.notices.length ? UI.fold(`참고<span class="muted">고칠 곳이 아니라 알고 넘어갈 것 · ${v.notices.length}건</span>`, `<ul class="doc-issues">${v.notices.map(n => `<li>${esc(n.message)}</li>`).join('')}</ul>`) : '') +
@@ -611,17 +613,17 @@
       ? { tone: 'ok', tag: '자동 검증 통과', line: '연결 구조에는 문제가 없습니다. 내용이 원문과 맞는지는 아래에서 직접 검토하세요. 고친 연결은 적재할 때 다시 검증합니다.', more }
       : { tone: 'warn', tag: `검토 필요 ${issues.length}건`, line: '문서가 틀렸다는 뜻이 아니라, AI가 채우지 못했거나 사람이 확인해야 하는 곳입니다. 해당 조치 방법에서 값을 고르거나 고친 뒤 적재하세요. 고친 연결은 적재할 때 다시 검증합니다.', more };
   }
+  // 구매 · 참고 절차마다 결론 한 줄(이 절차가 적재되면 무엇이 되는가)과, 연결을 확인해야 하면 그 까닭. 서버 검사 기록 전체는 원문 접기에 있다
   function manualExecutionHtml(v, preview, catalog) {
     if (!preview.procedures.some(p => manualLink(preview,p).scope === 'purchase') && !v?.execution) return '';
-    if (!v || typeof v.executable_ready !== 'boolean' || !Array.isArray(v.execution)) return UI.fold('실행 후보 검사', '<p class="muted">실행 후보 검사 기록이 없습니다. 원문 보관 여부와 실행 후보 가능 여부는 별도로 확인해야 합니다.</p>');
-    return UI.fold(`실행 후보 검사<span class="muted num">${v.execution.length}건</span>`, '<p class="muted">원문 보관과 후보 연결의 구조 검사입니다. 실제 구매 승인이나 구매 실행 완료를 뜻하지 않습니다.</p>' + '<ul class="doc-issues">' + v.execution.map(row => {
+    if (!v || typeof v.executable_ready !== 'boolean' || !Array.isArray(v.execution)) return UI.fold('구매 · 참고 절차', '<p class="muted">이 절차들의 검사 기록이 없습니다. 절차마다 「사용 방식」을 확인하세요.</p>', { open: true });
+    return UI.fold(`구매 · 참고 절차<span class="muted num">${v.execution.length}건</span>`, '<ul class="doc-issues">' + v.execution.map(row => {
       const p = preview.procedures.find(p => p.id === row.sop);
       const name = p?.name ? `${p.name} (${row.sop})` : '절차 표시 이름 기록 없음';
       const valid = typeof row.executable === 'boolean' && typeof row.ready === 'boolean' && Array.isArray(row.issues);
-      const label = !valid ? '연결 구조 검사 정보 읽기 실패' : row.executable === false ? '원문 참고 보관 · 실행 후보 제외' : row.ready ? '실행 후보 기계 검사 통과 · 연결 구조 검사 통과' : '실행 후보 연결 확인 필요';
-      const scope=UI.evaluationInfo(row), about=scope.state==='structural' ? '실제 견적 · 재고는 실행 판단 시 확인 · 현재 실제 승인 · 실행 준비는 확인하지 않음' : scope.state==='execution' ? '실제 실행 검사 기록 있음 · 승인 · 실행 완료 아님' : '실제 승인 · 실행 준비 검사 기록 확인 안 됨';
-      return `<li><b>${esc(name)}</b> · ${esc(label)}<p class="muted">${esc(about)}</p>${valid && row.issues.length ? '<ul class="doc-issues">'+row.issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}</li>`).join('')+'</ul>' : ''}</li>`;
-    }).join('')+'</ul>' + UI.raw(v.execution, { title: '실행 후보 검사 원문' }));
+      const label = !valid ? '검사 결과를 읽지 못했습니다.' : row.executable === false ? '원문만 보관하고 AI가 조치로 고르지 않습니다.' : row.ready ? '승인하면 구매 요청을 만드는 절차입니다(견적 · 재고는 그때 확인합니다).' : '구매 요청으로 잇는 연결을 확인해야 합니다.';
+      return `<li><b>${esc(name)}</b> · ${esc(label)}${valid && row.issues.length ? '<ul class="doc-issues">'+row.issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}</li>`).join('')+'</ul>' : ''}</li>`;
+    }).join('')+'</ul>' + UI.raw(v.execution, { title: '검사 원문' }), { open: true });
   }
   function manualPurchaseFields(p, r) {
     const link = manualLink(r,p), purchase = link.scope === 'purchase', catalog = H.manualCatalog;
@@ -629,43 +631,46 @@
     const fixed=(link.actions || []).find(a=>a.action==='action:purchase-request')?.value;
     const fixedName=(catalog?.suppliers || []).find(s=>s.id===fixed)?.name;
     const knownPolicy=Object.prototype.hasOwnProperty.call(policies,link.supplier_policy);
-    const supplierState=link.supplier_policy ? `원문이 정한 공급사 선정 기준: ${knownPolicy ? policies[link.supplier_policy] : '기록을 확인해야 합니다'}.` : fixed ? `원문에 적힌 공급사: ${fixedName || '등록된 이름을 확인해야 합니다'}.` : '원문에 공급사가 적혀 있지 않습니다. 공급사를 자동으로 추정하지 않습니다.';
+    const supplierState=link.supplier_policy ? `원문이 정한 공급사 선정 기준: ${knownPolicy ? policies[link.supplier_policy] : '기록을 확인해야 합니다'}.` : fixed ? `원문에 적힌 공급사: ${fixedName || '등록된 이름을 확인해야 합니다'}.` : '원문에 공급사가 적혀 있지 않습니다.';
     const options = (rows, selected, missing) => {
       const ids = Array.isArray(selected) ? selected : selected ? [selected] : [];
       return (rows || []).map(row=>`<option value="${esc(row.id)}" ${ids.includes(row.id) ? 'selected' : ''}>${esc(row.name || '등록 이름 없음')}${row.partNo ? ' · '+esc(row.partNo) : ''}</option>`).join('') + ids.filter(id=>!(rows || []).some(row=>row.id===id)).map(id=>`<option value="${esc(id)}" selected>${esc(missing)}</option>`).join('');
     };
-    return UI.field({label:'절차의 업무 범위',input:`<select id="manualScope-${esc(p.id)}" data-manual-scope="${esc(p.id)}"><option value="fault" ${!link.scope ? 'selected' : ''}>고장 조치 · 고장 유형 연결 필수</option><option value="purchase" ${purchase ? 'selected' : ''}>구매 원문 절차 · 구매 업무 범위</option>${link.scope && !purchase ? `<option value="${esc(link.scope)}" selected>범위 기록을 확인하세요</option>` : ''}</select>`}) +
-      `<div class="doc-sub" data-purchase-fields="${esc(p.id)}" ${purchase ? '' : 'hidden'}><p class="muted">고장 유형 없이 구매 대상 부품을 명시합니다. 원문 참고 보관은 실행 후보에 넣지 않으며 구매요청을 만들지 않습니다. 실행 후보는 구매요청 · 승인 담당자 · 공급 관계를 별도로 검사합니다.</p>${H.manualCatalogError ? `<p class="muted" data-tone="danger" role="alert">${esc(H.manualCatalogError)}</p>` : !catalog ? '<p class="muted">구매 부품 · 담당 역할 목록 확인 전입니다.</p>' : ''}<div role="group" class="doc-grid">` +
-      UI.field({label:'원문 절차의 사용 방식',required:true,input:`<select id="manualExecutable-${esc(p.id)}" data-manual-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable === false ? 'selected' : ''}>원문 참고 보관 · 실행 후보 제외</option><option value="true" ${link.executable === true ? 'selected' : ''}>실행 후보로 검토 · 구매요청 연결 검사</option></select>`}) +
+    return UI.field({label:'절차의 업무 범위',input:`<select id="manualScope-${esc(p.id)}" data-manual-scope="${esc(p.id)}"><option value="fault" ${!link.scope ? 'selected' : ''}>고장 조치</option><option value="purchase" ${purchase ? 'selected' : ''}>구매 절차</option>${link.scope && !purchase ? `<option value="${esc(link.scope)}" selected>범위 기록을 확인하세요</option>` : ''}</select>`}) +
+      `<div class="doc-sub" data-purchase-fields="${esc(p.id)}" ${purchase ? '' : 'hidden'}><p class="muted">승인하면 구매 요청을 만드는 절차입니다(견적 · 재고는 그때 확인합니다). 「원문만 보관」을 고르면 AI가 조치로 고르지 않습니다.</p>${H.manualCatalogError ? `<p class="muted" data-tone="danger" role="alert">${esc(H.manualCatalogError)}</p>` : !catalog ? '<p class="muted">구매 부품 · 담당 역할 목록 확인 전입니다.</p>' : ''}<div role="group" class="doc-grid">` +
+      UI.field({label:'원문 절차의 사용 방식',required:true,input:`<select id="manualExecutable-${esc(p.id)}" data-manual-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable === false ? 'selected' : ''}>원문만 보관</option><option value="true" ${link.executable === true ? 'selected' : ''}>구매 요청을 만드는 절차</option></select>`}) +
       UI.field({label:'구매 대상 부품',required:true,hint:'원문이 명시한 실제 등록 부품을 선택하세요. 여러 부품은 Ctrl 또는 Command를 누르고 선택합니다.',input:`<select id="manualParts-${esc(p.id)}" multiple data-manual-parts="${esc(p.id)}" ${catalog ? '' : 'disabled'}>${options(catalog?.parts,link.parts,'부품 등록 목록에서 확인되지 않음')}</select>`}) +
-      UI.field({label:'구매 승인 담당 역할',hint:'실행 후보는 원문에 명시된 구매 승인 담당자가 필요합니다. 참고 보관은 미지정을 그대로 둘 수 있습니다.',input:`<select id="manualApprover-${esc(p.id)}" data-manual-approver="${esc(p.id)}" ${catalog ? '' : 'disabled'}><option value="">원문에 담당 역할 미지정</option>${options(catalog?.roles,link.approver,'담당 역할 등록 목록에서 확인되지 않음')}</select>`}) +
-      UI.field({label:'원문 공급사 선정 기준',hint:'원문에 적힌 기준만 고르세요. 기준을 고르면 지금의 부품별 견적으로 공급사를 계산하고, 원문에 적힌 공급사는 쓰지 않습니다. 실제 승인이나 발주가 끝났다는 뜻은 아닙니다.',input:`<select id="manualSupplierPolicy-${esc(p.id)}" data-manual-supplier-policy="${esc(p.id)}"><option value="">지정하지 않음(원문에 적힌 공급사를 씁니다)</option>${Object.entries(policies).map(([key,label])=>`<option value="${key}" ${link.supplier_policy===key ? 'selected' : ''}>${esc(label)}</option>`).join('')}${link.supplier_policy!=null && !knownPolicy ? `<option value="${esc(link.supplier_policy)}" selected>선정 기준 기록을 확인해야 합니다</option>` : ''}</select>`}) + `</div><p class="muted">${esc(supplierState)} 참고 보관에는 공급사 선정 기준을 지정하지 않습니다.</p><p class="muted" data-supplier-review="${esc(p.id)}"></p></div>`;
+      UI.field({label:'구매 승인 담당 역할',hint:'구매 요청을 만드는 절차는 원문에 적힌 구매 승인 담당자가 필요합니다. 원문만 보관하면 비워 둘 수 있습니다.',input:`<select id="manualApprover-${esc(p.id)}" data-manual-approver="${esc(p.id)}" ${catalog ? '' : 'disabled'}><option value="">원문에 담당 역할 미지정</option>${options(catalog?.roles,link.approver,'담당 역할 등록 목록에서 확인되지 않음')}</select>`}) +
+      UI.field({label:'원문 공급사 선정 기준',hint:'원문에 적힌 기준만 고르세요. 기준을 고르면 지금의 부품별 견적으로 공급사를 계산하고, 원문에 적힌 공급사는 쓰지 않습니다.',input:`<select id="manualSupplierPolicy-${esc(p.id)}" data-manual-supplier-policy="${esc(p.id)}"><option value="">지정하지 않음(원문에 적힌 공급사를 씁니다)</option>${Object.entries(policies).map(([key,label])=>`<option value="${key}" ${link.supplier_policy===key ? 'selected' : ''}>${esc(label)}</option>`).join('')}${link.supplier_policy!=null && !knownPolicy ? `<option value="${esc(link.supplier_policy)}" selected>선정 기준 기록을 확인해야 합니다</option>` : ''}</select>`}) + `</div><p class="muted">${esc(supplierState)}</p><p class="muted" data-supplier-review="${esc(p.id)}"></p></div>`;
   }
   function manualReferenceFields(p, r) {
     const link=manualLink(r,p), sid=p.existing_skill_id || link.existing_skill_id || '', pin=p.reference_contract_sha256 || link.reference_contract_sha256 || '';
     const rows=H.manualCatalog?.skills || [];
-    return `<div class="doc-sub" data-reference-fields="${esc(p.id)}" ${link.kind==='reference' ? '' : 'hidden'}><p class="muted">이 절차는 원문만 보관하고 실행 후보에는 넣지 않습니다. 고장 유형 · 담당 역할 · 부품 · 실행 조치는 지정하지 않습니다. 이미 등록된 같은 절차와 연결해도 그 절차의 실행 단계는 바뀌지 않습니다.</p>`+
-      (H.manualCatalogError ? `<p class="muted" data-tone="danger" role="alert">이미 등록된 절차 목록을 읽지 못했습니다. ${esc(H.manualCatalogError)}</p>` : !Array.isArray(H.manualCatalog?.skills) ? '<p class="muted">이미 등록된 절차 목록이 없습니다. 같은 절차를 자동으로 짐작해 연결하지 않습니다.</p>' : '')+ `<div role="group" class="doc-grid">` +
-      UI.field({label:'참고 절차의 사용 방식',required:true,input:`<select data-reference-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable===false ? 'selected' : ''}>원문 참고 보관 · 실행 후보 제외</option></select>`})+
-      UI.field({label:'이미 등록된 같은 절차와 연결',hint:'원문 번호와 모든 단계가 정확히 같은 등록 절차만 연결할 수 있습니다. 고르면 지금 등록된 그 절차의 내용을 기준으로 고정합니다.',input:`<select data-reference-target="${esc(p.id)}"><option value="">연결하지 않음(이 문서의 원문만 보관)</option>${rows.filter(x=>x.reference_contract).map(x=>`<option value="${esc(x.id)}" ${x.id===sid ? 'selected' : ''}>${esc(x.name || '등록 이름 없음')} · ${esc(x.reference_contract.sopId || '원문 번호 미상')}</option>`).join('')}${sid && !rows.some(x=>x.id===sid && x.reference_contract) ? `<option value="${esc(sid)}" selected>연결한 절차의 등록 내용을 읽지 못했습니다</option>` : ''}</select>`})+
+    return `<div class="doc-sub" data-reference-fields="${esc(p.id)}" ${link.kind==='reference' ? '' : 'hidden'}><p class="muted">원문만 보관하고 AI가 조치로 고르지 않습니다.</p>`+
+      (H.manualCatalogError ? `<p class="muted" data-tone="danger" role="alert">이미 등록된 절차 목록을 읽지 못했습니다. ${esc(H.manualCatalogError)}</p>` : !Array.isArray(H.manualCatalog?.skills) ? '<p class="muted">이미 등록된 절차 목록이 없습니다.</p>' : '')+ `<div role="group" class="doc-grid">` +
+      UI.field({label:'참고 절차의 사용 방식',required:true,input:`<select data-reference-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable===false ? 'selected' : ''}>원문만 보관</option></select>`})+
+      UI.field({label:'이미 등록된 같은 절차와 연결',hint:'원문 번호와 모든 단계가 정확히 같은 등록 절차만 연결할 수 있습니다.',input:`<select data-reference-target="${esc(p.id)}"><option value="">연결하지 않음(이 문서의 원문만 보관)</option>${rows.filter(x=>x.reference_contract).map(x=>`<option value="${esc(x.id)}" ${x.id===sid ? 'selected' : ''}>${esc(x.name || '등록 이름 없음')} · ${esc(x.reference_contract.sopId || '원문 번호 미상')}</option>`).join('')}${sid && !rows.some(x=>x.id===sid && x.reference_contract) ? `<option value="${esc(sid)}" selected>연결한 절차의 등록 내용을 읽지 못했습니다</option>` : ''}</select>`})+
       `</div><input type="hidden" data-reference-pin="${esc(p.id)}" value="${esc(pin)}"><div class="doc-compare" data-reference-comparison="${esc(p.id)}" role="status"></div></div>`;
   }
-  // 2026-10-25 한 바퀴: 검토 화면이 절차 · 단계 · 고장 유형 연결만 보이고 AI가 뽑은 원인 · 증거 · 규칙은 보이지 않아 원문과 대조해
+  // 2026-10-25 한 바퀴: 검토 화면이 절차 · 단계 · 고장 유형 연결만 보이고 AI가 뽑은 원인 · 증거 · 규칙은 보이지 않아 원문과 견주어
   // 틀린 항목을 뺄 수 없었다. 항목마다 원문 인용과 [적재에서 제외]를 둔다.
-  const KNOW_GROUPS = [['failure_modes', '고장 유형', 'triangle-alert'], ['causes', '원인', 'git-branch'], ['evidence', '확인 증거', 'activity'], ['rules', '규칙', 'scale']];
+  const KNOW_GROUPS = [['failure_modes', '고장 유형', 'triangle-alert'], ['causes', '원인', 'git-branch'], ['evidence', '증거', 'activity'], ['rules', '규칙', 'scale']];
+  // 지식 후보의 제목: 이름이 없는 규칙은 원문 문장(annotation)이다 — 문장 속 경보 코드(「COOLER_DEGRADATION 경보에서 …」)는 다른 화면 문장처럼 UI.words 로 이름을 읽는다(원문 인용 칸은 원문 그대로)
+  const knowTitle = x => UI.words(x.name || x.annotation || x.id);
   function manualKnowledgeSummary(group, x, own) {
     // 이 문서에서 새로 나온 고장 유형 · 원인은 아직 카탈로그에 없다 — 제안 안의 이름을 먼저 쓴다(내부 id 를 화면에 내지 않는다)
     const name = id => own[id] || UI.name(id);
     if (group === 'causes') return `사전 확률 ${x.prior ?? '미정'}${x.failure_mode ? ' · ' + name(x.failure_mode) : ''}`;
     if (group === 'evidence') return `${hydWords.fieldName(String(x.tag || '').toLowerCase())} ${hydWords.agg(x.aggregate)}${x.window_seconds != null ? ` ${x.window_seconds}초` : ''} ${hydWords.sym(x.expect)} ${x.threshold} → ${name(x.cause)}`;
-    if (group === 'rules') return `${({ SELECT: '후보', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고' })[x.effect] || x.effect} · ${UI.ruleLabel(x)}${x.penalty != null ? ' · ' + x.penalty + '만 원' : ''}${(x.outputs || []).length ? ' → ' + x.outputs.map(o => name(o)).join(', ') : ''}`;
+    if (group === 'rules') return `${({ SELECT: '허용', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고' })[x.effect] || x.effect} · ${UI.ruleLabel(x)}${x.penalty != null ? ' · ' + x.penalty + '만 원' : ''}${(x.outputs || []).length ? ' → ' + x.outputs.map(o => name(o)).join(', ') : ''}`;
     return (x.symptoms || []).map(y => name(y)).join(', ');
   }
   // 단계 줄(디자인 기준 5-3): 올리기 → AI 추출 → 검토 → 적재. 판(#manualUpload) 맨 위에 두고 지금 단계만 바꾼다. 1단계의 파일 고르기 칸은 1단계에서만 보인다
   const MANUAL_PHASES = ['올리기', 'AI 추출', '검토', '적재'];
-  /* 저장된 추출 결과를 쓰는 문서(제공 문서 — 서버 응답의 cache)의 「추출 과정」. AI가 이 문서를 읽은 것은 미리 한 번이고 그때의 도구 호출 기록은 이 PC에 없다.
+  /* 제공 문서(서버 응답의 extraction.cache — 서버가 이미 있는 추출 결과를 돌려준 문서)의 「추출 과정」. 이 문서에는 이 PC에서 AI가 도구를 부른 기록이 없다.
      없는 과정을 지어내지 않고 있는 사실만 보인다: ① 방금 서버가 한 일(H.trail — 요청이 실제로 오간 차례와 걸린 시간) ② 그 추출 결과에서 절마다 무엇이 뽑혔는지
-     (절의 원문 범위 안에 인용이 놓인 조치 방법 · 지식 후보를 센 값). 시간으로 차오르는 막대나 일부러 늦춘 연출은 없다. */
+     (절의 원문 범위 안에 인용이 놓인 조치 방법 · 지식 후보를 센 값). 시간으로 차오르는 막대나 일부러 늦춘 연출은 없다.
+     그 결과를 만들며 남긴 작업 메모(cache.origin.review_notes 와 추출 경고 r.warnings — 서명 묶음의 proposal.warnings)는 학생 화면에 내지 않는다(사용자 2026-11-20). */
   const anchorCount = r => r.sections.filter(s => s.anchor).length + r.procedures.reduce((n, p) => n + (p.anchor ? 1 : 0) + p.steps.filter(st => st.anchor).length, 0) +
     KNOW_GROUPS.reduce((n, [g]) => n + (((r.knowledge || {})[g]) || []).filter(x => x && x.anchor).length, 0);
   function sectionYield(r) {
@@ -681,10 +686,8 @@
     });
   }
   function cachedProcessHtml(r) {
-    const origin = ((r.extraction || {}).cache || {}).origin || {}, notes = origin.review_notes || [];
-    return `<p class="muted" data-cached-note>이 문서는 AI가 미리 읽고 사람이 원문과 대조해 검토해 둔 추출 결과를 씁니다${origin.revision ? `(검토 판 ${esc(origin.revision)})` : ''}. 그때 AI가 부른 도구의 기록은 이 PC에 없습니다 — 아래는 그 추출 결과에서 절마다 뽑힌 것입니다.</p>` +
-      `<h3 class="doc-yield-head">절마다 뽑힌 것<span class="muted num">매뉴얼 절 ${r.sections.length}개</span></h3><div data-cached-yield>${UI.timeline(sectionYield(r))}</div>` +
-      (notes.length ? UI.fold(`검토하며 고친 곳<span class="muted num">${notes.length}건</span>`, `<ol class="doc-issues">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ol>`) : '');
+    return `<p class="muted" data-cached-note>AI가 이 문서에서 절마다 뽑은 것입니다.</p>` +
+      `<h3 class="doc-yield-head">절마다 뽑힌 것<span class="muted num">매뉴얼 절 ${r.sections.length}개</span></h3><div data-cached-yield>${UI.timeline(sectionYield(r))}</div>`;
   }
   function renderManualSteps(stage, o = {}) {
     const host = $('#manualUpload'); if (!host) return;
@@ -704,24 +707,25 @@
     const fms = failureModesOf(r);
     const where = a => `${a.page}쪽${a.located === 'loose' ? ' · 대략 일치 — 문맥 확인 필요' : a.located === 'normalized' ? ' · 공백 · 기호를 맞춰 찾음' : ''}`;
     // 원문 인용: 상세 판의 첫 절에는 펼친 인용(quote)으로, 단계마다의 인용은 접기(citation)로
-    const quote = a => a ? `<figure class="doc-quote"><blockquote>${esc(a.quote)}</blockquote><figcaption>${esc(where(a))}</figcaption></figure>` : '<p class="muted">원문 인용 위치가 없습니다. 아래 「원문」에서 직접 찾아 대조하세요.</p>';
-    const citation = a => a ? UI.fold(`원문 인용<span class="muted">${esc(where(a))}</span>`, `<figure class="doc-quote"><blockquote>${esc(a.quote)}</blockquote></figure>`) : '';
+    const quote = a => a ? `<figure class="doc-quote"><blockquote>${esc(UI.quoteText(a.quote))}</blockquote><figcaption>${esc(where(a))}</figcaption></figure>` : '<p class="muted">원문 인용 위치가 없습니다. 아래 「원문」에서 찾아 견주세요.</p>';
+    const citation = a => a ? UI.fold(`원문 인용<span class="muted">${esc(where(a))}</span>`, `<figure class="doc-quote"><blockquote>${esc(UI.quoteText(a.quote))}</blockquote></figure>`) : '';
     // 진행 단계: ① 올리기 → ② AI 추출 → ③ 검토 → ④ 적재. 올리기만 한 문서(r.extraction 없음)에는 절 · 절차 · 검증 칸이 없다 —
     // AI가 읽기 전에 결과나 경고처럼 보이는 것을 두지 않는다(서버도 등록 응답에 절 · 절차를 싣지 않는다: manual_review.registered)
     const stage = r.extraction ? 3 : 2;
-    const readWarnings = r.warnings.length ? UI.fold(`${stage === 3 ? '추출 경고' : '문서 읽기 확인'}<span class="muted num">${r.warnings.length}건</span>`, `<ol class="doc-issues">${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`) : '';
+    // 제공 문서의 추출 경고는 그 추출 결과를 만든 사람이 남긴 작업 메모라 검토 단계(3)에 내지 않는다. 내가 올린 문서의 AI 추출 경고와, 올릴 때 문서를 읽으며 생긴 것(2단계)은 그대로 보인다
+    const readWarnings = r.warnings.length && !(stage === 3 && r.extraction.cache) ? UI.fold(`${stage === 3 ? '추출 경고' : '문서 읽기 확인'}<span class="muted num">${r.warnings.length}건</span>`, `<ol class="doc-issues">${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`) : '';
     const sourceFold = UI.fold('원문<span class="muted">보관한 원본 · AI가 읽는 글</span>', `<div class="doc-links"><a class="btn" data-variant="outline" data-size="sm" href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">${icon('download')}보관한 원본 내려받기</a>` +
       `<button type="button" class="btn" data-variant="outline" data-size="sm" id="manualFullSource">${icon('file-text')}추출 원문 전체 보기</button></div><div id="manualSourceText"></div>`);
     const history = UI.fold('이 문서의 이전 추출 결과', `<div class="doc-links">${UI.field({ label: '추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}` +
       `<button type="button" class="btn" data-variant="outline" data-size="sm" id="manualAgentResult">선택한 결과 열기</button><button type="button" class="btn" data-variant="ghost" data-size="sm" id="manualExtractionMore" hidden>이전 추출 작업 더 보기</button></div>`);
     const another = `<button type="button" class="btn" data-variant="ghost" id="manualAnother">다른 문서 올리기</button>`;
     const procWhat = p => { const l = manualLink(r, p), fm = fms.find(f => f.id === l.failureMode);
-      return l.kind === 'reference' ? '참고 절차(실행 대상 아님)' : l.scope === 'purchase' ? '구매 절차' : fm ? `${fm.name} · ${REL_KO[l.relation || 'REMEDIED_BY'] || ''}` : '고장 유형 미지정'; };
+      return l.kind === 'reference' ? '참고 절차' : l.scope === 'purchase' ? '구매 절차' : fm ? `${fm.name} · ${REL_KO[l.relation || 'REMEDIED_BY'] || ''}` : '고장 유형 미지정'; };
     if (stage === 2) {
       const ready = r.status === 'READY';
-      // 다시 연 문서: 서버가 이 문서의 지금 적재된 판(r.loaded — 언제 · 누가 · 절차 수 · 그 판을 만든 원문이 지금 연 원문인가)을 준다.
+      // 다시 연 문서: 서버가 이 문서의 지금 적재된 판본(r.loaded — 언제 · 누가 · 절차 수 · 그 판본을 만든 원문이 지금 연 원문인가)을 준다.
       // 적재된 문서를 「아직 AI가 읽기 전」이라고 말하지 않는다
-      // 같은 원본 파일을 「새 문서 등록」으로 다시 올린 문서: 이 문서에는 적재된 판이 없지만 서버가 같은 파일로 적재한 다른 문서(r.same_original)를 준다.
+      // 같은 원본 파일을 「새 문서 등록」으로 다시 올린 문서: 이 문서에는 적재된 판본이 없지만 서버가 같은 파일로 적재한 다른 문서(r.same_original)를 준다.
       // 그대로 추출 · 적재하면 절차 번호가 그 문서의 것과 겹쳐 적재가 거절되므로, 올린 직후에 그 사실을 말하고 주 단추를 [이 문서 개정]으로 둔다
       const L = r.loaded || null, here = !!(L && L.same_source), twin = L ? null : r.same_original || null;
       const count = x => Array.isArray(x) ? x.length : x;
@@ -730,8 +734,8 @@
       box.innerHTML = `<div class="panel-sec mprev" data-doc-stage="2">
         <div class="result"><div class="result-label">${here ? '이미 적재된 문서' : twin ? '이미 적재한 원문' : '올린 문서'}</div><div class="result-main">${esc(r.filename)} <span class="muted num">${r.chars.toLocaleString()}자</span></div>
           <p class="result-sub" id="manualStageNote"${ready && !L && !twin ? ' data-fresh' : ''}>${!ready ? `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`
-            : here ? `이 원문으로 만든 판이 지식 지도에 적재돼 있습니다 — ${esc(loadedFacts)}. AI 추출을 다시 시작하면 새 결과를 검토해 이 문서를 개정합니다.`
-            : L ? `이 문서는 다른 원문${L.filename ? `(${esc(L.filename)})` : ''}으로 만든 판이 적재돼 있습니다 — ${esc(loadedFacts)}. 지금 연 원문은 AI가 아직 읽지 않았습니다. AI 추출을 시작해 검토한 뒤 적재하면 그 판을 개정합니다.`
+            : here ? `이 원문으로 만든 판본이 지식 지도에 적재돼 있습니다 — ${esc(loadedFacts)}. AI 추출을 다시 시작하면 새 결과를 검토해 이 문서를 개정합니다.`
+            : L ? `이 문서는 다른 원문${L.filename ? `(${esc(L.filename)})` : ''}으로 만든 판본이 적재돼 있습니다 — ${esc(loadedFacts)}. 지금 연 원문은 AI가 아직 읽지 않았습니다. AI 추출을 시작해 검토한 뒤 적재하면 그 판본을 개정합니다.`
             : twin ? `같은 원문이 등록한 문서 「${esc(twin.filename || '')}」로 이미 적재돼 있습니다 — ${esc(factsOf(twin))}. 새 문서로 적재하면 절차 번호가 그 문서와 겹쳐 거절됩니다. 고쳐 넣으려면 그 문서의 개정으로 여세요.`
             : '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.'}</p></div>
         <section class="doc-live" id="manualLive" aria-label="AI 추출 과정" hidden><div data-live-trail></div><div class="doc-progress" data-live-progress hidden></div><div data-live-host></div><div data-live-fail></div></section>
@@ -739,29 +743,29 @@
         <div class="doc-folds">${readWarnings}${sourceFold}${history}</div></div>`;
     } else {
       const k = r.knowledge || {}, groups = KNOW_GROUPS.filter(([g]) => (k[g] || []).length);
-      const cachedRun = !!(r.extraction && r.extraction.cache);      // 저장된 추출 결과를 쓴 문서 — 과정 접기에 서버가 한 일과 절마다 뽑힌 것을 둔다
+      const cachedRun = !!(r.extraction && r.extraction.cache);      // 제공 문서 — 과정 접기에 절마다 뽑힌 것을, 결과 요약 아래에 서버가 한 일을 둔다
       const own = Object.fromEntries(KNOW_GROUPS.flatMap(([g]) => (k[g] || []).filter(x => x && x.id && x.name).map(x => [x.id, x.name])));
       const knowCount = groups.reduce((n, [g]) => n + k[g].length, 0);
       const v = manualValidation(r.validation, r, { ...H.catalog, ...H.manualCatalog });
       // 왼쪽 제안 목록의 한 줄: [data-item] = 종류:식별자. 오른쪽에는 같은 이름의 상세 판([data-pane])이 하나씩 있고 고른 것만 보인다
       const row = (key, kind, ic, title, meta, tag = '') => `<button type="button" class="row" data-item="${esc(key)}" data-group="${kind}" hidden><span class="row-ic">${icon(ic)}</span><span class="row-title">${esc(title)}</span><span data-item-tag>${tag}</span><span class="row-meta">${esc(meta)}</span></button>`;
       const procRows = r.procedures.map(p => row('proc:' + p.id, 'proc', 'list-checks', p.name, `${p.id} · ${procWhat(p)} · 단계 ${p.steps.length}`, needsLink(r, p) ? UI.chipText('검토 필요', 'warning') : '')).join('');
-      const knowRows = groups.map(([g, title, ic]) => k[g].map(x => row(`know:${g}:${x.id}`, 'know', ic, x.name || x.annotation || x.id, `${title} · ${manualKnowledgeSummary(g, x, own)}`)).join('')).join('');
+      const knowRows = groups.map(([g, title, ic]) => k[g].map(x => row(`know:${g}:${x.id}`, 'know', ic, knowTitle(x), `${title} · ${manualKnowledgeSummary(g, x, own)}`)).join('')).join('');
       const secRows = r.sections.map((s, i) => row('sec:' + i, 'sec', 'file-text', `${s.ref} ${s.title}`, '매뉴얼 절')).join('');
       const procPanes = r.procedures.map(p => `<section class="panel doc-pane" data-pane="${esc('proc:' + p.id)}" hidden>
         <header class="panel-head"><div><h2><span data-proc-title>${esc(p.name)}</span>${needsLink(r, p) ? UI.chipText('검토 필요', 'warning') : ''}</h2><p><span class="mono">${esc(p.id)}</span> · ${esc(procWhat(p))} · 단계 ${p.steps.length}</p></div></header>
         <div class="panel-sec"><h3>원문 인용</h3>${quote(p.anchor)}</div>
         <div class="panel-sec">${UI.section('이름과 연결', UI.field({ label: UI.t('skill.sop'), input: `<input aria-label="절차 번호" data-manual-id="${esc(p.id)}" value="${esc(p.id)}">` }) + UI.field({ label: UI.t('skill.name'), input: `<input aria-label="이름" data-manual-name="${esc(p.id)}" value="${esc(p.name)}">` }) +
           manualPurchaseFields(p, r) +
-          UI.field({ label: UI.t('skill.fm'), hint: '고장 조치는 필수입니다. 구매 절차와 일반 원문 참고 절차에는 고장 유형을 연결하지 않습니다.', input: `<select data-fm="${esc(p.id)}"><option value="">(고르세요)</option>${fms.map(f => `<option value="${esc(f.id)}" ${f.id === manualLink(r,p).failureMode ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` }) +
+          UI.field({ label: UI.t('skill.fm'), hint: '고장 조치는 필수입니다. 구매 절차와 참고 절차에는 고장 유형을 연결하지 않습니다.', input: `<select data-fm="${esc(p.id)}"><option value="">(고르세요)</option>${fms.map(f => `<option value="${esc(f.id)}" ${f.id === manualLink(r,p).failureMode ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` }) +
           UI.field({ label: UI.t('skill.relation'), input: `<select data-rel="${esc(p.id)}"><option value="" ${manualLink(r,p).scope === 'purchase' && !manualLink(r,p).relation ? 'selected' : ''}>고장 유형 관계 없음</option>${['REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY'].map(v => `<option value="${v}" ${(manualLink(r,p).relation || (manualLink(r,p).scope === 'purchase' ? '' : 'REMEDIED_BY')) === v ? 'selected' : ''}>${esc(REL_KO[v])}</option>`).join('')}</select>` }) +
-          UI.field({ label: UI.t('skill.kind'), input: `<select data-kind="${esc(p.id)}"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control" ${manualLink(r,p).kind === 'control' ? 'selected' : ''}>${esc(UI.t('skill.kind.control'))}</option><option value="reference" ${manualLink(r,p).kind === 'reference' ? 'selected' : ''}>일반 원문 참고 절차 · 실행 후보 제외</option></select>` }) +
+          UI.field({ label: UI.t('skill.kind'), input: `<select data-kind="${esc(p.id)}"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control" ${manualLink(r,p).kind === 'control' ? 'selected' : ''}>${esc(UI.t('skill.kind.control'))}</option><option value="reference" ${manualLink(r,p).kind === 'reference' ? 'selected' : ''}>참고 절차</option></select>` }) +
           manualReferenceFields(p, r) +
           UI.field({ label: UI.t('skill.affects'), cls: 'wide', hint: '상태 변수 또는 성과 지표 id와 방향(+/-)을 쉼표로. 비우면 득실 0', input: `<input aria-label="영향" data-affects="${esc(p.id)}" value="${esc((manualLink(r,p).affects || []).map(a=>a.target+':'+a.sign).join(', '))}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+">` }))}</div>
         <div class="panel-sec"><h3>단계<span class="muted num">${p.steps.length}</span></h3><p class="muted" data-step-lock="${esc(p.id)}" hidden></p><ol class="doc-steps">${p.steps.map(s => `<li><textarea class="textarea" aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea>${s.manual ? `<span class="badge" data-variant="outline">${esc(s.manual)}</span>` : ''}${citation(s.anchor)}</li>`).join('')}</ol></div>
         <div class="panel-sec pane-fold">${UI.raw({inline:p.link,override:r.links && Object.prototype.hasOwnProperty.call(r.links,p.id) ? r.links[p.id] : undefined,suggestedFailureMode:p.suggestedFailureMode,existing_skill_id:p.existing_skill_id,reference_contract_sha256:p.reference_contract_sha256}, { title: '절차 연결 원문' })}</div></section>`).join('');
       const knowPanes = groups.map(([g, title]) => k[g].map(x => `<section class="panel doc-pane" data-pane="${esc(`know:${g}:${x.id}`)}" hidden>
-        <header class="panel-head"><div><h2>${esc(x.name || x.annotation || x.id)}</h2><p>${esc(title)}${manualKnowledgeSummary(g, x, own) ? ' · ' + esc(manualKnowledgeSummary(g, x, own)) : ''}</p></div></header>
+        <header class="panel-head"><div><h2>${esc(knowTitle(x))}</h2><p>${esc(title)}${manualKnowledgeSummary(g, x, own) ? ' · ' + esc(manualKnowledgeSummary(g, x, own)) : ''}</p></div></header>
         <div class="panel-sec"><h3>원문 인용</h3>${quote(x.anchor)}</div>
         <div class="panel-sec"><label class="doc-check"><input type="checkbox" class="input" data-know-drop="${esc(g)}" value="${esc(x.id)}"> 적재에서 제외</label><p class="muted">원문과 다르거나 근거가 없으면 제외합니다. 제외한 항목은 지식 지도에 들어가지 않습니다.</p></div></section>`).join('')).join('');
       const secPanes = r.sections.map((s, i) => `<section class="panel doc-pane" data-pane="sec:${i}" hidden>
@@ -772,7 +776,7 @@
         <div class="panel-sec">
           <div class="result"><div class="result-label">AI 추출 결과 · ${esc(r.filename)}</div>
             <div class="result-main">조치 방법 ${r.procedures.length}개${knowCount ? ` · 지식 후보 ${knowCount}개` : ''} · 매뉴얼 절 ${r.sections.length}개를 찾았습니다</div>
-            <p class="result-sub" id="manualAgentStatus" role="status">${cachedRun ? '저장된 추출 결과입니다 — 이 문서는 AI가 다시 읽지 않습니다. 원문과 대조해 검토한 뒤 적재하세요.' : 'AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.'}</p></div>
+            <p class="result-sub" id="manualAgentStatus" role="status">AI 추출 결과입니다. 원문과 견주어 검토한 뒤 적재하세요.</p></div>
           ${cachedRun ? '<div class="doc-trail-slot" data-live-trail></div>' : ''}
           <div class="doc-valid"><p>${UI.chipText(v.tag, { ok: 'success', warn: 'warning', danger: 'danger' }[v.tone])}<span>${esc(v.line)}</span></p>${v.more}</div>
           <div class="doc-folds">${manualExecutionHtml(r.validation, r, { ...H.catalog, ...H.manualCatalog })}${readWarnings}
@@ -786,7 +790,7 @@
         </div>
         <div class="panel-sec doc-confirm">
           <label class="doc-check"><input type="checkbox" class="input" id="manualReviewed"> 원문 · 단계 · 고장 유형 · 관계를 검토했습니다.</label>
-          <p id="manualReviewChanged" class="muted" hidden>검토 내용을 바꿨습니다. 위 검사는 원래 제안 기준입니다. 원문과 바뀐 연결을 대조한 뒤 검토 완료를 표시하세요.</p>
+          <p id="manualReviewChanged" class="muted" hidden>검토 내용을 바꿨습니다. 위 검사는 원래 제안 기준입니다. 원문과 바뀐 연결을 견준 뒤 검토 완료를 표시하세요.</p>
           <footer class="form-foot"><span id="manualCommitWhy" class="muted" role="status"></span>${another}<button type="button" class="btn" data-variant="outline" id="manualAgentExtract">AI 추출 다시 하기</button><button type="button" class="btn" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button></footer>
         </div></div>
         <div class="panel-sec" id="manualCommitView" data-doc-stage="4" hidden>
@@ -876,9 +880,9 @@
       FAILED: ['fail', '실패'], CANCELLED: ['fail', '취소됨'], PENDING: ['stop', '검증에서 멈춤 — 사람 확인 필요'] };
     const segLabel = s => `구간 ${s.index}/${s.total}${s.chars ? ` · ${Number(s.chars).toLocaleString()}자` : ''}`;
     /* 방금 서버가 한 일(H.trail): [AI 추출 시작]을 누른 순간부터 요청이 실제로 오간 차례를 단계 목록(hydLive.steps)에 적는다 — 누르자마자 첫 줄이 보이고,
-       0.몇 초 만에 끝나는 저장된 결과도 끝난 뒤 거친 단계와 걸린 시간이 결과 요약 아래에 남는다. 단계는 요청이 시작 · 끝난 때에만 넘어간다 */
+       0.몇 초 만에 끝나는 제공 문서의 결과도 끝난 뒤 거친 단계와 걸린 시간이 결과 요약 아래에 남는다. 단계는 요청이 시작 · 끝난 때에만 넘어간다 */
     function placeTrail() {
-      // 자리: 2단계는 실시간 칸(#manualLive) 맨 위, 3단계는 결과 요약 바로 아래(저장된 결과일 때만 — 0.몇 초 만에 끝난 일이 거친 단계를 접지 않고 남긴다)
+      // 자리: 2단계는 실시간 칸(#manualLive) 맨 위, 3단계는 결과 요약 바로 아래(제공 문서일 때만 — 0.몇 초 만에 끝난 일이 거친 단계를 접지 않고 남긴다)
       const T = H.trail, slot = box.querySelector('[data-live-trail]');
       if (!T || T.source_id !== r.source_id || !slot) return;
       if (T.host.parentElement !== slot) slot.replaceChildren(T.host);
@@ -893,14 +897,14 @@
     }
     function trailOpened(T, created) {
       T.cached = !!created.cache;
-      const rev = ((created.cache || {}).origin || {}).revision;
-      T.list.done('open', { note: T.cached ? `미리 추출해 검토해 둔 문서와 원문이 같습니다 — AI가 다시 읽지 않고 저장된 추출 결과를 씁니다${rev ? `(검토 판 ${rev})` : ''}`
+      // 제공 문서는 서버가 이미 있는 추출 결과를 돌려준다(created.cache) — 그 사정은 화면에 알리지 않는다(CLAUDE.md 5절 — 사용자 2026-11-20)
+      T.list.done('open', { note: T.cached ? ''
         : `추출 처리 건을 열었습니다${created.segments > 1 ? ` — 문서를 구간 ${created.segments}개로 나눠 AI가 읽습니다` : ' — AI가 문서를 읽기 시작합니다'}` });
       if (!T.cached) return;
-      // 저장된 결과일 때만 뒤 단계가 있다(AI 추출은 아래 실시간 기록이 잇는다): 결과 읽기 요청(GET) → 검토 화면에 쓸 목록 읽기
+      // 제공 문서일 때만 뒤 단계가 있다(AI 추출은 아래 실시간 기록이 잇는다): 결과 읽기 요청(GET) → 검토 화면에 쓸 목록 읽기
       const inner = document.createElement('div'), was = T.list;
       T.list = hydLive.steps(inner, [{ key: 'open', label: '원문 확인 · 추출 작업 열기' },
-        { key: 'verify', label: '저장된 추출 결과를 원문 · 지금 지식과 대조', hint: '서버가 인용마다 원문의 그 자리에 있는지 보고, 지금 지식 지도와 겹치는 번호가 없는지 견주는 중입니다.' },
+        { key: 'verify', label: '추출 결과를 원문 · 지금 지식과 대조', hint: '서버가 인용마다 원문의 그 자리에 있는지 보고, 지금 지식 지도와 겹치는 번호가 없는지 대조하는 중입니다.' },
         { key: 'prepare', label: '검토 화면 준비', hint: '검토 화면의 고르기 칸에 쓸 고장 유형 · 역할 · 부품 목록을 읽는 중입니다.' }], { label: '방금 서버가 한 일' });
       T.list.done('open', { note: (was.list.find(s => s.key === 'open') || {}).note, t0: was.since('open') });
       T.host.replaceChildren(inner);
@@ -919,11 +923,11 @@
       const others = L.state === 'failed' && (result.segments || []).some(s => WAITING.includes(s.status));      // 한 구간이 멈췄어도 다른 구간은 계속 돈다
       const running = L.state === 'starting' || L.state === 'running' || others;
       const p = result && result.progress, c = result && result.corrections;
-      // 저장된 추출 결과를 쓰는 문서(제공 문서 — 서버 result.cache)는 AI가 다시 읽지 않는다. 한 화면에서 「AI가 읽고 있습니다」와 「다시 읽지 않습니다」를 함께 말하지 않고,
-      // 실제로 일어나는 일 하나만 말한다(이것은 키가 있을 때도 같은 제품 동작이라 숨길 재생 사정이 아니다 — 본 것을 사실로 믿을 수 있어야 한다)
+      // 제공 문서(서버 result.cache)는 이 PC에서 AI가 읽지 않는다. 「AI가 읽고 있습니다」라고 지어 말하지 않고(본 것을 사실로 믿을 수 있어야 한다)
+      // 「추출 결과를 불러왔습니다」처럼 일어난 일만 말한다. 왜 불러오는지는 알리지 않는다(CLAUDE.md 5절)
       const cached = !!(result && result.cache);
-      hostSlot.hidden = cached;      // 저장된 결과에는 AI 실행 기록이 없다 — 빈 기록 칸 대신 서버가 한 일(H.trail)과 절마다 뽑힌 것(cachedProcessHtml)이 그 자리에 있다
-      const headline = cached ? (L.state === 'done' ? '저장된 추출 결과를 불러왔습니다' : L.state === 'failed' ? '저장된 추출 결과를 불러오지 못했습니다' : '저장된 추출 결과를 불러오는 중 — 이 문서는 AI가 다시 읽지 않습니다')
+      hostSlot.hidden = cached;      // 제공 문서에는 AI 실행 기록이 없다 — 빈 기록 칸 대신 서버가 한 일(H.trail)과 절마다 뽑힌 것(cachedProcessHtml)이 그 자리에 있다
+      const headline = cached ? (L.state === 'done' ? '추출 결과를 불러왔습니다' : L.state === 'failed' ? '추출 결과를 불러오지 못했습니다' : '추출 결과를 불러오는 중')
         : L.state === 'starting' ? 'AI 추출 작업을 여는 중' : L.state === 'done' ? 'AI 추출이 끝났습니다'
         : L.state === 'failed' ? (others ? '한 구간이 멈췄습니다 — 남은 구간은 계속 읽는 중' : 'AI 추출이 끝나지 않았습니다') : p ? `AI가 문서를 읽고 있습니다 — 구간 ${p.total}개 가운데 ${p.done}개를 마쳤습니다` : 'AI가 문서를 읽고 있습니다';
       const info = [c && c.attempts ? `낸 결과가 검증에서 ${c.attempts}번 되돌아갔습니다${(c.reasons || []).length ? ` — 마지막 사유: ${c.reasons[c.reasons.length - 1]}` : ''}` : ''].filter(Boolean).join(' ');
@@ -963,7 +967,7 @@
         L.result = result; L.error = '';
         if (result.preview) {
           const pv = result.preview, issues = ((pv.validation || {}).issues || []).length;
-          if (T && T.state('verify') === 'run') { T.done('verify', { note: `인용 ${anchorCount(pv)}곳이 원문의 그 자리에 있습니다${pv.coverage ? ` · 원문 글자의 ${Math.round(pv.coverage.ratio * 100)} %가 인용에 쓰였습니다` : ''} · 사람이 확인할 곳 ${issues}건` }); T.start('prepare'); }
+          if (T && T.state('verify') === 'run') { T.done('verify', { note: `인용 ${anchorCount(pv)}곳이 원문의 그 자리에 있습니다 · 사람이 확인할 곳 ${issues}건` }); T.start('prepare'); }
           await loadManualCatalog(); if (H.live !== L || H.preview !== r) return;
           if (T && T.state('prepare') === 'run') T.done('prepare', { note: `매뉴얼 절 ${pv.sections.length}개 · 조치 방법 ${pv.procedures.length}개를 검토 화면에 올렸습니다` });
           L.state = 'done'; H.preview = result.preview; renderPreview(); return;      // 3단계로 — 기록 칸은 「추출 과정 보기」로 옮겨 간다
@@ -1061,7 +1065,7 @@
       const why = $('#manualCommitWhy'), stop = (text, key) => { note(why, text, true); if (key) H.review.show('proc', key); };
       note(why, '');
       const by = manualActor(); if (!by) { stop('담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요.'); return; }
-      if (!$('#manualReviewed').checked) { stop('원문을 대조하고 검토 완료를 표시하세요.'); return; }
+      if (!$('#manualReviewed').checked) { stop('원문과 견준 뒤 검토 완료를 표시하세요.'); return; }
       const f = (p, name) => box.querySelector(`[data-${name}="${CSS.escape(p.id)}"]`);
       const built = commitRequest(r, p => ({ id: f(p, 'manual-id').value, name: f(p, 'manual-name').value,
         steps: new Map([...box.querySelectorAll(`[data-manual-step="${CSS.escape(p.id)}"]`)].map(x => [Number(x.dataset.order), x.value])),
@@ -1075,7 +1079,7 @@
       msg(''); $('#manualDone').innerHTML = '';
       commitView(true, { busy: true });
       $('#manualCommitTitle').textContent = '검토한 내용을 지식 지도에 적재하는 중입니다';
-      const flow = hydLive.steps($('#manualCommitSteps'), [...(r.previous_batch ? [{ key: 'changes', label: '개정으로 빠지는 항목 확인', hint: '이전 판본과 새 판본을 견주는 중입니다.' }] : []),
+      const flow = hydLive.steps($('#manualCommitSteps'), [...(r.previous_batch ? [{ key: 'changes', label: '개정으로 빠지는 항목 확인', hint: '이전 판본과 새 판본을 대조하는 중입니다.' }] : []),
         { key: 'commit', label: `검토한 내용을 지식 지도에 적재 — 매뉴얼 절 ${r.sections.length}개 · 조치 방법 ${r.procedures.length}개 · 단계 ${r.procedures.reduce((n, p) => n + p.steps.length, 0)}개` +
             (KNOW_GROUPS.some(([g]) => ((r.knowledge || {})[g] || []).length) ? ' · ' + KNOW_GROUPS.filter(([g]) => ((r.knowledge || {})[g] || []).length).map(([g, title]) => `${title} ${r.knowledge[g].length - box.querySelectorAll(`[data-know-drop="${g}"]:checked`).length}개`).join(' · ') : ''), hint: '절 · 조치 방법 · 단계 · 규칙 연결을 한 번에 넣는 중입니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
         { key: 'reload', label: '적재한 문서 목록과 지식 지도 다시 읽기' }], { label: '적재 단계' });
@@ -1089,7 +1093,7 @@
           if (H.preview !== r) return;
           flow.done('changes', { note: changes.removed?.length ? `빠지는 항목 ${changes.removed.length}개` : '빠지는 항목 없음' });
           if (changes.removed?.length) {
-            const labels={Skill:'조치 방법',FailureMode:'고장 유형',Cause:'원인',Evidence:'진단 근거',Rule:'판단 규칙',
+            const labels={Skill:'조치 방법',FailureMode:'고장 유형',Cause:'원인',Evidence:'증거',Rule:'판단 규칙',
               Step:'절차 단계',KnowledgeSource:'이전 원문 판본 연결',ManualSection:'이전 원문 절 연결'};
             const names=changes.removed.map(n=>`${n.labels.map(l=>labels[l] || l).join(' · ')}: ${n.name}`).join('\n');
             const proceed=await UI.confirm({title:'개정으로 지워지는 항목을 확인하세요',
@@ -1102,10 +1106,9 @@
         const out = await postJ(API.process + '/api/kg/manuals/commit', request);
         if (H.preview !== r) return;
         flow.done('commit', { note: `절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}` });
-        const activated = out.candidate_activation && typeof out.candidate_activation === 'object' ? Object.entries(out.candidate_activation) : [];
-        msg(`적재 완료: 절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}. ` + (activated.length
-          ? '후보 규칙에 연결: ' + activated.map(([fm, rules]) => `${hydWords.idName(fm)} → ${rules.map(r => hydWords.idName(r)).join(', ')}`).join(' · ') + ' (되돌리면 함께 빠집니다)'
-          : '연결된 후보 규칙이 없어 판단 후보는 바뀌지 않았습니다.'));
+        // 서버 영수증의 candidate_activation = 이 적재가 실제로 기존 후보 규칙에 이어 붙인 조치 방법 {절차 번호: [규칙 id]}(manual_graph.candidate_joins) — 없으면 덧붙일 말이 없다
+        const joined = Object.keys(out.candidate_activation || {}).map(id => (request.procedures.find(p => p.id === id) || {}).name || id);
+        msg(`적재 완료: 절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}.` + (joined.length ? ` 이미 있던 판단 규칙이 이 문서의 조치 방법 ${joined.join(' · ')}도 후보로 냅니다.` : ''));
         H.skills = [];
         flow.start(at = 'reload');
         await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
@@ -1147,19 +1150,21 @@
         const p=r.procedures.find(p=>p.id===id), registered=H.manualCatalog?.skills?.find(x=>x.id===target.value), contract=registered?.reference_contract;
         const sourceSteps=[...box.querySelectorAll(`[data-manual-step="${CSS.escape(id)}"]`)].map(x=>({order:Number(x.dataset.order),text:x.value}));
         const lines=steps=>`<ol>${steps.map(s=>`<li value="${esc(s.order)}">${esc(s.text)}</li>`).join('')}</ol>`;
-        let state='이미 등록된 절차와 연결하지 않고, 이 문서의 원문 단계만 보관합니다.';
+        let state='이미 등록된 절차와 연결하지 않고, 이 문서의 원문 단계만 보관합니다.', same=false;
         const typed=contract && contract.id===target.value && typeof contract.sopId==='string' && /^[a-f0-9]{64}$/.test(contract.contract_sha256) && Array.isArray(contract.steps) && contract.steps.every(s=>s && Number.isInteger(s.order) && typeof s.text==='string');
-        if(target.value) state=!typed ? '연결할 절차의 등록 내용을 읽지 못해 적재할 수 없습니다.' : field('manual-id').value.trim()!==contract.sopId ? '원문 번호가 등록된 절차와 달라 연결할 수 없습니다.' : JSON.stringify(sourceSteps)!==JSON.stringify(contract.steps) ? '원문의 단계가 등록된 절차의 단계와 달라 연결할 수 없습니다.' : pin.value!==contract.contract_sha256 ? '고른 뒤에 등록된 절차가 바뀌었습니다. 연결할 절차를 다시 고르고 검토하세요.' : '원문 번호와 모든 단계가 등록된 절차와 같습니다. 등록된 절차의 실행 단계는 바뀌지 않습니다.';
-        const role=manualLink(r,p).approver, roleName=H.manualCatalog?.roles?.find(x=>x.id===role)?.name;
+        if(target.value) { state=!typed ? '연결할 절차의 등록 내용을 읽지 못해 적재할 수 없습니다.' : field('manual-id').value.trim()!==contract.sopId ? '원문 번호가 등록된 절차와 달라 연결할 수 없습니다.' : JSON.stringify(sourceSteps)!==JSON.stringify(contract.steps) ? '원문의 단계가 등록된 절차의 단계와 달라 연결할 수 없습니다.' : pin.value!==contract.contract_sha256 ? '고른 뒤에 등록된 절차가 바뀌었습니다. 연결할 절차를 다시 고르고 검토하세요.' : '';
+          if(!state) { same=true; state=`이미 등록된 「${registered.name || contract.sopId}」 절차와 같은 절차로 잇습니다.`; } }
+        // 결론 한 줄이 먼저다. 두 절차의 단계를 나란히 견주는 것은 접어 두고, 연결할 수 없을 때만 펴서 어디가 다른지 보인다(다시 그려도 사람이 편 것은 그대로)
         const sourceSections=r.sections.filter(s=>s.ref===p.section || p.steps.some(step=>step.manual===s.ref));
-        comparison.innerHTML=`<p><b>${esc(state)}</b></p><p class="muted">원문 담당 역할: ${esc(roleName ? roleName+' · 참고 보관에는 사용하지 않습니다.' : '미상 · 자동으로 채우지 않습니다.')}</p><h4>이 문서의 원문 단계</h4>${lines(sourceSteps)}`+
-          (target.value ? `<h4>이 문서의 원문 절 · 판본 대조</h4>${sourceSections.length ? sourceSections.map(s=>`<p><b>${esc(s.ref)} ${esc(s.title || '')}</b></p><p>${esc(s.excerpt || '원문 절 본문 없음')}</p>`).join('') : '<p>연결된 원문 절 기록 없음</p>'}<p class="muted">원문 절과 기존 등록 설명의 기준값이 같다고 추정하지 않습니다. 재참조는 기존 실행 기준을 바꾸는 작업이 아닙니다.</p>` : '')+
-          (contract ? `<h4>현재 등록된 실행 단계 · ${esc(registered.name || '등록 이름 없음')} (${esc(contract.sopId || '원문 번호 미상')})</h4>${Array.isArray(contract.steps) ? lines(contract.steps) : '<p>실행 단계 정보 읽기 실패</p>'}<p class="muted">대상 원문 소유 문서: ${contract.owner ? '등록됨 · 식별자는 원문에서 확인하세요.' : '소유 문서 기록 없음'}</p><h4>현재 실행 단계가 참조하는 등록 설명</h4>${Array.isArray(contract.sections) && contract.sections.length ? contract.sections.map(s=>`<p><b>${esc(s.ref || '절 번호 미상')} ${esc(s.title || '')}</b></p><p>${esc(s.excerpt || '등록 설명 본문 없음')}</p><p class="muted">${s.source_id && s.citation ? '등록된 출처 식별 · 인용 정보는 판본 원문에서 확인하세요.' : '등록된 기존 설명 · 원본 인용 기록 없음'}</p>`).join('') : '<p>등록 설명 기록 없음 · 원문 기준값과 같은 판본이라고 판단할 수 없습니다.</p>'}` : '')+
-          UI.raw({existing_skill_id:target.value || null,reference_contract_sha256:pin.value || null,current_contract:contract || null}, { title: '참조 대상 · 고정 판본 원문' });
+        const was=comparison.querySelector('[data-reference-detail]')?.open;
+        const detail=!target.value ? '' : UI.fold('이 문서의 단계와 등록된 절차의 단계', `<h4>이 문서의 원문 단계</h4>${lines(sourceSteps)}`+
+          `<h4>이 문서의 원문 절</h4>${sourceSections.length ? sourceSections.map(s=>`<p><b>${esc(s.ref)} ${esc(s.title || '')}</b></p><p>${esc(s.excerpt || '원문 절 본문 없음')}</p>`).join('') : '<p>연결된 원문 절 기록 없음</p>'}`+
+          (contract ? `<h4>등록된 절차의 단계 · ${esc(registered.name || '등록 이름 없음')} (${esc(contract.sopId || '원문 번호 미상')})</h4>${Array.isArray(contract.steps) ? lines(contract.steps) : '<p>단계 정보 읽기 실패</p>'}<h4>등록된 절차가 참조하는 절</h4>${Array.isArray(contract.sections) && contract.sections.length ? contract.sections.map(s=>`<p><b>${esc(s.ref || '절 번호 미상')} ${esc(s.title || '')}</b></p><p>${esc(s.excerpt || '본문 없음')}</p>`).join('') : '<p>참조하는 절 기록 없음</p>'}` : ''), { open: was ?? !same }).replace('<details', '<details data-reference-detail');
+        comparison.innerHTML=`<p><b>${esc(state)}</b></p>${detail}`+(target.value ? UI.raw({existing_skill_id:target.value || null,reference_contract_sha256:pin.value || null,current_contract:contract || null}, { title: '연결 원문' }) : '');
       };
       const update=()=>{
         const reference=kind.value==='reference'; field('reference-fields').hidden=!reference;
-        field('manual-scope').querySelector('[value="fault"]').textContent=reference ? '일반 원문 참고 · 업무 실행 연결 없음' : '고장 조치 · 고장 유형 연결 필수';
+        field('manual-scope').querySelector('[value="fault"]').textContent=reference ? '참고 절차' : '고장 조치';
         if(reference) field('rel').value='';
         ['fm','rel','affects','manual-scope'].forEach(name=>{field(name).disabled=reference;});
         field('purchase-fields').hidden=reference || field('manual-scope').value!=='purchase';
@@ -1185,7 +1190,7 @@
     });
     box.querySelectorAll('[data-manual-supplier-policy]').forEach(select => {
       const id=select.dataset.manualSupplierPolicy, usage=box.querySelector(`[data-manual-executable="${CSS.escape(id)}"]`);
-      const update=()=>{box.querySelector(`[data-supplier-review="${CSS.escape(id)}"]`).textContent=usage.value==='false' ? (select.value ? '참고 보관에는 공급사 선정 기준을 지정할 수 없습니다. 기준을 「지정하지 않음」으로 바꾸세요.' : '참고 보관은 공급사를 고르지 않고 구매 요청도 만들지 않습니다.') : select.value ? '고른 기준으로 지금의 부품별 견적에서 공급사를 계산합니다. 원문에 적힌 공급사는 쓰지 않으며, 사람 승인과 구매 실행은 따로 진행됩니다.' : '기준을 지정하지 않으면 원문에 적힌 공급사로 검토합니다. 원문에 없는 값은 추정하지 않습니다.';};
+      const update=()=>{box.querySelector(`[data-supplier-review="${CSS.escape(id)}"]`).textContent=usage.value==='false' ? (select.value ? '「원문만 보관」에는 공급사 선정 기준을 지정할 수 없습니다. 기준을 「지정하지 않음」으로 바꾸세요.' : '「원문만 보관」은 공급사를 고르지 않고 구매 요청도 만들지 않습니다.') : select.value ? '고른 기준으로 지금의 부품별 견적에서 공급사를 계산합니다. 원문에 적힌 공급사는 쓰지 않습니다.' : '기준을 지정하지 않으면 원문에 적힌 공급사를 씁니다.';};
       select.addEventListener('change',update); usage.addEventListener('change',update); update();
     });
   }
@@ -1261,13 +1266,13 @@
   /* ---- 한 번에 적재(검토 없이) — 본: process-gpt-vue3 KbUploadZone(「n / 전체 접수 · 실패 n」과 문서별 상태). 서버 주소는 한 편씩 올릴 때와 같다(preview · extractions · changes · commit).
      고른 제공 문서마다 차례로: 올리기 → AI 추출(끝날 때까지 1.5초마다 묻는다 — 지금 읽는 구간이 줄에 흐른다) → 검토가 필요한지 판정 → 적재.
      적재하지 않고 「검토 필요」로 멈추는 때: 자동 검증이 통과하지 못했다 · 고장 유형이 정해지지 않은 조치 방법이 있다 · 손대지 않은 칸으로는 적재 요청을 만들 수 없다(commitRequest 가 멈춤) ·
-     개정으로 이전 판의 항목이 빠진다(사람이 확인할 일). 멈춘 문서는 [검토 열기]로 그 문서의 AI 추출 결과를 검토 단계에 연다.
+     개정으로 이전 판본의 항목이 빠진다(사람이 확인할 일). 멈춘 문서는 [검토 열기]로 그 문서의 AI 추출 결과를 검토 단계에 연다.
      H.batch = { running, items: [{ file, title, state('todo' | 'now' | 'done' | 'mine' | 'fail'), sub, preview, sent }] } */
   const BATCH_WAITING = ['TODO', 'IN_PROGRESS', 'SUBMITTED'];
   function batchNeedsReview(r) {
     const v = r.validation;
     if (!(r.sections || []).length || !(r.procedures || []).length) return 'AI 추출 결과에 매뉴얼 절이나 조치 방법이 없습니다.';
-    if (!v || v.checked !== true || !Array.isArray(v.issues)) return '자동 검증 결과가 없어 사람이 원문과 대조해야 합니다.';
+    if (!v || v.checked !== true || !Array.isArray(v.issues)) return '자동 검증 결과가 없어 사람이 원문과 견주어야 합니다.';
     if (v.technical_ready !== true) return `자동 검증이 「검토 필요 ${v.issues.length}건」을 냈습니다.`;
     if (r.procedures.some(p => needsLink(r, p))) return '고장 유형이 정해지지 않은 조치 방법이 있습니다.';
     return '';
@@ -1276,7 +1281,7 @@
     const box = $('#manualBatch'); if (!box) return;
     const B = H.batch, n = H.picked.size;
     if (!B) {
-      box.innerHTML = n ? `<footer class="form-foot doc-batch-bar"><span class="muted">사람 검토 없이 적재합니다. 자동 검증이 사람이 확인할 곳을 찾은 문서는 적재하지 않고 멈춥니다.</span>` +
+      box.innerHTML = n ? `<footer class="form-foot doc-batch-bar"><span class="muted">한 번에 적재 — 사람 검토 대신 자동 검증을 통과한 문서만 적재합니다. 검증에 걸린 문서는 적재하지 않고 멈춥니다.</span>` +
         `<button type="button" class="btn" id="manualBatchRun">${icon('layers')}고른 ${n}개 한 번에 적재</button></footer>` : '';
       return;
     }
@@ -1312,7 +1317,7 @@
           result = await getJ(url + '/' + encodeURIComponent(created.instance));
           if (result.preview || !BATCH_WAITING.includes(result.status)) break;
           const p = result.progress;
-          say(it, 'now', result.cache ? 'AI 추출 — 저장된 추출 결과를 불러오는 중' : p && p.total > 1 ? `AI 추출 — 구간 ${p.total}개 가운데 ${p.done}개를 읽었습니다` : 'AI 추출 — AI가 문서를 읽는 중');
+          say(it, 'now', result.cache ? 'AI 추출 — 추출 결과를 불러오는 중' : p && p.total > 1 ? `AI 추출 — 구간 ${p.total}개 가운데 ${p.done}개를 읽었습니다` : 'AI 추출 — AI가 문서를 읽는 중');
           await new Promise(ok => setTimeout(ok, 1500));
         }
         if (!result.preview) { say(it, 'mine', `검토 필요 — AI 추출이 끝나지 않았습니다(${UI.status(result.status)}).`); continue; }
@@ -1325,7 +1330,7 @@
         if (built.request.previous_batch) {
           say(it, 'now', '개정으로 빠지는 항목을 확인하는 중');
           const changes = await postJ(API.process + '/api/kg/manuals/changes', built.request);
-          if ((changes.removed || []).length) { say(it, 'mine', `검토 필요 — 개정하면 이전 판의 항목 ${changes.removed.length}개가 지식 지도에서 빠집니다.`); continue; }
+          if ((changes.removed || []).length) { say(it, 'mine', `검토 필요 — 개정하면 이전 판본의 항목 ${changes.removed.length}개가 지식 지도에서 빠집니다.`); continue; }
         }
         say(it, 'now', `지식 지도에 적재하는 중 — 매뉴얼 절 ${r.sections.length}개 · 조치 방법 ${r.procedures.length}개`);
         const out = await postJ(API.process + '/api/kg/manuals/commit', built.request);
@@ -1369,8 +1374,8 @@
     const f = $('#manualFile').files[0]; if (!f) { note($('#manualStatus'), '올릴 파일을 먼저 선택하세요.', true); return; }
     uploadManual(f.name, f, $('#manualDocumentId').value.trim());
   });
-  // 사용 범위(서버 GET /api/course-access): 지금 단계에서는 제공 문서만 올릴 수 있다 — 미리 안내하지 않고 다른 문서를 올리면 서버가 거절한 까닭을
-  // 그 자리에 보인다(안내는 벗어난 행동에서만). 질문 확인 단추는 서버가 준 까닭으로 끈다
+  // 사용 범위(서버 GET /api/course-access): 제공 문서만 받는 때에도 미리 안내하지 않는다 — 다른 문서를 올리면 서버가 거절한 까닭을
+  // 그 자리에 보인다(안내는 벗어난 행동에서만). 질문 확인 단추도 누를 때 그 뒤 한 줄에 서버 까닭이 나온다(courseAccess.js press)
   function courseScope() { renderProvided(); hydCourseAccess.apply($('#manualHistory')); }
   hydCourseAccess.onChange(courseScope); courseScope();   // 표가 먼저 와 있었으면 바로 그린다
   $('#manualFile').addEventListener('change', () => {

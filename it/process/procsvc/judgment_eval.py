@@ -4,9 +4,9 @@
 여기서는 그 확인을 반복 가능하게 만든다.
 
   정답표  **데이터**다. 코드 · 시드 · 파일에 정답이 없다. 강사 · 수강생이 포털(또는 API)에서 항목을 적어 저장하고, 처음엔 비어 있다.
-          항목 = 경보 상황(설비 · 패턴 · 가정 사실) + 기대 원인 · 고장 유형, 1위로 허용되는 조치, 빠져야 할 조치(제외돼야 / 1위면 안 됨),
+          항목 = 경보 상황(설비 · 패턴 · 가정 사실) + 기대 원인 · 고장 유형, 1순위로 허용되는 조치, 빠져야 할 조치(제외돼야 / 1순위면 안 됨),
           근거에 있어야 할 지식 id. validate_item()은 모양만 검사하고, 이름이 지식 그래프에 있는지는 eval_api 가 그래프에 묻는다.
-  채점    score_judgement(item, judged) — 순수 함수. 원인 적중 · 1위 허용 · 빠질 조치 미추천 · 근거 포함률 → 가중 합(0~100).
+  채점    score_judgement(item, judged) — 순수 함수. 원인 적중 · 1순위 허용 · 빠질 조치 미추천 · 근거 포함률 → 가중 합(0~100).
           정답표에 적지 않은 검사(빠질 조치를 비운 항목)는 가중치에서 빼고 나머지로 다시 나눈다 — 검사할 것이 없는 칸을 「맞음」으로 세지 않는다.
           judged 는 normalize_decision()(agent /api/agent/decide 응답 · process 가 받은 판단) 또는 normalize_evaluation()
           (agent /api/agent/evaluate 실행 기록) · worker_judgement()(지난 처리 건의 실제 워커 출력)이 같은 모양으로 만든다.
@@ -91,7 +91,7 @@ def validate_item(item: dict) -> dict:
     out['expected'] = {'cause': exp['cause'].strip(), 'failure_mode': exp['failure_mode'].strip()}
     allowed = item.get('allowed_top')
     if not isinstance(allowed, list) or not allowed or any(not isinstance(s, str) or not s.startswith('skill:') for s in allowed):
-        raise ValueError('1위로 허용되는 조치(skill:…)를 하나 이상 적으세요')
+        raise ValueError('1순위로 허용되는 조치(skill:…)를 하나 이상 적으세요')
     out['allowed_top'] = list(dict.fromkeys(s.strip() for s in allowed))
     forbidden = item.get('forbidden') or []
     if not isinstance(forbidden, list):
@@ -99,9 +99,9 @@ def validate_item(item: dict) -> dict:
     out['forbidden'] = []
     for j, f in enumerate(forbidden):
         if not isinstance(f, dict) or not str(f.get('skill') or '').startswith('skill:') or f.get('expect') not in FORBIDDEN_EXPECTS:
-            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄은 조치(skill:…)와 기대(제외돼야 함 · 1위면 안 됨)가 있어야 합니다")
+            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄은 조치(skill:…)와 기대(제외돼야 함 · 1순위면 안 됨)가 있어야 합니다")
         if f['skill'] in out['allowed_top']:
-            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄의 '{f['skill']}'{particle(f['skill'], '이')} 1위로 허용되는 조치에도 있습니다")
+            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄의 '{f['skill']}'{particle(f['skill'], '이')} 1순위로 허용되는 조치에도 있습니다")
         if f.get('rule') is not None and not str(f['rule']).startswith('rule:'):
             raise ValueError(f'빠져야 할 조치 {j + 1}번째 줄의 근거 규칙은 rule:… 이어야 합니다')
         out['forbidden'].append({k: f[k] for k in ('skill', 'expect', 'rule', 'why') if f.get(k)})
@@ -247,7 +247,7 @@ def score_judgement(item: dict, judged: dict, weights: dict | None = None) -> di
             got = '후보 아님' if o is None else ('제외됨 (' + ', '.join(x for x in o['violations'] if x) + ')' if not o['feasible'] else f"실행 가능 · {o['rank']}위")
         else:
             ok = rec != f['skill']
-            got = '1위 추천됨' if rec == f['skill'] else ('후보 아님' if o is None else f"{o['rank']}위")
+            got = '1순위 추천됨' if rec == f['skill'] else ('후보 아님' if o is None else f"{o['rank']}위")
         details.append({'skill': f['skill'], 'expect': f['expect'], 'rule': f.get('rule'), 'ok': ok, 'got': got})
     forbidden_ratio = (sum(d['ok'] for d in details) / len(details)) if details else None   # None = 정답표가 이 검사를 적지 않음
     cited = set(judged.get('cited') or [])

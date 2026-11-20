@@ -250,7 +250,7 @@ def mount(app, *, policy, runtime_factory, settings):
     def runtime_of(tenant):
         value = runtime_factory()
         if value is None or value.tenant_id != tenant:
-            raise HTTPException(503, '처리 서비스가 아직 준비되지 않았습니다')
+            raise HTTPException(503, '흐름 엔진이 아직 준비되지 않았습니다')
         return value
 
     @app.on_event('startup')

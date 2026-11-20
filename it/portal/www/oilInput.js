@@ -63,7 +63,7 @@
       O.el.querySelector('[data-retry]')?.addEventListener('click', () => mount(O.el));
       return;
     }
-    if (!p) { O.el.innerHTML = UI.empty('오일 분석 입력 칸이 서버에 없습니다', '처리 서비스가 이 화면과 다른 판입니다. 서비스를 이 화면과 같은 판으로 다시 시작하세요.'); return; }
+    if (!p) { O.el.innerHTML = UI.empty('오일 분석 입력 칸이 서버에 없습니다', '흐름 엔진이 이 화면과 다른 판본입니다. 서비스를 이 화면과 같은 판본으로 다시 시작하세요.'); return; }
     const opt = (v, t, sel) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`;
     const unit = (p.items.find(i => i.key === d.item) || {}).unit || '';
     // 폼 한 칸(디자인기준 5-2 의 조건 칸 하나 — 주 단추는 칸 맨 아래 칸 폭 가득) → 그 아래에 보낸 결과. 꺼진 단추의 까닭과 오류는 단추 위에 글로

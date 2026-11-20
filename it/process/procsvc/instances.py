@@ -669,7 +669,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if citation_changes:
             self.repo.record_events([{'job_id':'citation-reconcile:'+uuid4().hex,'todo_id':wi['id'],
                 'proc_inst_id':wi['proc_inst_id'],'crew_type':'result','event_type':'task_working',
-                'data':{'type':'notice','name':'인계 근거 조회문 원천 대조·교정','changes':citation_changes}}])
+                'data':{'type':'notice','name':'인계 근거 쿼리 원천 대조 · 교정','changes':citation_changes}}])
         out = {"instance": inst, "workitem": wi, "reached": adv.reached, "ended": adv.ended, "pending": adv.pending}
         if adv.pending:
             self._after_commit(self.hooks.audit,engine.variables(inst).get("asset", "-"), "process", "TASK_PENDING",

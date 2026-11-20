@@ -342,7 +342,7 @@ def refusal(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
         raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다" + (f"({when})" if when else "")
                       + " — [처리 건에서 보기]로 그 처리 건을 열어 끝낸 뒤 다시 누르세요", running)
     if not route(spec["pattern"]):
-        raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」에서 배포하세요(흐름 가져오기는 등록까지만 합니다)")
+        raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — 메뉴 「흐름」에서 이 흐름을 골라 「판본 · 배포」에서 배포하세요(흐름 가져오기는 등록까지만 합니다)")
     return row
 
 
@@ -383,7 +383,7 @@ def started(rt, key: str, alert: dict, definition: str | None, person: dict | No
     spec = SCENARIOS[key]
     if not definition:
         raise NotStarted(f"{spec['title']}: 경보 {alert['alertId']} 를 접수하는 사이 '{spec['label']}' 경보를 여는 흐름의 배포가 내려갔습니다"
-                         f"{_went_to(rt, alert['alertId'])}. [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」에서 다시 배포한 뒤 누르세요")
+                         f"{_went_to(rt, alert['alertId'])}. 메뉴 「흐름」에서 이 흐름을 골라 「판본 · 배포」에서 다시 배포한 뒤 누르세요")
     inst = rt.repo.find_event_instance(rt.tenant_id, definition, alert["alertId"])
     if inst is None:
         raise NotStarted(f"{spec['title']}: 경보 {alert['alertId']} 를 접수했지만 흐름 {definition} 의 처리 건이 열리지 않았습니다"

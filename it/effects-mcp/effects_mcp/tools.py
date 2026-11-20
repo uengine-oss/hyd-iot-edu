@@ -159,7 +159,7 @@ class EffectTools:
         return self._once("send_mail", idempotency_key, request, work)
 
     def smtp_ready(self) -> dict:
-        """건강 검사: 메일 서버(수업 메일함)가 연결 · NOOP 에 답하는가."""
+        """건강 검사: 메일 서버(시험용 메일함)가 연결 · NOOP 에 답하는가."""
         try:
             with self._smtp() as smtp:
                 code = smtp.noop()[0]

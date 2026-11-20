@@ -193,6 +193,22 @@ def _history_summary(history):
     return [dict(node=node, type=kind, count=n) for (node, kind), n in sorted(counts.items())]
 
 
+def candidate_joins(plan):
+    """A075: 이 문서의 조치 방법이 이어 붙는 기존 후보 규칙 {절차 번호: [규칙 id, …]} — 실제로 OUTPUTS 를 잇는 것만(빈 목록은 싣지 않는다).
+    절차 번호(p['id'])로 묶는 것은 적재 화면이 검토한 절차의 이름을 그 번호로 찾기 때문이다.
+    plan['candidate_rules'](고장 유형만으로 고르는 규칙 — manual_api 가 적재 직전에 읽는다)에서, 문서가 스스로 후보 규칙을 적은 조치 방법 ·
+    그 문서의 규칙 · 바로잡는 관계가 아닌 조치(예방 · 참고 절차)를 뺀다. 그래프 쓰기(desired)와 적재 영수증(_receipt)이 이 한 판정을 쓴다."""
+    own_candidates, own_rules = manual_knowledge.own_candidate_outputs(plan, skill_id)
+    joins = {}
+    for p in plan['procedures']:
+        if p.get('kind') == 'reference' or skill_id(p['id']) in own_candidates or p.get('relation') not in kgadmin.CORRECTIVE_RELATIONS:
+            continue
+        rules = [rule for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []) if rule not in own_rules]
+        if rules:
+            joins[p['id']] = rules
+    return joins
+
+
 def desired(plan):
     document = plan['document']
     prefix = 'manual:' + document + ':' + plan['sha256']
@@ -221,7 +237,7 @@ def desired(plan):
                        citation=canonical(s['anchor']))
         edge(sections[s['ref']], 'PART_OF', source)
     fms, causes = manual_knowledge.desired(plan, node, edge, sections, skill_id)
-    own_candidates, own_rules = manual_knowledge.own_candidate_outputs(plan, skill_id)
+    joins = candidate_joins(plan)
     for p in plan['procedures']:
         if p.get('kind') == 'reference':
             manual_references.reference_shape(p['id'], p)
@@ -247,11 +263,8 @@ def desired(plan):
                 edge(skill, 'INVOLVES_PART', ('Part', part))
         else:
             edge(fms.get(p['failureMode'], ('FailureMode', p['failureMode'])), p['relation'], skill)
-        # C1: a document that states its own candidate rule is not widened; a preventive (PREVENTED_BY) SOP never joins incident rules
-        if skill[1] not in own_candidates and p['relation'] in kgadmin.CORRECTIVE_RELATIONS:
-            for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []):
-                if rule not in own_rules:
-                    edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules
+        for rule in joins.get(p['id'], []):
+            edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules(candidate_joins)
         if p.get('approver'):
             edge(skill, 'APPROVED_BY', ('Role', p['approver']))
         for a in p.get('affects') or []:            # A079: reviewed impact → the SOP reaches the BSC like seeded skills
@@ -391,7 +404,7 @@ def _receipt(plan, at, replayed=False):
                 steps=sum(len(p['steps']) for p in plan['procedures']),
                 knowledge={kind: [i['id'] for i in k.get(kind) or []] for kind in manual_knowledge.KINDS},
                 actions=sum(len(p.get('actions') or []) for p in plan['procedures']),
-                candidate_activation=plan.get('candidate_rules') or 'NOT_CHANGED', extraction=plan.get('extraction'),
+                candidate_activation=candidate_joins(plan), extraction=plan.get('extraction'),
                 references=plan.get('references') or {},
                 source_value_warnings=manual_knowledge.source_value_warnings(plan),
                 reference_procedures=[p['id'] for p in plan['procedures'] if p.get('kind') == 'reference'],

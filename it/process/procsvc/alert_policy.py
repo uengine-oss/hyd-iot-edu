@@ -15,7 +15,7 @@ def validate(raw):
             raise ValueError('회복 기준에는 tag와 지원 비교 연산(<, >=)이 필요합니다')
         limit=c.get('limit')
         if type(limit) not in (int,float) or not math.isfinite(limit) or c.get('requireClear') is not True:
-            raise ValueError('회복 기준에는 유한 임계값과 requireClear=true가 필요합니다')
+            raise ValueError('회복 기준에는 유한 임계치와 requireClear=true가 필요합니다')
     fallback=policy.get('unsupported')
     if not isinstance(fallback,dict) or any(not isinstance(fallback.get(k),str) or not fallback[k].strip() for k in ('definition','version')):
         raise ValueError('미지원 경보의 사람 검토 정의/버전을 지정하세요')

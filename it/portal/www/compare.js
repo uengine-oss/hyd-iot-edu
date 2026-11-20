@@ -50,11 +50,11 @@
   const scenarioLabel = t => scenarioOf(t)?.label || `${UI.name(t.pattern)} · ${t.asset}`;
   const skillShow = name => { for (const a of S.opts?.agents || []) { const k = (a.skills || []).find(x => x.name === name); if (k) return UI.skillLabel(k).label; } return name; };      // 스킬은 등록한 설명으로 부른다(없으면 등록 이름)
   // 서버 문장 속의 도구 서버 id(「… 은 enterprise 서버의 도구입니다」)는 이름표로 읽는다. 앞의 두 바꿈은 옛 서버 판본이 저장한 시험 기록(지난 시험과 비교)에만 남아 있는 말이다
-  const plainReason = s => UI.idText(String(s || '').replaceAll('판단 엔진 도구(hyd-dmn)', '판단 시스템 도구 서버').replace(/hyd-dmn 가/g, '판단 시스템 도구 서버가')
+  const plainReason = s => UI.idText(String(s || '').replaceAll('판단 엔진 도구(hyd-dmn)', '판단 서비스 도구 서버').replace(/hyd-dmn 가/g, '판단 서비스 도구 서버가')
     .replace(/\b(hyd-dmn|enterprise-maint|enterprise-purchase|enterprise|neo4j)(?= 서버)/g, id => serverName(id)).replaceAll('hyd-dmn', serverName('hyd-dmn')));
   // 한쪽이 판단에 이르렀는가: ok = 원인과 1순위 조치까지 / hold = 근거가 없어 판단하지 않음(정상 결과) / none = 판단에 이르지 못함
   const reach = t => t.status === 'EVALUATED' ? 'ok' : t.status === 'WITHHELD' ? 'hold' : 'none';
-  const whyNot = t => t.status === 'NO_ENGINE_TOOL' ? '구성에 판단 시스템 도구 서버가 없어 원인 진단부터 하지 못했습니다'
+  const whyNot = t => t.status === 'NO_ENGINE_TOOL' ? '구성에 판단 서비스 도구 서버가 없어 원인 진단부터 하지 못했습니다'
     : t.status === 'NO_FEASIBLE_OPTION' ? '원인은 가렸지만 규정상 실행할 수 있는 조치가 없습니다'
     : t.status === 'WITHHELD' ? '지금 관측 값으로 뒷받침되는 원인이 없어 판단을 보류했습니다'
     : plainReason(t.result?.reason) || (STATUS[t.status] || [t.status])[0];
@@ -154,7 +154,7 @@
         ['1순위', rec ? `<b>${esc(rec.sopId)} ${nm(rec.id)}</b>` : top ? esc(whyNot(t)) : '원인을 가리지 않아 조치를 견주지 않았습니다'],      // 원인을 못 가린 까닭은 원인 줄에 한 번만 쓴다
         ['도구 서버', ((r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음') + cutNote(cutTools)],
         ['스킬', skills + cutNote(cutSkills)]]) +
-      UI.fold('판단 엔진 설명과 시험 번호', (r.explanation ? note(esc(UI.idText(r.explanation))) : '') +
+      UI.fold('판단 서비스 설명과 시험 번호', (r.explanation ? note(esc(UI.idText(r.explanation))) : '') +
         kv([['시험 번호', UI.id(t.id)], ['입력', UI.id(t.snapshot_id)], ['결과 지문', UI.id(String(t.fingerprint).slice(0, 12))]]) + UI.evaluationHtml(r, undefined, { raw: false })) });
   }
 

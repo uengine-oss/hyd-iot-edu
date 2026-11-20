@@ -26,7 +26,7 @@ const PROP_KO = { description: '설명', annotation: '풀이', text: '내용', t
   aliases: '다른 이름', kind: '종류', unit: '단위', tag: '태그', zone: '구역', level: '수준', scope: '범위', source: '출처',
   kpiRole: '지표 성격', frequency: '측정 주기', direction: '좋은 방향', target: '목표', normal: '정상 범위', min: '최소', max: '최대', limit: '한도',
   rule: '규칙 식', formula: '계산식', when: '조건', effect: '효과', expect: '기대 값', hitPolicy: '적용 방식', weight: '가중치', prior: '사전 확률', penalty: '감점',
-  threshold: '임계값', thresholdWarn: '경고 임계값', thresholdCrit: '위험 임계값', detectionMode: '감지 방식', holdSeconds: '지속 시간(초)',
+  threshold: '임계치', thresholdWarn: '경고 임계치', thresholdCrit: '위험 임계치', detectionMode: '감지 방식', holdSeconds: '지속 시간(초)',
   windowSeconds: '관찰 구간(초)', slopeWindowSeconds: '기울기 구간(초)', clearRule: '해제 규칙', clearHoldSeconds: '해제 지속 시간(초)', severity: '심각도',
   sopId: '절차 번호', executable: '실행 가능', isExecutable: '실행 가능', partNo: '부품 번호', avl: '승인 공급사', oem: '순정품', 
   question: '질문', note: '비고', virtual: '가상 값' };
@@ -34,7 +34,7 @@ const PROP_KO = { description: '설명', annotation: '풀이', text: '내용', t
 const PROP_VALUE_KO = { kpiRole: { lagging: '후행 지표(결과)', leading: '선행 지표(결과를 움직이는 요인)' }, direction: { UP: '높을수록 좋음', DOWN: '낮을수록 좋음' },
   severity: { CRITICAL: '매우 높음', HIGH: '높음', MEDIUM: '보통', LOW: '낮음' },
   detectionMode: { held: '조건이 지속 시간 동안 이어지면 경보', 'plc-trip': 'PLC 보호 정지 신호가 오면 경보' },
-  effect: { SELECT: '후보로 고름', EXCLUDE: '후보에서 제외', PENALTY: '감점', WARN: '경고', RANK: '순위 매김' },
+  effect: { SELECT: '허용', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고', RANK: '순위 매김' },
   hitPolicy: { UNIQUE: '맞는 규칙 하나', PRIORITY: '맞는 규칙 가운데 우선순위가 높은 것', COLLECT: '맞는 규칙 모두' },
   kind: { command: '설비 명령', control: '설비 제어', work_order: '정비 요청', transaction: '업무 거래', reference: '참고 절차', manual: '매뉴얼', policy: '정책', regulation: '규정', strategy: '전략',
     controlled: '제어되는 변수', manipulated: '조작하는 변수', disturbance: '외란' },
@@ -48,10 +48,10 @@ const RELATION_KO = {
   MEMBER_OF: '소속 부서', HAS_COMPONENT: '구성 요소', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', OBSERVES: '읽는 상태 변수', MANIPULATES: '바꾸는 변수',
   USES_PART: '교체 부품', SUPPLIED_BY: '공급사', HAS_SKILL: '수행 가능한 조치 방법', SOURCED_FROM: '데이터 출처', REPRESENTS: '나타내는 변수 · 지표',
   DETECTS: '감지 증상', OBSERVED_BY: '관측 센서', INDICATES: '나타내는 고장', OCCURS_IN: '발생 위치', LEADS_TO: '이어지는 고장', CAUSES: '일으키는 고장',
-  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 근거', MITIGATED_BY: '즉시 완화', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치',
+  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 증거', MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치',
   ADDRESSES: '해당 원인', HAS_STEP: '절차 단계', REFERS_TO: '근거 매뉴얼', PART_OF: '속한 문서', CONSISTS_OF: '세부 동작', TARGETS: '조치 대상',
   APPROVED_BY: '승인 역할', AFFECTS: '움직이는 변수 · 지표', REQUIRES_INPUT: '필요한 입력', REQUIRES_DECISION: '먼저 내릴 판단', IMPLEMENTED_BY: '결정표',
-  GOVERNED_BY: '통제 출처', HAS_RULE: '규칙', TESTS: '임계값 검사', OUTPUTS: '고르는 결과', APPLIES_TO: '적용 대상', PENALIZES: '감점 지표',
+  GOVERNED_BY: '통제 출처', HAS_RULE: '규칙', TESTS: '임계치 검사', OUTPUTS: '고르는 결과', APPLIES_TO: '적용 대상', PENALIZES: '감점 지표',
   DERIVED_FROM: '근거 출처', FORECASTS: '예측 대상', ASSUMES: '가정한 조치', GIVEN: '가정한 원인', ON_ASSET: '설비', RAISED_BY: '경보 패턴',
   DIAGNOSED_AS: '판정 원인', INSTANCE_OF: '판단 정의', CHOSE: '고른 조치', DECIDED_BY: '판단한 역할', FOR_INCIDENT: '대상 사건',
 };
@@ -658,7 +658,7 @@ function renderNodePanel() {
     const value = (v, k) => { const text = typeof v === 'string' ? v : typeof v === 'boolean' ? (v ? '예' : '아니요') : Array.isArray(v) && v.every(x => typeof x !== 'object') ? v.join(', ') : typeof v === 'number' ? String(v) : JSON.stringify(v);
       if (k === 'citation') {      // 인용 위치: 원문의 몇 쪽 어느 문장인지(받은 값은 { page, quote, … } — JSON 덩어리를 그대로 내지 않는다)
         let c = v; if (typeof c === 'string') { try { c = JSON.parse(c); } catch (_) { c = null; } }
-        if (c && typeof c === 'object' && c.quote) return `${c.page != null ? esc(c.page) + '쪽 · ' : ''}${esc(String(c.quote).replace(/^#+\s*/, '').slice(0, 160))}`;
+        if (c && typeof c === 'object' && c.quote) return `${c.page != null ? esc(c.page) + '쪽 · ' : ''}${esc(UI.quoteText(c.quote).slice(0, 160))}`;
       }
       if (PROP_EXPR.includes(k)) return `<span class="mono">${esc(text)}</span>`;
       if (k === 'tag') { const name = window.hydWords.fieldName(text.toLowerCase()); return name && name !== text.toLowerCase() ? `${esc(name)} <span class="mono muted">${esc(text)}</span>` : `<span class="mono">${esc(text)}</span>`; }
@@ -926,7 +926,7 @@ function decWithheld(detail, facts) {
   const causes = detail.causes || [], assumed = decAssumed(facts);
   return `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론 ${UI.chipText('판단 보류', 'warning')}</div>` +
     `<h2>판단을 보류했습니다 — 지금 관측 값으로 뒷받침되는 원인이 없습니다.</h2>` +
-    `<p>실패가 아닙니다. 이 설비의 지금 값에서 이 이상 패턴의 증거가 확인되지 않아 판단 엔진이 원인을 가리지 않았고, 조치 후보도 견주지 않았습니다. 「유압 설비」 화면에서 이 이상을 일으킨 뒤 다시 판단하면 원인과 조치 순위가 나옵니다.</p></div></div>` +
+    `<p>실패가 아닙니다. 이 설비의 지금 값에서 이 이상 패턴의 증거가 확인되지 않아 판단 서비스가 원인을 가리지 않았고, 조치 후보도 견주지 않았습니다. 「유압 설비」 화면에서 이 이상을 일으킨 뒤 다시 판단하면 원인과 조치 순위가 나옵니다.</p></div></div>` +
     `<div class="panel-sec"><p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p></div>` +
     `<div class="panel-sec"><h3>확인한 증거<span class="muted">원인 후보 ${causes.length}개</span></h3>` +
       (causes.length ? causes.map(c => `<ul class="evid">${decCauseLine(c)}${decEvidenceLines(c)}</ul>`).join('<br>') : `<p class="muted">${esc(UI.idText(detail.reason || ''))}</p>`) + `</div></section>`;
@@ -955,7 +955,7 @@ function unusedFacts(facts, trace) {
 // 처리 과정 원문: 판단 서비스가 거친 단계가 한 줄씩(키트 .line — 이름 · 한 일 · 시각). 단계 이름은 화면 말로 적고, 서버가 남긴 설명과 출력 원문은 그 아래 접기에 둔다
 const DEC_STEPS = { ontology: ['판단 규칙 읽기', '지식에서 이 판단의 결정표와 규칙을 읽습니다.'], facts: ['판단에 쓸 값 가져오기', '규칙이 검사할 값을 지식이 정한 출처(업무 시스템 · 센서)에서 가져옵니다.'],
   forecast: ['조치별 예측', '조치마다 설비 예측 모델로 조치 뒤 값을 계산합니다.'], candidates: ['조치 후보 고르기', '고장 유형과 설비 상태 규칙으로 후보를 고릅니다.'],
-  compliance: ['규정 적합성 검사', '후보마다 규칙의 기준에 대어 제외 · 감점 · 경고를 정합니다.'], tradeoffs: ['성과 득실과 선례', '조치가 성과 지표에 주는 득실을 모읍니다. 미리 넣어 둔 선례가 없어 선례 몫은 늘 0입니다.'],
+  compliance: ['규정 적합성 검사', '후보마다 규칙의 기준에 대어 제외 · 감점 · 경고를 정합니다.'], tradeoffs: ['성과 득실과 선례', '조치가 성과 지표에 주는 득실을 모읍니다. 지금 지식에는 선례가 없어 선례 몫은 0입니다(승인해도 늘지 않습니다).'],
   rank: ['점수와 순위', '순위 규칙의 식으로 점수를 내고 순위를 정합니다.'] };
 function decTrace(steps) {
   return `<div class="stream-log" style="max-height:none;padding:0">` + steps.map(s => {
@@ -1044,12 +1044,12 @@ function renderDecision(asked) {
       `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
       tr.map(t => `<tr><td title="${esc([t.rule, t.when].filter(Boolean).join(' — '))}">${esc(UI.ruleLabel(t))}<p class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</p></td><td>${esc(target(t))}</td>` +
         `<td>${t.fired ? UI.chipText(UI.t('dec.fired'), 'accent') : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.map(k => window.hydWords.fieldName(k)).join(', '))}</span>` : `<span class="muted">${esc(UI.t('dec.notApplicable'))}</span>`)}</td></tr>`).join('') + '</tbody></table></div>'],
-    ['raw', UI.t('raw'), null, `<dl class="kv"><dt>판단 번호</dt><dd>${UI.id(d.id)}</dd></dl>` + (text ? `<h4 class="dec-h">판단 엔진 설명 전문</h4><p class="result-sub">${esc(dedupeText(text))}</p>` : '') +
+    ['raw', UI.t('raw'), null, `<dl class="kv"><dt>판단 번호</dt><dd>${UI.id(d.id)}</dd></dl>` + (text ? `<h4 class="dec-h">판단 서비스 설명 전문</h4><p class="result-sub">${esc(dedupeText(text))}</p>` : '') +
       (r.rankRule && r.rankRule.annotation ? `<h4 class="dec-h">${esc(UI.t('card.scoreHow'))}</h4><p class="muted">${esc(r.rankRule.annotation)}</p>` : '') + `<h4 class="dec-h">${esc(UI.t('dec.trace'))}</h4>` + decTrace(d.steps || [])],
   ];
   html += `<div class="panel-sec"><details class="fold dec-more"><summary>자세히 보기</summary><div class="fold-body">${UI.viewTabs(panes.map(([k, l, n]) => [k, l, n]), 'inputs', 'data-dec-pane', { label: '판단 자세히', small: true })}` +
     panes.map(([k, , , body], i) => `<div data-dec-body="${k}"${i ? ' hidden' : ''}>${body}</div>`).join('') + '</div></details></div>';
-  const scope = UI.evaluationHtml(r, d);      // 평가 범위(모의 순위인지 실행 조건 검사인지)는 서버 기록 그대로, 맨 아래 한 줄
+  const scope = UI.evaluationHtml(r, d);      // 평가 범위(계산만 한 결과인지 실행 조건 검사인지)는 서버 기록 그대로, 맨 아래 한 줄
   if (scope) html += `<div class="trial-foot">${scope}</div>`;
   box.innerHTML = html + '</section>';
   box.querySelector('.dec-more')?.addEventListener('click', e => { const b = e.target.closest('[data-dec-pane]'); if (!b) return;
@@ -1149,7 +1149,7 @@ function renderDecisionApproval() {
 // 품질 처분 · 전력 · 대체 출하는 쓰는 거래가 없어 업무 DB에서 지웠다(FE 070) — 없는 칸을 읽지 않는다
 function systemBoards(s) {
   return [
-    ['생산 관리', s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더', '설비', '납기까지 (시간)']],
+    ['생산 관리', s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산 오더', '설비', '납기까지 (시간)']],
     // 정비 요청 한 줄: 어느 설비에 · 어느 조치 방법으로 · 언제 · 지금 상태. 서버의 이어 붙인 작업 문장(task)은 조치 방법 이름을 모를 때만 쓴다
     ['정비 관리', s.cmms.work_orders.map(w => ({ id: w.id, asset: w.asset, how: (w.option_id && UI.names[w.option_id]) || w.task, when: w.window_label || w.window || '–', status: UI.status(w.status) })),
       ['id', 'asset', 'how', 'when', 'status'], ['정비 요청 번호', '설비', '조치 방법', '정비 시점', '상태']],
@@ -1218,7 +1218,7 @@ document.getElementById('view-process').addEventListener('click', e => {
 const TX_FIELD = { id: '번호', qty: '수량', part: '품목', part_no: '품번', amount: '금액 (만원)', unit_price: '단가 (만원)', status: '상태', supplier: '공급사 번호', supplier_name: '공급사', option_id: '조치 방법',
   decision_id: '판단 번호', created_at: '만든 때', expected_at: '입고 예정', received_at: '입고한 때', cancelled_at: '취소한 때', completed_at: '끝난 때', requested_by: '요청한 사람', receipt_basis: '입고 근거', basis: '근거',
   lot: '로트', pr_id: '발주 번호', fail_rate: '불량률', inspection: '검수', ordered_qty: '발주 수량', rejected_qty: '불합격 수량', task: '작업', window_id: '정비 시간 번호', window_label: '정비 시점', window_starts_at: '정비 시작',
-  scope_group: '정비 범위 묶음', package: '정비 내용', plan: '정비 계획', maintenance_plan: '정비 계획', orders: '생산오더' };
+  scope_group: '정비 범위 묶음', package: '정비 내용', plan: '정비 계획', maintenance_plan: '정비 계획', orders: '생산 오더' };
 const txField = k => { const w = window.hydWords.fieldName(k); return w !== String(k).replace(/_/g, ' ') ? w : TX_FIELD[k] || w; };
 function txDiff(x) {
   const b = x.before || null, a = x.after || null;

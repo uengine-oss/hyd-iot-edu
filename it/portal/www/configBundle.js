@@ -1,14 +1,14 @@
-/* B6 출발본: 내가 만든 구성(에이전트 · 스킬 · MCP · 역할 · 흐름 · 배정 · 배포)을 파일로 받기 · 파일로 불러오기 · 기준으로 되돌리기.
+/* B6 내 구성 파일: 내가 만든 구성(에이전트 · 스킬 · MCP · 역할 · 흐름 · 배정 · 배포)을 파일로 받기 · 파일로 불러오기 · 기준으로 되돌리기.
    API: GET /api/config/export · POST /api/config/import {bundle, secrets?, skip_missing_secrets?, by, request_id} · POST /api/config/reset {by, request_id}
    불러오기 · 되돌리기는 도는 동안 서버가 적는 단계별 진행을 읽어 채운다(hydLive.track — GET /api/progress/{request_id}).
    불러오기는 "되돌리기 → 순서대로 적용 → 다시 읽어 대조"이고, 실패하면 어디서 왜 멈췄는지와 적용 전 상태로 되돌렸는지 보여 준다.
    설정에 그대로 적힌 비밀값(MCP 접속 헤더의 토큰 등)은 파일에 없다 — 필요하면 여기서 입력하거나 그 서버만 건너뛴다.
-   불러오기가 막힌 단계면 서버가 준 까닭이 단추 바로 뒤 한 줄로 보인다(마우스를 올리지 않아도 — courseAccess.js apply).
+   불러오기가 막혀 있으면 [파일 골라 불러오기]를 누를 때 서버가 준 까닭이 단추 바로 뒤 한 줄로 보인다(courseAccess.js press — 파일 고르기 창은 열리지 않는다).
    모양은 설정 줄(UI.settingRow — 굵은 이름 · 한 줄 설명 · 오른쪽 끝 동작 하나)이다. 진행은 그 줄 아래의 실시간 상자(hydLive.track), 결과는 .result + .evid.
    되돌리기는 확인 창에서 범위를 고르고 지우는 것 · 남는 것을 읽은 뒤 누른다(askReset). */
 (function () {
   const H = esc;                                        // 포털 공용 이스케이프(ui.js)
-  const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 수업 단계에서는 서버가 막고 까닭을 준다(courseAccess.js)
+  const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 서버가 막고 있으면 단추를 누를 때 까닭이 보인다(courseAccess.js)
   // [이름, 세는 말] — 도구 서버는 도구 연결 화면(mcp.js)과 같은 이름
   const COUNT_WORDS = { mcp_servers: ['도구 서버', '개'], skills: ['스킬', '개'], agents: ['AI 에이전트', '개'], roles: ['역할', '개'], flows: ['흐름', '개'],
     flow_versions: ['흐름 판본', '개'], assignments: ['단계 배정', '건'], deployments: ['배포', '건'], secrets_needed: ['입력할 비밀값', '개'] };
@@ -28,21 +28,21 @@
   }
 
   const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, [w, unit]]) => `${w} ${s[k]}${unit}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
-  // 출발본에는 기본 제공 흐름(시작할 때 설치되는 흐름)의 지금 판본도 담긴다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문이다).
+  // 구성 파일에는 기본 제공 흐름(시작할 때 설치되는 흐름)의 지금 판본도 담긴다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문이다).
   // 서버 요약(summary)이 내가 만든 것(flows · flow_versions · deployments)과 기본 제공 흐름(provided_flows)을 갈라 센다 — 화면은 그 수를 그대로 말한다
   const bundleCounts = bundle => { const s = bundle.summary || {}; return counts(s) + (s.provided_flows ? ` · 함께 담긴 기본 제공 흐름 ${s.provided_flows}개(지금 배포된 판본)` : ''); };
   // [기준으로 되돌리기]가 지우는 것과 남기는 것 — 확인 창이 이 한 곳을 쓴다. 서버 config_bundle.py 가 하는 일 그대로다: 단계는 RESET_STEPS(지식 → 배포 → 흐름 →
   // 에이전트 → 도구 서버 → 질문 · 채점 · 시험 기록), 남기는 것은 RESET_KEPT. 서버가 범위를 바꾸면 여기만 고친다. 실제로 지운 것 · 남긴 것은 응답(removed · kept · base_missing)을 그대로 보인다
-  const RESET_REMOVES = '내가 적재한 문서의 지식(기본 제공 판으로 돌아갑니다) · 업무 DB 표 정의 · 화면에서 만든 조치 방법, 내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
+  const RESET_REMOVES = '내가 적재한 문서의 지식(기본 제공 판본으로 돌아갑니다) · 업무 DB 표 정의 · 화면에서 만든 조치 방법, 내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
   const RESET_KEEPS = [
     ['기본 제공 에이전트 · 스킬 · 역할 · 도구 서버 · 흐름과 기본 제공 문서의 지식', '그대로 둡니다'],
     ['처리 건과 처리 건 기록', '그대로 둡니다. 지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다'],
     ['모의 업무 시스템에 생긴 발주 · 정비 요청과 가상 설비의 상태', '「유압 설비 › 결함 시뮬레이션」의 [설비 초기화] · [업무 데이터 초기화]로 되돌립니다'],
   ];
   const RESET_NOTE = '내가 만든 구성과 넣은 지식은 처음 상태가 됩니다. 처리 건 기록과 모의 업무 시스템의 기록은 남습니다.';
-  const SERVERS = 'tool_servers.register';               // 도구 서버를 만들 수 없는 단계에서는 되돌리기가 내 도구 서버와 비밀 값을 지우지 않는다(서버 mcp_reset 의 locked)
+  const SERVERS = 'tool_servers.register';               // 도구 서버 등록이 막혀 있으면 되돌리기가 내 도구 서버와 비밀 값을 지우지 않는다(서버 mcp_reset 의 locked)
   // 되돌리는 범위 — 「내가 만든 것을 지운다」는 포털에서 이 한 곳뿐이다(흐름 · 에이전트 · 도구 연결 화면은 여기로 보낸다). 종류 하나만 되돌리는 것은 그 종류의 서버 API 를 그대로 부른다.
-  // [키, 이름, 지우는 것과 남는 것, 요청, 결과 문장(응답 → 글), 수업 경계 행동 키(막힌 단계면 단추가 꺼지고 까닭이 보인다)]
+  // [키, 이름, 지우는 것과 남는 것, 요청, 결과 문장(응답 → 글), 수업 경계 행동 키(막혀 있으면 확인 창의 [되돌리기]가 꺼지고 까닭이 보인다)]
   const josa = (word, pair) => window.hydWords.josa(word, pair);
   const SCOPES = [
     ['all', '전체', RESET_REMOVES],
@@ -74,14 +74,14 @@
           <div id="cfgResetWhat" aria-live="polite"></div></section>
         <footer><button value="cancel" class="btn" data-variant="outline" autofocus>${H(UI.t('dialog.cancel'))}</button><button value="ok" class="btn" data-variant="destructive" id="cfgResetGo">되돌리기</button></footer></form>`;
       const q = sel => dlg.querySelector(sel);
-      // 고른 범위가 지우는 것과 남기는 것. 수업 경계에 막힌 범위는 [되돌리기]가 꺼지고 서버가 준 까닭이 보인다. 전체 되돌리기는 막히지 않는다 — 그 단계에서는 도구 서버와 비밀 값만 남긴다
+      // 고른 범위가 지우는 것과 남기는 것. 수업 경계에 막힌 범위는 [되돌리기]가 꺼지고 서버가 준 까닭이 보인다. 전체 되돌리기는 막히지 않는다 — 도구 서버 등록이 막혀 있으면 도구 서버와 비밀 값만 남긴다
       const paint = () => {
         const [key, , what, , , action] = SCOPES.find(x => x[0] === q('#cfgResetScope').value) || SCOPES[0], why = action ? hydCourseAccess.blocked(action) : '';
         const locked = key === 'all' ? hydCourseAccess.blocked(SERVERS) : '';
         const keeps = key === 'all' ? RESET_KEEPS.map(([w, where]) => `<li><b>${H(w)}</b> — ${H(where)}</li>`).join('')
-          + (locked ? `<li data-reset-locked title="${H(locked)}"><b>내 도구 서버와 비밀 값</b> — 지금은 도구 서버를 등록할 수 없는 단계라 지우지 않습니다</li>` : '') : '';
+          + (locked ? `<li data-reset-locked title="${H(locked)}"><b>내 도구 서버와 비밀 값</b> — 지금은 도구 서버를 등록할 수 없어 지우지 않습니다</li>` : '') : '';
         q('#cfgResetWhat').innerHTML = key === 'all'
-          ? `<h3>지우는 것</h3><p data-reset-removes>${H(what)}.</p><h3>남는 것</h3><ul data-reset-keeps>${keeps}</ul><p class="muted">먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(지식 · 비밀 값 · 기록은 파일에 없습니다).</p>`
+          ? `<h3>지우는 것</h3><p data-reset-removes>${H(what)}.</p><h3>남는 것</h3><ul data-reset-keeps>${keeps}</ul><p class="muted">먼저 내 구성 파일로 받아 두면 구성은 다시 불러올 수 있습니다(지식 · 비밀 값 · 기록은 파일에 없습니다).</p>`
           : `<p data-reset-removes>${H(what)}</p>` + (why ? `<p class="muted" data-tone="danger" role="status">${H(why)}</p>` : '');
         q('#cfgResetGo').disabled = !!why;
       };
@@ -100,21 +100,21 @@
     el.innerHTML = '<div class="settings">' +
       UI.settingRow({ title: '내 사례', desc: '구성에 사례 이름을 붙여 묶고, 사례 하나를 파일로 받습니다.',
         action: `<button type="button" class="btn" data-variant="outline" id="caseOpen" aria-haspopup="dialog">사례 보기</button>` }) +
-      UI.settingRow({ title: '출발본 내보내기', desc: '내가 만든 구성을 파일 하나로 받습니다. 기본 제공 구성과 비밀 값은 담기지 않습니다.',
+      UI.settingRow({ title: '내 구성 파일 받기', desc: '내가 만든 구성을 파일 하나로 받습니다. 기본 제공 구성과 비밀 값은 담기지 않습니다.',
         action: UI.btn('export', { variant: 'outline', attrs: 'id="cfgExport"' }) }) + more(say('cfgExportMsg')) +
-      UI.settingRow({ title: '출발본 불러오기', desc: '출발본 파일을 고르면 지금 구성을 기준으로 되돌린 뒤 파일대로 다시 세웁니다.',
-        action: `<input type="file" id="cfgFile" accept=".json,application/json" aria-label="출발본 파일(.json)" data-enhanced="1" hidden><button type="button" class="btn" data-variant="outline" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}파일 골라 불러오기</button>` }) +
+      UI.settingRow({ title: '내 구성 파일 불러오기', desc: '구성 파일을 고르면 지금 구성을 기준으로 되돌린 뒤 파일대로 다시 세웁니다.',
+        action: `<input type="file" id="cfgFile" accept=".json,application/json" aria-label="구성 파일(.json)" data-enhanced="1" hidden><button type="button" class="btn" data-variant="outline" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}파일 골라 불러오기</button>` }) +
         more(`${say('cfgImportMsg')}<div id="cfgSecrets"></div><div id="cfgImportResult" aria-live="polite"></div>`) +
       UI.settingRow({ title: UI.acts.reset[0], desc: '내가 만든 것을 지우고 기본 제공 상태로 돌아갑니다.', attrs: 'id="cfgResetSec"',
         action: UI.btn('reset', { variant: 'destructive', attrs: 'id="cfgReset" aria-haspopup="dialog"' }) }) + more(`${say('cfgResetMsg')}<div id="cfgResetResult" aria-live="polite"></div>`) + '</div>';
     const $ = id => el.querySelector('#' + id);
-    hydCourseAccess.apply(el);                            // 막힌 단계면 [파일 골라 불러오기] 바로 뒤에 서버가 준 까닭 한 줄이 붙는다(courseAccess.js)
+    hydCourseAccess.apply(el);                            // 표가 그린 뒤에 바뀌었어도 [파일 골라 불러오기]의 막힘 표시를 지금 표에 맞춘다(courseAccess.js)
     $('caseOpen').addEventListener('click', () => window.hydStudentCases.open());
     const msg = (id, text, bad) => { $(id).textContent = text; if (bad && text) $(id).dataset.tone = 'danger'; else delete $(id).dataset.tone; };
     // 결과 목록 한 줄(키트 .evid): 아이콘 + 굵은 이름 + 내용
     const lines = (icon, rows) => rows.length ? `<ul class="evid">${rows.map(([name, text]) => `<li>${UI.icon(icon)}<span><b>${H(name)}</b>${text ? ' ' + H(text) : ''}</span></li>`).join('')}</ul>` : '';
     const block = (title, body) => body ? `<div class="result"><div class="result-label">${title}</div>${body}</div>` : '';
-    let pending = null;                                   // 고른 출발본 파일(비밀 값을 기다리는 동안에도 남는다)
+    let pending = null;                                   // 고른 구성 파일(비밀 값을 기다리는 동안에도 남는다)
 
     $('cfgExport').addEventListener('click', async () => {
       const end = hydLive.busy($('cfgExport'), '파일을 만드는 중');
@@ -171,13 +171,13 @@
     }
     let importing = false;                                // 불러오기 · 건너뛰고 불러오기는 한 번에 하나(두 번 누름)
     async function run(skip) {
-      if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
+      if (!pending) { msg('cfgImportMsg', '구성 파일을 고르세요', true); return; }
       if (importing) return;
       importing = true;
       // 서버는 「파일 검사 → 지금 구성 보관 → 되돌리기 → 파일 내용을 순서대로 적용 → 다시 읽어 대조」의 단계가 시작 · 끝날 때마다 진행 기록에 적는다
       const end = hydLive.busy($('cfgImport'), '불러오는 중'); for (const id of ['cfgSkip', 'cfgRetry']) if ($(id)) $(id).disabled = true;
       msg('cfgImportMsg', '');
-      const track = hydLive.track({ text: '출발본을 불러오는 중', hint: '지금 구성을 기준으로 되돌리고, 파일 내용을 순서대로 적용하고, 도구 서버 연결을 검사한 뒤 다시 읽어 대조합니다(길면 3분).' });
+      const track = hydLive.track({ text: '구성 파일을 불러오는 중', hint: '지금 구성을 기준으로 되돌리고, 파일 내용을 순서대로 적용하고, 도구 서버 연결을 검사한 뒤 다시 읽어 대조합니다(길면 3분).' });
       track.mount($('cfgImportResult'));
       try {
         const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip, by: actor(), request_id: track.id });
@@ -194,13 +194,13 @@
       const f = $('cfgFile').files[0]; if (!f) return;
       pending = null; $('cfgSecrets').innerHTML = ''; $('cfgImportResult').innerHTML = '';
       try {
-        pending = hydDefinitions.readObject(await f.text(), '출발본 파일');   // 틀린 자리를 한국어로(줄 · 글자) — 브라우저의 영문 오류 문장을 붙이지 않는다
-      } catch (e) { msg('cfgImportMsg', `${e.message} — [파일 받기]로 받은 출발본 파일 그대로인지 확인하세요.`, true); $('cfgFile').value = ''; return; }
+        pending = hydDefinitions.readObject(await f.text(), '구성 파일');   // 틀린 자리를 한국어로(줄 · 글자) — 브라우저의 영문 오류 문장을 붙이지 않는다
+      } catch (e) { msg('cfgImportMsg', `${e.message} — [파일 받기]로 받은 구성 파일 그대로인지 확인하세요.`, true); $('cfgFile').value = ''; return; }
       const what = `${f.name} — ${bundleCounts(pending)}`;
       msg('cfgImportMsg', what);
       $('cfgFile').value = '';                             // 같은 파일을 다시 골라도 change 가 온다
-      if (hydCourseAccess.blocked(IMPORT)) return;         // 불러오기가 막힌 단계 — 단추가 꺼져 있고 까닭이 그 아래에 있다. 묻지 않는다
-      const yes = await UI.confirm({ title: '출발본을 불러올까요?', ok: '불러오기', body: `${what}\n\n지금 내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)을 지우고 파일 내용으로 다시 세웁니다. 기본 제공 흐름(시작할 때 설치되는 흐름)도 지우고 파일 내용대로 다시 세웁니다. 지운 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 진행 중인 처리 건이 있으면 아무것도 바꾸지 않고 멈춥니다. 기준 구성, 비밀 값, 질문 · 판단 채점 · 에이전트 시험 비교 기록은 그대로입니다.` });
+      if (hydCourseAccess.blocked(IMPORT)) return;         // 불러오기가 막혀 있다(파일 고르기 창이 열린 사이 표가 바뀐 때) — 묻지 않는다. 단추를 누르면 까닭이 나온다
+      const yes = await UI.confirm({ title: '내 구성 파일을 불러올까요?', ok: '불러오기', body: `${what}\n\n지금 내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)을 지우고 파일 내용으로 다시 세웁니다. 기본 제공 흐름(시작할 때 설치되는 흐름)도 지우고 파일 내용대로 다시 세웁니다. 지운 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 진행 중인 처리 건이 있으면 아무것도 바꾸지 않고 멈춥니다. 기준 구성, 비밀 값, 질문 · 판단 채점 · 에이전트 시험 비교 기록은 그대로입니다.` });
       if (yes) run(false); else msg('cfgImportMsg', `${what} · 불러오지 않았습니다.`);
     });
     // [기준으로 되돌리기] → 확인 창에서 범위를 고르고 지우는 것 · 남는 것을 읽는다 → 되돌리기. 다른 화면의 「관리에서 되돌리기」 링크는 그 범위를 골라 둔 채 이 창을 연다
@@ -230,7 +230,7 @@
         msg('cfgResetMsg', e.message, true);
         const d = e.detail || {};
         // 지식 되돌리기가 도중에 멈췄으면 그때까지 되돌린 것(partial)도 말한다 — 「아무것도 바뀌지 않았다」로 읽히지 않게
-        const p = d.partial || {}, part = [[(p.documents || []).length, '적재한 문서 판', '개'], [(p.skills || []).length, '화면에서 만든 조치 방법', '개'], [(p.ddl_batches || []).length, '업무 DB 표 정의 묶음', '개']].filter(([n]) => n).map(([n, w, u]) => [`${w} ${n}${u}`, '']);
+        const p = d.partial || {}, part = [[(p.documents || []).length, '적재한 문서 판본', '개'], [(p.skills || []).length, '화면에서 만든 조치 방법', '개'], [(p.ddl_batches || []).length, '업무 DB 표 정의 묶음', '개']].filter(([n]) => n).map(([n, w, u]) => [`${w} ${n}${u}`, '']);
         $('cfgResetResult').innerHTML = d.blocking ? block('막은 것', lines('x', d.blocking.map(b => [b.reason, ''])))
           : (d.done ? block('멈추기 전에 지운 단계', lines('check', d.done.map(x => [x.label, x.text || ''])) || '<p class="muted">없음</p>') : '')
             + block('멈춘 단계에서 이미 되돌린 것', lines('circle-dot', part));
@@ -253,6 +253,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('configBundleView'); if (!el) return;
     render(el);
-    hydCourseAccess.onChange(() => hydCourseAccess.apply(el));      // 허용 범위가 늦게 와도 불러오기 단추와 까닭 글을 맞춘다
+    hydCourseAccess.onChange(() => hydCourseAccess.apply(el));      // 허용 범위가 늦게 와도 불러오기 단추의 막힘 표시를 맞춘다
   });
 })();

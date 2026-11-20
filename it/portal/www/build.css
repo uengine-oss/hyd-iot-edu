@@ -42,7 +42,7 @@
 .lock-note > .fold-body { padding: 0 0 8px 22px; font-size: var(--fs-sm); color: var(--foreground); }
 
 /* ================================================================= 도구 연결(mcp.js): 목록 + 상세, 화면 아래 설정 줄 */
-#view-mcp :is(.page-tools, .pane-acts, .mcp-acts, .form-foot, .setting-act) > [data-course-why] { display: none; }      /* 막힌 까닭은 화면 아래 설정 줄 「내 도구 서버」가 한 번 말한다 */
+#view-mcp :is(.page-tools, .mcp-acts, .form-foot, .setting-act) > [data-course-why] { order: 9; flex: 1 1 100%; text-align: end; font-size: var(--fs-sm); line-height: 20px; }      /* 막힌 단추를 눌렀을 때의 까닭 한 줄(courseAccess.js press)은 단추들을 밀어내지 않고 그 줄 아래에 온 줄로 선다 */
 #mcpServers > .row > .row-meta { white-space: normal; }
 .mcp-state { display: grid; gap: 10px; }
 .mcp-state > p { margin: 0; }

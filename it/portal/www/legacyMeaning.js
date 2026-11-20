@@ -206,7 +206,7 @@
     }
     if (S.error) body += UI.errorBlock('뜻 후보 작업을 진행하지 못했습니다', S.error);
     el.innerHTML = UI.fold(`옛 DB 뜻 복원<span class="muted">${esc(sumLine)}</span>`, `<div class="lm-body">${body}</div>`, { open: !!(S.run || ctx.preview.meaningReview) });
-    hydCourseAccess.apply(el);   // attrs 로 그린 단추: 수업 단계에서 꺼진 까닭을 단추 옆 한 줄로(W3-07)
+    hydCourseAccess.apply(el);   // attrs 로 그린 단추의 막힘 표시를 지금 표에 맞춘다 — 까닭은 그 단추를 누를 때 그 뒤 한 줄에 나온다(courseAccess.js press)
     wire(); live();
   }
 

@@ -1,7 +1,7 @@
-"""B6: 구성 내보내기 · 가져오기 = 막별 "출발본", 하나의 "기준으로 되돌리기".
+"""B6: 구성 내보내기 · 가져오기 = "내 구성 파일", 하나의 "기준으로 되돌리기".
 
-강사가 막마다 출발본 파일을 주면 학생은 포털에서 한 번에 불러와 같은 지점에서 시작한다. 망쳐도 다시 불러오면 된다.
-출발본에는 **학생이 만든 것만** 담는다(B1~B4 가 origin='user' 등으로 구분한 것). 기준(seed) 것은 담지 않는다.
+구성 파일을 받으면 포털에서 한 번에 불러와 같은 지점에서 시작한다. 망쳐도 다시 불러오면 된다.
+구성 파일에는 **학생이 만든 것만** 담는다(B1~B4 가 origin='user' 등으로 구분한 것). 기준(seed) 것은 담지 않는다.
 
   GET  /api/config/export   → 파일 하나(JSON): 형식 이름 · 판수 · 만든 시각 · 내용
         mcp_servers   B2 학생 서버(포털 등록 · 포털 밖 추가). 설정에 그대로 적힌 비밀값(비밀 이름의 접속 헤더 값, 주소의 비밀번호 ·
@@ -26,7 +26,7 @@
         실패하면 어디서 왜 실패했는지 + 적용된 것 · 안 된 것, 그리고 3)의 보관본으로 적용 전 상태를 다시 세운다(rolled_back).
         MCP 보관본은 행 그대로 다시 쓴다 — 실시간 연결 검사를 다시 하지 않아 그 순간 외부 서버가 꺼져 있어도 학생 구성이 사라지지 않는다.
         같은 파일을 두 번 가져와도 되돌리기 → 적용이라 같은 결과다.
-  POST /api/config/reset    하나의 "기준으로 되돌리기" — 학생이 만든 것을 한 번에 처음 상태로: 지식(포털에서 적재한 문서 판 · 업무 DB 표 정의 묶음 ·
+  POST /api/config/reset    하나의 "기준으로 되돌리기" — 학생이 만든 것을 한 번에 처음 상태로: 지식(포털에서 적재한 문서 판본 · 업무 DB 표 정의 묶음 ·
         화면에서 만든 조치 방법 — 이미 있는 묶음별 되돌리기를 그대로 부른다, knowledge_reset) → B4 deploy-reset → B3 flows reset →
         B1 agents reset → B2 mcp reset(비밀 값 포함) → B5 ask reset → 판단 채점(정답표 · 실행 기록) → 시험 비교 기록.
         남는 것: 기본 제공 것(에이전트 · 스킬 · 역할 · 도구 서버 · 흐름 · 기본 제공 문서의 지식), 처리 건과 그 기록, 모의 업무 시스템 · 가상 설비의
@@ -39,7 +39,7 @@
         화면이 도는 동안 GET /api/progress/{request_id} 로 읽는다.
 
 원본 대조: process-gpt-vue3 에는 구성 묶음 내보내기가 없다(정의는 ProcessDefinitionChatHeader.vue 의 BPMN 파일 내보내기/가져오기,
-MCP 비밀값은 MCPEnvSecret.vue 의 별도 저장소). HYD 는 수업 출발본이 목적이라 B1~B4 저장소를 묶어 한 파일로 만든다.
+MCP 비밀값은 MCPEnvSecret.vue 의 별도 저장소). HYD 는 구성을 한 번에 옮기는 것이 목적이라 B1~B4 저장소를 묶어 한 파일로 만든다.
 """
 from __future__ import annotations
 
@@ -155,7 +155,7 @@ def register_body(item: dict, values: dict | None = None) -> dict:
     values = values or {}
     body = {"name": item.get("name"), "transport": item.get("transport")}
     if item.get("command") not in (None, ""):
-        body["command"] = item["command"]           # 옛 출발본의 명령형 서버 — 등록 검사가 학생이 읽을 사유로 거절한다
+        body["command"] = item["command"]           # 옛 구성 파일의 명령형 서버 — 등록 검사가 학생이 읽을 사유로 거절한다
     url = str(item.get("url") or "")
     if "url.password" in values and _token("url.password") in url:
         url = url.replace(_token("url.password"), urllib.parse.quote(values["url.password"], safe=""))
@@ -176,7 +176,7 @@ def _slots_in(item: dict) -> list[str]:
 
 # ---------------------------------------------------------------- 내보내기
 def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
-    """학생이 만든 것만 담은 출발본. include_secrets=True 는 안에서만(불러오기 실패 때 적용 전 상태로 되돌리는 보관본) 쓴다."""
+    """학생이 만든 것만 담은 구성 파일. include_secrets=True 는 안에서만(불러오기 실패 때 적용 전 상태로 되돌리는 보관본) 쓴다."""
     from . import flow_deploy
     repo, tenant = rt.repo, rt.tenant_id
     store = mcp_registry.store_for(repo)
@@ -226,7 +226,7 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
                              **({"class_flow": True} if f.get("class_flow") else {})})   # 불러오기가 수업 흐름으로 다시 배포한다
         else:
             not_included.append({"what": f"배포된 흐름 '{f['definition']}' 판본 {f['version']}",
-                                 "reason": "포털 흐름 가져오기(B3)로 등록한 판본이 아니라(관리 화면 JSON 등록 등) 출발본에 담지 않았습니다"})
+                                 "reason": "포털 흐름 가져오기(B3)로 등록한 판본이 아니라(관리 화면 JSON 등록 등) 구성 파일에 담지 않았습니다"})
     ref = routes["reference"]
     reference = {"definition_id": ref["definition"], "version": ref["deployed_version"]} if ref.get("changed") else None
     base = base_loader(rt) or {}
@@ -240,7 +240,7 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
     return {"format": FORMAT, "format_version": FORMAT_VERSION, "created_at": _now(), "tenant": tenant,
             "base": {"definition": rt.defn.id, "version": getattr(rt, "base_version", None) or rt.defn.raw.get("version"),
                      "parts_from": {"id": base.get("processDefinitionId"), "version": base.get("version")}},
-            "note": "내가 만든 것을 담은 출발본입니다. 기본 제공 에이전트 · 스킬 · 역할 · 도구 서버는 담지 않습니다. 기본 제공 흐름은 지금 배포된 "
+            "note": "내가 만든 것을 담은 구성 파일입니다. 기본 제공 에이전트 · 스킬 · 역할 · 도구 서버는 담지 않습니다. 기본 제공 흐름은 지금 배포된 "
                     "판본을 함께 담습니다(불러오기가 흐름을 모두 내리고 이 파일대로 다시 세웁니다). "
                     "도구 서버의 비밀값은 담지 않고 ${HYD_SECRET:칸} 자리표시로 남깁니다 — 불러올 때 입력합니다.",
             "summary": {"mcp_servers": len(servers), "skills": len(skills), "agents": len(agents), "roles": len(roles),
@@ -262,7 +262,7 @@ def class_flow_ids(rt) -> set[str]:
 def blocking(rt, *, keep_class: bool) -> list[dict]:
     """되돌리기를 막는 것(409 조건)을 모두 점검한다 — 아무것도 바꾸지 않는다.
     keep_class 는 이어서 할 _reset_steps 와 같은 값이어야 한다: True(관리 탭 [기준으로 되돌리기])면 수업 흐름은 지우지 않으므로 그 흐름으로
-    진행 중인 처리 건은 세지 않는다. False(출발본 불러오기)면 수업 흐름도 지우므로 센다."""
+    진행 중인 처리 건은 세지 않는다. False(구성 파일 불러오기)면 수업 흐름도 지우므로 센다."""
     out = []
     running = FlowStore(rt.repo, rt.tenant_id).running(keep=class_flow_ids(rt) if keep_class else frozenset())
     if running:
@@ -306,7 +306,7 @@ class KnowledgeResetStopped(Exception):
 
 def knowledge_reset(graph, tenant: str, by: str) -> dict:
     """학생이 넣은 지식을 처음 상태로 — 새 되돌리기 장치를 두지 않고 이미 있는 묶음별 되돌리기를 부른다(graph(fn) = fn(session)):
-      ① 포털의 검토 화면으로 적재한 문서 판(manual_graph.rollback) — 문서마다 최신 판부터, 기본 제공 판(시작할 때 넣는 판)이 맨 위가 될 때까지.
+      ① 포털의 검토 화면으로 적재한 문서 판본(manual_graph.rollback) — 문서마다 최신 판본부터, 기본 제공 판본(시작할 때 넣는 판본)이 맨 위가 될 때까지.
          기본 제공 판은 서명 묶음의 검토 방식(review_method)을 실어 적재한 판이다(scripts/class_knowledge.py). 포털의 검토 화면은 그 칸을 보내지
          않는다 — 이름(누가 넣었나)으로 가르지 않는다.
       ② 화면(조치 방법)에서 만든 조치 방법(skill_graph.remove).
@@ -375,7 +375,7 @@ def knowledge_reset(graph, tenant: str, by: str) -> dict:
 def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progress_log.SILENT, graph=None,
                  servers_locked: str | None = None) -> list[dict]:
     """records=True(관리 탭 [기준으로 되돌리기]): 지식 · 구성과 함께 학생 기록(비밀 값 · 끝난 질문 · 판단 채점 · 시험 비교)도 지운다.
-    records=False(출발본 불러오기 · 그 실패 복원): 구성만 — 지식은 건드리지 않고, 비밀 값은 이 PC 의 자격 증명이라 남긴다(불러온 서버의
+    records=False(구성 파일 불러오기 · 그 실패 복원): 구성만 — 지식은 건드리지 않고, 비밀 값은 이 PC 의 자격 증명이라 남긴다(불러온 서버의
     ${SECRET:이름} 이 쓴다).
     graph: 지식 그래프 세션을 여는 함수 graph(fn) = fn(session)(기본은 _graph_session).
     servers_locked: 지금 단계에서 내 도구 서버를 지울 수 없는 까닭(course_policy 의 tool_servers.register 가 막힌 단계) — 있으면 도구 서버 ·
@@ -386,7 +386,7 @@ def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progr
     from . import flow_deploy
     done = []
     # keep_class=True(관리 탭 [기준으로 되돌리기]): 흐름 배포 화면의 [기준 흐름으로 되돌리기](P9)와 같이 강사가 배포한 수업 흐름은 경보 경로와
-    # 흐름 목록에 남긴다(2026-10-23 사용자 결정 — 학생이 자기 구성을 지우다 B · C 버튼이 멈추지 않게). keep_class=False(출발본 불러오기 · 그
+    # 흐름 목록에 남긴다(2026-10-23 사용자 결정 — 학생이 자기 구성을 지우다 B · C 버튼이 멈추지 않게). keep_class=False(구성 파일 불러오기 · 그
     # 실패 복원): 파일 내용으로 통째로 다시 세우는 일이라 수업 흐름까지 내리고 지운다 — 파일이 수업 흐름 표시를 실어 다시 배포한다.
     kept: set[str] = set()
 
@@ -442,7 +442,7 @@ def _reset_text(step: str, r: dict) -> str:
     if step == "knowledge_reset":
         docs = r.get("documents") or []
         back = sum(1 for d in docs if d.get("restored_batch"))
-        return (f"적재한 문서 판 {len(docs)}개" + (f"(그 가운데 {back}개는 앞 판으로 돌아감)" if back else "")
+        return (f"적재한 문서 판본 {len(docs)}개" + (f"(그 가운데 {back}개는 앞 판본으로 돌아감)" if back else "")
                 + f" · 화면에서 만든 조치 방법 {len(r.get('skills') or [])}개 · 업무 DB 표 정의 묶음 {len(r.get('ddl_batches') or [])}개")
     if step == "deploy_reset":
         return r.get("message") or ""
@@ -480,7 +480,7 @@ def reset_summary(steps: list[dict]) -> dict:
     k, a, m = by_step.get("knowledge_reset") or {}, by_step.get("agents_reset") or {}, by_step.get("mcp_reset") or {}
     f = by_step.get("flows_reset") or {}
     removed = [text for n, text in (
-        (len(k.get("documents") or []), f"적재한 문서 판 {len(k.get('documents') or [])}개"),
+        (len(k.get("documents") or []), f"적재한 문서 판본 {len(k.get('documents') or [])}개"),
         (len(k.get("skills") or []), f"화면에서 만든 조치 방법 {len(k.get('skills') or [])}개"),
         (len(k.get("ddl_batches") or []), f"업무 DB 표 정의 묶음 {len(k.get('ddl_batches') or [])}개"),
         (f.get("definitions", 0), f"내가 가져온 흐름 {f.get('definitions', 0)}개(판본 {f.get('versions', 0)}개)"),
@@ -536,26 +536,26 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
     """파일을 검사해 적용 계획을 돌려준다. 문제가 있으면 BundleError(422, problems | needs_secrets)."""
     problems: list[dict] = []
     if not isinstance(bundle, dict):
-        raise BundleError(422, "출발본 파일이 JSON 객체가 아닙니다", problems=[_problem("파일", "JSON 객체({…})여야 합니다")])
+        raise BundleError(422, "구성 파일이 JSON 객체가 아닙니다", problems=[_problem("파일", "JSON 객체({…})여야 합니다")])
     if bundle.get("format") != FORMAT:
-        raise BundleError(422, f"출발본 형식이 아닙니다 — 형식 이름 '{_text(bundle.get('format'))[:40]}' (기대: {FORMAT})",
+        raise BundleError(422, f"구성 파일 형식이 아닙니다 — 형식 이름 '{_text(bundle.get('format'))[:40]}' (기대: {FORMAT})",
                           problems=[_problem("형식 이름", f"'{FORMAT}' 이어야 합니다")])
     version = bundle.get("format_version")
     if isinstance(version, int) and not isinstance(version, bool) and version < FORMAT_VERSION:
-        raise BundleError(422, f"이 출발본은 옛 형식입니다(판수 {version}) — 만든 PC 의 포털에서 다시 내보내세요. 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
-                          problems=[_problem("판수", f"옛 형식({version})입니다 — 다시 내보낸 파일(판수 {FORMAT_VERSION})을 쓰세요")])
+        raise BundleError(422, f"이 구성 파일은 옛 형식입니다(판수 {version}) — 만든 PC 의 포털에서 다시 받으세요. 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
+                          problems=[_problem("판수", f"옛 형식({version})입니다 — 다시 받은 파일(판수 {FORMAT_VERSION})을 쓰세요")])
     if version != FORMAT_VERSION:
-        raise BundleError(422, f"출발본 판수 {_text(version)[:20]}{particle(_text(version)[:20], '은')} 읽을 수 없습니다 — 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
+        raise BundleError(422, f"구성 파일 판수 {_text(version)[:20]}{particle(_text(version)[:20], '은')} 읽을 수 없습니다 — 이 포털은 판수 {FORMAT_VERSION} 만 읽습니다",
                           problems=[_problem("판수", f"{FORMAT_VERSION} 이어야 합니다")])
     content = bundle.get("content")
     if not isinstance(content, dict):
-        raise BundleError(422, "출발본에 내용(content)이 없습니다", problems=[_problem("내용", "content 객체가 없습니다")])
+        raise BundleError(422, "구성 파일에 내용(content)이 없습니다", problems=[_problem("내용", "content 객체가 없습니다")])
     for key in CONTENT_KEYS:
         want = dict if key == "deployments" else list
         if not isinstance(content.get(key, want()), want):
             problems.append(_problem(f"내용의 {CONTENT_WORDS[key]}", "목록이어야 합니다" if want is list else "객체여야 합니다"))
     if problems:
-        raise BundleError(422, f"출발본 파일을 받을 수 없습니다 ({len(problems)}건) — {problems[0]['where']}: {problems[0]['reason']}", problems=problems)
+        raise BundleError(422, f"구성 파일을 받을 수 없습니다 ({len(problems)}건) — {problems[0]['where']}: {problems[0]['reason']}", problems=problems)
     repo, tenant = rt.repo, rt.tenant_id
     secrets = secrets if isinstance(secrets, dict) else {}
     users = repo.list_users(None, tenant)
@@ -575,7 +575,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         if not mcp_registry.NAME_RE.match(name):
             problems.append(_problem(where, "이름은 소문자 · 숫자 · 하이픈 1~40자여야 합니다")); continue
         if name in mcp_registry.BASE_SERVERS:
-            problems.append(_problem(where, "기준(기본 제공) 서버 이름입니다 — 출발본에는 학생 서버만 담습니다")); continue
+            problems.append(_problem(where, "기준(기본 제공) 서버 이름입니다 — 구성 파일에는 내가 등록한 서버만 담습니다")); continue
         if name in seen:
             problems.append(_problem(where, "같은 이름의 서버가 파일에 두 번 있습니다")); continue
         seen.add(name)
@@ -760,7 +760,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
             sha = _text(v.get("definition_sha256"))
             if sha and definition_hash(result["definition"]) != sha:
                 problems.append(_problem(vwhere, "이 포털에서 다시 만든 정의가 내보낼 때와 다릅니다 — 기준 정의 파일(부품)이나 에이전트 목록이 "
-                                                  "출발본을 만든 환경과 다릅니다")); ok = False; break
+                                                  "구성 파일을 만든 환경과 다릅니다")); ok = False; break
             flow_steps[did] = A.agent_steps_of(did, result["definition"])
             plan_v.append({"label": label, "version": want, "bpmn": v["bpmn"], "file_name": v.get("file_name"), "mapping": v["mapping"], "sha": sha})
         if not ok:
@@ -818,7 +818,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
             plan_ref = {"definition_id": did, "version": ver}
 
     if problems:
-        raise BundleError(422, f"출발본 파일을 받을 수 없습니다 ({len(problems)}건) — {problems[0]['where']}: {problems[0]['reason']}",
+        raise BundleError(422, f"구성 파일을 받을 수 없습니다 ({len(problems)}건) — {problems[0]['where']}: {problems[0]['reason']}",
                           problems=problems, needs_secrets=needs or None)
     if needs:
         raise BundleError(422, "비밀값이 필요한 도구 서버가 있습니다 — " + ", ".join(f"{n['server']}({', '.join(s['label'] for s in n['slots'])})" for n in needs)
@@ -919,12 +919,12 @@ def _apply(rt, base_loader, plan: dict, by: str, *, mcp_rows: dict | None = None
         begin("deployments")
         for d in plan["deployments"]:
             version = plan["version_map"][(d["definition_id"], d["label"])]
-            rt.deploy_definition(d["definition_id"], version, by, "출발본 불러오기", class_flow=d["class_flow"])
+            rt.deploy_definition(d["definition_id"], version, by, "내 구성 파일 불러오기", class_flow=d["class_flow"])
             row = repo.get_proc_def(d["definition_id"], tenant, version=version) or {}
             current["items"].append(f"{row.get('name') or d['definition_id']} 판본 {version} — 다음 경보부터")
         if plan.get("reference"):
             r = plan["reference"]
-            rt.deploy_definition(r["definition_id"], r["version"], by, "출발본 불러오기(기준 흐름 운영 판본)")
+            rt.deploy_definition(r["definition_id"], r["version"], by, "내 구성 파일 불러오기(기준 흐름 운영 판본)")
             current["items"].append(f"{r['definition_id']} 판본 {r['version']}")
         done()
         student_cases.Store(repo, tenant).replace(plan.get('case_tags', []))
@@ -1084,7 +1084,7 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None, progress=progress_
             not_applied = [{"step": s, "label": l} for s, l in STEPS if s not in applied_steps and s != e.step]
             if audit:
                 audit("-", by, "CONFIG_IMPORT_FAILED", {"step": e.step, "reason": e.reason, "rolled_back": rolled_back})
-            raise BundleError(422, f"출발본 불러오기가 '{failed_label}' 단계에서 실패했습니다 — {e.reason}. "
+            raise BundleError(422, f"내 구성 파일 불러오기가 '{failed_label}' 단계에서 실패했습니다 — {e.reason}. "
                                    + ("불러오기 전 상태로 되돌려 놓았습니다." if rolled_back else f"불러오기 전 상태로 되돌리지 못했습니다 — {rollback_error}"),
                               failed_step=e.step, failed_label=failed_label, applied=e.applied,
                               partially_applied=e.partial, not_applied=not_applied,
@@ -1094,7 +1094,7 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None, progress=progress_
     if audit:
         audit("-", by, "CONFIG_IMPORTED", {"applied": {a["step"]: a["count"] for a in applied}, "skipped": len(plan["skipped"])})
     total = sum(a["count"] for a in applied)
-    return {"ok": True, "message": f"출발본을 불러왔습니다 — {total}건 적용" + (f", {len(plan['skipped'])}건 건너뜀" if plan["skipped"] else ""),
+    return {"ok": True, "message": f"구성 파일을 불러왔습니다 — {total}건 적용" + (f", {len(plan['skipped'])}건 건너뜀" if plan["skipped"] else ""),
             "reset": reset_done, "applied": applied, "skipped": plan["skipped"], "verified": True}
 
 

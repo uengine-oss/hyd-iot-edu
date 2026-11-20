@@ -615,7 +615,7 @@ def maintenance_scope(query, sop: str | None) -> dict:
     out["name"] = skill.get("name")
     addressed, fms = list(skill.get("addressed") or []), list(skill.get("failure_modes") or [])
     if not fms:
-        return dict(out, why=f"지식 지도에서 {sop}{particle(sop, '은')} 어느 고장 유형의 근본 조치 · 예방 조치로도 이어져 있지 않습니다(즉시 완화 조치는 원인을 없애지 않습니다)")
+        return dict(out, why=f"지식 지도에서 {sop}{particle(sop, '은')} 어느 고장 유형의 근본 조치 · 예방 조치로도 이어져 있지 않습니다(완화 조치는 원인을 없애지 않습니다)")
     causes = query(SCOPE_CAUSES_Q, addressed=addressed, fms=fms)
     handled = [c for c in causes if (c["cause"] in addressed if addressed else c["fm"] in fms)]
     if not handled:

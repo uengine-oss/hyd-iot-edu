@@ -346,7 +346,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     cause = base_facts.get("cause")
     cand_ids = [s for s in cand_ids if s in skills and (not skills[s].get("addresses") or cause in skills[s]["addresses"])]
 
-    # precedents = t3_precedents 행 — 교육용 고정: 그 템플릿이 시드 선례(seeded=true)만 센다. 점수식은 그대로.
+    # precedents = t3_precedents 행 — 그 템플릿이 지금 지식에 있는 선례(seeded=true)만 센다(승인해도 늘지 않게 고정). 점수식은 그대로.
     total_prec = sum(p["n"] for p in precedents) or 0
     prec_by = {p["skill"]: p for p in precedents}
     options = []
@@ -519,6 +519,16 @@ def _excluded(options: list[dict]) -> str:
 _PRODUCTION = {'keep': '유지', 'reduce': '감산'}
 
 
+def hours_text(hours) -> str:
+    """시간 길이(소수 시간)를 사람이 읽는 글로: 5.99 → 「5시간 59분」, 0.75 → 「45분」, 6 → 「6시간」(분에서 반올림). 화면의 값 칸(포털
+    UI.hoursText)과 같은 꼴이라, 판단 설명의 「납기까지 …」가 승인 판의 「납기까지」 칸과 같은 글로 읽힌다. 숫자가 아니면 받은 값 그대로에 「시간」."""
+    if isinstance(hours, bool) or not isinstance(hours, (int, float)):
+        return f"{hours}시간"
+    minutes = int(abs(hours) * 60 + 0.5)
+    h, m = divmod(minutes, 60)
+    return ("−" if hours < 0 and minutes else "") + (f"{h:,}시간" + (f" {m}분" if m else "") if h else f"{m}분")
+
+
 def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str] | None = None) -> str:
     """판단 설명 한 문단(사람이 읽는 글 — 화면 용어: 조치 후보 · 권장). 결론 · 숫자 · 근거는 응답의 칸에도 그대로 있다: recommended,
     options[](rank · score · feasible · forecast · gains · losses · violations · precedent · scoreParts · economicComparison · production) —
@@ -561,11 +571,11 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
     if out:
         parts.append("제외한 후보: " + _excluded(out) + ".")
     if rec["precedent"]:
-        parts.append(f"같은 고장 유형에서 사람이 이 조치를 고른 선례는 {rec['precedent']['n']}건입니다({int(rec['precedent']['share'] * 100)} %, 미리 넣은 사례 기준 — 승인해도 늘지 않음).")
+        parts.append(f"같은 고장 유형에서 사람이 이 조치를 고른 선례는 {rec['precedent']['n']}건입니다({int(rec['precedent']['share'] * 100)} % — 지금 지식에 있는 선례만 셉니다. 승인해도 늘지 않습니다).")
     delivery = rec['scoreParts'].get('delivery', 0)
     if delivery:
         tier = f"{facts['order_customer_tier']} " if facts.get("order_customer_tier") else ""
-        parts.append(f"납기: {tier}오더 납기까지 {facts.get('order_due_h')}시간, 늦으면 시간당 {facts.get('order_penalty_per_h')}만 원 — "
+        parts.append(f"납기: {tier}오더 납기까지 {hours_text(facts.get('order_due_h'))}, 늦으면 시간당 {facts.get('order_penalty_per_h')}만 원 — "
                      f"생산을 {_PRODUCTION.get(rec.get('production'), '정지')}하는 조치라 순위 점수에 {delivery:+g}점이 반영됐습니다.")
     risky = [o for o in options if (o["scoreParts"].get("quality") or 0) < 0]
     if risky:

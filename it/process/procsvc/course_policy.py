@@ -180,10 +180,10 @@ COURSE_DEFINITIONS = frozenset(COURSE_FLOWS) | HANDOVER_DEFINITIONS     # 수업
 DOCUMENTS = frozenset(EXTRACTIONS['payload']['documents'])
 # 제공 문서 파일 이름(서명 묶음의 차례 — 적재 순서 A · B · C, 교대 실습 D). 포털은 이 목록으로 samples/<파일> 링크를 그린다(W2-21)
 DOCUMENT_FILES = [d['filename'] for d in EXTRACTIONS['payload']['documents'].values()]
-# 학생에게 보이는 까닭 문장이 쓰는 이름 — 화면이 두 단계를 부르는 말(courseAccess.js: 「제공된 문서 · 흐름 · 모델만 쓰는 단계」 · 「제한 없이 쓰는
-# 단계 (PBL)」)과 기본 제공 흐름의 이름(제공 흐름 자료에서 읽는다 — 흐름 이름을 바꾸면 문장이 따라간다). 문장은 무엇이 지금 되고 무엇이 언제
-# 열리는지를 대상으로 말하고, 이 제품을 연습용이라 부르는 말(「수업」 · 「실습」 · 「강사」 · 「녹화」)을 쓰지 않는다.
-OPEN_PHASE = '제한 없이 쓰는 단계(PBL)'
+# 학생에게 보이는 까닭 문장이 쓰는 이름 — 화면이 PBL 선언이 있는 동안을 부르는 말(courseAccess.js 메뉴 아래 줄 「PBL 기간 · …까지」)과 기본 제공 흐름의
+# 이름(제공 흐름 자료에서 읽는다 — 흐름 이름을 바꾸면 문장이 따라간다). 까닭은 학생이 막힌 행동을 하려 할 때만 그 자리에 보이므로 한 문장으로
+# 무엇이 되고 무엇이 언제 열리는지만 말하고, 이 제품을 연습용이라 부르는 말(「수업」 · 「실습」 · 「강사」 · 「녹화」)을 쓰지 않는다.
+OPEN_PHASE = 'PBL 기간'
 PROVIDED_FLOWS = '기본 제공 흐름(' + ' · '.join([m['name'] for _, _, m in COURSE_FLOWS.values()] + [HANDOVER['mapping']['name']]) + ')'
 HANDOVER_NAME = HANDOVER['mapping']['name']
 
@@ -206,18 +206,15 @@ class Policy:
 
     # 값마다 갈리는 판정의 까닭(수업 단계) — 거절 응답과 화면(view 의 reasons)이 같은 문장을 쓴다
     REASONS = {
-        'ai_slot': (f'지금은 {PROVIDED_FLOWS}의 AI 단계와 질문하기만 AI가 실행합니다. '
-                    f'그 밖의 흐름의 AI 단계는 {OPEN_PHASE}에서 실행됩니다.'),
-        'assign': f'지금은 「{HANDOVER_NAME}」 흐름의 단계에만 내 에이전트를 배정합니다. 다른 흐름의 단계는 {OPEN_PHASE}에서 배정합니다.',
-        'start': f'지금은 {PROVIDED_FLOWS}만 시작합니다. 그 밖의 흐름은 {OPEN_PHASE}에서 시작합니다.',
-        'import_flow': (f'지금 가져올 수 있는 흐름은 제공된 「{HANDOVER_NAME}」 BPMN 하나입니다(파일 안의 흐름 식별 이름 {HANDOVER_IMPORT_ID}는 '
-                        f'바꾸지 마세요). 화면에 보이는 이름과 배치만 바꿔 가져오고, 다른 흐름은 {OPEN_PHASE}에서 가져옵니다.'),
-        'edit_flow': (f'지금 단계 설정을 고치고 검사 · 등록할 수 있는 흐름은 제공된 「{HANDOVER_NAME}」 하나입니다. '
-                      f'다른 흐름은 {OPEN_PHASE}에서 고칩니다.'),
-        'deploy_flow': f'지금 배포하거나 이전 판본으로 되돌릴 수 있는 흐름은 「{HANDOVER_NAME}」 하나입니다. 다른 흐름은 {OPEN_PHASE}에서 배포합니다.',
-        'define_flow': (f'지금은 흐름 정의(JSON)를 직접 등록하지 않습니다 — 「{HANDOVER_NAME}」 흐름은 [흐름 가져오기]로 등록하고, '
-                        f'정의 직접 등록은 {OPEN_PHASE}에서 엽니다.'),
-        'document': f'지금은 제공된 문서(내용을 고치지 않은 원문)만 등록합니다. 다른 문서는 {OPEN_PHASE}에서 등록합니다.',
+        'ai_slot': f'AI가 실행하는 것은 {PROVIDED_FLOWS}의 AI 단계와 질문하기이고, 그 밖의 흐름의 AI 단계는 {OPEN_PHASE}에 실행됩니다.',
+        'assign': f'내 에이전트는 「{HANDOVER_NAME}」 흐름의 단계에만 배정하고, 다른 흐름의 단계는 {OPEN_PHASE}에 배정합니다.',
+        'start': f'시작할 수 있는 흐름은 {PROVIDED_FLOWS}이고, 그 밖의 흐름은 {OPEN_PHASE}에 시작합니다.',
+        'import_flow': (f'가져올 수 있는 흐름은 「{HANDOVER_NAME}」 BPMN 하나이고(파일 안의 흐름 식별 이름 {HANDOVER_IMPORT_ID}는 그대로 두고 '
+                        f'화면에 보이는 이름과 배치만 바꿉니다), 다른 흐름은 {OPEN_PHASE}에 가져옵니다.'),
+        'edit_flow': f'단계 설정을 고치고 검사 · 등록할 수 있는 흐름은 「{HANDOVER_NAME}」 하나이고, 다른 흐름은 {OPEN_PHASE}에 고칩니다.',
+        'deploy_flow': f'배포하거나 이전 판본으로 되돌릴 수 있는 흐름은 「{HANDOVER_NAME}」 하나이고, 다른 흐름은 {OPEN_PHASE}에 배포합니다.',
+        'define_flow': f'흐름 정의(JSON) 직접 등록은 {OPEN_PHASE}에 열고, 「{HANDOVER_NAME}」 흐름은 [흐름 가져오기]로 등록합니다.',
+        'document': f'제공 문서(내용을 고치지 않은 원문)가 아닌 문서는 {OPEN_PHASE}에 등록합니다.',
     }
 
     def __init__(self, phase: Phase, clock=None):
@@ -272,8 +269,8 @@ class Policy:
         self.edit_flow(definition_id or HANDOVER_IMPORT_ID, 'import_flow')
         changed = handover_structure_changes(xml)
         if changed:
-            raise AccessDenied(f'지금은 제공된 「{HANDOVER_NAME}」 BPMN의 이름과 배치만 바꿔 가져옵니다 — 이 그림은 '
-                               + ' · '.join(changed) + f'. 원본 파일을 다시 열어 이름 · 배치만 고치세요(구조를 바꾼 그림은 {OPEN_PHASE}에서 가져옵니다).')
+            raise AccessDenied(f'「{HANDOVER_NAME}」 BPMN은 이름과 배치만 바꿔 가져옵니다 — 이 그림은 '
+                               + ' · '.join(changed) + f'. 원본 파일을 다시 열어 이름 · 배치만 고치세요(구조를 바꾼 그림은 {OPEN_PHASE}에 가져옵니다).')
 
     def imported_mapping(self, mapping, previous=None):
         """가져온 그림의 연결(매핑). 수업 단계의 제공 교대는 화면이 흐름 이름 · 세 초안 단계 에이전트만 연다(W3-08) — 나머지 칸은 제공한
@@ -299,9 +296,9 @@ class Policy:
         self.edit_flow(definition_id)
         changed = handover_structure_changes(xml) + handover_mapping_changes(mapping)
         if changed:
-            raise AccessDenied(f'지금은 제공된 「{HANDOVER_NAME}」 그림과 단계 설정에서 흐름 이름과 초안을 쓰는 단계의 AI 에이전트만 바꿔 '
+            raise AccessDenied(f'「{HANDOVER_NAME}」 흐름은 그림과 단계 설정에서 흐름 이름과 초안을 쓰는 단계의 AI 에이전트만 바꿔 '
                                '등록합니다 — 바뀐 곳: ' + ' · '.join(changed) + '. 그 칸을 원본대로 되돌리세요'
-                               f'(제공된 파일을 [흐름 가져오기]로 다시 가져오면 원본 단계 설정으로 돌아갑니다. 다른 칸은 {OPEN_PHASE}에서 고칩니다).')
+                               f'(제공된 파일을 [흐름 가져오기]로 다시 가져오면 원본 단계 설정으로 돌아갑니다. 다른 칸은 {OPEN_PHASE}에 고칩니다).')
 
     # -- 문서
     def document(self, sha256):
@@ -312,13 +309,10 @@ class Policy:
     # tool_servers.register = 내 도구 서버를 만들고 없애는 일 전부(등록 · 고치기 · 지우기 · 되돌리기 · 비밀 값 · 읽기로 확인). 만들 수 없는 단계에서는
     # 지울 수도 없다 — 지우면 되살릴 길이 없기 때문이다(사용자 2026-11-14). 저장된 서버의 [연결 검사]와 읽기 도구 [써 보기]는 어느 단계에서나 된다.
     ACTIONS = {
-        'tool_servers.register': (f'내 도구 서버를 등록하고 고치고 지우는 일, 비밀 값, 표시 없는 도구를 읽기로 확인하기는 {OPEN_PHASE}에서 엽니다. '
-                                  '지금은 기본 제공 도구 서버를 그대로 쓰고, 저장된 서버의 연결 검사와 읽기 도구 써 보기는 할 수 있습니다.'),
-        'documents.golden': (f'「이 문서로 답할 수 있는 질문」 검사(질문마다 AI가 이 문서의 지식으로 답합니다)는 {OPEN_PHASE}에서 엽니다. '
-                             '지금은 문서의 검토 · 적재 · 되돌리기를 합니다.'),
-        'ddl.meanings': f'옛 DB 뜻 복원(AI가 표 · 열의 뜻을 추정합니다)은 {OPEN_PHASE}에서 엽니다. 표 정의의 구조 읽기 · 적재 · 되돌리기는 지금도 됩니다.',
-        'config.import': (f'출발본 불러오기는 {OPEN_PHASE}에서 엽니다 — 파일에 든 내 도구 서버와 흐름이 함께 들어오기 때문입니다. '
-                          '출발본 내보내기와 기준으로 되돌리기는 지금도 됩니다.'),
+        'tool_servers.register': f'내 도구 서버의 등록 · 고치기 · 지우기와 비밀 값, 도구의 「읽기로 확인」은 {OPEN_PHASE}에 엽니다.',
+        'documents.golden': f'「이 문서로 답할 수 있는 질문」 검사는 {OPEN_PHASE}에 엽니다.',
+        'ddl.meanings': f'옛 DB 뜻 복원은 {OPEN_PHASE}에 엽니다.',
+        'config.import': f'내 구성 파일 불러오기는 {OPEN_PHASE}에 엽니다.',
     }
 
     def action(self, key):
@@ -326,7 +320,7 @@ class Policy:
             raise AccessDenied(self.ACTIONS[key])
 
     def view(self):
-        """포털이 읽는 표 — 화면은 이 표로만 단추를 끄고 서버가 준 까닭을 보인다(문장 사본 없음)."""
+        """포털이 읽는 표 — 화면은 이 표로만 단추를 막고, 학생이 그 단추를 누를 때 서버가 준 까닭을 보인다(문장 사본 없음)."""
         phase = self.phase
         course = not phase.pbl
         return {
@@ -449,7 +443,7 @@ def judged_claim(policy: Policy, runtime, body: dict, authorization):
     from . import engine, worker_credentials
     require_worker(authorization)
     if runtime is None or body.get('tenant_id') != runtime.tenant_id:
-        raise HTTPException(503, '수업 판정에 필요한 실행 서비스가 없습니다')
+        raise HTTPException(503, '판정에 필요한 실행 서비스가 없습니다')
     row = worker_credentials._claim(runtime, body)
     inst = runtime.repo.get_instance(row['proc_inst_id'])
     if not inst or inst.get('tenant_id') != runtime.tenant_id:

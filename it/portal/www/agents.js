@@ -35,7 +35,7 @@
   const kv = rows => { const r = rows.filter(([, v]) => v != null && v !== ''); return r.length ? `<dl class="kv">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>` : ''; };
   function reason(e) {
     if (e && e.status === 404 && !/[가-힣]/.test(e.message || '')) return '찾을 수 없습니다. 지웠거나 이름이 바뀌었을 수 있습니다. 다시 읽어 보세요.';
-    return (e && e.message) || '처리 엔진에 연결할 수 없습니다';
+    return (e && e.message) || '흐름 엔진에 연결할 수 없습니다';
   }
   function longText(key, text) {
     const t = String(text || '');

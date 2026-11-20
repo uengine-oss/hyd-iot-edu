@@ -4,7 +4,7 @@
      GET  /api/process/mode · /api/process/definitions/{id} · /api/instances · /api/instances/{id}(+/graph) · /api/graph-projections · /api/todolist… · /api/decisions/{id}
      POST /api/todolist/{id}/select · reject-card · decision-preview (조치 카드) · approve (일반 승인) · submit (폼) · human-response (질문 답) · 승인 전달 재전달 · 폐기 · 단계 닫기 · 실행 취소
    상태 의미는 ProcessGPT 와 같다: TODO 예정 → IN_PROGRESS 진행 중(내가 할 일) → SUBMITTED 제출됨(엔진 차례) → DONE · CANCELLED · PENDING.
-   화면: 왼쪽 목록(.rows) — 묶음 셋(내 차례 → 진행 중 → 처리 완료 3건 + 「처리 완료 N건 더 보기」) | 오른쪽 한 건:
+   화면: 왼쪽 목록(.rows) — 묶음 셋(내 차례 → 진행 중 → 처리 완료 3건 + 「처리 완료 N건 더 보기」)과 맨 아래 접힌 「시스템 작업」 묶음 | 오른쪽 한 건:
      머리(이름 · 상태 알약 하나 · 보조 줄 「사건 · 시작 · n/m 단계 · 걸린 시간」 · 진행 막대 · 「…」) → 내가 할 일(.turn — 내 차례일 때만) → 결과 카드(끝난 건) 또는 멈춘 단계 알림 →
      진행 상황 카드(세그먼트 「목록 / 흐름 그림」 — 목록은 caseRecord.js 의 단계 타임라인, 그림은 flow.js 의 bpmn-js) → 「…」 › 「자세한 기록」 접기(단계 표 원문 · 처리 건 값 · 복구 · 지식 지도 반영).
    단계 한 줄을 누르면 옆 판(caseRecord.js)에 그 단계의 판단 근거 · 실행 기록 · 받은 값과 넘긴 값 · 원문이 열린다.
@@ -22,9 +22,8 @@
   const isHuman = hydCases.isHumanTask;
   const josa = (word, pair) => window.hydWords ? hydWords.josa(word, pair) : '';
   const WINDOW = hydCases.WINDOW;                      // 목록 한 번에 읽는 건수(ui.js — 홈 카드도 같은 건수를 읽는다)
-  // 사건이 아닌 시스템 작업(질문 · 문서 추출 흐름) — 목록에서 사건과 가르는 표시. 서버가 준 흐름 정의 id 로만 가른다
-  const SYSTEM_DEFS = new Set(['ask_agent', 'manual_extraction', 'manual_source_extraction', 'golden_questions', 'timeseries_question', 'business_question', 'rule_question']);
-  const isSystemJob = x => SYSTEM_DEFS.has(String(x.proc_def_id || '').split('.')[0]);
+  // 사건이 아닌 시스템 작업(질문 · 문서 추출 흐름) — 판정은 ui.js(hydCases.isSystemJob) 한 곳이다. 목록은 맨 아래 접힌 「시스템 작업」 묶음에 두고, 묶음 셋과 홈 · 메뉴의 수에는 세지 않는다
+  const isSystemJob = hydCases.isSystemJob;
   // 끝난 처리 건의 결과(정상 · 미달 · 반려 · 지연 · 입고 완료)를 상태 낱말 하나로 — 미달(ESCALATED) 종결도 「완료」로만 보이지 않게.
   // 결과 보고가 없는 건은 끝 이벤트의 이름이 결과다(「사람이 닫음」 · 「조치 전 해소」 — 결과 카드가 말하는 것과 같은 말. 그런 건을 「완료」라고 하지 않는다).
   // 끝 이벤트의 이름이 「끝」 · 「처리 완료」처럼 뜻 없는 말일 때만 상태 이름(완료 · 취소)으로 말한다
@@ -257,7 +256,7 @@
       : x.status === 'RUNNING' ? (x.current_activity_ids || []).map(id => UI.flowName(names[id] || id.replace(/^task:|^ev:/, ''))).join(' · ') : '';
     const due = task ? dueOf(task) : null;
     const role = task ? (I.defRoles[`${x.proc_def_id}@${x.proc_def_version}`] || {})[task.user_id] || UI.who(task.user_id) : '';
-    const bits = [isSystemJob(x) ? '시스템 작업' : '', step ? `${step} 단계` : '', role && !step.includes(role) ? role : '', due ? `기한 ${UI.dateTime(due)}` : '',
+    const bits = [step ? `${step} 단계` : '', role && !step.includes(role) ? role : '', due ? `기한 ${UI.dateTime(due)}` : '',
       !task && x.start_date ? `${startText(x.start_date)} 시작` : '', x.status !== 'RUNNING' ? endText(x) : ''].filter(Boolean);
     const chip = task ? UI.chipText(turnWord(task), 'mine') : stateChip(x);
     return `<span class="row-title">${esc(x.proc_inst_name || '이름 없는 처리 건')}</span>${chip}<span class="row-meta">${esc(bits.join(' · '))}</span>`;
@@ -299,10 +298,10 @@
     const open = running.filter(x => x.attention).concat(running.filter(x => !x.attention));
     if (open.length) group('진행 중', open.length);
     open.forEach(x => add(x.proc_inst_id === I.sel, x, rowHtml(x), () => pick(x.proc_inst_id, null), { inst: x.proc_inst_id }));
-    // ③ 처리 완료: 접은 채로는 사건 3건(질문 · 문서 추출 같은 시스템 작업은 사건이 모자랄 때만 채운다)과 지금 고른 건. 펴면 시작한 차례대로 전부.
-    // 묶음 머리의 수는 접었든 폈든 끝난 건 전부(시스템 작업 포함)다 — 「더 보기」로 펴면 그 수만큼의 줄이 보인다
+    // ③ 처리 완료: 접은 채로는 3건과 지금 고른 건. 펴면 시작한 차례대로 전부.
+    // 묶음 머리의 수는 접었든 폈든 끝난 사건 처리 건 전부다 — 「더 보기」로 펴면 그 수만큼의 줄이 보인다(시스템 작업은 아래 ④에 따로 있다)
     const done = g.done;
-    const head = I.doneOpen ? done : done.filter(x => !isSystemJob(x)).concat(done.filter(isSystemJob)).slice(0, DONE_SHOWN);
+    const head = I.doneOpen ? done : done.slice(0, DONE_SHOWN);
     const sel = !I.doneOpen && done.find(x => x.proc_inst_id === I.sel && !head.includes(x));
     const shown = sel ? head.slice(0, DONE_SHOWN - 1).concat([sel]) : head;
     if (done.length) group('처리 완료', g.doneText);
@@ -311,6 +310,19 @@
       const m = el('div', 'rows-more', UI.moreButton(done.length - shown.length, 'data-done-more', { what: '처리 완료', unit: I.all.length >= WINDOW ? '건 넘게' : '건' }));
       m.querySelector('button').addEventListener('click', () => { I.doneOpen = true; renderList(); load(true); });
       box.appendChild(m);
+    }
+    // ④ 시스템 작업(질문하기 · 문서 추출처럼 다른 화면이 연 처리 건): 맨 아래에 접어 둔다 — 진행 중이든 끝났든 이 한 묶음이고, 위 묶음 셋의 수에 들지 않는다.
+    // 그 화면의 「처리 건에서 보기」로 온 건(지금 고른 건)이나 내가 할 일이 있는 건이 이 안에 있으면 편 채로 그린다(접힌 안에 고른 줄 · 내 차례가 숨지 않게)
+    const jobs = g.jobs;
+    if (jobs.length) {
+      if (I.jobsOpen || jobs.some(x => x.proc_inst_id === I.sel || mineOf(x.proc_inst_id))) {
+        group('시스템 작업', jobs.length);
+        jobs.forEach(x => add(x.proc_inst_id === I.sel, x, rowHtml(x), () => pick(x.proc_inst_id, null), { inst: x.proc_inst_id }));
+      } else {
+        const m = el('div', 'rows-more', UI.moreButton(jobs.length, 'data-jobs-more', { what: '시스템 작업', unit: '건' }));
+        m.querySelector('button').addEventListener('click', () => { I.jobsOpen = true; renderList(); });
+        box.appendChild(m);
+      }
     }
     // 처리 건이 하나도 없으면 목록 칸은 비워 둔다 — 「아직 없습니다」와 그 일을 하는 단추는 오른쪽 칸이 한 번만 말한다(같은 말을 두 칸에 두지 않는다)
     box.scrollTop = top;
@@ -333,10 +345,10 @@
   // 판의 틀(키트 .turn): 머리(아이콘 칸 · 「내가 할 일 · 승인」 · 기한 · 물음 한 문장 · 까닭) → 판단에 쓸 숫자(최대 넷) → (펼친 것) → 단추 줄(오른쪽 끝에 어느 역할로 기록되는지) → 까닭 한 줄
   // facts: [[이름, 값, 단위]] · late: 기한 줄(clockLine) · who: 「운전원 역할로 기록됩니다」
   // msg: 막힌 까닭 · 서버가 거절한 까닭(빨간 글) · note: 알아 둘 것(보통 글)
-  // 앞 AI 단계가 남긴 알림 가운데 「결과 글」에 대한 것(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 · 지금 값과 다른 곳): 그 글을 읽고 결정하는 자리에도 같은 말을 보인다.
+  // 앞 AI 단계가 남긴 알림 가운데 「결과 글」에 대한 것(AI 설명 속 값이 판단 때 값이라는 것 · 지금 값과 다른 곳): 그 글을 읽고 결정하는 자리에도 같은 말을 보인다.
   // 가장 최근에 끝난 AI 단계의 것만 본다(진행 상황의 그 단계 옆 판에 같은 문장이 있다)
-  // 결과 글이 지금 값과 다를 수 있음을 알리는 종류(worker ai_replay.NOTICE_KINDS) — 준비된 글 머리말은 뒤 문장이 있을 때만 서버가 붙인다
-  const RESULT_NOTICE_KINDS = ['prepared', 'typed_differs', 'values_differ', 'reads_differ', 'reads_unchecked'];
+  // 결과 글이 지금 값과 다를 수 있음을 알리는 종류(worker ai_replay.NOTICE_KINDS)
+  const RESULT_NOTICE_KINDS = ['typed_differs', 'values_differ', 'reads_differ', 'reads_unchecked'];
   function resultNotices() {
     const view = I.view; if (!view || !window.hydRecord) return [];
     const agentRows = (view.workitems || []).filter(w => (w.agent_orch === 'cliagents' || w.agent_mode) && w.end_date).sort((a, b) => String(b.end_date).localeCompare(String(a.end_date)));
@@ -351,7 +363,7 @@
     if (told) desc += told;
     return `<section class="turn" aria-label="내가 할 일" ${attrs}>
       <div class="turn-head"><div><div class="turn-eyebrow">${UI.icon(icon)}${esc(label)}${late}</div><h3>${esc(title)}</h3>${desc}${ai ? '<div class="turn-ai" data-ai-slot></div>' : ''}</div></div>
-      ${facts.length ? `<dl class="turn-facts">${facts.map(([k, x, u]) => `<div><dt>${esc(k)}</dt><dd class="num">${esc(x)}${u ? `<small>${esc(u)}</small>` : ''}</dd></div>`).join('')}</dl>` : ''}
+      ${UI.factCells(facts)}
       ${more ? `<div class="turn-more">${more}</div>` : ''}
       ${acts || who ? `<div class="turn-foot">${acts}${who ? `<span class="who">${who}</span>` : ''}</div>` : ''}
       ${note ? `<p class="turn-msg">${esc(note)}</p>` : ''}${msg ? `<p class="turn-msg" data-tone="danger" role="status">${esc(msg)}</p>` : ''}</section>`;
@@ -367,7 +379,7 @@
   }
   // 사유 칸: 반려(꼭 적는다)와 다른 안(적으면 기록에 남는다)일 때만
   const reasonField = (label, hint) => UI.field({ label, cls: 'turn-reason', hint, input: `<textarea id="tdReason" rows="2">${esc(I.form.reason || '')}</textarea>` });
-  // 판단에 쓸 숫자(최대 넷): ① 고른 안의 예측이 고르는 근거이면 그 값의 지금 값(경보가 실어 온 관측)과 조치 뒤 예측 ② 판단이 쓴 사실 가운데 판단 엔진의 설명에 그 숫자가 나온 것 먼저.
+  // 판단에 쓸 숫자(최대 넷): ① 고른 안의 예측이 고르는 근거이면 그 값의 지금 값(경보가 실어 온 관측)과 조치 뒤 예측 ② 판단이 쓴 사실 가운데 판단 서비스의 설명에 그 값이 나온 것 먼저.
   // 모두 서버가 준 값이다 — 없으면 그 칸을 그리지 않는다
   function turnFacts(d, chosen) {
     const W = window.hydWords, out = [];
@@ -385,8 +397,9 @@
     }
     const said = String(d.explanation || '');
     const facts = Object.entries({ ...(d.facts || {}), ...(chosen.facts || {}) }).filter(([k, x]) => typeof x === 'number' && Number.isFinite(x) && W.known(k));
-    const named = facts.filter(([, x]) => new RegExp(`(^|[^0-9.])${String(x).replace('.', '\\.')}([^0-9.]|$)`).test(said));
-    named.concat(facts.filter(x => !named.includes(x))).forEach(([k, x]) => { if (out.length < 4) out.push([W.fieldName(k), W.num(x), W.unit(k)]); });
+    const named = facts.filter(([k, x]) => new RegExp(`(^|[^0-9.])${String(x).replace('.', '\\.')}([^0-9.]|$)`).test(said) || (W.unit(k) === '시간' && said.includes(UI.hoursText(x))));
+    // 시간 길이(단위 「시간」 — 납기까지 5.99)는 「5시간 59분」으로 적는다(UI.hoursText). 그 밖의 값은 숫자와 단위
+    named.concat(facts.filter(x => !named.includes(x))).forEach(([k, x]) => { if (out.length < 4) out.push(W.unit(k) === '시간' ? [W.fieldName(k), UI.hoursText(x), ''] : [W.fieldName(k), W.num(x), W.unit(k)]); });
     return out;
   }
   function setMode(mode) { I.form.mode = I.form.mode === mode ? null : mode; I.msg = ''; renderTodoPanel(); if (I.form.mode) $('#tdReason')?.focus({ preventScroll: true }); }
@@ -595,7 +608,7 @@
     // 승인하면 무슨 일이 일어나는가: 서버가 준 그 안의 조치 목록 그대로(없으면 그 줄을 그리지 않는다)
     // 모든 안이 같은 까닭으로 제외됐으면 그 까닭을 여기서 한 번만 말한다(안마다 되풀이하지 않는다 — 원문은 아래 접기에)
     const will = P.none ? `<p>${none.same ? `${esc(none.reasons.join(' · '))}. 그래서 AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다.` : `AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 까닭은 아래에 있습니다.`}</p>`
-      : P.actions.length ? `<p>${P.state === 'execution' ? `승인하면 시스템이 ${esc(P.actions.join(' · '))}${josa(P.actions[P.actions.length - 1], '을/를')} 실행합니다.` : `모의 판단에 포함된 조치입니다(승인 · 실행되지 않습니다): ${esc(P.actions.join(' · '))}`}${P.changed ? ' <span class="muted">추천안 대신 직접 고른 안입니다.</span>' : ''}</p>` : P.changed ? '<p class="muted">추천안 대신 직접 고른 안입니다.</p>' : '';
+      : P.actions.length ? `<p>${P.state === 'execution' ? `승인하면 시스템이 ${esc(P.actions.join(' · '))}${josa(P.actions[P.actions.length - 1], '을/를')} 실행합니다.` : `${esc(UI.t('eval.calcOnly'))} 계산에 포함된 조치: ${esc(P.actions.join(' · '))}`}${P.changed ? ' <span class="muted">추천안 대신 직접 고른 안입니다.</span>' : ''}</p>` : P.changed ? '<p class="muted">추천안 대신 직접 고른 안입니다.</p>' : '';
     const previewNow = I.form.needPreview && I.form.option ? `<button type="button" class="btn" data-variant="outline" id="tdPreviewNow" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>` : '';
     const acts = mode === 'reject'
       ? `<button type="button" class="btn" data-variant="destructive" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>반려 확정</button><button type="button" class="btn" data-variant="ghost" id="tdModeOff">취소</button>`
@@ -1099,7 +1112,7 @@
     if (!g && !I.caseProjection) return `<p class="muted">${esc(UI.t('loading'))}</p>`;   // 이 탭을 연 뒤 첫 읽기가 끝나기 전
     const pending = g && g.projection, cases = I.caseProjection;
     const sync = `<p>${esc(UI.t('inst.projectionPending'))}: ${pending ? esc(pending.pending) + '건' : esc(UI.t('inst.projectionNone'))} · ${esc(UI.t('inst.projectionAll'))}: ${cases && !cases.error ? esc(cases.pending) + '건' : esc(UI.t('inst.projectionNone'))}</p>
-      ${cases && cases.worker_running === false ? `<div class="alert" data-variant="destructive" role="status">${UI.icon('circle-alert')}<h2>지식 지도에 반영하는 작업이 멈춰 있습니다</h2><section>반영이 늦어집니다. 잠시 뒤에도 그대로면 시스템 › 시스템 구성에서 처리 서비스의 상태를 확인하세요.</section></div>` : ''}
+      ${cases && cases.worker_running === false ? `<div class="alert" data-variant="destructive" role="status">${UI.icon('circle-alert')}<h2>지식 지도에 반영하는 작업이 멈춰 있습니다</h2><section>반영이 늦어집니다. 잠시 뒤에도 그대로면 시스템 › 시스템 구성에서 흐름 엔진의 상태를 확인하세요.</section></div>` : ''}
       ${cases && cases.error ? `<p class="muted" data-tone="danger">반영 상태 조회 실패: ${esc(cases.error)}</p>` : ''}
       ${cases?.knowledge ? `<p class="muted">지식 연결 변경 확인: <span data-knowledge-checked>${esc(knowledgeChecked(cases))}</span>${cases.knowledge.last_error ? '<br><span class="muted" data-tone="danger">연결 재확인 실패: ' + esc(cases.knowledge.last_error) + '</span>' : ''}</p>` : ''}
       ${pending && pending.last_error ? UI.raw(pending.last_error, { title: pending.last_error.startsWith('ProjectionConflict:') ? '반영이 멈춘 까닭 (오류 원문)' : '반영을 다시 시도하는 중 (오류 원문)' }) : ''}
@@ -1107,7 +1120,7 @@
       ${cases && (cases.items || []).some(x => x.last_error) ? UI.raw(cases.items.filter(x => x.last_error), { title: '사건 · 판단 반영 오류' }) : ''}`;
     if (!g) return sync + `<p class="muted">${esc(UI.t('loading'))}</p>`;
     if (g.error) return sync + `<p class="muted">${esc(UI.t('error.load'))}: ${esc(g.error)}</p>`;
-    const cy = UI.raw(g.cypher, { title: UI.t('inst.query'), lang: 'cypher' }) + UI.raw(g.params, { title: '질의 조건 값' });
+    const cy = UI.raw(g.cypher, { title: UI.t('inst.query'), lang: 'cypher' }) + UI.raw(g.params, { title: '쿼리에 넣은 값' });
     const x = g.graph;
     if (!x) return sync + '<p class="muted">조회 가능한 반영 내역이 없습니다.</p>' + cy;
     const rows = (x.workitems || []).map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(UI.flowName(w.executes_name || ''))}<br><span class="muted">${esc(KNOWLEDGE_KIND[w.executes_type] || w.executes_type || '')}</span>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');

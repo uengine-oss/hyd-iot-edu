@@ -42,9 +42,9 @@ def run_scope(given: dict | None) -> dict | None:
 
 
 mcp = FastMCP("hyd-dmn", instructions=(
-    "유압설비 교육 공장의 결정론 판단 엔진이다. 원인 진단(diagnose)은 후보 원인의 사전 확률 × 실제 증거 가중치로 순위를 매긴다. "
+    "유압 설비 공장의 결정론 판단 서비스다. 원인 진단(diagnose)은 후보 원인의 사전 확률 × 실제 증거 가중치로 순위를 매긴다. "
     "조치 판단은 온톨로지 v2 의 DMN 결정표 dec:action-candidates(COLLECT) · dec:compliance(COLLECT) · dec:rank-actions(UNIQUE)를 "
-    "실제 사실에 대어 같은 입력이면 같은 결과를 낸다. dec:diagnose-cause 규칙(rule:dx-*)은 진단 근거를 설명하는 지식이며 이 엔진이 평가하지 않는다. "
+    "실제 사실에 대어 같은 입력이면 같은 결과를 낸다. dec:diagnose-cause 규칙(rule:dx-*)은 진단 근거를 설명하는 지식이며 이 서비스가 평가하지 않는다. "
     "규칙을 임의로 해석하지 말고 이 도구의 결과를 인용하라. "
     "submit_decision·submit_purchase는 판단 카드를 쓰며(process /api/decisions), 설비 명령은 어디서도 나가지 않는다. "
     "FM 없는 원문 구매 SOP는 실제 ERP 부족부품과 Part 범위를 purchase_context/evaluate_purchase로 확인하고 submit_purchase로 제출한다. "
@@ -69,7 +69,7 @@ def diagnose(asset: Asset, pattern: Pattern,
 
 @mcp.tool(annotations=READ)
 def dmn_rules(decision: Annotated[str | None, Field(description="판단 id 로 거르기 (dec:action-candidates 등). 비우면 전체")] = None) -> dict:
-    """DMN 결정표의 규칙들: 임계값 검사(TESTS), 출력, 적용 대상, 근거 출처."""
+    """DMN 결정표의 규칙들: 임계치 검사(TESTS), 출력, 적용 대상, 근거 출처."""
     return enveloped(lambda: tools.dmn_rules(decision))()
 
 
@@ -93,7 +93,7 @@ def timeseries_schema() -> dict:
 
 @mcp.tool(annotations=READ)
 def timeseries_query(sql: Annotated[str, Field(description="timeseries_schema로 확인한 public.tag_1s/feat_1s/tag_1m 대상 PostgreSQL SELECT. 시간범위·설비·태그를 명시하고 지속 조건에는 관측 간격/누락/신선도를 함께 검사한다.")]) -> dict:
-    """에이전트가 생성한 센서 SQL을 실제 읽기 전용 원천에 실행한다. 최대200행/5초. 빈 결과는 정상0행이며 조건 불일치·미관측은 질의 의미에 따라 구분한다. 쓰기/원천 밖/미허용 함수는 거절한다."""
+    """에이전트가 생성한 센서 SQL을 실제 읽기 전용 원천에 실행한다. 최대200행/5초. 빈 결과는 정상0행이며 조건 불일치·미관측은 쿼리 의미에 따라 구분한다. 쓰기/원천 밖/미허용 함수는 거절한다."""
     return enveloped(lambda: tools.timeseries_query(sql))()
 
 
@@ -118,7 +118,7 @@ def read_evaluation_evidence(evidence_ref: Annotated[str, Field(description='평
 @mcp.tool(annotations=READ)
 def forecast_actions(asset: Asset, actions: Annotated[list[dict], Field(description="검토할 원자 조치 목록: kind=command, code, value. 예: FAN_SET=100, LOAD_SET=80")],
                      horizon_s: Annotated[float, Field(description="예측할 시뮬레이션 시간(초)", gt=0, le=86400)] = 900) -> dict:
-    """현재 설비의 명시된 교육용 모델 입력으로 조치 후 온도·압력·진동을 예측한다. 입력/가정/범위/인터록 가능성을 반환한다. 실행·승인·카드 제출은 하지 않으며 미지원 모델/조치/오래된 입력이면 오류다."""
+    """현재 설비의 명시된 모델 입력으로 조치 후 온도·압력·진동을 예측한다. 입력/가정/범위/인터록 가능성을 반환한다. 실행·승인·카드 제출은 하지 않으며 미지원 모델/조치/오래된 입력이면 오류다."""
     return enveloped(lambda: tools.forecast_actions(asset, actions, horizon_s))()
 
 
@@ -163,7 +163,7 @@ def submit_purchase(asset: Asset, part_no: Annotated[str, Field(description='실
 
 @mcp.tool(annotations=READ)
 def precedents(failure_mode: FailureMode) -> dict:
-    """같은 고장 유형에서 사람이 과거에 고른 카드(DecisionCase) 통계. 교육용 고정: 미리 넣은 예시(seeded) 사례만 센다 — 승인해도 늘지 않는다."""
+    """같은 고장 유형에서 사람이 과거에 고른 카드(DecisionCase) 통계. 지금 지식에 있는 선례만 센다 — 승인해도 늘지 않는다."""
     return enveloped(lambda: tools.precedents(failure_mode))()
 
 

@@ -8,8 +8,8 @@
   const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
     knowledge: null, choices: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run' };
   const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 에이전트)' };
-  const CHECK = { cause: '원인 적중', top: '1위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
-  const EXPECT = { excluded: '제외돼야 함', not_recommended: '1위면 안 됨' };
+  const CHECK = { cause: '원인 적중', top: '1순위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
+  const EXPECT = { excluded: '제외돼야 함', not_recommended: '1순위면 안 됨' };
   // 설비 목록 · 가정 사실(이름 · 선택지)은 서버가 준다(GET /api/eval/golden 의 assets · facts — judgment_eval.FACT_CHOICES)
   const factLabel = k => (E.facts[k] || {}).label || k;
   const q = (sel) => E.el.querySelector(sel);
@@ -49,7 +49,7 @@
       </div>
       <div data-view="golden" hidden>
         <div class="io-out">
-          <section class="panel"><div class="panel-head"><div><h2>정답표</h2><p>경보 상황마다 기대하는 원인, 1위로 허용되는 조치, 빠져야 할 조치, 있어야 할 근거를 적습니다.</p></div>
+          <section class="panel"><div class="panel-head"><div><h2>정답표</h2><p>경보 상황마다 기대하는 원인, 1순위로 허용되는 조치, 빠져야 할 조치, 있어야 할 근거를 적습니다.</p></div>
             <button type="button" class="btn" data-act="new">${UI.icon('plus')}새 항목 적기</button></div><div class="panel-sec" data-r="golden"></div></section>
           <div data-r="form"></div></div>
       </div>
@@ -83,7 +83,7 @@
       host.innerHTML = UI.empty('정답표가 비어 있습니다', '[새 항목 적기]로 경보 상황 하나와 기대하는 판단을 적습니다. 미리 들어 있는 정답은 없습니다.');
       return;
     }
-    host.innerHTML = table('<th>채점</th><th>경보 상황</th><th>기대 원인</th><th>1위 허용</th><th>빠질 조치</th><th>있어야 할 근거</th>',
+    host.innerHTML = table('<th>채점</th><th>경보 상황</th><th>기대 원인</th><th>1순위 허용</th><th>빠질 조치</th><th>있어야 할 근거</th>',
       E.golden.map(it => `<tr>
         <td><input type="checkbox" class="input" data-pick="${esc(it.id)}" ${E.picked.has(it.id) ? 'checked' : ''} aria-label="${esc(it.title)} 채점에 포함"></td>
         <td><button type="button" class="btn" data-variant="link" data-edit="${esc(it.id)}">${esc(it.title)}</button><p class="muted">${esc(it.asset)} · ${esc(patternName(it.pattern))} · ${esc(factsText(it.facts))}</p></td>
@@ -113,7 +113,7 @@
     `<option value="${esc(label)}">${kind === 'evidence' ? esc(KIND_WORD[Object.keys(KIND_WORD).find(p => id.startsWith(p))] || '') : ''}</option>`).join('')}</datalist>`).join('');
   // 이름으로 찾아 넣는 칸: 글자를 치면 목록이 좁혀지고, 고르면 아래 「고른 것」 목록에 한 줄이 더해진다
   const picker = (field, kind, label) => `<input class="input" data-add-to="${field}" data-kind="${kind}" list="evalDl-${kind}" placeholder="이름으로 찾아 넣기" aria-label="${esc(label)} 이름으로 찾아 넣기" autocomplete="off">`;
-  // 고른 것 목록(이름으로 보이고 줄마다 [빼기]). 빠져야 할 조치는 줄마다 기대(제외돼야 함 · 1위면 안 됨)와 근거 규칙(선택)을 고른다
+  // 고른 것 목록(이름으로 보이고 줄마다 [빼기]). 빠져야 할 조치는 줄마다 기대(제외돼야 함 · 1순위면 안 됨)와 근거 규칙(선택)을 고른다
   function picksHtml(field) {
     const d = E.editing.draft, xs = d[field], kind = field === 'required_evidence' ? 'evidence' : 'skill';
     const drop = i => `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-unpick="${field}" data-i="${i}">${UI.icon('x')}빼기</button>`;
@@ -152,8 +152,8 @@
       UI.section('기대하는 판단',
         UI.field({ label: '기대 원인', required: true, input: `<input data-f="cause" list="evalDl-cause" value="${esc(labelOf('cause', d.cause) || '')}" placeholder="원인 이름으로 찾기" autocomplete="off">`, hint: '지식의 원인 이름 가운데 고릅니다.' }) +
         UI.field({ label: '고장 유형', required: true, input: `<input data-f="failure_mode" list="evalDl-fm" value="${esc(labelOf('fm', d.failure_mode) || '')}" placeholder="고장 유형 이름으로 찾기" autocomplete="off">` }) +
-        UI.field({ label: '1위로 허용되는 조치', required: true, cls: 'wide', hint: '조치 방법 이름을 찾아 고르면 아래에 더해집니다. 여러 개를 고를 수 있습니다.', input: `${picker('allowed_top', 'skill', '1위로 허용되는 조치')}<div data-picks="allowed_top">${picksHtml('allowed_top')}</div>` }) +
-        UI.field({ label: '빠져야 할 조치', cls: 'wide', hint: '판단에서 제외돼야 하거나 1위가 되면 안 되는 조치 방법을 고릅니다. 줄마다 어느 쪽인지 고르고, 그 근거가 되는 규칙이 있으면 함께 고릅니다.', input: `${picker('forbidden', 'skill', '빠져야 할 조치')}<div data-picks="forbidden">${picksHtml('forbidden')}</div>` }) +
+        UI.field({ label: '1순위로 허용되는 조치', required: true, cls: 'wide', hint: '조치 방법 이름을 찾아 고르면 아래에 더해집니다. 여러 개를 고를 수 있습니다.', input: `${picker('allowed_top', 'skill', '1순위로 허용되는 조치')}<div data-picks="allowed_top">${picksHtml('allowed_top')}</div>` }) +
+        UI.field({ label: '빠져야 할 조치', cls: 'wide', hint: '판단에서 제외돼야 하거나 1순위가 되면 안 되는 조치 방법을 고릅니다. 줄마다 어느 쪽인지 고르고, 그 근거가 되는 규칙이 있으면 함께 고릅니다.', input: `${picker('forbidden', 'skill', '빠져야 할 조치')}<div data-picks="forbidden">${picksHtml('forbidden')}</div>` }) +
         UI.field({ label: '근거에 있어야 할 지식', required: true, cls: 'wide', hint: '판단의 근거에 들어 있어야 할 증거, 규칙, 매뉴얼 절을 이름으로 찾아 고릅니다.', input: `${picker('required_evidence', 'evidence', '근거에 있어야 할 지식')}<div data-picks="required_evidence">${picksHtml('required_evidence')}</div>` })) +
       UI.section('', UI.field({ label: UI.t('form.note'), cls: 'wide', input: `<input data-f="note" value="${esc(it.note || '')}" placeholder="이 항목을 왜 적었는지(선택)">` })) +
       (pats.length ? '' : UI.errorBlock('이상 패턴 목록을 읽지 못해 지금은 저장할 수 없습니다', '화면 위의 [다시 읽기]를 눌러 주세요.')) +
@@ -174,7 +174,7 @@
     // 이름 칸에 적힌 글 → id. 목록에 없는 글이면 보내지 않고 말한다(빈 정답이나 엉뚱한 id 로 저장되지 않게)
     const pick = (kind, text, what) => { if (!text) throw new Error(`${what} 칸이 비어 있습니다`); const id = nameMap(kind).get(text); if (!id) throw new Error(`${what} 「${text}」: 목록에 있는 이름을 고르세요`); return id; };
     const cause = pick('cause', v('cause'), '기대 원인'), failure_mode = pick('fm', v('failure_mode'), '고장 유형');
-    if (!d.allowed_top.length) throw new Error('1위로 허용되는 조치를 하나 이상 고르세요');
+    if (!d.allowed_top.length) throw new Error('1순위로 허용되는 조치를 하나 이상 고르세요');
     if (!d.required_evidence.length) throw new Error('근거에 있어야 할 지식을 하나 이상 고르세요');
     const forbidden = d.forbidden.map(x => ({ skill: x.skill, expect: x.expect, ...(x.rule ? { rule: x.rule } : {}), ...(x.why ? { why: x.why } : {}) }));
     if (!v('asset')) throw new Error('설비를 고르세요');
@@ -266,7 +266,7 @@
     // 서버는 항목(또는 처리 건) 하나를 끝낼 때마다 진행 기록에 그 결과를 적는다 — 화면은 그것을 읽어 아래에 하나씩 채운다. 채점 결과 전체는 끝난 뒤 한 번에 온다
     const since = new Date().toISOString();
     E.runWait = { since, unit: path === 'worker' ? '처리 건' : '항목', track: hydLive.track({ since, text: `판단 ${n}회를 정답표와 견주는 중`, hint: path === 'worker' ? '고른 지난 처리 건의 AI 판단을 정답표 항목과 차례로 견줍니다.'
-      : `판단 엔진에 ${n}번 묻습니다(항목 ${n / body.repeats}개 × ${body.repeats}회). 항목이 끝날 때마다 아래에 결과가 채워집니다.` }) };
+      : `판단 서비스에 ${n}번 묻습니다(항목 ${n / body.repeats}개 × ${body.repeats}회). 항목이 끝날 때마다 아래에 결과가 채워집니다.` }) };
     body.request_id = E.runWait.track.id;
     msg('run', ''); showRunWait();
     if (!E.run) q('[data-r="detail"]').innerHTML = '';      // 도는 동안에는 「아직 고른 채점 실행이 없습니다」를 실시간 상자 아래에 두지 않는다
@@ -299,7 +299,7 @@
   function checkLine(key, c) {
     let detail = '';
     if (key === 'cause') detail = `판단 ${nm(c.got)} · 정답 ${nm(c.want)}` + (c.got_failure_mode !== c.want_failure_mode ? ` <span class="muted">(고장 유형 ${nm(c.got_failure_mode)} / ${nm(c.want_failure_mode)})</span>` : '');
-    if (key === 'top') detail = `1위 ${nm(c.got)} · 허용 ${c.allowed.map(nm).join(', ')}`;
+    if (key === 'top') detail = `1순위 ${nm(c.got)} · 허용 ${c.allowed.map(nm).join(', ')}`;
     if (key === 'forbidden') detail = c.detail.length ? c.detail.map(d => `${nm(d.skill)} ${esc(EXPECT[d.expect])} → ${esc(UI.idText(d.got))}${d.ok ? '' : ' (틀림)'}`).join(' · ') : '정답표에 빠질 조치 없음 — 점수에 넣지 않음';
     if (key === 'evidence') detail = `${pct(c.ratio)}` + (c.missing.length ? ` · 빠진 근거 ${c.missing.map(nm).join(', ')}` : '');
     return `<li>${UI.icon(c.ok ? 'check' : 'x')}<span><b>${esc(CHECK[key])}</b> ${UI.chipText(c.ok ? '맞음' : '틀림', c.ok ? 'success' : 'danger')} ${detail}</span></li>`;
@@ -340,7 +340,7 @@
     const extra = [s.withheld ? `판단 없음(보류 · 오류) ${esc(s.withheld)}개` : '', s.unstable ? `흔들림 ${esc(s.unstable)}개` : ''].filter(Boolean).join(' · ');
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>평균 ${esc(s.score)}점 — 항목 ${esc(s.items)}개 · ${esc(PATH[r.path] || r.path)}</h2>` +
       `<p>${esc(UI.dateTime(r.created))} · ${esc(UI.who(r.by))}${r.note ? ' · ' + esc(r.note) : ''}</p></div></div>` +
-      `<dl class="turn-facts">${fact('원인 적중', of('cause_hits'))}${fact('1위 허용', of('top_ok'))}${fact('빠질 조치 미추천', of('forbidden_ok'))}${fact('근거 모두 포함', of('evidence_ok'))}</dl>` +
+      `<dl class="turn-facts">${fact('원인 적중', of('cause_hits'))}${fact('1순위 허용', of('top_ok'))}${fact('빠질 조치 미추천', of('forbidden_ok'))}${fact('근거 모두 포함', of('evidence_ok'))}</dl>` +
       (extra ? `<div class="panel-sec">${warn(extra)}</div>` : '') +
       (r.items || []).map(itemResult).join('') +
       `<div class="trial-foot">${note('채점 때 지식: ' + knowledgeLine(r.knowledge))}${note(knowledgeNow())}</div></section>`;

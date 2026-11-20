@@ -13,7 +13,7 @@
   const e = s => (typeof esc === 'function' ? esc(s) : String(s ?? ''));
   const num = v => Number.isFinite(+v) ? window.hydWords.num(+v) : '';   // 숫자 형식은 포털 하나(plainWords W.num — 크기별 자릿수, W1-12)
 
-  // 판단 설명에서 그 안을 말한 문장 하나를 꺼낸다("2순위 '팬 최대'(…)는 … 남습니다.") — 진 이유를 판단 엔진 설명(규칙 문장) 그대로 보인다
+  // 판단 설명에서 그 안을 말한 문장 하나를 꺼낸다("2순위 '팬 최대'(…)는 … 남습니다.") — 진 이유를 판단 서비스 설명(규칙 문장) 그대로 보인다
   function sentenceAbout(text, name) {
     if (!text || !name) return '';
     const parts = String(text).split(/(?<=[.。])\s+/);
@@ -21,7 +21,7 @@
   }
   const scoreText = o => window.hydWords?.purchaseEconomics(o) ? hydWords.purchaseCostLabel(o) : Number.isFinite(+o.score) ? `${num(o.score)}점` : '';
 
-  /* 머리말 값(라이브 3차): 예측은 "이 안을 고르면 설비가 어떻게 되나"다. 판단 엔진은 모든 안에 예측을 붙인다(순위 식의 예측 · 품질 성분,
+  /* 머리말 값(라이브 3차): 예측은 "이 안을 고르면 설비가 어떻게 되나"다. 판단 서비스는 모든 안에 예측을 붙인다(순위 식의 예측 · 품질 성분,
      규정의 예측 유온 검사, 승인 순간 재확인이 쓴다). 그러나 머리말에는 고르는 근거일 때만 둔다 — 설비를 바꾸는 안(kind control)이거나,
      안마다 예측이 달라 비교가 되는 때. 설비 명령이 없는 업무 안(발주 · 정비 오더)끼리 예측이 모두 같으면 그 값은 '지금 설비 그대로'라
      고르는 데 쓰이지 않으므로, 그 안의 업무 값(카드마다 다른 사실 · 작업지시의 정비 시점)을 머리말로 둔다. 시나리오 이름으로 가르지 않는다. */
@@ -34,17 +34,19 @@
   }
   // 이 안의 업무 값(글): 판단 수준에서는 비어 있는 카드별 사실(발주 금액 · 공급사 불량률 · 납기 여유 · AVL — 규칙이 이 값으로 감점 · 제외)
   // + 예측이 머리말이 아닌 업무 안이 작업지시를 내면 카드가 실어 온 정비 시점과 그때의 운전시간
-  function ownValues(o, d) {
+  // ownPairs 는 [이름, 값] 묶음(값 칸에 나눠 놓을 때), ownValues 는 그것을 「이름 값」 글로 이은 것
+  function ownPairs(o, d) {
     const W = window.hydWords, facts = d.facts || {};
     const out = Object.entries(o.facts || {}).filter(([k, x]) => W.known(k) && x != null && typeof x !== 'object' && facts[k] == null)
-      .map(([k, x]) => `${W.fieldName(k,o.facts)} ${W.value(k, x)}`);
+      .map(([k, x]) => [W.fieldName(k,o.facts), UI.valueText(k, x)]);
     const w = o.window;
     if (w && !forecastDecides(o, d.options) && (o.actions || []).some(a => a.code === 'WO_CREATE')) {
-      out.push(`정비 시점 ${w.name}${w.starts_at ? ` (${UI.dateTime(w.starts_at)})` : ''}`);
-      if (w.basis && W.known(w.basis) && facts[w.basis] != null) out.push(`${W.fieldName(w.basis)} ${W.value(w.basis, facts[w.basis])}`);
+      out.push(['정비 시점', `${w.name}${w.starts_at ? ` (${UI.dateTime(w.starts_at)})` : ''}`]);
+      if (w.basis && W.known(w.basis) && facts[w.basis] != null) out.push([W.fieldName(w.basis), UI.valueText(w.basis, facts[w.basis])]);
     }
     return out;
   }
+  const ownValues = (o, d) => ownPairs(o, d).map(([k, x]) => `${k} ${x}`);
   function businessContext(o, d) {
     if((o.actions || []).some(a=>a.code==='PR_CREATE')) return window.hydWords.purchaseContextHtml(o,d);
     if (o.kind === 'control' || forecastDecides(o, d.options)) return '';
@@ -52,7 +54,7 @@
     const purchase = (o.actions || []).some(a => a.code === 'PO_CREATE');
     const maintenance = (o.actions || []).some(a => a.code === 'WO_CREATE');
     const keys = purchase ? ['part_no', 'need_qty', 'po_amount', 'lead_slack_days'] : maintenance ? ['hours_since_pm', 'pm_interval_h', 'pm_due_in_h', 'spare_available'] : [];
-    const rows = keys.filter(k => values[k] != null).map(k => `<dt>${e(W.fieldName(k))}</dt><dd>${e(W.value(k, values[k]))}</dd>`).join('');
+    const rows = keys.filter(k => values[k] != null).map(k => `<dt>${e(W.fieldName(k))}</dt><dd>${e(UI.valueText(k, values[k]))}</dd>`).join('');
     return rows ? `<section class="cr-sec" aria-label="${purchase ? '구매 요청' : '정비 요청'}"><h4 class="cr-h">${purchase ? '구매 요청' : '정비 요청'}</h4><dl class="kv">${rows}</dl></section>` : '';
   }
 
@@ -73,10 +75,21 @@
     if (g.length) out.push(`좋아지는 것 ${g.join(' · ')}`);
     const l = (o.losses || []).filter(x => !x.conditional).map(x => e(x.name));
     if (l.length) out.push(`감수할 것 ${l.join(' · ')}`);
-    if (o.precedent && o.precedent.n) out.push(`과거 같은 선택 ${o.precedent.n}건(${e(UI.t('card.precedentFixed'))})${o.precedent.reasons && o.precedent.reasons[0] ? ` — ${e(o.precedent.reasons[0])}` : ''}`);   // 선례는 미리 넣은 예시 고정(dmn_mcp) — 실제 승인 이력처럼 읽히지 않게
+    if (o.precedent && o.precedent.n) out.push(`과거 같은 선택 ${o.precedent.n}건(${e(UI.t('card.precedentFixed'))})${o.precedent.reasons && o.precedent.reasons[0] ? ` — ${e(o.precedent.reasons[0])}` : ''}`);   // 선례는 지금 지식에 있는 것만 센다(dmn_mcp — 승인해도 늘지 않게 고정) — 실제 승인 이력처럼 읽히지 않게
     const warn = opt.warn === false ? [] : cautions(o).map(e);
     if (warn.length) out.push(`<b>주의</b> ${warn.slice(0, 2).join(' · ')}`);
     return out.slice(0, 4);
+  }
+  /* 같은 내용을 값 칸으로(UI.factCells 의 [이름, 값, 단위]): 머리말 값(예측마다 한 칸 또는 이 안의 업무 값마다 한 칸) · 좋아지는 것 · 감수할 것.
+     진행 상황의 AI 결론 아래가 쓴다 — 한 줄 글 「예측 평형 유온 49.8 °C · 토출 압력 182 bar · 좋아지는 것 …」은 어디까지가 이름이고 어디부터 값인지 보이지 않았다 */
+  function reasonFacts(o, d) {
+    const out = forecastDecides(o, d.options) ? (o.forecast || []).slice(0, 2).map(x => [`예측 ${UI.idText(x.name)}`, num(x.value), x.unit || ''])
+      : ownPairs(o, d).map(([k, x]) => [k, x, '']);
+    const g = (o.gains || []).filter(x => !x.conditional).map(x => x.name);
+    if (g.length) out.push(['좋아지는 것', g.join(' · '), '']);
+    const l = (o.losses || []).filter(x => !x.conditional).map(x => x.name);
+    if (l.length) out.push(['감수할 것', l.join(' · '), '']);
+    return out;
   }
   // 이 안에 걸린 주의(감점 · 경고 규칙의 글) — 승인 카드는 까닭 줄 끝에, 진행 상황의 AI 결론은 근거 줄 하나로 따로 보인다
   function cautions(o) { return [...(o.penalties || []), ...(o.warnings || [])].map(v => UI.idText(v.annotation || v.message || v.name || v.rule || '')).filter(Boolean); }
@@ -143,14 +156,14 @@
       <div class="ap-row"><span class="ap-label">제외된 안 ${opts.length}개</span><span class="chips">${sum.per.map(r => `<span class="badge" data-variant="secondary">${e(r.name)}</span>`).join('')}</span></div>
       ${UI.fold('안마다의 제외 사유 원문', `<ul class="ap-lost-list">${opts.map(o => `<li class="ap-lost"><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b></div>${excludedWhy(o).map(w => `<p>${e(w)}</p>`).join('') || '<p>실행 검사를 통과하지 못했습니다</p>'}</li>`).join('')}</ul>`)}
       ${opt.adjust || ''}
-      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
+      ${d.explanation ? UI.fold('판단 서비스 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
       ${opt.extra || ''}
     </div>`;
     return `<div class="ap-card" data-ap-none>
       <p class="ap-desc">안마다 제외된 까닭이 다릅니다.</p>
       <ul class="ap-lost-list">${opts.map(o => { const why = excludedWhy(o); return `<li class="ap-lost" data-out><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>제외 — ${e(why.length ? why.join(' · ') : '실행 검사를 통과하지 못했습니다')}</p></li>`; }).join('')}</ul>
       ${opt.adjust || ''}
-      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
+      ${d.explanation ? UI.fold('판단 서비스 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
       ${opt.extra || ''}
     </div>`;
   }
@@ -165,18 +178,18 @@
     const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a, cur) : a.name).filter(Boolean);
     const evaluation=UI.evaluationInfo(cur,d), blocked=UI.executionBlocked(cur,d);
     return `<div class="ap-card"${changed ? ' data-changed' : ''}>
-      <div class="ap-head"><span class="ap-kicker">${changed ? '직접 고른 안' : evaluation.state==='analysis' ? '모의 판단 1순위' : evaluation.state==='execution' ? '판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)' : '1순위 (실행 가능 여부 미검증)'}</span>${changed && !blocked ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
+      <div class="ap-head"><span class="ap-kicker">${changed ? '직접 고른 안' : evaluation.state==='analysis' ? '모의 판단 1순위' : evaluation.state==='execution' ? '추천안 (1순위)' : '1순위'}</span>${changed && !blocked ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
       ${UI.evaluationHtml(cur,d,{raw:false})}
       <h4 class="ap-title">${e(UI.idText(cur.name || '–'))}</h4>
       ${cur.description ? `<p class="ap-desc">${e(UI.idText(cur.description))}</p>` : ''}
       ${businessContext(cur, d)}
       ${window.hydWords?.maintenanceHtml(cur) || ''}
       ${rs.length ? `<ul class="ap-reasons">${rs.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
-      ${actions.length ? `<p class="ap-do"><span class="ap-label">${evaluation.state==='execution' ? '승인하면 시스템이' : '모의 판단에 포함된 조치(승인 · 실행되지 않음)'}</span> ${actions.map(a => `<span class="badge" data-variant="secondary">${e(a)}</span>`).join(' ')}</p>` : ''}
+      ${actions.length ? `<p class="ap-do"><span class="ap-label">${evaluation.state==='execution' ? '승인하면 시스템이' : '계산에 포함된 조치'}</span> ${actions.map(a => `<span class="badge" data-variant="secondary">${e(a)}</span>`).join(' ')}</p>` : ''}
       ${evidence(cur)}
       ${opt.adjust || ''}
       ${others.length ? UI.fold(`다른 조치 안 ${others.length}개 비교`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d, chosenId, opt.pending)).join('')}</ul>`) : ''}
-      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
+      ${d.explanation ? UI.fold('판단 서비스 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
       ${opt.extra || ''}
       ${UI.evaluationRawHtml(cur,d)}
     </div>`;
@@ -211,7 +224,7 @@
     });
     return `${UI.optionsTable(rows, { lead: '고르기', cls: 'ap-choices' })}
       ${evidence(cur)}${opt.adjust || ''}
-      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
+      ${d.explanation ? UI.fold('판단 서비스 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
       ${opt.extra || ''}${UI.evaluationRawHtml(cur, d)}`;
   }
 
@@ -301,5 +314,5 @@
       ${off}${opt.extra || ''}</div>`;
   }
 
-  window.hydApprove = { html, reasons, cautions, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml, noneSummary };
+  window.hydApprove = { html, reasons, reasonFacts, cautions, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml, noneSummary };
 })();

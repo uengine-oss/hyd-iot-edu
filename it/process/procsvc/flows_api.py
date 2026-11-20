@@ -263,8 +263,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             if deployed is not None:
                 patterns = ", ".join(deployed.get("patterns") or []) or "경보 패턴 없음"
                 raise HTTPException(409, {"reason": f"「{deployed.get('name') or def_id}」{particle(deployed.get('name') or def_id, '은')} 지금 경보 경로에 배포된 흐름입니다(판본 {deployed.get('version')}, "
-                                                    f"경보 {patterns}) — 지우지 않았습니다. 먼저 [관리] 탭 「흐름 판본 배포 · 비교 · 되돌리기」의 "
-                                                    "[기준 흐름으로 되돌리기]로 배포를 내린 뒤 지우세요",
+                                                    f"경보 {patterns}) — 지우지 않았습니다. 먼저 메뉴 「시스템」 › 「관리」의 「기준으로 되돌리기」에서 "
+                                                    "범위 「경보에 배포한 흐름」을 골라 배포를 내린 뒤 지우세요",
                                           "deployed": deployed})
             try:
                 out = store.reset(def_id)

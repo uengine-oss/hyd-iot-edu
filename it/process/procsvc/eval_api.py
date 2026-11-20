@@ -157,7 +157,7 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         from hydcommon.topics import ASSETS
         return {'items': items, 'storage': store().kind, 'paths': je.PATH_NOTES, 'weights': je.DEFAULT_WEIGHTS, 'max_repeats': je.MAX_REPEATS,
                 'assets': list(ASSETS), 'facts': je.FACT_CHOICES,
-                'empty_note': None if items else '정답표가 비어 있습니다. 경보 상황마다 기대 원인 · 허용 1위 조치 · 빠질 조치 · 있어야 할 근거를 적어 저장하세요.'}
+                'empty_note': None if items else '정답표가 비어 있습니다. 경보 상황마다 기대 원인 · 허용 1순위 조치 · 빠질 조치 · 있어야 할 근거를 적어 저장하세요.'}
 
     def save(req: GoldenReq, create: bool, iid: str | None = None) -> dict:
         by = by_of(req.by)
@@ -237,7 +237,7 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         if r['status'] in je.NOT_JUDGED:
             return f"{r['score']}점 · 판단이 나오지 않음 — {r['reason'] or r['status']}"
         mark = lambda key: '맞음' if r['checks'][key]['ok'] else '틀림'   # noqa: E731
-        return f"{r['score']}점 · 원인 {mark('cause')} · 1위 조치 {mark('top')}"
+        return f"{r['score']}점 · 원인 {mark('cause')} · 1순위 조치 {mark('top')}"
 
     def server_run(req: RunReq, golden: list[dict], p) -> list[dict]:
         by_id = {it['id']: it for it in golden}

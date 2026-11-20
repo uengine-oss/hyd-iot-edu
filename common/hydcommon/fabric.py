@@ -88,7 +88,7 @@ CROSS_QUERIES = {
         params={'ts1_limit': 'ts1'},
         parts=[dict(id='lots', source=ENT, purpose='QMS 고온 구간 로트 — 기록된 고온 시간(분), 출하 대기 로트 · 수량 · 클레임 위험',
                     sql="select hot_min, auto_lot, auto_qty, auto_claim, gen_lot, gen_qty from ent.quality_profiles where asset = %(asset)s"),
-               dict(id='ts1', source=TS, purpose='TS1이 기준(지식 그래프의 이상 패턴 임계값)을 넘은 분 수 · 최고값, 최근 60분',
+               dict(id='ts1', source=TS, purpose='TS1이 기준(지식 그래프의 이상 패턴 임계치)을 넘은 분 수 · 최고값, 최근 60분',
                     sql="select count(distinct time_bucket('1 minute', time)) filter (where value > %(ts1_limit)s) as minutes_over, "
                         "max(value) as peak, count(*) as samples from tag_1s where asset = %(asset)s and name = 'TS1' "
                         "and time > now() - interval '60 minutes'")],
@@ -418,7 +418,7 @@ class Fabric:
         for name, variable in (q.get('params') or {}).items():
             rows = self._graph_rows(LIMIT_Q, variable=variable)       # the threshold is knowledge, not a code constant
             if not rows or rows[0].get('value') is None:
-                raise SourceUnavailable(f'지식 그래프에 {variable} 임계값이 없습니다')
+                raise SourceUnavailable(f'지식 그래프에 {variable} 임계치가 없습니다')
             params[name] = rows[0]['value']
             notes.append(f"기준값 {rows[0]['operator']} {rows[0]['value']}{rows[0].get('unit') or ''} — 지식 그래프 '{rows[0]['pattern']}' 패턴")
         parts = [dict(p, statement=guard_for(p['source'], p['sql'], n)) for p in q['parts']]

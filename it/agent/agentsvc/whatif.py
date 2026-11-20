@@ -36,7 +36,7 @@ WEEK_HOURS = 120.0                 # 주 운전 시간 (가정: 주 5일 × 24 h
 # 시험값 한도 한 곳 — 검사(check_policy · weeks)가 쓰고, 시작 응답(limits)으로 화면이 읽는다(화면에 숫자 사본을 두지 않는다, 검진 W3-26)
 LIMITS = {'weights': (-10.0, 10.0), 'penalties': (0.0, 1000.0), 'perspectives': (0.0, 10.0), 'weeks': (1, 12)}
 # 순위 정책 항목 이름 (포털 ui.js score.* 와 같은 말). 정책에 새 항목이 생기면 그 키를 그대로 보인다.
-COMPONENT_LABELS = {'bsc': '성과 지표', 'forecast': '예측', 'warn': '경고', 'penalty': '감점', 'precedent': '과거 선택', 'delivery': '납기', 'quality': '품질'}
+COMPONENT_LABELS = {'bsc': '성과 지표', 'forecast': '예측 유온 여유', 'warn': '경고', 'penalty': '감점', 'precedent': '과거 선택', 'delivery': '납기', 'quality': '품질'}
 
 DOC_LOAD = {'kind': '문서', 'where': '설비 모델의 설계 부하 90 % (정상 운전점)', 'ref': 'ot/plant-sim/plantsim/thermal.py · cards.LOAD_DESIGN'}
 DOC_FAN = {'kind': '문서', 'where': '설비 모델의 정상 팬 60 %, 팬 최대 100 % — 업무 DB 팬 최대 추가 전력은 60 → 100 % 증가분',

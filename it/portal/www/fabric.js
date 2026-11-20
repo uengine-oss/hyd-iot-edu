@@ -1,7 +1,7 @@
 /* 데이터 원천(#/fabric) — 업무 DB(Supabase ent)와 시계열 DB(TimescaleDB)를 읽기만 해서 AI가 쓰는 값이 어느 원천 · 표 · 열에서 오는지 본다.
    window.hydFabric.mount(el). 보기 탭 셋(디자인 기준 4-6): 원천과 표(목록 + 상세 — 처음 보이는 보기) · 두 DB 묶어 보기(왼쪽 조건 · 오른쪽 결과) · 지식 지도 ↔ 표 · 열.
    원천과 연결의 지금 상태는 그 탭 안의 한 줄로 말한다(같은 숫자를 카드 · 탭 · 표에 겹쳐 두지 않는다). 색은 상태에만 쓴다 — 어느 원천인지는 글로 쓰고, 알약은 문제가 있는 상태에만 붙인다.
-   조회문(SQL)과 연결 정보는 접기 안에 있다. 화면 제목과 한 문장은 index.html 에, 배치는 knowledge.css 에 있다.
+   쿼리(SQL)와 연결 정보는 접기 안에 있다. 화면 제목과 한 문장은 index.html 에, 배치는 knowledge.css 에 있다.
    API: process /api/fabric/* (procsvc/fabric_api.py) — 에이전트의 MCP 도구 hyd-dmn fabric_query 와 같은 함수다. 쓰기 버튼 없음. */
 (function () {
   const S = { el: null, tab: 'sources', sources: null, links: null, queries: [], errors: {}, result: null, resultError: '', busy: false,
@@ -32,7 +32,7 @@
   function sourcesLine() {
     const bad = S.sources.filter(x => !x.ok), rw = S.sources.filter(x => x.ok && !x.read_only), n = S.sources.length;
     const names = S.sources.map(x => x.label).join(' · ');      // 원천의 수만 적으면 목록의 첫 원천(표가 많아 한 화면을 채운다)만 보여 「3개인데 하나뿐」으로 읽혔다 — 수 옆에 그 이름을 적는다(아래 목록의 묶음 머리와 같은 이름)
-    if (!n) return line('등록된 원천이 없습니다 — 처리 서비스의 원천 설정을 확인하세요.', 'warn');
+    if (!n) return line('등록된 원천이 없습니다 — 흐름 엔진의 원천 설정을 확인하세요.', 'warn');
     if (bad.length) return line(`원천 ${n}개(${names}) 가운데 ${bad.length}개에 연결하지 못했습니다 — ${bad.map(x => `${x.label}: ${x.reason}`).join(' · ')}`, 'danger');
     if (rw.length) return line(`원천 ${n}개(${names})가 연결돼 있습니다. 읽기 전용이 아닌 원천: ${rw.map(x => x.label).join(', ')}`, 'warn');
     return line(`원천 ${n}개(${names})가 모두 연결돼 있고 읽기 전용입니다.`);
@@ -59,7 +59,7 @@
     const form = `<form class="panel io-in" aria-label="조건" onsubmit="return false"><div class="panel-head"><div><h2>조건</h2></div></div><div class="panel-sec"><div class="io-fields">` +
       UI.field({ label: '설비', input: assetInput }) +
       UI.field({ label: '질문', input: `<select id="fabQuery">${opts.map(([k, l]) => `<option value="${esc(k)}"${k === S.query ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`,
-                 error: S.errors.queries ? `준비된 질문 목록을 읽지 못했습니다 — ${S.errors.queries}` : '',
+                 error: S.errors.queries ? `질문 목록을 읽지 못했습니다 — ${S.errors.queries}` : '',
                  hint: q ? q.question : '업무 DB와 시계열 DB의 값을, 어느 원천에서 왔는지와 함께 모읍니다.' }) + `</div>` +
       `<footer class="form-foot"><button type="button" class="btn" id="fabRun"${S.busy ? ' disabled aria-busy="true"' : ''}>${UI.icon('database')}${S.busy ? '읽는 중' : '묶어 보기'}</button></footer></div></form>`;
     return `<div class="io">${form}<div class="io-out fab-out" id="fabResult">${result()}</div></div>`;
@@ -132,12 +132,12 @@
       : listError ? UI.errorBlock('표의 열 목록을 읽지 못했습니다', listError + ' — 표를 다시 누르면 다시 읽습니다') : UI.loading('열을 읽는 중');
     const sm = S.sample[sid + '|' + name];
     const sample = !sm ? UI.loading('최신 행을 읽는 중') : sm.error ? UI.errorBlock('최신 행을 읽지 못했습니다', sm.error) : rowsTable(sm.columns, sm.rows);
-    const more = (sm && sm.statement ? group('최신 행을 읽은 조회문', `<pre class="code">${esc(sm.statement)}</pre>`) : '') + group('연결 정보', `<p class="muted">DB 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}</p>`);
+    const more = (sm && sm.statement ? group('최신 행을 읽은 쿼리', `<pre class="code">${esc(sm.statement)}</pre>`) : '') + group('연결 정보', `<p class="muted">DB 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}</p>`);
     const sec = (title, side, body) => `<div class="panel-sec"><h3>${title}${side ? `<span class="muted num">${side}</span>` : ''}</h3>${body}</div>`;
     return `<header class="panel-head pane-head"><div class="pane-title"><h2><span class="mono">${esc(name)}</span>${s.read_only ? '' : UI.chipText('읽기 전용 아님', 'danger')}</h2>` +
       `<p>${esc([meta && meta.comment, s.label, s.engine, s.read_only ? '읽기 전용' : ''].filter(Boolean).join(' · '))}</p></div></header>` +
       sec('열', meta ? meta.columns.length + '개' : '', cols) + sec(sm && !sm.error ? `최신 ${sm.row_count}행` : '최신 행', '', sample) +
-      `<div class="panel-sec pane-fold">${UI.fold('조회문 · 연결 정보', more)}</div>`;
+      `<div class="panel-sec pane-fold">${UI.fold('쿼리 · 연결 정보', more)}</div>`;
   }
 
   /* ---------- 탭 3: 클래스 ↔ 표·열 ---------- */

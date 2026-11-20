@@ -80,7 +80,7 @@ def link_candidate_rules(tx, sid, failure_mode):
 
 
 def _relation_refused(rel):
-    return f"고장 유형과 조치 방법의 관계 '{rel}'{particle(rel, '은')} 쓸 수 없습니다 — 근본 조치 · 즉시 완화 · 예방 조치 가운데 고르세요"
+    return f"고장 유형과 조치 방법의 관계 '{rel}'{particle(rel, '은')} 쓸 수 없습니다 — 근본 조치 · 완화 조치 · 예방 조치 가운데 고르세요"
 
 
 def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by):

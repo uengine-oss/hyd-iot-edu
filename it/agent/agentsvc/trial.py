@@ -334,9 +334,9 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     if dx is None:
         last = calls[-1]
         return finish("NO_ENGINE_TOOL" if last["status"] == "BLOCKED" else "FAILED",
-                      "이 에이전트의 도구 서버 구성에 판단 시스템이 없어 원인 진단 · 조치 판단을 할 수 없습니다" if last["status"] == "BLOCKED" else last["reason"])
+                      "이 에이전트의 도구 서버 구성에 판단 서비스가 없어 원인 진단 · 조치 판단을 할 수 없습니다" if last["status"] == "BLOCKED" else last["reason"])
     causes = dx.get("causes") or []
-    calls[-1]["summary"] = (f"원인 후보 {len(causes)}개" + (f" · 1위 {causes[0]['id']}" if causes and not dx.get("withheld") else "")
+    calls[-1]["summary"] = (f"원인 후보 {len(causes)}개" + (f" · 1순위 {causes[0]['id']}" if causes and not dx.get("withheld") else "")
                             + (" · 보류" if dx.get("withheld") else ""))
     calls[-1]["citations"] = [c["id"] for c in causes] + [e["id"] for c in causes for e in c.get("evidence") or []]
     out["diagnosis"] = {"withheld": bool(dx.get("withheld")), "reason": dx.get("reason"),

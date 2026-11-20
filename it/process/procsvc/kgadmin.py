@@ -47,7 +47,7 @@ def validate_affects(value, owner: str = "") -> list:
 # 고장 유형 ↔ 스킬(SOP) 관계: 즉시 완화 · 근본 조치 · 예방 조치(정기 정비, 2026-10-09 확정 추가 — schema.json PREVENTED_BY).
 # 관계 이름은 이 한 곳에서만 정한다(manual_knowledge · skill_graph가 가져다 쓴다).
 FAILURE_RELATIONS = ("MITIGATED_BY", "REMEDIED_BY", "PREVENTED_BY")
-FAILURE_RELATION_HELP = "고장 유형과의 관계는 MITIGATED_BY(즉시 완화) · REMEDIED_BY(근본 조치) · PREVENTED_BY(예방 조치 = 정기 정비)"
+FAILURE_RELATION_HELP = "고장 유형과의 관계는 MITIGATED_BY(완화 조치) · REMEDIED_BY(근본 조치) · PREVENTED_BY(예방 조치 = 정기 정비)"
 CORRECTIVE_RELATIONS = ("MITIGATED_BY", "REMEDIED_BY")      # 경보(고장) 대응 후보 규칙에 자동으로 합류하는 관계
 
 def validate_skill(body: dict, create: bool = False, *, source_backed: bool = False) -> dict:

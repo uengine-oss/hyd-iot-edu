@@ -247,7 +247,7 @@ function renderStack() {
     ['plain', [Lp('portal'), Rp('process')]],      // 사람은 포털에서 승인한다
     ['plain', [Tp('process', 34), [at.process.x + 34, at.process.y - NH / 2 - 14], [at['enterprise-sim'].x, at.process.y - NH / 2 - 14], Tp('enterprise-sim')], '정비 요청 · 구매', [at.portal.x, at.process.y - NH / 2 - 22], 'middle'],
     // 명령 길 밖: 흐름 엔진 · 포털 → 가상 설비 API(sim-net). 영역 띠 바깥(아래)으로 돌아 설비에 직접 닿는다 — 브로커와 명령 관문을 지나지 않는다
-    ['sim', [Lp('process'), [SYS.band.it[0] - 6, at.process.y], [SYS.band.it[0] - 6, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접(sim-net), 브로커와 명령 관문을 거치지 않음', [SYS.band.it[0] - 18, SIM + 22], 'end'],
+    ['sim', [Lp('process'), [SYS.band.it[0] - 6, at.process.y], [SYS.band.it[0] - 6, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접, 브로커와 명령 관문을 거치지 않음', [SYS.band.it[0] - 18, SIM + 22], 'end'],
   ];
   const COLOR = { data: 'var(--cv-blue)', cmd: 'var(--cv-amber)', ai: 'var(--cv-violet)', plain: 'var(--cv-edge)', sim: 'var(--cv-red)' };
   const netsOf = zone => NETS.filter(n => n.zone === zone).map(n => n.id).join(' · ');

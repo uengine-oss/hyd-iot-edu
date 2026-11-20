@@ -2,8 +2,8 @@
    (아직 시작하지 않은 단계의 옆 판에는 정의에 적힌 담당 · 읽을 값 · 만들 값 — planned):
      ① 받은 입력(값과 어느 단계에서 왔는지) ② 처리 과정 타임라인(시작 · 에이전트 판단 메시지 · 도구 호출 · 판단 근거 · 사람 질문 · 완료/실패)
      ③ 판단 · 출력(판단 근거 요지 + 읽기 쉬운 표, 원문은 접기) ④ 다음 단계로 넘긴 값 ⑤ 진행 중이면 그 단계만의 실시간 흐름.
-   단계 종류별: 에이전트(원인 점수 · 조건 / 카드 점수 구성 / 판단 메시지), 사람(받은 카드 · 권고 · 고른 것 · 사유 · 승인자 · 대기 경과),
-   시스템(보낸 명령 · 설비 응답 · 재측정까지 남은 시간 · 회복 근거), 매뉴얼 추출(원문 · 구간 · 제안 요약)이 같은 패널에 나온다.
+   단계 종류별: 에이전트(원인 점수 · 조건 / 카드 점수 구성 / 판단 메시지), 사람(받은 추천안 · 추천 · 고른 것 · 사유 · 승인자 · 대기 경과),
+   시스템(보낸 명령 · 설비 응답 · 효과 확인 판정까지 남은 시간 · 회복 근거), 매뉴얼 추출(원문 · 구간 · 제안 요약)이 같은 패널에 나온다.
    주소 #/instances/<처리 건>/task/<단계> 로 바로 열기(처리 건 화면이 그 단계의 옆 판을 연다).
    process-gpt-vue3 대응: apps/todolist/WorkItem.vue(업무 상세 탭: 진행 · 기록 · 산출물), apps/todolist/InstanceTimeline.vue
    (events 를 todo_id 로 묶어 업무 하나 = 메시지 하나, isAgentFinished), ui/WorkItemChat.vue(도구 입력 · 결과 접기),
@@ -26,7 +26,7 @@
     
     
     'td.delivered': '전달 완료', 'td.superseded': '다른 차수의 값으로 대체됨', 'td.notYet': '아직 넘기지 않음', 'td.consumers': '받는 단계', 
-    'td.cards': '받은 조치 카드', 'td.chosen': '고른 조치', 'td.reason': '사유', 'td.approver': '승인자', 'td.delivery': '승인 전달', 'td.sent': '보낸 명령', 'td.response': '설비 응답',
+    'td.cards': '받은 추천안', 'td.chosen': '고른 조치', 'td.reason': '사유', 'td.approver': '승인자', 'td.delivery': '승인 전달', 'td.sent': '보낸 명령', 'td.response': '설비 응답',
     'td.prose': '서술 결과',
     'td.planned': '아직 시작하지 않은 단계', 'td.plannedSub': '정의에 적힌 입력과 출력입니다', 'td.expects': '읽을 값', 'td.produces': '만들 값', 'td.who': '담당',
     'td.otherRound': '다음 회차 값', 'td.otherRoundSub': '이 단계는 다시 수행됐습니다. 아래는 이 회차가 받은 값이 아니라 처리 건의 지금 값입니다.',
@@ -35,11 +35,11 @@
     'td.note': 'AI 에이전트 판단', 'td.noteMore': '판단 전문', 'td.basis': '판단 근거', 
     'td.cause': '원인', 'td.prior': '사전확률', 'td.causeScore': '점수', 'td.conditions': '근거 조건', 'td.passedOf': '통과 근거',
     'td.causeFormula': '원인 점수 = 사전확률 × (통과한 근거 가중치 ÷ 전체 근거 가중치). 확인되지 않은 근거가 있으면 점수를 매기지 않습니다.',
-    'td.rank': '순위', 'td.card': '카드', 'td.parts': '점수 구성', 'td.verdict': '판정', 'td.formula': '점수 식', 'td.rankRule': '순위 규칙', 'td.selectedBy': '선정 규칙',
-    'td.recommended': '권고', 'td.differs': '권고와 다름', 'td.decState': '판단 결과 상태', 'td.wait': '대기 시간', 'td.waitFor': '경과', 'td.dueLeft': '기한까지', 'td.overdue': '기한 지남',
-    'td.timeout': '선택 기한이 지나 책임자 확인 단계로 넘어갔습니다', 'td.decFail': '조치 카드를 읽지 못했습니다',
+    'td.rank': '순위', 'td.card': '안', 'td.parts': '점수 구성', 'td.verdict': '판정', 'td.formula': '점수 식', 'td.rankRule': '순위 규칙', 'td.selectedBy': '선정 규칙',
+    'td.recommended': '추천', 'td.differs': '추천과 다름', 'td.decState': '판단 결과 상태', 'td.wait': '대기 시간', 'td.waitFor': '경과', 'td.dueLeft': '기한까지', 'td.overdue': '기한 지남',
+    'td.timeout': '선택 기한이 지나 책임자 확인 단계로 넘어갔습니다', 'td.decFail': '추천안을 읽지 못했습니다',
     'td.cmdId': '명령 번호', 'td.ackWait': '설비 응답을 기다리는 중', 'td.ackDone': '설비가 실행함', 'td.ackRejected': '설비가 거부함', 'td.interlock': '안전 연동',
-    'td.criterion': '회복 기준', 'td.remeasure': '재측정', 'td.remeasureIn': '재측정까지', 'td.remeasureDue': '재측정 시각 지남 · 판정 대기', 'td.extensions': '연장',
+    'td.criterion': '회복 기준', 'td.remeasure': '효과 확인', 'td.remeasureIn': '판정까지', 'td.remeasureDue': '판정 시각 지남 · 판정 대기', 'td.extensions': '연장',
     'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '설비 시간으로 {sim} 동안 지켜봄',
     'td.pages': '쪽', 'td.chars': '자', 'td.sections': '절', 'td.procedures': '절차', 'td.warnings': '주의',
     'td.steps': '단계', 'td.pageReviews': '페이지 검토',
@@ -219,7 +219,7 @@
     if (d.formula && Object.keys(d.formula).length) h += UI.fold(esc(UI.t('td.formula')), Object.entries(d.formula).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join(''));
     return h;
   }
-  // 조치 카드 점수 구성: 순위 · 카드 · 점수 · 구성(성과 지표 · 예측 · 감점 …) · 판정(권고 · 결정 · 제외 사유)
+  // 추천안 점수 구성: 순위 · 안 · 점수 · 구성(성과 지표 · 예측 유온 여유 · 감점 …) · 판정(추천 · 결정 · 제외 사유)
   function cardsTable(opts, { rec, chosen }) {
     return table([UI.t('td.rank'), UI.t('td.card'), UI.t('td.causeScore'), UI.t('td.parts'), UI.t('td.verdict')], opts.map(o => {
       const parts = Object.entries(o.scoreParts || {}).map(([k, x]) => `<span class="td-part">${esc(scoreLabel(k))} <b>${esc(signed(x))}</b></span>`).join('');
@@ -358,7 +358,7 @@
     if (tool === 'incident:reobserve') rows.push(...reobserveRows(inc, w));
     return rows.length ? `<div class="td-rows">${rows.join('')}</div>` : '';
   }
-  // 재측정까지 남은 시간: 효과 확인 단계 행이 저장한 마감(due_date — 서버 service_parts._reobserve, 연장하면 늘어남)과
+  // 판정까지 남은 시간: 효과 확인 단계 행이 저장한 마감(due_date — 서버 service_parts._reobserve, 연장하면 늘어남)과
   // 사건 이력 RE_OBSERVING 칸의 설비 시간 창(sim_s)
   function reobsWindow(inc, w) {
     const h = (inc.history || []).filter(x => x.state === 'RE_OBSERVING').pop();
@@ -494,7 +494,7 @@
     const sources = v.instance.variable_sources || {};
     if (['decision_id','decision'].some(k=>sources[k]?.kind==='workitem' && sources[k].id===w.id)) return vars(v.instance).decision_id || null;
     // 2026-10-23 점검: 승인(카드 선택) 단계는 판단을 앞 에이전트 단계에서 받는다. 위 셋에 걸리지 않아 판단 기록을 불러오지 않았고,
-    // 승인 단계 상세가 「받은 조치 카드 없음」으로 추천 · 지는 대안 표를 보이지 않았다. 자기 승인 기록의 판단, 없으면 같은 세대에서
+    // 승인 단계 상세가 「받은 추천안 없음」으로 추천 · 지는 대안 표를 보이지 않았다. 자기 승인 기록의 판단, 없으면 같은 세대에서
     // 만든 지금 판단을 쓴다(에이전트 단계가 뒤 세대 판단을 끌어오지 않는 규칙은 그대로).
     const tool = (item && item.tool) || w.tool || ((activityOf(v, w.activity_id) || {}).tool) || '';
     if (tool === 'formHandler:select_card') {

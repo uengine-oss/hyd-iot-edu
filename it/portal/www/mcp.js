@@ -4,12 +4,12 @@
    ③ 호출 기록: events 에서 그 도구가 불린 처리 건 · task · 입력 · 결과 요약 · 시각 → #/instances/<id>/task/<taskId>
    ④ 서버 직접 등록 · 고치기 · 지우기 · 연결 검사 · 비밀 값: 폼 → 연결 검사 통과해야 저장(실패는 사유), 기준 서버는 보기만.
    화면은 목록 + 상세다(디자인기준 5-1 — 본: process-gpt-lite 인스턴스 화면): 왼쪽 서버 목록 │ 머리(이름 · 연결 상태 알약 · 보조 줄, 오른쪽 끝 [연결 검사]와 「…」)
-   → 도구 목록 | 호출 기록(보기 탭) → 쓰는 곳(접기) → 연결 설정(접기). 화면 아래에 설정 줄(4-16 — 본: lite 설정 시트): 잠긴 까닭 · 비밀 값.
+   → 도구 목록 | 호출 기록(보기 탭) → 쓰는 곳(접기) → 연결 설정(접기). 화면 아래에 설정 줄(4-16 — 본: lite 설정 시트): 비밀 값.
       등록하는 서버는 HTTP 주소 하나다(명령형 stdio 는 서버가 받지 않는다 — 명령으로 띄우는 서버는 HTTP 로 띄워 등록).
    도구 이름은 이름 사전 하나(plainWords.js hydWords.toolName)로 보인다. 서버가 준 도구 설명은 에이전트가 읽는 원문이라 접어 둔다.
    원본: process-gpt-vue3 account-settings/MCPServer.vue(서버 목록 + 검사 요약 · 도구 수 · 펼침) · process-gpt-mcp-validator(도구 목록 · 실패 사유).
    수업 경계: 서버 등록 · 고치기 · 비밀값 · 읽기로 확인은 행동 키 tool_servers.register — 서버(GET /api/course-access)가 막으면 그 단추만
-   꺼지고 까닭이 글로 보인다(courseAccess.js). 이 화면은 스크립트가 실렸는지로 단계를 판정하지 않는다.
+   막히고, 누를 때 그 뒤 한 줄에 까닭이 보인다(courseAccess.js). 이 화면은 스크립트가 실렸는지로 단계를 판정하지 않는다.
    API: procsvc/mcp_api.py (/api/mcp/servers · /api/mcp/servers/{name}/tools · …/tools/{tool}/call · /api/mcp/calls),
         procsvc/mcp_registry.py (POST /api/mcp/servers · PUT/DELETE /api/mcp/servers/{name} · POST …/{name}/check · POST /api/mcp/check ·
         POST …/{name}/read-confirm · POST /api/mcp/reset), procsvc/mcp_secrets.py (/api/mcp/secrets). */
@@ -102,7 +102,7 @@
   // 도구 이름은 이름 사전 하나 — 서버가 준 설명(에이전트가 읽는 지시문)을 이름 자리에 쓰지 않는다(H-9: 설명 속 낱말이 이름처럼 보였다)
   const toolLabel = (srv, name) => hydWords.toolName(`mcp__${srv}__${name}`);
   const fieldLabel = f => {
-    return [f.label,f.description,window.hydWords?.fieldName(f.key),UI.terms['var.'+f.key]].find(label=>label && /[가-힣]/.test(label)) || ({ query: '질의문', params: '질의에 넣을 값', limit: '가져올 수', name: '이름', id: '식별자' }[f.key] || `입력 칸(원래 이름 ${f.key})`);
+    return [f.label,f.description,window.hydWords?.fieldName(f.key),UI.terms['var.'+f.key]].find(label=>label && /[가-힣]/.test(label)) || ({ query: '쿼리', params: '쿼리에 넣을 값', limit: '가져올 수', name: '이름', id: '식별자' }[f.key] || `입력 칸(원래 이름 ${f.key})`);
   };
   // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다
   async function once(key, button, work) {
@@ -209,7 +209,7 @@
     const rec = !r.loading && S.lastCheck && S.lastCheck.name === s.name ? S.lastCheck.rec : null;
     const checked = rec && (rec.steps || []).length ? `<div data-mcp-checked><h3>방금 한 연결 검사<span class="muted">${esc(UI.dateTime(rec.ended_at || rec.updated_at))}</span></h3>${UI.timeline(rec.steps.map(x => ({ state: x.state === 'ok' ? 'done' : x.state === 'fail' ? 'fail' : 'todo', name: x.label, sub: x.note || '',
       time: x.started_at && x.ended_at ? hydTrace.fmtMs(Date.parse(x.ended_at) - Date.parse(x.started_at)) : '' })))}</div>` : '';
-    const canEdit = s.editable && !window.hydCourseAccess.blocked(REGISTER);      // 잠긴 단계에서는 고치기 · 지우기를 그리지 않는다 — 까닭은 화면 아래 설정 줄이 한 번 말한다
+    const canEdit = s.editable && !window.hydCourseAccess.blocked(REGISTER);      // 등록이 막혀 있으면 고치기 · 지우기를 그리지 않는다 — 까닭은 머리의 [서버 등록]을 누를 때 나온다
     box.innerHTML = `<div class="panel-head pane-head"><div class="pane-title"><h2>${esc(serverLabel(s.name))}${statusTag(s.name)}</h2><p>${esc(sub)}</p></div>` +
       `<div class="pane-acts"><button type="button" class="btn" data-variant="outline" id="mcpProbe" ${r.loading || s.config_error ? 'disabled' : ''}>${icon('activity')}연결 검사</button>` +
       (canEdit ? UI.moreMenu('mcpMore', [{ icon: 'pencil', label: '고치기', attrs: 'id="mcpEdit"' }, { act: 'remove', attrs: 'id="mcpDelete"' }]) : '') + `</div></div>` +
@@ -456,7 +456,7 @@
   function renderForm() {
     const box = S.el.querySelector('#mcpForm');
     const F = S.form;
-    const add = S.el.querySelector('#mcpAdd'); if (add) add.hidden = !!F || !!window.hydCourseAccess.blocked(REGISTER);      // 주 단추는 화면에 하나 — 폼을 쓰는 동안에는 폼의 [검사 후 등록]이 주 단추다
+    const add = S.el.querySelector('#mcpAdd'); if (add) add.hidden = !!F;      // 주 단추는 화면에 하나 — 폼을 쓰는 동안에는 폼의 [검사 후 등록]이 주 단추다
     if (!F) { box.innerHTML = ''; return; }
     const v = F.v;
     const opt = (val, label) => `<option value="${val}" ${v.transport === val ? 'selected' : ''}>${label}</option>`;
@@ -555,9 +555,9 @@
   }
 
   /* ---------------------------------------------------------------- 화면 아래의 설정 줄(디자인기준 4-16 — 본: process-gpt-lite 설정 시트의 줄: 굵은 이름 · 한 줄 설명 · 오른쪽 동작 하나)
-     ① 잠긴 까닭: 서버가 tool_servers.register 를 막으면 「내 도구 서버」 줄이 그 까닭(서버 문장)을 말한다 — 머리의 [서버 등록]은 그리지 않는다(꺼진 주 단추를 가장 진한 자리에 두지 않는다).
-     ② 비밀 값(${SECRET:이름}): 줄 하나에 이름 · 쓰는 서버 · [지우기]. 값은 넣기만 하고 다시 보이지 않는다. 넣는 폼은 「비밀 값 넣기」 줄의 [넣기]가 연다.
-        잠긴 단계이고 넣어 둔 값도 없으면 비밀 값 줄을 그리지 않는다(쓸 서버를 등록할 수 없다).
+     비밀 값(${SECRET:이름}): 줄 하나에 이름 · 쓰는 서버 · [지우기]. 값은 넣기만 하고 다시 보이지 않는다. 넣는 폼은 「비밀 값 넣기」 줄의 [넣기]가 연다.
+        등록이 막혀 있고 넣어 둔 값도 없으면 비밀 값 줄을 그리지 않는다(쓸 서버를 등록할 수 없다).
+     서버가 tool_servers.register 를 막고 있어도 까닭을 줄로 늘 적어 두지 않는다 — 머리의 [서버 등록]을 누를 때 그 뒤 한 줄에 서버 문장이 나온다(courseAccess.js press).
      되돌리기는 관리 › 내 설정 한 곳에 있고 같은 키로 잠긴다(configBundle.js SCOPES) */
   async function loadSecrets() {
     try { S.secrets = await getJ(api('/api/mcp/secrets')); S.secretsError = ''; }
@@ -568,14 +568,10 @@
     const box = S.el.querySelector('#mcpOperator'); if (!box) return;
     const why = window.hydCourseAccess.blocked(REGISTER);
     const add = S.el.querySelector('#mcpAdd');
-    add.outerHTML = `<button type="button" class="btn" id="mcpAdd"${reg()}${S.form || why ? ' hidden' : ''}>${icon('plus')}서버 등록</button>`;
+    add.outerHTML = `<button type="button" class="btn" id="mcpAdd"${reg()}${S.form ? ' hidden' : ''}>${icon('plus')}서버 등록</button>`;
     S.el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
     const list = (S.secrets && S.secrets.secrets) || [];
     const rows = [];
-    // 잠긴 까닭은 한 줄까지다(범위 · 까닭을 말하는 문장은 한 화면에 한 번, 한 줄): 서버가 준 까닭의 첫 문장(무엇이 어느 단계에서 열리는가)만 줄에 적는다.
-    // 둘째 문장(지금도 되는 것 — 연결 검사 · 읽기 도구 써 보기)은 이 화면의 켜진 단추가 이미 말하므로 줄에 적지 않고 올렸을 때의 도움말(title)로 둔다. 문장은 손으로 적지 않는다
-    if (why) { const cut = why.indexOf('. '), lead = cut < 0 ? why : why.slice(0, cut + 1), rest = cut < 0 ? '' : why.slice(cut + 2).trim();
-      rows.push(UI.settingRow({ title: '내 도구 서버', desc: lead, attrs: `data-mcp-why${rest ? ` title="${esc(rest)}"` : ''}` })); }
     if (S.secretsError) rows.push(`<div class="setting" data-mcp-secrets-error>${UI.errorBlock('비밀 값 목록을 불러오지 못했습니다', S.secretsError, { retry: true })}</div>`);
     else if (!why || list.length) {
       list.forEach(x => rows.push(UI.settingRow({ title: x.key, attrs: `data-secret="${esc(x.key)}"`,
@@ -620,7 +616,7 @@
   function mount(el) {
     if (!el) return;
     S.el = el;
-    // 차례: 제목 · 한 문장 · 주 단추 하나 → 왼쪽 서버 목록 · 오른쪽 상세(등록 폼도 이 자리) → 화면 아래 설정 줄(잠긴 까닭 · 비밀 값)과 「관리에서 되돌리기」 한 줄
+    // 차례: 제목 · 한 문장 · 주 단추 하나 → 왼쪽 서버 목록 · 오른쪽 상세(등록 폼도 이 자리) → 화면 아래 설정 줄(비밀 값)과 「관리에서 되돌리기」 한 줄
     el.innerHTML = UI.pageHead('mcp', { sub: '에이전트가 부르는 도구 서버(MCP)와 그 도구를 보고, 직접 불러 결과를 확인합니다.', tools: '<button type="button" class="btn" id="mcpAdd" hidden>서버 등록</button>', more: [{ act: 'reload', attrs: 'id="mcpReload"' }] }) +
       `<div class="split"><div class="pane-side"><div class="rows" id="mcpServers" aria-label="도구 서버 목록"></div></div><section class="panel" id="mcpPanel" aria-label="고른 도구 서버"><div id="mcpForm"></div><div id="mcpDetail"></div></section></div>` +
       `<section class="pane-foot mcp-set" id="mcpOperator" aria-label="비밀 값과 등록" hidden></section>` +

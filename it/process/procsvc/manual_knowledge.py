@@ -297,7 +297,7 @@ def _evidence(item, base, sops):
     window = item.get('window_seconds')
     if type(window) is not int or not 1 <= window <= 3600:
         raise ValueError(f'{nid}: window_seconds는 1~3600 정수')
-    threshold = _number(item.get('threshold'), f'{nid} 임계값')
+    threshold = _number(item.get('threshold'), f'{nid} 임계치')
     return dict(base, cause=_ref(item.get('cause'), 'cause', f'{nid} 원인'), name=_text(item.get('name'), f'{nid} 이름', 120),
                 tag=tag, aggregate=agg, window_seconds=window, expect=expect, threshold=threshold,
                 weight=_number(item.get('weight'), f'{nid} 가중치 weight', 0.0, 1.0),
@@ -313,7 +313,7 @@ def _rule(item, base, sops):
         raise ValueError(f'{nid}: {table}의 effect는 {TABLES[table]} 중 하나')
     tests = item.get('tests')
     if not isinstance(tests, list) or not 1 <= len(tests) <= 8:
-        raise ValueError(f'{nid}: TESTS(임계값 검사)가 1~8개 필요합니다')
+        raise ValueError(f'{nid}: TESTS(임계치 검사)가 1~8개 필요합니다')
     checked = []
     for t in tests:
         if not isinstance(t, dict) or t.get('operator') not in OPERATORS:

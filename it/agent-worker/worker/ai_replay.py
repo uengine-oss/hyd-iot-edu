@@ -506,7 +506,7 @@ def decision_gap(old, new) -> tuple[list[str], list[str]]:
 #:   같다    열 이름이 같고, 행의 순서를 무시하고, 시각 칸을 뺀 나머지 값이 모두 같다. 순서는 시각으로 정렬한 조회에서 PC마다 다르고, 시각
 #:          (만든 때 · 고친 때 · 측정한 때)은 같은 일을 한 PC끼리도 늘 다르다 — 그것으로 「다름」을 내면 늘 뜨는 거짓 알림이 된다. 번호(정비
 #:          요청 번호 등)는 뺄 수 없다: 글이 그 번호를 적고, 이 PC에는 그 번호가 없다.
-#:   설비 측정값처럼 늘 달라지는 조회는 따로 가르지 않는다 — 다시 부르면 값이 다르고, 「글 속의 측정값은 준비 당시 값」이라는 알림이 그대로 참이다.
+#:   설비 측정값처럼 늘 달라지는 조회는 따로 가르지 않는다 — 다시 부르면 값이 다르고, 「글 속의 측정값은 판단 때 값」이라는 알림이 그대로 참이다.
 _MOMENT = re.compile(r"\A\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?\Z")
 _SQL_SOURCE = re.compile(r"\b(from|join)\s+([A-Za-z_][\w.]*)(\s*\()?", re.I)
 _SQL_TEXT = re.compile(r"'(?:[^']|'')*'")
@@ -824,7 +824,7 @@ def _counted(lines: list[str]) -> list[str]:
 
 
 def reads_said(last: dict, when: str) -> str:
-    """다시 부른 읽기 조회가 저장된 결과와 다르거나 견주지 못했을 때의 말(when: 「준비 당시」 · 「앞선 실행 때」). 모두 같으면 빈 글."""
+    """다시 부른 읽기 조회가 저장된 결과와 다르거나 견주지 못했을 때의 말(when: 「판단 때」 · 「앞선 실행 때」). 모두 같으면 빈 글."""
     reads = last.get("reads") or []      # (가리키는 말, 차이): 차이 = None 같음 · False 견주지 못함 · (저장된 행 수, 지금 행 수) 다름
     gaps = _counted([f"{subject} — " + (f"{when} {gap[0]}건 · 지금 {gap[1]}건" if gap[0] != gap[1] else f"{gap[0]}건으로 같고 값이 다름")
                      for subject, gap in reads if gap])
@@ -849,19 +849,18 @@ def typed_said(last: dict) -> str:
     pairs = last.get("typed") or []
     if not pairs:
         return ""
-    return ("결과 글은 준비 당시의 입력을 두고 쓴 것이고, 지금 넣은 입력과 다릅니다: "
-            + "; ".join(f"준비 당시 {cut(old)} · 지금 {cut(new)}" for old, new in pairs) + ".")
+    return ("AI 설명은 지금 넣은 입력과 다른 입력을 두고 쓴 글입니다: "
+            + "; ".join(f"글이 쓰인 때 {cut(old)} · 지금 {cut(new)}" for old, new in pairs) + ".")
 
 
 # 알림 문장의 종류 — 화면이 문장을 읽어 가르지 않게 처리 과정 이벤트(task_working · notice)의 parts[].kind 로 싣는다
 NOTICE_KINDS = {
-    "prepared": "준비된 AI 설명 · 결과 글을 그대로 보인다는 머리말",
-    "typed_differs": "사람이 넣은 입력 글이 준비 당시와 다름",
-    "values_differ": "글 안의 판단 값이 준비 당시 값이고 승인 카드가 지금 계산임",
+    "typed_differs": "AI 설명이 지금 넣은 입력과 다른 입력을 두고 쓰임",
+    "values_differ": "AI 설명 속 판단 값이 판단 때 값이고 승인 카드가 지금 계산임",
     "reads_differ": "다시 해 본 읽기 조회가 지금 값과 다름",
     "reads_unchecked": "읽기 조회를 다시 하지 못해 견주지 못함",
     "skills": "스킬을 바꿔도 같은 답을 낸다는 안내(학생이 스킬을 바꾼 실행에서만)",
-    "reused": "같은 설정 · 같은 입력의 앞선 실행 결과를 다시 씀",
+    "reused": "같은 설정 · 같은 입력이라 앞선 실행 결과와 같음",
     "reuse_dropped": "돌려보내진 같은 요청 저장을 버리고 새로 실행함",
 }
 
@@ -871,9 +870,10 @@ def _reads_kind(last: dict) -> str:
 
 
 def notice_parts(last: dict | None, skills: list[str] | None = None) -> list[tuple[str, str]]:
-    """처리 과정에 남길 한 줄을 (종류, 문장) 묶음으로. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 안내는 재생
-    모드가 지원하지 않는 행동에서만 한다(준비된 글이 이 PC의 지금 값 · 지금 넣은 입력과 다른 것을 두고 쓰인 것도 그 하나다 — differs ·
-    reads_said · typed_said). skills: 학생이 스킬 구성을 바꿀 수 있었던 실행(포털에서 만든 에이전트 · 스킬 — Runner 가 가린다)에 붙인 스킬,
+    """처리 과정에 남길 한 줄을 (종류, 문장) 묶음으로. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 「재생 모드」라는
+    말은 재생이 지원하지 않는 행동의 안내(REPLAY)에만 쓴다. AI 설명 속 값이 이 PC의 지금 값 · 지금 넣은 입력과 다를 때(differs · reads_said ·
+    typed_said)는 재생 모드나 「준비된」 글이라는 사정을 말하지 않고 사실만 알린다: 그 값은 판단 때 값이고 지금 값은 무엇인가(학생이 글 속
+    숫자를 지금 값으로 믿지 않게 — 사용자 2026-11-20). skills: 학생이 스킬 구성을 바꿀 수 있었던 실행(포털에서 만든 에이전트 · 스킬 — Runner 가 가린다)에 붙인 스킬,
     그 밖의 실행은 None. 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고 뗀 차이를 보려는 실습이 같은
     답을 보고 「스킬이 아무 일도 하지 않는다」로 배우지 않게). 기본 제공 구성 그대로인 실행에는 말하지 않는다 — AI 단계마다 같은 안내가
     붙으면 정작 스킬을 바꿨을 때의 안내가 묻힌다."""
@@ -881,20 +881,18 @@ def notice_parts(last: dict | None, skills: list[str] | None = None) -> list[tup
         return []
     if last.get("library") == REUSE:
         rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
-        kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
+        kept = (f" 앞선 실행에서 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
         reads = reads_said(last, "앞선 실행 때")
-        return ([("reused", f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept}")]
+        return ([("reused", f"같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.{rerun}{kept}")]
                 + ([(_reads_kind(last), reads)] if reads else [])
                 + [("reused", "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")])
-    said, reads, typed = [], reads_said(last, "준비 당시"), typed_said(last)
-    if last.get("differs") or reads or typed:
-        said.append(("prepared", f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다."))
-        if typed:
-            said.append(("typed_differs", typed))
-        if last.get("differs"):
-            said.append(("values_differ", f"그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 계산입니다: {'; '.join(last['differs'])}."))
-        if reads:
-            said.append((_reads_kind(last), reads))
+    said, reads, typed = [], reads_said(last, "판단 때"), typed_said(last)
+    if typed:
+        said.append(("typed_differs", typed))
+    if last.get("differs"):      # differs 의 한 줄 = 「조치 이름」 수량 3 → 5개(decision_gap — 왼쪽이 글 속 값, 오른쪽이 이 PC가 지금 계산한 값)
+        said.append(("values_differ", f"AI 설명 속 값 일부는 판단 때 값입니다 — 판단 때 → 지금 값: {'; '.join(last['differs'])}."))
+    if reads:
+        said.append((_reads_kind(last), reads))
     if skills is not None and set(skills) != set(last.get("skills") or ()):
         said.append(("skills", f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
                                "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다."))

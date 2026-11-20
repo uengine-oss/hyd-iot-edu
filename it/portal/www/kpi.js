@@ -161,7 +161,7 @@
     const range = win && win.start ? `${when(win.start)} ~ ${when(win.end)}` : '';
     const tools = periods.length ? `<div class="kpi-bar"><div class="seg" role="group" aria-label="기간">${periods.map(([k, l]) => `<button type="button" data-kpi-period="${escH(k)}" aria-pressed="${k === st.period}"${k === st.period && range ? ` title="${escH(range)}"` : ''}>${escH(l)}</button>`).join('')}</div></div>` : '';
     let body;
-    if (st.loading && !st.data) body = hydLive.waitHtml('성과 지표 실적을 계산하는 중', { since: st.since, hint: '시계열 · 업무 DB · 처리 기록을 읽어 지표마다 실적을 계산합니다. 서버가 모두 끝낸 뒤 한 번에 줍니다.' });
+    if (st.loading && !st.data) body = hydLive.waitHtml('성과 지표 실적을 계산하는 중', { since: st.since, hint: '시계열 DB · 업무 DB · 처리 기록을 읽어 지표마다 실적을 계산합니다. 서버가 모두 끝낸 뒤 한 번에 줍니다.' });
     else if (st.error) body = UI.errorBlock('성과 지표를 불러오지 못했습니다', st.error, { retry: true });
     else {
       const d = st.data, s = d.summary;

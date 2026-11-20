@@ -104,7 +104,7 @@ def _read_source(asset):
             return None, f'{asset}의 설비 상태가 아직 들어오지 않았습니다'
         return None, f'설비 상태를 읽지 못했습니다(응답 {exc.code})'
     except OSError:
-        return None, '설비 상태를 들고 있는 처리 서비스에 닿지 못했습니다'
+        return None, '설비 상태를 들고 있는 흐름 엔진에 닿지 못했습니다'
     if not isinstance(snapshot, dict) or snapshot.get('asset') != asset:
         raise broken(f'설비 상태 응답이 {asset}의 것이 아닙니다')
     try:

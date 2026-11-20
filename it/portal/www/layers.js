@@ -29,12 +29,12 @@ const HEARD = {
 const DMZ_HEALTH = [SVC('connect-ingest') + '/healthz', API.gateway + '/healthz'];
 
 const LAYERS = [
-  { name: '프로세스 · 승인 · 앱', role: '권고를 승인하고 조치를 실행', zone: 'it', focus: true, comps: [
+  { name: '프로세스 · 승인 · 앱', role: '추천안을 승인하고 조치를 실행', zone: 'it', focus: true, comps: [
     { name: 'process', nets: ['it-net', 'sim-net'], role: '승인 → 명령 전송 → 결과 확인 → 종결', real: '업무 프로세스 엔진(BPM)', zone: 'it', url: P(8080) + '/docs', health: API.process + '/healthz' },
     { name: 'portal', nets: ['it-net', 'dmz-it-net', 'sim-net'], role: '설비 관찰 · 판단 확인 · 승인을 하는 화면', real: '운영 포털 · 업무 화면', zone: 'it', url: P(8088), health: null },
     { name: 'enterprise-sim', nets: ['it-net'], role: '생산 관리 · 정비 관리 · 구매 · 재고 시스템을 모의 실행', real: 'ERP · 정비(CMMS) · 구매 시스템', zone: 'it', url: P(8095) + '/docs', health: API.ent + '/healthz' },
   ]},
-  { name: 'AI 에이전트', role: '근거를 조회하고 조치를 권고', zone: 'it', focus: true, comps: [
+  { name: 'AI 에이전트', role: '근거를 조회하고 조치를 추천', zone: 'it', focus: true, comps: [
     { name: 'agent', nets: ['it-net', 'dmz-it-net'], role: '지식 그래프를 읽어 원인 · 조치 후보 · 부서별 영향을 계산 · 설비를 직접 제어할 권한 없음', real: '의사결정 지원 서비스', zone: 'it', url: P(8091) + '/docs', health: API.agent + '/healthz' },
     // 2026-10-25: 포털의 AI 단계(판단 · 제안, 질문, 매뉴얼 추출)를 하는 AI 에이전트. 꺼지면 그 단계만 멈추므로 상태 점에 보인다
     { name: 'agent-worker', nets: ['it-net'], role: 'AI 에이전트 실행 서비스 — 판단 · 제안, 질문 응답, 매뉴얼 추출을 수행', real: 'AI 에이전트 실행 환경', zone: 'it', url: P(8097) + '/healthz', health: SVC('agent-worker') + '/healthz' },
@@ -49,9 +49,9 @@ const LAYERS = [
     { name: 'Prometheus', nets: ['it-net', 'dmz-it-net'], role: '서비스 상태와 처리량 수집', real: '인프라 감시 도구', zone: 'it', url: P(9090), health: P(9090) + '/-/ready', optional: true },
   ]},
   { name: '시계열 저장소', role: '관측값과 사건을 시간순으로 보관', zone: 'it', comps: [
-    { name: 'connect-sink', nets: ['it-net'], role: '이벤트를 받아 시계열 DB에 기록', real: 'Kafka Connect 같은 싱크 커넥터', zone: 'it', url: P(8094) + '/docs', health: SVC('connect-sink') + '/healthz' },
+    { name: 'connect-sink', nets: ['it-net'], role: '이벤트를 받아 시계열 저장소에 기록', real: 'Kafka Connect 같은 싱크 커넥터', zone: 'it', url: P(8094) + '/docs', health: SVC('connect-sink') + '/healthz' },
     // url 없음: 사람이 여는 화면이 없는 부품이다 — 시스템 구성 화면은 [열기] 대신 how(무엇으로 들여다보는지)를 보인다
-    { name: 'TimescaleDB', nets: ['it-net'], role: '센서값 · 경보 · 명령 · 감사 이력 저장', real: '히스토리언(시계열 DB) — 사이트 히스토리언은 OT 쪽에도 둡니다', zone: 'it', url: null, how: '여는 화면이 없습니다. 저장된 값은 추이 화면(Grafana)이 읽어 그래프로 보입니다.', health: null },
+    { name: 'TimescaleDB', nets: ['it-net'], role: '센서값 · 경보 · 명령 · 감사 이력 저장', real: '히스토리언(시계열 저장소) — 사이트 히스토리언은 OT 쪽에도 둡니다', zone: 'it', url: null, how: '여는 화면이 없습니다. 저장된 값은 추이 화면(Grafana)이 읽어 그래프로 보입니다.', health: null },
   ]},
   { name: '스트림 처리 · CEP', role: '연속된 데이터에서 이상을 탐지', zone: 'it', comps: [
     { name: 'detector', nets: ['it-net'], role: '1초 단위 특징 계산 · 경보 발생과 해제 판정', real: '스트림 처리 · CEP 엔진 — 현장(엣지) 쪽에서도 탐지합니다', zone: 'it', url: P(8092) + '/docs', health: API.detector + '/healthz' },
@@ -87,10 +87,10 @@ const NETS = [
 ];
 // 이 구성이 현업 공장과 다른 곳 — 시스템 구성 화면이 그림 아래에 그대로 보인다(대상을 말하는 문장, 근거는 현업 구조 대조).
 const SYS_DIFFS = [
-  { icon: 'route', name: '명령 길 밖의 조작', text: '결함 주입 · 현장 패널 조작 · 정비 수행은 가상 설비 API 망(sim-net)으로 설비에 직접 적용됩니다. 바깥에서 생긴 고장과 사람이 현장에서 하는 일을 대신하는 길이라 승인과 명령 관문을 거치지 않습니다.' },
+  { icon: 'route', name: '명령 길 밖의 조작', text: '결함 주입 · 현장 패널 조작 · 정비 수행은 가상 설비 API 망으로 설비에 직접 적용됩니다. 바깥에서 생긴 고장과 사람이 현장에서 하는 일을 대신하는 길이라 승인과 명령 관문을 거치지 않습니다.' },
   { icon: 'shield-alert', name: '영역 경계', text: '영역은 망 다섯으로 나뉘고 DMZ의 부품은 경계 망에만 붙습니다. 공장과 DMZ 사이의 연결은 공장 쪽 브리지가 먼저 열고, DMZ · IT의 부품에서 공장 브로커로는 닿는 길이 없습니다. 이 PC의 프로그램은 공장 브로커를 구독만 하는 입구(1883 · 8083)로 값을 직접 볼 수 있습니다. 현업은 그런 입구를 두지 않고, 영역 사이에 방화벽과 단방향 전송 장치를 둡니다.' },
   { icon: 'lock', name: '인증 · 암호화', text: 'MQTT 브로커 · 관제 화면 · 추이 화면은 암호화(TLS)와 사용자 인증 없이 이 PC 안에서만 열립니다. 브로커에 붙는 서비스는 비밀번호 없이 이름만 대고, 브로커는 그 이름으로 토픽 규칙을 적용합니다. 현업은 암호화와 인증(인증서 · 비밀번호)을 켭니다.' },
-  { icon: 'cpu', name: '설비 · PLC · 엣지', text: '가상 설비 3기와 PLC, 값을 내보내는 엣지가 한 프로그램(plant-sim)에서 돕니다. 현업은 따로 있는 장치이고 안전계장(SIS)을 제어와 따로 둡니다.' },
-  { icon: 'activity', name: '이상 탐지', text: '탐지는 IT의 이상 탐지(detector) 한 곳에서 합니다. 현업은 현장(엣지) 쪽에서도 탐지합니다.' },
+  { icon: 'cpu', name: '설비 · PLC · 엣지', text: '가상 설비 3기와 PLC, 값을 내보내는 엣지가 한 프로그램에서 돕니다. 현업은 따로 있는 장치이고 안전계장(SIS)을 제어와 따로 둡니다.' },
+  { icon: 'activity', name: '이상 탐지', text: '탐지는 IT의 이상 탐지 한 곳에서 합니다. 현업은 현장(엣지) 쪽에서도 탐지합니다.' },
   { icon: 'plug', name: '공장 쪽 브리지', text: '공장 쪽 브리지는 끊긴 동안의 값을 쌓아 두지 않습니다. 다시 이어지면 그때부터의 값이 올라갑니다. 현업의 엣지 게이트웨이는 끊긴 동안의 값을 모아 두었다가 이어지면 보냅니다(store and forward).' },
 ];

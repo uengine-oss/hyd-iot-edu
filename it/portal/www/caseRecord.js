@@ -22,7 +22,8 @@
    단계 한 줄 = 점(끝남 · 지금 · 내 차례 · 실패 · 남음) · 단계 이름 · (그 상태일 때만) 알약 · 오른쪽 끝 시각, 아래 한 줄 「누가 · 결론 한 마디」. 줄을 누르면 옆 판이 열린다.
    옆 판의 보기: AI 단계는 판단(결론 · 근거 · 후보 비교) · 실행 기록 · 받은 일 · 데이터와 지식 · 받은 값과 넘긴 값 · 원문, 그 밖의 단계는 내용 · 받은 값과 넘긴 값 · 원문.
    기계가 일하는 중인 단계는 그 줄 아래에 지금 하는 일 한 줄과 방금 한 일이 한 줄씩 흘러나오고(7절), 줄을 누르면 그 호출의 요청 · 결과 원문이 펼쳐진다. 사람을 기다리는 단계는 멈춘 모양이다.
-   남은 단계는 이름만 선 줄로, 길이 갈리는 곳은 갈림 한 줄(접기 안에 가지마다의 길)로, 가지 않은 단계는 맨 아래 흐린 한 줄로 둔다.
+   남은 단계는 이름만 선 줄로, 길이 갈리는 곳은 갈림 한 줄(접기 안에 가지마다의 길)로 둔다. 끝난 건의 가지 않은 길은 그리지 않는다 — 흐름 그림을 아는 사람이 확인할 정보라
+   학생 이야기에 쓰이지 않는다(사용자 2026-11-20 「가지않은 단계를 표시를 해야하는 이유」 · 「다 처리해줘」). 흐름 그림 보기는 그 갈래를 흐리게 그대로 보인다.
    세는 숫자 · 스킬 전달 표 · 해시 · 단서 조항 · 원문 JSON · 「기록에 없는 것」은 모두 옆 판 안에 있다. */
 (function () {
   const W = () => window.hydWords;
@@ -91,7 +92,7 @@
       } else if (ev.event_type === 'task_working' && d.type === 'file_artifact') {
         rows.push({ key: 'f:' + ev.id, kind: 'file', t0: ev.timestamp, minor: true, text: UI.baseName(d.path || '') });
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
-        // 알림(notice): 워커가 이 실행에 대해 사람에게 알리는 말(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 등) — 줄이지 않고 결론 아래에 그대로 보인다
+        // 알림(notice): 워커가 이 실행에 대해 사람에게 알리는 말(AI 설명 속 조회 값이 판단 때 값이라는 것 등) — 줄이지 않고 결론 아래에 그대로 보인다
         // 알림의 종류는 서버가 칸으로 싣는다(data.kind, 재생 알림은 문장마다 data.parts[{kind,text}] — worker runner.py · ai_replay.NOTICE_KINDS). 문장을 읽어 가르지 않는다
         const say = t => UI.clean(W().tableWords(W().text(t || '')));
         rows.push({ key: 'n:' + ev.id, kind: 'note', notice: d.type === 'notice', noticeKind: d.kind || '', t0: ev.timestamp, text: say(d.content || d.name),
@@ -140,12 +141,8 @@
     const ctx = { inst, v, d, inc, agents, read, view, running, byTodo, acts, evDefs, gaps: [], producedBy, olderDone: !!ext.olderDone };
     const steps = [];
     steps.push(startStep(ctx));
-    // 가지 않은 길의 단계(흐름이 닿은 적 없이 닫힌 줄 — ui.js neverReached, 서버의 reached_at)는 본줄에 세우지 않고 이름만 모아 맨 아래 한 줄로 보인다(실패가 아니다)
+    // 가지 않은 길의 단계(흐름이 닿은 적 없이 닫힌 줄 — ui.js neverReached, 서버의 reached_at)는 일어난 일이 아니라 본줄에 세우지 않는다(실패도 아니다)
     const neverRan = w => UI.neverReached(w);
-    // 다시 수행으로 새 차수가 열리면 앞 차수에서 닿지 못하고 닫힌 줄은 「가지 않은 단계」가 아니다(새 차수에서 갈 수 있다) — 지금 차수의 것만 모은다
-    const maxGen = Math.max(0, ...(view.workitems || []).map(w => w.generation || 0));
-    const skipped = (view.workitems || []).filter(w => neverRan(w) && !evDefs[w.activity_id] && (w.generation || 0) === maxGen).sort(UI.workitemOrder(view))
-      .map(w => ({ id: w.id, name: UI.flowName(w.activity_name || (acts[w.activity_id] || {}).name || w.activity_id), gen: w.generation || 0 }));
     const wis = (view.workitems || []).filter(w => !(w.status === 'TODO' && !byTodo.has(w.id)) && !neverRan(w))
       .filter(w => !(evDefs[w.activity_id] && w.status === 'CANCELLED'))        // 울리지 않은 타이머(승인이 먼저 옴)는 일어난 일이 아니다
       .filter(w => !(evDefs[w.activity_id] && evDefs[w.activity_id].eventDefinition !== 'timer'))
@@ -196,7 +193,7 @@
     if (!running && !steps.some(s => s.type === 'report')) { const r = endStep(ctx); if (r) steps.push(r); }
     gapsOf(ctx, steps);
     const t0 = inst.start_date, t1 = inst.end_date;
-    return { inst, v, steps, skipped, gaps: ctx.gaps, running, t0, t1, tools: steps.reduce((n, s) => n + (s.rows || []).filter(r => r.kind === 'tool').length, 0),
+    return { inst, v, steps, gaps: ctx.gaps, running, t0, t1, tools: steps.reduce((n, s) => n + (s.rows || []).filter(r => r.kind === 'tool').length, 0),
       outcome: window.hydResultReport ? hydResultReport.fromValues(v) : null, decision: d,
       namesUnread: read.agents.state === 'error' || read.people.state === 'error' };   // 이름 목록(AI 에이전트 · 사람)을 못 읽음 — 머리 요약에 한 줄(사유는 「기록에 없는 것」)
   }
@@ -238,12 +235,12 @@
       const plantBound = (ctx.view.definition && ctx.view.definition.activities || []).some(a => PLANT.test(a.tool || ''));
       const shown = biz ? Object.entries(ev).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object' && !/^(spare_below_min|pm_due)$/.test(k))
         : Object.entries(ev.values || {}).map(([k, x]) => [k.toLowerCase(), x]).concat(Object.entries(ev).filter(([k, x]) => /^(ts1|ce|ps1|fs1|vs1|load)$/.test(k) && typeof x === 'number' && !(ev.values || {})[k.toUpperCase()]));
-      const chips = [chip(W().pattern(alert.pattern), 'danger')].concat(shown.slice(0, 6).map(([k, x]) => chip(`${W().fieldName(k)} ${W().value(k, x)}`)));
+      const chips = [chip(W().pattern(alert.pattern), 'danger')].concat(shown.slice(0, 6).map(([k, x]) => chip(`${W().fieldName(k)} ${UI.valueText(k, x)}`)));
       const sentence = pressed ? `${who}${W().josa(who, '이/가')} ${ev.trigger}${W().josa(ev.trigger, '을/를')} 눌러 ${alert.asset || ''} ‘${W().pattern(alert.pattern)}’ 처리 건을 열었습니다. 근거는 그때의 업무 데이터 값입니다.`
         : biz ? `${who}${W().josa(who, '이/가')} ${alert.asset || ''} 업무 데이터에서 ‘${W().pattern(alert.pattern)}’${W().josa(W().pattern(alert.pattern), '을/를')} 발견해 처리 건을 열었습니다.`
-        : `${alert.asset || ''}의 ${shown.length ? shown.slice(0, 2).map(([k, x]) => `${W().fieldName(k)} ${W().value(k, x)}`).join(' · ') + ' 값이' : '센서 값이'} 경보 규칙에 걸려 ‘${W().pattern(alert.pattern)}’ 경보가 났고, 처리 건이 열렸습니다.`;
+        : `${alert.asset || ''}의 ${shown.length ? shown.slice(0, 2).map(([k, x]) => `${W().fieldName(k)} ${UI.valueText(k, x)}`).join(' · ') + ' 값이' : '센서 값이'} 경보 규칙에 걸려 ‘${W().pattern(alert.pattern)}’ 경보가 났고, 처리 건이 열렸습니다.`;
       const pressRows = pressed ? [['누른 사람', presser, ''], ['누른 시각', UI.dateTime ? UI.dateTime(ev.requested_at) : ev.requested_at, '']] : [];
-      const table = shown.length || pressRows.length ? kvTable(pressRows.concat(shown.map(([k, x]) => [W().fieldName(k), W().value(k, x), k]))) : '';
+      const table = shown.length || pressRows.length ? kvTable(pressRows.concat(shown.map(([k, x]) => [W().fieldName(k), UI.valueText(k, x), k]))) : '';
       if (biz && !plantBound) chips.push(chip('설비 명령 없음'));
       const sections = [
         sec('들어온 값', table || '<p class="muted">값 없음</p>', { open: true }),
@@ -342,7 +339,7 @@
     const provName = p => (p.variable === 'cause' && pw.input) || (p.variable === 'failure_mode' && pw.inputFm) || p.name || W().fieldName(p.variable);
     const dataCalls = major.filter(r => /업무|ERP|MES|CMMS|SCM|센서|정비|구매|생산|공급/.test(W().toolSystem(r.tool)));
     if (prov.length || dataCalls.length) {
-      const provRows = prov.map(p => `<tr><td>${named(provName(p), p.variable)}</td><td class="num">${e(W().value(p.variable, p.value))}</td><td>${e((p.source && W().system(p.source)) || p.sourceName || '')}${W().id(p.source)}</td><td class="muted">${e(UI.clean(p.how || ''))}</td></tr>`).join('');
+      const provRows = prov.map(p => `<tr><td>${named(provName(p), p.variable)}</td><td class="num">${e(UI.valueText(p.variable, p.value))}</td><td>${e((p.source && W().system(p.source)) || p.sourceName || '')}${W().id(p.source)}</td><td class="muted">${e(UI.clean(p.how || ''))}</td></tr>`).join('');
       sections.push(sec(`가져온 데이터 ${prov.length ? prov.length + '건' : ''}`, `${prov.length ? `<div class="table-container"><table class="table cr-table"><thead><tr><th>값</th><th>읽은 값</th><th>어느 시스템</th><th>어떻게</th></tr></thead><tbody>${provRows}</tbody></table></div>` : ''}
         ${dataCalls.length ? `<p class="muted">도구로 직접 읽은 곳: ${[...new Set(dataCalls.map(r => W().toolSystem(r.tool)))].map(x => e(x)).join(' · ')} (요청과 결과는 아래 도구 호출에 있습니다)</p>` : ''}`, { open: !!prov.length }));
       chips.push(chip(`데이터 ${prov.length || dataCalls.length}건`));
@@ -386,7 +383,7 @@
     if (cause) parts.push(cw.found(cause));
     let sentence;
     if (rec) sentence = UI.evaluationInfo(rec,d).state==='analysis'
-      ? `${parts.join(' ')} 대안 ${d.options.length}개를 규칙으로 비교해 ‘${W().text(rec.name)}’${W().josa(W().text(rec.name), '을/를')} 모의 1순위로 계산했습니다. 실제 승인 · 실행 준비는 확인하지 않았습니다.`
+      ? `${parts.join(' ')} 대안 ${d.options.length}개를 규칙으로 비교해 ‘${W().text(rec.name)}’${W().josa(W().text(rec.name), '을/를')} 모의 1순위로 계산했습니다. ${UI.t('eval.calcOnly')}`
       : `${parts.join(' ')} 대안 ${d.options.length}개를 비교해 ‘${W().text(rec.name)}’${W().josa(W().text(rec.name), '을/를')} 추천했습니다.`;
     else if (cause) sentence = `${parts.join(' ')} 판단을 넘겼습니다.`;
     // 끝맺는 글이 산문이면 그 첫 문장, 출력 계약(JSON)이면 글로 옮기지 않는다 — 「도구를 13번 써서 {」로 읽혔다(원문은 옆 판의 「원문」에 있다)
@@ -428,7 +425,7 @@
     }
     return out.join('');
   }
-  const basisText = s => String(s).replace(/AnomalyPattern\.code/g, UI.terms['ontology.field.AnomalyPattern.code']).replace(/\bAnomalyPattern\b/g, UI.terms['ontology.class.AnomalyPattern']).replace(/ontology/gi, '지식 그래프').replace(/same query as diagnose/i, '원인 진단과 같은 질의').replace(/via business_causes/i, '— 업무 경보 원인 찾기 도구')
+  const basisText = s => String(s).replace(/AnomalyPattern\.code/g, UI.terms['ontology.field.AnomalyPattern.code']).replace(/\bAnomalyPattern\b/g, UI.terms['ontology.class.AnomalyPattern']).replace(/ontology/gi, '지식 그래프').replace(/same query as diagnose/i, '원인 진단과 같은 쿼리').replace(/via business_causes/i, '— 업무 경보 원인 찾기 도구')
     .replace(/failure mode/gi, '고장 유형').replace(/FailureMode/g, '고장 유형').replace(/\bpattern\b/gi, '경보 패턴').replace(/\bsymptom\b/gi, '증상').replace(/\bcause\b/gi, '원인').replace(/\bCause\b/g, '원인')
     .replace(/\bSkill\b/g, '조치').replace(/\bPart\b/g, '부품').replace(/-PREVENTED_BY->/g, '→ 예방 조치 →').replace(/-INVOLVES_PART->/g, '→ 쓰는 부품 →')
     .replace(/-CAUSES->/g, '→ 일으키는 고장 →').replace(/\bpart\b/g, '부품').replace(/\bskill\b/g, '조치').replace(/\bT1\b/g, '').replace(/\s+/g, ' ').trim();
@@ -443,7 +440,7 @@
     return `<div class="cr-path">${nodes.map(([label, name, id], i) => `${i ? `<span class="cr-arrow" aria-hidden="true">${arrows[i - 1] || '→'}</span>` : ''}<span class="cr-node"><small>${e(label)}</small><b>${e(name || '–')}</b>${W().id(id)}</span>`).join('')}</div>`;
   }
 
-  // 대안: 추천안 + 나머지(점수 · 진 이유 · 판단 엔진 설명이 그 안에 대해 한 말)
+  // 대안: 추천안 + 나머지(점수 · 진 이유 · 판단 서비스 설명이 그 안에 대해 한 말)
   function altHtml(d) {
     const opts = [...(d.options || [])].sort((a, b) => (b.id === d.recommended) - (a.id === d.recommended) || (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
     const rec = opts.find(o => o.id === d.recommended) || opts[0];
@@ -465,7 +462,7 @@
       return `<li class="cr-alt"${o.id === rec.id ? ' data-pick' : !o.feasible ? ' data-out' : ''}><div class="cr-alt-head">${tag}<b>${e(W().text(o.name))}</b>${W().id(o.id)}<span class="num muted">${W().purchaseEconomics(o) ? e(W().purchaseCostLabel(o)) : Number.isFinite(+o.score) && o.score !== null ? e(W().num(+o.score)) + '점' : ''}</span>${o.approver && o.approver.name ? `<span class="muted">승인 역할: ${e(o.approver.name)}</span>` : ''}</div>
         ${UI.evaluationHtml(o,d)}${W().purchaseContextHtml(o,d)}${W().maintenanceHtml(o)}${fc(o) ? `<p class="muted">예측 ${e(fc(o))}</p>` : ''}${own(o) ? `<p class="muted">이 안의 값 ${e(own(o))}</p>` : ''}<p>${o.id === rec.id ? why(o) : e(why(o))}</p>${o.id !== rec.id && said(o) ? `<p class="cr-said">AI 에이전트: “${e(said(o))}”</p>` : ''}</li>`;
     }).join('');
-    return `<ol class="cr-alts">${rows}</ol>${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose">${e(W().text(d.explanation))}</p>`) : ''}`;
+    return `<ol class="cr-alts">${rows}</ol>${d.explanation ? UI.fold('판단 서비스 설명 전문 (규칙 문장)', `<p class="prose">${e(W().text(d.explanation))}</p>`) : ''}`;
   }
 
   /* ---------------------------------------------------------------- 사람 */
@@ -495,7 +492,7 @@
       const out = w.output || {}, who = W().who(w.user_id);
       return Object.assign(b, { type: 'human', lane: 'person', icon: 'human', title: b.name, actor: who,
         sentence: w.status === 'DONE' ? `${who}${W().josa(who, '이/가')} ‘${b.name}’${W().josa(b.name, '을/를')} 마쳤습니다.` : b.live ? `${who}의 입력을 기다리는 중입니다.` : UI.logText(w.log),
-        chips: Object.entries(out).filter(([, x]) => x != null && typeof x !== 'object').slice(0, 4).map(([k, x]) => chip(`${W().fieldName(k)} ${W().value(k, x)}`)),
+        chips: Object.entries(out).filter(([, x]) => x != null && typeof x !== 'object').slice(0, 4).map(([k, x]) => chip(`${W().fieldName(k)} ${UI.valueText(k, x)}`)),
         sections: [sec('입력한 값', rawBlock(out), { raw: true })] });
     }
     const byId = (hist && hist.by) || (appr && appr.payload && appr.payload.by) || v.approved_by || '';
@@ -517,7 +514,7 @@
     if (acts.length) sections.push(sec('승인으로 시스템에 넘긴 일', `<ul class="cr-list">${acts.map(a => `<li>${e(W().action({ code: a.code, value: a.value }))} <span class="muted">→ ${e(W().system(a.system || a.target))}</span>${W().id(a.code)}</li>`).join('')}</ul>`, { open: true }));
     const cc = appr && appr.payload && appr.payload.current_check;
     if (cc) sections.push(sec('승인 순간 다시 확인한 값', `<p>${cc.allowed ? UI.chipText('그대로 실행해도 됨', 'success') : UI.chipText('실행 불가', 'danger')} ${(cc.reasons || []).map(r => e(W().text(r.annotation || r.rule || r))).join(' · ')}${cc.checked_at ? ` <span class="muted">${e(hhmmss(cc.checked_at))}</span>` : ''}</p>
-      ${kvTable(Object.entries(cc.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object').map(([k, x]) => [W().fieldName(k,cc.facts), W().value(k, x), k]))}${(cc.unknown || []).length ? `<p class="cr-gapline">그 순간 읽지 못한 값: ${e(cc.unknown.map(k => W().fieldName(k, cc.facts)).join(', '))}</p>` : ''}`));
+      ${kvTable(Object.entries(cc.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object').map(([k, x]) => [W().fieldName(k,cc.facts), UI.valueText(k, x), k]))}${(cc.unknown || []).length ? `<p class="cr-gapline">그 순간 읽지 못한 값: ${e(cc.unknown.map(k => W().fieldName(k, cc.facts)).join(', '))}</p>` : ''}`));
     if (appr) sections.push(sec('승인 전달 기록', `<ul class="cr-list">${(appr.history || []).map(h => `<li>${e(hhmmss(h.t))} ${e(UI.deliveryStates[h.status] || UI.status(h.status))}${h.by ? ` · ${e(W().who(h.by))}` : ''}</li>`).join('')}</ul><p class="muted">전달 시도 ${e(appr.attempts)}회 · 지금 ${e(UI.deliveryStates[appr.status] || UI.status(appr.status))}</p>`));
     sections.push(sec('승인 원문', rawBlock(appr ? appr.payload : w.output), { raw: true }));
     const chips = [chip(`${by || '–'}${role ? ' · ' + W().who(role) : ''}`, 'accent'), chip(W().text(opt.name || nm(optId) || '–'), changed ? 'warning' : d ? 'success' : 'neutral')];
@@ -525,7 +522,8 @@
     const subject = by || W().who(role), optName = W().text(opt.name || nm(optId));
     // 판단을 못 읽었으면 추천안과 같은지 모른다 — 모르는 것은 말하지 않는다
     const how = !d ? '' : changed ? '추천안 대신 골라 ' : '추천안 그대로 ';
-    const sentence = w.status === 'DONE' ? `${subject}${role && by ? `(${W().who(role)})` : ''}${W().josa(subject, '이/가')} ${when ? hhmmss(when) + '에 ' : ''}‘${optName}’${W().josa(optName, '을/를')} ${how}승인했습니다.`
+    // 문장에 시각을 적지 않는다 — 끝난 단계의 시각은 줄 오른쪽 끝 한 곳(끝난 때 — rowParts)이고, 승인한 시각은 옆 판의 「누가 · 언제 · 무엇을」에 있다
+    const sentence = w.status === 'DONE' ? `${subject}${role && by ? `(${W().who(role)})` : ''}${W().josa(subject, '이/가')} ‘${optName}’${W().josa(optName, '을/를')} ${how}승인했습니다.`
       : b.live ? `${W().who(w.user_id)}의 승인을 기다리는 중입니다.` : UI.logText(w.log);
     return Object.assign(b, { type: 'approve', lane: 'person', icon: 'human', title: b.name, actor: by ? `${by}${role ? ' · ' + W().who(role) : ''}` : W().who(w.user_id), sentence, chips, sections,
       now: b.live ? '위의 「내가 할 일」에서 승인하거나 반려하면 다음 단계로 넘어갑니다.' : '', ids: [w.activity_id, role] });
@@ -573,7 +571,7 @@
       if (po.ref) chips.push(chip(po.ref, 'accent'));
       if (v.approved_amount != null) chips.push(chip(`${W().num(v.approved_amount)}만원`));
       if (v.approved_qty != null) chips.push(chip(`${v.approved_qty}개`));
-      sections.push(sec('발주 값 (승인 순간 서버가 견적으로 확정)', kvTable([['공급사', sup, v.approved_supplier], ['부품', W().text(v.approved_part_no || '–'), ''], ['수량', W().value('approved_qty', v.approved_qty), ''], ['단가', W().value('approved_unit_price', v.approved_unit_price), ''], ['금액', W().value('approved_amount', v.approved_amount), '']]), { open: true }));
+      sections.push(sec('발주 값 (승인 순간 서버가 견적으로 확정)', kvTable([['공급사', sup, v.approved_supplier], ['부품', W().text(v.approved_part_no || '–'), ''], ['수량', UI.valueText('approved_qty', v.approved_qty), ''], ['단가', UI.valueText('approved_unit_price', v.approved_unit_price), ''], ['금액', UI.valueText('approved_amount', v.approved_amount), '']]), { open: true }));
       const m = mailOf(po); if (m) { sentence += ` 공급사 · 입고 부서에 메일을 보냈습니다.`; chips.push(chip('메일 1통')); sections.push(sec('보낸 메일', mailHtml(m), { open: true })); }
     } else if (tool === 'plant:restore') {
       icon = 'schedule'; target = `${W().system('sys:cmms')} · 설비`;
@@ -670,7 +668,8 @@
         chips.push(chip('값 흐름 못 읽음', 'warning'));
       } else if (series && (series.points || []).length) {
         b.series = series;
-        sentence = `${seriesSentence(series, win)} — ${rec == null ? '아직 판정하지 않았습니다' : rec ? '회복으로 판정했습니다' : '미회복으로 판정했습니다'}.`;
+        const evRead = evSeries && evSeries.reading;      // 정비 요청 뒤 효과 확인은 판정 때 읽은 값이 기록 줄(REOBSERVATION)에 있다
+        sentence = rec == null ? `${seriesSentence(series, win)} — 아직 판정하지 않았습니다.` : verdictSentence(series, win, rec, m && m.tag ? m : evRead && evRead.tag ? evRead : null);
         sections.unshift(sec('지켜본 동안의 값', seriesHtml(series), { open: true }));
         chips.push(chip(`기준 안 ${Math.round((series.inside_share || 0) * 100)} %`, series.inside_last ? 'success' : 'danger'));
       }
@@ -686,7 +685,7 @@
       sentence = tr ? `${settle && settle.data && settle.data.plan ? `안정될 때까지 기다린 뒤(${virtual(settle.data.plan)}) ` : ''}${(tr.readings || []).length}개 값을 재어 ${tr.passed ? '모두 기준 안 — 통과' : '기준 밖 값이 있어 미달'}로 판정했습니다.${tr.counter && tr.counter.detail ? ` ${W().text(tr.counter.detail)}.` : ''}`
         : !b.live ? notYet(b) : settle ? `시운전 — 안정될 때까지 기다리는 중입니다 (${virtual(settle.data.plan)}).` : '시운전을 준비하는 중입니다.';
       (tr && tr.readings || []).forEach(r => chips.push(chip(`${W().fieldName(String(r.tag).toLowerCase())} ${r.value == null ? '모름' : W().num(r.value)} ${W().sym(r.op)} ${W().num(r.limit)}${W().unit(String(r.tag).toLowerCase()) ? ' ' + W().unit(String(r.tag).toLowerCase()) : ''}`, r.ok ? 'success' : 'danger')));
-      if (tr) sections.push(sec('잰 값과 기준', `<div class="table-container"><table class="table cr-table"><thead><tr><th>값</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${(tr.readings || []).map(r => `<tr><td>${named(W().fieldName(String(r.tag).toLowerCase()), r.tag)}</td><td class="num">${r.value == null ? '모름' : e(W().value(String(r.tag).toLowerCase(), r.value))}</td><td class="num">${e(W().sym(r.op))} ${e(W().num(r.limit))}</td><td>${UI.chipText(r.ok ? '통과' : '미달', r.ok ? 'success' : 'danger')}</td></tr>`).join('')}</tbody></table></div>${tr.at ? `<p class="muted">잰 시각 ${e(hhmmss(tr.at))}</p>` : ''}`, { open: true }));
+      if (tr) sections.push(sec('잰 값과 기준', `<div class="table-container"><table class="table cr-table"><thead><tr><th>값</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${(tr.readings || []).map(r => `<tr><td>${named(W().fieldName(String(r.tag).toLowerCase()), r.tag)}</td><td class="num">${r.value == null ? '모름' : e(UI.valueText(String(r.tag).toLowerCase(), r.value))}</td><td class="num">${e(W().sym(r.op))} ${e(W().num(r.limit))}</td><td>${UI.chipText(r.ok ? '통과' : '미달', r.ok ? 'success' : 'danger')}</td></tr>`).join('')}</tbody></table></div>${tr.at ? `<p class="muted">잰 시각 ${e(hhmmss(tr.at))}</p>` : ''}`, { open: true }));
     } else {   // 입고 확인
       icon = 'receipt';
       // 입고를 기다리는 동안: 어느 발주를 언제까지 기다리는지(서버의 입고 대기 기록 — 발주 번호 · 입고 예정 시각 · 리드타임). 공급사가 늦췄으면 늦춘 예정을 말한다
@@ -779,6 +778,19 @@
     const span = reobsSpan(win, x.from && x.to ? ts(x.to) - ts(x.from) : null);
     return `${span ? span + ' 동안 ' : ''}${W().fieldName(tag)} ${W().num(x.first)}→${W().num(x.last)}${u ? ' ' + u : ''}, 기준(${W().num(x.limit)}${u ? ' ' + u : ''} ${SIDE[x.op] || ''}) 안에 있던 시간 ${Math.round((x.inside_share || 0) * 100)} %`;
   }
+  /* 효과 확인의 판정 문장 — 실제 판정 근거를 먼저 말한다. 서버의 판정(service_parts._reobserve)은 「판정 때 읽은 마지막 값이 기준 안이고 경보가 꺼졌는가」다.
+     기준 안에 있던 시간의 몫(reobs_series.inside_share)은 지켜본 동안의 모습일 뿐 판정에 쓰이지 않는다 — 그것을 앞세우면 「60 %인데 회복」으로 읽힌다. 그래서 괄호 안 덧붙임으로 둔다.
+     read: 판정 때 읽은 값(사건 이력의 reobservation 칸 또는 기록 줄의 reading — { value, cleared }). 없으면 값 흐름의 마지막 값과 그 안 · 밖(inside_last)으로 말한다 */
+  function verdictSentence(x, win, rec, read) {
+    const tag = String(x.tag || '').toLowerCase(), u = W().unit(tag), unit = u ? ' ' + u : '';
+    const span = reobsSpan(win, x.from && x.to ? ts(x.to) - ts(x.from) : null);
+    const seen = read && read.value != null && Number.isFinite(+read.value), last = seen ? +read.value : x.last;
+    const inside = seen && INSIDE[x.op] && x.limit != null ? INSIDE[x.op](last, +x.limit) : !!x.inside_last;
+    const cleared = read && read.cleared != null ? !!read.cleared : null;
+    const basis = `${W().fieldName(tag)}의 마지막 값(${W().num(last)}${unit})이 기준(${W().num(x.limit)}${unit} ${SIDE[x.op] || ''}) ${inside ? '안' : '밖'}`;
+    const how = rec ? (cleared ? '이고 경보도 꺼져 회복으로' : '이라 회복으로') : inside ? (cleared === false ? '이지만 경보가 꺼지지 않아 미회복으로' : '이지만 미회복으로') : '이라 미회복으로';
+    return `${basis}${how} 판정했습니다 (${span ? span + ' 동안 ' : ''}${W().num(x.first)}→${W().num(x.last)}${unit} · 기준 안에 있던 시간 ${Math.round((x.inside_share || 0) * 100)} %).`;
+  }
   // 작은 선 그림: 값 흐름 + 기준선(점선) + 마지막 점
   function seriesHtml(x) {
     const pts = (x.points || []).filter(p => Number.isFinite(+p.v));
@@ -823,7 +835,7 @@
         ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '정비 요청', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
         ${rep.incident_closed != null ? `<p class="muted">${e(hydResultReport.incidentMeaning(rep, ctx.inc, ctx.read.incident))}${rep.notification_count == null ? '' : rep.notification_count > 0 ? ` · 담당자 ${e(rep.notification_count)}명에게 알림` : ' · 알림 받을 담당자 없음'}</p>` : ''}`, { open: true }));
       const facts = Object.entries(rep.facts || {}).filter(([, x]) => x != null && typeof x !== 'object');
-      if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));
+      if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : UI.valueText(k, x), k]))));
     }
     sections.push(sec('결과 보고 원문', rawBlock(rep), { raw: true }));
     return Object.assign(b, { type: 'report', lane: 'system', icon: 'flag', title: b.name, actor: `${W().system('sys:process')} → 담당자 알림`,
@@ -846,7 +858,7 @@
     const G = ctx.gaps;
     const tools = steps.flatMap(s => (s.rows || []).filter(r => r.kind === 'tool'));
     const cut = tools.filter(r => r.status === 'warn' && !(r.full && r.full.stored)), blocked = tools.filter(r => r.status === 'blocked');
-    if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 에이전트는 그 결과를 다 보지 못했고, 잘린 뒤의 원래 결과는 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
+    if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 에이전트는 그 결과를 다 보지 못했고, 잘린 뒤의 원래 결과는 처리 건에 남지 않습니다. 그 뒤 판단은 판단 서비스가 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
     if (blocked.length) G.push({ key: 'blocked', text: `안전 장치가 막은 명령 ${blocked.length}건 — 실행되지 않았고, 막힌 명령의 결과는 없습니다.` });
     const skillsRecorded = steps.filter(s => s.type === 'agent').every(s => {
       const evs = ctx.byTodo.get(s.key) || [], starts = evs.filter(x=>x.event_type === 'task_started');
@@ -929,7 +941,7 @@
   }
   function sysDetail(r) {
     const d = r.data || {};
-    if (r.job === 'MCP_RESULT_VALUES') return kvTable(Object.entries(d.values || {}).map(([k, value]) => [W().fieldName(k), W().value(k, value), k]));
+    if (r.job === 'MCP_RESULT_VALUES') return kvTable(Object.entries(d.values || {}).map(([k, value]) => [W().fieldName(k), UI.valueText(k, value), k]));
     if (d.setpoints) return ` <span class="muted">${e(W().who(d.by))} · ${e(W().setpointsText(d))}</span>`;
     if (W().effectText(r.job, d)) return ` <span class="muted">${e(W().effectText(r.job, d))}</span>`;
     if (d.plan) return ` <span class="muted">${e(d.plan.label || '')} ${e(virtual(d.plan, /^RECEIPT/.test(r.job || '') ? BIZ : undefined))}${d.plan.source ? ` · ${e(W().text(d.plan.source))}` : ''}</span>`;
@@ -969,7 +981,7 @@
     }
     const evid = f.evid.length ? `<section class="cr-sec"><h4 class="cr-h">근거</h4><ul class="evid">${f.evid.map(([ic, html]) => `<li>${UI.icon(ic)}<span>${html}</span></li>`).join('')}</ul></section>` : '';
     const alts = f.opts.length ? `<section class="cr-sec"><h4 class="cr-h">후보 비교 <span class="num">${f.opts.length}</span></h4>${optsTable(f)}</section>` : '';
-    return `<section class="cr-sec cr-judge"><h4 class="cr-h">${e(label)}</h4><p class="result-main">${e(main)}</p>${f.sub ? `<p class="result-sub">${f.sub}</p>` : ''}</section>${noticeHtml(s.rows)}${evid}${alts}`;
+    return `<section class="cr-sec cr-judge"><h4 class="cr-h">${e(label)}</h4><p class="result-main">${e(main)}</p>${UI.factCells(f.facts, 'data-cr-facts style="margin-top:12px"')}</section>${noticeHtml(s.rows)}${evid}${alts}`;
   }
   /* 옆 판의 보기(밑줄 탭)로 나눈 그 단계의 기록 — 접기 안에 접기를 두지 않는다. 접는 것은 원문(UI.raw)뿐이다.
      AI 단계: 판단 · 실행 기록 · 받은 일 · 데이터와 지식 · 받은 값과 넘긴 값 · 원문. 그 밖의 단계: 내용 · 받은 값과 넘긴 값 · 원문.
@@ -1010,7 +1022,8 @@
     const g = groups.find(x => x.key === tab) || groups[0];
     const names = [...new Set(String(s.actor || '').split(' · ').filter(Boolean))].join(' · ') || LANE[s.lane] || '';
     const dur = s.t0 && s.t1 && ts(s.t1) - ts(s.t0) > 0 ? fmtMs(ts(s.t1) - ts(s.t0)) : '';
-    return { tab: g ? g.key : '', head: sheetHead(s.title, [e(names), s.t0 ? e(UI.dateTime(s.t0)) : '', dur ? e(dur) : ''].filter(Boolean).join(' · ')) +
+    // 머리의 시각도 단계 줄과 같은 규칙: 끝난 단계는 끝난 때, 아직 끝나지 않은 단계는 시작한 때. 그 뒤는 걸린 시간
+    return { tab: g ? g.key : '', head: sheetHead(s.title, [e(names), s.t1 || s.t0 ? e(UI.dateTime(s.t1 || s.t0)) : '', dur ? e(dur) : ''].filter(Boolean).join(' · ')) +
         (groups.length > 1 ? UI.viewTabs(groups.map(x => [x.key, x.label]), g.key, 'data-cr-tab', { label: '단계 자세히' }) : ''),
       body: g ? g.html : '<p class="muted">이 단계가 남긴 기록이 없습니다.</p>' };
   }
@@ -1095,10 +1108,10 @@
       : `${cw.found(told)}, 「${recName}」${W().josa(recName, '을/를')} ${act}.`;
     else if (rec) verdict = `조치 ${opts.length}개를 비교해 「${recName}」${W().josa(recName, '을/를')} ${act}.`;
     else if (told) verdict = diagnosed ? `원인을 ${told}${W().josa(told, '으로/로')} 판단했습니다.` : `${cw.cause}${W().josa(cw.cause, '은/는')} ${told}입니다.`;
-    // 결론 아래 한 줄: 추천안의 예측 · 좋아지는 것 · 감수할 것(승인 카드와 같은 함수 — approvalCard.js reasons)
-    // 주의(감점 · 경고 규칙의 글)는 문장이 길어 이 한 줄에 잇지 않고 아래 근거 줄 하나로 보인다
-    const sub = rec && window.hydApprove ? hydApprove.reasons(rec, d, { warn: false }).slice(0, 3).join(' · ') : '';
-    // 근거: 원인(고장 유형) → 원인 판정에 쓴 관측값(잰 값과 기준, 여섯 줄까지) → 판단 엔진이 그 안에 대해 한 말
+    // 결론 아래 값 칸: 추천안의 예측 · 좋아지는 것 · 감수할 것을 이름과 값으로 나눠(approvalCard.js reasonFacts — 승인 판의 값 칸과 같은 부품 UI.factCells)
+    // 주의(감점 · 경고 규칙의 글)는 문장이 길어 이 칸에 넣지 않고 아래 근거 줄 하나로 보인다
+    const facts = rec && window.hydApprove ? hydApprove.reasonFacts(rec, d) : [];
+    // 근거: 원인(고장 유형) → 원인 판정에 쓴 관측값(잰 값과 기준, 여섯 줄까지) → 판단 서비스가 그 안에 대해 한 말
     const evid = [];
     // 「관측값과 맞습니다」는 센서 진단일 때만 한다 — 업무 경보의 원인은 관측값으로 가린 것이 아니라 지식 지도의 길(정비가 막는 고장 · 부품이 고치는 원인)로 찾은 것이다
     const fmName = d && d.scenario && d.scenario.failureMode ? W().text(d.scenario.failureMode) : '';
@@ -1115,7 +1128,7 @@
       else if (Number.isFinite(+rec.score) && opts.length > 1) evid.push(['scale', `조치 ${opts.length}개를 순위 식으로 견줘 <b>「${e(recName)}」</b>${ref ? ` <span class="muted mono">${e(ref)}</span>` : ''}${W().josa(ref || recName, '이/가')} <b class="num">${e(W().num(+rec.score).replace(/^-/, '−'))}점</b>으로 가장 높았습니다${+rec.score < 0 ? ' (점수는 감점을 뺀 값이라 음수일 수 있습니다)' : ''}.`]);
       if (window.hydApprove) hydApprove.cautions(rec).slice(0, 2).forEach(t => evid.push(['triangle-alert', `<b>주의</b> ${e(W().text(t))}`]));
     }
-    return { verdict, sub, evid, opts, rec, d, mock };
+    return { verdict, facts, evid, opts, rec, d, mock };
   }
   // 후보 비교 표(키트 .opts): 순위 · 이름(둘째 줄에 진 까닭) · 종류 · 점수 · 막대 · 승인 역할. 고른 줄은 제품색
   function optsTable(f) {
@@ -1164,8 +1177,12 @@
       say = f.verdict || (stopped && err ? err.text : stopped ? '결론을 내지 못하고 끝났습니다.' : s.sentence || '');
     } else say = UI.leadRest(waitsMe(s) ? s.now : (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '') + (s.sentence || ''), 110)[0];
     const waiting = (s.live || busy) && !s.t1 && !failed;
+    // 오른쪽 끝 시각은 한 규칙이다: 끝난 단계는 끝난 때(작업 행의 끝 시각 t1), 아직 끝나지 않은 단계는 시작한 때부터의 경과(기계가 일하는 중) 또는 시작 시각.
+    // 끝난 줄에 시작 시각을 적으면 문장이 말하는 일(승인 · 판정)이 그 시각에 일어난 것으로 읽힌다 — 승인을 기다린 시간만큼 어긋났다. 시작 시각은 title 에 남긴다
+    const ended = !!s.t1 && !waiting;
     const time = !s.t0 ? '' : waiting ? `<time class="step-time num" title="${e(UI.dateTime(s.t0))} 시작" data-since="${e(s.t0)}">${e(fmtMs(Date.now() - ts(s.t0)))}</time>`
-      : `<time class="step-time num" title="${e(UI.dateTime(s.t0))}">${e(hhmmss(s.t0))}</time>`;
+      : ended ? `<time class="step-time num" data-ended title="${e(UI.dateTime(s.t0))} 시작 · ${e(UI.dateTime(s.t1))} 끝">${e(hhmmss(s.t1))}</time>`
+      : `<time class="step-time num" title="${e(UI.dateTime(s.t0))} 시작">${e(hhmmss(s.t0))}</time>`;
     // 보조 줄 「누가 · 결론 한 마디」: 문장이 이미 그 이름으로 시작하면(「담당자(운전원)가 …」 · 「설비 제어에 …」) 이름을 앞에 또 적지 않는다
     const told = say && names.some(n => say.startsWith(n));
     const row = `<span class="step-head"><span class="step-title">${e(s.title)}</span>${pill}${time}</span><span class="step-sub">${told ? '' : e(who)}${say ? `${told ? '' : ' · '}${e(say)}` : ''}</span>`;
@@ -1346,8 +1363,7 @@
       // 남은 단계: 정해진 데까지는 이름만 선 남음 줄(흐름 그림의 남은 상자와 같은 차례), 길이 갈리는 곳은 갈림 한 줄
       const path = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst) : null;
       const rest = path ? path.nodes.filter(n => n.state === 'todo') : [], fork = path ? path.fork : null, timers = path ? path.timers || [] : [];
-      const skip = m.skipped || [];
-      const want = shown.map(s => s.key).concat(rest.map(n => 'todo:' + n.id), fork || timers.length ? ['next'] : [], skip.length ? ['skipped'] : []);
+      const want = shown.map(s => s.key).concat(rest.map(n => 'todo:' + n.id), fork || timers.length ? ['next'] : []);
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
       // 줄 하나: 점 · 누르는 줄(머리 + 보조 줄 — 옆 판을 연다. open 이 없으면 눌리지 않는 글) · 줄 아래(흘러나오는 줄 · 접기) · 부른 쪽이 채우는 칸
       const place = (key, i, parts) => {
@@ -1405,12 +1421,6 @@
         place('next', at++, { state: 'todo', gateway: !!fork,
           row: `<span class="step-head"><span class="step-title">${fork ? e(q ? UI.flowName(q) + '?' : '갈림') : '기한'}</span></span><span class="step-sub">${fork ? '아직 나지 않은 결과에 따라 길이 갈립니다' : '지금 단계에 걸린 기한이 먼저 오면 다른 길로 갑니다'}</span>`,
           body: `<details class="fold" data-plain data-k="next"><summary>갈림 뒤의 길</summary><div class="fold-body">${forkHtml(fork, timers)}</div></details>` });
-      }
-      // 가지 않은 단계: 맨 아래 흐린 한 줄(수만), 펼치면 이름만. 실패가 아니므로 붉은 표시를 쓰지 않는다
-      if (skip.length) {
-        const names = [...new Set(skip.map(x => x.name))];
-        place('skipped', at++, { state: 'skip', row: `<span class="step-head"><span class="step-title">가지 않은 단계</span></span><span class="step-sub">${names.length}단계 — 이 처리 건이 지나가지 않은 길입니다</span>`,
-          body: `<details class="fold cr-skipped" data-plain data-k="skipped"><summary>단계 이름 보기</summary><div class="fold-body"><p class="muted">${e(names.join(' · '))}</p></div></details>` });
       }
       tickWatch();
       drawSheet();

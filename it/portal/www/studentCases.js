@@ -1,5 +1,5 @@
 /* K1 내 사례(시스템 › 관리 › 내 설정의 「내 사례」 줄 — configBundle.js 가 [사례 보기]로 연다): 이 PC에서 만든 흐름 · 에이전트 · 스킬 · 도구 서버에 사례 이름 꼬리표를 붙여 묶고,
-   사례 하나를 출발본 파일로 받는다. 계정 · 소유권의 뜻은 없다.
+   사례 하나를 구성 파일로 받는다. 계정 · 소유권의 뜻은 없다.
    모양은 옆 판(디자인기준 4-19 — 표가 든 넓은 판): 머리(이름 · 한 문장 · 닫기) → 사례 고르기와 [이 사례 파일 받기] 한 줄 → 구성 표(구성 · 종류 · 구분 · 사례 이름 칸).
    서버: process GET /api/config/cases · PUT /api/config/cases/tag · GET /api/config/export?case= */
 (function () {
@@ -30,7 +30,7 @@
       try {
         const data = await request('/api/config/export?case=' + encodeURIComponent(filter));
         const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-        const link = document.createElement('a'); link.href = url; link.download = '내-사례-출발본.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+        const link = document.createElement('a'); link.href = url; link.download = '내-사례-구성-파일.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 5000);
         const selected = data.case_selection; message(`사례 구성 ${selected.direct_count}개와 연결 구성 ${selected.dependency_count}개를 파일로 받았습니다.${selected.dependencies.length ? ' 함께 담은 것: ' + selected.dependencies.map(d => d.name + ' (' + d.kind_name + ')').join(', ') : ''} 비밀 값은 포함하지 않습니다.`);
       } catch (e) { message(e.message, true); } finally { busy = false; exportState(); }
     });

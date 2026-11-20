@@ -28,7 +28,8 @@ const UI = {
   evaluationHtml(record, parent, opt = {}) {
     const info=this.evaluationInfo(record,parent);
     if(info.state==='execution') return '';
-    const text=info.state==='analysis' ? '규칙 비교 · 모의 순위 / 실제 승인 · 실행 준비는 확인하지 않음' : info.state==='structural' ? '구조 검사 / 실제 승인 · 실행 준비는 확인하지 않음' : '승인 · 실행 준비 검사 기록 확인 안 됨 · 실행 가능 여부 확인 안 됨';
+    // 실행 조건을 검사하지 않은 결과(규칙 비교 · 구조 검사 · 검사 기록이 어긋난 것)는 한 문장으로 말한다. 평가 범위 기록이 아예 없는 옛 기록은 승인이 막히지 않으므로(executionBlocked) 「실행하지 않습니다」라고 하지 않는다
+    const text=info.state==='unknown' && !info.recorded ? this.t('eval.noRecord') : this.t('eval.calcOnly');
     return `<div class="muted" role="status" data-evaluation-notice><p>${esc(text)}</p>${opt.raw===false ? '' : this.evaluationRawHtml(record,parent)}</div>`;
   },
   skillLabel(k, historical = false) {
@@ -55,7 +56,7 @@ const UI = {
     const counts = {file:0,prompt:0,failed:0,unknown:0};
     entries.forEach(k => counts[this.skillDelivery(k).kind]++);
     return [['file','파일 전달'],['prompt','프롬프트로 본문 전달'],['failed','전달 실패'],['unknown','전달 상태 기록 없음']]
-      .filter(([k])=>counts[k]).map(([k,n])=>`${n} ${counts[k]}개`).join(' · ') || '제공된 스킬 없음';
+      .filter(([k])=>counts[k]).map(([k,n])=>`${n} ${counts[k]}개`).join(' · ') || '넘긴 스킬 없음';
   },
   /* ---------- 명칭표 (UIUX_PLAN §4) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
   terms: {
@@ -84,10 +85,10 @@ const UI = {
     'form.err.required': '필수 항목을 입력하세요', 'form.err.reason': '사유를 입력하세요', 'form.err.byRole': '담당자 정보나 승인 기록의 역할을 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.', 'form.err.byRoleReason': '사유를 입력하세요. 사유를 적었는데도 이 안내가 보이면 화면을 새로 고친 뒤 다시 해 주세요.',
     // 카드 칩
     'chip.recommended': '추천', 'chip.chosen': '결정', 'chip.excluded': '제외', 'chip.control': '설비 제어', 'chip.workOrder': '정비 요청',
-    'card.score': '점수', 'card.approver': '승인 역할', 'card.precedent': '과거 같은 선택', 'card.precedentFixed': '미리 넣은 사례 기준', 'card.forecastTs1': '예상 유온', 'card.evidence': '근거 보기', 'card.expected': '예상 영향',
+    'card.score': '점수', 'card.approver': '승인 역할', 'card.precedent': '과거 같은 선택', 'card.precedentFixed': '지금 지식에 있는 선례만 셉니다 — 승인해도 늘지 않습니다', 'card.forecastTs1': '예상 유온', 'card.evidence': '근거 보기', 'card.expected': '예상 영향',
     'card.scoreHow': '점수 계산 방법', 'card.reviewed': '검토한 조치값', 'card.baseSop': '기준 절차', 'card.forecastLimits': '예측 조건과 한계', 'card.steps': '절차',
     'card.penalty': '감점', 'card.warn': '경고', 'card.noAction': '세부 동작 없음',
-    'score.bsc': '성과 지표', 'score.forecast': '예측', 'score.warn': '경고', 'score.penalty': '감점', 'score.precedent': '과거 선택', 'score.delivery': '납기', 'score.quality': '품질',
+    'score.bsc': '성과 지표', 'score.forecast': '예측 유온 여유', 'score.warn': '경고', 'score.penalty': '감점', 'score.precedent': '과거 선택', 'score.delivery': '납기', 'score.quality': '품질',
     // 조치 판단 규칙
     'dec.asset': '설비', 'dec.mode': '운전 모드', 'dec.state': '설비 상태', 'dec.fan': '팬 100 % 연속 운전 (시간)', 'dec.standby': '예비 펌프',
     'dec.empty': '설비와 이상 패턴을 고르고 판단을 실행하세요', 'dec.loading': '규칙을 사실에 대어 보는 중…',
@@ -103,7 +104,7 @@ const UI = {
     // 처리 건
     'inst.running': '진행 중',
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '설비에 경보가 나면 처리 건이 생깁니다. 결함 시뮬레이션에서 결함을 주입해 보세요', 'inst.select': '처리 건을 선택하세요',
-    'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '승인이나 입력이 필요한 단계가 열리면 여기에 나타나고 알림이 옵니다', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
+    'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '승인이나 입력이 필요한 단계가 열리면 여기에 나타나고 알림이 옵니다', 'inst.noConn': '흐름 엔진에 연결할 수 없습니다',
     'inst.started': '시작', 'inst.ended': '종료',
     'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동',
     'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
@@ -112,10 +113,10 @@ const UI = {
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보', 'var.incident':'사건', 'var._deferral':'보류 평가 기록',
     // 처리 건 변수의 화면 이름(정의 설명문에는 규칙 id · 클래스 이름이 섞여 화면 이름으로 쓰지 않는다)
-    'var.alert': '경보 메시지', 'var.guide_card': '원인 분석 카드', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '조치 카드 묶음', 'var.decision_id': '조치 카드 묶음 번호', 'var.commands': '설비 명령', 'var.chosen_option': '고른 조치 카드', 'var.incident_outcome': '사건 결과', 'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '지식 목록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
+    'var.alert': '경보 메시지', 'var.guide_card': '원인 진단 결과', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '추천안(판단 기록)', 'var.decision_id': '판단 기록 번호', 'var.commands': '설비 명령', 'var.chosen_option': '고른 안', 'var.incident_outcome': '사건 결과', 'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '지식 목록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
     'var.package_semantics':'정비 내용의 기록 의미','var.configured_base_package':'등록된 기본 정비 내용','val.base_interval_configuration':'등록된 기본 정비 설정 · 이번 차례 패키지 선택 아님',
     'inst.output': '출력', 'inst.due': '기한', 'inst.prevTask': '이전 단계',
-    'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '질의 보기',
+    'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '쿼리 보기',
     'inst.stepTable.step': '단계', 'inst.stepTable.status': '상태', 'inst.stepTable.who': '누가', 'inst.stepTable.when': '시각', 'inst.stepTable.result': '결과',
     'inst.closeReason': '이 단계를 닫는 사유', 'inst.cancelReason': '실행을 취소하는 사유',
     // 승인과 실행
@@ -127,7 +128,7 @@ const UI = {
     'plant.ts1': '유온', 'plant.ce': '냉각 효율', 'plant.cp': '냉각 능력', 'plant.fan': '팬 속도', 'plant.load': '펌프 부하', 'plant.ps1': '토출 압력', 'plant.fs1': '유량', 'plant.vs1': '팬 진동', 'plant.pump': '운전 펌프',
     'plant.health': '쿨러 성능 비율', 'plant.phase': '경보', 'plant.state': '설비 상태', 'plant.lastCmd': '최근 명령 결과',
     'plant.modes': '운전 모드', 'plant.noCmd': '아직 누른 단추와 검증된 명령이 없습니다',
-    'plant.noConn': '설비 값을 읽지 못했습니다', 'plant.noConnSub': '가상 설비(plant-sim)가 응답하면 저절로 다시 보입니다.',
+    'plant.noConn': '설비 값을 읽지 못했습니다', 'plant.noConnSub': '가상 설비가 응답하면 저절로 다시 보입니다.',
     'plant.standby': '예비', 'plant.none': '아직 없음', 'plant.faultOn': '결함 진행 중', 'plant.current': '현재 상태',
     // 홈
     'main.noConn': '설비 연결 끊김',
@@ -142,7 +143,7 @@ const UI = {
     'golden.ask': '확인 요청', 'golden.asking': '요청 중…', 'golden.askMore': '다른 질문 확인하기', 'golden.pending': '진행 중', 'golden.correcting': '교정 중', 'golden.done': '완료', 'golden.failed': '실패',
     'golden.checking': '질문 {n}개를 지식에 대어 보는 중…', 'golden.checkingSub': 'AI 에이전트가 이 문서가 넣은 지식만으로 답하는지 확인합니다',
     'golden.answerable': '답할 수 있음', 'golden.partial': '일부', 'golden.notYet': '아직 못 함', 'golden.grounded': '근거 있음', 'golden.confidence': '확신도',
-    'golden.conf.high': '높음', 'golden.conf.medium': '보통', 'golden.conf.low': '낮음', 'golden.evidence': '근거 보기', 'golden.cited': '인용한 지식 항목', 'golden.noCited': '인용한 항목 없음', 'golden.query': '질의 보기',
+    'golden.conf.high': '높음', 'golden.conf.medium': '보통', 'golden.conf.low': '낮음', 'golden.evidence': '근거 보기', 'golden.cited': '인용한 지식 항목', 'golden.noCited': '인용한 항목 없음', 'golden.query': '쿼리 보기',
     'golden.err.empty': '질문을 한 줄 이상 적으세요', 'golden.err.many': '질문은 최대 20개입니다', 'golden.err.load': '확인 결과를 읽지 못했습니다', 'golden.corrections': '형식 교정 {n}회',
     'inst.resultFile': '결과 파일로 제출',
     // A141 다이어트: 보조 정보 접기 · 에이전트 도구 이름 · 정의 이름
@@ -152,7 +153,7 @@ const UI = {
     'def.c3_cooling': '냉각 긴급 대응', 'def.c3_pm': '정기 정비', 'def.c3_spare': '예비품 구매',
     'def.manual_extraction': '매뉴얼 추출', 'def.manual_source_extraction': '문서 원천 추출', 'def.golden_questions': '매뉴얼 확인 질문', 'def.timeseries_question': '시계열 질문', 'def.business_question': '업무 질문', 'def.rule_question': '규칙 질문',
     'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
-    'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.rel.prevent': '예방 조치', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
+    'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '완화 조치', 'skill.rel.prevent': '예방 조치', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
     'skill.steps': '절차 — 한 줄에 한 단계', 'skill.stepsTitle': '절차', 'skill.linked': '연결된 지식', 'skill.causes': '해당 원인', 'skill.actions': '세부 동작', 'skill.rules': '적용 규칙', 'skill.affects': '영향 지표',
     'skill.allCauses': '고장 유형의 모든 원인', 'skill.noSteps': '절차 없음', 'skill.none': '없음', 'skill.noFm': '대상 고장 유형 없음', 'skill.add': '추가', 'skill.unsaved': '저장하지 않은 변경 사항',
     'skill.saved': '저장했습니다', 'skill.nameRequired': '이름을 입력하세요', 'skill.fromDoc': '등록한 매뉴얼에서 만든 조치 방법입니다. 매뉴얼 개정 화면에서 수정합니다.', 'skill.openDoc': '매뉴얼 개정 열기',
@@ -176,6 +177,8 @@ const UI = {
     'val.answered': '답함', 'val.unanswerable': '답할 수 없음', 'val.not_answerable': '답할 수 없음', 'val.ok': '정상', 'val.normal': '정상', 'val.abnormal': '비정상',
     'val.recovered': '회복', 'val.not_recovered': '미회복', 'val.approved': '승인', 'val.rejected': '반려', 'val.pending': '대기',
     'inst.cannotOpen': '이 처리 건은 열 수 없습니다',
+    // 실행 조건을 검사하지 않은 결과의 한 문장(UI.evaluationHtml · 처리 건의 AI 단계 · 승인 판이 같은 말을 쓴다)
+    'eval.calcOnly': '계산만 한 결과입니다 — 승인 · 실행하지 않습니다.', 'eval.noRecord': '실행 조건을 검사한 기록이 없습니다.',
     'empty.noData': '없음', 'loading': '불러오는 중…', 'error.load': '불러오지 못했습니다', 'more': '자세히', 'raw': '원문', 'yes': '예', 'no': '아니요',
   },
   t(key, vars) {
@@ -211,6 +214,18 @@ const UI = {
   ID_RE: /\b[a-z][a-z-]*:[A-Za-z0-9_][A-Za-z0-9_.:%-]*/g,
   name(id) { return (id && this.names[id]) || id || ''; },
   idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
+  // 값 칸(키트 .turn-facts — 승인 판의 「지금 유온 55.6 ℃」 줄과 같은 부품): facts = [[이름, 값, 단위]]. 이름은 작은 글, 값은 굵은 글, 단위는 값 뒤 작은 글
+  factCells(facts, attrs = '') { return (facts || []).length ? `<dl class="turn-facts"${attrs ? ' ' + attrs : ''}>${facts.map(([k, x, u]) => `<div><dt>${esc(k)}</dt><dd class="num">${esc(x)}${u ? `<small>${esc(u)}</small>` : ''}</dd></div>`).join('')}</dl>` : ''; },
+  // 시간 길이(소수 시간 — 납기까지 5.99 등)를 사람이 읽는 「5시간 59분」으로. 1시간 미만은 분만(「45분」), 분이 0이면 시간만(「6시간」). 분에서 반올림한다
+  hoursText(h) {
+    const v = Number(h); if (h == null || h === '' || !Number.isFinite(v)) return '';
+    const m = Math.round(Math.abs(v) * 60), H = Math.floor(m / 60), M = m % 60;
+    return (v < 0 && m ? '−' : '') + (H ? `${H.toLocaleString('ko-KR')}시간${M ? ` ${M}분` : ''}` : `${M}분`);
+  },
+  // 값 하나를 화면 말로(plainWords W.value) — 단위가 「시간」인 숫자만 hoursText 꼴로 적는다(처리 건 화면 · 승인 카드가 이 문을 쓴다)
+  valueText(key, v) { const W = window.hydWords; return typeof v === 'number' && Number.isFinite(v) && W.unit(key) === '시간' ? this.hoursText(v) : W.value(key, v); },
+  // 원문 인용(문서 적재의 anchor.quote — 원문 그대로의 글)을 보일 때: 줄 머리의 문서 서식 제목 표시(「### 」)만 뗀다. 낱말은 바꾸지 않는다(원문 대조용)
+  quoteText(text) { return String(text ?? '').replace(/^#{1,6}[ \t]+/gm, ''); },
   // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
   // 서버가 준 글(흐름 정의의 역할 설명 · 에이전트의 역할 · 목표)에 남은 「PLC 명령 발행」 · 「작업지시」도 정본 말(UIUX_PLAN 4절 — 설비에 명령 · 정비 요청)로 — 화면마다 따로 바꾸지 않는다.
@@ -244,11 +259,11 @@ const UI = {
     [/^approval discarded: (.+)$/, () => '승인 폐기'],
     [/^cancelled: instance closed by a person$/, () => '담당자가 처리 건을 닫아 취소'],
     [/^fired at (\S+)$/, m => `발생 ${m[1].replace('T', ' ').replace(/\.\d+Z?$|Z$/, '')}`],
-    [/^\[Rejected (\d+)\/(\d+)\] ?(.*)$/, m => `[형식 반려 ${m[1]}/${m[2]}] ${m[3]}`.trim()],
+    [/^\[Rejected (\d+)\/(\d+)\] ?(.*)$/, m => `[형식 검사에서 되돌려 보냄 ${m[1]}/${m[2]}] ${m[3]}`.trim()],
     [/^\[Error\] ?(.*)$/, m => `[오류] ${m[1]}`.trim()],
     [/^\[DELIVERY RETRY\] ?(.*)$/, m => `[전달 재시도] ${m[1]}`.trim()],
     [/^CMMS retry requested by (.+?) \((.+)\)$/, (m, U) => `${U.who(m[1])} 정비 요청 재시도`],
-    [/^\[Lease expired after (\d+) claims: run marked FAILED\]$/, m => `실행 임대 ${m[1]}회 만료 · 실패 처리`],
+    [/^\[Lease expired after (\d+) claims: run marked FAILED\]$/, m => `실행이 ${m[1]}번 끊겨 실패로 처리`],
     [/^submitted by (.+)$/, (m, U) => `${U.who(m[1])} 제출`],
     [/^waiting for the incident re-observation verdict$/, () => '효과 확인 결과 대기'],
     [/^cancelled: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 취소`],
@@ -256,7 +271,7 @@ const UI = {
     [/^rework superseded: (.+)$/, () => '다시 수행으로 대체됨'],
     // 서버가 까닭을 한국어로 적은 취소 줄(「cancelled: 조치 전 해소 — …」 · 「취소: …」): 영문 머리를 화면에 내지 않는다. 위의 정해진 꼴에 걸리지 않은 것만 여기로 온다
     [/^(?:cancelled|취소):\s*(.+)$/i, (m, U) => `취소 — ${U.idText(m[1])}`],
-    [/^\[Lease expired: reclaimed by (.+?) \(claim (\d+)\)\]$/, m => `실행 임대 만료 · 다른 작업자가 이어받음 (${m[2]}번째)`],
+    [/^\[Lease expired: reclaimed by (.+?) \(claim (\d+)\)\]$/, m => `실행이 끊겨 다른 실행기가 이어받음 (${m[2]}번째)`],
     [/^action\.cmd (CMD-[\w-]+) issued$/, m => `설비 명령 ${m[1]} 전송`],
     [/^waiting ACK$/, () => '설비 응답 대기'],
     [/^waiting ACK until (\S+)$/, (m, U) => `설비 응답 대기(${U.dateTime(m[1])}까지)`],   // instances.py 명령 전송 로그
@@ -266,7 +281,7 @@ const UI = {
     [/^cleared before any action$/, () => '조치 전에 경보 해제'],
     [/^cleared=(True|False) (\w+)=(-?[\d.]+|None) \(criterion (.+)\)$/, m => `경보 해제 ${m[1] === 'True' ? '예' : '아니요'} · ${m[2]} ${m[3] === 'None' ? '값 없음' : m[3]} (기준 ${m[4]})`],
     [/^alert (ALT-[\w-]+)$/, m => `경보 ${m[1]}`],
-    [/^source handler lease expired$/, () => '원천 처리기 임대 만료'],
+    [/^source handler lease expired$/, () => '접수 처리가 끊김'],
     [/^[A-Z_]{4,}$/, (m, U) => U.status(m[0])],
   ],
   /* ---------- A161-U1 화면 정리: 호스트 경로 → 파일 이름, 모델 이름 → "AI 모델", 내부 오류 문구 → 사용자 말 (원문은 접기에만) ---------- */
@@ -768,7 +783,7 @@ const UI = {
     rank: ['원인 후보 비교', '사전확률과 관측 근거로 원인 후보의 순위를 정합니다.'],
     t2_actions: ['조치 방법 조회', '원인에 연결된 조치, 허용 범위, 절차와 매뉴얼을 찾습니다.'],
     card: ['분석 결과 작성', '원인과 권장 조치를 근거와 함께 정리합니다.'],
-    guardrail: ['제약과 근거 검증', '권고가 정해진 제약을 지키고 근거를 갖추었는지 검사합니다.'],
+    guardrail: ['제약과 근거 검증', '추천안이 정해진 제약을 지키고 근거를 갖추었는지 검사합니다.'],
     submit: ['승인 절차로 전달', '판단 결과를 담당자가 검토할 수 있도록 전달합니다.'],
     enterprise: ['관련 업무 판단 연결', '설비 문제와 연결된 생산·정비·품질 판단을 실행합니다.'],
     ontology_context: ['판단에 필요한 지식 조회', '상황에 연결된 조치 방법, 성과 지표와 규정을 찾습니다.'],
@@ -778,7 +793,7 @@ const UI = {
     impacts: ['대안별 영향 계산', '각 대안이 성과 지표에 미치는 금액 영향을 계산합니다.'],
     policies: ['규정 위반 확인', '제외할 대안과 불이익을 반영할 대안을 구분합니다.'],
     perspectives: ['부서와 전사 관점 비교', '부서별 목표와 회사 전체 목표에서 유리한 대안을 비교합니다.'],
-    recommend: ['권고안 정리', '권고안, 선택 근거와 필요한 승인 역할을 정리합니다.'],
+    recommend: ['추천안 정리', '추천안, 선택 근거와 필요한 승인 역할을 정리합니다.'],
     error: ['처리 실패', '실패 원인은 아래 처리 기록에서 확인할 수 있습니다.'],
   },
   revealDetail(detail) {
@@ -1109,18 +1124,26 @@ if (typeof document !== 'undefined') document.addEventListener('click', e => { c
 /* 처리 건 목록의 묶음 셋(내 차례 · 진행 중 · 처리 완료)을 세는 곳 — 정본은 여기 하나다. 처리 건 화면의 목록(instances.js renderList), 홈의 단계 카드(main.js · app.js refreshCases),
    메뉴 「처리 건」 곁의 건수 점(app.js refreshTodoCount)이 모두 이 함수로 센다. 같은 이름(「내 차례」 · 「진행 중」 · 「처리 완료」)이 화면마다 다른 수를 내지 않게, 세는 식의 사본을 다른 파일에 두지 않는다.
      all · running: GET /api/instances?limit=50 과 그 status=RUNNING(서버가 거른 것), done: 「더 보기」로 편 뒤 서버가 상태로 거른 끝난 건(없으면 null), todo: GET /api/todolist?status=IN_PROGRESS 의 행.
-   돌려주는 값: mine(내 차례 — 사람이 처리할 단계 하나가 한 줄, 에이전트의 질문 먼저) · open(진행 중 — 내 차례 묶음에 있는 건은 또 세지 않는다) · done(끝난 건 — 질문 · 문서 추출 같은 시스템 작업도 처리 건이다)
-   · doneText(묶음 머리의 수 — 한 번에 읽는 건수를 채웠으면 「50+」). */
+   돌려주는 값: mine(내 차례 — 사람이 처리할 단계 하나가 한 줄, 에이전트의 질문 먼저) · open(진행 중 — 내 차례 묶음에 있는 건은 또 세지 않는다) · done(끝난 건)
+   · doneText(묶음 머리의 수 — 한 번에 읽는 건수를 채웠으면 「50+」) · jobs(시스템 작업 — 진행 중이든 끝났든 한 묶음, 최근 것부터).
+   진행 중 · 처리 완료와 그 수는 사건 처리 건만 센다. 사건이 아닌 시스템 작업(질문하기 · 문서 추출처럼 다른 화면이 여는 흐름의 처리 건)은 jobs 한 묶음으로 따로 낸다 —
+   문서 한 건을 추출하고 사건 한 건을 처리한 사람에게 홈이 「2건 처리 완료」라고 말하지 않게(사용자 2026-11-20). 내 차례는 사람이 할 일이라 시스템 작업 안의 차례(에이전트가
+   사람에게 되묻는 질문 등)도 세고 그 건은 내 차례 묶음에만 둔다 — 할 일이 수에서 숨지 않게. 가르는 기준은 서버가 준 흐름 정의 id 하나다(isSystemJob). */
 const CASE_WINDOW = 50;      // 목록 한 번에 읽는 건수
 // 사람이 처리할 단계인가. 맡은 쪽이 AI 에이전트(agent:…)나 시스템(sys:…)인 작업 행은 워커가 아직 가져가기 전(agent_orch 가 비어 있는 순간)에도 사람 단계가 아니다
 const isHumanTask = t => UI.doerOf(t) === 'human' && !/^(agent:|sys:)/.test(String(t.user_id || ''));
+// 사건이 아닌 시스템 작업: 다른 화면(질문하기 · 문서 등록 · 옛 DB 뜻 복원)이 여는 흐름의 처리 건. 처리 건 행과 담당 작업 행 모두 흐름 정의 id(proc_def_id)를 싣는다
+const SYSTEM_DEFS = new Set(['ask_agent', 'manual_extraction', 'manual_source_extraction', 'manual_golden_check', 'golden_questions', 'legacy_column_meaning', 'timeseries_question', 'business_question', 'rule_question']);
+const isSystemJob = x => SYSTEM_DEFS.has(String((x && x.proc_def_id) || '').split('.')[0]);
 function caseGroups({ all = [], running = [], done = null, todo = [] }) {
   const asked = todo.filter(t => t.draft_status === 'HUMAN_ASKED');
   const mine = asked.concat(todo.filter(t => isHumanTask(t) && !asked.some(a => a.id === t.id)));
   const turn = new Set(mine.map(t => t.proc_inst_id)), seen = new Set();
   const rows = running.concat(all, done || []).filter(x => !seen.has(x.proc_inst_id) && seen.add(x.proc_inst_id));
-  const ended = (done || all).filter(x => x.status !== 'RUNNING');
-  return { mine, rows, open: rows.filter(x => x.status === 'RUNNING' && !turn.has(x.proc_inst_id)), done: ended,
-           doneText: `${ended.length}${(done ? ended.length : all.length) >= CASE_WINDOW ? '+' : ''}`, more: all.length >= CASE_WINDOW };
+  const ended = (done || all).filter(x => x.status !== 'RUNNING' && !isSystemJob(x));
+  // 한 번에 읽는 건수를 채웠는지는 읽은 줄 수로 본다(시스템 작업을 빼기 전) — 채웠으면 뒤에 사건이 더 있을 수 있다
+  const full = (done || all).length >= CASE_WINDOW;
+  return { mine, rows, open: rows.filter(x => x.status === 'RUNNING' && !turn.has(x.proc_inst_id) && !isSystemJob(x)), done: ended,
+           jobs: rows.filter(x => isSystemJob(x) && !turn.has(x.proc_inst_id)), doneText: `${ended.length}${full ? '+' : ''}`, more: all.length >= CASE_WINDOW };
 }
-window.hydCases = { groups: caseGroups, isHumanTask, WINDOW: CASE_WINDOW };
+window.hydCases = { groups: caseGroups, isHumanTask, isSystemJob, WINDOW: CASE_WINDOW };

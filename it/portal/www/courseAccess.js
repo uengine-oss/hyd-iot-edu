@@ -1,8 +1,10 @@
 /* 수업 경계 — 정본은 서버다(GET /api/course-access = it/process/procsvc/course_policy.py 의 Policy.view()). 화면은 그 표를 읽기만 한다.
-   ① 메뉴 줄 맨 아래 한 줄(#courseStatus): 지금 단계(제공 자료만 사용 / 자유 구성 (PBL), PBL 기한이 지났으면 그 사실).
-   ② 막힌 행동: 행동 키를 단 요소(data-course-action="tool_servers.register" 등)만 끄고 서버가 준 까닭을 보인다. 메뉴는 잠그지 않는다.
-      화면 모듈은 그릴 때 attrs(키)로 속성을 달고, 표가 늦게 오거나 바뀌면 apply()가 그 요소들만 다시 맞춘다(문서 전체 관찰자 없음).
-   ③ 값마다 갈리는 판정: 배정할 수 있는 정의 · 시작할 수 있는 정의 · 가져올 수 있는 흐름 · 수업 모델 · 제공 문서만 받는지. 막힌 까닭은
+   ① 메뉴 줄 맨 아래 한 줄(#courseStatus): PBL 기간과 그 기한, PBL 기간이 끝났으면 그 사실만. PBL 선언이 없던 때에는 줄이 없다 —
+      늘 같은 그 상태를 메뉴 아래에 띄우면 학생이 읽을 것이 없는 글만 남는다.
+   ② 막힌 행동: 행동 키를 단 단추(data-course-action="tool_servers.register" 등)는 aria-disabled 로 둔다(키보드 · 터치로 닿는다). 까닭은 늘 붙이지 않고,
+      학생이 그 단추를 누르거나 Enter · Space 를 칠 때만 동작을 막고(요청을 보내지 않는다) 단추 바로 뒤 한 줄(data-course-why)에 서버가 준 까닭을 보인다.
+      메뉴는 잠그지 않는다. 화면 모듈은 그릴 때 attrs(키)로 속성을 달고, 표가 늦게 오거나 바뀌면 apply()가 그 요소들만 다시 맞춘다(문서 전체 관찰자 없음).
+   ③ 값마다 갈리는 판정: 배정할 수 있는 정의 · 시작할 수 있는 정의 · 가져올 수 있는 흐름 · 모델 · 제공 문서만 받는지. 막힌 까닭은
       서버가 준 문장(표의 reasons — 거절 응답과 같은 문장)만 보인다. 화면에 규칙 문장 사본이 없다.
    ④ PBL 기한: 서버는 판정할 때마다 기한을 지금 시각과 견준다. 화면은 기한 시각에 표를 한 번 다시 읽는다.
    조회 실패는 잠금이 아니다 — 「단계 정보 읽기 실패 · 다시 시도」를 띄우고 정해진 횟수만 다시 읽는다. 그동안 단추는 그대로 두고
@@ -19,7 +21,7 @@
     if (!a) return '';
     return a.allowed === false ? a.reason : '';
   }
-  // 목록 판정의 까닭: 서버 문장(수업 단계에서만 있다)
+  // 목록 판정의 까닭: 서버 문장(PBL 기간이 아닐 때만 있다)
   const reason = key => (C.access && C.access.reasons && C.access.reasons[key]) || '';
   // 목록 판정: 서버 값이 null 이면 PBL(제한 없음), 목록이면 그 안의 것만
   const outside = (list, id) => Array.isArray(list) && !list.includes(id);
@@ -34,29 +36,32 @@
     return only && flowId !== only ? reason('import_flow') : '';
   }
 
-  // 그릴 때 다는 속성: 행동 키 + (지금 막혔으면) 꺼짐 · 까닭
+  // 그릴 때 다는 속성: 행동 키 + (지금 막혔으면) aria-disabled · 막힘 표시. 까닭 문장은 속성에 싣지 않는다 — 누를 때 표에서 읽는다(press)
   function attrs(key) {
-    const why = blocked(key);
-    return ` data-course-action="${esc(key)}"` + (why ? ` disabled data-course-off="1" title="${esc(why)}"` : '');
+    return ` data-course-action="${esc(key)}"` + (blocked(key) ? ' aria-disabled="true" data-course-off="1"' : '');
   }
-  // 이미 그려진 요소를 지금 표에 맞춘다. 수업 경계 때문에 끈 것만 다시 켠다(다른 까닭으로 꺼진 단추는 건드리지 않는다).
-  // 꺼진 단추는 키보드 · 터치로 초점이 가지 않아 title 을 못 읽는다 — 까닭은 단추 바로 뒤 한 줄(data-course-why)로도 보인다(W3-07).
-  // 화면 모듈은 attrs 로 그린 뒤 apply(그린 영역)를 부른다.
+  // 이미 그려진 요소를 지금 표에 맞춘다. 수업 경계 때문에 막은 것만 다시 연다(다른 까닭으로 꺼진 단추는 건드리지 않는다).
+  // 열린 단추 뒤에 남은 까닭 줄은 지운다. 화면 모듈은 attrs 로 그린 뒤 apply(그린 영역)를 부른다.
+  const whyLine = node => { const next = node.nextElementSibling; return next && next.hasAttribute('data-course-why') ? next : null; };
   function apply(root = document) {
     root.querySelectorAll('[data-course-action]').forEach(node => {
-      const why = blocked(node.dataset.courseAction);
-      const next = node.nextElementSibling;
-      const line = next && next.hasAttribute('data-course-why') ? next : null;
-      if (why) {
-        node.disabled = true; node.dataset.courseOff = '1'; node.title = why;
-        const hint = line || node.insertAdjacentElement('afterend', Object.assign(document.createElement('span'), { className: 'muted' }));
-        hint.setAttribute('data-course-why', ''); hint.textContent = why;
-      } else {
-        if (node.dataset.courseOff) { node.disabled = false; delete node.dataset.courseOff; node.removeAttribute('title'); }
-        if (line) line.remove();
-      }
+      if (blocked(node.dataset.courseAction)) { node.setAttribute('aria-disabled', 'true'); node.dataset.courseOff = '1'; return; }
+      if (node.dataset.courseOff) { node.removeAttribute('aria-disabled'); delete node.dataset.courseOff; }
+      whyLine(node)?.remove();
     });
   }
+  // 막힌 단추를 눌렀다(마우스 · 터치 · 키보드의 Enter · Space 모두 click 으로 온다): 그 단추의 동작을 막고 — 화면 모듈의 처리기보다 먼저(문서의 잡는 단계) —
+  // 단추 바로 뒤에 서버 까닭 한 줄을 보인다(다시 눌러도 한 줄). role=status 라 화면 낭독기도 그때 읽는다(W3-07: 꺼진 단추는 초점이 가지 않아 까닭을 읽을 길이 없었다)
+  function press(ev) {
+    const node = ev.target.closest && ev.target.closest('[data-course-off]');
+    if (!node) return;
+    const why = blocked(node.dataset.courseAction);
+    if (!why) { apply(node.parentElement || document); return; }      // 표가 그새 열렸다 — 이번 누름부터 그대로 지나간다
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    const hint = whyLine(node) || node.insertAdjacentElement('afterend', Object.assign(document.createElement('span'), { className: 'muted' }));
+    hint.setAttribute('data-course-why', ''); hint.setAttribute('role', 'status'); hint.textContent = why;
+  }
+  document.addEventListener('click', press, true);
 
   function banner() {
     const box = document.getElementById('courseStatus');
@@ -69,20 +74,18 @@
       box.querySelector('[data-course-retry]')?.addEventListener('click', () => { C.tries = 0; refresh(); });
       return;
     }
-    const until = a.expires ? UI.dateTime(a.expires) : '';
-    // 단계를 「무엇이 정해져 있는가」로 말한다: 제공된 문서 · 흐름 · 모델만 쓰는 단계(course) / 제한 없이 쓰는 단계(pbl). 화면의 다른 자리도 이 두 이름만 쓴다.
-    // 누르면(키보드 · 터치 포함) 지금 막힌 행동과 까닭이 펼쳐진다 — 까닭은 서버 표가 준 문장 그대로다(화면에 규칙 사본 없음)
-    const label = a.phase === 'pbl' ? `제한 없이 쓰는 단계 (PBL)${until ? ` · ${until}까지` : ''}`
-      : a.expired ? '제공된 문서 · 흐름 · 모델만 쓰는 단계 (PBL 기한 지남)' : '제공된 문서 · 흐름 · 모델만 쓰는 단계';
-    const tone = a.phase === 'pbl' ? 'run' : a.expired ? 'warn' : '';
-    const closed = Object.values(a.actions || {}).filter(x => x && x.allowed === false).map(x => x.reason);
-    const notes = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 제공된 문서 · 흐름 · 모델만 쓰는 단계로 돌아왔습니다.` : ''].filter(Boolean);
-    const was = !!box.querySelector('details[open]');
     box.removeAttribute('title');
-    box.innerHTML = closed.length || notes.length
-      ? `<details${was ? ' open' : ''}><summary${tone ? ` data-tone="${tone}"` : ''}>${UI.icon('chevron-right')}<span>${esc(label)}</span></summary><div class="course-why">` +
-        notes.map(n => `<p>${esc(n)}</p>`).join('') + (closed.length ? `<p>이 단계에서 막힌 행동 ${closed.length}가지</p><ul>${closed.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '') + '</div></details>'
-      : `<span${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
+    // PBL 선언이 없던 때는 그리지 않는다 — 막힌 행동의 까닭은 학생이 그 단추를 누를 때 그 자리에서 말한다(press)
+    if (a.phase !== 'pbl' && !a.expired) { box.innerHTML = ''; return; }
+    const until = a.expires ? UI.dateTime(a.expires) : '';
+    // PBL 기간이면 그 기한을, 기한이 지났으면 끝났다는 사실만 말한다. 강사가 선언에 적은 한 줄(note)과 끝난 기한은 누르면(키보드 · 터치 포함) 펼쳐진다
+    const label = a.phase === 'pbl' ? `PBL 기간${until ? ` · ${until}까지` : ''}` : 'PBL 기간이 끝났습니다';
+    const tone = a.phase === 'pbl' ? 'run' : 'warn';
+    const notes = [a.note, a.expired && until ? `PBL 기간은 ${until}까지였습니다.` : ''].filter(Boolean);
+    const was = !!box.querySelector('details[open]');
+    box.innerHTML = notes.length
+      ? `<details${was ? ' open' : ''}><summary data-tone="${tone}">${UI.icon('chevron-right')}<span>${esc(label)}</span></summary><div class="course-why">${notes.map(n => `<p>${esc(n)}</p>`).join('')}</div></details>`
+      : `<span data-tone="${tone}">${esc(label)}</span>`;
   }
 
   // 서버 표가 이 화면이 읽는 모양인가 — 막힌 행동 · 목록 판정에는 서버 까닭 문장이 있어야 한다(없으면 화면이 문장을 지어내지 않고 실패로 본다)
@@ -91,7 +94,7 @@
     if (Object.values(a.actions).some(x => !x || (x.allowed === false && !x.reason))) return false;
     return a.phase === 'pbl' || ['assign', 'start', 'import_flow', 'document'].every(k => a.reasons && a.reasons[k]);
   }
-  // PBL 기한 시각에 한 번 다시 읽는다(서버가 그때부터 수업 단계로 판정한다)
+  // PBL 기한 시각에 한 번 다시 읽는다(서버가 그때부터 PBL 선언이 없던 때처럼 판정한다)
   function watchExpiry() {
     clearTimeout(C.expiry); C.expiry = 0;
     const a = C.access;
@@ -105,7 +108,7 @@
     C.loading = true; clearTimeout(C.timer); C.timer = 0;
     try {
       const next = await getJ(API.process + '/api/course-access');
-      if (!wellFormed(next)) throw new Error('단계 정보 응답 형식이 올바르지 않습니다 — 서비스가 이 화면과 다른 판일 수 있습니다.');
+      if (!wellFormed(next)) throw new Error('단계 정보 응답 형식이 올바르지 않습니다 — 서비스가 이 화면과 다른 판본일 수 있습니다.');
       C.access = next; C.error = ''; C.tries = 0;
     } catch (e) {
       C.access = null; C.error = e.message || String(e);
@@ -120,11 +123,11 @@
     onChange(fn) { listeners.push(fn); },
     get access() { return C.access; },
     get error() { return C.error; },
-    // 수업 모델(두 단계 모두 하나 — 서버 값). 아직 모르면 null
+    // 이 포털에 연결된 모델(PBL 기간이든 아니든 하나 — 서버 값). 아직 모르면 null
     get model() { return C.access ? C.access.model : null; },
     // 질문 길이 한도(서버 값 — 질문 계약 한 곳). 아직 모르면 null
     get questionMaxChars() { return C.access ? C.access.question_max_chars : null; },
-    // 수업 단계 교대 등록에서 바꿀 수 있는 칸 {flow_name, agent_tasks} — PBL 이면 null
+    // 교대 흐름 등록에서 바꿀 수 있는 칸 {flow_name, agent_tasks} — PBL 기간이면 null(모든 칸)
     get handoverEditable() { return C.access ? C.access.handover_editable : null; },
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refresh); else refresh();

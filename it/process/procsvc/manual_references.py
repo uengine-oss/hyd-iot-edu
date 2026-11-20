@@ -60,7 +60,7 @@ def contracts(tx, ids=None):
 
 def reference_shape(sop, link):
     if link.get('kind') != 'reference' or link.get('executable') is not False:
-        raise ValueError(f'{sop}: 참고 절차는 종류를 「일반 원문 참고 절차」(kind=reference)로, 실행 후보에서 빼야(executable=false) 합니다')
+        raise ValueError(f'{sop}: 참고 절차는 종류를 「참고 절차」(kind=reference)로, 사용 방식을 「원문만 보관」(executable=false)으로 둡니다')
     forbidden = ('failureMode', 'relation', 'approver', 'actions', 'addresses', 'affects', 'parts', 'supplier_policy', 'purchase_comparison_policy')
     if any(link.get(key) not in (None, [], {}) for key in forbidden) or link.get('scope') not in (None, 'fault'):
         raise ValueError(f'{sop}: 참고 절차에는 고장 유형 · 관계 · 승인 역할 · 원자 조치 · 대상 원인 · 영향 · 구매 칸을 붙이지 않습니다(원문 제안은 검토 기록에 남습니다)')
@@ -73,7 +73,7 @@ def binding_shape(procedure, link):
     if not target and pin is None:
         return {}
     if link.get('kind') != 'reference':
-        raise ValueError(f"{procedure['id']}: 이미 있는 조치 방법은 일반 원문 참고 절차로만 다시 가리킵니다(그 조치 방법의 소유 · 실행 계약은 가져오지 않습니다)")
+        raise ValueError(f"{procedure['id']}: 이미 있는 조치 방법은 참고 절차로만 다시 가리킵니다(그 조치 방법의 소유 · 실행 계약은 가져오지 않습니다)")
     if not isinstance(target, str) or not re.fullmatch(r'skill:[a-z0-9][a-z0-9:_.-]*', target):
         raise ValueError(f"{procedure['id']}: 다시 가리킬 조치 방법(skill:…)을 고르세요")
     if not isinstance(pin, str) or not re.fullmatch(r'[0-9a-f]{64}', pin):

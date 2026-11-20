@@ -37,7 +37,7 @@ SERVER_NAMES = {"all": "hyd-enterprise-mcp", "maintenance": "hyd-enterprise-main
 WHAT = {"all": "업무 시스템(ERP · MES · CMMS · QMS · SCM · EMS)", "maintenance": "보전 업무(CMMS 정비 계획 · 운전시간 계수기 · 작업지시 · MES 생산 오더)",
         "purchasing": "구매 업무(ERP 예비품 재고 · SCM 공급사 견적)"}
 mcp = FastMCP(SERVER_NAMES[TOOLSET], instructions=(
-    f"유압설비 교육 공장의 {WHAT[TOOLSET]}을 읽는 도구다. 금액은 만원, 시간은 h. "
+    f"유압 설비 공장의 {WHAT[TOOLSET]}을 읽는 도구다. 금액은 만원, 시간은 h. "
     "값은 현재 DB 의 것이며 바뀔 수 있다. 쓰기는 없다 — 조치 실행은 사람이 승인한 뒤 process 서비스가 한다."))
 def reader_connection():
     return connect_reader(DSN)
@@ -51,7 +51,7 @@ Asset = Annotated[str, Field(description="설비 코드 (HYD-01 | HYD-02 | HYD-0
 
 @mcp.tool(annotations=READ)
 def mes_orders(asset: Asset) -> dict:
-    """MES: 이 설비가 지금 돌리는 생산오더 (납기까지 남은 시간 due_in_h, 남은 수량, 시간당 생산 가치, 대체 설비)."""
+    """MES: 이 설비가 지금 돌리는 생산 오더 (납기까지 남은 시간 due_in_h, 남은 수량, 시간당 생산 가치, 대체 설비)."""
     return guarded(tools.read)("mes_orders", asset=asset)
 
 

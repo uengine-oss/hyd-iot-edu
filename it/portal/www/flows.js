@@ -121,9 +121,9 @@
   // alertPolicy.unsupported — 기본 상태에서는 오일 분석 입력의 기준 이탈이 이리로 온다). 사람이 직접 시작하는 흐름이 아니다
   function usedBy(x) {
     if (x.mine) return null;
-    if (x.id === 'alert_triage') return { tab: 'oil', tag: '경보가 엶', sub: '처리 흐름이 정해지지 않은 경보가 나면 열립니다', link: '오일 분석 입력에서 경보 내기' };
+    if (x.id === 'alert_triage') return { tab: 'oil', tag: '경보로 열림', sub: '처리 흐름이 정해지지 않은 경보가 나면 열립니다', link: '오일 분석 입력에서 경보 내기' };
     const tab = USED_BY[x.id], name = tab && UI.t('nav.' + tab);
-    return tab ? { tab, tag: `${name}${window.hydWords.josa(name, '이/가')} 씀`, sub: `${name} 화면이 시작합니다`, link: `${name}에서 시작` } : null;
+    return tab ? { tab, tag: `${name} 화면이 씀`, sub: `${name} 화면이 시작합니다`, link: `${name}에서 시작` } : null;
   }
   function stateTag(x) {
     const by = usedBy(x);

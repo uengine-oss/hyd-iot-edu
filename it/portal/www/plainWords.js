@@ -11,7 +11,7 @@
   /* ---------------------------------------------------------------- 시스템 (어디에 물었나 · 어디에 했나) */
   // 도구 서버 표시 이름 — 포털 전체(도구 연결 · 에이전트 · 시험 비교 · 질문 · 처리 기록)가 이 표 하나를 쓴다
   const SERVERS = {
-    neo4j: '지식 그래프', 'hyd-dmn': '판단 시스템', enterprise: '업무 자료 (생산 · 구매 · 정비)', 'enterprise-maint': '정비 업무 자료',
+    neo4j: '지식 그래프', 'hyd-dmn': '판단 서비스', enterprise: '업무 자료 (생산 · 구매 · 정비)', 'enterprise-maint': '정비 업무 자료',
     'enterprise-purchase': '구매 업무 자료', 'hyd-effects': '메일 · 알림', effects: '메일 · 알림',
   };
   // 등록한 설명이 한국어면 그것, 아니면 위 표, 둘 다 없으면 서버 이름 그대로(학생이 지은 이름은 내부어가 아니다)
@@ -448,36 +448,36 @@
     'mcp__neo4j__read_neo4j_cypher': { name: '지식 그래프 조회', sys: '지식 그래프', ask: i => cypherAsk(i.query), got: rowsGot },
     'mcp__neo4j__get_neo4j_schema': { name: '지식 그래프 구조 보기', sys: '지식 그래프', ask: () => '어떤 종류의 노드 · 관계가 있나' },
     'mcp__neo4j__write_neo4j_cypher': { name: '지식 그래프 쓰기', sys: '지식 그래프', ask: i => cypherAsk(i.query) },
-    'mcp__hyd-dmn__diagnose': { name: '원인 진단', sys: '판단 시스템', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
+    'mcp__hyd-dmn__diagnose': { name: '원인 진단', sys: '판단 서비스', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
       got: o => { const d = doc(parse(o)) || {}; const c = (d.causes || []).find(x => x.id === d.topCause) || (d.causes || [])[0]; return c ? `가장 유력한 원인 ‘${c.name}’ (점수 ${W.num(c.score)})` : ''; } },
-    'mcp__hyd-dmn__business_causes': { name: '업무 경보 원인 찾기', sys: '판단 시스템 · 지식 그래프', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
+    'mcp__hyd-dmn__business_causes': { name: '업무 경보 원인 찾기', sys: '판단 서비스 · 지식 그래프', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
       got: o => { const d = doc(parse(o)) || {}; return [d.cause && `원인 ‘${nm(d.cause)}’`, d.failure_mode && `고장 유형 ‘${nm(d.failure_mode)}’`, d.part && `부품 ${nm(d.part)}`].filter(Boolean).join(' · '); } },
-    'mcp__hyd-dmn__purchase_context': {name:'구매 부품 근거 조회',sys:'판단 시스템 · 구매 · 재고 관리 · 지식 그래프',ask:i=>W.purchaseAsk('purchase_context',i),got:o=>W.purchaseGot('purchase_context',o)},
-    'mcp__hyd-dmn__evaluate_purchase': {name:'구매 후보 비교',sys:'판단 시스템',ask:i=>W.purchaseAsk('evaluate_purchase',i),got:o=>W.purchaseGot('evaluate_purchase',o)},
-    'mcp__hyd-dmn__submit_purchase': {name:'구매 판단 등록 (승인 전)',sys:'판단 시스템 → 처리 건',ask:i=>W.purchaseAsk('submit_purchase',i),got:o=>W.purchaseGot('submit_purchase',o)},
+    'mcp__hyd-dmn__purchase_context': {name:'구매 부품 근거 조회',sys:'판단 서비스 · 구매 · 재고 관리 · 지식 그래프',ask:i=>W.purchaseAsk('purchase_context',i),got:o=>W.purchaseGot('purchase_context',o)},
+    'mcp__hyd-dmn__evaluate_purchase': {name:'구매 후보 비교',sys:'판단 서비스',ask:i=>W.purchaseAsk('evaluate_purchase',i),got:o=>W.purchaseGot('evaluate_purchase',o)},
+    'mcp__hyd-dmn__submit_purchase': {name:'구매 판단 등록 (승인 전)',sys:'판단 서비스 → 처리 건',ask:i=>W.purchaseAsk('submit_purchase',i),got:o=>W.purchaseGot('submit_purchase',o)},
     'mcp__hyd-dmn__timeseries_query': { name: '센서 기록 조회', sys: '센서 기록', ask: sqlAsk },
     'mcp__hyd-dmn__timeseries_schema': { name: '센서 기록 구조 보기', sys: '센서 기록' },
-    'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 시스템', ask: i => nm(i.decision || ''),
+    'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 서비스', ask: i => nm(i.decision || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) && d[0] ? `‘${d[0].decisionName || nm(d[0].decision)}’ 규칙 ${(d[0].rules || []).length || d.length}개` : ''; } },
-    'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
-      got:o=>{const d=doc(parse(o)), options=d?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과를 읽지 못했습니다(펼쳐서 원문 보기)';   // 판단 시스템 read_outcome 꼴: 맨 위 options · recommended
+    'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 서비스', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
+      got:o=>{const d=doc(parse(o)), options=d?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과를 읽지 못했습니다(펼쳐서 원문 보기)';   // 판단 서비스 read_outcome 꼴: 맨 위 options · recommended
         const chosen=options.find(x=>x.id===d.recommended);
         return [d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 대안 없음' : d.status==='EVALUATED' ? '대안 비교 완료' : '평가 상태 기록 확인 필요',`대안 ${options.length}개`,options.some(x=>x.feasible===false) ? `제외 ${options.filter(x=>x.feasible===false).length}개` : '',chosen?.name ? `당시 추천 ‘${chosen.name}’` : '', '조회와 계산만 한 결과입니다(판단 등록 전)'].filter(Boolean).join(' · '); } },
-    'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
+    'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 서비스', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
       got: o => factsLine((doc(parse(o)) || {}).facts) },
-    'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 시스템', ask: i => nm(i.failure_mode || ''),
+    'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 서비스', ask: i => nm(i.failure_mode || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) ? `${d.length}건 · ${list(d.map(x => nm(x.skill)), 2)}` : ''; } },
-    'mcp__hyd-dmn__submit_decision': { name: '판단 제출', sys: '판단 시스템', ask: i => i.recommended ? `추천 ‘${nm(i.recommended)}’` : (i.asset || ''),
+    'mcp__hyd-dmn__submit_decision': { name: '판단 제출', sys: '판단 서비스', ask: i => i.recommended ? `추천 ‘${nm(i.recommended)}’` : (i.asset || ''),
       got: o => { const d = doc(parse(o)) || {}; return d.id ? `판단을 저장했습니다${d.recommended ? ` · 추천 ‘${nm(d.recommended)}’` : ''}` : ''; } },      // 판단 번호(DEC-…)는 문장에 넣지 않는다 — 원문 보기와 처리 건의 번호 조각에 있다
-    'mcp__hyd-dmn__forecast_actions': { name: '조치 효과 예측', sys: '판단 시스템' },
-    'mcp__hyd-dmn__tradeoffs': { name: '성과 지표 득실 경로', sys: '판단 시스템 · 지식 그래프' },
-    'mcp__hyd-dmn__inputs': { name: '판단 입력 보기', sys: '판단 시스템' },
-    'mcp__hyd-dmn__read_evaluation_evidence': { name: '대안 평가 근거 이어 읽기', sys: '판단 시스템', ask: i => i.field || '' },
-    'mcp__hyd-dmn__fabric_query': { name: '두 자료 묶어 보기', sys: '판단 시스템 · 센서 기록 · 업무 자료', ask: i => [i.asset, i.query].filter(Boolean).join(' · ') },
+    'mcp__hyd-dmn__forecast_actions': { name: '조치 효과 예측', sys: '판단 서비스' },
+    'mcp__hyd-dmn__tradeoffs': { name: '성과 지표 득실 경로', sys: '판단 서비스 · 지식 그래프' },
+    'mcp__hyd-dmn__inputs': { name: '판단 입력 보기', sys: '판단 서비스' },
+    'mcp__hyd-dmn__read_evaluation_evidence': { name: '대안 평가 근거 이어 읽기', sys: '판단 서비스', ask: i => i.field || '' },
+    'mcp__hyd-dmn__fabric_query': { name: '두 자료 묶어 보기', sys: '판단 서비스 · 센서 기록 · 업무 자료', ask: i => [i.asset, i.query].filter(Boolean).join(' · ') },
     'mcp__enterprise__mes_orders': { name: '생산 주문 조회', sys: '생산 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__enterprise__erp_contract': { name: '계약 조회', sys: '구매 · 재고 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__enterprise__erp_inventory': { name: '완제품 재고 조회', sys: '구매 · 재고 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
-    'mcp__enterprise__query': { name: '업무 자료 질의', sys: '업무 자료', ask: sqlAsk, got: rowsGot },
+    'mcp__enterprise__query': { name: '업무 자료 쿼리', sys: '업무 자료', ask: sqlAsk, got: rowsGot },
     'mcp__hyd-effects__send_mail': { name: '메일 보내기', sys: '메일', ask: i => `${i.to || ''}${i.subject ? ` · 제목 ‘${i.subject}’` : ''}`, got: o => W.mailReceipt(o) ? '보냄 · 발송 영수증 확인' : '메일 발송 영수증을 확인할 수 없습니다' },
   };
   // 업무 MCP 는 서버가 셋(전부 · 정비용 · 구매용)이라 도구 이름으로 한 번 더 찾는다

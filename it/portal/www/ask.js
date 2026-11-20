@@ -1,7 +1,7 @@
 /* B5 에이전트에게 질문하기 — window.hydAsk.mount(el). 주소 #/ask
    질문 하나 = 처리 건 하나(정식 정의 ask_agent). 답할 에이전트를 고르고 보내면, 입력창 위에 지금 하는 일 한 줄(부르는 도구 · 걸린 시간)이 흐르고
    에이전트가 무엇을 읽고 불렀는지가 실시간 상자에 한 줄씩 붙는다(디자인기준 7절 — hydLive.agentWork: 도구 호출이 생기는 대로, 연결이 끊긴 동안만 다시 묻는다).
-   끝나면 그 자리에 답이 온다: 답(결론) → 근거(접기 — 실행한 질의 · 조회 결과 · 실행 기록에서 확인됐는지) → 처리 과정(접기) 또는 「답할 수 없음 + 이유」, 그리고 「처리 건에서 보기 →」.
+   끝나면 그 자리에 답이 온다: 답(결론) → 근거(접기 — 실행한 쿼리 · 조회 결과 · 실행 기록에서 확인됐는지) → 처리 과정(접기) 또는 「답할 수 없음 + 이유」, 그리고 「처리 건에서 보기 →」.
    한 질문 → 한 답(이전 질문을 기억하지 않음). 서버: process GET/POST /api/ask* (it/process/procsvc/ask.py).
    짜임(디자인기준 5-5 — 본: process-gpt-lite ChatColumn · Composer): 왼쪽 좁은 칸에 지난 질문 목록, 가운데 한 칸(최대 720px)에 질문과 답, 바닥에 입력창
    (둥근 상자 — 왼쪽 아래 답할 에이전트 고르기, 오른쪽 아래 보내기 원 단추). 빈 대화에는 질문 예 알약 둘.
@@ -139,10 +139,10 @@
       const check = c => c ? `<p class="muted">${esc(c.note)}${c.missing?.length ? `: ${esc(c.missing.join(', '))}` : ''}</p>` : '';
       const ev = (r.evidence || []).map(x => `<li>${icon(x.verified ? 'circle-check' : 'triangle-alert')}<div><p><b>${esc(UI.toolName(x.tool))}</b> — ${x.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음'}</p>
           ${x.result != null ? `<p class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</p>` : ''}
-          ${check(x.result_check)}${UI.raw(UI.clean(x.query), { title: '조회문', lang: /\bMATCH\b/i.test(x.query || '') ? 'cypher' : /\bSELECT\b/i.test(x.query || '') ? 'sql' : '' })}${x.actual_result ? UI.raw(x.actual_result, { title: '실제 조회 결과' }) : '<p class="muted">실제 조회 결과 원문이 남아 있지 않습니다.</p>'}</div></li>`).join('');
+          ${check(x.result_check)}${UI.raw(UI.clean(x.query), { title: '쿼리', lang: /\bMATCH\b/i.test(x.query || '') ? 'cypher' : /\bSELECT\b/i.test(x.query || '') ? 'sql' : '' })}${x.actual_result ? UI.raw(x.actual_result, { title: '실제 조회 결과' }) : '<p class="muted">실제 조회 결과 원문이 남아 있지 않습니다.</p>'}</div></li>`).join('');
       return `<div class="prose ask-answer" data-md="${esc(UI.clean(r.answer))}"></div>${check(r.answer_check)}`
         + `<details class="fold ask-evidence" ${A.evidenceOpen ? 'open' : ''}><summary>근거<span class="muted">실행 기록과 맞은 근거 ${esc(r.verified)}건 · 성공한 조회 ${esc(r.queried)}건</span></summary><div class="fold-body">`
-        + (ev ? `<ul class="evid ask-evid">${ev}</ul>` : '<p class="muted">근거로 적은 질의가 없습니다.</p>') + (r.note ? `<p class="muted">고른 근거: ${esc(UI.clean(r.note))}</p>` : '') + '</div></details>';
+        + (ev ? `<ul class="evid ask-evid">${ev}</ul>` : '<p class="muted">근거로 적은 쿼리가 없습니다.</p>') + (r.note ? `<p class="muted">고른 근거: ${esc(UI.clean(r.note))}</p>` : '') + '</div></details>';
     }
     return alertBox('triangle-alert', '답할 수 없음', esc(UI.clean(r.reason || '이유가 기록되지 않았습니다')) +
       `<p class="muted">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p>`)
