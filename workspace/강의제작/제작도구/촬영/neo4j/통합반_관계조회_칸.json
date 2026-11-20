@@ -4,7 +4,7 @@
   "cells": [
     {
       "id": "2-1",
-      "query": "CREATE (a:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (b:연습장치 {id:'basic-B', name:'연습 팬', score:70});"
+      "query": "CREATE (:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (:연습장치 {id:'basic-B', name:'연습 팬', score:70});"
     },
     {
       "id": "3-1",
@@ -64,7 +64,7 @@
     },
     {
       "id": "10-2",
-      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p:Part)\nWHERE c.name = '오일 쿨러'\nRETURN c.name AS 구성요소, p.name AS 부품, p.partNo AS 품번;"
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part)\nWHERE c.name = '오일 쿨러'\nRETURN c.name AS 구성요소, pt.name AS 부품, pt.partNo AS 품번;"
     },
     {
       "id": "11-1",
