@@ -3,12 +3,13 @@
 //   guide <안내.html 경로> [절 id]      안내 문서 탭을 열거나 찾아, 그 절의 머리가 화면 위쪽에 오게 굴려 둔다
 //   shot <png 경로> [main|guide]        그 탭의 화면을 녹화와 같은 크기로 찍는다(길뚫기 확인용)
 //   eval <main|guide> <JS 식>           그 탭에서 식을 돌려 결과를 찍는다(길뚫기 — 상태를 바꾸지 않는 식만)
-import {createRequire} from 'node:module';
 import fs from 'node:fs';
-import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {playwright} from '../../포털/촬영도구/env.mjs';
 const HERE=fileURLToPath(new URL('.',import.meta.url));
 const CFG=JSON.parse(fs.readFileSync(HERE+'config.json','utf8'));
-const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+const {chromium}=playwright();
 const b=await chromium.connectOverCDP(`http://127.0.0.1:${CFG.cdp}`),ctx=b.contexts()[0];
 await ctx.grantPermissions(['clipboard-read','clipboard-write']).catch(()=>{});
 const [cmd,...a]=process.argv.slice(2);
@@ -16,7 +17,7 @@ const main=()=>ctx.pages().find(x=>x.url().includes('/browser/'))||ctx.pages()[0
 const guide=()=>ctx.pages().find(x=>x.url().startsWith('file:')&&x.url().endsWith('.html'));
 const metrics=async pg=>{const s=await ctx.newCDPSession(pg);await s.send('Emulation.setDeviceMetricsOverride',{...CFG.viewport,mobile:false});return s;};
 if(cmd==='open'){const p=main();await metrics(p);await p.goto(a[0]);await p.waitForSelector('[role="dialog"] input[name="hostname"]',{timeout:30000});await p.bringToFront();console.log('open',p.url());}
-else if(cmd==='guide'){let g=guide();if(!g){g=await ctx.newPage();await metrics(g);await g.goto('file://'+a[0]);}else await metrics(g);
+else if(cmd==='guide'){let g=guide();if(!g){g=await ctx.newPage();await metrics(g);await g.goto(pathToFileURL(path.resolve(a[0])).href);}else await metrics(g);
  if(a[1])await g.evaluate(id=>{const e=document.getElementById(id)||document.querySelector(`[id$="${id}"]`);if(!e)throw Error('절 없음: '+id);window.scrollTo(0,e.getBoundingClientRect().top+scrollY-40);},a[1]);
  await main().bringToFront();console.log('guide',g.url(),await g.evaluate(()=>scrollY));}
 else if(cmd==='shot'){const p=a[1]==='guide'?guide():main();const s=await metrics(p);const r=await s.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(a[0],Buffer.from(r.data,'base64'));console.log('shot',a[0]);}

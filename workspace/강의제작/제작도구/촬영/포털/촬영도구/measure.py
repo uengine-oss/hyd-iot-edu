@@ -5,7 +5,8 @@
   끝 클릭 수: recording-start.json에 clicksBefore(녹화 전에 누른 수)가 없을 때 끝에서 그만큼만 센다(ARROWS 옛 녹화).
   config에 "banner": "notion"이 있으면 Notion 오류 문구 · 업데이트 막대 프레임을 센다(PIL 필요).
 출력 키(chain.sh · full.sh가 error · banner_frames · gaps_over_100을 읽는다): segment, pointer_mode, error, duration_s, frames, avg_fps, cues, moves,
-  start_delay_max_ms, max_gap_ms, gaps_over_100, click_offset_max_px, clicks, pointer, late_commits, banner_frames, update_banner_frames, end_tab, last_motion, last_frame."""
+  start_delay_max_ms, max_gap_ms, gaps_over_100, click_offset_max_px, clicks, pointer, late_commits, highlights(기록된 강조 수 — 큐에 준 hl 수와 같아야 한다),
+  banner_frames, update_banner_frames, end_tab, last_motion, last_frame."""
 import json, sys
 from pathlib import Path
 
@@ -74,7 +75,7 @@ def measure(d, cfg=None, last=None):
     return {'segment': d.name, 'pointer_mode': ps.get('mode', 'page'), 'error': (t['error'] or '')[:300], 'duration_s': round(t['duration'] / 1000, 1),
             'frames': len(times), 'avg_fps': round(len(times) / (t['duration'] / 1000), 1) if t['duration'] else None, 'cues': len(t['actions']), 'moves': len(gaps),
             'start_delay_max_ms': max(starts, default=None), 'max_gap_ms': max(gaps, default=None), 'gaps_over_100': [g for g in gaps if g >= 100],
-            'click_offset_max_px': max(off, default=None), 'clicks': len(off), 'pointer': es.get('pointer'), 'late_commits': late_commits(t['actions']),
+            'click_offset_max_px': max(off, default=None), 'clicks': len(off), 'pointer': es.get('pointer'), 'late_commits': late_commits(t['actions']), 'highlights': len(t.get('highlights') or []),
             'banner_frames': error + update, 'update_banner_frames': update, 'end_tab': es.get('tab'),
             'last_motion': {'x': round(t['motions'][-1]['x'], 1), 'y': round(t['motions'][-1]['y'], 1)} if t['motions'] else None,
             'last_frame': t['frames'][-1]['file'] if t['frames'] else None}

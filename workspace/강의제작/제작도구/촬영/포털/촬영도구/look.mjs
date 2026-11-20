@@ -3,10 +3,9 @@
 // 그 메뉴를 열어 위에서부터 한 화면씩 PNG로 저장하고, 선택자마다 보이는 요소의 글 · 위치를 출력한다. 버튼은 누르지 않는다.
 // 같은 메뉴를 보려면 현재 메뉴 이름을 그대로 준다(스크롤만 내렸다가 되돌림).
 import fs from 'node:fs';
-import {createRequire} from 'node:module';
+import {playwright} from './env.mjs';
 import {fileURLToPath} from 'node:url';
-const require=createRequire(import.meta.url);
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+const {chromium}=playwright();
 const HERE=fileURLToPath(new URL('.',import.meta.url));
 const CFG=JSON.parse(fs.readFileSync(HERE+'config.json','utf8'));
 const [tab,...sels]=process.argv.slice(2);

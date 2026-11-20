@@ -15,7 +15,12 @@
   조각 프레임 수 = round(사용 ms × 30 / 1000). 큐 음성 · 자막 · 시각표는 앞 조각 실제 프레임 합 / 30 위에 놓는다(구간이 늘어도 소리가 밀리지 않는다).
 화살표: 구간마다 pointer-start.json mode로 정한다. overlay(페이지 화살표 투명 녹화)면 기록된 이동(출발 · 도착 · 시작 · 계획 길이)으로 30fps마다
   화살표를 그린다(기록된 위치 · 시각 그대로, 두 화살표 없음). 그 도구 config pointer가 overlay인데 overlay가 아닌 구간이면 멈춘다. 화면 내용은 그 시각까지
-  받은 마지막 원본 프레임이다 — 원본에 없는 화면을 만들지 않는다. 출력 크기는 첫 원본 JPEG 크기, config viewport · deviceScaleFactor는 화살표 배율에만 쓴다.
+  받은 마지막 원본 프레임이다 — 원본에 없는 화면을 만들지 않는다. 출력 크기는 첫 원본 JPEG 크기, config viewport · deviceScaleFactor는 화살표 · 강조 배율에만 쓴다.
+강조(영상 V-14 · V-11): timing.json의 highlights(녹화기가 hl.mjs로 남긴 {cue, shape, rects(CSS px), start, end})를 화살표와 같은 자리에서 그 시각 동안 그린다(화살표가 위).
+  start ≤ 프레임 시각 < end인 프레임에만 그리므로, 강조는 시작 프레임에 나타나고 다음 강조의 시작 프레임에 지워진다. 모양은 underline(글자 상자 아래 선) · band(반투명 노랑 띠) ·
+  box(둘레 선)이고 색 · 굵기는 이론 영상 강조표시.py와 같다(빨강 229,57,53 굵기 5px, 노랑 255,214,0 투명도 0.42 — 프레임 px). 강조가 걸친 조각만 키에 강조가 들어가 다시 만들어지고,
+  강조가 없는 조각의 키와 프레임은 그대로다. 쓰는 범위에 걸친 강조가 모르는 모양이거나, 끝이 없거나 시작보다 이르거나 같거나, 상자 크기가 0이거나, 그릴 자리(모양 여백 포함)가 프레임 밖이거나,
+  overlay가 아닌 구간에 있으면 인코딩 전에 take · 큐 id · 강조 번호 · 값을 대며 멈춘다(빼거나 잘라 그리지 않는다).
 고친 음성: 캐시의 글 · 길이가 녹화 때와 다르면(녹화 뒤 대사만 고쳐 다시 만든 음성) 원래 말이 끝나던 자리에 끝나도록 오른쪽에 맞춘다(조작이 말 직후 그대로).
   원래보다 길어 앞 말과 겹치면 앞 말 끝(또는 조각 시작)부터 놓고, 조각 끝을 넘으면 멈춘다. 자막은 고친 글 · 길이로 쓴다. 합성 안에 두 번 이상 나오는 큐 id가
   바뀌었으면 어느 자리인지 알 수 없어 멈춘다 — --음성교체 <json>([{segment(take), time(take ms), file(json 기준), text(선택), 붙임(선택)}])으로 자리마다 정한다.
@@ -30,7 +35,7 @@
   join.py · cut.py · 다시 인코딩한 영상은 경계에 키프레임이 없어 멈춘다. 바꾼 조각만 새로 만든다. 이은 결과의 영상 패킷 수가 조각 프레임 합과 다르면 멈춘다.
 다른 곳에서 부르기: from encode import encode; encode(이름, 명세들, work=…, audio=…, crf=18, desc=…, tool_name=…, record_dir=…) — work · audio를 주면
   config 대신 그 폴더를 쓴다(config가 없는 neo4j가 옮겨 올 자리, 아직 부르는 곳 없음)."""
-import bisect, hashlib, json, os, re, shutil, subprocess, sys, tempfile, wave
+import bisect, hashlib, json, math, os, re, shutil, subprocess, sys, tempfile, wave
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -44,6 +49,9 @@ KEY_VERSION = 1
 SAME_PCT = 0.5          # 같은 화면: 값이 12 넘게 바뀐 화소가 이만큼(%) 이하
 ONSET = 0.02            # 소리 시작 문턱(전체 크기 비)
 ARROW_PTS = [(1, 1), (1, 25), (7, 20), (12, 31), (17, 29), (12, 18), (22, 18)]   # ui.mjs 화살표(SVG viewBox 25x34 → CSS 20x27)
+# 강조 모양(프레임 px). 색 · 굵기는 이론 영상 강조표시.py(RED · YELLOW · 선 굵기 5 · 띠 투명도 0.42 · 모서리 4)와 같다.
+HL = {'red': (229, 57, 53), 'yellow': (255, 214, 0), 'band_alpha': 107, 'line': 5, 'under': 2, 'under_side': (4, 6), 'box_pad': 6, 'radius': 4}
+HL_SHAPES = ('underline', 'band', 'box')
 _FF = None
 
 
@@ -200,6 +208,61 @@ def pointer_at(ms, motions, start):
     return pos
 
 
+def mark_extent(shape, rects, s):
+    """강조 하나가 프레임에서 차지하는 자리 [(x1, y1, x2, y2), …](모양 여백 포함, 프레임 px). rects = [[x, y, w, h], …] CSS px, s = 배율."""
+    px = [(x * s, y * s, (x + w) * s, (y + h) * s) for x, y, w, h in rects]
+    if shape == 'band':
+        return px
+    if shape == 'underline':   # 글자 상자 아래 변 바로 밑의 선, 양옆으로 조금 나간다
+        return [(x1 - HL['under_side'][0], y2 + HL['under'] - HL['line'] / 2, x2 + HL['under_side'][1], y2 + HL['under'] + HL['line'] / 2) for x1, y1, x2, y2 in px]
+    p = HL['box_pad'] + HL['line'] / 2   # 줄이 여럿이면 모두를 두르는 상자 하나
+    return [(min(r[0] for r in px) - p, min(r[1] for r in px) - p, max(r[2] for r in px) + p, max(r[3] for r in px) + p)]
+
+
+def mark_patch(shape, rects, s):
+    """강조 하나의 그림(RGBA)과 프레임에 붙일 자리. 4배로 그려 줄인다(화살표와 같다)."""
+    from PIL import Image, ImageDraw
+    ext = mark_extent(shape, rects, s)
+    x0, y0 = math.floor(min(e[0] for e in ext)) - 1, math.floor(min(e[1] for e in ext)) - 1
+    x1, y1 = math.ceil(max(e[2] for e in ext)) + 1, math.ceil(max(e[3] for e in ext)) + 1
+    k = 4
+    im = Image.new('RGBA', ((x1 - x0) * k, (y1 - y0) * k), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    for a, b, c, e in ext:
+        box = [(a - x0) * k, (b - y0) * k, (c - x0) * k, (e - y0) * k]
+        if shape == 'band':
+            d.rounded_rectangle(box, radius=HL['radius'] * k, fill=HL['yellow'] + (HL['band_alpha'],))
+        elif shape == 'underline':
+            d.rounded_rectangle(box, radius=HL['line'] / 2 * k, fill=HL['red'] + (255,))
+        else:
+            d.rounded_rectangle(box, radius=HL['radius'] * k, outline=HL['red'] + (255,), width=HL['line'] * k)
+    return im.resize((x1 - x0, y1 - y0), Image.LANCZOS), (x0, y0)
+
+
+def check_highlights(take, hs, lo, hi, mode, scale, W, H):
+    """쓰는 범위 lo~hi(take ms)에 걸친 강조를 검사해 돌려준다. 어긋나면 take · 큐 id · 강조 번호(녹화 차례, 1부터) · 값을 대며 멈춘다."""
+    use = []
+    for i, h in enumerate(hs, 1):
+        at = f"{take}: 큐 {h.get('cue')} 강조 {i}번({h.get('shape')})"
+        s, e = h.get('start'), h.get('end')
+        if s is None or s >= hi or (e is not None and s < e <= lo):
+            continue
+        if e is None or e <= s:
+            raise RuntimeError(f'{at} — 끝 시각 {e}ms가 시작 {s}ms보다 이르거나 같다(끝이 없다)')
+        if h.get('shape') not in HL_SHAPES:
+            raise RuntimeError(f"{at} — 모르는 모양, {' | '.join(HL_SHAPES)} 가운데 하나")
+        if mode != 'overlay':
+            raise RuntimeError(f'{at} — 화살표를 페이지에 그대로 녹화한 구간(page)에는 강조를 그리지 않는다. pointer=overlay로 다시 녹화한다')
+        rects = h.get('rects') or []
+        if not rects or any(not (r[2] > 0 and r[3] > 0) for r in rects):
+            raise RuntimeError(f'{at} — 상자 크기가 0이다: {rects}')
+        for x1, y1, x2, y2 in mark_extent(h['shape'], rects, scale):
+            if x1 < 0 or y1 < 0 or x2 > W or y2 > H:
+                raise RuntimeError(f'{at} — 그릴 자리 {[round(v, 1) for v in (x1, y1, x2, y2)]}가 프레임 {W}x{H} 밖이다(상자 {rects} CSS px × {scale})')
+        use.append({k: h[k] for k in ('cue', 'shape', 'rects', 'start', 'end')})
+    return use
+
+
 def plan_spec(spec, default, root, crf, ffv):
     """명세 하나 → 조각 목록(아직 인코딩 안 함)."""
     from PIL import Image
@@ -238,6 +301,7 @@ def plan_spec(spec, default, root, crf, ffv):
     if mode == 'overlay':
         vp = T.cfg.get('viewport') or {}
         scale = vp.get('deviceScaleFactor') or (W / vp['width'] if vp.get('width') else 1.0)
+    marks = check_highlights(take, t.get('highlights') or [], start, end, mode, scale, W, H)
     chunks = []
     for i, (f, e) in enumerate(zip(cuts, cuts[1:])):
         n = round((e - f) * FPS / 1000)
@@ -258,7 +322,10 @@ def plan_spec(spec, default, root, crf, ffv):
                 'runs': [(fr[j]['file'], c, (d / fr[j]['file']).stat().st_size) for j, c in runs]}
         if mode == 'overlay':
             body.update(scale=scale, arrow=ARROW_PTS, pstart=[ps['x'], ps['y']], motions=[m for m in t['motions'] if m.get('glide', m['start']) < e])
-        chunks.append(SimpleNamespace(
+        hl = [h for h in marks if h['start'] < e and h['end'] > f]
+        if hl:   # 강조가 걸친 조각만 키가 달라진다
+            body.update(highlights=hl, hl_style=HL)
+        chunks.append(SimpleNamespace(highlights=hl,
             key=hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:24], tool=T, take=take, dir=d,
             from_ms=f, to_ms=e, frames=n, mode=mode, scale=scale, W=W, H=H, runs=[(fr[j]['file'], c) for j, c in runs], idx=idx, times=times, fr=fr,
             all_motions=t['motions'], pstart=(ps['x'], ps['y']) if ps else None,
@@ -288,6 +355,7 @@ def encode_chunk(c, crf, cache, log):
     if c.mode == 'overlay':
         from PIL import Image
         ARROW = arrow(c.scale)
+        marks = [(h['start'], h['end'], *mark_patch(h['shape'], h['rects'], c.scale)) for h in c.highlights]
         p = subprocess.Popen([str(x) for x in [ff(), '-y', '-v', 'warning', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{c.W}x{c.H}', '-r', FPS, '-i', '-',
                                                '-vf', 'setsar=1'] + enc], stdin=subprocess.PIPE)
         cur, im0 = None, None
@@ -296,7 +364,11 @@ def encode_chunk(c, crf, cache, log):
             if f != cur:
                 cur, im0 = f, Image.open(c.dir / f).convert('RGB')
             im = im0.copy()
-            x, y = pointer_at(c.from_ms + k * 1000 / FPS, c.all_motions, c.pstart)
+            ms = c.from_ms + k * 1000 / FPS
+            for s, e, patch, at in marks:
+                if s <= ms < e:
+                    im.paste(patch, at, patch)
+            x, y = pointer_at(ms, c.all_motions, c.pstart)
             im.paste(ARROW, (round(x * c.scale), round(y * c.scale)), ARROW)
             p.stdin.write(im.tobytes())
         p.stdin.close()
@@ -509,7 +581,8 @@ def compose(name, chunks, out, *, crf=18, desc=None, silent=False, overrides=(),
               '음성교체': [{**o, 'file': os.path.relpath((ov_base / o['file']).resolve(), record_dir)} for o in overrides],
               '조각': [{'키': c.key, '도구': c.tool.name, 'take': c.take, 'from_ms': c.from_ms, 'to_ms': c.to_ms, 'frames': c.frames, 'mode': c.mode,
                         'part': c.part, 'audio': os.path.relpath(c.audio, record_dir) if c.audio else None, 'error': c.error, 'recorded_ms': c.recorded_ms,
-                        'end_url': c.end_url, 'end_tab': c.end_tab, 'edge_age': c.edge_age, 'cues': c.cues, 'motions': c.motions, 'clicks': c.clicks}
+                        'end_url': c.end_url, 'end_tab': c.end_tab, 'edge_age': c.edge_age, 'cues': c.cues, 'motions': c.motions, 'clicks': c.clicks,
+                        **({'highlights': c.highlights} if c.highlights else {})}
                        for c in chunks],
               'mp4': {'sha256': sha256(mp4), 'video_packets': len(vp), 'bytes': mp4.stat().st_size}}
     bad_seams = [s for s in seams if s['판정'] == '실패']
@@ -582,7 +655,8 @@ def replace(record_path, repl, out_name=None, video=None, *, root=TOOLS, overrid
         c = SimpleNamespace(key=r['키'], tool=ct, take=r['take'], from_ms=r['from_ms'], to_ms=r['to_ms'], frames=r['frames'], mode=r['mode'],
                             W=rec['size'][0], H=rec['size'][1], part=r['part'], audio=(record_dir / r['audio']).resolve() if r['audio'] else None,
                             error=r['error'], recorded_ms=r['recorded_ms'], end_url=r['end_url'], end_tab=r['end_tab'], edge_age=r['edge_age'],
-                            cues=r['cues'], motions=r['motions'], clicks=r['clicks'], file=cache / f"{r['키']}.mp4", new=False, cut=False, index=i - 1)
+                            cues=r['cues'], motions=r['motions'], clicks=r['clicks'], highlights=r.get('highlights', []),
+                            file=cache / f"{r['키']}.mp4", new=False, cut=False, index=i - 1)
         chunks.append(c); keep.append(c)
     missing = [c for c in keep if not c.file.exists()]
     if missing:
@@ -660,7 +734,7 @@ def self_test():
         (Path(Tl.audio) / f'{cid}.json').write_text(json.dumps({'id': cid, 'text': text, 'duration_ms': round(n * 1000 / SR)}, ensure_ascii=False), encoding='utf-8')
         return round(n * 1000 / SR)
 
-    def take(Tl, name, sec, cues, overlay, first=None, seed=0, segment_in_actions=True, pstart=(400, 300)):
+    def take(Tl, name, sec, cues, overlay, first=None, seed=0, segment_in_actions=True, pstart=(400, 300), highlights=None):
         d = Path(Tl.work) / name
         (d / 'frames').mkdir(parents=True)
         run([ff(), '-v', 'error', '-f', 'lavfi', '-i', f'testsrc2=size=1920x1080:rate=20,hue=h={seed * 40}', '-t', sec, '-q:v', '4', '-start_number', '0', d / 'frames/%06d.jpg'])
@@ -684,7 +758,7 @@ def self_test():
                 m['glide'] = at + 120
             mots.append(m); pos = to
         (d / 'timing.json').write_text(json.dumps({'start': st0, 'frames': frames, 'actions': acts, 'motions': mots, 'clicks': [{'x': m['x'], 'y': m['y'], 'time': m['end']} for m in mots],
-                                                   'duration': sec * 1000, 'error': None}), encoding='utf-8')
+                                                   'duration': sec * 1000, 'error': None, **({'highlights': highlights} if highlights is not None else {})}), encoding='utf-8')
         (d / 'end-state.json').write_text(json.dumps({'url': 'http://시험/', 'tab': 'home', 'clicks': [{'x': m['x'], 'y': m['y'], 'px': m['x'], 'py': m['y']} for m in mots]}), encoding='utf-8')
         if overlay:
             (d / 'pointer-start.json').write_text(json.dumps({'x': pstart[0], 'y': pstart[1], 'mode': 'overlay'}), encoding='utf-8')
@@ -838,6 +912,61 @@ def self_test():
             check(False, '같은 이름 덮어쓰기가 멈추지 않았다')
         except FileExistsError:
             pass
+
+        # 9. 강조: 같은 화면의 두 녹화(강조 없음 h0 · 강조 셋 h)를 합성해 견준다. 강조는 시작 프레임에 나타나고 끝 프레임(다음 강조의 시작)에 지워지며,
+        #    달라진 화소는 그 강조를 그릴 자리 안에만 있다. 강조가 없는 녹화의 조각 키는 강조 기능과 상관없이 같다(highlights가 빈 목록이어도, 없어도).
+        hcues = [('A1', 5, 300, 'A1 문장'), ('A2', 5, 1500, 'A2 문장')]
+        hs = [{'cue': 'A1', 'shape': 'band', 'rects': [[100, 100, 200, 20]], 'start': 400, 'end': 1200},
+              {'cue': 'A1', 'shape': 'underline', 'rects': [[100, 200, 200, 20], [100, 230, 80, 20]], 'start': 1200, 'end': 2000},
+              {'cue': 'A2', 'shape': 'box', 'rects': [[700, 100, 150, 40]], 'start': 2000, 'end': 2600}]
+        take(P, 'h0', 3, hcues, True, seed=6, pstart=(1000, 600))
+        take(P, 'h0b', 3, hcues, True, seed=6, pstart=(1000, 600), highlights=[])
+        take(P, 'h', 3, hcues, True, seed=6, pstart=(1000, 600), highlights=hs)
+        ffv = out_of([ff(), '-version']).decode().splitlines()[0]
+        k0, k0b, kh = (plan_spec(n, P, root, 18, ffv)[0].key for n in ('h0', 'h0b', 'h'))
+        # take 이름이 키에 들어가므로 이름을 뺀 몸통을 견줄 수 없다 — 대신 같은 take에서 highlights 칸만 지웠다 넣어 키가 같은지 본다
+        tj = Path(P.work) / 'h0b' / 'timing.json'
+        tb0 = read(tj); tb1 = dict(tb0); tb1.pop('highlights')
+        tj.write_text(json.dumps(tb1), encoding='utf-8'); k0c = plan_spec('h0b', P, root, 18, ffv)[0].key
+        tj.write_text(json.dumps(tb0), encoding='utf-8')
+        check(k0b == k0c, '강조가 빈 목록인 녹화와 highlights 칸이 없는 녹화의 조각 키가 다르다')
+        check(len({k0, k0b, kh}) == 3, '조각 키가 take · 강조를 가르지 못한다')
+        r0 = encode('시험H0', ['h0'], root=root, silent=True, log=lambda m: None)
+        rh = encode('시험H', ['h'], root=root, silent=True, log=lambda m: None)
+        check(rh['조각'][0].get('highlights') == hs and 'highlights' not in r0['조각'][0], '합성기록의 강조 칸')
+        H0, HH = (Path(P.work) / n / f'{n}_1080p.mp4' for n in ('시험H0', '시험H'))
+
+        def changed(k):
+            a, b = decode_frames(H0, k, 1, 1920, 1080)[0], decode_frames(HH, k, 1, 1920, 1080)[0]
+            from PIL import ImageChops
+            return ImageChops.difference(a, b).convert('L').point(lambda v: 255 if v > 40 else 0).getbbox()
+
+        def inside(box, shape, rects, pad=12):
+            ext = mark_extent(shape, rects, 1.5)
+            x1, y1, x2, y2 = min(e[0] for e in ext) - pad, min(e[1] for e in ext) - pad, max(e[2] for e in ext) + pad, max(e[3] for e in ext) + pad
+            return box is not None and x1 <= box[0] and y1 <= box[1] and box[2] <= x2 and box[3] <= y2
+
+        F = lambda ms: round(ms * FPS / 1000)
+        for k, want in [(F(400) - 1, None), (F(400), hs[0]), (F(1200) - 1, hs[0]), (F(1200), hs[1]), (F(2000) - 1, hs[1]), (F(2000), hs[2]), (F(2600) - 1, hs[2]), (F(2600), None)]:
+            box = changed(k)
+            if want is None:
+                check(box is None, f'강조가 없어야 할 프레임 {k}에 달라진 화소 {box}')
+            else:
+                check(inside(box, want['shape'], want['rects']), f"프레임 {k}: {want['shape']} 강조 자리 밖이 달라졌거나 강조가 없다 {box}")
+        px = decode_frames(HH, F(800), 1, 1920, 1080)[0].getpixel((300, 165)), decode_frames(H0, F(800), 1, 1920, 1080)[0].getpixel((300, 165))
+        check(px[0][2] < px[1][2] - 20 or px[1][2] < 40, f'띠가 노랗지 않다(강조 {px[0]} · 원본 {px[1]})')
+        px = decode_frames(HH, F(1600), 1, 1920, 1080)[0].getpixel((300, round(220 * 1.5) + HL['under']))
+        check(px[0] > 170 and px[1] < 110 and px[2] < 110, f'밑줄이 빨갛지 않다 {px}')
+        # 깨뜨린 입력 넷: 프레임 밖 · 크기 0 · 끝이 시작보다 이르거나 같음 · 모르는 모양 → 인코딩 전에 큐 id와 강조 번호를 대며 멈춘다
+        for label, bad_h, word in [('프레임 밖', {**hs[0], 'rects': [[1200, 100, 200, 20]]}, '프레임'), ('크기 0', {**hs[0], 'rects': [[100, 100, 0, 20]]}, '크기가 0'),
+                                   ('끝 ≤ 시작', {**hs[0], 'end': 400}, '이르거나 같다'), ('모르는 모양', {**hs[0], 'shape': 'circle'}, '모르는 모양')]:
+            take(P, 'hx-' + label, 3, hcues, True, seed=6, pstart=(1000, 600), highlights=[hs[2], bad_h])
+            try:
+                encode('시험HX-' + label, ['hx-' + label], root=root, silent=True, log=lambda m: None)
+                check(False, f'깨진 강조({label})가 멈추지 않았다')
+            except RuntimeError as e:
+                check('큐 A1 강조 2번' in str(e) and word in str(e), f'깨진 강조({label}) 오류 글 {e}')
+            check(not (Path(P.work) / ('시험HX-' + label)).exists(), f'깨진 강조({label})인데 출력 폴더가 생겼다')
     except Exception as e:
         import traceback
         traceback.print_exc()

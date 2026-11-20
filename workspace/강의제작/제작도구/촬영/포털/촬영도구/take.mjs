@@ -1,9 +1,10 @@
 // 끊지 않는 한 번 녹화(로컬 ego · 클라우드 Playwright). 구간 여러 개를 녹화 한 번으로 찍어 이음새가 생기지 않는다. encode.py가 그대로 합성한다.
-// 실행: take.sh가 부른다 — ego는 ego-browser nodejs -e "…await take({...})", 리눅스는 node <실행 파일>(먼저 run.sh up). 브라우저 연결은 아래 openPage 한 곳.
+// 실행: take.sh가 부른다 — 클라우드 · 이 PC Playwright는 node <실행 파일>(먼저 run.sh up), ego는 ego-browser nodejs -e "…await take({...})". 브라우저 연결은 아래 openPage 한 곳.
 //   mode:'rehearse'  소리 길이 0 · 녹화 없음으로 같은 조작을 한다. 통과한 큐마다 조작 표시를 rehearsal-<이름 앞부분>.json에 남긴다. 이어서 돌린 리허설도 합친다.
 //   mode:'record'    모든 큐가 지금 조작 그대로 통과했을 때만 녹화한다. 큐 하나를 고치면 그 큐만 다시 리허설한다(대사만 바꾼 큐는 다시 돌지 않는다).
 // 커서: 페이지에 그리지 않고 이동을 기록해 합성 때 그린다(ui.mjs virtualPointer). 클릭은 도착 뒤 대상을 다시 찾고 맨 위 요소인지 확인한 뒤 누른다.
 // 실패 복구: resume:{prev,fromCue} — 페이지를 그대로 둔 채 그 큐부터 이어 찍는다. 앞 take는 그 큐 시작에서 잘라 쓴다(이음.json). 이음새검수.py가 두 화면이 같은지 잰다.
+// 강조: 짚기 대상이 강조 모양(hl)을 가지면 구간 모듈이 ctx.hl(hl.mjs)로 그 대상의 화면 상자 · 시작 · 끝 시각을 남기고, timing.json의 highlights로 나가 encode.py가 그린다.
 // 출력: <work>/<name>/frames · timing.json · end-state.json · pointer-start.json · frames.jsonl · 이음.json(이어 찍었을 때)
 const fs=await import('node:fs/promises');
 const {createHash}=await import('node:crypto');
@@ -12,6 +13,7 @@ const CFG=JSON.parse(await fs.readFile(HERE+'config.json','utf8'));
 const abs=r=>decodeURIComponent(new URL(r,'file:///'+HERE).pathname).replace(/^\/([A-Za-z]:)/,'$1').replace(/\/$/,'');
 const WORK=abs(CFG.work);
 const SPEECH_RATE=422/60000; // 음성 없는 시험의 문장 길이(글자/ms). ctrl.mjs ctx.silent와 같은 실측값.
+const {highlighter}=await import(new URL('./hl.mjs',import.meta.url).href);
 
 const opsMark=c=>createHash('sha256').update(JSON.stringify(c.ops||[])).digest('hex').slice(0,16);
 function jpegSize(b){let i=2;while(i<b.length){if(b[i]!==255){i++;continue;}const m=b[i+1];i+=2;if(m===216||m===217)continue;const len=b.readUInt16BE(i);if([192,193,194].includes(m))return{width:b.readUInt16BE(i+5),height:b.readUInt16BE(i+3)};i+=len;}throw Error('JPEG dimensions missing');}
@@ -40,11 +42,10 @@ async function resumePoint({prev,fromCue}){
 
 // 브라우저 연결만 둘로 갈린다. 아래 코드는 ego 페이지 모양(cdp · events · waitForFileChooser · mouse · evaluate)만 쓴다. 둘 다 CSS 1280x720 · 프레임 1920x1080이라 encode.py가 같은 값으로 화살표를 그린다.
 //   ego(로컬 Windows, taskSpace가 있을 때): 작업 공간의 페이지. ego 150 %라 1920x1080 dsf1 → CSS 1280x720.
-//   Playwright(클라우드 리눅스): browser.mjs가 띄워 둔 헤드리스 Chromium에 CDP로 붙는다 — 녹화가 실패해도 페이지가 남아 그 큐부터 이어 찍는다. config.json viewport(CSS 1280x720 × 1.5).
+//   Playwright(클라우드 리눅스 · 이 PC Windows): browser.mjs가 띄워 둔 헤드리스 Chromium에 CDP로 붙는다 — 녹화가 실패해도 페이지가 남아 그 큐부터 이어 찍는다. config.json viewport(CSS 1280x720 × 1.5). 모듈 자리는 env.mjs.
 async function openPage(opts){
  if(typeof taskSpace==='function'){const p=(await taskSpace(opts.space)).page('p1');return{p,view:{width:1920,height:1080,deviceScaleFactor:1},close:async()=>{}};}
- const {createRequire}=await import('node:module');
- const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+ const {chromium}=(await import(new URL('./env.mjs',import.meta.url).href)).playwright();
  const browser=await chromium.connectOverCDP(`http://127.0.0.1:${CFG.cdp}`);
  const p=browser.contexts()[0]?.pages()[0];if(!p)throw Error('녹화 브라우저 페이지 없음(run.sh up 먼저)');
  const s=await p.context().newCDPSession(p),got=[];s.on('Page.screencastFrame',params=>got.push({method:'Page.screencastFrame',params}));
@@ -78,6 +79,7 @@ export async function take(opts){
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  let recording=false,done=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null,captures=0,current=null;
  const frames=[],actions=[],motions=[],clicks=[],retargets=[],waits=[];
+ const hl=highlighter({clock:()=>Date.now()-start,cue:()=>current});
  const capture=rehearsal?Promise.resolve():(async()=>{while(!done){
   for(const e of await serial(()=>p.events()))if(e.method==='Page.screencastFrame'){
    serial(()=>p.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId})).catch(x=>{error??=String(x);});
@@ -102,7 +104,7 @@ export async function take(opts){
  const pos0=seam?seam.pointer:after||{x:760,y:430};
  if(after)await fs.writeFile(out+'/이음.json',JSON.stringify({prev:opts.after,fromCue:null,cut_ms:(await loadTiming(opts.after)).duration+1,pointer:after}));   // 이음새검수.py가 앞 take 끝 프레임과 이 take 첫 프레임을 견준다
  let waitingFor=opts.resume?.fromCue||null;
- const ctx={p,serial,sleep,fs,out,audio,cueFile:opts.cueFile,rehearsal,virtualPointer:pos0,resuming:!!seam,
+ const ctx={p,serial,sleep,fs,out,audio,cueFile:opts.cueFile,rehearsal,virtualPointer:pos0,resuming:!!seam,hl,
   recordMotion:m=>motions.push({...m,cue:current,start:m.start-start,end:m.end-start,glide:m.glide-start}),
   recordClick:c=>clicks.push({...c,cue:current,time:Date.now()-start}),
   amendMotion:(x,y)=>{const m=motions.at(-1);if(m)Object.assign(m,{x,y,amended:true});},
@@ -125,10 +127,10 @@ export async function take(opts){
    if(waitingFor){if(id!==waitingFor)return;waitingFor=null;}
    current=id;
    const c=JSON.parse(await fs.readFile(audio+'/'+id+'.json','utf8'));
-   // 큐 사이 기본 쉼 1000ms = 영상 V-14(큐 1.0초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
-   const w=Math.max(speechFree,actionFree)+(rehearsal?0:(opt.gap??1000))-Date.now();if(w>0)await sleep(w);
+   // 큐 사이 기본 쉼 1300ms = 영상 V-14(큐 1.3초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
+   const w=Math.max(speechFree,actionFree)+(rehearsal?0:(opt.gap??1300))-Date.now();if(w>0)await sleep(w);
    const t0=Date.now(),a={id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);speechFree=t0+c.duration_ms;
-   if(!rehearsal)await fs.writeFile(out+'/partial.json',JSON.stringify({start,actions,motions,clicks,retargets,waits,captures}));
+   if(!rehearsal)await fs.writeFile(out+'/partial.json',JSON.stringify({start,actions,motions,clicks,retargets,waits,highlights:hl.list,captures}));
    if(opts.failAt===id&&!opts.resume)throw Error('복구 시험: 일부러 실패');
    if(!fn){actionFree=Math.max(actionFree,t0);return;}
    const pw=t0+(opt.pointDelay??250)-Date.now();if(pw>0&&!rehearsal)await sleep(pw);
@@ -140,7 +142,7 @@ export async function take(opts){
   for(const n of opts.segments){current='구간'+n+' 시작';await mod.seg(ctx,n);}
   const tail=speechFree-Date.now();if(tail>0)await sleep(tail+400);
  }catch(e){error=`${current}: ${e?.stack||e}`;}
- recording=false;done=true;await capture;
+ hl.end('녹화 끝');recording=false;done=true;await capture;
  const duration=start===null?0:Date.now()-start;await writeQueue;
  if(!rehearsal)await p.cdp('Page.stopScreencast').catch(()=>{});
  // 「나」는 끝까지 찍었을 때만 비운다. 실패한 take는 페이지를 그대로 두어야 그 큐부터 같은 화면으로 이어 찍는다.
@@ -150,10 +152,10 @@ export async function take(opts){
  clicks.forEach((c,i)=>{if(received[i])Object.assign(c,{page_x:received[i].x,page_y:received[i].y});});
  const state={url:await p.url().catch(()=>null),tab:await p.evaluate(()=>document.querySelector('.rail nav button.active')?.dataset.tab||null).catch(()=>null),clicks:clicks.map(c=>({x:c.x,y:c.y,px:c.x,py:c.y}))};
  await fs.writeFile(out+'/end-state.json',JSON.stringify(state,null,2));
- await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,clicks,retargets,waits,captures,duration,error,result},null,2));
+ await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,clicks,retargets,waits,highlights:hl.list,captures,duration,error,result},null,2));
  // 실패했으면 마지막 큐만 빼고 통과로 친다. 고친 뒤 그 큐부터 이어 돌리면 된다.
  if(rehearsal){const ok=new Set(actions.slice(0,error?-1:undefined).map(a=>a.id));for(const c of allCues)if(ok.has(c.id))passed[c.id]=opsMark(c);await fs.writeFile(proof,JSON.stringify(passed,null,1));}
  await close();
- const r={mode:opts.mode,duration,frames:frames.length,captures,cues:actions.length,motions:motions.length,clicks:clicks.length,retargets:retargets.length,error};
+ const r={mode:opts.mode,duration,frames:frames.length,captures,cues:actions.length,motions:motions.length,clicks:clicks.length,highlights:hl.list.length,retargets:retargets.length,error};
  console.log(JSON.stringify(r));return r;
 }

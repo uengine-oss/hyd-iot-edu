@@ -8,6 +8,8 @@
 //   phrase: 그 요소 안 구절 하나(한 번만 나와야 한다)를 기준으로 anchor를 잡는다 — after(구절 끝 바로 뒤) · below(구절 밑) · center.
 //   pathAt: SVG 선(path) 위의 길이 비율 자리. cy: 지식 지도 캔버스(Cytoscape, window.hydEnt.kg.cy)의 항목 id — 이름표가 보이면 이름표 끝, 아니면 점 오른쪽.
 //     '@node' · '@edge'는 캔버스 가운데에 가장 가까운 항목 · 선이다. long: wait에서 6초 넘는 기다림을 실패로 치지 않는다(주입 뒤 경보 · 효과 확인처럼 일부러 기다리는 자리).
+//   hl: point 대상에 강조 모양('underline' | 'band' | 'box')을 주면 화살표가 닿은 때 그 대상(구절이 있으면 그 구절)의 화면 상자와 시각을 기록하고 encode.py가 그린다(../hl.mjs).
+//     강조는 다음 강조가 시작할 때, 누르기 · 굴리기 · 입력이 시작할 때, 강조 없는 다른 대상으로 화살표가 떠날 때, 구간이 끝날 때 지워진다.
 // 화면 밖 대상: 안쪽 스크롤 영역(지도 #ontoMap)부터 바깥(본문 main#content, 본문이 굴러가지 않는 판은 문서 자체)까지 페이지 안 애니메이션으로 굴린다. 굴리기는 화살표를 움직이지 않으므로 이동 기록에 넣지 않는다.
 // 리허설(take.sh rehearse)이면 조작마다 ① 대상이 하나로 찾아지는가 ② 화살표가 덮는 글자 ③ 입력 시간(2.5초 이하) ④ 결과를 기다린 시간(6초 이하, long 제외)을 <take>/dry-<구간>.json에 남기고, 하나라도 어기면 멈춘다.
 // 구간 1은 녹화 밖에서 포털 홈을 새로 열고 브라우저 저장값을 비운다(「서비스 N/N」의 앞뒤 숫자가 같고, 「나」 칸이 있는 판이면 「선택 안 함」인지 확인). 쉬는 화살표 자리는 ctx.rest(대상)가 있으면 그 대상, 없으면 REST다.
@@ -65,6 +67,8 @@ function locateInPage(t) {
   }
   if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) return {error: `지식 지도 항목이 캔버스 밖: ${t.cy}`};
   x = b.left + p.x; y = b.top + p.y;
+  const hb = (t.cy === '@edge' ? near(cy.edges().filter((ed) => ed.visible() && !ed.hasClass('dim')), (ed) => ed.renderedMidpoint()).el : t.cy === '@node' ? near(cy.nodes().filter(live), (nd) => nd.renderedPosition()).el : cy.getElementById(t.cy)).renderedBoundingBox({includeLabels: true});
+  window.__hlTarget = {box: [b.left + hb.x1, b.top + hb.y1, hb.w, hb.h]};      // 강조가 잴 상자(hl.mjs)
  } else {
   let es = [...document.querySelectorAll(t.css)].filter(vis);
   if (t.contains) es = es.filter((el) => el.textContent.includes(t.contains));
@@ -72,6 +76,7 @@ function locateInPage(t) {
   if (t.nth !== undefined) es = es.slice(t.nth, t.nth + 1);
   if (es.length !== 1 && !(t.any && es.length)) return {error: `대상 ${JSON.stringify({css: t.css, contains: t.contains, exact: t.exact})} — 보이는 요소 ${es.length}개`};
   e = es[0]; b = e.getBoundingClientRect();
+  window.__hlTarget = e;      // 강조가 잴 요소(hl.mjs)
   let r = b, rs = null;
   if (t.phrase) {
    // 구절 하나의 글자 상자를 기준으로 삼는다(줄이 꺾이면 마지막 줄 조각)
@@ -146,10 +151,14 @@ function layer(ctx, report) {
  const find = (t) => q1(() => p.evaluate(locateInPage, t)).then((r) => { if (r.error) throw Error(r.error); return r; });
  let pos = ctx.virtualPointer;
  const G = {lastMoveEnd: 0};
+ const run = (fn, arg) => q1(() => p.evaluate(fn, arg));
+ const hlEnd = (why) => ctx.hl?.end(why);
  // 가상 포인터 이동: 경로만 기록하고(encode.py가 그림) 도착 시각에 실제 입력을 목표로 한 번 보낸다(포털 ui.mjs virtual 갈래와 같은 속도식).
- async function move(x, y) {
+ // 화살표가 다른 자리로 떠나면 앞 강조를 지운다. 새 강조로 가는 이동(keepHl)은 앞 강조를 새 강조가 시작할 때까지 둔다.
+ async function move(x, y, keepHl = false) {
   const a = pos, dist = Math.hypot(x - a.x, y - a.y);
   if (dist < 1) { G.lastMoveEnd = Date.now(); return; }
+  if (!keepHl) hlEnd('커서 이동');
   const ms = Math.round(Math.max(260, Math.min(620, 200 + dist * 0.4))), t0 = Date.now();
   ctx.recordMotion({start: t0, end: t0 + ms, x, y, from: a, planned_ms: ms, glide: t0});
   if (!ctx.rehearsal) await sleep(ms);
@@ -171,6 +180,7 @@ function layer(ctx, report) {
    return [cl(dx, -el.scrollLeft, el.scrollWidth - cw - el.scrollLeft), cl(dy, -el.scrollTop, el.scrollHeight - ch - el.scrollTop)];
   }, {sel, dx, dy}));
   if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+  hlEnd('굴리기');
   const ms = Math.round(Math.max(350, Math.min(1400, 220 + Math.hypot(dx, dy) * 0.55)));
   const g = await q1(() => p.evaluate(({sel, dx, dy, ms}) => {
    const el = document.querySelector(sel); if (!el) return null;
@@ -216,19 +226,27 @@ function layer(ctx, report) {
  const L = {};
  L.point = async (t) => {
   const a = aim(t, 'point');
-  if (t.cy) { const r = await settled(a); await move(r.x, r.y); rep({op: 'point', target: 'cy:' + t.cy, scrolled: r.scrolled || 0}); return; }      // 캔버스 글자는 DOM 글자가 아니라 덮음 검사를 하지 않는다
+  if (t.hl && !ctx.hl) throw Error('강조(hl)는 take.mjs로 찍을 때만 기록한다: ' + JSON.stringify(t));
+  // 강조: 화살표가 출발하기 전에 대상 상자를 재고(바로 앞의 find가 대상을 잡아 둔다), 닿은 뒤 같은 상자인지 다시 재어 그때를 시작으로 남긴다
+  const arrive = async (r, at) => {
+   const o = t.hl ? {shape: t.hl, phrase: t.phrase} : null, before = o ? (await find(at), await ctx.hl.read(run, o)) : null;
+   await move(r.x, r.y, !!o);
+   if (o) { await find(at); await ctx.hl.mark(run, sleep, o, before); }
+  };
+  if (t.cy) { const r = await settled(a); await arrive(r, a); rep({op: 'point', target: 'cy:' + t.cy, scrolled: r.scrolled || 0, hl: t.hl}); return; }      // 캔버스 글자는 DOM 글자가 아니라 덮음 검사를 하지 않는다
   const coverAt = (r) => q1(() => p.evaluate(coverInPage, {x: r.x, y: r.y, css: t.css, contains: t.contains, exact: t.exact}));
-  let r = await settled(a), cover = await coverAt(r);
+  let r = await settled(a), cover = await coverAt(r), at = a;
   // 기본 자리(글 끝 오른쪽)가 다른 글을 덮으면(아랫줄이 붙은 칸) 그 줄 왼쪽 여백을 짚는다. 녹화와 리허설이 같은 자리를 고르도록 늘 같은 차례로 본다
   if (cover.length && !t.anchor && a.anchor === 'after') {
    const r2 = await settled({...a, anchor: 'margin'}), c2 = await coverAt(r2);
-   if (!c2.length) { r = r2; cover = c2; }
+   if (!c2.length) { r = r2; cover = c2; at = {...a, anchor: 'margin'}; }
   }
-  await move(r.x, r.y);
-  rep({op: 'point', target: name(t), scrolled: r.scrolled || 0, covered: cover, fail: cover.length > 0, why: cover.length ? '화살표가 글을 덮음: ' + cover.join(' | ') : undefined});
+  await arrive(r, at);
+  rep({op: 'point', target: name(t), scrolled: r.scrolled || 0, hl: t.hl, covered: cover, fail: cover.length > 0, why: cover.length ? '화살표가 글을 덮음: ' + cover.join(' | ') : undefined});
  };
  L.click = async (t) => {
   const a = aim(t, 'click');
+  hlEnd('누르기');
   for (let i = 0; i < 4; i++) {
    const r = await settled(a); await move(r.x, r.y); await gate();
    const now = await find(a);
@@ -260,19 +278,19 @@ function layer(ctx, report) {
  L.clear = async () => {
   const f = await q1(() => p.evaluate(() => document.activeElement?.matches('input,textarea') ? document.activeElement.id : null));
   if (!f) throw Error('지울 입력칸에 포커스가 없음');
-  await gate(); await q1(() => p.keyboard.press('Control+a')); await sleep(250);
+  hlEnd('입력'); await gate(); await q1(() => p.keyboard.press('Control+a')); await sleep(250);
  };
  L.type = async (text) => {
   const f = await q1(() => p.evaluate(() => document.activeElement?.matches('input,textarea') ? document.activeElement.id : null));
   if (!f) throw Error('입력칸에 포커스가 없음: ' + text);
-  await gate();
+  hlEnd('입력'); await gate();
   // 검색 칸은 글자마다 지도를 다시 그린다 — 네 글자 이상은 두 덩이로 넣는다(map-common과 같다).
   const cs = [...text], parts = cs.length >= 4 ? [cs.slice(0, Math.ceil(cs.length / 2)).join(''), cs.slice(Math.ceil(cs.length / 2)).join('')] : [text];
   const t0 = Date.now();
   for (const part of parts) { await q1(() => p.keyboard.insertText(part)); await sleep(160); }
   const ms = Date.now() - t0; rep({op: 'type', text, ms, fail: ms > 2500, why: ms > 2500 ? `입력 ${ms}ms > 2500` : undefined});
  };
- L.key = async (k) => { await gate(); await q1(() => p.keyboard.press(k)); await sleep(200); };
+ L.key = async (k) => { hlEnd('입력'); await gate(); await q1(() => p.keyboard.press(k)); await sleep(200); };
  L.wait = async (t, secs) => {
   const a = Date.now(), limit = (secs || 30) * 1000, label = t.cy ? 'cy:' + t.cy : name(t);
   for (;;) {
@@ -372,5 +390,6 @@ export async function seg(ctx, n) {
   if (report) await fs.writeFile(`${ctx.out}/dry-${n}.json`, JSON.stringify(report, null, 1));
  }
  if (!ctx.rehearsal) await ctx.sleep(800);   // 마지막 조작의 결과가 프레임에 남도록
+ ctx.hl?.end('구간 끝');
  return {view: await L.view()};
 }

@@ -5,10 +5,9 @@
 //   건너뛴 조작 뒤에 나오는 화면의 대상은 이 시험으로 확인할 수 없다 → 그 시점 화면을 녹화 없이 보는 look.mjs와 코드(it/portal/www)로 확인한다.
 // 결과: 큐마다 대상 좌표 · 실패, 큐 끝 화면 PNG. 실패가 하나라도 있으면 종료 코드 1.
 import fs from 'node:fs';
-import {createRequire} from 'node:module';
+import {playwright} from './env.mjs';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-const require=createRequire(import.meta.url);
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+const {chromium}=playwright();
 const HERE=fileURLToPath(new URL('.',import.meta.url));
 const CFG=JSON.parse(fs.readFileSync(HERE+'config.json','utf8'));
 const [mod,segArg,outArg]=process.argv.slice(2);

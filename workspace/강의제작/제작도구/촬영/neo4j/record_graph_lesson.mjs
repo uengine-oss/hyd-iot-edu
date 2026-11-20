@@ -1,18 +1,22 @@
 // Neo4j Browser 녹화 코어. 큐 파일(cues)의 op마다 정해 둔 조작을 말에 맞춰 하고, 화면 프레임 · 큐 시각 · 이동 · 클릭을 남긴다.
 // 브라우저 연결만 둘로 갈린다(openPages). 아래 조작 층은 페이지 모양(cdp · mouse · keyboard · evaluate · waitForFunction)만 쓴다.
-//   클라우드 Playwright(정본): 상주 브라우저(포털 browser.mjs, HYD_BROWSER_CONFIG=neo4j/촬영도구/config.json)에 CDP로 붙는다.
+//   Playwright(클라우드 리눅스 · 이 PC Windows, 정본): 상주 브라우저(포털 browser.mjs, HYD_BROWSER_CONFIG=neo4j/촬영도구/config.json)에 CDP로 붙는다. 모듈 자리는 포털 촬영도구 env.mjs.
 //     Neo4j Browser 탭과 안내 문서 탭(cfg.guide가 있으면)을 찾고, 녹화하는 탭(show)만 screencast한다. 구간 사이에도 두 탭의 상태가 남는다.
 //   ego(이 PC, taskSpace가 있을 때): 옛 길. 안내 문서 탭은 다루지 않는다.
 // 리듬(영상 V-14): 큐 시작 = 앞 말과 앞 조작이 모두 끝난 뒤 gap(큐의 gap, 없으면 설정 gap)만큼 쉰 때. 조작은 말 안의 비율(gate)에서 한다.
 //   hold = 학생이 따라 할 시간(그 큐의 말과 조작이 끝난 뒤 화면을 그대로 두는 ms).
+// 강조(영상 V-14 · V-11): 짚기 조작에 hl('underline' | 'band' | 'box')을 주면 화살표가 닿은 때 그 대상의 화면 상자와 시각을 timing.json의 highlights에 남기고 포털 encode.py가 그린다(포털 촬영도구 hl.mjs).
+//   줄 수 있는 자리: point의 points[] 항목 · pointText · detailsTour의 points[] 항목. 글로 찾은 대상(contains · text)은 그 글 구절을, css로 찾은 대상은 그 요소를 잰다(phrase를 주면 그 구절).
+//   그 밖의 조작에 hl을 주면 멈춘다. 강조는 다음 강조가 시작할 때, 누르기 · 탭 바꾸기가 시작할 때, 강조 없는 다른 자리로 화살표가 떠날 때, 녹화가 끝날 때 지워진다.
 // 설정(globalThis.HYD_RECORDING): take(새 이름) · cues(큐 파일) · host(연결 창 주소) · segments(찍을 구간 번호들, 없으면 전부) · only(큐 id들) ·
 //   continue(앞 구간 끝 화면에서 이어 찍기) · pointer({x,y} 시작 위치) · silent(음성 없이 글 길이로 시험 — 숫자면 그 배로 빠르게) · gap(기본 큐 쉼 ms) ·
 //   guide(안내 문서 주소의 끝부분, 예: 안내.html).
 // 출력: <work>/<take>/frames · timing.json · end-state.json · pointer-start.json · progress.json
 import {focusReadableGraph} from './readable_graph.mjs';
 import {installGraphObserver,graphTarget} from './graph_targets.mjs';
+import {highlighter} from '../포털/촬영도구/hl.mjs';
 import fs from 'node:fs/promises';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import path from 'node:path';
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const TOOL=JSON.parse(await fs.readFile(HERE+'/촬영도구/config.json','utf8'));
@@ -29,8 +33,7 @@ async function openPages(){
   const p=(await taskSpace(cfg.space)).page(cfg.page||'p1');
   return {ego:true,main:p,guide:null,view:{width:cfg.width||1920,height:cfg.height||1080,deviceScaleFactor:1},close:async()=>{}};
  }
- const {createRequire}=await import('node:module');
- const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+ const {chromium}=(await import('../포털/촬영도구/env.mjs')).playwright();
  const browser=await chromium.connectOverCDP(`http://127.0.0.1:${TOOL.cdp}`);
  const ctx=browser.contexts()[0];if(!ctx)throw Error('상주 브라우저 문맥 없음(browser.mjs 먼저)');
  await ctx.grantPermissions(['clipboard-read','clipboard-write']).catch(()=>{});
@@ -76,6 +79,7 @@ const point=spec=>p.evaluate(spec=>{
  if(spec.contains)all=all.filter(e=>e.textContent.includes(spec.contains));
  const e=all.find(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.y>=0&&r.y<innerHeight;});
  if(!e)throw Error('Visible target missing: '+JSON.stringify(spec));
+ window.__hlTarget=e;   // 강조가 잴 요소(hl.mjs)
  const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};
 },spec);
 const installPointer=(pg,q)=>pg.evaluate(({q,hidden})=>{
@@ -105,14 +109,17 @@ await p.cdp('Page.startScreencast',SCREENCAST);await nudge(p);
 // 녹화하는 탭을 바꾼다(안내 문서 ↔ Neo4j Browser). 화면에는 탭 줄이 없으므로 말이 「안내 문서로 가서」처럼 바뀜을 짚는다.
 async function show(target){
  if(target===active)return;
+ hl.end('탭 바꾸기');
  const n=frames.length;await serial(()=>active.cdp('Page.stopScreencast'));
  await serial(()=>target.bringToFront());await serial(()=>metrics(target));
  await serial(()=>target.mouse.move(pos.x,pos.y,{steps:1}));
  active=target;p=target;await serial(()=>target.cdp('Page.startScreencast',SCREENCAST));await serial(()=>nudge(target));
  const t=Date.now();while(frames.length===n){if(error)throw Error(error);if(Date.now()-t>5000)throw Error('탭을 바꾼 뒤 프레임이 오지 않음');await sleep(20);}
 }
-async function move(target){
+// 화살표가 다른 자리로 떠나면 앞 강조를 지운다. 새 강조로 가는 이동(keepHl)은 앞 강조를 새 강조가 시작할 때까지 둔다.
+async function move(target,keepHl=false){
  if(Math.hypot(target.x-pos.x,target.y-pos.y)<1)return;
+ if(!keepHl)hl.end('커서 이동');
  const a={...pos},ms=Math.round(Math.max(260,Math.min(620,200+Math.hypot(target.x-a.x,target.y-a.y)*.4))),t0=Date.now();
  await serial(()=>p.evaluate(({a,b,ms})=>{const e=document.getElementById('recording-pointer');window.__recordGlide=e.animate([{transform:`translate(${a.x}px,${a.y}px)`},{transform:`translate(${b.x}px,${b.y}px)`}],{duration:ms,easing:'ease-in-out',fill:'forwards'});},{a,b:target,ms}));
  const glide=Date.now();
@@ -121,12 +128,20 @@ async function move(target){
  pos={x:target.x,y:target.y};motions.push({start:t0-start,glide:glide-start,end:Date.now()-start,from:a,...pos,planned_ms:ms,cue:current});
 }
 const actions=[];let current=null;
+const hl=highlighter({clock:()=>Date.now()-start,cue:()=>current});
+const run=(fn,arg)=>serial(()=>p.evaluate(fn,arg));
+// 짚은 대상에 강조를 건다: 출발 전에 상자를 재고, 닿은 뒤 같은 상자인지 다시 재어 그때를 시작으로 남긴다. locate는 대상을 다시 잡는 함수다(잡을 때마다 window.__hlTarget이 바뀐다).
+const arriveAt=async(to,q,locate,phrase)=>{
+ const o=q.hl?{shape:q.hl,phrase:q.phrase??phrase}:null,before=o?await hl.read(run,o):null;
+ await move(to,!!o);
+ if(o){await serial(locate);await hl.mark(run,sleep,o,before);}
+};
 const spec=JSON.parse(await fs.readFile(cfg.cues,'utf8'));
 let savedDownload=null,lastDownload=null;
 const DOWNLOADS=out+'/받은 파일';
 try{
  const waitStart=Date.now();while(start===null){if(error)throw Error(error);if(Date.now()-waitStart>10000)throw Error('No recording frames');await sleep(20);}
- const clickHere=async()=>{await serial(()=>p.mouse.down());await sleep(95);await serial(()=>p.mouse.up());clicks.push({x:pos.x,y:pos.y,cue:current,time:Date.now()-start,page:p===P.guide?'guide':'main'});};
+ const clickHere=async()=>{hl.end('누르기');await serial(()=>p.mouse.down());await sleep(95);await serial(()=>p.mouse.up());clicks.push({x:pos.x,y:pos.y,cue:current,time:Date.now()-start,page:p===P.guide?'guide':'main'});};
  const act=async(spec,click=false)=>{let target;for(let i=0;i<15;i++){const a=await serial(()=>point(spec));await sleep(150);target=await serial(()=>point(spec));if(Math.hypot(a.x-target.x,a.y-target.y)<1)break;if(i===14)throw Error('Unstable target');}await move(target);if(click){const r=await serial(()=>point(spec));if(Math.hypot(r.x-target.x,r.y-target.y)>2)throw Error('Target moved');await clickHere();}};
  let free=Date.now()-60000;
  const cue=async(c,operation)=>{
@@ -165,17 +180,19 @@ try{
  const activeCues=spec.cues.filter(c=>(!cfg.only||cfg.only.includes(c.id))&&(!cfg.segments||cfg.segments.includes(c.segment)));
  if(!activeCues.length)throw Error('찍을 큐가 없다(segments · only 확인)');
  // 큐 하나에 조작이 여럿이면(ops) 차례로 한다. 조작마다 자기 at(말 안의 비율)을 기다린다.
- const visibleText=(contains,within)=>p.evaluate(({contains,within})=>{const root=within?Array.from(document.querySelectorAll(within)).find(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;}):document;if(!root)throw Error('화면에 그 칸이 없다: '+within);const e=Array.from(root.querySelectorAll('*')).filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.y>=0&&r.bottom<=innerHeight&&e.textContent.trim().includes(contains)&&![...e.children].some(k=>k.textContent.includes(contains));})[0];if(!e)throw Error('화면에 그 글이 없다: '+contains);const r=e.getBoundingClientRect();return {x:r.x+Math.min(r.width/2,90),y:r.y+r.height/2,w:r.width};},{contains,within});
- const pointAt=async q=>{const t=q.css?await serial(()=>point(q)):await serial(()=>visibleText(q.contains??q.text,q.within));await move({x:t.x+(q.dx??14),y:t.y+(q.dy??8)});};
+ const visibleText=(contains,within)=>p.evaluate(({contains,within})=>{const root=within?Array.from(document.querySelectorAll(within)).find(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;}):document;if(!root)throw Error('화면에 그 칸이 없다: '+within);const e=Array.from(root.querySelectorAll('*')).filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.y>=0&&r.bottom<=innerHeight&&e.textContent.trim().includes(contains)&&![...e.children].some(k=>k.textContent.includes(contains));})[0];if(!e)throw Error('화면에 그 글이 없다: '+contains);window.__hlTarget=e;const r=e.getBoundingClientRect();return {x:r.x+Math.min(r.width/2,90),y:r.y+r.height/2,w:r.width};},{contains,within});
+ const pointAt=async q=>{const locate=q.css?()=>point(q):()=>visibleText(q.contains??q.text,q.within);const t=await serial(locate);await arriveAt({x:t.x+(q.dx??14),y:t.y+(q.dy??8)},q,locate,q.css?undefined:(q.contains??q.text));};
  const clickText=async(text,css='button')=>{await act({css,text},true);};
  async function doOp(c,g,a){
    a.op=(a.op?a.op+'+':'')+c.op;
+   if(c.hl&&c.op!=='pointText')throw Error(`${c.id}: 조작 ${c.op}에는 hl을 줄 수 없다 — point · detailsTour는 points[] 항목에, pointText는 조작에 준다`);
+   if(c.op!=='point'&&c.op!=='detailsTour'&&(c.points||[]).some(q=>q&&q.hl))throw Error(`${c.id}: 조작 ${c.op}의 points[]에는 hl을 줄 수 없다`);
    switch(c.op){
     case 'none':break;
     // 결과 카드(그림 · 표)를 위에서부터 센 n번째(0 = 맨 위 새 카드)의 윗부분을 짚는다. 화면 안에 없으면 멈춘다.
     case 'pointCard':{await g(c.at??.2);const r=await serial(()=>p.evaluate(n=>{const hs=[...document.querySelectorAll('*')].filter(e=>e.children.length===0&&/^neo4j\$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);const e=hs[n];if(!e)throw Error('그 카드가 없다: '+n);const r=e.getBoundingClientRect();if(r.bottom>innerHeight-4)throw Error('그 카드 머리 줄이 화면 아래에 있다: '+n);return {x:r.x+90,y:r.y+r.height/2};},c.n));await move(r);break;}
     case 'point':for(const q of c.points){await g(q.at??.1);await pointAt(q);}break;
-    case 'pointText':await g(c.at??.1);await pointAt({contains:c.contains,within:c.within,dx:c.dx,dy:c.dy});break;
+    case 'pointText':await g(c.at??.1);await pointAt({contains:c.contains,within:c.within,dx:c.dx,dy:c.dy,hl:c.hl,phrase:c.phrase});break;
     case 'pointStream':await g(c.at??.1);{const r=await serial(()=>p.evaluate(()=>{const e=[...document.querySelectorAll('article,[data-testid*="frame"],section')].find(e=>{const r=e.getBoundingClientRect();return r.y>150&&r.height>120&&r.x>400;});if(!e)throw Error('결과 카드가 없다');const r=e.getBoundingClientRect();return {x:r.x+r.width*.45,y:r.y+Math.min(r.height*.4,180)};}));await move(r);}break;
     // 처음 쓰는 사람용 안내 창(Work in tabs의 Dismiss, Discover more actions의 OK, got it)을 닫는다. 창이 없으면 학생 화면과 달라진 것이라 멈춘다.
     case 'tour':await g(c.point_at??Math.max(0,(c.at??.85)-.25));await act({css:'button',text:c.button});await g(c.at??.85);await act({css:'button',text:c.button},true);
@@ -205,7 +222,7 @@ try{
     case 'paste':await g(c.at??.5);await input(c.query,{paste:true});a.query=c.query;a.pasted=true;break;
     // 받은 그림 파일을 새 탭으로 연다(학생이 내려받기 표시에서 여는 것과 같은 그림). 녹화 밖에서 열어 두지 않고 그 자리에서 연다.
     case 'openFile':{await g(c.at??.4);if(!lastDownload)throw Error('열 파일이 없다(앞 png 조작)');
-     const pg=await P.newPage();await P.attach(pg);await pg.goto('file://'+lastDownload);await serial(()=>metrics(pg));await installPointer(pg,pos);P.file=pg;await show(pg);break;}
+     const pg=await P.newPage();await P.attach(pg);await pg.goto(pathToFileURL(lastDownload).href);await serial(()=>metrics(pg));await installPointer(pg,pos);P.file=pg;await show(pg);break;}
     // 새 탭은 이름 글자가 비어 있기도 해서(새 프로필), 쿼리 탭(Stream 옆)의 수가 늘었는지로 본다.
     case 'newTab':{await g(c.at??.8);const tabs=()=>p.evaluate(()=>document.querySelectorAll('[aria-label="Close tab"]').length);const n0=await serial(tabs);await act({css:'button[aria-label="Add new tab"]'},true);
      await serial(()=>p.waitForFunction(n=>document.querySelectorAll('[aria-label="Close tab"]').length>n,n0,{timeout:5000}));break;}
@@ -274,7 +291,7 @@ try{
      await g(.2);const prop=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);const r=h?.parentElement?.parentElement?.getBoundingClientRect();return r&&{x:r.x+Math.min(r.width-30,140),y:r.y+150};}));if(prop)await move(prop);break;
     // 정보 칸의 글(이름표 · 속성 이름)을 차례로 짚는다. points: [{text, at}] — 그 글이 정보 칸에 정확히 있어야 한다.
     case 'detailsTour':
-     for(const q of c.points){await g(q.at);const t=await serial(()=>p.evaluate(text=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);const box=h.parentElement.parentElement;const e=Array.from(box.querySelectorAll('*')).filter(e=>e.children.length===0&&e.textContent.trim()===text&&e.getBoundingClientRect().height>0)[0];if(!e)throw Error('정보 칸에 글 없음: '+text);const r=e.getBoundingClientRect();return {x:r.x+Math.min(r.width/2,60),y:r.y+r.height/2};},q.text));await move({x:t.x+14,y:t.y+6});}break;
+     for(const q of c.points){await g(q.at);const locate=()=>p.evaluate(text=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);const box=h.parentElement.parentElement;const e=Array.from(box.querySelectorAll('*')).filter(e=>e.children.length===0&&e.textContent.trim()===text&&e.getBoundingClientRect().height>0)[0];if(!e)throw Error('정보 칸에 글 없음: '+text);window.__hlTarget=e;const r=e.getBoundingClientRect();return {x:r.x+Math.min(r.width/2,60),y:r.y+r.height/2};},q.text);const t=await serial(locate);await arriveAt({x:t.x+14,y:t.y+6},q,locate);}break;
     case 'mapTour':case 'graphTalk':
      for(let i=0;i<(c.points||[]).length;i++){const q=c.points[i],label=typeof q==='string'?q:q.label;await g(typeof q==='string'?.15+i*.2:q.at);await move(q.between?await betweenPoint(q.between,q.frac):await graphPoint(label,!!q.edge));}break;
     case 'png':{
@@ -304,9 +321,9 @@ try{
  }
  await sleep(Math.max(0,free-Date.now())+400);
 }catch(e){error=String(e?.stack||e);}
-done=true;await capture;await writes;await active.cdp('Page.stopScreencast').catch(()=>{});
+hl.end('녹화 끝');done=true;await capture;await writes;await active.cdp('Page.stopScreencast').catch(()=>{});
 const duration=Date.now()-start;
-await fs.writeFile(out+'/timing.json',JSON.stringify({start,duration,frames,motions,actions,error,result:error?null:'recorded'},null,2));
+await fs.writeFile(out+'/timing.json',JSON.stringify({start,duration,frames,motions,actions,highlights:hl.list,error,result:error?null:'recorded'},null,2));
 await fs.writeFile(out+'/end-state.json',JSON.stringify({url:await P.main.url(),page:active===P.guide?'guide':'main',pointer:pos,clicks:await P.main.evaluate(()=>window.__recordClicks||[]),guideClicks:P.guide?await P.guide.evaluate(()=>window.__recordClicks||[]):[],sentClicks:clicks,targets},null,2));
 await P.close();
 console.log(JSON.stringify({frames:frames.length,duration,error}));

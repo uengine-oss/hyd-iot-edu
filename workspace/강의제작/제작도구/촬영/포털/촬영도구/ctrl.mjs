@@ -3,12 +3,11 @@
 // (ego의 events 폴링 · 직렬 큐 · EPERM 문제가 없음). 조작(mouse · keyboard · evaluate)은 직렬 큐 하나로 보낸다.
 // 리듬: 행동 문장 안에서 가리키고 문장 끝 약 250ms 전에 실행(gate), 결과 발화는 행동 종료 뒤.
 // 출력: <work>/<name>/frames/*.jpg · timing.json(프레임 · 큐 · 이동) · end-state.json(URL · 탭 · 스크롤 · 클릭) · end-snapshot.txt
-import {createRequire} from 'node:module';
+import {playwright} from './env.mjs';
 import fs from 'node:fs/promises';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import path from 'node:path';
-const require=createRequire(import.meta.url);
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+const {chromium}=playwright();
 const HERE=fileURLToPath(new URL('.',import.meta.url));
 const CFG=JSON.parse(await fs.readFile(HERE+'config.json','utf8'));
 const abs=r=>path.resolve(HERE,r);
@@ -53,8 +52,8 @@ export async function run(opts){
   if(!recording||start===null)throw Error('Cue '+c.id+' before recording began (call c.begin() first)');
   if(await fs.stat(WORK+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
   if(!opt.overlap&&pending){await pending;pending=null;}
-  // 큐 사이 기본 쉼 1000ms = 영상 V-14(큐 1.0초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
-  const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??1000)-Date.now();if(w>0)await sleep(w);
+  // 큐 사이 기본 쉼 1300ms = 영상 V-14(큐 1.3초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
+  const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??1300)-Date.now();if(w>0)await sleep(w);
   const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);
   speechFree=t0+c.duration_ms;
   if(!fn){actionFree=Math.max(actionFree,t0);return;}
