@@ -2,6 +2,11 @@
 // - 음성은 큐 단위 클립. 행동 문장이 시작되면 가리키고, 클릭·입력·키는 그 문장 끝 약250ms 전에 실행한다.
 // - 다음 음성은 앞 음성 · 행동이 끝난 뒤 그 큐의 gap(ms)만큼 쉬고 시작한다(영상 V-14의 쉼. 큐에 없으면 1000 = 1회차 큐 사이 1.0초). 전체 음성 길이만큼 기다리는 고정 대기는 없다.
 // - 캡처 ACK는 즉시, 모든 ego 호출은 하나의 직렬 큐. 무거운 인코딩은 녹화 뒤에 한다.
+// - 화살표는 페이지에 그리지 않는다(ui.mjs). 이동 · 끌기 경로 · 누르기 · 강조를 timing.json(motions · clicks · highlights)에 남기고, pointer-start.json에 시작 자리 · mode overlay ·
+//   이 녹화가 잰 배율(프레임 폭 ÷ CSS 폭) · CSS 크기 · 화살표 크기를 적는다. 합성기(포털 encode.py --도구 arrows)가 그 값으로 화살표와 강조를 그린다.
+// - SEG.rehearse(무음 리허설): 소리 길이 0 · 쉼 0 · 녹화 없음으로 같은 조작을 한다(화살표 이동 · 끌기 · 입력의 빠르기는 녹화와 같다. 조작이 통과하는지만 본다 — 그림은 실제로 그려지므로 녹화 전에 브라우저를 새로 띄운다).
+// - SEG.silent(음성 없이 시험 녹화): 음성 캐시가 없거나 글이 다른 큐는 글자 수로 어림한 길이(촬영/시간계수.json speech)로 찍는다. 주지 않으면 그런 큐에서 멈춘다.
+const FRAME={w:1920,h:1080},ARROW_CSS=[25,34];   // 녹화 프레임 크기, 화살표 크기(CSS px — SVG viewBox 25×34 그대로)
 export async function run(SEG){
 const fs0=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');const path=await import('node:path');
 // 근거 폴더 · 작업 공간 번호는 이 폴더의 config.json에서 읽는다(PC마다 절대 경로를 코드에 두지 않는다).
@@ -12,6 +17,12 @@ const ego=typeof globalThis.taskSpace==='function';const pw=ego?null:await impor
 const M=(ego?conf.ego:pw.PROFILE).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
 const boot=m=>fs0.appendFile(base+'/boot.log',new Date().toISOString().slice(11,23)+' '+SEG.name+' '+m+String.fromCharCode(10));await boot('enter');
 const {makeUI}=await import('./ui.mjs?'+SEG.name);
+const {highlighter}=await import(new URL('../../포털/촬영도구/hl.mjs',import.meta.url).href);
+const rehearse=!!SEG.rehearse,silent=!!SEG.silent;
+// 음성 없는 큐의 길이(ms): 시간계산.py speech_seconds와 같은 식 — [한글 음절, 숫자, 영문자, 부호(.?!,)] 수 × 계수.
+const COEF=JSON.parse(await fs0.readFile(path.resolve(here,'../../시간계수.json'),'utf8')).speech;
+const estimate=text=>{const t=text.replace(/\*\*|^>.*$|^#.*$/gm,'').replace(/[A-Za-z][A-Za-z0-9 _\-\/\.]*\(([가-힣 ]+)\)/g,'$1');const n=re=>(t.match(re)||[]).length;
+ return Math.round(1000*(COEF[0]*n(/[가-힣]/g)+COEF[1]*n(/[0-9]/g)+COEF[2]*n(/[A-Za-z]/g)+COEF[3]*n(/[.?!,]/g)));};
 const fs=await import('node:fs/promises');
 const out=base+'/'+SEG.name;
 await fs.mkdir(out+'/frames',{recursive:true});
@@ -28,15 +39,16 @@ await p.cdp('Emulation.setDeviceMetricsOverride',metrics());
 await p.cdp('Page.bringToFront');
 let queue=Promise.resolve();function serial(fn){const r=queue.then(fn);queue=r.catch(()=>{});return r;}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-let recording=false,done=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null;const frames=[],actions=[],motions=[];
+let recording=false,done=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null,current=null;const frames=[],actions=[],motions=[],clicks=[];
+const hl=highlighter({clock:()=>Date.now()-start,cue:()=>current});
 function jpegSize(b){let i=2;while(i<b.length){if(b[i]!==255){i++;continue;}const marker=b[i+1];i+=2;if(marker===216||marker===217)continue;const len=b.readUInt16BE(i);if([192,193,194].includes(marker))return {width:b.readUInt16BE(i+5),height:b.readUInt16BE(i+3)};i+=len;}throw Error('JPEG dimensions missing');}
 try{await p.cdp('Page.stopScreencast');}catch(e){}
-const capture=(async()=>{while(!done){
+const capture=rehearse?Promise.resolve():(async()=>{while(!done){
  const evs=await serial(()=>p.events());
  for(const e of evs)if(e.method==='Page.screencastFrame'){
   serial(()=>p.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId})).catch(x=>{error=String(x);});
   if(!recording)continue;const b=Buffer.from(e.params.data,'base64');const d=jpegSize(b);
-  if(d.width!==1920||d.height!==1080){if(start===null)continue;throw Error('Capture dimensions '+JSON.stringify(d));}
+  if(d.width!==FRAME.w||d.height!==FRAME.h){if(start===null)continue;throw Error('Capture dimensions '+JSON.stringify(d));}
   if(start===null)start=Date.now();
   const f={file:'frames/'+String(frames.length).padStart(6,'0')+'.jpg',time:Date.now()-start,sourceTimestamp:e.params.metadata.timestamp};frames.push(f);bufferBytes+=b.length;
   if(bufferBytes>64*1024*1024)throw Error('Capture disk queue exceeded 64MiB');
@@ -50,13 +62,18 @@ function plan(text){
  const k=[...spans].reverse().find(x=>ACT.test(x.x))||spans.at(-1);
  return{pointFrac:k.a/total,commitFrac:k.b/total,sentence:k.x,lastFrac:spans.at(-1).a/total};
 }
-let speechFree=0,actionFree=0;const ctx={p,serial,sleep,saved:{}};
-ctx.recordMotion=m=>motions.push({...m,start:m.start-start,end:m.end-start});
+let speechFree=0,actionFree=0;const ctx={p,serial,sleep,saved:{},hl};
+ctx.recordMotion=m=>motions.push({...m,cue:current,start:m.start-start,end:m.end-start,glide:m.glide-start,...(m.path?{path:m.path.map(([t,x,y])=>[t-start,x,y])}:{})});
+// 그 시각(벽시계 ms)에 합성기가 그릴 화살표 자리 — 포털 encode.py pointer_at과 같은 식(끌기는 경로, 그 밖은 같은 곡선).
+ctx.pointerAt=at=>{const ms=at-start;let pos=ctx.startPos;for(const m of motions){if(ms<m.glide)break;
+  if(m.path){const q=m.path;let i=q.findIndex(v=>ms<v[0]);if(i<0)pos={x:q.at(-1)[1],y:q.at(-1)[2]};else if(i===0)pos={x:q[0][1],y:q[0][2]};else{const a=q[i-1],b=q[i],u=b[0]>a[0]?(ms-a[0])/(b[0]-a[0]):1;pos={x:a[1]+(b[1]-a[1])*u,y:a[2]+(b[2]-a[2])*u};}continue;}
+  const u=Math.min(1,(ms-m.glide)/m.planned_ms),e=u*u*(3-2*u);pos={x:m.from.x+(m.x-m.from.x)*e,y:m.from.y+(m.y-m.from.y)*e};}return pos;};
+ctx.recordClick=c=>clicks.push({...c,cue:current,time:c.time-start});
 async function cue(c,fn,pointing){
  if(error)throw Error(error);
  if(await fs.stat(base+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
- const ready=Math.max(speechFree,actionFree)+(c.gap??1000);const w=ready-Date.now();if(w>0)await sleep(w);
- const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);await log('cue '+c.id);
+ const ready=Math.max(speechFree,actionFree)+(rehearse?0:(c.gap??1000));const w=ready-Date.now();if(w>0)await sleep(w);
+ const t0=Date.now();const a={id:c.id,segment:c.segment,text:c.text,time:t0-start,duration:c.duration_ms,voice:c.voice};actions.push(a);current=c.id;await log('cue '+c.id);
  speechFree=t0+c.duration_ms;ctx.cueT0=t0;ctx.cueDur=c.duration_ms;
  if(!fn){actionFree=t0;return;}
  const pl=plan(c.text);
@@ -88,13 +105,21 @@ try{
    if(!ok)throw Error('View not stable: '+JSON.stringify(await vt(false)));await log('view '+JSON.stringify(VIEWSET));}
  }
  await serial(()=>p.mouse.move(ctx.startPos.x,ctx.startPos.y,{steps:1}));await sleep(500);
- recording=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));
- {const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}}
- await fs.writeFile(out+'/recording-start.json',JSON.stringify({start,url,clicksBefore:await serial(()=>p.evaluate(()=>(window.__tutorialClicks||[]).length))}));
+ // 합성기가 쓸 배율: 이 녹화의 CSS 크기를 재어 프레임 폭 ÷ CSS 폭으로 적는다(환경 칸마다 화면 값이 달라 config에 두지 않는다). 가로 · 세로 배율이 다르면 프레임이 1920×1080으로 오지 않는 화면 값이다.
+ {const v=await serial(()=>p.evaluate(()=>[innerWidth,innerHeight])),scale=FRAME.w/v[0];
+  if(Math.abs(v[1]*scale-FRAME.h)>1)throw Error(`화면 값이 프레임 ${FRAME.w}x${FRAME.h}와 맞지 않는다: CSS ${v[0]}x${v[1]} × ${scale} = ${FRAME.w}x${(v[1]*scale).toFixed(1)} (config.json 환경 칸의 metrics)`);
+  await fs.writeFile(out+'/pointer-start.json',JSON.stringify({x:ctx.startPos.x,y:ctx.startPos.y,mode:'overlay',scale,viewport:v,arrow:ARROW_CSS}));}
+ if(rehearse){start=Date.now();recording=true;}
+ else{recording=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:FRAME.w,maxHeight:FRAME.h,everyNthFrame:1}));
+  const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}}
+ await fs.writeFile(out+'/recording-start.json',JSON.stringify({start,url,clicksBefore:0}));   // end-state의 clicks는 녹화 중 누르기만 담는다
  // 이어 찍기: 앞 녹화에서 멈춘 동작의 나머지를 음성 없이 먼저 수행한다(SEG.pre).
  if(SEG.pre){const pre=JSON.parse(SEG.pre);ctx.cueT0=Date.now();ctx.cueDur=0;ctx.commitAt=0;for(const o of pre)await exec(o);await log('pre done');}
  for(const c0 of cues){
-  const c={...c0,...JSON.parse(await fs.readFile(audio+'/'+c0.id+'.json','utf8').catch(()=>{throw Error('Voice cue missing: '+audio+'/'+c0.id+'.json (voice.py로 만든 뒤 촬영)');}))};
+  // 글이 큐와 같은 음성만 쓴다. 없거나 글이 다르면 멈추고, SEG.silent일 때만 글자 수로 어림한 길이로 찍는다(리허설은 길이 0).
+  const meta=await fs.readFile(audio+'/'+c0.id+'.json','utf8').then(JSON.parse).catch(()=>null),real=meta&&meta.text===c0.text?meta:null;
+  if(!real&&!rehearse&&!silent)throw Error(`Voice cue ${c0.id}: ${meta?'캐시 글이 큐 글과 다르다':'음성 없음'} — ${audio}/${c0.id}.json (voice.py로 만든 뒤 촬영, 음성 없이 시험 녹화는 SILENT=1)`);
+  const c={...c0,duration_ms:rehearse?0:real?real.duration_ms:estimate(c0.text),voice:rehearse?'rehearse':real?'cache':'estimate'};
   const ops=c0.ops;const pointing=ops.length&&ops.every(o=>['at','point','verify','note'].includes(o[0]));
   await cue(c,ops.length?async()=>{for(const o of ops)await exec(o);}:null,pointing);
  }
@@ -102,20 +127,20 @@ try{
  // arrows는 바뀐 그림을 늦게 저장한다(「Saving to Web Browser storage...」). 저장이 끝난 화면까지 녹화해야 끝 프레임과 끝 상태(end-state의 그림)가 같은 그림이 된다.
  if((await serial(()=>p.url())).includes('arrows.app')){const t1=Date.now();await sleep(300);while(!(await serial(()=>p.evaluate(()=>document.body.innerText.includes('Saved to Web Browser storage'))))){if(Date.now()-t1>5000)throw Error('Graph not saved within 5s after last cue');await sleep(100);}await sleep(300);}
  result='segment '+SEG.segment+' done';
-}catch(e){error=String(e?.stack||e);}
+}catch(e){error=(current?'큐 '+current+': ':'')+String(e?.stack||e);}
 async function exec(o){
  const [op,...a]=o;
  if(op==='at'){const w=ctx.cueT0+ctx.cueDur*a[0]-Date.now();if(w>0)await sleep(w);return;}
  // 짚기 뒤 끝 조작: 말 끝 0.9초 전에 출발해(커서 이동) 끝 0.25초 전에 누른다(시간표 큐의 마지막 누르기 · 적기).
  if(op==='atend'){const w=ctx.cueT0+ctx.cueDur-900-Date.now();if(w>0)await sleep(w);ctx.commitAt=ctx.cueT0+ctx.cueDur-250;return;}
- if(op==='point')return ui.point(a[0]);
+ if(op==='point')return ui.point(a[0],a[1]);   // a[1] = 강조 모양(없으면 짚기만)
  // 글상자: 화면에 없는 값(판단할 사건 값 등)을 그림판 위에 띄운다(note 글 자리) · 지운다(note null). 자리는 두 글자다: 첫 글자 t(위) · b(아래), 둘째 글자 l(왼쪽) · c(가운데) · r(오른쪽) — 그 배치에서 원 · 글이 없는 구석을 준다. 페이지 위에 얹는 표시일 뿐 클릭을 받지 않는다.
- if(op==='note')return serial(()=>p.evaluate(([t,at])=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
+ if(op==='note'){ui.hlEnd('글상자');return serial(()=>p.evaluate(([t,at])=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
   if(!e){e=document.createElement('div');e.id='recording-note';e.setAttribute('aria-hidden','true');document.documentElement.append(e);}
   const c=document.querySelector('canvas').getBoundingClientRect();
   const hz=at[1]==='l'?`left:${c.left+24}px;`:at[1]==='r'?`right:${innerWidth-c.right+24}px;`:`left:${c.left+c.width/2}px;transform:translateX(-50%);`;const vt=at[0]==='t'?`top:${c.top+20}px;`:`bottom:${innerHeight-c.bottom+24}px;`;
   e.style.cssText=`position:fixed;${hz}${vt}max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
-  e.textContent=t;},[a[0]??null,a[1]||'bc']));
+  e.textContent=t;},[a[0]??null,a[1]||'bc']));}
  if(op==='click')return ui.click(a[0]);
  if(op==='type')return ui.type(a[0]);
  if(op==='key')return ui.key(a[0]);
@@ -126,8 +151,6 @@ async function exec(o){
  if(op==='grow'){for(const d of [0,60]){try{return await ui.grow(a[0],a[1]+d);}catch(e){await log('retry grow '+a[0]+' '+String(e).slice(0,80));}}throw Error('grow failed 3 times from '+a[0]);}
  if(op==='move')return ui.move(a[0],a[1],a[2]);
  if(op==='growTo'){if(!a[3])throw Error('growTo '+a[0]+': 기준 원(넷째 값)이 없다 — build_ontology.py gt()');return ui.growTo(a[0],a[1],a[2],a[3]);}
- // 사용자가 직접 조작하는 동안 녹화만 유지한다. DONE 파일이 생기면 끝(최대 15분). 포인터는 사용자 마우스 이동을 따라간다.
- if(op==='manual'){await log('manual start');const t0=Date.now();while(!(await fs.stat(base+'/DONE').then(()=>true).catch(()=>false))){if(Date.now()-t0>900000)throw Error('manual timeout');await sleep(300);}await log('manual done');return;}
  if(op==='place'){const r=await ui.place(a[0]);await log('place '+r.join(' '));return;}
  // 비율 배치: [이름, 가로 비율, 세로 비율]을 지금 그림 범위(저장 좌표)에 맞춰 그림 좌표로 바꾼 뒤 layout으로 옮긴다.
  if(op==='layoutNorm'){const g=await serial(()=>p.evaluate(()=>{const id=location.hash.split('id=')[1];return JSON.parse(localStorage.getItem('GRAPH|'+id)).graph.nodes.map(n=>n.position);}));const X=g.map(q=>q.x),Y=g.map(q=>q.y),x0=Math.min(...X),x1=Math.max(...X),y0=Math.min(...Y),y1=Math.max(...Y);return exec(['layout',a[0].map(([c,nx,ny])=>[c,Math.round(x0+nx*(x1-x0)),Math.round(y0+ny*(y1-y0))]),a[1]]);}
@@ -138,20 +161,25 @@ async function exec(o){
  // 오른쪽 칸 굴리기(사람 손의 휠): panelScroll <대상>은 그 대상이 화면에 들어올 때까지 오른쪽 칸 위에서 휠을 아래로 굴리고, 대상 없이 부르면 맨 위로 되돌린다. Customize 목록 아래쪽의 값(Arrows 묶음)을 바꿀 때 쓴다.
  if(op==='panelScroll'){
   const cb=await serial(()=>p.evaluate(()=>{const b=document.querySelector('canvas').getBoundingClientRect();return{x:b.right+(innerWidth-b.right)/2,y:b.top+110,lim:innerHeight*0.6};}));   // 칸 위쪽 빈 자리에서 굴린다(radius 줄 밑에 뜨는 슬라이더 위에서는 휠이 칸을 굴리지 않는다)
-  await ui.move2(cb.x,cb.y);await ui.gate();
+  await ui.move2(cb.x,cb.y);await ui.gate();ui.hlEnd('굴리기');
   if(a[0]){for(let i=0;i<30;i++){try{const q=await ui.dom(a[0]);if(q.y<cb.lim)break;}catch(e){}await serial(()=>p.mouse.wheel(0,100));await sleep(110);}await ui.dom(a[0]);}
   else{for(let i=0;i<30;i++){await serial(()=>p.mouse.wheel(0,-100));await sleep(60);}}
   await sleep(300);return;
  }
- // 쪽이 바뀐 뒤(검색 → 결과 쪽): 새 쪽이 다 뜨기를 기다려 표시 포인터를 다시 심는다(쪽이 바뀌면 심어 둔 포인터가 사라진다).
- if(op==='reinstall'){await serial(()=>p.waitForLoadState('load',{timeout:30000}));await sleep(a[0]??800);await ui.install();await sleep(200);return;}
+ // 쪽이 바뀐 뒤(검색 → 결과 쪽): 새 쪽이 다 뜨기를 기다려 누르기 · 캔버스 기록을 다시 심는다(쪽이 바뀌면 심어 둔 것이 사라진다).
+ // 쪽이 실제로 바뀔 때(심어 둔 누르기 기록이 사라질 때)까지 기다린 뒤 다 뜨기를 기다린다 — 엔터 직후에는 아직 옛 쪽이라, 바로 기다리면 옛 쪽에 다시 심고 지나간다.
+ if(op==='reinstall'){ui.hlEnd('쪽 바뀜');{const t0=Date.now();while(await serial(()=>p.evaluate(()=>!!window.__tutorialDown).catch(()=>true))){if(Date.now()-t0>30000)throw Error('reinstall: 30초 안에 쪽이 바뀌지 않았다');await sleep(100);}}
+  await serial(()=>p.waitForLoadState('load',{timeout:30000}));await sleep(a[0]??800);await ui.install();await sleep(200);return;}
  // 검색 결과 줄을 눌러 arrows.app으로 들어간다: openLink <대상>(대상은 ui의 result:<화면에 적힌 주소> · link:<제목 글> · sel:<선택자>).
  // 검색 사이트가 결과를 새 탭으로 열면(Bing · 네이버) 녹화 탭은 따라가지 못하므로, 새 탭을 닫고 녹화 탭을 https://arrows.app으로 옮긴다 — 녹화 화면에는 탭 줄이 없어 학생이 보는 것(새 탭이 앞에 뜸)과 같은 화면이다. Playwright 길(cloud · pc)에서만 된다.
  if(op==='openLink'){
   const isArrows=u=>/^https:\/\/(www\.)?arrows\.app\//.test(u);
-  const target=a[0];if(!target)throw Error('openLink: 대상이 없다');await ui.point(target);await ui.gate();const q=await ui.dom(target);   // ui.move는 원 옮기기라 쓰지 않는다(포인터 옮기기는 ui.point)
+  const target=a[0];if(!target)throw Error('openLink: 대상이 없다');
+  // 검색 결과는 쪽이 다 뜬 뒤에도 조금 늦게 그려진다. 그 줄이 하나로 잡힐 때까지 기다린다(15초).
+  for(const t0=Date.now();;await sleep(200)){try{await ui.dom(target);break;}catch(e){if(Date.now()-t0>15000)throw Error('openLink '+target+': 15초 안에 나타나지 않았다 — '+e.message);}}
+  await ui.point(target);await ui.gate();const q=await ui.dom(target);   // ui.move는 원 옮기기라 쓰지 않는다(포인터 옮기기는 ui.point)
   const ctxp=typeof p.context==='function'?p.context():null;const before=ctxp?ctxp.pages().length:0;
-  await serial(()=>p.mouse.click(q.x,q.y));
+  await ui.clickAt(q.x,q.y,{nav:true});
   let moved=false;for(const t0=Date.now();Date.now()-t0<15000&&!moved;await sleep(100)){
    if(isArrows(await serial(()=>p.url()))){moved=true;break;}
    if(ctxp&&ctxp.pages().length>before){const np=ctxp.pages().at(-1);await np.waitForURL(isArrows,{timeout:15000,waitUntil:'commit'}).catch(()=>{});const u=np.url();await np.close();if(!isArrows(u))throw Error('openLink '+target+': new tab opened '+u.slice(0,80));
@@ -180,15 +208,16 @@ async function exec(o){
  }
  throw Error('Unknown op '+op);
 }
-recording=false;done=true;await capture;const duration=start===null?0:Date.now()-start;await writeQueue;
-try{await p.cdp('Page.stopScreencast');}catch(e){}
+hl.end(error?'녹화 끝':'구간 끝');recording=false;done=true;await capture;const duration=start===null?0:Date.now()-start;await writeQueue;
+if(!rehearse)try{await p.cdp('Page.stopScreencast');}catch(e){}
 // 끝 화면의 보기(확대율 · 위치)도 남긴다 — 다음 호출에서 화면 크기가 풀리면 그림 맞춤이 다시 되므로, 이어 찍는 구간은 이 값을 VIEWSET로 넣는다.
 const view=await p.evaluate(()=>{const root=document.getElementById('root');const k=Object.keys(root).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root[k]];let s=null;while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)return null;const g=s.getState().viewTransformation;return {scale:g.scale,dx:g.offset.dx,dy:g.offset.dy};}).catch(()=>null);
 const state={url:await p.url().catch(()=>null),pointer:ui?ui.pos():null,saved:ctx.saved,view,
- clicks:await p.evaluate(()=>window.__tutorialClicks||[]).catch(()=>[]),
+ clicks,   // 녹화 중 누르기: x · y = 페이지가 받은 좌표(received false면 보낸 좌표), px · py = 그때 합성기가 그리는 화살표 자리
  graph:await p.evaluate(()=>{const id=location.hash.split('id=')[1];return id?JSON.parse(localStorage.getItem('GRAPH|'+id)):null;}).catch(()=>null)};
 await fs.writeFile(out+'/end-state.json',JSON.stringify(state,null,1));
-await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,duration,error,result},null,1));
+await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,clicks:clicks.map(c=>({x:c.x,y:c.y,time:c.time,cue:c.cue,kind:c.kind})),highlights:hl.list,mode:rehearse?'rehearse':'record',duration,error,result},null,1));
 await log('end '+(error?error.slice(0,200):result));
-return {duration,frames:frames.length,cues:actions.length,error,result,url:state.url};
+const est=actions.filter(a=>a.voice==='estimate').map(a=>a.id);
+return {mode:rehearse?'rehearse':'record',duration,frames:frames.length,cues:actions.length,motions:motions.length,clicks:clicks.length,highlights:hl.list.length,...(est.length?{estimated_voice:est}:{}),error,result,url:state.url,view};
 }

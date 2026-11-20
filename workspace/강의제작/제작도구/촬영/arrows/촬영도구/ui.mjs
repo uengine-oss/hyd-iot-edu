@@ -1,49 +1,71 @@
-// ARROWS 조작 층. Notion v10(ui-v10.mjs)의 이동·실행 방식을 그대로 쓴다.
-// - 표시 포인터: 페이지 안 SVG(흰 화살표·얇은 검은 테두리·후광 없음)를 element.animate로 이동.
-// - 실제 입력: 같은 경로·시각으로 mouse.move(steps:1) 16회. RPC마다 직렬 큐를 잠깐 쓰고 놓는다.
+// ARROWS 조작 층(세 환경 cloud · pc · ego가 함께 쓴다).
+// - 화살표: 페이지에 그리지 않는다. 이동마다 출발 · 도착 · 시작 시각 · 길이를 기록하고(ctx.recordMotion) 합성기(포털 encode.py)가 30fps로 그린다 — 녹화 프레임에는 화살표가 없다.
+//   실제 입력은 도착 시각에 목표로 한 번 보낸다(포털 ui.mjs의 virtualPointer와 같은 속도식). 입력 지연이 화살표를 끌지 못한다.
+// - 끌기(press와 release 사이): arrows.app이 끌리는 원 · 화살표를 마우스 자리에 그리므로, 같은 곡선을 약 33ms 단계로 실제로 보내고 단계마다 보낸 자리와 시각을 그 이동의 path로 남긴다.
+//   합성기는 path가 있는 이동을 그 경로대로 그린다(끌리는 원과 화살표가 같이 간다). 단계는 출력 프레임 간격(33ms)이다 — 끄는 동안 마우스 이동 하나가 화면을 다시 그리게 해 약 35ms 걸리므로, 더 잘게 나누면 끌기가 계획 길이의 두 배로 늘어진다.
+// - 누르기: 화살표가 닿은 자리(lastPos)에 보낸다. 페이지가 받은 좌표(mousedown)와 그때 합성기가 그릴 화살표 자리를 함께 남긴다(ctx.recordClick — measure.py의 클릭 오차).
+// - 강조(영상 V-14 · V-11): point 조작에 모양(underline · band · box · circle)이 있으면 대상의 화면 상자를 재어 window.__hlTarget에 두고 포털 hl.mjs(ctx.hl)로 시작 · 끝을 남긴다.
+//   끝은 hl.mjs 머리말의 규칙 그대로다 — 다음 강조, 화면을 바꾸는 조작(누르기 · 끌기 · 입력 · 굴리기 · 글상자 · 쪽 바뀜)의 시작, 강조 없는 대상으로 화살표가 떠날 때, 구간 끝.
 // - gate(): 큐가 정한 실행 시점(행동 문장 끝 약250ms 전)까지 기다린 뒤 클릭·입력·키를 보낸다.
 // - 원 위치: 캔버스 arc/fillText 호출을 기록해 Caption 글자가 들어 있는 원을 찾는다(화면 좌표, 추측 좌표 없음).
 export async function makeUI(ctx){
  const raw=ctx.p, sleep=ctx.sleep, q1=fn=>ctx.serial(fn);
- let lastPos=ctx.startPos, lastMoveEnd=0;
+ let lastPos=ctx.startPos, lastMoveEnd=0, held=false, seen=0;
+ const hl=ctx.hl||null, hlEnd=why=>hl?.end(why), run=(fn,arg)=>q1(()=>raw.evaluate(fn,arg));
  const gate=async()=>{const until=Math.max(ctx.commitAt||0,lastMoveEnd+150);const w=until-Date.now();if(w>0)await sleep(w);ctx.committed??=Date.now();};
- const pointerPos=()=>raw.evaluate(()=>{const r=document.getElementById('recording-pointer')?.getBoundingClientRect();if(!r)throw Error('Recording pointer missing');return{x:r.x,y:r.y};});
  async function install(){
-  await q1(()=>raw.evaluate(pos=>{
-   document.removeEventListener('mousemove',window.__tutorialMove,true);document.removeEventListener('mousedown',window.__tutorialDown,true);
-   document.getElementById('recording-pointer')?.remove();
-   const e=document.createElement('div');e.id='recording-pointer';e.setAttribute('aria-hidden','true');
-   e.style.cssText='position:fixed;left:0;top:0;width:20px;height:27px;pointer-events:none;z-index:2147483647;will-change:transform;transform:'+`translate(${pos.x}px,${pos.y}px)`;
-   e.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="25" height="34" viewBox="0 0 25 34"><path d="M1 1 L1 25 L7 20 L12 31 L17 29 L12 18 L22 18 Z" fill="white" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>';
-   document.documentElement.append(e);window.__tutorialClicks??=[];window.__glide=null;
-   window.__tutorialMove=ev=>{if(!window.__glide)e.style.transform=`translate(${ev.clientX}px,${ev.clientY}px)`;};
-   window.__tutorialDown=ev=>{const r=e.getBoundingClientRect();window.__tutorialClicks.push({x:ev.clientX,y:ev.clientY,px:r.x,py:r.y,trusted:ev.isTrusted,gliding:!!window.__glide,time:performance.now(),url:location.href});};
-   document.addEventListener('mousemove',window.__tutorialMove,true);document.addEventListener('mousedown',window.__tutorialDown,true);
-   window.__startGlide=(ax,ay,x,y,ms)=>{window.__glide?.cancel();const kf=[];for(let i=0;i<=20;i++){const t=i/20,u=t*t*(3-2*t);kf.push({transform:`translate(${ax+(x-ax)*u}px,${ay+(y-ay)*u}px)`,offset:t});}
-    const a=e.animate(kf,{duration:ms,easing:'linear',fill:'forwards'});window.__glide=a;
-    a.onfinish=()=>{e.style.transform=`translate(${x}px,${y}px)`;a.cancel();if(window.__glide===a)window.__glide=null;};};
+  seen=await q1(()=>raw.evaluate(()=>{
+   document.removeEventListener('mousedown',window.__tutorialDown,true);
+   window.__tutorialClicks??=[];
+   window.__tutorialDown=ev=>{window.__tutorialClicks.push({x:ev.clientX,y:ev.clientY,trusted:ev.isTrusted,time:performance.now(),url:location.href});};
+   document.addEventListener('mousedown',window.__tutorialDown,true);
    // 다시 그리기: 창 크기 신호(resize)를 보내면 arrows가 그림 맞춤을 다시 해 화면이 한 번에 줄며 옮겨 간다(옛 08 10:32 · 10:40의 튐).
    // 그래서 지금 보기 값(확대율 · 위치)을 그대로 다시 넣어 같은 화면으로 한 번 더 그리게 한다. 상태 저장소를 못 찾으면 멈춘다.
    window.__redraw=()=>{let s=window.__arrowsStore;if(!s){const root=document.getElementById('root');const k=Object.keys(root||{}).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root&&root[k]];while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)throw Error('arrows store not found (ui.mjs __redraw)');window.__arrowsStore=s;}
     const v=s.getState().viewTransformation;s.dispatch({type:'ADJUST_VIEWPORT',scale:v.scale,panX:v.offset.dx,panY:v.offset.dy});};
    // 캔버스 기록: 그린 원·글자의 화면 좌표와 시각. 원래 함수는 한 번만 보관하고 설치 때마다 새로 감싼다.
+   // 글자는 가운데 자리(x, y) · 가로로 본 폭(w)과 함께 강조가 쓸 값도 남긴다: 실제 폭(wt), 기준선에서 글꼴 상자의 위 · 아래까지(up · dn), 기운 각(rot, 라디안 — 화살표를 따라 선 관계 이름).
    const P=CanvasRenderingContext2D.prototype;P.__orig??={arc:P.arc,fillText:P.fillText};
    {const cv=document.querySelector('canvas');if(cv){cv.__arcs=[];cv.__texts=[];}}
    {const scr=(c,x,y)=>{const m=c.getTransform(),r=c.canvas.getBoundingClientRect();return{x:r.x+(m.a*x+m.c*y+m.e)*r.width/c.canvas.width,y:r.y+(m.b*x+m.d*y+m.f)*r.height/c.canvas.height,k:Math.hypot(m.a,m.b)*r.width/c.canvas.width};};
     const main=c=>c.canvas===document.querySelector('canvas');const keep=a=>{if(a.length>3000)a.splice(0,a.length-1500);return a;};
     const oa=P.__orig.arc;P.arc=function(x,y,rad,...a){if(main(this)){const s=scr(this,x,y);keep(this.canvas.__arcs??=[]).push({x:s.x,y:s.y,r:rad*s.k,t:performance.now()});}return oa.call(this,x,y,rad,...a);};
-    const ot=P.__orig.fillText;P.fillText=function(t,x,y,...a){if(main(this)){const w=this.measureText(t).width,off=this.textAlign==='center'?0:(this.textAlign==='right'||this.textAlign==='end')?-w/2:w/2;const s=scr(this,x+off,y),e=scr(this,x+off+w/2,y);keep(this.canvas.__texts??=[]).push({t:String(t),x:s.x,y:s.y,w:2*(e.x-s.x),at:performance.now()});}return ot.call(this,t,x,y,...a);};
+    const ot=P.__orig.fillText;P.fillText=function(t,x,y,...a){if(main(this)){const mt=this.measureText(t),w=mt.width,off=this.textAlign==='center'?0:(this.textAlign==='right'||this.textAlign==='end')?-w/2:w/2;const s=scr(this,x+off,y),e=scr(this,x+off+w/2,y),m=this.getTransform();
+      keep(this.canvas.__texts??=[]).push({t:String(t),x:s.x,y:s.y,w:2*(e.x-s.x),wt:w*s.k,up:mt.fontBoundingBoxAscent*s.k,dn:mt.fontBoundingBoxDescent*s.k,rot:Math.atan2(m.b,m.a),at:performance.now()});}return ot.call(this,t,x,y,...a);};
    }
-  },lastPos));
+   return window.__tutorialClicks.length;
+  }));
+  await q1(()=>raw.mouse.move(lastPos.x,lastPos.y,{steps:1}));   // 쪽이 바뀐 뒤에도 실제 마우스는 화살표 자리에 있다
  }
- async function moveCore(x,y){
-  const a=await q1(pointerPos);const dist=Math.hypot(x-a.x,y-a.y);if(dist<1){lastMoveEnd=Date.now();lastPos={x,y};return;}
-  const ms=Math.round(Math.max(260,Math.min(620,200+dist*0.4)));const t0=Date.now();
-  await q1(()=>raw.evaluate(({ax,ay,x,y,ms})=>window.__startGlide(ax,ay,x,y,ms),{ax:a.x,ay:a.y,x,y,ms}));
-  for(let i=1;i<=16;i++){const t=i/16,u=t*t*(3-2*t);const w=t0+ms*t-Date.now();if(w>0)await sleep(w);await q1(()=>raw.mouse.move(a.x+(x-a.x)*u,a.y+(y-a.y)*u,{steps:1}));}
-  for(let n=0;n<60&&await q1(()=>raw.evaluate(()=>!!window.__glide));n++)await sleep(20);
-  ctx.recordMotion?.({start:t0,end:Date.now(),x,y,from:a,planned_ms:ms});lastMoveEnd=Date.now();lastPos={x,y};
+ // 화살표 옮기기. keepHl: 새 강조로 가는 이동이라 앞 강조를 새 강조가 시작할 때까지 둔다(그 밖의 이동은 떠날 때 앞 강조를 지운다).
+ async function moveCore(x,y,{keepHl=false}={}){
+  const a=lastPos,dist=Math.hypot(x-a.x,y-a.y);if(dist<1){lastMoveEnd=Date.now();return;}
+  if(!keepHl)hlEnd('커서 이동');
+  const ms=Math.round(Math.max(260,Math.min(620,200+dist*0.4))),t0=Date.now();
+  if(held){
+   const n=Math.max(2,Math.ceil(ms/33)),path=[[t0,a.x,a.y]];
+   for(let i=1;i<=n;i++){const t=i/n,u=t*t*(3-2*t),px=i===n?x:a.x+(x-a.x)*u,py=i===n?y:a.y+(y-a.y)*u;
+    const w=t0+ms*t-Date.now();if(w>0)await sleep(w);
+    await q1(()=>raw.mouse.move(px,py,{steps:1}));path.push([Date.now(),px,py]);}
+   ctx.recordMotion?.({start:t0,end:Date.now(),x,y,from:a,planned_ms:ms,glide:t0,path});
+  }else{
+   ctx.recordMotion?.({start:t0,end:t0+ms,x,y,from:a,planned_ms:ms,glide:t0});
+   await sleep(ms);
+   await q1(()=>raw.mouse.move(x,y,{steps:1}));
+  }
+  lastMoveEnd=Date.now();lastPos={x,y};
  }
+ // 누르기 기록: 페이지가 받은 mousedown(받은 좌표)을 바로 읽어, 보낸 좌표 · 그때 합성기가 그릴 화살표 자리와 함께 남긴다. nav = 쪽을 옮기는 누르기(받은 기록이 쪽과 함께 사라진다).
+ async function clicked(sent,kind,nav){
+  const time=Date.now();let got=null;
+  if(!nav){const r=await q1(()=>raw.evaluate(()=>{const c=window.__tutorialClicks;return c?{n:c.length,last:c.at(-1)||null}:null;})).catch(()=>null);
+   if(r&&r.n===seen+1)got=r.last;if(r)seen=r.n;}
+  const ptr=ctx.pointerAt?ctx.pointerAt(time):lastPos;
+  ctx.recordClick?.({x:got?got.x:sent.x,y:got?got.y:sent.y,px:ptr.x,py:ptr.y,sent,received:!!got,kind,time});
+ }
+ const clickAt=async(x,y,o={})=>{hlEnd('누르기');await q1(()=>o.ctrl?raw.keyboard.down('Control'):null);await q1(()=>raw.mouse.click(x,y));await q1(()=>o.ctrl?raw.keyboard.up('Control'):null);await clicked({x,y},o.ctrl?'ctrlclick':'click',o.nav);};
+ const press=async()=>{hlEnd('끌기');await q1(()=>raw.mouse.down());held=true;await clicked(lastPos,'down');};
+ const release=async()=>{await q1(()=>raw.mouse.up());held=false;};
  // 원 찾기: 마지막으로 그린 한 판에서 Caption 글자(줄바꿈 조각)를 담은 원. 기록이 비면 resize로 한 번 다시 그리게 한다.
  // arrows는 그림 전체를 화면에 자동으로 맞추므로 저장 좌표로 화면 위치를 계산하지 않는다.
  // 화면 맞춤 애니메이션 중이면 위치가 움직이므로, 150ms 간격으로 두 번 읽어 2px 안으로 같을 때 쓴다.
@@ -126,9 +148,12 @@ export async function makeUI(ctx){
    else if(name.startsWith('style:')){const row=[...document.querySelectorAll('form tr')].find(r=>vis(r)&&r.querySelector('td')?.textContent.trim()===name.slice(6)+':');es=row?[...row.querySelectorAll('input')].slice(0,1):[];}
    else return{error:'unknown target '+name};
    if(!es||es.length!==1)return{error:'target '+name+' matched '+(es?es.length:0)};
-   const b=es[0].getBoundingClientRect();const inp=es[0].tagName==='INPUT';
-   if(name==='cypherHead')return{x:b.x+14,y:b.y+34};   // Cypher 글 첫 줄의 첫 낱말 바로 아래
-   return{x:inp?b.x+Math.min(40,b.width/3):b.x+b.width/2,y:b.y+b.height/2,input:inp,bottom:b.bottom,left:b.x};
+   const b=es[0].getBoundingClientRect();const inp=es[0].tagName==='INPUT';window.__hlEl=es[0];   // 강조가 잴 요소(aim)
+   // Cypher 글 첫 줄의 첫 낱말 바로 아래. 글이 입력칸(textarea) 안이라 글자 상자를 요소에서 잴 수 없으므로, 강조가 쓸 첫 낱말의 상자는 칸의 글꼴 · 안쪽 여백 · 줄 높이로 잰다.
+   if(name==='cypherHead'){const cs=getComputedStyle(es[0]),g=document.createElement('canvas').getContext('2d');g.font=cs.font;const word=(es[0].value??es[0].textContent).split(/\s/)[0];
+    if(!word)return{error:'cypherHead: Cypher 글이 비어 있다'};const lh=parseFloat(cs.lineHeight);if(!(lh>0))return{error:'cypherHead: 줄 높이를 읽지 못함 '+cs.lineHeight};
+    return{x:b.x+14,y:b.y+34,hl:{rects:[[b.x+parseFloat(cs.borderLeftWidth)+parseFloat(cs.paddingLeft)-es[0].scrollLeft,b.y+parseFloat(cs.borderTopWidth)+parseFloat(cs.paddingTop)-es[0].scrollTop,g.measureText(word).width,lh]]}};}
+   return{x:inp?b.x+Math.min(40,b.width/3):b.x+b.width/2,y:b.y+b.height/2,input:inp,bottom:b.bottom,left:b.x,hl:{el:true}};
   },name));
   if(r.error)throw Error(r.error);return r;
  }
@@ -136,7 +161,7 @@ export async function makeUI(ctx){
  const wide=name=>q1(()=>raw.evaluate(name=>{const b=document.querySelector('canvas').getBoundingClientRect();return name==='canvasMid'?{x:b.left+b.width*0.3,y:b.top+b.height*0.33}:{x:b.right+(innerWidth-b.right)/2,y:b.top+135};},name));
  // 그림판에 그린 글자(관계 이름 · Label 띠 · 화살표 속성)를 그 글로 찾는다. 같은 글이 둘 이상이면 오류.
  async function ctext(want){
-  const r=await q1(()=>raw.evaluate(w=>{const c=document.querySelector('canvas');if(!(c.__texts||[]).length)window.__redraw();const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));const hit=T.filter(t=>t.at>=lt-20&&t.t.includes(w));const u=[];for(const h of hit)if(!u.some(q=>Math.hypot(q.x-h.x,q.y-h.y)<4))u.push(h);return u.length===1?{x:u[0].x,y:u[0].y,w:u[0].w}:{error:'canvas text '+w+' matched '+u.length};},want));
+  const r=await q1(()=>raw.evaluate(w=>{const c=document.querySelector('canvas');if(!(c.__texts||[]).length)window.__redraw();const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));const hit=T.filter(t=>t.at>=lt-20&&t.t.includes(w));const u=[];for(const h of hit)if(!u.some(q=>Math.hypot(q.x-h.x,q.y-h.y)<4))u.push(h);return u.length===1?u[0]:{error:'canvas text '+w+' matched '+u.length};},want));
   if(r.error)throw Error(r.error);return r;
  }
  // 빈 곳: 고정 좌표는 배치가 바뀌면 원·화살표에 맞아 선택이 풀리지 않는다(10구간 radius가 원 하나에만 들어간 원인).
@@ -159,49 +184,73 @@ export async function makeUI(ctx){
     if(!best||s>best.s)best={x,y,s};}
    return best;}));
  }
+ // 강조가 잴 상자(CSS px [x, y, w, h]): 원은 테두리에서 RING px 띄운 둘레, 그림판 글자는 글꼴 상자(기운 글자는 그 글자를 두르는 곧은 상자 — 밑줄은 그을 수 없다).
+ const RING=6;
+ const circleBox=n=>({rects:[[n.x-n.r-RING,n.y-n.r-RING,2*(n.r+RING),2*(n.r+RING)]]});
+ const textBox=t=>{if(Math.abs(Math.sin(t.rot))<0.02)return{rects:[[t.x-t.wt/2,t.y-t.up,t.wt,t.up+t.dn]]};
+  const c=Math.cos(t.rot),sn=Math.sin(t.rot),P=[[-t.wt/2,-t.up],[t.wt/2,-t.up],[t.wt/2,t.dn],[-t.wt/2,t.dn]].map(([a,b])=>[t.x+a*c-b*sn,t.y+a*sn+b*c]),X=P.map(q=>q[0]),Y=P.map(q=>q[1]);
+  return{rects:[[Math.min(...X),Math.min(...Y),Math.max(...X)-Math.min(...X),Math.max(...Y)-Math.min(...Y)]],tilted:true};};
+ // 대상 → 화살표가 짚을 자리 {x, y}와 강조가 잴 것 hl({rects} | {el: 페이지의 window.__hlEl} | 없음 — 화살표 끝 · 넓은 자리 · 빈 곳).
  async function point(name){
   if(name==='blank')return blank();
   if(name==='canvasMid'||name==='panelMid')return wide(name);
-  if(name.startsWith('node:'))return node(name.slice(5));
+  if(name.startsWith('node:')){const n=await node(name.slice(5));return{...n,hl:circleBox(n)};}
   // 원을 짚을 때는 테두리에서 18px 떨어진 오른쪽 아래를 짚는다(테두리 바깥 4~12px는 띠라서, 거기에 커서를 대면 띠가 진해져 끌어낼 자리처럼 보인다).
-  if(name.startsWith('look:')){const n=await node(name.slice(5)),d=(n.r+18)*Math.SQRT1_2;return{x:n.x+d,y:n.y+d};}
+  if(name.startsWith('look:')){const n=await node(name.slice(5)),d=(n.r+18)*Math.SQRT1_2;return{x:n.x+d,y:n.y+d,hl:circleBox(n)};}
+  // 원 안쪽(원을 잡아 옮기는 자리) — 이름 글자를 덮지 않게 가운데에서 왼쪽 아래로 비킨 자리를 짚는다.
+  if(name.startsWith('inner:')){const n=await node(name.slice(6));return{x:n.x-n.r*0.45,y:n.y+n.r*0.5,hl:circleBox(n)};}
   // 원 둘레의 하늘색 띠(테두리 바로 바깥 — 새 원을 끌어낼 때 잡는 자리)를 오른쪽 아래에서 짚는다.
-  if(name.startsWith('ring:')){const n=await node(name.slice(5));return{x:n.x+n.r*1.09*Math.SQRT1_2,y:n.y+n.r*1.09*Math.SQRT1_2};}
+  if(name.startsWith('ring:')){const n=await node(name.slice(5));return{x:n.x+n.r*1.09*Math.SQRT1_2,y:n.y+n.r*1.09*Math.SQRT1_2,hl:circleBox(n)};}
   // 화살표의 두 끝: edgeFrom:가>나는 가 원의 테두리에서 나가는 자리, edgeTo:가>나는 나 원의 테두리에 닿는 자리(화살표를 따라 짚을 때 앞뒤로 쓴다 — 가운데의 관계 이름은 덮지 않는다).
   if(name.startsWith('edgeFrom:')||name.startsWith('edgeTo:')){const from=name.startsWith('edgeFrom:');const [a,b]=name.slice(from?9:7).split('>');const p=await node(a),t=await node(b);const d=Math.hypot(t.x-p.x,t.y-p.y),ux=(t.x-p.x)/d,uy=(t.y-p.y)/d;
    return from?{x:p.x+ux*(p.r+18),y:p.y+uy*(p.r+18)}:{x:t.x-ux*(t.r+18),y:t.y-uy*(t.r+18)};}
-  // 글상자(ctrl의 note)의 n째 줄: 글상자 왼쪽 바깥에서 그 줄 높이를 짚는다(글을 덮지 않는다).
-  if(name.startsWith('noteLine:')){const r=await q1(()=>raw.evaluate(i=>{const e=document.getElementById('recording-note');if(!e)return null;const b=e.getBoundingClientRect(),cs=getComputedStyle(e),lh=parseFloat(cs.lineHeight),pt=parseFloat(cs.paddingTop);return{x:b.left-30,y:b.top+pt+lh*(i-0.5)-8};},Number(name.slice(9))));
-   if(!r)throw Error('noteLine: 글상자가 떠 있지 않다');return r;}
+  // 글상자(ctrl의 note)의 n째 줄: 글상자 왼쪽 바깥에서 그 줄 높이를 짚는다(글을 덮지 않는다). 강조는 그 줄 글자의 상자.
+  if(name.startsWith('noteLine:')){const r=await q1(()=>raw.evaluate(i=>{const e=document.getElementById('recording-note');if(!e)return null;const b=e.getBoundingClientRect(),cs=getComputedStyle(e),lh=parseFloat(cs.lineHeight),pt=parseFloat(cs.paddingTop);
+    const tn=e.firstChild,lines=e.textContent.split('\n');if(!tn||i<1||i>lines.length)return{error:'줄 '+i+'이 없다(글상자는 '+lines.length+'줄)'};
+    const a=lines.slice(0,i-1).reduce((s,l)=>s+l.length+1,0),g=document.createRange();g.setStart(tn,a);g.setEnd(tn,a+lines[i-1].length);const lb=g.getBoundingClientRect();
+    return{x:b.left-30,y:b.top+pt+lh*(i-0.5)-8,hl:{rects:[[lb.left,lb.top,lb.width,lb.height]]}};},Number(name.slice(9))));
+   if(!r)throw Error('noteLine: 글상자가 떠 있지 않다');if(r.error)throw Error(name+': '+r.error);return r;}
   // 증거(속성) 줄: 그 원 둘레에 그려진 「키: 값」 글자(관계의 「절차:」는 뺀다)를 찾아, 첫 줄 바로 왼쪽을 짚는다(포인터가 글자를 덮지 않게).
-  // props:<원>#2처럼 줄 번호를 붙이면 그 줄(위에서부터)을 짚는다.
+  // props:<원>#2처럼 줄 번호를 붙이면 그 줄(위에서부터)을 짚는다. 강조는 줄 번호가 있으면 그 줄, 없으면 그 원의 증거 줄 전부(줄마다 상자 하나).
   if(name.startsWith('props:')){const [cap,nth]=name.slice(6).split('#');const n=await node(cap);n.nth=nth?Number(nth):0;
    const r=await q1(()=>raw.evaluate(n=>{const c=document.querySelector('canvas');const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));
     const L=T.filter(t=>t.at>=lt-20&&t.t.includes(':')&&!t.t.startsWith('절차')&&Math.hypot(t.x-n.x,t.y-n.y)<n.r+190);if(!L.length)return null;
     const rows=[...new Set(L.map(t=>Math.round(t.y)))].sort((a,b)=>a-b);if(n.nth&&!rows[n.nth-1])return null;
-    return{left:Math.min(...L.map(t=>t.x-t.w/2)),top:n.nth?rows[n.nth-1]:rows[0]};},n));
-   if(!r)throw Error('props '+name.slice(6)+': no property text near the node');return{x:r.left-30,y:r.top-6};}
+    const box=y=>{const R=L.filter(t=>Math.round(t.y)===y),l=Math.min(...R.map(t=>t.x-t.wt/2)),r=Math.max(...R.map(t=>t.x+t.wt/2)),up=Math.max(...R.map(t=>t.up)),dn=Math.max(...R.map(t=>t.dn));return[l,R[0].y-up,r-l,up+dn];};
+    return{left:Math.min(...L.map(t=>t.x-t.w/2)),top:n.nth?rows[n.nth-1]:rows[0],rects:(n.nth?[rows[n.nth-1]]:rows).map(box)};},n));
+   if(!r)throw Error('props '+name.slice(6)+': no property text near the node');return{x:r.left-30,y:r.top-6,hl:{rects:r.rects}};}
   // 캔버스 글자(관계 이름 · 절차 번호 · Label 띠)는 글자 한가운데가 아니라 오른쪽 아래를 짚는다 — 포인터 몸통이 아래 · 오른쪽으로 뻗으므로 가로 · 세로 글자 모두 가리지 않는다(t13-s1 a019 「Asset」을 덮음).
-  if(name.startsWith('ctext:')){const c=await ctext(name.slice(6));return{x:c.x+10,y:c.y+14};}
+  if(name.startsWith('ctext:')){const c=await ctext(name.slice(6));return{x:c.x+10,y:c.y+14,hl:textBox(c)};}
   // 글자의 왼쪽 끝 · 오른쪽 끝 아래(글자를 처음부터 끝까지 따라 짚을 때).
-  if(name.startsWith('ctextL:')||name.startsWith('ctextR:')){const c=await ctext(name.slice(7));return{x:c.x+(name[5]==='L'?-1:1)*c.w/2,y:c.y+14};}
+  if(name.startsWith('ctextL:')||name.startsWith('ctextR:')){const c=await ctext(name.slice(7));return{x:c.x+(name[5]==='L'?-1:1)*c.w/2,y:c.y+14,hl:textBox(c)};}
   // 두 원 사이 화살표의 가운데(화살표를 짚을 때).
   if(name.startsWith('edgeMid:')){const [a,b]=name.slice(8).split('>');const p=await node(a),t=await node(b);return{x:(p.x+t.x)/2,y:(p.y+t.y)/2};}
   return dom(name);
  }
- const ui={raw,install,gate,node,dom,circles,
+ // 강조 대상 잡기: 방금 point()가 잰 것을 hl.mjs가 읽는 window.__hlTarget에 둔다. 잴 것이 없는 대상 · 기운 글자의 밑줄은 대상과 모양을 대며 멈춘다.
+ async function aim(name,shape,q){
+  if(!hl)throw Error(`강조(${shape})는 녹화 제어(ctrl.mjs)로 돌릴 때만 기록한다: ${name}`);
+  if(!q.hl)throw Error(`${name}: 강조(${shape})를 잴 상자가 없는 대상이다(화살표 끝 · 넓은 자리 · 빈 곳) — 큐에서 모양을 뺀다`);
+  if(q.hl.tilted&&shape!=='box')throw Error(`${name}: 화살표를 따라 기운 글자에는 ${shape}을 그릴 수 없다 — box를 주거나 모양을 뺀다`);
+  await q1(()=>raw.evaluate(r=>{window.__hlTarget=r?{rects:r}:window.__hlEl;},q.hl.rects||null));
+ }
+ const ui={raw,install,gate,node,dom,circles,hlEnd,
   pos:()=>lastPos,
+  clickAt:async(x,y,o)=>{await moveCore(x,y);await gate();await clickAt(x,y,o);},   // 좌표를 아는 누르기(쪽을 옮기는 검색 결과 줄 — ctrl openLink)
   move:async(x,y)=>{await moveCore(x,y);},
   move2:async(x,y)=>{await moveCore(x,y);},   // 포인터를 화면 좌표로 옮기기(move는 아래의 원 옮기기가 같은 이름으로 덮는다)
-  point:async name=>{const q=await point(name);await moveCore(q.x,q.y);},
+  // 짚기. shape(underline · band · box · circle)이 있으면 강조를 남긴다: 출발 전에 상자를 재고, 닿은 뒤 다시 재어 같으면 그때가 시작이다(hl.mjs mark).
+  point:async(name,shape)=>{const q=await point(name);if(!shape){await moveCore(q.x,q.y);return;}
+   const o={shape,keep:false};await aim(name,shape,q);const before=await hl.read(run,o);
+   await moveCore(q.x,q.y,{keepHl:true});await aim(name,shape,await point(name));await hl.mark(run,sleep,o,before);},
   click:async name=>{
    for(let i=0;i<4;i++){
     const q=await point(name);
     // 하위 메뉴(New ▸ Web Browser storage): 비스듬히 가면 아래 줄 Open을 지나 그 하위 메뉴가 대신 열린다. 사람처럼 지금 줄에서 오른쪽으로 먼저 옮긴 뒤 내려간다.
-    if(name==='menu:newLocal'){const a=await q1(pointerPos);await moveCore(q.x,a.y);}
+    if(name==='menu:newLocal')await moveCore(q.x,lastPos.y);
     await moveCore(q.x,q.y);await gate();const now=name==='blank'?q:await point(name);
     if(Math.hypot(now.x-q.x,now.y-q.y)>2)continue;
-    await q1(()=>raw.mouse.click(now.x,now.y));await sleep(160);
+    await clickAt(q.x,q.y);await sleep(160);   // 화살표가 닿은 자리를 누른다(대상은 그 자리에서 2px 안)
     if(now.input)ctx.focusBox=now;return;
    }
    throw Error('Target layout did not settle: '+name);
@@ -210,9 +259,9 @@ export async function makeUI(ctx){
   type:async text=>{
    const ok=await q1(()=>raw.evaluate(()=>document.activeElement?.matches('input,textarea')));if(!ok)throw Error('Typing target is not an input');
    if(ctx.focusBox)await moveCore(ctx.focusBox.left+24,ctx.focusBox.bottom+22);
-   await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([105,125,95,135,110][i++%5]);}
+   hlEnd('입력');await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([105,125,95,135,110][i++%5]);}
   },
-  key:async k=>{await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);},
+  key:async k=>{hlEnd('입력');await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);},
   // 간격 넓히기: 그림 중심에서 먼 원부터 바깥쪽으로 dist만큼 끈다. 가장자리에 닿으면 arrows가 그림 전체를 축소해 맞춘다.
   spread:async(count,dist)=>{
    const {list,box}=await circles();const cx=list.reduce((a,c)=>a+c.x,0)/list.length,cy=list.reduce((a,c)=>a+c.y,0)/list.length;
@@ -220,7 +269,7 @@ export async function makeUI(ctx){
    for(const f of far){const cur=(await circles()).list.reduce((b,c)=>Math.hypot(c.x-f.x,c.y-f.y)<Math.hypot(b.x-f.x,b.y-f.y)?c:b);
     const a=Math.atan2(cur.y-cy,cur.x-cx);let tx=cur.x+dist*Math.cos(a),ty=cur.y+dist*Math.sin(a);
     tx=Math.max(box.l+cur.r*0.6,Math.min(box.r-cur.r*0.6,tx));ty=Math.max(box.t+cur.r*0.6,Math.min(box.b-cur.r*0.6,ty));
-    await moveCore(cur.x,cur.y);await gate();await q1(()=>raw.mouse.down());await moveCore(tx,ty);await q1(()=>raw.mouse.up());await sleep(350);}
+    await moveCore(cur.x,cur.y);await gate();await press();await moveCore(tx,ty);await release();await sleep(350);}
   },
   // 배치 정리: 원을 기준 원(anchor)에서 반지름 단위 (dx,dy) 위치로 끈다. 옮긴 뒤 겹치거나 그림이 크게 줄면(폭주) 실행 취소하고 다음으로 넘어간다.
   arrange:async moves=>{
@@ -228,7 +277,7 @@ export async function makeUI(ctx){
    for(const [cap,anchor,dx,dy] of moves){
     const before=await circles();const n=await node(cap),a=await node(anchor);const r=a.r,tx=a.x+dx*r,ty=a.y+dy*r,b=before.box;
     if(tx<b.l+r*0.8||tx>b.r-r*0.8||ty<b.t+r*0.8||ty>b.b-r*0.8||before.list.some(c=>Math.hypot(c.x-n.x,c.y-n.y)>4&&Math.hypot(c.x-tx,c.y-ty)<c.r+r+30)){done.push(cap+':skip');continue;}
-    await moveCore(n.x,n.y);await gate();await q1(()=>raw.mouse.down());await moveCore(tx,ty);await q1(()=>raw.mouse.up());await sleep(400);
+    await moveCore(n.x,n.y);await gate();await press();await moveCore(tx,ty);await release();await sleep(400);
     const after=await circles();const m=await node(cap);const rs=after.list[0].r;
     const bad=rs<r*0.8||after.list.some(c=>c.x<b.l||c.x>b.r||c.y<b.t||c.y>b.b)||after.list.some(c=>Math.hypot(c.x-m.x,c.y-m.y)>4&&Math.hypot(c.x-m.x,c.y-m.y)<c.r+m.r);
     if(bad){await q1(()=>raw.keyboard.press('ControlOrMeta+Z'));await sleep(400);done.push(cap+':undo');}else done.push(cap+':ok');
@@ -240,7 +289,7 @@ export async function makeUI(ctx){
    const done=[];
    for(const [cap,tx,ty] of moves){
     const r0=(await circles()).list[0].r;const n=await node(cap);
-    await moveCore(n.x,n.y);await gate();await q1(()=>raw.mouse.down());await moveCore(tx,ty);await q1(()=>raw.mouse.up());await sleep(400);
+    await moveCore(n.x,n.y);await gate();await press();await moveCore(tx,ty);await release();await sleep(400);
     const r1=(await circles()).list[0].r;if(r1<r0*0.85){await q1(()=>raw.keyboard.press('ControlOrMeta+Z'));await sleep(400);done.push(cap+':undo');}else done.push(cap+':ok');
    }
    return done;
@@ -255,14 +304,14 @@ export async function makeUI(ctx){
     if(Math.hypot(g[cap].x-gx,g[cap].y-gy)<20){res[cap]=cap+':0,0';continue;}
     const A=await node(ref[0]),B=await node(ref[1]),ga=g[ref[0]],gb=g[ref[1]];const k=(B.x-A.x)/(gb.x-ga.x);
     const tx=A.x+(gx-ga.x)*k,ty=A.y+(gy-ga.y)*k;const n=await node(cap);
-    await moveCore(n.x,n.y);await gate();await q1(()=>raw.mouse.down());await moveCore(tx,ty);await q1(()=>raw.mouse.up());await sleep(400);
+    await moveCore(n.x,n.y);await gate();await press();await moveCore(tx,ty);await release();await sleep(400);
     await q1(()=>raw.waitForFunction(()=>document.body.innerText.includes('Saved to Web Browser storage'),undefined,{timeout:8000})).catch(()=>{});
     const p=Object.fromEntries((await G()).map(([c,x,y])=>[c,{x,y}]))[cap];res[cap]=cap+':'+Math.round(p.x-gx)+','+Math.round(p.y-gy);
    }
    return moves.map(([c])=>res[c]);
   },
   // Ctrl을 누른 채 클릭(여러 원 함께 선택).
-  ctrlclick:async name=>{const q=await point(name);await moveCore(q.x,q.y);await gate();await q1(()=>raw.keyboard.down('Control'));await q1(()=>raw.mouse.click(q.x,q.y));await q1(()=>raw.keyboard.up('Control'));await sleep(160);},
+  ctrlclick:async name=>{const q=await point(name);await moveCore(q.x,q.y);await gate();await clickAt(q.x,q.y,{ctrl:true});await sleep(160);},
   // 원 테두리를 빈 곳으로 끌어 새 원+화살표 만들기. 놓을 자리에 다른 원이 있거나 그림 밖이면 각도를 15도씩 돌려 빈 곳을 찾는다.
   grow:async(source,deg)=>{
    const s=await node(source);await ui.click('node:'+source);
@@ -286,7 +335,7 @@ export async function makeUI(ctx){
    if(!pick)throw Error('No free spot around '+source);
    const sx=s.x+r*1.09*Math.cos(pick.a),sy=s.y+r*1.09*Math.sin(pick.a);
    const n0=(await circles()).list.length;
-   await moveCore(sx,sy);await gate();await q1(()=>raw.mouse.down());await moveCore(pick.x,pick.y);await q1(()=>raw.mouse.up());await sleep(300);
+   await moveCore(sx,sy);await gate();await press();await moveCore(pick.x,pick.y);await release();await sleep(300);
    const n1=(await circles()).list.length;if(n1!==n0+1)throw Error(`grow from ${source}: circles ${n0} -> ${n1}`);
   },
   // 정한 자리로 끌기: 기준 원(anchor — 첫 원)에서 잰 그림 좌표 (gx,gy)를 지금 보기 배율로 화면 좌표로 바꿔, source 원의 띠에서 그쪽으로 끌어 새 원 + 화살표를 만든다.
@@ -302,19 +351,19 @@ export async function makeUI(ctx){
    const near=(px,py)=>segs.some(([P,Q])=>{const vx=Q.x-P.x,vy=Q.y-P.y,L=vx*vx+vy*vy||1,u=Math.max(0,Math.min(1,((px-P.x)*vx+(py-P.y)*vy)/L));return Math.hypot(P.x+u*vx-px,P.y+u*vy-py)<16;});
    const base=Math.atan2(y-s.y,x-s.x);let ang=base;for(const d of [0,0.25,-0.25,0.5,-0.5,0.75,-0.75]){const g=base+d;if(!near(s.x+Math.cos(g)*s.r*1.09,s.y+Math.sin(g)*s.r*1.09)){ang=g;break;}}
    const sx=s.x+s.r*1.09*Math.cos(ang),sy=s.y+s.r*1.09*Math.sin(ang);const n0=list.length;
-   await moveCore(sx,sy);await gate();await q1(()=>raw.mouse.down());await moveCore(x,y);await q1(()=>raw.mouse.up());await sleep(300);
+   await moveCore(sx,sy);await gate();await press();await moveCore(x,y);await release();await sleep(300);
    const n1=(await circles()).list.length;if(n1!==n0+1)throw Error(`growTo from ${source}: circles ${n0} -> ${n1}`);
   },
   // 두 원 사이 화살표를 눌러 관계 선택(Type 칸 확인).
   edge:async(a,b)=>{
    // 한가운데 대신 출발 원 쪽 35% 지점: 여러 화살표가 모이는 도착 원 근처에서 다른 선을 누르지 않게 한다.
    const p=await node(a),t=await node(b);const x=p.x+(t.x-p.x)*0.35,y=p.y+(t.y-p.y)*0.35;
-   await moveCore(x,y);await gate();await q1(()=>raw.mouse.click(x,y));await sleep(200);
+   await moveCore(x,y);await gate();await clickAt(x,y);await sleep(200);
    await q1(()=>raw.waitForFunction(()=>[...document.querySelectorAll('form *')].some(e=>e.childElementCount===0&&e.textContent.trim()==='Type'),undefined,{timeout:3000})).catch(()=>{throw Error('Relationship not selected between '+a+' and '+b);});
   },
   // 이미 있는 원을 화면에서 (dx,dy)만큼 끌어 옮기기(겹침·이름 잘림 정리). 끝난 뒤 실제로 움직였는지 확인한다.
   move:async(caption,dx,dy)=>{
-   const n=await node(caption);await moveCore(n.x,n.y);await gate();await q1(()=>raw.mouse.down());await moveCore(n.x+dx,n.y+dy);await q1(()=>raw.mouse.up());await sleep(300);
+   const n=await node(caption);await moveCore(n.x,n.y);await gate();await press();await moveCore(n.x+dx,n.y+dy);await release();await sleep(300);
    const m=await node(caption);const others=(await circles()).list.filter(c=>Math.hypot(c.x-m.x,c.y-m.y)>4);
    if(others.some(c=>Math.hypot(c.x-m.x,c.y-m.y)<c.r+m.r))throw Error('After move '+caption+' overlaps another node');
   },
@@ -323,7 +372,7 @@ export async function makeUI(ctx){
    const n=await node(caption);const c=await q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();const b=document.querySelector('canvas').getBoundingClientRect();return{l:b.left,t:b.top,w:b.width,h:b.height,k:window.__arrowsStore.getState().viewTransformation.scale};}));
    const x=c.l+cx,y=cy==null?n.y:c.t+cy,m0=n.r+54;if(x-c.l<m0||c.l+c.w-x<m0||y-c.t<m0||c.t+c.h-y<m0)throw Error(`drag ${caption}: 놓을 자리 ${cx},${cy}가 그림판 가장자리 ${Math.round(m0)}px 안이다(그림이 줄어든다)`);
    await moveCore(n.x,n.y);await gate();
-   await q1(()=>raw.mouse.down());await moveCore(x,y);await q1(()=>raw.mouse.up());await sleep(300);
+   await press();await moveCore(x,y);await release();await sleep(300);
    const m=await node(caption);if(Math.hypot(m.x-x,m.y-y)>12)throw Error(`drag ${caption}: at ${Math.round(m.x)},${Math.round(m.y)} expected ${Math.round(x)},${Math.round(y)}`);
    const k=await q1(()=>raw.evaluate(()=>window.__arrowsStore.getState().viewTransformation.scale));if(k!==c.k)throw Error(`drag ${caption}: 보기 배율이 ${c.k} → ${k}로 바뀌었다`);
   },
@@ -335,7 +384,7 @@ export async function makeUI(ctx){
    const near=(x,y)=>segs.some(([P,Q])=>{const vx=Q.x-P.x,vy=Q.y-P.y,L=vx*vx+vy*vy||1,u=Math.max(0,Math.min(1,((x-P.x)*vx+(y-P.y)*vy)/L));return Math.hypot(P.x+u*vx-x,P.y+u*vy-y)<16;});
    let ang=base;for(const d of [0,0.25,-0.25,0.5,-0.5,0.75,-0.75]){const g=base+d;if(!near(p.x+Math.cos(g)*p.r*1.09,p.y+Math.sin(g)*p.r*1.09)){ang=g;break;}}
    const sx=p.x+Math.cos(ang)*p.r*1.09,sy=p.y+Math.sin(ang)*p.r*1.09;
-   await moveCore(sx,sy);await gate();await q1(()=>raw.mouse.down());await moveCore(t.x,t.y);await q1(()=>raw.mouse.up());await sleep(250);
+   await moveCore(sx,sy);await gate();await press();await moveCore(t.x,t.y);await release();await sleep(250);
    await q1(()=>raw.waitForFunction(()=>[...document.querySelectorAll('form *')].some(e=>e.childElementCount===0&&e.textContent.trim()==='Type'),undefined,{timeout:3000})).catch(()=>{throw Error('Relationship not created: '+a+' -> '+b);});
   },
  };

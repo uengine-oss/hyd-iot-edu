@@ -90,7 +90,7 @@ OPS = {
  'g0202': [OP('tour', '닫으시면', button='Dismiss')],
  'g0203': [MV(CSS(INST, under=True))],
  # g0204의 Instance 글은 화면 위 끝에서 CSS 5.6px 아래라 테두리 여백이 화면 밖으로 나간다 — clip으로 화면 안 10px까지 줄인다(클라우드 실측)
- 'g0204': [X(CSS(INST, inner='Instance:bolt://', clip=True), '맨 위, Instance라고'), U(PORT, '끝의 숫자는')],
+ 'g0204': [X(CSS(INST, inner='Instance:bolt://', clip=True), '맨 위, Instance라고'), U(PORT, '끝의 숫자가')],
  'g0206': [U(DBNAME, '그 옆에 Database라고'), U(ADDR, '주소로 구분합니다')],
  'g0205': [X(CSS('[data-testid="frame"]', contains=':welcome', clip=True))],
  # 3. 무엇이 들어 있나 — 왼쪽 패널
@@ -155,7 +155,7 @@ OPS = {
  'g1003': [U(ED('DELETE'), '지우는 절은 DELETE'), U(ED('DETACH'), '앞에 DETACH가'), X(EDGE(PUMP, S_NEW), '센서로 가는 관계가'), X(NODE(PUMP), '펌프만 지우면')],
  'g1004': [U(ED('DETACH DELETE'), 'DETACH DELETE는'), RUN(summary='Deleted 1 node, deleted 1 relationship')],
  'g1005': [U(FOOT('Deleted 1 node, deleted 1 relationship')), *PUT('7-2', '그래서')],
- 'g1006': [U(WITH(ED('연습장치'), ED('연습센서')), '장치에 붙인 레이블과'), U(ED('|'), '레이블 사이의 세로줄이'), RUN(graph=True, nodes=2, edges=0)],
+ 'g1006': [U(WITH(ED('연습장치'), ED('연습센서')), '펌프와 팬에 붙인'), U(ED('|'), '레이블 사이의 세로줄이'), RUN(graph=True, nodes=2, edges=0)],
  'g1007': [X(NODE(FAN), '팬과'), X(NODE(S_NEW), '센서,')],
  'g1008': PUT('7-3', '남은 둘은'),
  'g1009': [U(ED('DELETE n'), 'DELETE를'), U(ED('연습장치|연습센서'), '레이블이 달라서'), RUN(summary='Deleted 2 nodes')],

@@ -60,6 +60,8 @@ KIND = dict(NODES)
 # 낭독 글은 대본원고.md(사용자가 확정한 대본의 발화 칸 그대로, 큐 id도 그대로)이고, 여기 MAP이 큐 id마다 그 글의 ▸ 자리 차례대로 조작을 단다.
 # MAP의 한 칸 = ('A', 조작들): 큐 끝의 ▸ — 그 말이 끝날 때 한다 · ('P', 조작들): 바로 뒤 낱말을 말할 때 짚는다
 #             · ('T', 조작들): 말 속 그 자리에서 바로 한다(말하면서 하는 누르기 · 적기 · Ctrl로 함께 고르기).
+# 짚기에는 강조(영상 V-14 · V-11 — 합성 때 그리는 밑줄 · 띠 · 테두리 · 동그라미)가 붙는다. 모양은 대상 종류마다 기본값(hl_default)이고,
+# P(대상, hl='underline' | 'band' | 'box' | 'circle')로 바꾸거나 hl='none'으로 뺀다. 큐에는 ['point', 대상, 모양]으로 나가고, 강조가 없으면 ['point', 대상]이다.
 # 쉼은 큐 글과 조작으로 정한다(GAP과 gap_before) — 원고에 쉼 표시를 두지 않는다.
 # 원은 처음부터 끝 자리에 놓는다: POS = 첫 원(HYD-01)을 (0, 0)으로 둔 끝 그림의 그림 좌표다(직각 격자 — 열 0 · 330 · 630 · 936 · 1260, 줄 −452 · −228 · 0 · 220 · 440).
 # 첫 원은 새 그림의 빈 원을 원 안쪽을 잡고 왼쪽으로 끌어 옮긴 것이고(FIRST_X), 새 원을 놓는 자리는 그 첫 원의 화면 자리에서 잰다(촬영도구 ui.mjs growTo).
@@ -96,10 +98,33 @@ def sop(a, b, v):
     return [['edge', a, b], ['click', 'propPlus']] + pv('절차', v)
 def color(v):
     return [['click', 'style:node-color'], ['key', 'ControlOrMeta+A'], ['type', v], ['key', 'Tab']]
+HL_SHAPES = ('underline', 'band', 'box', 'circle')   # 포털 촬영도구 hl.mjs SHAPES
+HL_BOX = {'caption', 'type', 'labelInput', 'propKey', 'propVal', 'customize', 'reverse', 'labelPlus', 'propPlus', 'export', 'done'}
+
+
+def hl_default(t):
+    """짚기 대상의 기본 강조 모양. 화살표 끝 · 넓은 자리 · 메뉴 줄처럼 여기 없는 대상은 강조가 없다(None)."""
+    if t.startswith(('look:', 'ring:', 'node:', 'inner:')):
+        return 'circle'       # 원 둘레의 동그라미
+    if t.startswith(('ctext:', 'ctextL:', 'ctextR:', 'props:')) or t in ('selCount', 'cypherHead'):
+        return 'underline'    # 그림판 글자(관계 이름 · Label 띠 · 절차 번호) · 증거 줄 · 개수 줄 · Cypher 첫 낱말
+    if t.startswith('noteLine:') or t == 'cypherText':
+        return 'band'         # 글상자 줄 · Cypher 글
+    if t in HL_BOX or t.startswith(('style:', 'styleSel:', 'tab:')):
+        return 'box'          # 오른쪽 칸의 입력칸 · 단추
+    return None
+
+
+def P(t, hl=None):
+    shape = hl_default(t) if hl is None else None if hl == 'none' else hl
+    if shape is not None and shape not in HL_SHAPES:
+        raise SystemExit(f"P({t!r}): 모르는 강조 모양 {hl!r} — {' | '.join(HL_SHAPES)} | none (build_ontology.py)")
+    return ('P', [['point', t] + ([shape] if shape else [])])
+
+
 A = lambda *ops: ('A', [o for x in ops for o in x])
 T = lambda *ops: ('T', [o for x in ops for o in x])
-P = lambda t: ('P', [['point', t]])
-L = lambda c: P('look:' + c)                       # 원(테두리 오른쪽 아래)
+L = lambda c, hl=None: P('look:' + c, hl)          # 원(테두리 오른쪽 아래)
 EF = lambda a, b: P(f'edgeFrom:{a}>{b}')           # 화살표가 나가는 끝
 ET = lambda a, b: P(f'edgeTo:{a}>{b}')             # 화살표가 닿는 끝
 N = lambda text: ('P', [['note', text, 'tr']])     # 글상자 띄우기
@@ -108,80 +133,68 @@ ck = lambda t: [['click', t]]
 
 MAP = {
  # 1구간 — 검색해서 들어가기 · 원 크기 · 관계 글 가로 · 첫 원 옮기기
- 'e003': [A([['click', 'sel:#sb_form_q'], ['type', 'arrows.app'], ['key', 'Enter'], ['reinstall']])],
- 'e004': [A([['openLink', 'result:arrows.app']])],
- 'e005': [A(ck('text:Use necessary cookies only'))],
- 'e006': [A(ck('done'))],
- 'e007': [P('canvasMid'), P('panelMid'), L('')],
- 'e008': [A(ck('customize'))],
- 'e009': [P('style:radius'), T([['click', 'style:radius'], ['key', 'ControlOrMeta+A'], ['type', '60'], ['key', 'Tab']])],
- 'e010b': [T([['panelScroll', 'styleSel:detail-orientation']]), P('styleSel:detail-orientation'),
-           A([['click', 'styleSel:detail-orientation'], ['click', 'styleOpt:detail-orientation=horizontal'], ['panelScroll']])],
- 'e011': [T([['drag', '', FIRST_X, None]])],
- # 2구간
- 'e012': [A(ck('node:'))], 'e013': [P('caption'), A(cap(H))], 'e015': [A(ck('labelPlus'))],
- 'e016': [T([['click', 'labelInput'], ['type', 'Asset'], ['key', 'Tab']])], 'e017': [P('ctext:Asset')],
- 'e019': [T(ck('node:' + H)), P('ring:' + H), P('node:' + H), P('ring:' + H), A(gt(H, K, click=False))],
- 'e020': [A(nn(K))], 'e021': [EF(H, K), ET(H, K)], 'e022': [L(H), L(K)],
- 'e023': [T([['edge', H, K]]), P('type'), A(ty('HAS_COMPONENT'))],
- 'e024': [P('ctext:HAS_COMPONENT'), P('ctextL:HAS_COMPONENT'), P('ctextR:HAS_COMPONENT')],
- 'e025': [EF(H, K), ET(H, K), L(H), L(K), P('ctext:HAS_COMPONENT')], 'e026': [L(H), ET(H, K)],
- 'e027': [L(K), P('ctext:HAS_COMPONENT'), L(H), L(K)], 'e028': [L(K)], 'e029': [A(gt(K, S))], 'e030': [T(nn(S))],
- 'e031': [L(S), L(K), L(K), L(S)], 'e032': [L(S), EF(K, S)], 'e033': [L(K), EF(K, S), ET(K, S), A(et(K, S, 'MONITORED_BY'))],
- 'e034': [L(K), L(S), P('ctext:MONITORED_BY'), L(H), L(K), L(S)],
- # 3구간
- 'e035': [A(gt(S, U))], 'e036': [T(cap(U)), A(lab(U))], 'e037': [L(U), L(S)], 'e038': [L(U), EF(S, U), ET(S, U)],
- 'e039': [T([['edge', S, U]]), P('reverse'), A(ck('reverse'))], 'e040': [A(ty('OBSERVED_BY'))], 'e041': [L(U), L(S), P('ctext:OBSERVED_BY')],
- 'e042': [L(U), EF(U, S), L(S)], 'e043': [L(U), L(K)], 'e044': [A(gt(U, F))], 'e045': [T(cap(F)), A(lab(F))],
- 'e046': [L(U), L(F), A(et(U, F, 'INDICATES'))], 'e047': [L(K), A(con(F, K))], 'e048': [L(F), L(K), A(et(F, K, 'OCCURS_IN'))],
- 'e049': [L(U), L(S), L(F), L(K)],
- # 4구간
- 'e050': [L(K)], 'e051': [A(gt(F, PO))], 'e052': [A(nn(PO))], 'e053': [L(PO), L(F), EF(F, PO), ET(F, PO)], 'e054': [A(et(F, PO, 'CAUSES', rev=True))],
- 'e055': [L(PO), L(F), L(F), L(PO)], 'e057': [T(ck('node:' + PO)), A(ck('propPlus'))],
- 'e058': [P('propKey'), P('propVal'), A([['click', 'propKey'], ['type', '냉각 효율']])],
- 'e059': [T([['click', 'propVal'], ['type', '30초 평균 < 70 %']]), T([['key', 'Tab']])], 'e060': [P('props:' + PO)],
- 'e061': [T(ck('propPlus')), A(pv('팬 진동', '2분 평균 < 0.9 mm/s'))], 'e062': [P('props:' + PO)],
- # 5구간
- 'e064': [A(gt(F, MX))], 'e065': [T(nn(MX))], 'e066': [L(F), L(MX)], 'e067': [A(et(F, MX, 'MITIGATED_BY'))], 'e068': [A(gt(F, PC))], 'e069': [A(nn(PC))],
- 'e070': [T(et(F, PC, 'REMEDIED_BY')), L(F), L(PC), P('ctext:REMEDIED_BY')], 'e071': [P('ctext:MITIGATED_BY'), P('ctext:REMEDIED_BY')],
- 'e072': [A(con(PC, PO))], 'e073': [L(PC), L(PO), A(et(PC, PO, 'ADDRESSES'))], 'e074': [A(gt(MX, M85))], 'e075': [T(cap(M85)), A(lab(M85))],
- 'e076': [L(MX), L(M85), A(et(MX, M85, 'REFERS_TO'))], 'e077': [T(gt(PC, M87)), A(nn(M87))], 'e078': [A(et(PC, M87, 'REFERS_TO'))],
- 'e079': [L(PO), L(PC), L(M87)],
- # 6구간
- 'e080': [L(PO)], 'e081': [A(gt(F, FD))], 'e082': [T(cap(FD)), A(lab(FD))], 'e083': [A(et(F, FD, 'CAUSES', rev=True))],
- 'e084': [A([['click', 'node:' + FD], ['click', 'propPlus']], pv('팬 진동', '2분 평균 ≥ 0.9 mm/s'))], 'e085': [P('props:' + PO + '#2'), P('props:' + FD)],
- 'e086': [A(gt(F, FI))], 'e087': [T(cap(FI)), T(lab(FI)), A(et(F, FI, 'REMEDIED_BY'))], 'e088': [A(con(FI, FD), et(FI, FD, 'ADDRESSES'))],
- 'e089': [T(gt(FI, M81)), A(nn(M81))], 'e089b': [A(et(FI, M81, 'REFERS_TO'))],
- # 7구간
- 'e090b': [A(gt(F, AT))], 'e091': [T(nn(AT)), A(et(F, AT, 'CAUSES', rev=True))],
- 'e092': [A([['click', 'node:' + AT], ['click', 'propPlus']], pv('캐비닛 온도', '2분 평균 ≥ 35 ℃'))], 'e093': [A(gt(AT, CV))], 'e094': [A(nn(CV))],
- 'e095': [L(CV), L(AT), EF(AT, CV), ET(AT, CV), A(et(AT, CV, 'ADDRESSES', rev=True))], 'e096': [A(con(F, CV), et(F, CV, 'REMEDIED_BY'))],
- 'e097': [A(con(CV, M87), et(CV, M87, 'REFERS_TO'))], 'e098': [L(PC), L(M87), L(CV)], 'e099': [L(PO), L(PC), L(FD), L(FI), L(AT), L(CV)],
- # 8구간
- 'e101': [L(FD)], 'e102': [A(gt(F, BR))], 'e103': [A(nn(BR))], 'e104': [L(BR), L(F)], 'e105': [A(et(F, BR, 'LEADS_TO', rev=True))],
- 'e106': [P('props:' + FD), L(BR)], 'e107': [L(U), A(gt(BR, VB))], 'e108': [T(nn(VB)), A(et(BR, VB, 'INDICATES', rev=True))], 'e109': [L(VB), L(BR), L(F)],
- 'e110': [L(M87), L(PC), L(CV)], 'e111': [A([['edge', FI, M81]])], 'e112': [A(ck('propPlus'), pv('절차', 'SOP-FAN-11'))],
- 'e113': [A(sop(CV, M87, 'SOP-COOL-15'))], 'e114': [A(sop(PC, M87, 'SOP-COOL-14'))], 'e115': [A(sop(MX, M85, 'SOP-COOL-11'))],
- 'e116': [P('ctext:SOP-COOL-14'), P('ctext:SOP-COOL-15')],
+ 'g004': [A([['click', 'sel:#sb_form_q'], ['type', 'arrows.app'], ['key', 'Enter'], ['reinstall']])],
+ 'g005': [A([['openLink', 'result:arrows.app']])],
+ 'g006': [A([['click', 'text:Use necessary cookies only'], ['click', 'done']])],
+ 'g007': [P('canvasMid'), L('')],
+ 'g008': [A(ck('customize'))],
+ 'g009': [P('style:radius'), T([['click', 'style:radius'], ['key', 'ControlOrMeta+A'], ['type', '60'], ['key', 'Tab']])],
+ 'g010': [T([['panelScroll', 'styleSel:detail-orientation']]), P('styleSel:detail-orientation'),
+          A([['click', 'styleSel:detail-orientation'], ['click', 'styleOpt:detail-orientation=horizontal'], ['panelScroll']])],
+ 'g011': [T([['drag', '', FIRST_X, None]])],
+ # 2구간 — 설비 · 쿨러 · 센서
+ 'g012': [A(ck('node:'))], 'g013': [P('caption'), A(cap(H))], 'g015': [P('labelPlus'), A(ck('labelPlus'))],
+ 'g016': [A([['click', 'labelInput'], ['type', 'Asset'], ['key', 'Tab']])], 'g017': [P('ctext:Asset')], 'g018': [L(H)],
+ 'g019': [P('inner:' + H), P('ring:' + H), A(gt(H, K, click=False))],
+ 'g020': [A(nn(K))], 'g021': [EF(H, K)], 'g022': [L(H), L(K)],
+ 'g023': [T([['edge', H, K]]), P('type'), A(ty('HAS_COMPONENT'))],
+ 'g024': [EF(H, K), ET(H, K)], 'g026': [L(K), P('ctext:HAS_COMPONENT')], 'g027': [L(K)],
+ 'g028': [A(gt(K, S))], 'g029': [T(nn(S))], 'g030': [L(K), L(S)], 'g031': [T([['edge', K, S]]), A(ty('MONITORED_BY'))], 'g032': [L(K), L(S)],
+ # 3구간 — 증상 · 방향 뒤집기 · 고장 유형
+ 'g033': [L(S)], 'g034': [A(gt(S, U))], 'g035': [T(cap(U)), A(lab(U))], 'g036': [L(U), L(S)], 'g037': [EF(S, U), L(U)],
+ 'g038': [T([['edge', S, U]]), P('reverse'), A(ck('reverse'))], 'g039': [A(ty('OBSERVED_BY'))], 'g040': [L(U), L(S)],
+ 'g042': [L(U)], 'g043': [A(gt(U, F))], 'g044': [T(cap(F)), A(lab(F))],
+ 'g045': [L(U), L(F), A(et(U, F, 'INDICATES'))], 'g046': [A(con(F, K))], 'g047': [L(F), L(K), A(et(F, K, 'OCCURS_IN'))],
+ 'g048': [L(S), L(U), L(F), L(K)],
+ # 4구간 — 원인 · 증거
+ 'g049': [L(K)], 'g050': [L(F), A(gt(F, PO))], 'g051': [A(nn(PO))], 'g052': [L(PO), L(F), EF(F, PO)], 'g053': [A(et(F, PO, 'CAUSES', rev=True))],
+ 'g054': [P('ctext:CAUSES')], 'g056': [T(ck('node:' + PO)), P('propPlus'), A(ck('propPlus'))],
+ 'g057': [P('propKey'), P('propVal'), A([['click', 'propKey'], ['type', '냉각 효율']])],
+ 'g058': [T([['click', 'propVal'], ['type', '30초 평균 < 70 %']]), T([['key', 'Tab']])], 'g059': [P('props:' + PO)],
+ 'g060': [T(ck('propPlus')), A(pv('팬 진동', '2분 평균 < 0.9 mm/s'))], 'g061': [P('props:' + PO + '#1'), P('props:' + PO + '#2')],
+ # 5구간 — 완화 조치 · 근본 조치 · 근거 매뉴얼
+ 'g063': [A(gt(F, MX))], 'g064': [T(nn(MX))], 'g065': [L(F), L(MX), A(et(F, MX, 'MITIGATED_BY'))], 'g066': [A(gt(F, PC))], 'g067': [A(nn(PC))],
+ 'g068': [L(F), L(PC), A(et(F, PC, 'REMEDIED_BY'))], 'g069': [P('ctext:MITIGATED_BY'), P('ctext:REMEDIED_BY')],
+ 'g070': [L(PC), A(con(PC, PO))], 'g071': [L(PC), L(PO), A(et(PC, PO, 'ADDRESSES'))], 'g073': [A(gt(MX, M85))], 'g074': [T(cap(M85)), A(lab(M85))],
+ 'g075': [L(MX), L(M85), A(et(MX, M85, 'REFERS_TO'))], 'g076': [T(gt(PC, M87)), A(nn(M87))], 'g077': [A(et(PC, M87, 'REFERS_TO'))],
+ 'g078': [L(PO), L(PC), L(M87)],
+ # 6구간 — 두 번째 원인
+ 'g080': [A(gt(F, FD))], 'g081': [T(cap(FD)), A(lab(FD))], 'g082': [A(et(F, FD, 'CAUSES', rev=True))],
+ 'g083': [A([['click', 'node:' + FD], ['click', 'propPlus']], pv('팬 진동', '2분 평균 ≥ 0.9 mm/s'))], 'g084': [P('props:' + PO + '#2'), P('props:' + FD)],
+ 'g085': [A(gt(F, FI))], 'g086': [T(nn(FI)), A(et(F, FI, 'REMEDIED_BY'))], 'g087': [A(con(FI, FD), et(FI, FD, 'ADDRESSES'))],
+ 'g088': [A(gt(FI, M81), nn(M81))], 'g089': [A(et(FI, M81, 'REFERS_TO'))],
+ # 7구간 — 세 번째 원인
+ 'g091': [A(gt(F, AT))], 'g092': [T(nn(AT)), A(et(F, AT, 'CAUSES', rev=True))],
+ 'g093': [A([['click', 'node:' + AT], ['click', 'propPlus']], pv('캐비닛 온도', '2분 평균 ≥ 35 ℃'))], 'g094': [A(gt(AT, CV))], 'g095': [A(nn(CV))],
+ 'g096': [L(CV), L(AT), EF(AT, CV), A(et(AT, CV, 'ADDRESSES', rev=True))], 'g097': [A(con(F, CV), et(F, CV, 'REMEDIED_BY'))],
+ 'g098': [A(con(CV, M87), et(CV, M87, 'REFERS_TO'))], 'g099': [L(PC), L(M87), L(CV)], 'g100': [L(FD), L(FI), L(PO), L(PC), L(AT), L(CV)],
+ # 8구간 — 고장이 고장으로 · 절차 번호
+ 'g102': [L(F), A(gt(F, BR))], 'g103': [A(nn(BR))], 'g104': [L(BR), L(F)], 'g105': [A(et(F, BR, 'LEADS_TO', rev=True))],
+ 'g106': [P('props:' + FD), A(gt(BR, VB))], 'g107': [T(nn(VB)), A(et(BR, VB, 'INDICATES', rev=True))], 'g108': [L(VB), L(BR), L(F)],
+ 'g110': [L(M87)], 'g111': [A([['edge', CV, M87]])], 'g112': [T(ck('propPlus')), A(pv('절차', 'SOP-COOL-15'))],
+ 'g113': [A(sop(PC, M87, 'SOP-COOL-14'))], 'g114': [P('ctext:SOP-COOL-14'), P('ctext:SOP-COOL-15')],
+ 'g115': [A(sop(MX, M85, 'SOP-COOL-11'))], 'g116': [A(sop(FI, M81, 'SOP-FAN-11'))],
  # 9구간 — 색칠
- 'e117': [T(ck('node:' + PO)), T([['ctrlclick', 'node:' + FD]]), T([['ctrlclick', 'node:' + AT]])], 'e118': [P('selCount'), P('style:node-color'), A(color(RED))],
- 'e119': [T(ck('node:' + MX)), T([['ctrlclick', 'node:' + PC]]), T([['ctrlclick', 'node:' + CV]]), T([['ctrlclick', 'node:' + FI]]), P('selCount')], 'e120': [A(color(GREEN))],
+ 'g117': [T(ck('node:' + PO)), T([['ctrlclick', 'node:' + FD]]), T([['ctrlclick', 'node:' + AT]])], 'g118': [P('selCount'), P('style:node-color'), A(color(RED))],
+ 'g119': [T(ck('node:' + MX)), T([['ctrlclick', 'node:' + PC]]), T([['ctrlclick', 'node:' + CV]]), T([['ctrlclick', 'node:' + FI]]), A(color(GREEN))],
  # 10구간 — 그림으로 판단하기
- 'e121': [T(ck('blank')), L(U), L(F), L(PO), L(FD), L(AT)], 'e122': [N(CASE), P('noteLine:1'), P('noteLine:2'), P('noteLine:3')],
- 'e123': [P('props:' + PO + '#1'), P('props:' + PO + '#2')], 'e124': [P('props:' + FD), P('props:' + AT), L(PO)],
- 'e125': [OFF, L(PO), L(PC), L(M87), P('ctext:SOP-COOL-14'), L(MX)], 'e126': [N(CASE14), P('props:' + FD), L(FI), L(M81), P('ctext:SOP-FAN-11')],
- 'e126b': [L(VB), L(BR), L(MX)], 'e127': [OFF, L(PC), L(FI)], 'e128': [N(CASE38), P('props:' + AT), P('props:' + PO), L(CV), L(PC)],
- 'e129': [OFF, P('props:' + PO + '#2')],
- # 11구간 — 내보내기 · 새 그림 · 가져오기
- 'e130': [A(ck('export'))], 'e131': [P('tab:PNG'), A([['download', 'png', 'Untitled graph']])], 'e132': [A([['click', 'tab:JSON'], ['download', 'json', 'Untitled graph']])],
- 'e133': [A(ck('done'))], 'e134': [A(ck('blank'))], 'e135': [A(ck('logo'))],
- 'e136': [P('menu:New'), P('menu:Open'), A([['point', 'menu:New'], ['click', 'menu:newLocal']])], 'e137': [L(''), A(ck('blank'))],
- 'e138': [A([['click', 'logo'], ['click', 'menu:Import']])], 'e139': [A([['choose', 'json']])], 'e140': [A(ck('importButton'))],
- # e141: 다시 연 그림은 관계 글이 화살표를 따라 서서 세로 화살표의 절차 번호 셋이 원에 가려 잘린다 — 온전히 보이는 가로 화살표의 번호를 짚는다
- 'e141': [P('selCount'), P('props:' + PO), P('ctext:SOP-FAN-11'), L(PC)], 'e142': [L(F), P('ctext:LEADS_TO')],
- 'e143': [A([['click', 'blank'], ['click', 'node:'], ['click', 'text:Delete'], ['verify']])],
- # 12구간 — Cypher
- 'e145': [A(ck('export'))], 'e146': [A(ck('tab:Cypher'))], 'e147': [P('cypherText'), P('cypherHead'), A(ck('done'))],
+ 'g120': [T(ck('blank')), L(U), L(F), L(FD), L(AT), L(PO)], 'g121': [N(CASE), P('noteLine:1'), P('noteLine:2'), P('noteLine:3')],
+ 'g122': [P('props:' + PO + '#1'), P('props:' + PO + '#2')], 'g123': [P('props:' + FD), P('props:' + AT), L(PO)],
+ 'g124': [OFF, L(PO), L(PC), P('ctext:SOP-COOL-14'), L(M87), L(MX)], 'g125': [N(CASE14), P('props:' + PO + '#2'), P('props:' + FD), L(FI), P('ctext:SOP-FAN-11'), L(M81)],
+ 'g126': [L(VB), L(BR)], 'g127': [N(CASE38), P('props:' + PO), P('props:' + AT), L(CV), L(PC)], 'g128': [OFF, P('props:' + PO + '#2')],
+ 'g129': [L(U), L(PC), L(FI)],
+ # 11구간 — 파일로 남기기 · Cypher · 맺음(화면을 열지 않고 단추만 짚는다)
+ 'g130': [P('export')],
 }
 # 쉼(ms, 영상 V-14): 한 문맥으로 이어지는 큐 0.6초 · 큐 사이 1.3초 · 조작 결과 뒤와 따라 적은 뒤 2.0초 · 구간이 바뀌는 곳 2.3초.
 GAP = {'join': 600, 'pause': 1300, 'result': 2000, 'stage': 2300}
@@ -277,7 +290,7 @@ def act(op):
         t = a[0]
         if t in TARGET:
             return TARGET[t] if k == 'click' else TARGET[t].replace('클릭', '가리키기')
-        for pre, word in (('node:', '원'), ('look:', '원'), ('ring:', '원 둘레의 하늘색 띠'), ('ctextL:', '글자의 앞'), ('ctextR:', '글자의 끝'), ('ctext:', '글자'), ('text:', '단추')):
+        for pre, word in (('node:', '원'), ('look:', '원'), ('inner:', '원 안쪽'), ('ring:', '원 둘레의 하늘색 띠'), ('ctextL:', '글자의 앞'), ('ctextR:', '글자의 끝'), ('ctext:', '글자'), ('text:', '단추')):
             if t.startswith(pre):
                 return f'‘{t[len(pre):]}’ {word} ' + POINTED[k]
         if t.startswith('noteLine:'):
@@ -395,7 +408,7 @@ def write_all():
 
 if __name__ == '__main__':
     if sys.argv[1] == 'cues':
-        data = {'voice_id': '1PdAOcPlPTz12RwMyFVp', 'model_id': 'eleven_v4', 'nodes': [list(n) for n in NODES],
+        data = {'voice_id': 'tlxL9ilynpbOVf9sZXKh', 'model_id': 'eleven_v4', 'nodes': [list(n) for n in NODES],
                 'relationships': RELS, 'properties': PROPS, 'cues': cues()}
         Path(sys.argv[2]).write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding='utf-8')
         print(len(data['cues']), 'cues')

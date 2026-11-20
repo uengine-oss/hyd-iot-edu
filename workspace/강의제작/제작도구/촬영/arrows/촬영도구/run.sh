@@ -3,7 +3,10 @@
 # 환경은 ARROWS_ENV=cloud|pc|ego로 고르고, 주지 않으면 리눅스는 cloud, Windows(Git Bash)는 pc다. 환경마다 다른 값은 config.json의 그 환경 칸에만 둔다(env.mjs가 읽는다).
 #   ./run.sh up | down                                              cloud · pc: 녹화 브라우저 띄우기 · 끄기(구간 사이 그림 · 저장소 유지)
 #   ./run.sh open [주소]                                            cloud · pc: 녹화 탭을 그 주소로(기본 https://arrows.app 첫 화면, 녹화 밖). 검색 화면에서 시작하는 구간은 검색 사이트 주소를 준다
-#   ./run.sh rec <이름> <구간> [시작큐] [이전 구간 이름] [relax]   구간 하나 녹화(relax: 그림 주소가 바뀐 뒤 첫 구간. VIEW={"scale":…,"dx":…,"dy":…}이면 녹화 전 보기를 그 값으로. EXPECT=<주소 조각>이면 시작 주소를 그 값으로 검사 — 기본 arrows.app)
+#   ./run.sh rec <이름> <구간> [시작큐] [이전 구간 이름] [relax]   구간 하나 녹화(relax: 그림 주소가 바뀐 뒤 첫 구간. VIEW={"scale":…,"dx":…,"dy":…}이면 녹화 전 보기를 그 값으로. EXPECT=<주소 조각>이면 시작 주소를 그 값으로 검사 — 기본 arrows.app.
+#                                                                    SILENT=1이면 음성이 없거나 글이 다른 큐를 글자 수로 어림한 길이로 찍는다 — 시험 녹화)
+#   ./run.sh rehearse <이름> <구간> [구간 …]                         무음 리허설: 그 구간들을 차례로, 소리 길이 0 · 쉼 0 · 녹화 없음으로 같은 조작을 한다(take <이름>-<구간>, 실패한 구간에서 멈춘다).
+#                                                                    첫 구간의 시작 주소는 EXPECT로 검사하고, 뒤 구간은 앞 구간의 끝 상태 · 보기에서 잇는다. 그림이 실제로 그려지므로 녹화 전에 down · up으로 새로 띄운다
 #   ./run.sh restore <이전 구간 이름> [출발원 도착원]               녹화 밖 상태 복원(가져오기 + 원 크기 + 마지막 화살표 선택)
 #   ./run.sh coords                                                  사용자가 배치한 그림들의 저장 좌표 읽기(읽기 전용)
 # 실행 전 node --check로 문법 오류를 막고(ego는 문법 오류에 조용히 멈춘다), stdin을 닫는다(-e가 입력을 기다린다).
@@ -44,8 +47,16 @@ case "$cmd" in
   rec)
     n=$1; seg=$2; from=${3:-}; st=${4:-}; relax=false; [ -n "${5:-}" ] && relax=true
     mkdir -p "$work"
-    js="const {run}=await import('$pre$here/ctrl.mjs?$n');console.log(JSON.stringify(await run({name:'$n',segment:$seg,from:'$from',startState:'$st',expectUrl:'${EXPECT:-arrows.app}',to:'${TO:-}',relaxUrl:$relax,view:${VIEW:-null}})));"
+    silent=false; [ -n "${SILENT:-}" ] && silent=true
+    js="const {run}=await import('$pre$here/ctrl.mjs?$n');console.log(JSON.stringify(await run({name:'$n',segment:$seg,from:'$from',startState:'$st',expectUrl:'${EXPECT:-arrows.app}',to:'${TO:-}',relaxUrl:$relax,view:${VIEW:-null},silent:$silent})));"
     log="$work/$n.log";;
+  rehearse)
+    n=${1:-}; shift || true
+    [ -n "$n" ] && [ $# -gt 0 ] || { echo "rehearse <이름> <구간> [구간 …]"; exit 2; }
+    for g in "$@"; do case "$g" in ''|*[!0-9]*) echo "rehearse: 구간 번호가 아니다 — $g"; exit 2;; esac; done
+    mkdir -p "$work"
+    js="const {run}=await import('$pre$here/ctrl.mjs?$n');let prev='',view=${VIEW:-null},bad=null;for(const seg of [$(IFS=,; echo "$*")]){const name='$n-'+seg;const r=await run({name,segment:seg,from:'',startState:prev,expectUrl:prev?'':'${EXPECT:-arrows.app}',to:'',relaxUrl:false,view,rehearse:true});console.log(JSON.stringify({take:name,...r}));if(r.error){bad=name;break;}prev=name;view=r.view;}console.log(JSON.stringify({rehearse:'$n',passed:!bad,stopped_at:bad}));"
+    log="$work/$n-rehearse.log";;
   restore)
     take=$1; e1=${2:-}; e2=${3:-}
     edge=$([ -n "$e1" ] && echo "['$e1','$e2']" || echo "null")
@@ -54,7 +65,7 @@ case "$cmd" in
   coords)
     js="const {coords}=await import('$pre$here/restore.mjs?$stamp');console.log(JSON.stringify(await coords()));"
     log="$work/coords-$stamp.log";;
-  *) sed -n 2,8p "$0"; exit 2;;
+  *) sed -n 2,13p "$0"; exit 2;;
 esac
 mkdir -p "$work"; runner="$work/run-$cmd-$stamp.mjs"
 if $pw; then printf '%s\nconst {closeTaskSpace}=await import("%s%s/pw.mjs");await closeTaskSpace();process.exit(0);\n' "$js" "$pre" "$here" > "$runner"; else printf '%s\n' "$js" > "$runner"; fi
@@ -63,4 +74,4 @@ if $pw; then timeout ${TMO:-600} node "$runner" < /dev/null > "$log" 2>&1; rc=$?
   [ $rc -eq 124 ] && echo "TIMEOUT: 녹화만 끊음(브라우저 유지) — 끊긴 명령이 상태를 바꿨을 수 있으니 저장 데이터로 확인"
 else timeout ${TMO:-600} ego-browser nodejs -e "await import('file:///$runner')" < /dev/null > "$log" 2>&1; rc=$?
   if [ $rc -eq 124 ]; then powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='ego.exe'\" | ? { \$_.CommandLine -match 'ego.mojom.NodeService' } | % { Stop-Process -Id \$_.ProcessId -Force }"; echo "TIMEOUT: NodeService만 정리함 — 끊긴 명령이 실제로 실행됐을 수 있으니 저장 데이터로 상태를 확인"; fi; fi
-grep -v "^    at" "$log" | tail -3 | cut -c1-600
+grep -v "^    at" "$log" | tail -${TAIL:-3} | cut -c1-600
