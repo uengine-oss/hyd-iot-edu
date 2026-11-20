@@ -52,7 +52,7 @@ def BOTH(css, *more, **k): return T(css, also=[{'css': c} for c in more], **k)  
 MID = dict(anchor='margin')      # 줄 가운데 낱말은 그 줄 왼쪽 여백을 짚는다(낱말 바로 뒤를 짚으면 화살표가 이어지는 글을 덮는다)
 MENU = lambda m: T(f'#menuList summary[data-menu="{m}"]')
 TAB = lambda t: T(f'#menuList a[data-tab="{t}"]')
-HEAD = lambda v: T(f'#view-{v} .page-head h1')      # 화면 제목 — 메뉴를 누른 뒤 화살표를 메뉴 줄에서 떼어 둘 자리
+HEAD = lambda v: T(f'#view-{v} .page-head h1', anchor='after', dy=-8)      # 화면 제목 — 메뉴를 누른 뒤 화살표를 메뉴 줄에서 떼어 둘 자리
 
 # 2절. 조치 방법(hitl.js renderSkillList · renderSkillDetail)
 SL, SK = '#skillList', '#skillDetail'
@@ -62,6 +62,7 @@ OPENED = lambda i, name: W(T(f'{SK}[data-key="skill:{i}"] .pane-title h2', conta
 STEPS = f'{SK} ol.sk-steps'
 STEP = lambda n, **k: T(f'{STEPS} li:nth-child({n})', **k)
 SM = dict(anchor='margin', dx=-18)      # 번호 줄 가운데 낱말: 번호 왼쪽 빈자리(여백 바로 왼쪽은 번호 글자다)
+TAG = lambda name: T(f'{SK} .pane-title h2 .tag', exact=name, anchor='after', dy=-10)      # 이름 옆 종류 알약(화살표가 아랫줄 설명 글을 덮지 않게 조금 위)
 KV1 = f'{SK} .panel-sec:not(.pane-fold) > dl.kv'      # 「대상 고장 유형」 · 「승인 역할」
 KV1ROW = lambda name: T(f'{KV1} dt', exact=name, also=['next'], text=True)
 KFOLD = f'{SK} .pane-fold details.fold'      # 접힌 「연결된 지식」
@@ -132,7 +133,8 @@ OPS = {
  't0101': [W(T('#mainStages a.stat:nth-child(4) .stat-value', contains='0건 처리 완료'), 20)],
  't0102': [C(MENU('knowledge'), '펼쳐서'), C(TAB('skills'), '열게요'), W(T(f'{SL} .row:first-child[aria-current="true"] .row-title', exact='팬 최대 운전'), 15), OPENED(FAN, '팬 최대 운전')],
  # 2. 조치 방법에서 SOP 찾기
- 't0201': [P(HEAD('skills'), '여기가'), H(T(SL), 'box', '왼쪽 목록의'), H(T(f'{SL} .row:first-child'), 'band', '한 줄이')],
+ # 목록은 열아홉 줄이라 한 화면에 다 들어오지 않는다 — 첫 줄에서 보이는 줄까지 두른다
+ 't0201': [P(HEAD('skills'), '여기가'), H(BOTH(f'{SL} .row:first-child .row-title', f'{SL} .row:first-child', f'{SL} .row:nth-child(8)'), 'box', '왼쪽 목록의'), H(T(f'{SL} .row:first-child'), 'band', '한 줄이')],
  't0202': [H(T(f'{SL} .row:first-child .row-meta', phrase='설비 제어', **MID), 'underline', '앞의 것은'), H(T(f'{SL} .row:first-child .row-meta', phrase='쿨러 냉각 성능 상실'), 'underline', '뒤의 것은', keep=True),
            H(T(f'{SK} .pane-title h2', phrase='팬 최대 운전'), 'band', '오른쪽에는'), C(T(f'{SROW(FIN)} .row-title', exact='쿨러 핀 세척', anchor='after'), '누를게요'), OPENED(FIN, '쿨러 핀 세척')],
  't0203': [H(T(STEPS), 'box', '번호 붙은 줄 셋이')],
@@ -142,9 +144,9 @@ OPS = {
  't0206': [H(T(f'{STEPS} li:nth-child(1) .sk-ref', exact='HM-8.7'), 'underline', '작은 글씨로'),
            H(BOTH(f'{STEPS} li:nth-child(1) .sk-ref', f'{STEPS} li:nth-child(2) .sk-ref', f'{STEPS} li:nth-child(3) .sk-ref'), 'box', '작업 단계마다')],
  't0207': [H(KV1ROW('대상 고장 유형'), 'band', '첫 줄은'), H(KV1ROW('승인 역할'), 'band', '승인 역할은'), H(T(f'{KV1} dd', exact='설비보전팀장'), 'underline', '설비보전팀장이라고')],
- 't0208': [H(T(f'{SK} .pane-title h2 .tag', exact='정비 요청'), 'box', '이름 옆에 붙은'), H(T(f'{KV1} dd .muted', exact='(근본 조치)'), 'underline', '괄호 안의')],
+ 't0208': [H(TAG('정비 요청'), 'box', '이름 옆에 붙은'), H(T(f'{KV1} dd .muted', exact='(근본 조치)'), 'underline', '괄호 안의')],
  't0209': [C(T(f'{SL} .row:first-child .row-title', exact='팬 최대 운전', anchor='after'), '팬 최대 운전입니다'), OPENED(FAN, '팬 최대 운전')],
- 't0210': [H(T(f'{SK} .pane-title h2 .tag', exact='설비 제어'), 'box', '종류가 설비 제어예요'), H(TEXT(f'{STEPS} li:nth-child(1)', contains='PLC 운전 모드가 REMOTE_AUTO인지 확인한다.'), 'band', '1번 단계가'),
+ 't0210': [H(TAG('설비 제어'), 'box', '종류가 설비 제어예요'), H(TEXT(f'{STEPS} li:nth-child(1)', contains='PLC 운전 모드가 REMOTE_AUTO인지 확인한다.'), 'band', '1번 단계가'),
            H(STEP(1, phrase='REMOTE_AUTO', **SM), 'underline', 'REMOTE_AUTO인지')],
  't0211': [H(STEP(2, phrase='100 % 연속 운전은 24시간 이내로 한다.', **SM), 'underline', '2번에는'), H(TEXT(f'{STEPS} li:nth-child(3)', contains='15분 재관측으로 HM-8.6 회복 판정을 한다.'), 'band', '3번은'),
            H(T(f'{KV1} dd .muted', exact='(완화 조치)'), 'underline', '완화 조치라고'), H(T(f'{KV1} dd', exact='운전원'), 'underline', '승인 역할도 운전원으로')],
@@ -159,17 +161,18 @@ OPS = {
            W(T(f'{DR} .empty'), 5)],
  't0302': [P(HEAD('decision'), '여기는'), H(FIELD('decAsset'), 'box', '설비 칸에는'), H(FIELD('decPattern'), 'box', '이상 패턴 칸에는'), C(RUN, '누릅니다'),
            W(ASSUMED('없음 — 설비의 지금 값으로 판단했습니다.'), 10), W(T(f'{OPTS} tbody tr[data-pick] .opts-name b', exact='팬 최대 운전'), 5), W(T(f'{FACT(3)} dd', exact='4개 가능'), 5)],
- 't0303': [H(T(OPTS), 'box', '조치 후보 표를')],
+ # 표의 줄이 두 줄씩이라 결과 첫 화면에서는 표 아래가 잘린다 — 표 제목을 위로 올려 표 전체를 들인다
+ 't0303': [SCROLL(T(f'{DR} .panel-sec:has(table.opts) > h3'), '오늘은 가운데', top=76), H(T(OPTS), 'box', '조치 후보 표를')],
  't0305': [H(T(f'{OPTS} thead tr'), 'band', '표의 줄마다'), H(T(f'{OPTS} tbody tr:first-child .badge'), 'underline', '종류와 승인 역할은'), H(T(f'{OPTS} tbody tr:first-child td.opts-role'), 'underline', keep=True),
            H(T(FACT(3)), 'box', '조치 후보 칸에는')],
- # 펼치면 탭 넷과 「판단에 쓴 값」 표(열 줄)가 나온다 — 표가 한 화면에 다 들어오게 탭 줄을 위로 올린다
+ # 펼치면 탭 넷과 「판단에 쓴 값」 표(열 줄, 높이 약 640px)가 나온다 — 접힌 줄을 위로 올려 탭과 표 머리를 보이고(t0306), 표를 두를 때는 표 머리를 위 막대 바로 밑에 둔다(t0307)
  't0306': [H(T(f'{MORE} > summary', phrase='자세히 보기'), 'band', '접혀 있죠'), C(T(f'{MORE} > summary', phrase='자세히 보기', anchor='after'), '펼치면'), W(T(INP), 5),
            SCROLL(T(f'{MORE} > summary'), top=64)],
- 't0307': [H(T(INP), 'box', '이 표가'), H(IROW('PLC 운전 모드'), 'band', '운전 모드 줄을'), H(T(f'{INP} tbody td', exact='SCADA · PLC (설비 제어)'), 'underline', '옆에 출처가'),
+ 't0307': [SCROLL(T(INP), top=66), H(T(INP), 'box', '이 표가'), H(IROW('PLC 운전 모드'), 'band', '운전 모드 줄을'), H(T(f'{INP} tbody td', exact='SCADA · PLC (설비 제어)'), 'underline', '옆에 출처가'),
            H(IROW('팬 100 % 연속 운전 시간'), 'band', '팬 연속 운전 시간 줄은'), H(T(f'{INP} tbody td', exact='0 시간'), 'underline', '시간이라는 단위가'),
            H(IROW('PLC 운전 모드'), 'band', '이 둘이에요'), H(IROW('팬 100 % 연속 운전 시간'), 'band', keep=True)],
  # 「적용한 규칙」 표는 열아홉 줄이라 한 화면에 다 들어오지 않는다 — 열은 머리 칸에서 보이는 줄까지 칠한다
- 't0308': [C(T(f'{MORE} [data-dec-pane="rules"]'), '누르면'), W(T(RUL), 5),
+ 't0308': [C(T(f'{MORE} [data-dec-pane="rules"]'), '누르면'), W(T(RUL), 5), SCROLL(T(f'{MORE} > summary'), top=64),
            H(BOTH(f'{RUL} thead th:nth-child(1)', f'{RUL} tbody tr:nth-child(6) td:nth-child(1)'), 'band', '줄 맨 앞의 문장이'),
            H(BOTH(f'{RUL} thead th:nth-child(2)', f'{RUL} tbody tr:nth-child(6) td:nth-child(2)'), 'band', '가운데 칸은')],
  't0310': [H(T(f'{RUL} tbody tr', **REMOTE_ROW), 'band', '가운데 칸이 팬 최대 운전인'), H(T(f'{RUL} tbody tr', phrase='해당 없음', **REMOTE_ROW), 'underline', '해당 없음이라고', keep=True)],
@@ -179,7 +182,8 @@ OPS = {
            H(T('#decForm details.io-more .fold-body'), 'box', '칸이 넷'), H(BOTH('#decMode'), 'box', '지금 값 그대로라고')],
  't0402': [H(FIELD('decMode'), 'box', '여기서'), SEL(MODE, '원격 수동', '바꿔 볼게요'), C(RUN, '다시 누릅니다'), W(T(f'{FACT(3)} dd', exact='1개 가능 · 3개 제외'), 10),
            W(T(CHANGED, contains='1순위가 팬 최대 운전에서 쿨러 핀 세척(으)로 바뀌었습니다'), 5)],
- 't0403': [H(T(FACT(3)), 'box', '조치 후보 칸에'), H(BOTH(f'{OPTS} tbody tr[data-out]:nth-child(2)', f'{OPTS} tbody tr[data-out]:nth-child(4)'), 'box', '설비 제어가 들어 있는'),
+ # 제외된 줄은 이름 아래 걸린 규칙 글이 붙어 높다 — 세 줄이 한 화면에 들어오게 표 머리를 위로 올린다
+ 't0403': [H(T(FACT(3)), 'box', '조치 후보 칸에'), SCROLL(T(f'{OPTS} thead'), '표에서는', top=70), H(BOTH(f'{OPTS} tbody tr[data-out]:nth-child(2)', f'{OPTS} tbody tr[data-out]:nth-child(4)'), 'box', '설비 제어가 들어 있는'),
            W(T(f'{OPTS} tbody tr:nth-child(2) .opts-name b', exact='팬 최대 운전'), 5),
            H(T(f'{OPTS} tbody tr:nth-child(2) td.num', exact='제외'), 'underline', '제외라고 적혀'), H(T(f'{OPTS} tbody tr:nth-child(2) .opts-why small', contains='제외 — PLC 운전 모드가'), 'underline', '어느 규칙에 걸렸는지도')],
  't0404': [H(T(f'{OPTS} tbody tr[data-pick]', contains='쿨러 핀 세척'), 'band', '남은 건'), H(T(f'{FACT(3)} dd small', phrase='개 가능'), 'underline', '가능이라니')],
@@ -188,7 +192,7 @@ OPS = {
            H(T(OPTS), 'box', '후보로 돌아옵니다')],
  't0405': [H(FIELD('decFan'), 'box', '맨 아래에 보이는 칸은'), H(T('#decForm label[for="decFan"]', phrase='(시간)'), 'underline', '단위는'), C(FANH, '삼십을 넣고'), TYPE('30'), C(RUN, '누릅니다'),
            W(T(CHANGED, contains='1순위가 팬 최대 운전에서 부하 70 %와 야간 핀 세척(으)로 바뀌었습니다'), 10)],
- 't0406': [H(OROW('SOP-COOL-11'), 'band', '빠지지 않고 남아'), H(OROW('SOP-COOL-12'), 'band', keep=True),
+ 't0406': [SCROLL(T(f'{OPTS} thead'), top=70), H(OROW('SOP-COOL-11'), 'band', '빠지지 않고 남아'), H(OROW('SOP-COOL-12'), 'band', keep=True),
            H(T(f'{OPTS} tbody tr:nth-child(2) .opts-why small', contains='감점 — 팬 100 % 연속 운전이 이미 24시간을 넘긴 경우'), 'underline', '감점이라고 적힌 글이')],
  't0411': [H(OROW('SOP-COOL-11'), 'band', '제외는'), H(OROW('SOP-COOL-12'), 'band', keep=True), H(TEXT(CHANGED), 'band', '표 위 줄을 보면')],
  't0407': [H(FIELD('decFan'), 'box', '맨 아래 칸을'), C(FANH, '비우고'), CLEAR(), KEY('Delete'), C(RUN, '누르면'), W(ASSUMED('없음 — 설비의 지금 값으로 판단했습니다.'), 10),
@@ -211,10 +215,12 @@ OPS = {
            H(TEXT(f'{CALC} tbody td:first-child', exact='납기 지연 위약금'), 'band', '납기 지연 위약금은'), H(T(f'{CALC} tbody td:nth-child(2)', phrase='위약금 120만원/시간 × 지연', contains='위약금 120만원/시간 × 지연', **MID), 'underline', '한 시간 늦을 때마다'),
            H(T(f'{CALC} tbody td:nth-child(3)', contains='납기 지연 위약금 120 만원/시간'), 'box', '출처 칸에는'),
            H(T(f'{CALC} tbody td:nth-child(3) div', exact='데이터 · 업무 DB ERP · 납기 지연 위약금 120 만원/시간', phrase='업무 DB', **MID), 'underline', '업무 DB라고')],
- 't0508': [H(T('#wiForm legend', exact='바꿔 볼 것'), 'underline', '바꿔 볼 것이라고'), C(T(f'{WI} [data-wi-tab="values"]'), '누릅니다'), LONG(T(BGO), 40),
+ # 업무 값을 고르면 왼쪽 판이 길어져(칸 아홉) 화면과 함께 굴러간다. map.mjs는 붙박이(sticky) 칸 안의 대상을 굴려 들이지 못하므로, 오른쪽 결과의 한 자리를 굴려
+ # 왼쪽 칸과 오른쪽 표가 함께 보이는 자리를 잡는다(t0508 · t0511 · t0513 · t0515). 「1순위가 바뀌는 값」 제목을 위에서 99px에 두면 왼쪽 칸 여섯과 그 표가 함께 보인다
+ 't0508': [H(T('#wiForm legend', exact='바꿔 볼 것'), 'underline', '바꿔 볼 것이라고'), C(T(f'{WI} [data-wi-tab="values"]'), '누릅니다'), LONG(T(BGO), 40), SCROLL(T(f'{BND} > h3'), top=99),
            W(BCELL(2, exact='납기 지연 위약금'), 5), W(BCELL(5, exact='쿨러 핀 세척'), 5)],
- # 업무 값 칸은 아홉이라 한 화면에 다 들어오지 않는다 — 첫 칸에서 보이는 칸까지 두른다
- 't0509': [H(BOTH(f'{FV(DUE)} label', FV(DUE), FV('failure_cost')), 'box', '칸이 여러 개'), H(T(f'{FV(DUE)} label', phrase='(시간)'), 'underline', '칸 이름 옆 괄호가'), H(T(f'{FV(DUE)} .field-hint'), 'underline', '칸 아래 작은 글씨는', keep=True),
+ # 업무 값 칸은 아홉이라 한 화면에 다 들어오지 않는다 — 첫 칸에서 보이는 여섯째 칸까지 두른다
+ 't0509': [H(BOTH(f'{FV(DUE)} label', FV(DUE), FV('mtbf_h')), 'box', '칸이 여러 개'), H(T(f'{FV(DUE)} label', phrase='(시간)'), 'underline', '칸 이름 옆 괄호가'), H(T(f'{FV(DUE)} .field-hint'), 'underline', '칸 아래 작은 글씨는', keep=True),
            H(FVBOX(PEN), 'box', '납기 지연 위약금을'), H(T(f'{FV(PEN)} .field-hint', phrase='120 만원/시간'), 'underline', '백이십만 원입니다')],
  # 줄의 띠는 그 줄을 읽는 동안(t0510 · t0517) 두고, 밑줄만 옮긴다
  't0510': [H(BTBOX, 'box', '1순위가 바뀌는 값이라는'), H(T(BR, contains='납기 지연 위약금'), 'band', '납기 지연 위약금 줄을'), H(BCELL(3), 'underline', '지금 값과 바뀌는 값이', keep=1), H(BCELL(4), 'underline', keep=True),
@@ -223,15 +229,15 @@ OPS = {
  't0519': [H(FVBOX(HOURV), 'box', '시간당 생산 가치 칸도'), H(BTBOX, 'box', '이 표에는'), H(T(BR, contains='납기 지연 위약금'), 'band', '납기 지연 위약금이 답을')],
  't0514': [H(T(BGO, anchor='right'), 'box', '줄 끝에 있는 단추'), C(T(BGO), '누르면'), W(T('#wiReset'), 15),
            W(T(WHEAD, contains='판단 1순위는 「쿨러 핀 세척」, 손익 1순위는 「팬 최대 운전」입니다'), 5), H(FVBOX(PEN), 'box', '왼쪽 칸에 그 값이')],
- 't0511': [H(T(f'{WO} .panel-sec > h3 .muted', exact='기준 → 시험값'), 'underline', '화살표 앞이'), H(TEXT(f'{WOPT} tbody tr:first-child td.opts-name', contains='쿨러 핀 세척'), 'band', '맨 위로 올라왔습니다'),
-           H(WCELL(1, 6), 'underline', '예상 손익의 손해가'), H(WCELL(1, 3), 'underline', '점수도 올라서', keep=True)],
+ 't0511': [SCROLL(T(f'{WO} .panel-sec:has(table.opts) > h3'), '위쪽 결과 표를', top=70), H(T(f'{WO} .panel-sec > h3 .muted', exact='기준 → 시험값'), 'underline', '화살표 앞이'), H(TEXT(f'{WOPT} tbody tr:first-child td.opts-name', contains='쿨러 핀 세척'), 'band', '맨 위로 올라왔습니다'),
+           H(WCELL(1, 6, anchor='below'), 'underline', '예상 손익의 손해가'), H(WCELL(1, 3, anchor='below'), 'underline', '점수도 올라서', keep=True)],
  't0518': [H(COL(5), 'band', '손익 순위는 그대로'), W(T(f'{WOPT} tbody tr:nth-child(2) .opts-name b', exact='팬 최대 운전'), 5), H(WCELL(2, 5, exact='1위'), 'underline', '팬 최대 운전이 가장'),
            H(TEXT(WHEAD), 'band', '맨 위 결론에도')],
  't0512': [H(BCELL(3), 'underline', '지금 값과 바뀌는 값이'), H(BCELL(4), 'underline', keep=True)],
- 't0513': [H(T(f'{WO} .panel-sec:has(#wiReset) [role="status"]'), 'band', '안내가 한 줄'), C(T('#wiReset'), '누를게요'), W(T(WHEAD, exact=BASE_SAYS), 10),
+ 't0513': [H(T(f'{WO} .panel-sec:has(#wiReset) [role="status"]'), 'band', '안내가 한 줄'), C(T('#wiReset'), '누를게요'), W(T(WHEAD, exact=BASE_SAYS), 10), SCROLL(T(WOPT), top=150),
            H(T(WOPT), 'box', '표가 기준 값으로'), H(FVBOX(PEN), 'box', '왼쪽 칸도')],
  # [기준 다시 계산]은 결과와 왼쪽 칸을 지웠다가 다시 그린다(약 5초) — 「1순위가 바뀌는 값」의 단추가 다시 뜰 때까지 기다린다
- 't0515': [H(T('#wiLoad', exact='기준 다시 계산', anchor='right'), 'box', '기준 다시 계산 단추를'), C(T('#wiLoad'), '누르면'), LONG(T(BGO), 40), W(T(WHEAD, exact=BASE_SAYS), 5), W(T(f'{FV(PEN)} .field-hint'), 5)],
+ 't0515': [H(T('#wiLoad', exact='기준 다시 계산', anchor='right'), 'box', '기준 다시 계산 단추를'), C(T('#wiLoad'), '누르면'), LONG(T(BGO), 40), W(T(WHEAD, exact=BASE_SAYS), 5), SCROLL(T(WOPT), top=150)],
  't0516': [H(T(f'{FV(PEN)} .field-hint', phrase='120 만원/시간'), 'underline', '칸 아래를')],
  # 6. 성과 지표 — KPI 목표를 바꿔 판정 보기
  't0601': [C(MENU('system'), '펼치고'), C(TAB('kpi'), '엽니다'), LONG(T(f'{K} .kpi-stats'), 40), W(T(f'{K} [data-kpi-period="24h"][aria-pressed="true"]'), 5),
@@ -240,15 +246,16 @@ OPS = {
  't0611': [H(T(f'{K} .kpi-stats'), 'box', '위쪽 숫자 네 칸은'), H(STAT('missed', anchor='below'), 'box', '앞의 두 칸이'), H(STAT('met', anchor='below'), 'box', keep=True),
            H(STAT('open', anchor='below'), 'box', '나머지 두 칸은'), H(STAT('dead', anchor='below'), 'box', keep=True), H(STAT('met', anchor='below'), 'box', '지금 눌려 있는')],
  't0603': [H(T(f'{KC(AVAIL)} .stat-value'), 'underline', '큰 숫자가'), H(T(f'{KC(AVAIL)} .stat-note', phrase='목표 95 %'), 'underline', '그 아래에는 목표값이'), H(T(f'{KC(AVAIL)} .stat-pill .tag', exact='달성'), 'box', '달성이라고'),
-           C(T(f'{KC(AVAIL)} .kpi-name'), '누르면'), W(T(f'{SH} .sheet-head h2', contains='설비 가동률'), 10)],
+           C(T(f'{KC(AVAIL)} .kpi-name', anchor='after'), '누르면'), W(T(f'{SH} .sheet-head h2', contains='설비 가동률'), 10)],
  't0604': [H(T(f'{SH} .sheet-head p.muted', exact='내부 프로세스 › 설비 가용성 확보'), 'underline', '맨 위 작은 글씨에는'), H(SHROW('.sheet-body > dl.kv', '지표 종류'), 'band', '지표 종류는'),
            H(SHROW('.sheet-body > dl.kv', '받치는 목표'), 'band', '받치는 목표에는', keep=True)],
  't0605': [H(SHROW('.kpi-sheet-sec dl.kv', '식'), 'band', '식과 원천이'), H(SHROW('.kpi-sheet-sec dl.kv', '원천'), 'band', keep=True),
            H(T(f'{SH} .kpi-sheet-sec dl.kv dd', contains='Σ(관측 분', phrase='보호 정지 분', **MID), 'underline', '보호 정지로')],
  't0606': [C(T(f'{SH} [data-kpi-sheet-close]'), '닫으면'), H(T(f'{TRIAL} > summary', phrase='목표값 바꿔 보기'), 'band', '목표값 바꿔 보기라는'), C(T(f'{TRIAL} > summary', phrase='목표값 바꿔 보기', anchor='after'), '펼치면'),
            W(T(TT), 5), SCROLL(T(f'{TRIAL} > summary'), top=70), H(T(f'{TT} thead th', exact='원래 목표'), 'underline', '원래 목표와'), H(T(f'{TT} thead th', exact='시험 목표'), 'underline', keep=True)],
+ # 시험 목표 칸에는 id가 없어 map.mjs의 type(들어가 있는 칸의 id를 확인한다)을 쓰지 못한다 — 숫자 키 둘로 넣는다
  't0607': [H(T(TROW, contains='인터록 여유'), 'band', '인터록 여유 줄을'), H(T(f'{TROW} td:nth-child(2)', exact='10 ℃'), 'underline', '원래 목표는'), H(T(f'{TROW} td:nth-child(4)', exact='달성'), 'underline', '지금 판정은'),
-           C(T(f'{TROW} input', anchor='center'), '이십을 넣고'), TYPE('20'), C(T(f'{K} [data-kpi-trial-run]'), '누릅니다'), LONG(T(f'{AL} h2', exact='시험 목표 1개를 적용해 판정한 결과입니다'), 30)],
+           C(T(f'{TROW} input', anchor='center'), '이십을 넣고'), KEY('2'), KEY('0'), C(T(f'{K} [data-kpi-trial-run]'), '누릅니다'), LONG(T(f'{AL} h2', exact='시험 목표 1개를 적용해 판정한 결과입니다'), 30)],
  # 알림의 한 줄은 「…목표 10 → <b>20</b> · 달성 → <b>미달</b>」로 태그가 갈려 있다 — 밑줄 둘을 이어 한 줄로 보이게 한다
  't0608': [H(BOTH(f'{AL} h2', AL), 'box', '안내가 떴어요'), H(T(WHY, phrase='달성 →', **MID), 'underline', '달성에서 미달로'), H(T(f'{WHY} b:last-child', exact='미달'), 'underline', keep=True),
            H(T(WHY, phrase='목표 10 →', **MID), 'underline', '목표를 십에서 이십으로', keep=True), H(T(f'{WHY} b:nth-of-type(2)', exact='20'), 'underline', keep=True), H(STAT('missed', anchor='below'), 'box', '숫자 칸의 미달도')],

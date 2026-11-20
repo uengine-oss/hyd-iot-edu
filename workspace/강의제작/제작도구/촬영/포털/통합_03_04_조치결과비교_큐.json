@@ -73,7 +73,9 @@
     [
      "point",
      {
-      "css": "#view-skills .page-head h1"
+      "css": "#view-skills .page-head h1",
+      "anchor": "after",
+      "dy": -8
      },
      {
       "at": "여기가"
@@ -82,7 +84,15 @@
     [
      "point",
      {
-      "css": "#skillList",
+      "css": "#skillList .row:first-child .row-title",
+      "also": [
+       {
+        "css": "#skillList .row:first-child"
+       },
+       {
+        "css": "#skillList .row:nth-child(8)"
+       }
+      ],
       "hl": "box"
      },
      {
@@ -380,6 +390,8 @@
      {
       "css": "#skillDetail .pane-title h2 .tag",
       "exact": "정비 요청",
+      "anchor": "after",
+      "dy": -10,
       "hl": "box"
      },
      {
@@ -439,6 +451,8 @@
      {
       "css": "#skillDetail .pane-title h2 .tag",
       "exact": "설비 제어",
+      "anchor": "after",
+      "dy": -10,
       "hl": "box"
      },
      {
@@ -728,7 +742,9 @@
     [
      "point",
      {
-      "css": "#view-decision .page-head h1"
+      "css": "#view-decision .page-head h1",
+      "anchor": "after",
+      "dy": -8
      },
      {
       "at": "여기는"
@@ -806,6 +822,16 @@
    "text": "오른쪽에 결과가 나왔습니다. 원인을 가리는 쪽은 1회차에 봤으니, 오늘은 가운데 있는 조치 후보 표를 봅니다. 승인 카드에서 근거를 열었을 때 본 후보 비교가 이런 계산에서 나와요.",
    "gap": 2.0,
    "ops": [
+    [
+     "scroll",
+     {
+      "css": "#decResult .panel-sec:has(table.opts) > h3",
+      "top": 76
+     },
+     {
+      "at": "오늘은 가운데"
+     }
+    ],
     [
      "point",
      {
@@ -918,6 +944,13 @@
    "gap": 2.0,
    "ops": [
     [
+     "scroll",
+     {
+      "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table",
+      "top": 66
+     }
+    ],
+    [
      "point",
      {
       "css": "#decResult details.dec-more [data-dec-body=\"inputs\"] table",
@@ -1015,6 +1048,13 @@
       "css": "#decResult details.dec-more [data-dec-body=\"rules\"] table"
      },
      5
+    ],
+    [
+     "scroll",
+     {
+      "css": "#decResult details.dec-more > summary",
+      "top": 64
+     }
     ],
     [
      "point",
@@ -1214,6 +1254,16 @@
      },
      {
       "at": "조치 후보 칸에"
+     }
+    ],
+    [
+     "scroll",
+     {
+      "css": "#decResult table.opts thead",
+      "top": 70
+     },
+     {
+      "at": "표에서는"
      }
     ],
     [
@@ -1455,6 +1505,13 @@
    "text": "팬을 최대로 돌리는 조치가 이번에는 빠지지 않고 남아 있어요. 대신 이름 아래에 감점이라고 적힌 글이 붙었습니다. 조치 방법 화면에서 본 스물네 시간 규칙이에요. 그보다 오래 돌리면 팬 수명이 줄어들어서 점수를 깎는 겁니다.",
    "gap": 2.0,
    "ops": [
+    [
+     "scroll",
+     {
+      "css": "#decResult table.opts thead",
+      "top": 70
+     }
+    ],
     [
      "point",
      {
@@ -2152,6 +2209,13 @@
      40
     ],
     [
+     "scroll",
+     {
+      "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) > h3",
+      "top": 99
+     }
+    ],
+    [
      "wait",
      {
       "css": "#whatifView .io-out .panel-sec:has([data-wi-bound]) table tbody tr:nth-child(2) td:nth-child(2)",
@@ -2185,7 +2249,7 @@
         "css": "#wiForm .field:has([data-wi-var=\"due_h\"])"
        },
        {
-        "css": "#wiForm .field:has([data-wi-var=\"failure_cost\"])"
+        "css": "#wiForm .field:has([data-wi-var=\"mtbf_h\"])"
        }
       ],
       "hl": "box"
@@ -2460,6 +2524,16 @@
    "gap": 2.0,
    "ops": [
     [
+     "scroll",
+     {
+      "css": "#whatifView .io-out .panel-sec:has(table.opts) > h3",
+      "top": 70
+     },
+     {
+      "at": "위쪽 결과 표를"
+     }
+    ],
+    [
      "point",
      {
       "css": "#whatifView .io-out .panel-sec > h3 .muted",
@@ -2487,6 +2561,7 @@
      "point",
      {
       "css": "#whatifView .io-out table.opts tbody tr:nth-child(1) td:nth-child(6)",
+      "anchor": "below",
       "hl": "underline"
      },
      {
@@ -2497,6 +2572,7 @@
      "point",
      {
       "css": "#whatifView .io-out table.opts tbody tr:nth-child(1) td:nth-child(3)",
+      "anchor": "below",
       "hl": "underline",
       "keep": true
      },
@@ -2623,6 +2699,13 @@
      10
     ],
     [
+     "scroll",
+     {
+      "css": "#whatifView .io-out table.opts",
+      "top": 150
+     }
+    ],
+    [
      "point",
      {
       "css": "#whatifView .io-out table.opts",
@@ -2694,11 +2777,11 @@
      5
     ],
     [
-     "wait",
+     "scroll",
      {
-      "css": "#wiForm .field:has([data-wi-var=\"penalty_per_h\"]) .field-hint"
-     },
-     5
+      "css": "#whatifView .io-out table.opts",
+      "top": 150
+     }
     ]
    ]
   },
@@ -2921,7 +3004,8 @@
     [
      "click",
      {
-      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"] .kpi-name"
+      "css": "#kpiView .kpi-card[data-kpi=\"msr:availability\"] .kpi-name",
+      "anchor": "after"
      },
      {
       "at": "누르면"
@@ -3163,8 +3247,12 @@
      }
     ],
     [
-     "type",
-     "20"
+     "key",
+     "2"
+    ],
+    [
+     "key",
+     "0"
     ],
     [
      "click",
