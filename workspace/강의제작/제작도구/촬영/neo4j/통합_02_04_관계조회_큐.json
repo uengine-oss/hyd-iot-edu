@@ -832,7 +832,6 @@
      "op": "press",
      "tab": "Graph",
      "at": 0.8134,
-     "point_at": 0.6934,
      "expect": {
       "tab": "Graph",
       "css": "[data-testid=\"nvl-c2d-canvas\"]"

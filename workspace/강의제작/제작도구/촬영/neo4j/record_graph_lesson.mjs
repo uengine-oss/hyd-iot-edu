@@ -7,10 +7,11 @@
 //   hold = 학생이 따라 할 시간(그 큐의 말과 조작이 끝난 뒤 화면을 그대로 두는 ms).
 // 강조(영상 V-14 · V-11): 짚기 조작에 hl('underline' | 'band' | 'box')을 주면 화살표가 닿은 때 그 대상의 화면 상자와 시각을 timing.json의 highlights에 남기고 포털 encode.py가 그린다(포털 촬영도구 hl.mjs).
 //   줄 수 있는 자리: point의 points[] 항목 · pointText · detailsTour의 points[] 항목. 글로 찾은 대상(contains · text)은 그 글 구절을, css로 찾은 대상은 그 요소를 잰다(phrase를 주면 그 구절).
-//   그 밖의 조작에 hl을 주면 멈춘다. 강조는 다음 강조가 시작할 때, 누르기 · 탭 바꾸기가 시작할 때, 강조 없는 다른 자리로 화살표가 떠날 때, 녹화가 끝날 때 지워진다.
+//   그 밖의 조작에 hl을 주면 멈춘다. 강조는 다음 강조가 시작할 때, 누르기 · 탭 바꾸기가 시작할 때, 강조 없는 다른 자리로 화살표가 떠날 때, 그 큐의 말이 끝날 때, 녹화가 끝날 때 지워진다.
 // 표로 쓴 대본의 큐(통합_02_04_관계조회_큐만들기.py)가 쓰는 조작 — 대상 꼴은 mark_targets.mjs 머리말:
 //   mark {points: [{대상, at, hl?}]}  대상을 차례로 짚는다. hl을 주면 그 대상(함께 짚는 also 포함)의 상자에 강조를 건다 — 입력칸 조각 · 표의 행과 열 · 그림의 원과 선 · 단추 묶음 모두
-//   press {대상, at, point_at?, expect?}  대상에 미리 가 있다가 at에서 누르고, expect(mark_targets.mjs expectInPage)가 될 때까지 기다린다
+//   press {대상, at, point_at?, expect?}  대상에 미리 가 있다가 at에서 누르고, expect(mark_targets.mjs expectInPage)가 될 때까지 기다린다. point_at이 없으면 누르기 PRESS_LEAD_MS 전에
+//     떠나되 같은 큐의 앞 짚기보다 먼저 떠나지 않는다(말 길이의 비율로 정하면 긴 큐에서 2초 먼저 떠나 앞 강조를 지웠다)
 //   runCard {at, summary?, graph?, nodes?, edges?, rows?}  입력칸 옆 Run을 누르고, 맨 위에 새 결과 카드가 생겨 그 결과를 담을 때까지 기다린다(이 판은 앞 카드가 펼쳐진 채 남아 run의 화면 전체 검사가 옛 카드에 걸린다)
 //   gShow {block, query, at, top?} · gCopy {block, at, point_at?}  안내 문서 탭으로 가서 그 칸(위에서부터 센 번호 — 글이 같은 칸이 둘이라 번호로 고른다)이 보이게 굴리고, 그 칸의 복사를 누른다
 //   query {query, at, rest?}  입력칸을 누르고 전부 고른 뒤 쿼리를 바로 넣는다(안내 문서 탭을 오가지 않는 길 — 영상 V-13). 넣은 글이 쿼리와 다르면 멈춘다
@@ -36,6 +37,7 @@ const out=WORK+'/'+cfg.take;await fs.mkdir(out+'/frames',{recursive:true});
 if((await fs.readdir(out+'/frames')).length)throw Error('Existing take preserved');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const SPEECH_RATE=422/60000; // 음성 없는 시험의 말 길이(글자/ms) — 포털 take.mjs와 같은 실측값
+const PRESS_LEAD_MS=900;     // press가 누르기 전 대상으로 떠나는 때(화살표 이동 260~620ms + 닿은 뒤 잠깐)
 
 async function openPages(){
  if(typeof taskSpace==='function'){
@@ -91,7 +93,10 @@ const point=spec=>p.evaluate(spec=>{
  window.__hlTarget=e;   // 강조가 잴 요소(hl.mjs)
  const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};
 },spec);
+// 화살표를 합성 때 그리면(overlay) 실제 마우스는 짚은 쿼리 글자 위에 몇 초씩 머문다. 그러면 입력칸(CodeMirror)이 그 글자의 설명 창(.cm-tooltip-hover — 변수의 타입 목록, 함수 설명)을
+// 띄워 말과 상관없이 쿼리 줄을 가리므로, 녹화하는 탭에서는 그 창만 띄우지 않는다. 학생이 마우스를 글자 위에 두지 않을 때의 화면과 같다(자동 완성 창은 그대로 둔다).
 const installPointer=(pg,q)=>pg.evaluate(({q,hidden})=>{
+ if(hidden&&!document.getElementById('recording-no-hover-tip')){const s=document.createElement('style');s.id='recording-no-hover-tip';s.textContent='.cm-tooltip-hover{display:none!important}';document.head.append(s);}
  document.getElementById('recording-pointer')?.remove();
  const e=document.createElement('div');e.id='recording-pointer';e.setAttribute('aria-hidden','true');
  e.style.cssText=`position:fixed;left:0;top:0;width:20px;height:27px;pointer-events:none;z-index:2147483647;will-change:transform;transform:translate(${q.x}px,${q.y}px);opacity:${hidden?0:1}`;
@@ -162,6 +167,7 @@ try{
   const gate=async(fraction)=>{await sleep(Math.max(0,at+meta.duration_ms*fraction-Date.now()));if(error)throw Error(error);};
   a.actionStart=Date.now()-start;await operation(gate,a);a.actionEnd=Date.now()-start;
   await sleep(Math.max(0,at+meta.duration_ms-Date.now()));
+  hl.end('말 끝');   // 강조는 그 큐의 말이 짚는 동안만 둔다 — 다음 큐가 다른 것을 말하는 동안 남으면 학생 눈이 엉뚱한 곳에 간다(영상 V-11)
   free=Date.now()+(c.hold||0);a.hold=c.hold||0;};
 
  const editor={css:'[aria-label="Cypher Editor"]'};
@@ -203,8 +209,8 @@ try{
    if(c.op!=='point'&&c.op!=='detailsTour'&&c.op!=='mark'&&(c.points||[]).some(q=>q&&q.hl))throw Error(`${c.id}: 조작 ${c.op}의 points[]에는 hl을 줄 수 없다`);
    switch(c.op){
     case 'none':break;
-    case 'mark':for(const q of c.points){await g(q.at??.1);const t=await settled(q,q.hl);if(q.hl)await arriveAt(t.anchor,{hl:q.hl},()=>resolve(q,q.hl));else await move(t.anchor);}break;
-    case 'press':{await g(c.point_at??Math.max(0,(c.at??.8)-.15));let t=await settled(c);await move(t.click);await g(c.at??.8);t=await serial(()=>resolve(c));if(Math.hypot(t.click.x-pos.x,t.click.y-pos.y)>2)await move(t.click);await clickHere();a.clickAt=Date.now()-start;
+    case 'mark':for(const q of c.points){await g(q.at??.1);const t=await settled(q,q.hl);if(q.hl)await arriveAt(t.anchor,{hl:q.hl},()=>resolve(q,q.hl));else await move(t.anchor);a.lastAt=q.at??.1;}break;
+    case 'press':{await g(c.point_at??Math.max(a.lastAt??0,(c.at??.8)-PRESS_LEAD_MS/a.duration));let t=await settled(c);await move(t.click);await g(c.at??.8);t=await serial(()=>resolve(c));if(Math.hypot(t.click.x-pos.x,t.click.y-pos.y)>2)await move(t.click);await clickHere();a.clickAt=Date.now()-start;
      if(c.expect)await serial(()=>p.waitForFunction(expectInPage,c.expect,{timeout:15000})).catch(()=>{throw Error(`${c.id}: 누른 뒤 기다린 화면이 오지 않음 `+JSON.stringify(c.expect));});
      break;}
     case 'runCard':{const n0=(await serial(()=>p.evaluate(cardState,null))).count;await g(c.at??.95);await act(runButton,true);a.runAt=Date.now()-start;

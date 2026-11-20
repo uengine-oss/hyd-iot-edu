@@ -246,7 +246,8 @@ def steps_to_ops(cid, text, steps):
             _, t, at, expect, point = s
             pa = frac(point) if point else None
             a = frac(at)
-            ops.append({'op': 'press', **t, 'at': a, 'point_at': pa if pa is not None else max(0.0, round(a - 0.12, 4)), **({'expect': expect} if expect else {})})
+            # point_at을 따로 주지 않으면 녹화기가 누르기 직전(PRESS_LEAD_MS)에 떠난다 — 말 길이의 비율로 정하면 긴 큐에서 앞 강조를 일찍 지운다.
+            ops.append({'op': 'press', **t, 'at': a, **({'point_at': pa} if pa is not None else {}), **({'expect': expect} if expect else {})})
         elif kind == 'run':
             _, at, want = s
             ops.append({'op': 'runCard', 'at': frac(at, 0.97), **want})
