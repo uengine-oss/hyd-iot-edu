@@ -28,6 +28,7 @@ VOICE, MODEL = 'tlxL9ilynpbOVf9sZXKh', 'eleven_v4'      # 영상 V-4
 GAP_NAMES = {'잇기': 0.6, '큐': 1.3, '결과 뒤': 2.0, '구간': 2.3}      # 영상 V-14 실습 값
 SHAPES = {'밑줄': 'underline', '띠': 'band', '테두리': 'box'}
 FIRST_GAP = 300
+REST = {'x': 1180, 'y': 113}      # 쿼리를 넣는 동안 화살표를 두는 자리(입력칸 첫 줄 오른쪽 빈 곳 — 가장 긴 쿼리 줄도 여기까지 오지 않는다)
 
 _cells = json.loads(CELLS_FILE.read_text(encoding='utf-8'))['cells']
 QUERY = {c['id']: c['query'] for c in _cells}
@@ -69,7 +70,7 @@ def OP(op, at=None, **k): return ('op', op, at, k)
 
 def PUT(cell, at):
     """맨 위 입력칸을 누르고 칸 원고의 그 쿼리를 바로 넣는다. at = 그 걸음을 시작할 발화 속 구절.
-    넣은 뒤 화살표는 입력칸 옆 Run 밑(쿼리 글이 닿지 않는 빈 곳)에 둔다 — 넣은 글을 가리지 않는다(영상 V-14)."""
+    넣는 동안 화살표는 REST에, 넣은 뒤에는 입력칸 옆 Run 밑(쿼리 글이 닿지 않는 빈 곳)에 둔다 — 넣은 글을 가리지 않는다(영상 V-14)."""
     return [('query', cell, at), MV(CSS(RUNB, under=True))]
 
 
@@ -88,7 +89,8 @@ OPS = {
            PRESS(CSS('button', text='Connect'), '누르세요', {'css': '[data-testid="connection-status-indicator-success"]', 'button': 'Dismiss'}, 'Connect를')],
  'g0202': [OP('tour', '닫으시면', button='Dismiss')],
  'g0203': [MV(CSS(INST, under=True))],
- 'g0204': [X(CSS(INST, inner='Instance:bolt://'), '맨 위, Instance라고'), U(PORT, '끝의 숫자는')],
+ # g0204의 Instance 글은 화면 위 끝에서 CSS 5.6px 아래라 테두리 여백이 화면 밖으로 나간다 — clip으로 화면 안 10px까지 줄인다(클라우드 실측)
+ 'g0204': [X(CSS(INST, inner='Instance:bolt://', clip=True), '맨 위, Instance라고'), U(PORT, '끝의 숫자는')],
  'g0206': [U(DBNAME, '그 옆에 Database라고'), U(ADDR, '주소로 구분합니다')],
  'g0205': [X(CSS('[data-testid="frame"]', contains=':welcome', clip=True))],
  # 3. 무엇이 들어 있나 — 왼쪽 패널
@@ -174,7 +176,7 @@ OPS = {
            B(WITH(HAS('쿨러 팬'), HAS('오일 쿨러')), '그리고 쿨러 팬과')],
  'g1204': [U({'head': '-[:HAS_COMPONENT]->'}, '관계를 한 번 건너서')],
  # 13. 두 단계 경로
- 'g1301': PUT('10-1', '이번에는'),
+ 'g1301': PUT('10-1', '구성 요소가 쓰는'),
  'g1302': [U(ED('-[:USES_PART]->(:Part)'), '화살표와 괄호가'), U(ED(PATH_10_1), '줄줄이 이어진 길을')],
  'g1303': [U(WITH(ED('(:Component)'), ED('(:Part)')), '괄호 안에 변수가 없고'), U(ED('path ='), '패턴 맨 앞에'), U(ED('RETURN path'), 'RETURN에 그 변수를'), RUN(graph=True, nodes=7, edges=6)],
  'g1304': [X(NODE('HYD-01'), '설비에서'), X(WITH(*map(NODE, COMPS)), '구성 요소 셋으로'), X(WITH(*map(NODE, PARTS)), '부품 셋으로')],
@@ -188,7 +190,7 @@ OPS = {
  'g1403': [B(WITH(ROW(1), ROW(2)), '오일 쿨러가 두 행'), B(WITH(ROW(3), ROW(4)), '주 펌프가 두 행'), B(ROW(5), '쿨러 팬이 한 행')],
  'g1404': [B(COL('가상')), B(ROW(1), '냉각 효율은')],
  'g1405': [B(ROW(1), '첫 행 하나가'), B(WITH(ROW(2), ROW(3), ROW(4), ROW(5)), '아래 네 행이')],
- 'g1406': [*PUT('11-2', '방금 쿼리에'), U(EL(2), '가상이 false인'), RUN(rows=4)],
+ 'g1406': [*PUT('11-2', '방금 돌린 쿼리에'), U(EL(2), '가상이 false인'), RUN(rows=4)],
  'g1407': [B(WITH(ROW(1), ROW(2), ROW(3), ROW(4)), '네 행이 나왔고'), B(COL('가상'), '가상 열이'), B(ROW(1, card=1), '맨 위 냉각 효율')],
  'g1408': PUT('11-3', '다음은 세는 쿼리'),
  'g1409': [U(WITH(ED('c.name AS 구성요소'), ED('count(s)')), '구성 요소 이름과 count를'), U(ED('collect(s.name)'), '옆의 collect는'), RUN(rows=3)],
@@ -248,7 +250,7 @@ def steps_to_ops(cid, text, steps):
             _, at, want = s
             ops.append({'op': 'runCard', 'at': frac(at, 0.97), **want})
         elif kind == 'query':
-            ops.append({'op': 'query', 'query': QUERY[s[1]], 'at': frac(s[2])})
+            ops.append({'op': 'query', 'query': QUERY[s[1]], 'at': frac(s[2]), 'rest': REST})
         elif kind == 'op':
             _, op, at, k = s
             ops.append({'op': op, 'at': frac(at), **k})

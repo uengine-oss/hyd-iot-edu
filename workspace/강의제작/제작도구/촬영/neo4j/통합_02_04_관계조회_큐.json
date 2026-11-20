@@ -55,7 +55,7 @@
    "id": "g0106",
    "segment": 1,
    "section": "1. 여는 말",
-   "text": "Docker Desktop을 켜고 명령 두 개를 터미널에서 차례로 돌리면, 오늘 쓸 DB가 내 컴퓨터에 뜨고 브라우저에 이 연결 창이 저절로 열려요.",
+   "text": "이 화면을 띄우려면 Docker Desktop을 켜고 명령 두 개를 터미널에서 차례로 돌립니다. 그러면 오늘 쓸 DB가 내 컴퓨터에 뜨고, 브라우저에 이 연결 창이 저절로 열려요.",
    "gap": 1300,
    "ops": [
     {
@@ -64,7 +64,7 @@
       {
        "css": "[role=\"dialog\"]",
        "clip": true,
-       "at": 0.8072,
+       "at": 0.84,
        "hl": "box"
       }
      ]
@@ -175,6 +175,7 @@
       {
        "css": "[data-testid=\"instance-menu-button\"]",
        "inner": "Instance:bolt://",
+       "clip": true,
        "at": 0.1189,
        "hl": "box"
       },
@@ -359,7 +360,11 @@
     {
      "op": "query",
      "query": "CREATE (:연습장치 {id:'basic-A', name:'연습 펌프', score:40}),\n       (:연습장치 {id:'basic-B', name:'연습 팬', score:70});",
-     "at": 0.6061
+     "at": 0.6061,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -548,7 +553,11 @@
     {
      "op": "query",
      "query": "MATCH (n:연습장치)\nRETURN n;",
-     "at": 0.5333
+     "at": 0.5333,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -840,7 +849,11 @@
     {
      "op": "query",
      "query": "MATCH (n:연습장치)\nRETURN n.name AS 이름, n.score AS 점수\nORDER BY 점수;",
-     "at": 0.5556
+     "at": 0.5556,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -961,7 +974,11 @@
     {
      "op": "query",
      "query": "MATCH (n:연습장치)\nWHERE n.score >= 50\nRETURN n;",
-     "at": 0.7467
+     "at": 0.7467,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1034,13 +1051,17 @@
    "id": "g0701",
    "segment": 7,
    "section": "7. 있으면 찾고 없으면 만들기 — MERGE · SET",
-   "text": "이제 펌프에 센서를 하나 달아 볼게요. 센서 노드를 먼저 만들고, 그다음에 펌프와 관계로 이으면 됩니다. 센서는 여러 번 돌려도 하나만 남게, CREATE 대신 MERGE로 만들어 볼게요.",
+   "text": "이제 펌프에 센서를 하나 달아 볼게요. 센서 노드를 먼저 만들고, 그다음에 펌프와 관계로 이으면 됩니다. 센서는 여러 번 돌려도 하나만 남게, CREATE 대신 MERGE로 만듭니다.",
    "gap": 2300,
    "ops": [
     {
      "op": "query",
      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;",
-     "at": 0.5619
+     "at": 0.5784,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1048,7 +1069,7 @@
       {
        "css": "[data-testid=\"run-button\"]",
        "under": true,
-       "at": 0.5619
+       "at": 0.5784
       }
      ]
     }
@@ -1202,7 +1223,11 @@
     {
      "op": "query",
      "query": "MERGE (s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 온도 센서', s.unit = '℃'\nRETURN s;",
-     "at": 0.0
+     "at": 0.0,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1264,7 +1289,11 @@
     {
      "op": "query",
      "query": "MATCH (p:연습장치 {id:'basic-A'})\nMATCH (s:연습센서 {id:'basic-S1'})\nMERGE (p)-[r:감시된다]->(s)\nRETURN p, r, s;",
-     "at": 0.4605
+     "at": 0.4605,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1448,7 +1477,11 @@
     {
      "op": "query",
      "query": "MATCH (p:연습장치 {id:'basic-A'})-[r:감시된다]->(s:연습센서 {id:'basic-S1'})\nSET s.name = '연습 유온 센서'\nRETURN p, r, s;",
-     "at": 0.8101
+     "at": 0.8101,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1594,7 +1627,11 @@
     {
      "op": "query",
      "query": "MATCH (p:연습장치 {id:'basic-A'})\nDETACH DELETE p;",
-     "at": 0.0
+     "at": 0.0,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1689,7 +1726,11 @@
     {
      "op": "query",
      "query": "MATCH (n:연습장치|연습센서)\nRETURN n;",
-     "at": 0.7938
+     "at": 0.7938,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1773,7 +1814,11 @@
     {
      "op": "query",
      "query": "MATCH (n:연습장치|연습센서)\nDELETE n;",
-     "at": 0.0
+     "at": 0.0,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1836,7 +1881,11 @@
     {
      "op": "query",
      "query": "MATCH (n:연습장치|연습센서)\nRETURN count(n) AS 남은수;",
-     "at": 0.4815
+     "at": 0.4815,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -1920,7 +1969,11 @@
     {
      "op": "query",
      "query": "MATCH (n)\nRETURN labels(n) AS 레이블, count(n) AS 개수\nORDER BY 개수 DESC;",
-     "at": 0.7191
+     "at": 0.7191,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -2084,7 +2137,11 @@
     {
      "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\nRETURN c.name AS 구성요소;",
-     "at": 0.2069
+     "at": 0.2069,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -2214,13 +2271,17 @@
    "id": "g1301",
    "segment": 13,
    "section": "13. 관계를 두 번 건너기 — 여러 단계 경로",
-   "text": "한 번 더 건너 볼게요. 이번에는 구성 요소가 쓰는 부품까지 가는 길입니다.",
+   "text": "한 번 더 건너 볼게요. 구성 요소가 쓰는 부품까지 가는 길입니다.",
    "gap": 2300,
    "ops": [
     {
      "op": "query",
      "query": "MATCH path = (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(:Component)-[:USES_PART]->(:Part)\nRETURN path;",
-     "at": 0.3333
+     "at": 0.3784,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -2228,7 +2289,7 @@
       {
        "css": "[data-testid=\"run-button\"]",
        "under": true,
-       "at": 0.3333
+       "at": 0.3784
       }
      ]
     }
@@ -2388,7 +2449,11 @@
     {
      "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(pt:Part)\nWHERE c.name = '오일 쿨러'\nRETURN c.name AS 구성요소, pt.name AS 부품, pt.partNo AS 품번;",
-     "at": 0.5306
+     "at": 0.5306,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -2494,7 +2559,11 @@
     {
      "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;",
-     "at": 0.6068
+     "at": 0.6068,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -2644,13 +2713,17 @@
    "id": "g1406",
    "segment": 14,
    "section": "14. 답을 믿는 법 — 원래 행, 조건, 집계",
-   "text": "방금 쿼리에 WHERE 한 줄을 더했습니다. 가상이 false인 것만 받는다는 조건이에요.",
+   "text": "방금 돌린 쿼리에 WHERE 한 줄을 더했습니다. 가상이 false인 것만 받는다는 조건이에요.",
    "gap": 1300,
    "ops": [
     {
      "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nWHERE s.virtual = false\nRETURN c.name AS 구성요소, s.name AS 센서, s.virtual AS 가상\nORDER BY 구성요소, 센서;",
-     "at": 0.0
+     "at": 0.0,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
@@ -2662,7 +2735,7 @@
       },
       {
        "edLine": 2,
-       "at": 0.5,
+       "at": 0.5283,
        "hl": "underline"
       }
      ]
@@ -2725,7 +2798,11 @@
     {
      "op": "query",
      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS 구성요소, count(s) AS 센서수, collect(s.name) AS 센서목록\nORDER BY 센서수 DESC, 구성요소;",
-     "at": 0.0
+     "at": 0.0,
+     "rest": {
+      "x": 1180,
+      "y": 113
+     }
     },
     {
      "op": "mark",
