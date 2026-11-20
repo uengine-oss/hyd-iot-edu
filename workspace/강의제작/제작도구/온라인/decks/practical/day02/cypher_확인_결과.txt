@@ -1,0 +1,99 @@
+name, versions, edition
+"Neo4j Kernel", ["5.26.33"], "community"
+
+######## 1 · 2단원의 예(1~3호기, 2호기의 구성 요소 셋, 세 오일 쿨러가 같은 쿨러 코어를 쓴다)를 넣는다(통합 확인과 같은 예)
+== 예 넣기
+   > CREATE (e1:Asset {code: 'EQ-01', name: '1호기'}), (e2:Asset {code: 'EQ-02', name: '2호기'}), (e3:Asset {code: 'EQ-03', name: '3호기'}),
+   >  (c1:Component {code: 'EQ-01-COOLER', name: '오일 쿨러'}), (c2:Component {code: 'EQ-02-COOLER', name: '오일 쿨러'}),
+   >  (f2:Component {code: 'EQ-02-FAN', name: '쿨러 팬'}), (m2:Component {code: 'EQ-02-PUMP', name: '주 펌프'}),
+   >  (c3:Component {code: 'EQ-03-COOLER', name: '오일 쿨러'}),
+   >  (p:Part {partNo: 'CC-2040', name: '쿨러 코어'}),
+   >  (e1)-[:HAS_COMPONENT]->(c1), (e2)-[:HAS_COMPONENT]->(c2), (e2)-[:HAS_COMPONENT]->(f2), (e2)-[:HAS_COMPONENT]->(m2), (e3)-[:HAS_COMPONENT]->(c3),
+   >  (c1)-[:USES_PART]->(p), (c2)-[:USES_PART]->(p), (c3)-[:USES_PART]->(p);
+   (종료 코드 0)
+== 처음 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+9, 8
+   (종료 코드 0)
+
+######## 44장 조회: 화면의 네 줄, 그리고 그 네 줄에서 WHERE 줄만 뺀 쿼리
+== 44-1 화면의 네 줄(MATCH · WHERE · RETURN)
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component)
+   > WHERE c.name = '오일 쿨러'
+   > RETURN c.code;
+c.code
+"EQ-02-COOLER"
+   (종료 코드 0)
+== 44-2 WHERE 줄을 뺀 쿼리
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component)
+   > RETURN c.code;
+c.code
+"EQ-02-PUMP"
+"EQ-02-FAN"
+"EQ-02-COOLER"
+   (종료 코드 0)
+== 44-3 46장 역량 질문 쿼리(조회)
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component)
+   >       -[:USES_PART]->(p:Part)
+   > WHERE c.name = '오일 쿨러'
+   > RETURN p.partNo;
+p.partNo
+"CC-2040"
+   (종료 코드 0)
+== 44-4 조회 세 번 뒤 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+9, 8
+   (종료 코드 0)
+
+######## 47장 응용 C: 같은 그래프에 조회 쿼리와 적재 쿼리를 두 번씩 돌린다
+== 47-0 돌리기 전 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+9, 8
+   (종료 코드 0)
+== 47-1 조회 쿼리(MATCH · RETURN) 첫 번째
+   > MATCH (a:Asset) RETURN a.code;
+a.code
+"EQ-01"
+"EQ-02"
+"EQ-03"
+   (종료 코드 0)
+== 47-2 조회 한 번 뒤 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+9, 8
+   (종료 코드 0)
+== 47-3 같은 조회 쿼리 두 번째
+   > MATCH (a:Asset) RETURN a.code;
+a.code
+"EQ-01"
+"EQ-02"
+"EQ-03"
+   (종료 코드 0)
+== 47-4 조회 두 번 뒤 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+9, 8
+   (종료 코드 0)
+== 47-5 적재 쿼리(MERGE) 첫 번째
+   > MERGE (:Asset {code: 'EQ-04'});
+   (종료 코드 0)
+== 47-6 적재 한 번 뒤 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+10, 8
+   (종료 코드 0)
+== 47-7 같은 적재 쿼리(MERGE) 두 번째
+   > MERGE (:Asset {code: 'EQ-04'});
+   (종료 코드 0)
+== 47-8 적재 두 번 뒤 노드 수 · 관계 수
+   > MATCH (n) WITH count(n) AS nodes OPTIONAL MATCH ()-[r]->() RETURN nodes, count(r) AS relationships;
+nodes, relationships
+10, 8
+   (종료 코드 0)
+== 임시 컨테이너 지움: hyd-deck-practical2-u3-check
