@@ -24,7 +24,10 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v36-lab', 'graph-lab': 'v36-lab'}
+VERSIONS = {'ontology-lab': 'v37-lab', 'graph-lab': 'v37-lab'}
+# v37-lab(2026-11-20): v36 독립 검토 두 건(작업 폴더 판정/검토_통합2_ontology_v36.json · 검토_통합2_graph_v36.json) 고침 — Codex의 첫 파일 쓰기 단계로 승인 창 안내를 옮김,
+#   역량 질문을 Codex에게 붙여 넣게 하고 정답 토글에 질문 문장을, 요령 「묻게 하기」를 첫 결정 자리로(TIP_ASK 문장도 「짐작」 되풀이를 피해 고침), Codex가 채운 design.csv · quantity_rules.py를 열어 역할 짚기,
+#   그래프 10단계는 compare 명령을 먼저(Codex는 포털 표를 못 봄), 09단계 질문 3 기대 답도 Codex에게, 손으로 쓰는 것처럼 읽히는 문장 · 토글 속 단계 번호 · `$` 자리 풀이 · 새 대화 여는 법.
 # v36-lab(2026-11-20, 사용자 「냉정하게 그냥 헌법, 입력데이터 및 입력 문서 … , 로직 끝아님?」 · 「학생은 오로직 입력은 터미널에서 실행 및 띄워보기, 그리고 바이브코딩 codex 챗엣만」):
 #   랩 폴더에는 규칙(AGENTS.md) · 입력(data/) · 로직(app/) · 실행 파일만 둔다 — README.md · requirements.md · review.md · data/model/provenance.md를 뺐다(코드가 읽지 않는 사본 · 서류).
 #   가이드는 학생 손으로 파일을 쓰게 하지 않고 Codex에게 적게 하며, 요령 셋(TIP_ASK · TIP_PROOF · TIP_FRESH)을 처음 쓰는 단계에 싣는다. AGENTS.md와 판단 칸은 v35와 같다(장난감 시험 다시 돌리지 않음 — 코딩랩 길 6).
@@ -254,6 +257,9 @@ def completed(starter, destination, work):
         from reference.session2_graph_trials import expectation, fill, instance
         fill(folder)
         expectation(folder, after='남김')     # 완성본은 수정본까지 반영한 상태라 기대 답도 그 뒤의 답이다
+        target = folder / 'app/features/expected.csv'   # 칸 뜻 머리는 학생 빈 틀과 같은 줄을 쓴다(v36 검토 — 강사 참조의 머리는 「0줄」 꼴을 모른다)
+        head = (starter / 'app/features/expected.csv').read_text(encoding='utf-8').split('\n', 1)[0]
+        target.write_text(head + '\n' + target.read_text(encoding='utf-8').split('\n', 1)[1], encoding='utf-8', newline='')
         title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py load\npython run.py update\npython run.py usage'
         context, actions, rules = instance(folder), ('load', 'repeat', 'sensors', 'parts', 'update', 'usage', 'compare', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
     write_metadata(folder, title + ' · 완성본',

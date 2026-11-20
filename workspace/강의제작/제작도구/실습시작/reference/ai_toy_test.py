@@ -62,8 +62,9 @@ SCENARIOS = {'two_turn': ['START.md대로 다 해 줘', '권장안대로 다 해
 def scenario_prompts(lab, scenario):
     """학생 ZIP에 실제로 있는 진입 안내를 가리킨다. 바깥 가이드와 정답은 읽지 않는다."""
     prompts = list(SCENARIOS[scenario])
-    if scenario == 'two_turn' and (lab/'README.md').is_file() and (lab/'run.py').is_file() and (lab/'app/features').is_dir():
-        prompts[0] = 'README.md의 목적에 맞게 app/features의 핵심 기능을 전부 구현하고, run.py로 실제 결과까지 다 만들어 줘.'
+    if scenario == 'two_turn' and (lab/'run.py').is_file() and (lab/'app/features').is_dir():   # 새 구조 — README를 두지 않는 랩도 있다(코딩랩 K-5)
+        purpose = 'README.md의 목적에 맞게 ' if (lab/'README.md').is_file() else ''
+        prompts[0] = purpose + 'app/features의 핵심 기능을 전부 구현하고, run.py로 실제 결과까지 다 만들어 줘.'
     return prompts
 
 
