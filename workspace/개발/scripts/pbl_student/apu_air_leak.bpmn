@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0apu1lk" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">
+  <bpmn:collaboration id="Collaboration_0apu1lk">
+    <bpmn:participant id="Participant_APU" name="APU 공기 누설 대응" processRef="apu_air_leak" />
+  </bpmn:collaboration>
+  <bpmn:process id="apu_air_leak" name="APU 공기 누설 대응" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_0apu1lk">
+      <bpmn:lane id="Lane_AI" name="AI 에이전트">
+        <bpmn:flowNodeRef>Task_Judge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Lead" name="APU 정비 책임자">
+        <bpmn:flowNodeRef>Task_Approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Approved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_LeadCheck</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="시스템">
+        <bpmn:flowNodeRef>Start_Alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Stopped</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportFail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportRejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Alert" name="공기 누설 의심 경보">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0apu1lk" />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_Judge" name="누설 판단 · 정비 제안">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Judged</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Task_Approve" name="정비 승인">
+      <bpmn:incoming>Flow_Judged</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approval</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Approved" name="승인?" default="Flow_No">
+      <bpmn:incoming>Flow_Approval</bpmn:incoming>
+      <bpmn:outgoing>Flow_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Record" name="정비 기록 등록">
+      <bpmn:incoming>Flow_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_Recorded</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Wait" name="정비 뒤 대기">
+      <bpmn:incoming>Flow_Recorded</bpmn:incoming>
+      <bpmn:outgoing>Flow_Waited</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Check" name="효과 확인">
+      <bpmn:incoming>Flow_Waited</bpmn:incoming>
+      <bpmn:outgoing>Flow_Checked</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Stopped" name="누설 멈춤?" default="Flow_NotStopped">
+      <bpmn:incoming>Flow_Checked</bpmn:incoming>
+      <bpmn:outgoing>Flow_Stopped</bpmn:outgoing>
+      <bpmn:outgoing>Flow_NotStopped</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_ReportOk" name="결과 보고(정상)">
+      <bpmn:incoming>Flow_Stopped</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportedOk</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Ok" name="정상 종료">
+      <bpmn:incoming>Flow_ReportedOk</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Task_LeadCheck" name="책임자 확인">
+      <bpmn:incoming>Flow_NotStopped</bpmn:incoming>
+      <bpmn:outgoing>Flow_LeadChecked</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_ReportFail" name="결과 보고(미달)">
+      <bpmn:incoming>Flow_LeadChecked</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportedFail</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Fail" name="미달 종료">
+      <bpmn:incoming>Flow_ReportedFail</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_ReportRejected" name="결과 보고(반려)">
+      <bpmn:incoming>Flow_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportedRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Rejected" name="반려 종료">
+      <bpmn:incoming>Flow_ReportedRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start_Alert" targetRef="Task_Judge" />
+    <bpmn:sequenceFlow id="Flow_Judged" sourceRef="Task_Judge" targetRef="Task_Approve" />
+    <bpmn:sequenceFlow id="Flow_Approval" sourceRef="Task_Approve" targetRef="Gateway_Approved" />
+    <bpmn:sequenceFlow id="Flow_Yes" name="승인" sourceRef="Gateway_Approved" targetRef="Task_Record" />
+    <bpmn:sequenceFlow id="Flow_No" name="반려" sourceRef="Gateway_Approved" targetRef="Task_ReportRejected" />
+    <bpmn:sequenceFlow id="Flow_Recorded" sourceRef="Task_Record" targetRef="Task_Wait" />
+    <bpmn:sequenceFlow id="Flow_Waited" sourceRef="Task_Wait" targetRef="Task_Check" />
+    <bpmn:sequenceFlow id="Flow_Checked" sourceRef="Task_Check" targetRef="Gateway_Stopped" />
+    <bpmn:sequenceFlow id="Flow_Stopped" name="멈춤" sourceRef="Gateway_Stopped" targetRef="Task_ReportOk" />
+    <bpmn:sequenceFlow id="Flow_ReportedOk" sourceRef="Task_ReportOk" targetRef="End_Ok" />
+    <bpmn:sequenceFlow id="Flow_NotStopped" name="계속" sourceRef="Gateway_Stopped" targetRef="Task_LeadCheck" />
+    <bpmn:sequenceFlow id="Flow_LeadChecked" sourceRef="Task_LeadCheck" targetRef="Task_ReportFail" />
+    <bpmn:sequenceFlow id="Flow_ReportedFail" sourceRef="Task_ReportFail" targetRef="End_Fail" />
+    <bpmn:sequenceFlow id="Flow_ReportedRejected" sourceRef="Task_ReportRejected" targetRef="End_Rejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0apu1lk">
+      <bpmndi:BPMNShape id="Participant_APU_di" bpmnElement="Participant_APU" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="1700" height="620" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_AI_di" bpmnElement="Lane_AI" isHorizontal="true">
+        <dc:Bounds x="180" y="80" width="1670" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Lead_di" bpmnElement="Lane_Lead" isHorizontal="true">
+        <dc:Bounds x="180" y="240" width="1670" height="180" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="Lane_System" isHorizontal="true">
+        <dc:Bounds x="180" y="420" width="1670" height="280" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Alert_di" bpmnElement="Start_Alert">
+        <dc:Bounds x="222" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="196" y="525" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Judge_di" bpmnElement="Task_Judge">
+        <dc:Bounds x="310" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Approve_di" bpmnElement="Task_Approve">
+        <dc:Bounds x="470" y="290" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Approved_di" bpmnElement="Gateway_Approved" isMarkerVisible="true">
+        <dc:Bounds x="625" y="305" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="636" y="281" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Record_di" bpmnElement="Task_Record">
+        <dc:Bounds x="740" y="460" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Wait_di" bpmnElement="Task_Wait">
+        <dc:Bounds x="900" y="460" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Check_di" bpmnElement="Task_Check">
+        <dc:Bounds x="1060" y="460" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Stopped_di" bpmnElement="Gateway_Stopped" isMarkerVisible="true">
+        <dc:Bounds x="1215" y="475" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1206" y="532" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportOk_di" bpmnElement="Task_ReportOk">
+        <dc:Bounds x="1320" y="460" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Ok_di" bpmnElement="End_Ok">
+        <dc:Bounds x="1482" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1472" y="525" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LeadCheck_di" bpmnElement="Task_LeadCheck">
+        <dc:Bounds x="1320" y="290" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportFail_di" bpmnElement="Task_ReportFail">
+        <dc:Bounds x="1590" y="460" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Fail_di" bpmnElement="End_Fail">
+        <dc:Bounds x="1762" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1752" y="525" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportRejected_di" bpmnElement="Task_ReportRejected">
+        <dc:Bounds x="740" y="580" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="902" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="892" y="645" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_di" bpmnElement="Flow_Start">
+        <di:waypoint x="258" y="500" />
+        <di:waypoint x="284" y="500" />
+        <di:waypoint x="284" y="160" />
+        <di:waypoint x="310" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Judged_di" bpmnElement="Flow_Judged">
+        <di:waypoint x="410" y="160" />
+        <di:waypoint x="440" y="160" />
+        <di:waypoint x="440" y="330" />
+        <di:waypoint x="470" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Approval_di" bpmnElement="Flow_Approval">
+        <di:waypoint x="570" y="330" />
+        <di:waypoint x="625" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Yes_di" bpmnElement="Flow_Yes">
+        <di:waypoint x="675" y="330" />
+        <di:waypoint x="790" y="330" />
+        <di:waypoint x="790" y="460" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="716" y="312" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_No_di" bpmnElement="Flow_No">
+        <di:waypoint x="650" y="355" />
+        <di:waypoint x="650" y="620" />
+        <di:waypoint x="740" y="620" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="658" y="470" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Recorded_di" bpmnElement="Flow_Recorded">
+        <di:waypoint x="840" y="500" />
+        <di:waypoint x="900" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Waited_di" bpmnElement="Flow_Waited">
+        <di:waypoint x="1000" y="500" />
+        <di:waypoint x="1060" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Checked_di" bpmnElement="Flow_Checked">
+        <di:waypoint x="1160" y="500" />
+        <di:waypoint x="1215" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Stopped_di" bpmnElement="Flow_Stopped">
+        <di:waypoint x="1265" y="500" />
+        <di:waypoint x="1320" y="500" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1281" y="482" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReportedOk_di" bpmnElement="Flow_ReportedOk">
+        <di:waypoint x="1420" y="500" />
+        <di:waypoint x="1482" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NotStopped_di" bpmnElement="Flow_NotStopped">
+        <di:waypoint x="1240" y="475" />
+        <di:waypoint x="1240" y="330" />
+        <di:waypoint x="1320" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1248" y="400" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LeadChecked_di" bpmnElement="Flow_LeadChecked">
+        <di:waypoint x="1420" y="330" />
+        <di:waypoint x="1640" y="330" />
+        <di:waypoint x="1640" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReportedFail_di" bpmnElement="Flow_ReportedFail">
+        <di:waypoint x="1690" y="500" />
+        <di:waypoint x="1762" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReportedRejected_di" bpmnElement="Flow_ReportedRejected">
+        <di:waypoint x="840" y="620" />
+        <di:waypoint x="902" y="620" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,224 @@
+{
+ "_설명": "학생(지하철 APU 운영사 보전 담당)이 포털에서 하는 일을 포털 API 본문 그대로 적은 것. $BY = 포털의 「나」(사람 사용자 id), $SERVER_URL = 이 PC에서 띄운 도구 서버 주소, $AGENT_ID = 에이전트를 만든 뒤 받은 id, $WAIT = 정비 뒤 기다릴 시간(ISO 기간), $SKILL_MD = skills/apu-leak-diagnosis/SKILL.md 본문. pbl_round.py 가 채워 보낸다.",
+ "server": {
+  "name": "apu-ops",
+  "url": "$SERVER_URL",
+  "description": "지하철 APU 운영 데이터 — 실측 신호 · 회사 고장 보고 · 정비 기록(MetroPT-3)",
+  "by": "$BY"
+ },
+ "role": {
+  "name": "APU 정비 책임자",
+  "key": "apu-maint-lead",
+  "kind": "manager",
+  "by": "$BY"
+ },
+ "skill": {
+  "skill_name": "apu-leak-diagnosis",
+  "description": "APU 공기 누설 의심 경보 — 설비 데이터와 매뉴얼로 누설 · 헛경보를 가르고 절차 번호로 정비안",
+  "content": "$SKILL_MD",
+  "by": "$BY"
+ },
+ "agent": {
+  "name": "APU 누설 판단 에이전트",
+  "role": "APU 정비 판단",
+  "goal": "지하철 공기 공급 장치(APU)의 공기 누설 의심 경보를 받아, 설비 데이터(도구 서버 apu-ops)와 지식 지도에 적재한 APU 매뉴얼 지식으로 누설인지 헛경보인지 판단하고 매뉴얼의 절차 번호로 정비안을 낸다",
+  "persona": "",
+  "model": "",
+  "tools": [
+   "apu-ops",
+   "neo4j"
+  ],
+  "skills": [
+   "apu-leak-diagnosis"
+  ],
+  "work_rules": "",
+  "by": "$BY"
+ },
+ "flow": {
+  "file_name": "apu_air_leak.bpmn",
+  "definition_id": "apu_air_leak"
+ },
+ "mapping": {
+  "name": "APU 공기 누설 대응",
+  "start": {
+   "kind": "alert",
+   "patterns": [],
+   "declared": [
+    {
+     "pattern": "APU_AIR_LEAK",
+     "name": "공기 누설 의심"
+    }
+   ]
+  },
+  "lanes": {
+   "Lane_Lead": "APU 정비 책임자"
+  },
+  "tasks": {
+   "Task_Judge": {
+    "part": "agent",
+    "agent": "$AGENT_ID",
+    "inputs": [
+     "asset",
+     "alert",
+     "alert_id",
+     "pattern"
+    ],
+    "instruction": "공기 공급 장치(APU)의 공기 누설 의심 경보 하나를 판단한다. 스킬 apu-leak-diagnosis 의 차례대로 경보 근거, 지금 설비 값(도구 서버 apu-ops), 지식 지도에 적재된 APU 매뉴얼 지식(neo4j)을 읽고, 누설인지 헛경보인지 근거와 함께 판정한 뒤 매뉴얼의 절차 번호로 정비안을 낸다. 결과 proposal 의 꼴은 스킬에 적힌 대로다. 승인 전에는 읽기만 하고 정비 기록을 쓰지 않는다.",
+    "outputs": [
+     {
+      "key": "proposal",
+      "text": "누설 판단 · 정비 제안",
+      "type": "object"
+     }
+    ]
+   },
+   "Task_Approve": {
+    "part": "human:approve",
+    "role": "APU 정비 책임자",
+    "inputs": [
+     "proposal"
+    ],
+    "config": {
+     "options": "proposal.options",
+     "recommended": "proposal.recommended",
+     "losers": "proposal.losers"
+    }
+   },
+   "Task_Record": {
+    "part": "svc:mcp-call",
+    "inputs": [],
+    "config": {
+     "server": "apu-ops",
+     "tool": "record_maintenance",
+     "arguments": {
+      "case_id": "{proc_inst_id}",
+      "sop": "{approved_option.sop}",
+      "action": "{approved_option.action}",
+      "performed_by": "{approved_by_name}"
+     }
+    }
+   },
+   "Task_Wait": {
+    "part": "svc:wait",
+    "inputs": [],
+    "config": {
+     "duration": "$WAIT",
+     "label": "정비 뒤 효과가 드러나기를 기다림"
+    }
+   },
+   "Task_Check": {
+    "part": "svc:mcp-call",
+    "inputs": [],
+    "config": {
+     "server": "apu-ops",
+     "tool": "apu_windows",
+     "arguments": {
+      "hours": 0.5
+     },
+     "effect": false,
+     "output": "effect_check",
+     "extract": {
+      "load_prev": {
+       "path": "windows.0.load_ratio",
+       "type": "Number"
+      },
+      "load_last": {
+       "path": "windows.1.load_ratio",
+       "type": "Number"
+      },
+      "oil_last": {
+       "path": "windows.1.oil_temp_c_mean",
+       "type": "Number"
+      },
+      "checked_at": {
+       "path": "now",
+       "type": "Text"
+      }
+     }
+    }
+   },
+   "Task_ReportOk": {
+    "part": "svc:report",
+    "inputs": [],
+    "config": {
+     "outcome": "정상",
+     "title": "{asset} 공기 누설 정비 결과",
+     "summary": "승인한 조치 {approved_option.sop} {approved_option.title} — 정비 기록 뒤 확인(데이터 시각 {checked_at}): 최근 30분 부하 운전 비율 {load_prev} · {load_last}, 오일 온도 {oil_last} ℃로 누설이 멈췄습니다. 판단: {proposal.verdict} — {proposal.summary}"
+    }
+   },
+   "Task_LeadCheck": {
+    "part": "human",
+    "role": "APU 정비 책임자",
+    "inputs": [
+     "effect_check"
+    ],
+    "fields": [
+     {
+      "key": "lead_note",
+      "text": "확인한 내용과 다음 조치",
+      "type": "textarea"
+     }
+    ]
+   },
+   "Task_ReportFail": {
+    "part": "svc:report",
+    "inputs": [],
+    "config": {
+     "outcome": "미달",
+     "title": "{asset} 공기 누설 정비 결과",
+     "summary": "승인한 조치 {approved_option.sop} {approved_option.title} 뒤에도 누설이 멈추지 않았습니다(데이터 시각 {checked_at}: 최근 30분 부하 운전 비율 {load_prev} · {load_last}, 오일 온도 {oil_last} ℃). 책임자 확인: {lead_note}"
+    }
+   },
+   "Task_ReportRejected": {
+    "part": "svc:report",
+    "inputs": [],
+    "config": {
+     "outcome": "반려",
+     "title": "{asset} 공기 누설 의심 — 정비하지 않음",
+     "summary": "반려 사유: {approval_reason}. 에이전트 판단: {proposal.verdict} — {proposal.summary}"
+    }
+   }
+  },
+  "timers": {},
+  "flows": {
+   "Flow_Yes": {
+    "var": "approval",
+    "op": "==",
+    "value": "승인"
+   },
+   "Flow_No": {
+    "default": true
+   },
+   "Flow_Stopped": {
+    "text": "load_prev < 0.9 and load_last < 0.9"
+   },
+   "Flow_NotStopped": {
+    "default": true
+   }
+  }
+ },
+ "deploy": {
+  "reason": "APU 공기 누설 의심 경보를 내 흐름으로 받는다",
+  "by": "$BY"
+ },
+ "review": {
+  "_설명": "학생이 검토 화면에서 고르는 것(포털 「지식 › 문서 등록」 검토 — 절차 판의 고장 유형 · 관계 · 대상 원인 · 종류). AI 추출의 id 는 실행마다 다를 수 있어 이름으로 적는다. 근거는 매뉴얼 원문: APU-6.1 고장 표 「공기 누설 … 조치 절차 SOP-APU-05 · SOP-APU-11 · SOP-APU-12 · SOP-APU-13」, APU-6.2 누설 시험 판정(Reservoirs 차 0.5 bar), APU-8 「같은 고장이 한 달 안에 두 번 생기면 설비보전팀장이 원인 분석 회의를 연다」(고장 조치가 아닌 기록 규정).",
+  "procedures": {
+   "SOP-APU-05": {
+    "failure_mode": "공기 누설",
+    "relation": "MITIGATED_BY"
+   },
+   "SOP-APU-11": {
+    "failure_mode": "공기 누설",
+    "relation": "REMEDIED_BY",
+    "addresses": [
+     "배관 이음부 누설",
+     "배수 밸브 고착"
+    ]
+   },
+   "SOP-APU-8": {
+    "kind": "reference"
+   }
+  }
+ }
+}
