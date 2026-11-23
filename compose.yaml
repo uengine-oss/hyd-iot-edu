@@ -416,7 +416,7 @@ services:
       HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
       # 강의 중계(LiteLLM, Anthropic 방식 주소 — 끝에 /v1 없음). 키는 process 만 받고 워커 CLI 에는 작업에 묶인 토큰만 간다(course_model.py)
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_RELAY_URL: https://knu-litellm-1087825885001.asia-northeast3.run.app
+      LLM_RELAY_URL: https://hyd-relay-tfoskn47sa-du.a.run.app
       # 업무 시스템 쓰기 · 승인 뒤 메일 도구를 process 만 부르게 하는 값(enterprise-sim · effects-mcp 와 같은 값), 승인 장부 지문 키(cmd-gateway 와 같은 값)
       PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}
       CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:?시작 파일이 정합니다}
