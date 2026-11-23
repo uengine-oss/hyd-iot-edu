@@ -246,11 +246,10 @@ export async function resetLab(key, {restore = [], top = []} = {}) {
 }
 
 // ── 여러 편이 같은 꼴로 하는 조작 ──
-// 왼쪽 위 ☰ → Terminal → New Terminal(조작만, 큐는 부르는 쪽이 준다)
+// 위 메뉴 줄의 Terminal → New Terminal(조작만, 큐는 부르는 쪽이 준다). 메뉴 줄은 촬영준비 길 4의 설정(window.menuBarVisibility visible)으로 편다 — ☰ 단추만 있으면 Terminal 단추를 못 찾아 멈춘다
 export async function newTerminal(c, ctx) {
  const shown = text => ctx.waitFor('[...document.querySelectorAll(".monaco-menu .action-label, .context-view .action-label")].some(e => e.textContent.trim() === ' + JSON.stringify(text) + ' && e.getBoundingClientRect().width > 0)', 5000);   // 메뉴가 그려진 뒤에 고른다
- await c.clickSel('.menubar-menu-button', 'Application Menu'); await shown('Terminal');
- await c.menuItem('Terminal'); await shown('New Terminal');
+ await c.clickSel('.menubar-menu-button', 'Terminal'); await shown('New Terminal');
  await c.menuItem('New Terminal');
 }
 // 명령 뒤 결과 파일과 터미널 끝 줄을 기다린다
