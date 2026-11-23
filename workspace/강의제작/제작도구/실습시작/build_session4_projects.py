@@ -38,7 +38,7 @@ from project_layout import write_metadata, errors, AI_RULES, DB_RULE
 
 HERE = Path(__file__).resolve().parent
 REF = HERE / 'reference/session3_docs'
-VERSION = '2026-11-17-decider2'   # 독립 검토 고칠목록(가이드 · AGENTS · 기록 틀 문장, 요령 까닭은 lab_frame 한 곳). 그 앞: 2026-11-17-decider 학생은 AI로 파악하고 추천안을 따져 결정(코딩랩 K-3)
+VERSION = '2026-11-23-envkey'   # .env.example에 접속 주소 · 모델 이름을 채우고 키만 비움(안내도 「받은 키 한 줄」). 그 앞: 2026-11-17-decider2 독립 검토 고칠목록(가이드 · AGENTS · 기록 틀 문장, 요령 까닭은 lab_frame 한 곳). 그 앞: 2026-11-17-decider 학생은 AI로 파악하고 추천안을 따져 결정(코딩랩 K-3)
 WORK = ROOT / '작업/검사/session4-projects'
 OUT = F.OUT
 TASK = BD.TASK
@@ -412,7 +412,7 @@ ROOT = Path(__file__).resolve().parent__LLM_SETUP__
 
 
 def env_twice():
-    """.env에 같은 이름이 두 번 있으면(받은 세 줄을 빈 세 줄 위에 붙인 경우) 뒤의 빈 값이 이겨 키가 없는 것처럼 된다 — 줄 번호를 짚고 멈춘다."""
+    """.env에 같은 이름이 두 번 있으면(받은 키 줄을 빈 줄 위에 따로 붙인 경우) 뒤의 빈 값이 이겨 키가 없는 것처럼 된다 — 줄 번호를 짚고 멈춘다."""
     path = ROOT / '.env'
     if not path.is_file():
         return None
@@ -421,7 +421,7 @@ def env_twice():
         if '=' in line and not line.strip().startswith('#'):
             seen.setdefault(line.split('=', 1)[0].strip(), []).append(n)
     twice = [f'{" · ".join(map(str, lines))}줄에 {name}' for name, lines in seen.items() if len(lines) > 1]
-    return ('.env ' + ', '.join(twice) + '가 두 번 있습니다 — 등호 뒤가 빈 줄을 지우고 받은 세 줄만 남긴 뒤 저장합니다.') if twice else None
+    return ('.env ' + ', '.join(twice) + '가 두 번 있습니다 — 등호 뒤가 빈 줄을 지우고 저장합니다.') if twice else None
 
 
 def main():
@@ -475,7 +475,7 @@ class _NoKey(SystemExit):
     def __init__(self, message, code=1):
         if str(message).startswith('키가 없어'):
             message = ('키가 없어 수업 모델에 보내지 않았습니다(.env가 없거나 LLM_API_KEY가 비어 있음).\\n'
-                       '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, 강의에서 받은 세 줄을 붙여 넣어 저장한 뒤 같은 명령을 다시 실행합니다.\\n'
+                       '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, LLM_API_KEY= 뒤에 강의에서 받은 키를 붙여 넣어 저장한 뒤 같은 명령을 다시 실행합니다.\\n'
                        '키가 없으면 클래스룸에서 실습 폴더와 따로 받는 완성본 ZIP(__ZIP__)으로 결과를 봅니다.')
         print(message)
         super().__init__(code)
@@ -670,9 +670,9 @@ def extract_guide(key, event, facts):
             f'`data/action_review.json`은 판정 · 성과 비교 실습의 조치 검토 결과와 같은 꼴입니다. 내 결과를 쓰려면 형식을 `data/contract.md` 「입력」과 견준 뒤 `app/features/my_inputs/`에 같은 이름으로 복사합니다(선택).')
     no_key = f'키가 없으면 실습 폴더와 따로 받는 완성본 ZIP(`{name}-completed.zip`)으로 결과를 봅니다. 그때는 모델을 부르지 못한 단계를 `review.md`에 그렇다고 적습니다.'
     env_how = ('`.env.example`을 복사해 이름을 `.env`로 바꿉니다(탐색기에서 오른쪽 클릭 **복사**(Copy) → 빈 곳 **붙여넣기**(Paste) → 사본 **이름 바꾸기**(Rename)). '
-               '`.env`를 열어 등호(=) 뒤가 비어 있는 세 줄을 지우고, 그 자리에 강의에서 받은 세 줄을 그대로 붙여 넣은 뒤 **Ctrl+S**로 저장합니다. 손으로 정하거나 고칠 값은 없습니다.')
+               '`.env`를 열어 `LLM_API_KEY=` 바로 뒤에 강의에서 받은 키를 붙여 넣은 뒤 **Ctrl+S**로 저장합니다. 주소와 모델 이름은 이미 적혀 있어 고칠 값이 없습니다.')
     if practical:
-        env_how = '`.env.example`을 복사해 이름을 `.env`로 바꾸고, 등호 뒤가 빈 세 줄을 지운 뒤 그 자리에 받은 세 줄을 그대로 붙여 넣어 **Ctrl+S**로 저장합니다.'
+        env_how = '`.env.example`을 복사해 이름을 `.env`로 바꾸고, `LLM_API_KEY=` 뒤에 받은 키를 붙여 넣어 **Ctrl+S**로 저장합니다.'
     wait = (f'조각마다 요청을 하나씩 보내므로 조각 수만큼 기다립니다. 같은 요청은 다시 보내지 않고, `output/model_responses/`에 보낸 기록이 {LLM.MAX_SENT}개가 되면 더 보내지 않습니다(비용을 지키는 이 폴더의 상한).')
     count_check = '먼저 보낼 요청 수가 남은 수 안인지 봅니다. 많으면 보낼 문서를 줄이거나 조각을 크게 묶습니다.'
     main_check = ('문서마다 지식 후보 · 찾지 못한 인용 · 잘린 답 수와, 기대 항목마다 맞음 · 종류 다름 · 줄 못 정함 · 누락이 보입니다. 「같은 요청의 기록이 … 개」로 멈추면 두 답을 원문 줄과 견줘 '
@@ -702,7 +702,7 @@ def extract_guide(key, event, facts):
              '문서 조각을 수업 모델에 보내 지식 후보를 받습니다. 첫 요청은 서버가 준비되느라 1분쯤 걸릴 수 있어 여기서 미리 한 번 보냅니다.', env_how,
              '키는 이 폴더의 `.env`에만 둡니다. 키가 새면 다른 사람이 내 한도로 모델을 부를 수 있으므로 채팅 · 다른 파일 · 기록에 붙이지 않습니다.'],
              cmd='python run.py connect',
-             check=('「연결됨」 줄과 모델 이름이 보입니다. 「키가 없어 수업 모델에 보내지 않았습니다」면 파일 이름이 `.env`인지, 탭 이름 옆 ●가 없는지 봅니다. 「.env의 … 값이 비어 있습니다」면 그 줄을 다시 붙여 넣고, '
+             check=('「연결됨」 줄과 모델 이름이 보입니다. 「키가 없어 수업 모델에 보내지 않았습니다」면 파일 이름이 `.env`인지, 탭 이름 옆 ●가 없는지 봅니다. 「.env의 … 값이 비어 있습니다」면 `.env.example`의 그 줄을 다시 옮겨 적고, '
                     '「.env … 줄에 … 두 번 있습니다」면 빈 줄을 지웁니다. '
                     f'{LLM.TIMEOUT_S}초 안에 답이 없으면 「모델 서버에 닿지 못했습니다」로 멈추니 1분쯤 뒤 같은 명령을 다시 실행합니다. ' + no_key)),
          section('기대 항목 먼저 적기', [

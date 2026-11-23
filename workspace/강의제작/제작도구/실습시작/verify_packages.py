@@ -5,8 +5,8 @@
 1. package-index.json의 ZIP마다 해시 · 시작 파일 · 가이드 링크 · 과제 정답 경계(verify_lab).
 2. 도구 실습의 한 파일 가이드(랩/<랩>.html)마다 랩 폴더로 다시 만든 바이트와 같은가(lab_package.page_bytes, 가이드 P-13).
 3. 학생 ZIP(산출물/*/실습/*/랩/*.zip 전부, 인수를 주면 그것만)마다 check_zip — 랩 폴더와 경로 집합 · 바이트(텍스트는 줄끝을 맞춰)가
-   같은가, 강사 대본(/대본/) · 제작 지시 문구 · __pycache__ · .env(TEMPLATES 밖)가 없는가, 빈 틀(.env.example · TEMPLATES의 .env)의
-   등호 뒤가 모두 비었는가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
+   같은가, 강사 대본(/대본/) · 제작 지시 문구 · __pycache__ · .env(TEMPLATES 밖)가 없는가, .env.example은 키만 비고 접속 주소 · 모델 이름이
+   lab_frame.ENV_FIXED와 같은가, TEMPLATES의 .env는 등호 뒤가 모두 비었는가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
 start_guides/build.py와 lab_package.py도 check_zip · forbidden_hits · link_errors를 부른다.
 """
 from pathlib import Path, PurePosixPath
@@ -16,7 +16,7 @@ from urllib.parse import unquote,urlsplit
 import hashlib,html,json,posixpath,re,sys,zipfile
 from build_labs import PICTURE_TYPES, student_photos
 from lab_package import PRIVATE, guide_name, outside_guide, page_bytes, student_files, zip_root
-from lab_frame import MARK, SHOW_RESULT
+from lab_frame import ENV_FIXED, ENV_KEY, MARK, SHOW_RESULT
 from project_layout import errors as project_errors
 ROOT=Path(__file__).resolve().parents[4]
 HERE=Path(__file__).resolve().parent
@@ -85,11 +85,13 @@ def same_content(a,b):
     if a==b:return True
     return text_of(a) is not None and text_of(b) is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n')
 
-ENV_NAMES=('OPENAI_BASE_URL','LLM_API_KEY','LLM_MODEL')   # 코딩랩.md K-7 — 학생이 받는 접속 세 줄의 이름(.env.example에 셋 다, 값은 빈 채)
+ENV_NAMES=(*ENV_FIXED,ENV_KEY)   # 코딩랩.md K-7 — .env.example에 있어야 하는 이름. 접속 주소 · 모델 이름은 ENV_FIXED 값, 키는 빈 채
 
-def env_template_errors(name,data,need=()):
-    """학생이 등호 뒤를 채우는 빈 틀(.env.example · TEMPLATES의 .env)에서 값이 든 줄과, need의 이름 가운데 빠진 것. 값은 학생 코드(llm_client)가 읽는 대로
-    앞뒤 공백 · 따옴표를 걷어 본다. 값 자체는 찍지 않는다(키 · 주소일 수 있다)."""
+def env_template_errors(name,data,need=(),fixed=None):
+    """학생이 채우는 틀(.env.example · TEMPLATES의 .env)에서 값이 잘못 든 줄과, need의 이름 가운데 빠진 것. fixed({이름: 값})에 든 이름은 그 값이어야 하고
+    (코딩랩.md K-7 — 접속 주소 · 모델 이름), 그 밖의 이름은 등호 뒤가 비어야 한다(키가 섞이면 안 된다). 값은 학생 코드(llm_client)가 읽는 대로
+    앞뒤 공백 · 따옴표를 걷어 본다. 값 자체는 찍지 않는다(키일 수 있다)."""
+    fixed=fixed or {}
     text=text_of(data)
     if text is None:return [f'{name}: 빈 틀이 글이 아님']
     errors=[];seen=set()
@@ -97,10 +99,13 @@ def env_template_errors(name,data,need=()):
         line=line.strip()
         if not line or line.startswith('#') or '=' not in line:continue
         key,value=line.split('=',1)
-        seen.add(key.strip())
-        if value.strip().strip('"\''):errors.append(f'{name}:{n}: 빈 틀에 값이 들어 있음 {key.strip()}=…(키 · 주소가 섞였을 수 있음 — 값을 비운다)')
+        key,value=key.strip(),value.strip().strip('"\'')
+        seen.add(key)
+        if key in fixed:
+            if value!=fixed[key]:errors.append(f'{name}:{n}: {key} 값이 정해 둔 값과 다름(lab_frame.ENV_FIXED — 코딩랩.md K-7)')
+        elif value:errors.append(f'{name}:{n}: 빈 틀에 값이 들어 있음 {key}=…(키가 섞였을 수 있음 — 값을 비운다)')
     missing=[k for k in need if k not in seen]
-    if missing:errors.append(f'{name}: 접속 세 줄의 이름이 빠짐 {", ".join(missing)}(코딩랩.md K-7)')
+    if missing:errors.append(f'{name}: 접속 값의 이름이 빠짐 {", ".join(missing)}(코딩랩.md K-7)')
     return errors
 
 def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
@@ -141,7 +146,7 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
         if parts[-1]=='.env':
             errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data)] if name in templates else [f'{zpath.name}: .env가 들어 있음 {name}']
         elif parts[-1]=='.env.example':
-            errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data,ENV_NAMES)]
+            errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data,ENV_NAMES,ENV_FIXED)]
     for name in sorted(templates-set(packed)):
         errors.append(f'{zpath.name}: 학생에게 줄 틀이 빠짐 {name}(이 PC 체크아웃에는 .env가 없다 — 틀이 있는 PC에서 묶는다)')
     only_zip=sorted(n for n in set(packed)-set(present)-templates if PurePosixPath(n).name!='.env')   # .env는 위에서 따로 찍었다

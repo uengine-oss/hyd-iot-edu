@@ -18,7 +18,7 @@ class _NoKey(SystemExit):
     def __init__(self, message, code=1):
         if str(message).startswith('키가 없어'):
             message = ('키가 없어 수업 모델에 보내지 않았습니다(.env가 없거나 LLM_API_KEY가 비어 있음).\n'
-                       '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, 강의에서 받은 세 줄을 붙여 넣어 저장한 뒤 같은 명령을 다시 실행합니다.\n'
+                       '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, LLM_API_KEY= 뒤에 강의에서 받은 키를 붙여 넣어 저장한 뒤 같은 명령을 다시 실행합니다.\n'
                        '키가 없으면 클래스룸에서 실습 폴더와 따로 받는 완성본 ZIP(knowledge-extract-lab-completed.zip)으로 결과를 봅니다.')
         print(message)
         super().__init__(code)
@@ -28,7 +28,7 @@ llm_client.Stop = _NoKey
 
 
 def env_twice():
-    """.env에 같은 이름이 두 번 있으면(받은 세 줄을 빈 세 줄 위에 붙인 경우) 뒤의 빈 값이 이겨 키가 없는 것처럼 된다 — 줄 번호를 짚고 멈춘다."""
+    """.env에 같은 이름이 두 번 있으면(받은 키 줄을 빈 줄 위에 따로 붙인 경우) 뒤의 빈 값이 이겨 키가 없는 것처럼 된다 — 줄 번호를 짚고 멈춘다."""
     path = ROOT / '.env'
     if not path.is_file():
         return None
@@ -37,7 +37,7 @@ def env_twice():
         if '=' in line and not line.strip().startswith('#'):
             seen.setdefault(line.split('=', 1)[0].strip(), []).append(n)
     twice = [f'{" · ".join(map(str, lines))}줄에 {name}' for name, lines in seen.items() if len(lines) > 1]
-    return ('.env ' + ', '.join(twice) + '가 두 번 있습니다 — 등호 뒤가 빈 줄을 지우고 받은 세 줄만 남긴 뒤 저장합니다.') if twice else None
+    return ('.env ' + ', '.join(twice) + '가 두 번 있습니다 — 등호 뒤가 빈 줄을 지우고 저장합니다.') if twice else None
 
 
 def main():

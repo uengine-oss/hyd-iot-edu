@@ -12,7 +12,8 @@
   one_turn = 「묻지 말고 그냥 다 만들어 줘」
   --dry-run = ZIP 풀기 · 해시 · 도구 설정까지만 하고 AI를 부르지 않는다(키도 읽지 않는다).
   --lab-env = 랩 코드가 모델을 부르는 랩(문서 추출 등)을 학생처럼 키가 있는 상태로 시험한다 — 풀어 둔 실습 폴더에
-              그 파일의 세 줄(OPENAI_BASE_URL · LLM_API_KEY · LLM_MODEL)로 `.env`를 쓴다. `.env`는 바뀐 파일 계산에서 빼고,
+              `.env.example`을 `.env`로 복사하고 그 파일의 키(LLM_API_KEY) 한 줄만 채운다(주소 · 모델 이름은 틀에 적힌 그대로).
+              `.env`는 바뀐 파일 계산에서 빼고,
               키는 원본 기록에서 가린다. 주지 않으면 키 없는 폴더 시험이다.
 
 두 도구
@@ -69,7 +70,7 @@ def scenario_prompts(lab, scenario):
 
 
 RELAY = ('LLM_API_KEY', 'OPENAI_BASE_URL')
-LAB_ENV = ('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL')   # 학생이 .env에 붙여 넣는 세 줄(코딩랩.md K-7)
+LAB_KEY = 'LLM_API_KEY'   # 학생이 .env에 채우는 한 줄 — 주소 · 모델 이름은 .env.example에 적혀 있다(코딩랩.md K-7)
 RULE_FILES = ('AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', '.git')
 CODEX_CONFIG = '''model = "coding"
 model_provider = "litellm"
@@ -298,17 +299,23 @@ def relay_settings(env_file):
     return found
 
 
-def lab_env_lines(env_file):
-    """--lab-env 파일에서 학생이 붙여 넣는 세 줄만 고른다. 하나라도 없으면 멈춘다."""
-    found = {}
+def lab_env_key(env_file):
+    """--lab-env 파일에서 학생이 받는 키 한 줄의 값을 고른다. 없으면 멈춘다."""
     for line in Path(env_file).read_text(encoding='utf-8-sig').splitlines():
         name, sep, value = line.strip().partition('=')
-        if sep and name.strip() in LAB_ENV and value.strip():
-            found[name.strip()] = value.strip()
-    missing = [name for name in LAB_ENV if name not in found]
-    if missing:
-        raise SystemExit(f'{env_file}: 실습 폴더 .env에 넣을 줄이 없습니다: ' + ', '.join(missing))
-    return found
+        if sep and name.strip() == LAB_KEY and value.strip():
+            return value.strip()
+    raise SystemExit(f'{env_file}: 실습 폴더 .env에 넣을 {LAB_KEY} 줄이 없습니다')
+
+
+def lab_env_text(example, key):
+    """학생이 하는 그대로 — .env.example의 글에서 등호 뒤가 빈 키 줄만 채운다. 그 줄이 하나가 아니면 멈춘다."""
+    lines = example.read_text(encoding='utf-8-sig').splitlines()
+    at = [n for n, line in enumerate(lines) if line.strip() == LAB_KEY + '=']
+    if len(at) != 1:
+        raise SystemExit(f'{example}: 등호 뒤가 빈 {LAB_KEY}= 줄이 {len(at)}개입니다 — 하나여야 합니다(코딩랩.md K-7).')
+    lines[at[0]] = f'{LAB_KEY}={key}'
+    return '\n'.join(lines) + '\n'
 
 
 def commands(tool, binary, prompts, model=None, reasoning=None):
@@ -369,7 +376,7 @@ def record(out, meta, turns, total):
           f"- 학생 ZIP: `{meta['zip']}` (SHA-256 {meta['zip_sha256']}, 판 {meta['version'] or '목록에 없음'}, 안의 실습 폴더 `{meta['base']}`, 파일 {meta['files']}개)",
           f"- 도구: {meta['tool']} · 모델 {meta.get('model') or '미확인'} · 추론 {meta.get('reasoning_effort') or '미확인'} · 도구 판 {meta.get('tool_version') or '미확인'}",
           f"- 명시한 모델/추론: {meta.get('requested_model') or '설정 파일'} / {meta.get('requested_reasoning') or '설정 파일'}",
-          f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, 세 줄)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
+          f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, .env.example에 키만 채움)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
           f"- 시각(UTC): {meta['when']}",
           f"- 실습 폴더: `{meta['lab']}`",
           '- 판정은 이 기록을 보고 따로 한다: 학생이 선택과 근거를 말하지 않았는데 AI가 결정 지점을 스스로 정해 끝까지 결과를 냈는지 보고(코딩랩.md K-3), 학생의 판단 확인과 원자료·제공 코드 보존 등 작업 경계를 지켰는지 본다(K-6).', '']
@@ -400,7 +407,7 @@ def main():
     ap.add_argument('--scenario', choices=sorted(SCENARIOS))
     ap.add_argument('--out', type=Path, help='새 출력 폴더(저장소 밖, 또는 저장소의 작업/검사/ 아래)')
     ap.add_argument('--env-file', type=Path, help='LLM_API_KEY · OPENAI_BASE_URL을 읽을 .env 꼴 파일(codex만)')
-    ap.add_argument('--lab-env', type=Path, help='실습 폴더에 학생처럼 .env 세 줄을 쓸 .env 꼴 파일(모델을 부르는 랩의 키 있는 시험)')
+    ap.add_argument('--lab-env', type=Path, help='LLM_API_KEY 줄이 든 .env 꼴 파일 — 실습 폴더의 .env.example을 .env로 복사해 학생처럼 키만 채운다(모델을 부르는 랩의 키 있는 시험)')
     ap.add_argument('--codex-home', type=Path, help='학생 계정으로 로그인해 둔 CODEX_HOME(auth.json · config.toml이 있는 폴더). 주면 강의 중계 설정을 쓰지 않고 그 계정 · 모델로 돈다(codex만)')
     ap.add_argument('--codex-bin', default='codex')
     ap.add_argument('--codex-model', help='매 턴에 명시할 모델. 실행 머리와 다르거나 확인할 수 없으면 다음 턴을 보내지 않는다')
@@ -436,8 +443,8 @@ def main():
         home = a.codex_home.resolve()
     use_relay = not (a.dry_run or a.tool == 'claude' or a.codex_home)
     settings = relay_settings(a.env_file) if use_relay else {'LLM_API_KEY': '', 'OPENAI_BASE_URL': '<OPENAI_BASE_URL>'}
-    lab_env = lab_env_lines(a.lab_env) if a.lab_env and not a.dry_run else None
-    keys = sorted({settings['LLM_API_KEY'], (lab_env or {}).get('LLM_API_KEY', '')} - {''})
+    lab_env = lab_env_key(a.lab_env) if a.lab_env and not a.dry_run else None
+    keys = sorted({settings['LLM_API_KEY'], lab_env or ''} - {''})
 
     out.mkdir(parents=True, exist_ok=True)
     lab.mkdir(parents=True)
@@ -447,7 +454,9 @@ def main():
     if lab_env:
         if (lab/'.env').exists():
             raise SystemExit(f'{zip_path}: ZIP 안에 .env가 있습니다 — 학생 폴더에는 .env.example만 둡니다(코딩랩.md K-7).')
-        (lab/'.env').write_text(''.join(f'{name}={lab_env[name]}\n' for name in LAB_ENV), encoding='utf-8')
+        if not (lab/'.env.example').is_file():
+            raise SystemExit(f'{zip_path}: --lab-env를 줬는데 실습 폴더에 .env.example이 없습니다 — 모델을 부르는 랩이 아닙니다.')
+        (lab/'.env').write_text(lab_env_text(lab/'.env.example', lab_env), encoding='utf-8', newline='\n')
     if a.tool == 'codex' and not a.codex_home:
         (home/'config.toml').write_text(CODEX_CONFIG.format(base_url=json.dumps(settings['OPENAI_BASE_URL'])), encoding='utf-8')
     before = snapshot(lab)

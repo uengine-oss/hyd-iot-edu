@@ -19,7 +19,7 @@ ROOT = HERE.parents[3]
 LAB = ROOT / 'workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab'
 LEGACY = LAB.parent / '05일차_실습2_원인추론과점검계획'
 REF = HERE / 'reference/session5_root'
-VERSION = '2026-11-17-agent-decider2'   # 독립 검토 고칠목록(가이드 · 기록 틀 문장, 요령 까닭은 lab_frame 한 곳). 그 앞: 2026-11-17-agent-decider 학생은 AI로 파악하고 추천안을 따져 결정(코딩랩 K-3)
+VERSION = '2026-11-23-agent-envkey'   # .env.example에 접속 주소 · 모델 이름을 채우고 키만 비움(안내도 「받은 키 한 줄」). 그 앞: 2026-11-17-agent-decider2 독립 검토 고칠목록(가이드 · 기록 틀 문장, 요령 까닭은 lab_frame 한 곳). 그 앞: 2026-11-17-agent-decider 학생은 AI로 파악하고 추천안을 따져 결정(코딩랩 K-3)
 DEFAULT_REQUEST = 'ALT-hyd03-0289-060b'
 LEAD = '앞에서 배운 지식·현재값·출처 확인을 바탕으로, 제공된 4회차의 원인 후보와 문서 조건을 이번 사건의 관측값과 연결하는 원인·점검 계획 에이전트를 만듭니다.'
 TITLE = '원인 후보와 다음 점검 계획'
@@ -145,7 +145,7 @@ def guide_sections(L):
     body+='<h3>조회 범위를 구현하고 실제 근거 보기</h3>'
     body+=paragraph('query.py의 두 함수가 무엇을 받는지 Codex에게 먼저 설명받습니다. 내 질문에 필요한 근거를 모델이 고르도록 지침을 만들고, 내가 선택한 원문·설비·기간 기준을 실제 인수에 반영하게 요청합니다. 실행 뒤 모델 인수와 반영 뒤 인수, 반환된 원문 범위를 나란히 봅니다.')
     body+=answer('앞에서 검토한 plan.md와 내가 고른 근거 묶음을 적용해 app/features/query.py의 instructions와 prepare_query만 구현해줘. 실제 도구의 인수 계약을 읽고, 어떤 문서 판본·설비·기간을 요청할지 모델이 반환을 보고 선택하게 해줘. 내가 정한 적용 조건과 주변 원문을 잃지 않도록 범위를 반영하되 조회 결과나 값을 지어내지 마. assess.py와 deliver.py는 바꾸지 마. 실행 명령과 변경 파일을 알려줘.')
-    body+=paragraph('모델 접속 세 줄을 받았다면 `.env.example`을 복사해 `.env`로 이름을 바꾸고 받은 세 줄 그대로 저장합니다. 키를 채팅이나 공유 파일에 넣지 않습니다. 개인 GPT 로그인은 API 키와 별개입니다. 세 줄이 없으면 아래 채팅 경로를 사용합니다.')
+    body+=paragraph('수업 모델 키를 받았다면 `.env.example`을 복사해 `.env`로 이름을 바꾸고 `LLM_API_KEY=` 뒤에 받은 키를 붙여 넣어 저장합니다. 키를 채팅이나 공유 파일에 넣지 않습니다. 개인 GPT 로그인은 API 키와 별개입니다. 키가 없으면 아래 채팅 경로를 사용합니다.')
     body+=command(collect)
     body+=paragraph('API 키가 없으면 터미널에 `output/model_requests/`의 요청 글과 붙여넣기 명령이 나옵니다. 이 폴더를 모르는 별도 Codex 채팅에 요청 글을 보내 JSON 답을 받습니다. 터미널에 나온 `python run.py --paste … --model …`을 그대로 실행해 답을 붙여 넣고, 새 줄에서 **Ctrl+Z → Enter**로 끝냅니다. 같은 수집 명령을 다시 실행하면 그 반환부터 이어집니다. 필요한 조회가 남으면 이 동선을 반복합니다. 모델이 독립 조회를 묶으면 한 답에서 여러 도구가 실행됩니다.')
     body+=paragraph('결과 화면의 **조회 근거**에서 실제 도구·출처·시각을 보고 **입력·반환 원문 펼치기**로 모델 인수와 실제 인수·반환을 견줍니다. 수집이 끝나면 **모델이 쓴 요약**도 보입니다. 그 요약은 검토 대상입니다. 도구 오류가 있으면 실제 오류와 빠진 근거를 확인합니다. 필요한 근거가 없으면 조회 기능을 고쳐 수집하며, 기준이나 자료가 바뀌면 이전 반환은 이전판으로 구분됩니다.')
@@ -209,7 +209,7 @@ def build(report, refresh_data=False, photos=None):
     for name in ['app/__init__.py','app/features/__init__.py','app/ui/__init__.py','app/utils/__init__.py']: frame.write(LAB/name,'')
     frame.write(LAB/'app/utils/llm_client.py',(HERE/'lab_llm.py').read_text(encoding='utf-8'))
     frame.write(LAB/'run.py','from pathlib import Path\nfrom app.utils.workflow import main\n\nif __name__ == "__main__":\n    raise SystemExit(main(Path(__file__).resolve().parent))\n')
-    frame.write(LAB/'.env.example','OPENAI_BASE_URL=\nLLM_API_KEY=\nLLM_MODEL=\n')
+    frame.write(LAB/'.env.example',frame.ENV_EXAMPLE)
     write_metadata(LAB,TITLE,LEAD,'python run.py --inspect', '조회·판정·전달은 각각 query.py·assess.py·deliver.py에서 구현한다. 요구·선택·기대·대조 기록도 app/features/에 둔다. 근거를 읽을 범위와 field_notes.md에 정해지지 않았다고 적힌 전달 시점·확인 역할은 사람이 정한다. 사람이 물으면 선택지와 각 선택으로 달라지는 조회 범위·다음 행동, 근거 줄을 보이고 추천안도 낼 수 있다. 사람이 고르고 이유를 말하기 전에는 choices.csv의 그 줄과 그 선택에 걸린 기능을 만들지 않고, 다 해 달라는 요청에도 대신 정하지 않는다. choices.csv와 expected.csv에는 사람이 대화에서 정한 것만 적는다. 사람이 보고 받아들인 근거 줄과 기대 후보도 사람이 정한 것이다. 기대 후보는 원문에서 찾아 줄 번호와 함께 내고, 실행 결과나 모델 요약을 기대로 옮기지 않는다. 출력 계약의 조립과 모델 호출은 제공 기능을 사용한다.')
     for name,text in FEATURES.items(): frame.write(LAB/'app/features'/name,text)
     fields={'choices.csv':(['decision','choice','source','changed_action'],'decision=적용 기능 query/deliver, choice=내가 정한 기준 또는 전달 요구, source=그렇게 고른 내 이유와 그 결정을 좌우해 열어 본 원문 줄(파일:줄), changed_action=달라지는 조회 또는 다음 행동'),

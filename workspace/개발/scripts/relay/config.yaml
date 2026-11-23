@@ -1,0 +1,16 @@
+# 강의 중계(LiteLLM) 설정 — 시스템 안의 모든 AI(process 관문 → 워커 CLI)와 코딩 랩의 수업 모델 호출이 이 한 이름 `coding`으로 부른다
+# (course_ledger.POLICY['model'], 랩 LLM_MODEL=coding). 뒤쪽 모델은 옛 중계와 같은 gpt-6-luna(저장된 AI 답의 응답 model 값).
+# 비밀값은 여기 두지 않는다 — OPENAI_API_KEY · LITELLM_MASTER_KEY · DATABASE_URL 은 Cloud Run 이 Secret Manager 에서 환경 변수로 넣는다(relay.py).
+model_list:
+  - model_name: coding
+    litellm_params:
+      model: openai/gpt-6-luna
+      api_key: os.environ/OPENAI_API_KEY
+
+litellm_settings:
+  # Claude Code CLI(Anthropic 방식)가 보내는 값 가운데 OpenAI 모델이 받지 않는 것은 버리고 보낸다 — 버리지 않으면 요청 전체가 400 이다
+  drop_params: true
+
+general_settings:
+  # 가상 키(키마다 모델 · 비용 한도)는 DATABASE_URL 의 Postgres 에 산다. 마스터 키는 키를 만들고 지우는 강사 도구만 쓴다
+  master_key: os.environ/LITELLM_MASTER_KEY

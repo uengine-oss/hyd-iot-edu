@@ -24,6 +24,13 @@ ROOT = HERE.parents[3]
 OUT = ROOT/'workspace/강의제작/산출물'
 SHOW_RESULT = (HERE/'show_result.py').read_text(encoding='utf-8')
 MARK = '제공 빈 틀'
+# 수업 모델을 부르는 랩의 .env.example — 접속 주소와 모델 이름은 채워 주고 키만 비운다(코딩랩.md K-7). 주소는 강의 중계(main compose.yaml의
+# LLM_RELAY_URL)에 OpenAI 방식의 /v1을 붙인 것이고, 학생 폴더 llm_client.py(lab_llm.py)가 그 뒤에 /chat/completions를 붙여 부른다.
+# 생성기 셋(build_document_labs · build_session4_projects · build_agent_labs)과 verify_packages.py가 이 값을 함께 쓴다.
+ENV_KEY = 'LLM_API_KEY'
+ENV_FIXED = {'OPENAI_BASE_URL': 'https://hyd-relay-tfoskn47sa-du.a.run.app/v1', 'LLM_MODEL': 'coding'}
+ENV_EXAMPLE = (f'# 이 파일을 복사해 이름을 .env로 바꾸고, {ENV_KEY}= 뒤에 강의에서 받은 키를 붙여 넣은 뒤 저장합니다. 주소와 모델 이름은 그대로 둡니다.\n'
+               f'OPENAI_BASE_URL={ENV_FIXED["OPENAI_BASE_URL"]}\n{ENV_KEY}=\nLLM_MODEL={ENV_FIXED["LLM_MODEL"]}\n')
 
 
 BOM_DOCS = {'START.md', 'README.md', '입출력_계약.md'}

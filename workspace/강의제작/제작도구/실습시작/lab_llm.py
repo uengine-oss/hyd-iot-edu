@@ -170,11 +170,11 @@ def _reason(error):
     if error.code == 401 and message.startswith('litellm.AuthenticationError'):   # 내 키는 받았는데 서버 쪽 인증이 실패했다는 글
         return '내 키는 받았지만 모델 서버 쪽 설정이 맞지 않습니다. 내 .env 문제가 아니니 강사에게 알립니다'
     if error.code == 401:
-        return '.env의 키(LLM_API_KEY)가 받은 키와 다릅니다. 받은 세 줄을 그대로 다시 붙여 넣습니다'
+        return '.env의 키(LLM_API_KEY)가 받은 키와 다릅니다. LLM_API_KEY= 뒤에 받은 키를 다시 붙여 넣습니다'
     if kind == 'key_model_access_denied' or 'Invalid model name' in message:
-        return '.env의 모델 이름(LLM_MODEL)이 서버에 없는 이름입니다. 받은 세 줄을 그대로 다시 붙여 넣습니다'
+        return '.env의 모델 이름(LLM_MODEL)이 서버에 없는 이름입니다. .env.example에 적힌 모델 이름과 같게 고칩니다'
     if error.code == 404:
-        return '.env의 접속 주소(OPENAI_BASE_URL)가 받은 주소와 다릅니다. 받은 세 줄을 그대로 다시 붙여 넣습니다'
+        return '.env의 접속 주소(OPENAI_BASE_URL)가 서버 주소와 다릅니다. .env.example에 적힌 주소와 같게 고칩니다'
     if error.code == 429 or 'budget' in message.lower():
         return '서버가 지금 이 키의 요청을 받지 않습니다(요청이 많거나 한도에 닿음). 1분 뒤 다시 실행하고, 같으면 강사에게 알립니다'
     if error.code == 400:
@@ -227,10 +227,10 @@ def ask(request, again=False):
         raise Stop(f'키가 없어 요청을 보내지 않았습니다. 보낼 글을 {path.relative_to(HERE).as_posix()}에 남겼습니다.\n'
                    f'키 없이 이 한 조각만 받아 보려면: 그 글을 이 폴더를 모르는 채팅에 붙여 보내고, 받은 답을 `{CLIENT_COMMAND} --paste {digest} --model <채팅 화면의 모델 이름>`으로 남긴 뒤 '
                    '같은 코드를 다시 실행합니다.\n'
-                   '키를 받았으면 .env에 받은 세 줄을 붙여 넣고 다시 실행합니다.', 2)
+                   '키를 받았으면 .env의 LLM_API_KEY= 뒤에 붙여 넣어 저장하고 다시 실행합니다.', 2)
     empty = [name for name in NAMES if not conf[name]]
     if empty:
-        raise Stop(f'.env의 {", ".join(empty)} 값이 비어 있습니다. 강의에서 받은 세 줄을 그대로 붙여 넣었는지 봅니다.')
+        raise Stop(f'.env의 {", ".join(empty)} 값이 비어 있습니다. .env.example에 적힌 그 줄을 .env에 그대로 옮겨 적습니다.')
     count = sent_count()
     if count >= MAX_SENT:
         raise Stop(f'{relative(RECORDS)}/에 모델 서버로 보낸 기록이 {count}개라 비용을 지키는 이 폴더의 안내용 상한 {MAX_SENT}개에 닿았습니다. 더 보내지 않습니다. '
@@ -339,7 +339,7 @@ def main(argv=None):
     conf = settings()
     if not conf['LLM_API_KEY']:
         raise Stop('키가 없어 연결을 확인하지 않았습니다(.env가 없거나 LLM_API_KEY가 비어 있음).\n'
-                   '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, 강의에서 받은 세 줄을 그대로 붙여 넣어 저장한 뒤 다시 실행합니다.\n'
+                   '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, LLM_API_KEY= 뒤에 강의에서 받은 키를 붙여 넣어 저장한 뒤 다시 실행합니다.\n'
                    f'키가 없으면 내 코드가 모델을 부를 때 보낼 글을 {relative(REQUESTS)}/에 남기고 멈춥니다 — 그 글을 폴더를 모르는 채팅에 보내 받은 답을 --paste(채팅 화면의 모델 이름은 --model)로 남길 수 있습니다.', 2)
     reply = ask(CHECK_REQUEST)
     if reply['sent'] and reply.get('usable', True):

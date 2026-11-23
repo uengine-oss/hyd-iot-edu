@@ -126,10 +126,10 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "문서에서 작업 조건과 근거를 추출하는 기능 만들기",
-      "version": "2026-11-17-decider2",
+      "version": "2026-11-23-envkey",
       "folder": "condition-extract-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/condition-extract-lab.zip",
-      "sha256": "101fe3f30b35bc9a52728f77b7b8b45bad707432d2d9c68bd073a6d4eb598854",
+      "sha256": "57ba6114431e33b740afbc8c363772ee7f3fba1bc8d305c60b303a748e1f8c9c",
       "guide_steps": [
         "폴더 열고 사건과 문서 확인하기",
         "Codex와 핀 세척 원문 찾기",
@@ -145,7 +145,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/condition-extract-lab_guide.html",
-        "sha256": "bd1580a83708e3690076e5110579e25f474213111e9902f3c579d3c17b608e18"
+        "sha256": "9d6865b14cd134223f12665f378407738702dfe67e7dccc10c1710893ea54611"
       }
     },
     {
@@ -179,10 +179,10 @@
       "course": "통합반",
       "session": "05",
       "title": "원인 후보와 다음 점검 계획",
-      "version": "2026-11-17-agent-decider2",
+      "version": "2026-11-23-agent-envkey",
       "folder": "root-cause-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab.zip",
-      "sha256": "8f632a3296f053469323431312edb66de5d7017dd884f99534a2e86ba209132e",
+      "sha256": "00dffb8cd1321ae16bf9481606365153ab73dde5be85292e993353e7063275dd",
       "guide_steps": [
         "자료와 질문 파악",
         "요구와 기대 답 정하기",
@@ -195,7 +195,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab_guide.html",
-        "sha256": "fe93ac90de3891cb24f653661aab722cc3e54a020f4e157b0fd30bc1e19235e9"
+        "sha256": "ad67a066dc870dbbf5af76f4c446c6694f40fb08492d75a5b92ce5779749c781"
       }
     },
     {
@@ -320,10 +320,10 @@
       "course": "통합반",
       "session": "온라인 04회차",
       "title": "문서에서 근거 있는 지식을 추출하는 기능 만들기",
-      "version": "2026-11-17-decider2",
+      "version": "2026-11-23-envkey",
       "folder": "knowledge-extract-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-extract-lab.zip",
-      "sha256": "c438f1ff4dbc5693bd9ead8b72a4adfa905c6f346928f6410ad53fec376c3e34",
+      "sha256": "59e2deb42e81b889028a4a44341261f3d3b2308799a1375df7f067a80b362ac2",
       "guide_steps": [
         "폴더 열고 사건과 문서 확인하기",
         "Codex와 핀 세척 원문 찾기",
@@ -340,7 +340,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-extract-lab_guide.html",
-        "sha256": "2600dba228b26489f3ca7af10848ffe112d96729d80a3f37b5c2fa5734f328dd"
+        "sha256": "9b04b1a22a648ee9202d7a3a248c0e9bfcc08403fa7fa505d5792f14afc63d85"
       }
     },
     {

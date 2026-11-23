@@ -8,7 +8,7 @@
 사용(저장소 밖):
   cp -r <저장소>/workspace/강의제작/산출물/통합반/실습/04회차/랩/04일차_실습2_문서지식추출 <임시>/run1
   python instructor_extract.py <임시>/run1 --dry-run                (모델을 부르지 않고 조각 수만 — 회당 조각 수 = 보낼 요청 수)
-  (<임시>/run1/.env 에 발급 도구가 준 세 줄을 붙여 넣는다 — 키 값은 어디에도 옮기지 않는다)
+  (<임시>/run1/.env.example을 .env로 복사해 LLM_API_KEY= 뒤에 받은 키를 붙여 넣는다 — 키 값은 어디에도 옮기지 않는다)
   python <임시>/run1/llm_client.py                                   (연결 확인 한 번)
   python instructor_extract.py <임시>/run1 [--keep run1]
   같은 일을 <임시>/run2 사본에서 한 번 더(같은 요청의 두 번째 응답 — 두 실행의 차이를 본다)
