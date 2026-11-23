@@ -3,6 +3,8 @@
 // - gate(): 큐가 정한 실행 시점(행동 문장 끝 약 250ms 전)까지 대기. 클릭·키·입력은 모두 gate를 거친다.
 // - Codex 채팅은 웹뷰 iframe이라 DOM으로 찾지 않는다. 바깥 문서의 웹뷰 영역 좌표로 누르고 키보드로 입력한다.
 // - 좌표는 CSS 픽셀(뷰포트 2304x1296 dsf1, ego 150% → CSS 1536x864, 캡처 2304x1296 → 1920x1080 프레임).
+// - 강조 · 펜 그림 · 글상자(draw.mjs, ctrl.mjs가 ctx.draw로 넘긴다): c.emph(대상, {shape, phrase, keep}) · c.clearEmph() · c.pen(정의) · c.note(줄 목록 | null).
+//   강조는 다음 강조가 시작할 때, 화살표가 다른 곳으로 떠날 때, 누르기 · 입력 · 굴리기가 시작할 때, 구간이 끝날 때 지워진다(포털 hl.mjs의 규칙).
 
 export function installPointerInPage(pos){
   document.removeEventListener('mousemove',window.__tutorialMove,true);document.removeEventListener('mousedown',window.__tutorialDown,true);
@@ -26,8 +28,10 @@ export async function vscode(ctx){
  const gate=async()=>{const until=Math.max(ctx.commitAt||0,gs.lastMoveEnd+150);const w=until-Date.now();if(w>0)await sleep(w);ctx.committed??=Date.now();};
  const pointerPos=()=>raw.evaluate(()=>{const r=document.getElementById('recording-pointer')?.getBoundingClientRect();if(!r)throw Error('Recording pointer missing');return{x:r.x,y:r.y};});
  const c={gate,serial:ctx.serial};
+ const draw=ctx.draw||null,hlEnd=async why=>{if(draw)await draw.end(why);};
+ const needDraw=()=>{if(!draw)throw Error('강조 · 펜 그림 · 글상자는 녹화 제어(ctrl.mjs의 rec · dry)로 돌릴 때만 쓴다');return draw;};
  c.installPointer=async at=>q1(()=>raw.evaluate(installPointerInPage,at||null));
- c.move=async(x,y)=>{
+ const moveCore=async(x,y)=>{
   const a=await q1(pointerPos);const dist=Math.hypot(x-a.x,y-a.y);if(dist<1){gs.lastMoveEnd=Date.now();return;}
   const ms=Math.round(Math.max(260,Math.min(620,200+dist*0.4)));const t0=Date.now();
   await q1(()=>raw.evaluate(({ax,ay,x,y,ms})=>window.__startGlide(ax,ay,x,y,ms),{ax:a.x,ay:a.y,x,y,ms}));
@@ -36,6 +40,13 @@ export async function vscode(ctx){
   await q1(()=>raw.evaluate(()=>{window.__glide=null;}));
   ctx.recordMotion?.({start:t0,end:Date.now(),x,y,from:a,planned_ms:ms});gs.lastMoveEnd=Date.now();
  };
+ c.move=async(x,y)=>{await hlEnd('커서 이동');await moveCore(x,y);};
+ // 강조(영상 V-14): 대상을 재고, 화살표를 그 옆(글을 덮지 않는 자리)으로 옮긴 뒤 닿은 때 그린다. 대상 꼴 · 모양은 draw.mjs 머리말과 촬영준비 「길」 6.
+ c.emph=async(target,o={})=>needDraw().emph(target,o,moveCore);
+ c.clearEmph=async()=>{needDraw();await hlEnd('지움');};
+ // 펜 그림 · 글상자. 그림의 point는 c.move로 옮긴다(조작 층을 감싼 쪽의 화면 안 검사를 그대로 받는다).
+ c.pen=def=>needDraw().pen(def,(x,y)=>c.move(x,y));
+ c.note=async(lines,o)=>needDraw().note(lines,o);
  // 바깥 문서의 대상 중심 좌표. 보이는 대상이 정확히 하나여야 한다(여러 개면 멈춘다).
  c.point=async(selector,text)=>{
   const r=await q1(()=>raw.evaluate(({selector,text})=>{
@@ -60,10 +71,10 @@ export async function vscode(ctx){
  // 웹뷰는 첫 클릭에 패널만 활성화하고 입력칸 포커스는 둘째 클릭에서 받는다(한 번만 누르면 글이 편집기 쪽으로 가거나 버려졌다).
  c.codexInput=async()=>{const q=await c.codexPoint(0.45,0.855);await c.clickAt(q.x,q.y);await sleep(400);await c.clickAt(q.x,q.y);};
  // 입력: 완성형 글자 단위(IME 조합 시연 아님). 입력 중 포인터는 입력칸 위 여백으로 비킨다.
- c.type=async(text,aside)=>{if(aside)await c.move(aside.x,aside.y);await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([70,85,60,95,75][i++%5]);}};
- c.key=async k=>{await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);};
+ c.type=async(text,aside)=>{if(aside)await c.move(aside.x,aside.y);await gate();await hlEnd('입력');let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([70,85,60,95,75][i++%5]);}};
+ c.key=async k=>{await gate();await hlEnd('입력');await q1(()=>raw.keyboard.press(k));await sleep(200);};
  // 터미널: 열려 있지 않으면 Ctrl+` 로 연다. 명령은 typeKeys 뒤 Enter(터미널은 insertText로 넣은 글자를 받지 않는다).
- c.typeKeys=async text=>{await gate();await q1(()=>raw.keyboard.type(text,{delay:45}));};
+ c.typeKeys=async text=>{await gate();await hlEnd('입력');await q1(()=>raw.keyboard.type(text,{delay:45}));};
  c.terminalOpen=async()=>{const open=await q1(()=>raw.evaluate(()=>!!document.querySelector('.terminal-wrapper')?.checkVisibility()));if(!open)await c.key('Control+Backquote');await sleep(1500);};
  // 오른쪽 버튼(VS Code 탐색기 Copy·Paste 메뉴). 메뉴 항목은 clickSel('.context-view .action-label','Copy')로 누른다.
  c.rightClickSel=async(selector,text)=>{const q=await c.hoverSel(selector,text);await gate();await q1(()=>raw.mouse.click(q.x,q.y,{button:'right'}));await sleep(400);};
@@ -77,10 +88,10 @@ export async function vscode(ctx){
  // 편집기에서 글이 정확히 text로 시작하는 줄의 끝(글 오른쪽 6px)을 누른다 — 그 줄 끝에 커서가 놓인다.
  c.lineEnd=async text=>{const q=await q1(()=>raw.evaluate(text=>{const ls=[...document.querySelectorAll('.editor-instance .view-lines .view-line')].filter(e=>e.textContent.replace(/ /g,' ').startsWith(text));if(ls.length!==1)return{error:`line ${text} matched ${ls.length}`};const sp=ls[0].querySelector('span');const b=sp.getBoundingClientRect();return{x:b.right+6,y:b.y+b.height/2};},text));if(q.error)throw Error(q.error);await c.clickAt(q.x,q.y);};
  // 빠른 입력(표 행처럼 긴 기록). 글자당 30~45ms.
- c.typeFast=async text=>{await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([32,40,36,45][i++%4]);}};
+ c.typeFast=async text=>{await gate();await hlEnd('입력');let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([32,40,36,45][i++%4]);}};
  // 스크롤 영역을 부드럽게 굴린다(브라우저 smooth 스크롤). 화살표는 그 영역 안 빈 곳(at)으로 먼저 옮긴다.
- c.scrollBy=async(selector,dy,at)=>{if(at)await c.move(at.x,at.y);await q1(()=>raw.evaluate(({selector,dy})=>document.querySelector(selector).scrollBy({top:dy,behavior:'smooth'}),{selector,dy}));await sleep(900);};
- c.scrollTo=async(selector,top,at)=>{if(at)await c.move(at.x,at.y);await q1(()=>raw.evaluate(({selector,top})=>document.querySelector(selector).scrollTo({top,behavior:'smooth'}),{selector,top}));await sleep(900);};
+ c.scrollBy=async(selector,dy,at)=>{if(at)await c.move(at.x,at.y);await hlEnd('굴리기');await q1(()=>raw.evaluate(({selector,dy})=>document.querySelector(selector).scrollBy({top:dy,behavior:'smooth'}),{selector,dy}));await sleep(900);};
+ c.scrollTo=async(selector,top,at)=>{if(at)await c.move(at.x,at.y);await hlEnd('굴리기');await q1(()=>raw.evaluate(({selector,top})=>document.querySelector(selector).scrollTo({top,behavior:'smooth'}),{selector,top}));await sleep(900);};
  // 선택 상자: 대상을 가리킨 뒤 실행 시점에 값을 바꾸고 change를 보낸다(운영체제 목록 창은 녹화에 안 찍힌다).
  c.selectValue=async(selector,value)=>{await c.hoverSel(selector);await gate();await q1(()=>raw.evaluate(({selector,value})=>{const s=document.querySelector(selector);if(![...s.options].some(o=>o.value===value))throw Error('option '+value+' 없음');s.value=value;s.dispatchEvent(new Event('change',{bubbles:true}));},{selector,value}));await sleep(300);};
  c.waitFor=ctx.waitFor;

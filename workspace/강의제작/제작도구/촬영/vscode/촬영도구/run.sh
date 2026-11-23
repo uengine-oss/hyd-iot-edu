@@ -14,7 +14,7 @@ work="$(cd "$here" && PYTHONUTF8=1 python -c "from common import WORK;print(WORK
 audio="$(cd "$here" && PYTHONUTF8=1 python -c "from common import AUDIO;print(AUDIO.as_posix())")" || exit 2
 cmd=${1:-}; shift || true
 if [ "$cmd" = measure ]; then cd "$here" && PYTHONUTF8=1 python measure.py "$1"; exit; fi
-for f in ctrl.mjs ui.mjs segs/*.mjs; do node --check "$here/$f" || { echo "SYNTAX ERROR in $f: ego로 보내지 않음"; exit 2; }; done
+for f in ctrl.mjs ui.mjs draw.mjs segs/*.mjs; do node --check "$here/$f" || { echo "SYNTAX ERROR in $f: ego로 보내지 않음"; exit 2; }; done
 busy=$(powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -Filter \"Name='ego-browser.exe'\").Count")
 [ "${busy//[^0-9]/}" = "0" ] || { echo "BUSY: 다른 ego 명령이 실행 중($busy) — 끝난 뒤 다시"; exit 3; }
 # PC 부하: 화상회의가 돌면 녹화하지 않는다(Zoom으로 1~2초 정지가 반복된 사례). 여유 메모리 3GB 미만은 경고만 하고 measure.py의 프레임 간격으로 판정한다(수치만으로 중단하지 않음).

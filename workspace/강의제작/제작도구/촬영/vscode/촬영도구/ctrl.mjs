@@ -1,6 +1,8 @@
 // VS Code 웹(serve-web) 녹화 제어기 — Notion v10 제어기를 복사해 Notion 전용 검사만 뺐다. 한 번 실행에 구간 모듈 하나를 녹화한다(기능 구간별 분할 촬영). run.sh rec가 부른다.
 // 리듬: 행동 문장 안에서 가리키고 문장 끝 약 250ms 전에 실행(gate), 결과 발화는 행동 종료 뒤. 모든 ego 호출은 한 직렬 큐.
-// 출력: <work>/<name>/frames/*.jpg · timing.json(프레임·큐·이동) · end-state.json(URL·클릭) · end-snapshot.txt
+// 출력: <work>/<name>/frames/*.jpg · timing.json(프레임·큐·이동·강조 highlights·펜 그림과 글상자 drawings) · end-state.json(URL·클릭) · end-snapshot.txt
+// 화면 위 그림 층(강조 · 펜 그림 · 글상자, draw.mjs): 구간마다 빈 층에서 시작하고(ctx.draw), 남은 강조는 구간의 마지막 말이 끝날 때 지운다.
+// 구간 모듈이 끝났는데 펜 그림이나 글상자가 떠 있으면 멈춘다(다음 구간은 빈 층에서 시작해 이음새에서 그림이 튄다) — 리허설도 같다.
 const fs=await import('node:fs/promises');
 const HERE=decodeURIComponent(new URL('.',import.meta.url).pathname).replace(/^\/([A-Za-z]:)/,'$1');
 const CFG=JSON.parse(await fs.readFile(HERE+'config.json','utf8'));
@@ -25,17 +27,23 @@ async function dryRun(opts,audio,out){
  await p.cdp('Emulation.setDeviceMetricsOverride',{width:VP.width,height:VP.height,deviceScaleFactor:VP.dsf||1,mobile:false});
  let queue=Promise.resolve();const serial=fn=>{const r=queue.then(fn);queue=r.catch(()=>{});return r;};
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));const report=[];let error=null,result=null;
+ const {drawLayer}=await import('file:///'+HERE+'draw.mjs?'+Date.now());const t0=Date.now();
  const ctx={p,serial,sleep,fs,out,audio,rehearsal:true,report,commitAt:0,prev:null,recordMotion:()=>{},begin:async()=>{},
   waitFor:async(fn,timeout=12000)=>{const a=Date.now();while(!(await serial(()=>p.evaluate(fn)))){if(Date.now()-a>timeout)throw Error('Expected page state did not appear');await sleep(100);}},
   say:async(id,fn)=>{ctx.cueId=id;if(fn){ctx.commitAt=0;await fn();}}};
+ ctx.draw=drawLayer({p,serial,sleep,clock:()=>Date.now()-t0,cue:()=>ctx.cueId});await ctx.draw.reset();
  // 녹화와 같은 조건: screencast를 돌려 프레임은 받는 즉시 ACK만 한다(저장 없음). screencast 없이 두면 도중에 화면 크기 설정이 풀렸다(리허설 d05-8, CSS 1280 → 864).
  let live=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:30,maxWidth:640,maxHeight:360,everyNthFrame:1}));
  const pump=(async()=>{while(live){for(const e of await serial(()=>p.events()))if(e.method==='Page.screencastFrame')serial(()=>p.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId})).catch(()=>{});await sleep(30);}})().catch(()=>{});
- try{const mod=await import((opts.moduleUrl||'file:///'+HERE+'segs/'+opts.module)+'?'+Date.now());result=await mod.default(ctx);}catch(e){error=String(e?.stack||e).slice(0,800);}
+ try{const mod=await import((opts.moduleUrl||'file:///'+HERE+'segs/'+opts.module)+'?'+Date.now());result=await mod.default(ctx);
+  const left=ctx.draw.left();if(left.length)throw Error('구간 끝에 '+left.join(' · ')+'이 떠 있음 — 구간 안에서 걷는다(hide · note(null))');
+ }catch(e){error=String(e?.stack||e).slice(0,800);}
+ await ctx.draw.reset().catch(()=>{});   // 리허설이 그린 것을 화면에 남기지 않는다
  live=false;await pump;try{await p.cdp('Page.stopScreencast');}catch(e){}
  const fails=report.filter(r=>r.fail);const num=(k,op)=>{const v=report.filter(r=>(!op||r.op===op)&&typeof r[k]==='number').map(r=>r[k]);return v.length?[Math.min(...v),Math.max(...v)]:null;};
  const sum={dry:true,ok:!error&&!fails.length,error,cues:[...new Set(report.map(r=>r.cue))].length,ops:report.length,
   found_inview:report.filter(r=>r.target).length,scrolled:report.filter(r=>r.scrolled).length,overlap_chars:num('overlap','point'),type_ms:num('ms','type'),wait_ms:num('ms','wait'),
+  highlights:ctx.draw.marks.length,drawings:ctx.draw.log.length,
   failures:fails.map(r=>({cue:r.cue,op:r.op,why:r.why})),view:result?.view??null};
  await fs.writeFile(out+'/dry.json',JSON.stringify({...sum,report},null,2));
  return sum;
@@ -73,8 +81,8 @@ export async function run(opts){
   if(!recording||start===null)throw Error('Cue '+c.id+' before recording began (call c.begin() first)');
   if(await fs.stat(work+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
   if(!opt.overlap&&pending){await pending;pending=null;}
-  // 큐 사이 기본 쉼 1000ms = 영상 V-14(큐 1.0초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
-  const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??1000)-Date.now();if(w>0)await sleep(w);
+  // 큐 사이 기본 쉼 1300ms = 영상 V-14(큐와 큐 사이 1.3초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
+  const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??1300)-Date.now();if(w>0)await sleep(w);
   const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);
   speechFree=t0+c.duration_ms;
   if(!fn){actionFree=Math.max(actionFree,t0);return;}
@@ -87,7 +95,7 @@ export async function run(opts){
   if(opt.async){pending=go;return;}
   await go;
  }
- let result=null;
+ let result=null,draw=null;
  try{
   const ctx={p,serial,sleep,fs,out,audio,cueFile:HERE+'source-cues.json',protect:CFG.protect,page:CFG.page,
    recordMotion:m=>motions.push({...m,start:m.start-start,end:m.end-start}),
@@ -97,7 +105,10 @@ export async function run(opts){
   };
   // 앞 take가 남긴 화면 상태(구간 모듈이 돌려준 result). 녹화 밖에서 그 상태(굴린 자리 등)로 되돌릴 때 쓴다. 앞 take를 주었는데 기록이 없으면 멈춘다.
   ctx.prev=opts.prev?JSON.parse(await fs.readFile(work+'/'+opts.prev+'/timing.json','utf8').catch(()=>{throw Error('앞 take 기록 없음: '+work+'/'+opts.prev+'/timing.json (촬영도구/ctrl.mjs)');})).result:null;
-  ctx.say=async(id,fn,opt)=>{const f=audio+'/'+id+'.json';const c=JSON.parse(await fs.readFile(f,'utf8').catch(()=>{throw Error('Voice cue missing: '+f+' (생성 후 촬영)');}));await cue(ctx,c,fn,opt);};
+  // 화면 위 그림 층: 앞 take가 남긴 것을 녹화 전에 지우고 빈 층에서 시작한다.
+  const {drawLayer}=await import('file:///'+HERE+'draw.mjs?'+Date.now());
+  draw=ctx.draw=drawLayer({p,serial,sleep,clock:()=>Date.now()-start,cue:()=>ctx.cueId});await draw.reset();
+  ctx.say=async(id,fn,opt)=>{ctx.cueId=id;const f=audio+'/'+id+'.json';const c=JSON.parse(await fs.readFile(f,'utf8').catch(()=>{throw Error('Voice cue missing: '+f+' (생성 후 촬영)');}));await cue(ctx,c,fn,opt);};
   // 이어 찍기: 앞 구간 끝 포인터 위치에 표시·실제 포인터를 둔다(녹화 전, 화면에 남지 않음).
   // 이어 찍기: 앞 구간이 끝난 페이지가 아니면 녹화 전에 그 페이지를 연다(화면에 남지 않음).
   // 이어 찍기: 앞 구간 끝 URL과 다르면 녹화 전에 그 주소를 연다(화면에 남지 않음). 토큰은 환경변수 HYD_VSCODE_TOKEN_FILE이 가리키는 파일에서 읽어 붙인다(없으면 멈춘다).
@@ -108,15 +119,18 @@ export async function run(opts){
   const mod=await import((opts.moduleUrl||'file:///'+HERE+'segs/'+opts.module)+'?'+Date.now());
   result=await mod.default(ctx);
   if(pending)await pending;
-  const tail=speechFree-Date.now();if(tail>0)await sleep(tail+400);
+  const left=draw.left();if(left.length)throw Error('구간 끝에 '+left.join(' · ')+'이 떠 있음 — 구간 안에서 걷는다(hide · note(null))');
+  // 남은 강조는 마지막 말이 끝날 때 지운다(그 뒤 꼬리 400ms 동안 지워진 화면이 찍힌다).
+  const tail=speechFree-Date.now();if(tail>0)await sleep(tail);await draw.end('구간 끝');if(tail>0)await sleep(400);
  }catch(e){error=String(e?.stack||e);}
  finally{
+  if(draw)await draw.end(error?'녹화 끝':'구간 끝').catch(()=>{});   // 오류로 끝난 take의 강조도 끝 시각을 남기고 화면에서 지운다
   recording=false;done=true;await capture;const duration=start===null?0:Date.now()-start;await writeQueue;
   try{await p.cdp('Page.stopScreencast');}catch(e){}
   const state={url:(await p.url().catch(()=>null))?.replace(/tkn=[0-9a-f]+/,'tkn=REDACTED'),clicks:await p.evaluate(()=>window.__tutorialClicks||[]).catch(()=>[]),pointer:await p.evaluate(()=>window.__ptrStat||null).catch(()=>null)};
   await fs.writeFile(out+'/end-state.json',JSON.stringify(state,null,2));
   await fs.writeFile(out+'/end-snapshot.txt',await p.snapshot().catch(e=>String(e)));
-  await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,duration,error,result},null,2));
+  await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,highlights:draw?.marks??[],drawings:draw?.log??[],duration,error,result},null,2));
   return {duration,frames:frames.length,cues:actions.length,error,result,url:state.url};
  }
 }

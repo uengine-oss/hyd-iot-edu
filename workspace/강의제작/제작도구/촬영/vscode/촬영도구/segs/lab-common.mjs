@@ -8,6 +8,8 @@
 //     Codex 웹뷰(iframe)나 다른 곳에 초점이 있으면 fail로 멈춘다 — 글이 Codex 입력칸으로 가서 전송되지 않게 한다.
 //  ③ ctx.say를 감싸 지금 큐의 글과 시작 시각을 들고 있다. 한 큐 안의 둘째 조작은 고정 sleep 대신 atPhrase(ctx, '구절')로 그 구절을 말할 때 한다.
 //     dry는 at 구절이 큐 JSON(LABS의 cues)의 글에 차례대로 있는지 본다. 말만 하는 큐는 op 'say' 한 줄로 세어, dry.json의 cues가 그 구간의 큐 수와 같다.
+//  ④ 강조 · 펜 그림 · 글상자(../draw.mjs — c.emph · c.clearEmph · c.pen · c.note)도 조작으로 세어 ctx.report에 op 'emph' · 'pen' · 'note'로 남긴다.
+//     자주 짚는 대상은 아래 em.line · em.term · em.row · em.codex로 만든다.
 
 import fs from 'node:fs/promises';
 import {vscode} from '../ui.mjs';
@@ -34,7 +36,7 @@ export const LABS = {
  p307: {dir: 'D:/HYD-Practice/p307p-e0076eb3/condition-extract-lab', zip: OUT + '실전반/실습/03회차/랩/condition-extract-lab.zip', features: 8, cues: '실전_03_07_지식추출_큐.json'},
  p308: {dir: 'D:/HYD-Practice/p308p-f1a55b73/work-card-lab', zip: OUT + '실전반/실습/03회차/랩/work-card-lab.zip', features: 10, cues: '실전_03_08_작업카드_큐.json'},
 };
-// 쉼(영상 V-14의 2회차부터 값 — 이 표의 랩은 모두 2회차 뒤다). ../ctrl.mjs의 기본 gap 1000ms는 1회차 값이라 바꾸지 않고, labUi의 ctx.say가 큐 사이 gap을 cue로 준다.
+// 쉼(영상 V-14). 큐 사이 쉼 cue는 ../ctrl.mjs의 기본 gap과 같은 값이고, labUi의 ctx.say가 큐마다 이 값을 gap으로 준다.
 // 구간 경계: ctrl.mjs는 구간 끝 말 뒤 tail(400ms)을 두고 끝나고, 다음 구간의 첫 큐는 쉼 없이 시작한다(첫 큐에는 앞 말이 없어 gap이 먹지 않는다).
 // 그래서 01이 아닌 구간의 첫 큐 앞에 segment − tail을 쉬어 경계 쉼을 segment로 맞춘다(녹화 때만). 앞 구간이 말보다 늦게 끝난 조작으로 닫히면 그만큼 길어진다.
 export const PAUSE = {cue: 1300, result: 2000, segment: 2300, tail: 400};
@@ -282,6 +284,14 @@ export const tableCell = (c, ctx, key, n = 0, cols = null) => c.serial(() => ctx
 }, {key, n, cols})).then(q => aimed(ctx, '표 ' + key + ' 칸 ' + n, q));
 export const tableHead = (c, ctx, name) => c.serial(() => ctx.p.evaluate(name => { const th = [...document.querySelectorAll('th')].filter(e => e.textContent.trim() === name && e.getBoundingClientRect().width > 0); if (th.length !== 1) throw Error('표 머리 ' + th.length + '개: ' + name); const b = th[0].getBoundingClientRect(); return {x: b.x + 20, y: b.y + b.height / 2}; }, name)).then(q => aimed(ctx, '표 머리 ' + name, q));
 
+// 강조 대상(c.emph의 첫 인자): 편집기에서 글이 text로 시작하는 줄 · 터미널에서 text가 든 마지막 줄(둘 다 그 줄의 글자가 차지한 폭만큼) · 결과 화면 표에서 첫 칸이 key인 줄(n을 주면 그 줄의 n번째 칸) · Codex 패널 안의 비율 상자(웹뷰라 글을 잴 수 없다 — 녹화 답 화면을 보고 정한다)
+export const em = {
+ line: text => ({sel: '.editor-instance .view-lines .view-line', starts: text, tight: true}),
+ term: text => ({sel: '.terminal-wrapper .xterm-rows > div', has: text, pick: 'last', tight: true}),
+ row: (key, n = null) => ({sel: 'tbody tr', cell: [0, key], ...(n == null ? {} : {child: n})}),
+ codex: (x0, y0, x1, y1) => ({codex: [x0, y0, x1, y1]}),
+};
+
 // ── 조작 층: ../ui.mjs의 vscode(ctx) + 조작 기록 · 화면 안 검사 · 입력 초점 검사 · 말 시점(맨 위 머리말 ①②③) ──
 const cueText = async (ctx, id) => {
  if (!ctx.rehearsal) { const a = JSON.parse(await fs.readFile(ctx.audio + '/' + id + '.json', 'utf8')); return {text: a.text, dur: a.duration_ms}; }
@@ -293,7 +303,7 @@ const cueText = async (ctx, id) => {
 export async function labUi(ctx) {
  const c = await vscode(ctx);
  c.ctx = ctx;
- const base = {move: c.move, clickAt: c.clickAt, clickSel: c.clickSel, menuItem: c.menuItem, explorerRow: c.explorerRow, codexPoint: c.codexPoint, typeKeys: c.typeKeys, type: c.type, key: c.key};
+ const base = {move: c.move, clickAt: c.clickAt, clickSel: c.clickSel, menuItem: c.menuItem, explorerRow: c.explorerRow, codexPoint: c.codexPoint, typeKeys: c.typeKeys, type: c.type, key: c.key, emph: c.emph, clearEmph: c.clearEmph, pen: c.pen, note: c.note};
  const rep = o => { ctx.report?.push({cue: ctx.cueId, ...o}); };
  const bad = (o, why) => { rep({...o, fail: true, why}); throw Error((ctx.cueId ?? '(큐 밖)') + ' ' + o.op + ' ' + (o.target ?? '') + ': ' + why); };
  let inner = 0;   // 클릭 안에서 화살표를 옮기는 것은 짚기로 따로 세지 않는다(화면 안 검사는 한다)
@@ -318,6 +328,12 @@ export async function labUi(ctx) {
  c.typeKeys = async text => { const o = {op: 'type', target: '터미널', text}; await c.gate(); await needZone(o, 'typeKeys'); const t0 = Date.now(); await base.typeKeys(text); rep({...o, ms: Date.now() - t0, fail: false}); };
  c.type = async (text, aside) => { const o = {op: 'type', target: '편집기', text}; if (aside) await c.move(aside.x, aside.y); await c.gate(); await needZone(o, 'type'); const t0 = Date.now(); await base.type(text); rep({...o, ms: Date.now() - t0, fail: false}); };
  c.key = async k => { const o = {op: 'key', target: k}; await c.gate(); const z = await needZone(o, k === 'Enter' ? 'Enter' : 'key'); await base.key(k); rep({...o, zone: z, fail: false}); };
+ // 강조 · 펜 그림 · 글상자: 대상이 없거나 화면 밖이면 ../draw.mjs가 큐 id를 대며 멈추고, 아래 ctx.say가 그 실패를 한 줄로 남긴다.
+ const tag = t => typeof t === 'string' ? t : JSON.stringify(t).slice(0, 120);
+ c.emph = async (target, o = {}) => { await base.emph(target, o); rep({op: 'emph', target: tag(target), shape: o.shape ?? 'band', ...(o.phrase ? {phrase: o.phrase} : {}), fail: false}); };
+ c.clearEmph = async () => { await base.clearEmph(); rep({op: 'emph', target: '지움', fail: false}); };
+ c.pen = def => { const f = base.pen(def); for (const k of Object.keys(f)) { const fn = f[k]; f[k] = async (...a) => { await fn(...a); rep({op: 'pen', target: def.id + ' ' + k + (a.length ? ' ' + a.map(tag).join(' ') : ''), fail: false}); }; } return f; };
+ c.note = async (lines, o) => { await base.note(lines, o); rep({op: 'note', target: lines ? '띄움 ' + lines.length + '줄' : '걷음', fail: false}); };
  // ctx.say: 지금 큐의 글과 시작 시각을 들고, at 구절이 큐 글에 있는지 보며, 조작이 있는 큐가 조작을 하나도 남기지 않으면 멈춘다.
  const say = ctx.say;
  ctx.say = async (id, fn, opt = {}) => {
