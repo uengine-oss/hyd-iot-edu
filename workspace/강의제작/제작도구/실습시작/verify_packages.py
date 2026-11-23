@@ -5,8 +5,8 @@
 1. package-index.json의 ZIP마다 해시 · 시작 파일 · 가이드 링크 · 과제 정답 경계(verify_lab).
 2. 도구 실습의 한 파일 가이드(랩/<랩>.html)마다 랩 폴더로 다시 만든 바이트와 같은가(lab_package.page_bytes, 가이드 P-13).
 3. 학생 ZIP(산출물/*/실습/*/랩/*.zip 전부, 인수를 주면 그것만)마다 check_zip — 랩 폴더와 경로 집합 · 바이트(텍스트는 줄끝을 맞춰)가
-   같은가, 강사 대본(/대본/) · 제작 지시 문구 · __pycache__ · .env(TEMPLATES 밖)가 없는가, .env.example은 키만 비고 접속 주소 · 모델 이름이
-   lab_frame.ENV_FIXED와 같은가, TEMPLATES의 .env는 등호 뒤가 모두 비었는가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
+   같은가, 강사 대본(/대본/) · 제작 지시 문구 · __pycache__ · .env(TEMPLATES 밖)가 없는가, 학생에게 주는 틀(.env.example · TEMPLATES의 .env)은 키만 비고
+   접속 주소 · 모델 이름이 lab_frame.ENV_FIXED와 같은가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
 start_guides/build.py와 lab_package.py도 check_zip · forbidden_hits · link_errors를 부른다.
 """
 from pathlib import Path, PurePosixPath
@@ -22,7 +22,7 @@ ROOT=Path(__file__).resolve().parents[4]
 HERE=Path(__file__).resolve().parent
 OUT=ROOT/'workspace/강의제작/산출물'
 FORBIDDEN=('제작 참고용','낭독하지 않음','강사 대본','비낭독')   # 제작 지시 문구 — 학생 파일에 있으면 안 된다
-# 학생에게 주는 빈 .env 틀(값은 학생이 적는다 — START.md 「코드/.env: 모델 접속」). 동기화가 .env를 빼므로 다른 PC 체크아웃 폴더에는 없다.
+# 학생에게 주는 .env 틀(접속 주소 · 모델 이름은 채워 있고 키만 학생이 적는다 — START.md 「코드/.env: 모델 접속」). 동기화가 .env를 빼므로 다른 PC 체크아웃 폴더에는 없다.
 TEMPLATES={'실전반/실습/04회차/랩/04일차_실습2_원인추론과점검계획/코드/.env'}
 MD_LINK=re.compile(r'\]\(([^)\s]+)\)')
 HREF=re.compile(r'href="([^"]+)"')
@@ -144,7 +144,7 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
         if '대본' in parts[:-1]:errors.append(f'{zpath.name}: 강사 대본이 들어 있음 {name}')
         if '__pycache__' in parts or name.endswith('.pyc'):errors.append(f'{zpath.name}: 실행 찌꺼기 {name}')
         if parts[-1]=='.env':
-            errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data)] if name in templates else [f'{zpath.name}: .env가 들어 있음 {name}']
+            errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data,ENV_NAMES,ENV_FIXED)] if name in templates else [f'{zpath.name}: .env가 들어 있음 {name}']
         elif parts[-1]=='.env.example':
             errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data,ENV_NAMES,ENV_FIXED)]
     for name in sorted(templates-set(packed)):

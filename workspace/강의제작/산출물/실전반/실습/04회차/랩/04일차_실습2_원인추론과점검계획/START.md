@@ -7,7 +7,7 @@
 - `코드/source/ontology/`: 설비 그래프(`graph.json` 노드 83개 · 관계 136개, `schema.json`). 경보에서 원인·증거·조치까지 가는 길과 증거 한 건을 읽는 법은 `source/ontology/README.md`에 있습니다.
 - `코드/source/cases/cases.json`: 경보 사례 S01~S11(HYD-01~03, 이상 패턴 네 종류). 신선도(`freshness`)와 관측 충분성(`coverage`)의 뜻은 `source/cases/README.md`에 있습니다. 제공된 과거 입력이며 지금 설비의 값이 아닙니다.
 - `코드/source/manuals/`: HM-8(쿨러 · 팬), PM-02(정기 점검), PR-07(예비품) 원문과 `문서_목록.csv`.
-- `코드/llm_client.py`, `코드/.env`: 모델 접속입니다. `.env`의 등호 뒤에 수업에서 받은 주소·키를 적고 `LLM_MODEL`에는 `coding`을 적습니다. `chat(messages, tools)`에 도구 목록을 주면 모델이 그 가운데서 골라 부릅니다.
+- `코드/llm_client.py`, `코드/.env`: 모델 접속입니다. `.env`의 `LLM_API_KEY=` 뒤에 수업에서 받은 키를 적고, 주소와 모델 이름은 적혀 있는 그대로 둡니다. `chat(messages, tools)`에 도구 목록을 주면 모델이 그 가운데서 골라 부릅니다.
 - [코드/입출력_계약.md](코드/입출력_계약.md): 결과 형식. `코드/check.py`: 결과의 구조 검사.
 - 빈 틀: [코드/output/expected.md](코드/output/expected.md)(기대와 실제), [코드/output/review.md](코드/output/review.md)(호출 기록과 어긋남 대조).
 

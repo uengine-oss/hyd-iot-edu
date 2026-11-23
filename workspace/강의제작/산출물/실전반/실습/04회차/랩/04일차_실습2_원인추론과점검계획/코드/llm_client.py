@@ -22,7 +22,9 @@ def _settings():
             settings[key.strip()] = value.strip().strip("\"'")
     for key in ("OPENAI_BASE_URL", "LLM_API_KEY", "LLM_MODEL"):
         if not settings.get(key):
-            raise SystemExit(f".env 의 {key} 가 비어 있다. 받은 값을 등호 뒤에 적고 저장한다.")
+            if key == "LLM_API_KEY":
+                raise SystemExit(".env 의 LLM_API_KEY 가 비어 있다. 수업에서 받은 키를 등호 뒤에 적고 저장한다.")
+            raise SystemExit(f".env 의 {key} 가 비어 있다. 받은 ZIP 의 코드/.env 에 적힌 그 줄을 다시 옮겨 적고 저장한다.")
     return settings
 
 
@@ -36,11 +38,11 @@ def _reason(error):
     if error.code == 401 and message.startswith("litellm.AuthenticationError"):
         return "내 키는 통과했지만 중계 서버 뒤쪽의 키가 맞지 않는다. 내 .env 문제가 아니니 강사에게 알린다"
     if error.code == 401:
-        return ".env 의 LLM_API_KEY 가 받은 키와 다르다"
+        return ".env 의 LLM_API_KEY 가 받은 키와 다르다. 등호 뒤에 받은 키를 다시 적는다"
     if kind == "key_model_access_denied" or "Invalid model name" in message:
-        return ".env 의 LLM_MODEL 이 서버에 없는 이름이다. 받은 모델 이름을 적는다"
+        return ".env 의 LLM_MODEL 이 서버에 없는 이름이다. 받은 ZIP 의 코드/.env 에 적힌 그 줄을 다시 옮겨 적는다"
     if error.code == 404:
-        return ".env 의 OPENAI_BASE_URL 이 받은 주소와 다르다. 끝이 /v1 인지 본다"
+        return ".env 의 OPENAI_BASE_URL 이 서버 주소와 다르다. 받은 ZIP 의 코드/.env 에 적힌 그 줄을 다시 옮겨 적는다"
     if error.code == 429:
         return "서버가 지금 요청을 받지 못한다. 1분 뒤 다시 실행하고, 같으면 강사에게 알린다"
     return "서버가 요청을 받지 않았다. 강사에게 알린다"
