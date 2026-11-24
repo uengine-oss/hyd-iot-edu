@@ -145,3 +145,17 @@ def test_재생_모드에서_저장된_답이_없는_질문은_실패로_남고_
     assert status == 200 and [q['id'] for q in left] == [waiting['id']], left
     closed = [e for e in course.rt.repo.list_events(proc_inst_id=failed['id']) if e['job_id'] == 'TASK_CLOSED']
     assert closed and closed[-1]['data']['by'] == 'user:me' and closed[-1]['data']['reason'] == ask.STOPPED_CLOSE_REASON, closed
+
+
+
+@pytest.mark.parametrize('tool, output, failed', [
+    ('mcp__apu-ops__get_status', '{"state": "RUN", "error": "E-104"}', False),     # 학생 도구 결과 안의 설비 오류 코드 — 조회한 데이터
+    ('mcp__apu-ops__inspect', '{"result": "NG"}', False),                           # 검사 결과 「NG」 — 데이터
+    ('mcp__apu-ops__get_status', '{"isError": true, "message": "설비에 닿지 못함"}', True),   # MCP 의 오류 표시는 어느 서버든 실패
+    ('mcp__enterprise__query', '{"result": "error", "message": "표가 없습니다"}', True),      # 기준 서버의 결과 봉투
+    ('mcp__enterprise__query', '{"error": "권한 없음"}', True),
+], ids=['학생_error_칸', '학생_result_NG', '학생_isError', '기준_봉투_result', '기준_봉투_error'])
+def test_도구_결과의_실패는_MCP_오류_표시로_가르고_결과_봉투는_기준_서버에만_댄다(tool, output, failed):
+    """2026-11-25 감사: 결과 봉투(error 칸 · result 가 ok 가 아닌 글)를 모든 서버에 대어, 학생 도구의 맞는 조회를 「조회 실패」로 세고 근거 없는 답이라며
+    답을 숨겼다 — 「{"result":"OK"}」까지 「도구가 거절했습니다」였다."""
+    assert (ask._failed(output, False, tool) is not None) is failed

@@ -112,7 +112,7 @@ def test_채점이_적은_진행_기록에_항목마다_결과와_끝난_수가_
     assert list(steps) == ['golden', 'knowledge', 'item:0', 'save'] and all(s['state'] == 'ok' for s in steps.values())
     [item] = run['items']
     assert steps['item:0']['label'] == golden['title']
-    assert item['status'] == 'WITHHELD' and item['reason'].startswith('판단 보류 (409): 근거 조회가 불완전')      # 거절 본문의 사유 칸(원문 JSON 이 아니다)
+    assert item['status'] == 'WITHHELD' and item['reason'].startswith('판단 보류: 근거 조회가 불완전')      # 거절 본문의 사유 칸(원문 JSON 이 아니다) · HTTP 응답 코드는 싣지 않는다
     assert steps['item:0']['note'] == f"항목 1/1 끝 · {item['score']}점 · 판단이 나오지 않음 — {item['reason']}"
     assert steps['golden']['note'] == '항목 1개' and steps['save']['note'] == f"평균 {run['summary']['score']}점 · 항목 1개"
 

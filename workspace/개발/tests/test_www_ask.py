@@ -119,3 +119,63 @@ def test_실제_AI_로_답할_때의_질문_예는_그_질문에_답할_기본_�
         served.close()
     assert len(shown['sys:agent']) == 2 and shown['agent:half'] == [shown['sys:agent'][0]] and '재고' in shown['agent:half'][0], shown
     assert shown['agent:mine'] == [], shown
+
+
+def test_목록은_읽기_전에_없다고_하지_않고_AI_답과_쿼리는_원문대로이며_사람이_닫은_질문은_초록_점이_아니다():
+    """2026-11-25 감사 · 화면 탐사: ① 지난 질문이 있는데 열자마자 「아직 지난 질문이 없습니다」가 1~2초 보였다. ② AI 의 답에 화면 말 바꾸기(UI.words)가
+    걸려 학생 MES 의 「작업지시」가 「정비 요청」으로, 사전에 없는 학생 지식 id 가 「원인 표시 이름 미등록」으로 바뀌어 보였다 — 표에 있는 경보 코드만
+    이름으로 읽는다. ③ 객체로 넘긴 쿼리가 「[object Object]」로 보였다. ④ 사람이 닫은 질문의 처리 과정 머리에 초록(정상) 점이 붙고 「종료」라 불렀다."""
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    said = '생산 작업지시 WO-12 와 재관측 기록을 보면 cause:apu-air-leak 이고 COOLER_DEGRADATION 경보와는 다릅니다.'
+    done = _view('done', tool_calls=[dict(CALL, running=False, ok=True)], result={
+        'kind': 'answered', 'answer': said, 'verified': 1, 'queried': 1,
+        'evidence': [{'tool': 'mcp__apu-ops__get_status', 'verified': True, 'query': {'asset': 'APU-01', 'window': '1h'}, 'result': 'RUN'}]})
+    closed = _view('closed', id='ask_agent.q2', message='사람이 닫은 질문입니다 — 사유: 시연 끝', link='#/instances/ask_agent.q2/task/w1')
+    world = {'held': None, 'views': {'ask_agent.q1': done, 'ask_agent.q2': closed}}
+    history = [{'id': 'ask_agent.q1', 'question': QUESTIONS[0], 'state': 'done', 'verdict': 'answered', 'agent': done['agent'], 'started': done['started']},
+               {'id': 'ask_agent.q2', 'question': QUESTIONS[1], 'state': 'closed', 'agent': closed['agent'], 'started': closed['started']}]
+
+    def answer(route):
+        url = route.request.url.split('?')[0]
+        if url.endswith('/api/ask/status'):
+            return route.fulfill(json=STATUS)
+        if url.endswith('/api/ask'):
+            world['held'] = route                       # 목록 응답을 잡아 둔다 — 읽기 전의 화면을 잰다
+            return None
+        for key, view in world['views'].items():
+            if url.endswith('/api/ask/' + key):
+                return route.fulfill(json=view)
+        if url.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'ask')
+            hist = page.locator('[data-ask-history]')
+            page.wait_for_function("() => document.querySelector('[data-ask-history]').innerText.includes('불러오는 중')", timeout=15000)
+            assert '아직 지난 질문이 없습니다' not in hist.inner_text()                         # ① 읽기 전에는 「없음」이 아니다
+            world['held'].fulfill(json=history)
+            page.locator('[data-ask-open="ask_agent.q1"]').wait_for(timeout=10000)
+            page.locator('[data-ask-open="ask_agent.q1"]').click()
+            page.locator('.ask-answer').wait_for(timeout=8000)
+            text = page.locator('.ask-answer').inner_text()
+            assert '작업지시 WO-12' in text and '재관측' in text and 'cause:apu-air-leak' in text, text          # ② 원문대로
+            code = page.evaluate("UI.patterns.COOLER_DEGRADATION || 'COOLER_DEGRADATION'")              # 표에 있는 경보 코드만 이름으로(이름표가 없으면 코드 그대로)
+            assert '정비 요청' not in text and '표시 이름 미등록' not in text and code in text, text
+            page.locator('.ask-evidence summary').first.click()
+            ev = page.locator('.ask-evidence').inner_text()
+            assert '[object Object]' not in ev and '"asset": "APU-01"' in page.locator('.ask-evidence').evaluate('d => d.textContent'), ev   # ③
+            page.locator('[data-ask-open="ask_agent.q2"]').click()
+            page.wait_for_function("() => (document.querySelector('#askView [data-lv-now]') || {}).textContent?.includes('사람이 닫음')", timeout=8000)
+            tone = page.locator('#askView [data-lv-now] .dot').get_attribute('data-tone')
+            assert tone not in ('ok', 'run'), tone                                                                 # ④ 초록 · 진행 점이 아니다
+            b.close()
+    finally:
+        served.close()

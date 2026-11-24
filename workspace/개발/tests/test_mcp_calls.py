@@ -49,3 +49,29 @@ def test_시작과_끝_이벤트는_한_호출로_묶여_걸린_시간과_상태
     assert (query['state'], query['duration_ms']) == ('done', 1500)
     assert 'pw-1' not in query['input'] and 'select 1' in query['input']
     assert query['link'] == '#/instances/p-1/task/t-1'
+
+
+def _call(tool, output, *, step_status='DONE', finished=True):
+    rows = [_event(1, 'tool_usage_started', tool, 'u-9', '2026-10-30T09:00:00+00:00', input={'id': 'x'})]
+    if finished:
+        rows.insert(0, _event(2, 'tool_usage_finished', tool, 'u-9', '2026-10-30T09:00:01+00:00', output=output))
+    for r in rows:
+        r['step_status'] = step_status
+    [call] = mcp_calls.calls(rows)
+    return call['state']
+
+
+@pytest.mark.parametrize('tool, output, state', [
+    ('mcp__enterprise__query', '{"result": "error", "message": "표가 없습니다"}', 'error'),     # 기준 서버의 결과 봉투가 알린 실패
+    ('mcp__apu-ops__get_status', '{"state": "RUN", "error": "E-104"}', 'done'),             # 학생 서버 결과 안의 error 칸은 설비 데이터
+    ('mcp__apu-ops__inspect', '{"result": "NG"}', 'done'),
+], ids=['기준_서버_봉투_실패', '학생_서버의_error_칸', '학생_서버의_result_칸'])
+def test_도구_호출의_실패는_질문하기와_같은_한_판정으로_가른다(tool, output, state):
+    """2026-11-25 감사: 기준 서버가 결과 봉투(result: error)로 알린 실패가 호출 기록에서는 보통 줄로 보였다(다른 화면은 오류로 셌다)."""
+    assert _call(tool, output) == state
+
+
+@pytest.mark.parametrize('step_status, state', [('IN_PROGRESS', 'running'), ('DONE', 'unfinished'), ('CANCELLED', 'unfinished')])
+def test_끝_기록이_없는_호출은_그_단계가_끝났으면_끝_기록_없음이다(step_status, state):
+    """2026-11-25 감사: 끝 기록이 없는 호출(실행이 끊기거나 취소됨)이 시간이 얼마나 지나도 「진행 중」으로 남았다."""
+    assert _call('mcp__enterprise__query', None, step_status=step_status, finished=False) == state

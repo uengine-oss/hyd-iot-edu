@@ -19,6 +19,20 @@ def test_값_이름은_화면_사전이_이기고_사전에_없는_칸만_처리
     assert run(FILES, "hydWords.caseFields = DATA.cf; out(hydWords.fieldName(DATA.key))", {'cf': case_fields, 'key': key}) == expected
 
 
+@pytest.mark.parametrize('first, key, case_fields, name, unit', [
+    (True, 'load', {'load': '프레스 하중'}, '프레스 하중', ''),          # 학생 현장 처리 건: 그 흐름이 붙인 이름이 이기고 실습장 단위(%)도 붙이지 않는다
+    (True, 'cycle', {'cycle': '압축기 가동 횟수'}, '압축기 가동 횟수', ''),
+    (True, 'load', {}, '펌프 부하', '%'),                               # 이름을 붙이지 않은 칸은 사전 그대로
+    (False, 'load', {'load': '프레스 하중'}, '펌프 부하', '%'),          # 실습장(가상 설비) 처리 건은 사전이 이긴다
+])
+def test_학생_현장_처리_건은_그_흐름이_붙인_칸_이름이_실습장_사전보다_먼저다(first, key, case_fields, name, unit):
+    """2026-11-25 감사: 학생 흐름의 load(kN)가 「펌프 부하 350 %」로, cycle 이 「정비 회차 … 회」로 보였다 — 서버 plant_case 가 false 인 처리 건은
+    그 흐름의 칸 이름을 먼저 쓴다(caseRecord 가 hydWords.caseFieldsFirst 를 정한다)."""
+    got = run(FILES, "hydWords.caseFields = DATA.cf; hydWords.caseFieldsFirst = DATA.first; out([hydWords.fieldName(DATA.key), hydWords.unit(DATA.key)])",
+              {'cf': case_fields, 'key': key, 'first': first})
+    assert got == [name, unit]
+
+
 @pytest.mark.parametrize('op, sym', [('>=', '≥'), ('<=', '≤'), ('==', '='), ('!=', '≠'), ('lt', '<'), ('lte', '≤'), ('gt', '>'), ('gte', '≥'),
                                      ('eq', '='), ('ne', '≠'), ('<', '<'), ('~', '~')])
 def test_비교_기호는_식_기호와_규칙_낱말_연산자를_한_표로_바꾼다(op, sym):

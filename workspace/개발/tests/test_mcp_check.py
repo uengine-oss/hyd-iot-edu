@@ -244,7 +244,10 @@ def test_포털_연결_자리가_다_차면_기다리다_까닭과_함께_거절
     ({'name': 'drop_rows', 'annotations': {'destructiveHint': True}}, False, ['되돌릴 수 없는 쓰기 도구로 표시했습니다']),
     ({'name': 'set_speed', 'annotations': {'readOnlyHint': True}}, False, ["이름의 'set' 가 쓰기·실행을 뜻합니다"]),
     ({'name': 'find_rows', 'annotations': {'readOnlyHint': True}}, True, []),
-], ids=['쓰기 표시', '되돌릴 수 없는 쓰기 표시', '읽기 표시지만 쓰기 이름', '읽기 도구'])
+    ({'name': 'get_run_status', 'annotations': {'readOnlyHint': True}}, True, []),       # 읽기 동사로 시작 — run 은 무엇을 읽나(2026-11-25 감사)
+    ({'name': 'readStopHistory', 'annotations': {'readOnlyHint': True}}, True, []),
+    ({'name': 'start_pump', 'annotations': {'readOnlyHint': True}}, False, ["이름의 'start' 가 쓰기·실행을 뜻합니다"]),
+], ids=['쓰기 표시', '되돌릴 수 없는 쓰기 표시', '읽기 표시지만 쓰기 이름', '읽기 도구', '읽기 동사_뒤_run', '읽기 동사_뒤_stop', '쓰기 동사로_시작'])
 def test_써_보기_거부_사유는_도구_연결_화면의_학생_문장이라_표시_이름을_쓰지_않는다(tool, ok, words):
     """한바퀴3 고침 3: 「쓰기 도구(readOnlyHint=false)」처럼 서버 표시 이름이 화면에 그대로 보였다(10 실습 · 통합 63행)."""
     allowed, reason = mcp_check.read_only_verdict(tool)
@@ -265,3 +268,10 @@ def test_승인_뒤_쓰기_호출은_쓰기_요청을_서버에_보냈는지_알
     전에는 꺼진 서버 · 등록 없는 서버도 「앞선 외부 쓰기가 됐는지 확인되지 않아」로 멈췄다."""
     out = mcp_check.call_effect(dict(student_server, url=url) if url else student_server, tool, arguments, timeout=8)
     assert (out['status'], out['sent']) == (status, sent), out
+
+
+
+@pytest.mark.parametrize('name, ok', [('list_command_log', True), ('get_set_point', True), ('reset_counter', False)])
+def test_표시_없는_도구는_읽기_동사로_시작하면_사람이_읽기로_확인해_줄_수_있다(name, ok):
+    """표시(readOnlyHint)가 없는 서버의 조회 도구 — 이름 뒤 낱말(command · set)을 쓰기로 읽어 강사가 풀어 줄 수도 없었다(2026-11-25 감사)."""
+    assert mcp_check.confirmable({'name': name}) is ok

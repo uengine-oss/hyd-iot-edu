@@ -165,7 +165,7 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
     w.down = {'detector'}
     page.goto(w.base + '/index.html#/home')
     page.wait_for_function("document.getElementById('sysSum').textContent.includes('응답 없음')", timeout=15000)
-    table = page.evaluate("LAYERS.flatMap((L, i) => L.comps.map(c => ({key: c.name.split(' ')[0], role: c.role, real: c.real || '', optional: !!c.optional, health: !!c.health, layer: `Layer ${LAYERS.length - i}`, nets: c.nets})))")
+    table = page.evaluate("LAYERS.flatMap((L, i) => L.comps.map(c => ({key: c.name.split(' ')[0], role: c.role, real: c.real || '', optional: !!c.optional, health: !!c.health, layer: `Layer ${LAYERS.length - i}`, nets: c.nets, netNames: c.nets.map(id => (NETS.find(n => n.id === id) || {}).name || id)})))")
     drawn = page.eval_on_selector_all('#stack .sys-nd', 'ns => Object.fromEntries(ns.map(n => [n.dataset.key, n.dataset.st]))')
     assert sorted(drawn) == sorted(c['key'] for c in table)              # 표의 부품이 빠짐없이, 표에 없는 부품 없이
     assert drawn['detector'] == 'down' and page.inner_text('#sysSum') == '응답 없음 1 — detector'
@@ -201,7 +201,7 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
         c = next(x for x in table if x['key'] == key)
         page.hover(f"#stack .sys-nd[data-key='{key}']")
         info = page.inner_text('#sysInfo')
-        assert c['role'] in info and f"현업에서는 {c['real']}" in info and c['layer'] in info and all(n in info for n in c['nets']), info      # 계층은 왼쪽 줄 이름과 같은 번호(Layer n)로
+        assert c['role'] in info and f"현업에서는 {c['real']}" in info and c['layer'] in info and all(n in info for n in c['netNames']), info      # 계층은 왼쪽 줄 이름과 같은 번호(Layer n)로
         assert page.evaluate("(() => { const i = document.getElementById('sysInfo'); return i.scrollHeight - i.clientHeight; })()") <= 0, key      # 카드 안을 굴리지 않고 다 읽힌다
         assert ('응답 없음' if key == 'detector' else '상태 확인 대상 아님' if key == 'TimescaleDB' else '정상') in info
         # 정보 카드는 그림의 빈 칸에 뜬다 — 어느 부품 상자도 가리지 않는다

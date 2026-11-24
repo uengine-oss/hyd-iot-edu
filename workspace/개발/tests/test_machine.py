@@ -387,3 +387,17 @@ def test_승인_뒤_흐름이_새_승인으로_되돌아가면_사건도_승인_
     other, fx = _approved(), Recorder()
     assert machine.on_rework_reopen(other, 'REQ-9', 'user:me', 'role:operator', '다시 판단', {}, fx)
     assert other.state == 'AWAITING_APPROVAL' and other.superseded[-1]['state_before'] == 'APPROVED_EXECUTING'
+
+
+@pytest.mark.parametrize('cleared', [False, True], ids=['원천_경보_켜짐', '원천_경보_해제됨'])
+def test_정상_결과_보고로_닫을_때_원천_경보가_아직_켜져_있으면_그_사실을_이력과_감사에_싣는다(cleared):
+    """2026-11-25 감사: 학생 현장 흐름(승인 → 도구 호출 → 결과 보고)이 「정상」으로 보고하면 원천 경보가 켜진 채로도 사건이 정상 종결로만 보여,
+    학생은 명령을 보내면 고쳐진다고 믿었다. 결과 보고는 흐름이 정한 판정이라 따르되(닫는다), 경보가 아직 켜져 있다는 사실을 함께 남긴다."""
+    inc, fx = _approved(), Recorder()
+    if cleared:
+        machine.on_alert(inc, {'alertId': 'ALT-1', 'state': 'CLEAR'}, fx)
+    assert machine.on_result_report(inc, 'ok', '도구 호출을 마쳤습니다', fx) and inc.state == 'CLOSED'
+    note = inc.history[-1]['note']
+    closed = [e for e in fx.events if e['event'] == 'INCIDENT_CLOSED']
+    assert ('원천 경보는 아직 해제되지 않았습니다' in note) is (not cleared), note
+    assert len(closed) == 1 and closed[0]['detail'].get('alertStillActive', False) is (not cleared)
