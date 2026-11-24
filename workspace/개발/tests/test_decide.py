@@ -126,7 +126,6 @@ def _cooling_alert(world, monkeypatch, late_s):
     world.settle(1800)
     tags = world.plant.tags(asset)
     _, pid = world.raise_alert(pattern, asset, ts1=tags['TS1'], ce=tags['CE'])
-    world.stack.timescale.write(asset, tags)
     seen = (datetime.now(timezone.utc) - timedelta(seconds=late_s)).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
     world.receive(topics.K_STATUS, world.plant.status(asset, seen))
     handed = _Handed(world.main.plant_status, asset)
@@ -144,11 +143,12 @@ def test_판단할_때_낡았던_설비_상태가_몇_초_뒤_새로_들어오�
     pid, handed = _cooling_alert(world, monkeypatch, late_s=15.5)
     box = {}
     run = threading.Thread(target=lambda: box.update(handled=world.runner('replay').poll_once()))
-    run.start()
-    assert handed.read.wait(120), '판단이 설비 상태를 읽지 않았다'
-    time.sleep(3)                               # 판단은 낡은 값을 받은 채 3초를 더 기다린다
-    world.report('HYD-01')                      # 설비 보고가 다시 들어온다(지금 값)
-    run.join(180)
+    with world.reporting('HYD-01'):             # 설비 상태(process 가 받은 것)만 밀렸고 태그 값은 1초마다 계속 들어온다(블록이 열릴 때 첫 보고) — 판단 등록이 그 자리에서 다시 하는 원인 진단의 관측 구간이 비지 않게
+        run.start()
+        assert handed.read.wait(120), '판단이 설비 상태를 읽지 않았다'
+        time.sleep(3)                           # 판단은 낡은 값을 받은 채 3초를 더 기다린다
+        world.report('HYD-01')                  # 설비 보고가 다시 들어온다(지금 값)
+        run.join(180)
     row = world.row(pid, 'T_agent')
     assert box.get('handled') == 1 and row['status'] in ('SUBMITTED', 'DONE'), (box, row['status'], world._failure(row))
     (made,) = _decisions_of(world, pid)
@@ -177,8 +177,9 @@ def _stopped_for_stale_state(world, monkeypatch):
     from worker import ai_replay
     monkeypatch.setattr(ai_replay, 'WRITE_RETRY_WAITS_S', (0.2, 0.2))      # 시도 사이의 기다림만 줄인다(시도마다 판단 서비스가 8초를 다시 읽는다)
     pid, handed = _cooling_alert(world, monkeypatch, late_s=15.5)
-    started = time.monotonic()
-    handled = world.runner('replay').poll_once()
+    with world.reporting('HYD-01'):             # 설비 상태(process 가 받은 것)만 밀렸고 태그 값은 1초마다 계속 들어온다(블록이 열릴 때 첫 보고) — 판단 등록이 그 자리에서 다시 하는 원인 진단의 관측 구간이 비지 않게
+        started = time.monotonic()
+        handled = world.runner('replay').poll_once()
     waited = time.monotonic() - started
     assert _decisions_of(world, pid) == []
     row = world.row(pid, 'T_agent')
@@ -211,7 +212,8 @@ def test_판단_등록이_값을_받지_못해_안_됐다가_값이_들어오면
         waits.append(seconds)
         world.report('HYD-01')
     monkeypatch.setattr(ai_replay, '_wait', state_arrives)
-    handled = world.runner('replay').poll_once()
+    with world.reporting('HYD-01'):             # 설비 상태(process 가 받은 것)만 밀렸고 태그 값은 1초마다 계속 들어온다 — 판단 등록이 그 자리에서 다시 하는 원인 진단의 관측 구간이 비지 않게
+        handled = world.runner('replay').poll_once()
     row = world.row(pid, 'T_agent')
     assert handled == 1 and row['status'] in ('SUBMITTED', 'DONE'), (row['status'], world._failure(row))
     assert waits == [ai_replay.WRITE_RETRY_WAITS_S[0]], waits                 # 첫 등록이 「아직 받지 못함」으로 안 됐고 한 번 기다린 뒤 됐다
@@ -230,15 +232,17 @@ def test_재생_모드에서_실패한_AI_단계를_다시_수행하면_그_처�
     assert not plan['blockers'], plan['blockers']
     result = world.rt.request_rework(pid, failed['id'], str(uuid.uuid4()), plan['snapshot_token'], OPERATOR['by'], OPERATOR['role'], '설비 값이 다시 들어옴')
     world.report('HYD-01')
-    assert world.runner('replay').poll_once() == 1
+    with world.reporting('HYD-01'):
+        assert world.runner('replay').poll_once() == 1
     again = world.row(pid, 'T_agent')
     assert again['id'] == result['start_workitem'] != failed['id'] and again['status'] in ('SUBMITTED', 'DONE'), (again['status'], world._failure(again))
     (made,) = _decisions_of(world, pid)
     assert made['recommended'] and made['origin']['process_scope']['generation'] == 1 == world.inst(pid)['rework_generation']
 
 
-@pytest.mark.parametrize('facts, needle', [({'fan100_hours': -5}, '음수일 수 없습니다'), ({'secret_fact': 1}, '바꿔 넣을 수 없는 사실')],
-                         ids=['음수 시간', '지식에 없는 변수'])
+@pytest.mark.parametrize('facts, needle', [({'fan100_hours': -5}, '음수일 수 없습니다'), ({'secret_fact': 1}, '바꿔 넣을 수 없는 사실'),
+                                           ({'cause': 'cause:not-in-this-knowledge'}, '이 경보의 진단 지식(원인 후보)에 없습니다 — 원인 후보: 쿨러 핀 오염')],
+                         ids=['음수 시간', '지식에 없는 변수', '진단 지식에 없는 원인을 가정(탐사 N10 — 전에는 조용히 1순위 원인으로 판단했다)'])
 def test_수동_판단에_틀린_사실을_넣으면_엔진이_422와_그_문장으로_거절한다(cooling, facts, needle):
     """한바퀴3 고침 4: 판단 엔진이 틀린 입력을 200 · status FAILED(판단 실패와 같은 꼴)로 돌려줬다 — 입력 거절은 4xx 다."""
     status, d = post(cooling.stack.services['agent'].url + '/api/agent/decide', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': facts})
@@ -312,3 +316,50 @@ def test_승인_역할이_구매_담당이_아닌_구매_절차도_재고_보충
     cards = world.main.book[did]['options']
     assert {o['id'] for o in cards} == {m['id'] for m in moved} and world.main.book[did]['recommended'] == 'skill:sop-pur-11'
     assert {o['approver']['id'] for o in cards} == {'role:purchasing-mgr'}
+
+
+def test_판단_기록의_지식_지문은_판단을_정하는_내용이_바뀔_때만_달라진다():
+    # 탐사 N7: 지식 목록(id)만으로는 같은 규칙의 기준값을 고친 지식을 가리지 못한다. 지문은 규칙의 조건 · 효과 · 순위식, 조치 후보의 원자 조치와 값 ·
+    # 관계 · 승인 역할, 성과 지표 경로가 바뀌면 달라지고, 설명 글 · 출처(문서 판본 id — PC 마다 다르다) · 행의 차례가 달라도 같다.
+    rule = {'rule': 'rule:t-hot', 'decision': 'dec:compliance', 'hitPolicy': 'COLLECT', 'effect': 'EXCLUDE', 'penalty': None, 'rankingPolicy': None,
+            'annotation': '예측 유온이 높으면 제외', 'when': '예측 유온 > 60', 'sources': ['manual:1111:aaaa'], 'outputs': [], 'applies': ['skill:a'], 'penalizes': [],
+            'tests': [{'input': 'in:forecast-ts1', 'variable': 'forecast_ts1', 'name': '예측 유온', 'operator': '>', 'value': 60, 'unit': '℃'}]}
+    pick = {'rule': 'rule:t-pick', 'decision': 'dec:action-candidates', 'hitPolicy': 'COLLECT', 'effect': 'SELECT', 'outputs': ['skill:a', 'skill:b'], 'tests': []}
+    skills = {'skill:a': {'skillId': 'skill:a', 'name': '팬 최대', 'kind': 'control', 'relation': 'MITIGATED_BY', 'approver': {'id': 'role:operator', 'name': '운전원'},
+                          'actions': [{'code': 'FAN_SET', 'kind': 'command', 'param': 'fan_pct', 'value': 100, 'target': 'actr:fan-drive'}],
+                          'steps': [{'id': 's1', 'source_id': 'manual:1111:aaaa'}], 'citation': 'manual:1111:aaaa'},
+              'skill:b': {'skillId': 'skill:b', 'name': '세척', 'kind': 'work_order', 'relation': 'REMEDIED_BY', 'approver': {'id': 'role:maint-mgr'}, 'actions': [],
+                          'maintenance_policy': json.dumps({'version': 1, 'interval_h': 2000, 'anchor': {'source_id': 'manual:1111:aaaa', 'quote': '주기 2,000 h'},
+                                                            'packages': [{'sop': 'SOP-B', 'model_anchor': {'source_id': 'manual:1111:aaaa'}}]})}}
+    moved = json.dumps({'version': 1, 'interval_h': 2000, 'anchor': {'source_id': 'manual:2222:bbbb', 'quote': '주기 2,000 h'},
+                        'packages': [{'sop': 'SOP-B', 'model_anchor': {'source_id': 'manual:2222:bbbb'}}]})
+    # 성과 지표 경로는 t3_tradeoffs.cypher 가 돌려주는 꼴 그대로 — 관계마다 DB 내부 번호(key = elementId)와 설명 글(note)이 실린다(2026-11-24 검토 나-1:
+    # 그 둘까지 재어 같은 지식이어도 PC · 다시 적재마다 지문이 달랐다. 전에는 이 시험의 경로에 관계가 없어 그것을 못 잡았다)
+    def edge(key, source, target, strength, note):
+        return {'key': key, 'type': 'INFLUENCES', 'source': source, 'target': target, 'sign': -1, 'strength': strength, 'delta': None, 'unit': None,
+                'note': note, 'condition': None}
+    paths = [{'skill': 'skill:a', 'nodes': ['sv:fan-speed', 'sv:ts1'], 'direction': 'DOWN',
+              'edges': [edge('5:aaaa:11', 'sv:fan-speed', 'sv:ts1', 'high', 'HM-8.4 팬 속도가 오르면 유온이 내린다')]},
+             {'skill': 'skill:b', 'nodes': ['sv:ce'], 'direction': 'UP', 'edges': []}]
+    base = decide.knowledge_of([rule, pick], skills, ['skill:a', 'skill:b'], paths)
+    assert base['rules'] == ['rule:t-hot', 'rule:t-pick'] and base['candidates'] == ['skill:a', 'skill:b'] and len(base['digest']) == 64
+    other_pc = decide.knowledge_of([pick, dict(rule, sources=['manual:2222:bbbb'], annotation='같은 규칙의 다른 설명', when='다른 글')],
+                                   {'skill:a': dict(skills['skill:a'], name='팬 최대 운전', citation='manual:2222:bbbb', steps=[]),
+                                    'skill:b': dict(skills['skill:b'], maintenance_policy=moved)}, ['skill:a', 'skill:b'],
+                                   list(reversed([dict(paths[0], edges=[edge('5:bbbb:907', 'sv:fan-speed', 'sv:ts1', 'high', '다른 PC 에서 다시 적재한 설명')]),
+                                                  paths[1]])))
+    assert other_pc == base
+    changed = {
+        '기준값': decide.knowledge_of([dict(rule, tests=[dict(rule['tests'][0], value=58)]), pick], skills, ['skill:a', 'skill:b'], paths),
+        '효과': decide.knowledge_of([dict(rule, effect='WARN'), pick], skills, ['skill:a', 'skill:b'], paths),
+        '원자 조치 값': decide.knowledge_of([rule, pick], {**skills, 'skill:a': dict(skills['skill:a'], actions=[dict(skills['skill:a']['actions'][0], value=90)])},
+                                         ['skill:a', 'skill:b'], paths),
+        '승인 역할': decide.knowledge_of([rule, pick], {**skills, 'skill:b': dict(skills['skill:b'], approver={'id': 'role:operator'})}, ['skill:a', 'skill:b'], paths),
+        '성과 지표 경로': decide.knowledge_of([rule, pick], skills, ['skill:a', 'skill:b'], paths[:1]),
+        '경로 관계의 강도': decide.knowledge_of([rule, pick], skills, ['skill:a', 'skill:b'],
+                                          [dict(paths[0], edges=[edge('5:aaaa:11', 'sv:fan-speed', 'sv:ts1', 'low', 'HM-8.4 팬 속도가 오르면 유온이 내린다')]), paths[1]]),
+        '절차의 정책 값': decide.knowledge_of([rule, pick], {**skills, 'skill:b': dict(skills['skill:b'], maintenance_policy=moved.replace('2000', '4000'))},
+                                          ['skill:a', 'skill:b'], paths),
+    }
+    assert all(k['digest'] != base['digest'] and k['rules'] == base['rules'] for k in changed.values()), {n: k['digest'] == base['digest'] for n, k in changed.items()}
+    assert len({k['digest'] for k in changed.values()}) == len(changed)

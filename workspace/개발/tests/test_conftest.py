@@ -179,7 +179,7 @@ def test_칸을_잡으면_도는_묶음이_없는_자리의_남은_컨테이너�
         assert mine not in swept and _exists(container_name('timescaledb')), '자기 자리의 컨테이너를 지웠다'
     finally:
         lock.close()
-        subprocess.run(['docker', 'rm', '-f', dead, alive], capture_output=True)
+        subprocess.run(['docker', 'rm', '-f', '-v', dead, alive], capture_output=True)   # -v: 이미지의 익명 볼륨까지(없으면 남는다)
 
 
 def test_엔진_시계가_앞선_뒤_명령_응답이_와도_그_뒤_설비_보고가_최신_상태가_된다(world):
@@ -191,6 +191,101 @@ def test_엔진_시계가_앞선_뒤_명령_응답이_와도_그_뒤_설비_보�
     world.receive(topics.K_STATUS, status)
     latest = world.main.source_inbox.latest_states()['HYD-01']
     assert latest.get('cmdId') != 'FUXA-probe-1' and latest['t'] == status['t'], latest
+
+
+# ---------------------------------------------------------------- world 의 설비 자리(1초 보고 · 관문 쪽 상태 · 감지기 자리)
+def _ts1_since(world, asset, since):
+    """시계열 tag_1s 의 그 설비 유온(TS1) 행 [(시각, 값)] (since 이후, 시각 차례)과 시계열 DB 의 지금."""
+    with psycopg.connect(world.stack.timescale.dsn) as db:
+        rows = db.execute("SELECT time, value FROM tag_1s WHERE asset = %s AND name = 'TS1' AND time >= %s ORDER BY time", (asset, since)).fetchall()
+        (now,) = db.execute('SELECT now()').fetchone()
+    return rows, now
+
+
+def test_설비_기록은_보고가_끊긴_빈_초를_지난_값으로_채우고_1초_안의_다음_보고를_지금보다_뒤_시각에_두지_않는다(world):
+    """world 의 시계열은 설비의 1초 보고다(_record): 근거 규칙은 관측 구간 안의 빈틈(약 3초 넘음)을 「관측 공백」으로 보류하므로 보고가 끊긴 초는
+    그동안 설비가 낸 값(지난번 값)으로 채워 1초보다 벌어진 틈이 없어야 하고, 보고는 시계열 DB 의 지금에 남는다. 전에는 두 보고 사이가 1초 미만이면
+    이번 보고가 1초 미래 시각에 들어갔다(근거 조회의 시각 어긋남 허용 2초가 덮어, world 시험 전체가 그 허용에 기댔다)."""
+    import time
+    from datetime import timedelta
+    asset, tags = 'HYD-02', world.plant.tags('HYD-02')
+    world._record({asset: [dict(tags, TS1=41.0)]})
+    first = world._reported[asset][0]
+    time.sleep(3)                                            # 설비 보고가 3초 끊긴다(이 시험이 재는 빈 초 — 기다림의 길이와 상관없이 판정은 같다)
+    world._record({asset: [dict(tags, TS1=42.0)]})
+    second = world._reported[asset][0]
+    world._record({asset: [dict(tags, TS1=43.0)]})            # 1초 안에 온 다음 보고
+    rows, now = _ts1_since(world, asset, first - timedelta(seconds=5))
+    times = [t for t, _ in rows]
+    assert times[-1] <= now and rows[-1][1] == 43.0, (rows[-3:], now)
+    assert all(timedelta(0) < b - a <= timedelta(seconds=1) for a, b in zip(times, times[1:])), \
+        [(a.isoformat(), b.isoformat()) for a, b in zip(times, times[1:]) if not timedelta(0) < b - a <= timedelta(seconds=1)]
+    between = [v for t, v in rows if first < t < second]
+    assert len(between) >= 2 and set(between) == {41.0}, rows                 # 끊긴 동안은 지난번 값
+    assert [v for t, v in rows if t == second] == [42.0], rows
+
+
+def test_두_보고_사이_블록_동안_관문은_블록_앞의_상태를_마지막으로_보고_블록이_끝나면_다음_1초_보고를_받는다(world):
+    """between_reports: 블록 앞에서 한 번 보고하고, 블록 동안은 설비가 바뀌어도(현장 패널의 모드 변경) 관문의 마지막 상태가 그대로다 — 1초 보고 고리가
+    멈췄다. 블록이 끝나면 고리가 다시 보고해 관문이 바뀐 상태를 받는다."""
+    import time
+    from conftest import until
+    last = world.gateway.gstate.last_status
+    until(lambda: 'HYD-01' in last, '관문이 설비의 1초 상태 보고를 받지 않았다', 10)
+    with world.between_reports():
+        held = dict(last['HYD-01'])
+        assert held['mode'] == 'REMOTE_AUTO' and world.plant.set_mode('HYD-01', 'LOCAL', requester='LOCAL')
+        time.sleep(2.5)                                      # 1초 보고가 두 번 올 때가 지난다(블록이 고리를 멈췄으면 오지 않는다)
+        assert last['HYD-01'] == held, (last['HYD-01'], held)
+    until(lambda: last['HYD-01']['t'] != held['t'], '블록이 끝났는데 관문이 설비의 다음 1초 보고를 받지 않았다', 10)
+    assert last['HYD-01']['mode'] == 'LOCAL'
+
+
+def _reports(world, n, until_event=None):
+    """설비가 벽시계 1초 보고를 하나씩 n 번 낸다(settle — 감지기 자리가 보고마다 본다) → [(그 보고의 설비 태그 {설비: 태그}, 그 보고에 낸 경보들)].
+    until_event(경보) 가 참인 경보가 나오면 거기서 멈춘다."""
+    out = []
+    for _ in range(n):
+        seen = len(world.detected)
+        world.settle(world.plant.time_scale)
+        out.append(({a: world.plant.tags(a) for a in world.plant.units}, world.detected[seen:]))
+        if until_event and any(until_event(e) for e in out[-1][1]):
+            break
+    return out
+
+
+@pytest.mark.parametrize('fault, asset, pattern, raised, cleared', [
+    ('cooler_degradation', 'HYD-01', 'COOLER_DEGRADATION', lambda t: t['TS1'] > 55 and t['CE'] < 70, lambda t: t['TS1'] < 52),
+    # 펌프 누설 규칙은 PLC 상태(운전 중)도 본다 — 감지기 자리가 태그와 함께 PLC 상태를 넣어야 낸다
+    ('pump_leakage', 'HYD-02', 'PUMP_LEAKAGE', lambda t: t['PS1'] < 165 and t['FS1'] < 8.0, lambda t: t['PS1'] >= 168 and t['FS1'] >= 8),
+], ids=['쿨러 열화', '펌프 누설'])
+def test_감지기_자리는_설비의_1초_보고로_실제_감지_규칙을_돌려_지속_시간을_채운_뒤에만_경보를_내고_회복이_이어지면_푼다(world, fault, asset, pattern,
+                                                                                      raised, cleared):
+    """_detect: 보고마다 설비의 지금 값(태그 · PLC 상태)을 감지기의 실제 판정 코드(지식 지도의 이상 패턴 — 감지 · 해제 조건이 설비 시간 60초 동안
+    이어져야 한다, 배속 20이면 보고 세 번)에 넣는다. 정상 설비는 아무 경보도 없고, 결함 설비는 조건이 60초 이어진 뒤에 그 패턴 하나만, 설비를
+    되돌리면 해제 조건이 60초 이어진 뒤에 푼다. 그 조건 판정(태그 문턱)은 시험이 설비 값으로 따로 본다."""
+    hold = round(60 / world.plant.time_scale)                # 설비 시간 60초 = 보고 몇 번
+    assert all(not events for _, events in _reports(world, 5)), '정상 설비에서 경보가 났다'
+    world.plant.inject(asset, fault)
+    went = _reports(world, 200, lambda e: e['state'] == 'RAISE')
+    events = [(e['asset'], e['pattern'], e['state']) for _, es in went for e in es]
+    assert events == [(asset, pattern, 'RAISE')], events
+    assert _held(went, asset, raised) >= hold, f'감지 조건이 이어진 보고 {_held(went, asset, raised)}번 만에 경보 — 설비 시간 60초 전'
+    world.plant.reset()
+    back = _reports(world, 60, lambda e: e['state'] == 'CLEAR')
+    events = [(e['asset'], e['pattern'], e['state']) for _, es in back for e in es]
+    assert events == [(asset, pattern, 'CLEAR')], events
+    assert _held(back, asset, cleared) >= hold, [tags[asset] for tags, _ in back]
+
+
+def _held(reports, asset, condition):
+    """마지막 보고(경보를 낸 보고)까지 condition 이 이어진 보고 사이의 수 — 그 줄의 첫 보고에서 마지막 보고까지 몇 번 지났나(안 맞으면 -1)."""
+    run = 0
+    for tags, _ in reversed(reports):
+        if not condition(tags[asset]):
+            break
+        run += 1
+    return run - 1
 
 
 def test_설비_데이터_수집기는_실제_MQTT_Kafka_브로커에_붙어_정상으로_답한다(stack):

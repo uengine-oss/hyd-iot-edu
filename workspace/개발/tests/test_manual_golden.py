@@ -6,7 +6,7 @@ import pytest
 from procsvc import manual_golden as mg
 
 REQ = {'batch': 'b1', 'document': 'doc', 'source_id': 's', 'filename': 'HM-8.md', 'questions': ['쿨러 즉시 조치는?', '팬 점검 기준은?'],
-       'knowledge': {'ids': ['skill:sop-cool-11', 'section:hm-8-5'], 'sections': [], 'skills': [], 'steps': 0}, 'by': '강사'}
+       'knowledge': {'ids': ['skill:sop-cool-11', 'section:hm-8-5'], 'sections': [], 'skills': [], 'steps': 0}, 'by': 'user:me'}
 
 
 def item(question, **over):
@@ -76,8 +76,16 @@ def test_조회_기록으로_확인되지_않는_답은_답_못함으로_낮추�
 
 def test_골든_질문_요청은_이_문서의_노드_목록과_다듬은_질문을_싣는다():
     record = {k: REQ[k] for k in ('batch', 'document', 'source_id', 'filename', 'knowledge')}
-    req = mg.request(record, [' 쿨러 즉시 조치는? '], '  강사  ')
-    assert (req['questions'], req['by'], req['knowledge']['ids']) == (['쿨러 즉시 조치는?'], '강사', REQ['knowledge']['ids'])
+    req = mg.request(record, [' 쿨러 즉시 조치는? '], '  user:me  ')
+    assert (req['questions'], req['by'], req['knowledge']['ids']) == (['쿨러 즉시 조치는?'], 'user:me', REQ['knowledge']['ids'])
+
+
+@pytest.mark.parametrize('by', ['', '   ', None])
+def test_골든_질문_요청은_담당자_없이는_받지_않는다(by):
+    """전수 대조 03-17: 빈 담당자로도 접수돼 감사 기록이 「-」로 남았다. 문서 적재 · 되돌리기처럼 담당자 이름이 있어야 한다."""
+    record = dict(batch='b', document='d', source_id='s', filename='f.md', knowledge=dict(ids=[], sections=[], skills=[], steps=0))
+    with pytest.raises(ValueError, match='담당자'):
+        mg.request(record, ['쿨러 즉시 조치는?'], by)
 
 
 def test_골든_질문_정의는_계약과_판본을_싣는다():

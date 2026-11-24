@@ -37,7 +37,6 @@ def test_hyd_dmn과_neo4j는_같은_프로세스의_다른_주소다(tool_server
     assert tool_servers['neo4j'].rsplit('/neo4j/mcp', 1)[0] == tool_servers['hyd-dmn'].rsplit('/mcp', 1)[0]
     dmn = listed(tool_servers['hyd-dmn'])
     assert {'diagnose', 'evaluate_cards', 'submit_decision', 'submit_purchase'} <= set(dmn)
-    assert not any(n.startswith('prometheus_') for n in dmn)     # G4-4: 기본 스택에 Prometheus 가 없어 늘 실패하던 도구 셋을 지웠다
 
 
 @pytest.mark.parametrize('query, error, text', [

@@ -39,6 +39,15 @@ def test_검토_뒤_설비_변화는_시뮬레이션_시간에_비례한_허용�
     assert any('예측 유온 악화' in r for r in reasons) is refused
 
 
+@pytest.mark.parametrize('side', ['old', 'current'], ids=['검토한 예측', '지금 예측'])
+def test_한쪽_예측에_입력_기록이_없으면_서버_오류가_아니라_입력_미확인_까닭이다(side):
+    """전수검사 02-17: 한쪽 예측에 inputs 칸이 없으면 KeyError 로 승인 검사가 까닭 없는 서버 오류로 끝났다."""
+    old, now = _context(T0), _context(T0 + timedelta(seconds=60))
+    ({'old': old, 'current': now}[side]).pop('inputs')
+    reasons = forecasting.consent_changes(old, now, time_scale=20)
+    assert any(r.startswith('예측 입력 미확인') for r in reasons), reasons
+
+
 def _snapshot(state='RUN'):
     return {'asset': 'HYD-01', 't': T0.isoformat(), 'state': state, 'pump': 'A', 'forecast_model': 'hydraulic-lumped-simulator-v1',
             'disturbance_ramps': [], 'ts1': 58.0, 't_amb': 28.0, 'fan_pct': 60.0, 'load_pct': 90.0, 'cooler_health': 0.43, 'leak': 0.0,

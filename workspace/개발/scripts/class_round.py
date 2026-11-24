@@ -160,6 +160,13 @@ def card_findings(dec: dict, source_approver: dict[str, str]) -> list[str]:
     return bad
 
 
+def decision_part(dec: dict) -> str | None:
+    """구매 판단이 다룬 부품 번호(판단 엔진이 origin.part 에 싣는 ERP 부족 부품) — 없으면 None(부르는 쪽이 그 사실로 실패한다. 수업 부품으로
+    대신 대조하지 않는다 — 판단이 부품을 빠뜨린 결함이 「수업 부품과 맞는가」 뒤에 가려진다)."""
+    part = ((dec.get("origin") or {}).get("part") or {}).get("partNo")
+    return part if isinstance(part, str) and part else None
+
+
 def purchase_findings(dec: dict, stock: dict) -> list[str]:
     """구매 카드 판정(빈 목록 = 맞음) — 원천과 대조: 추천 공급사는 AVL(ERP 견적), 수량 ≥ 부족 수량(ERP), 단가 · 불량률 = 견적,
     총비용 = 단가 × 수량 + 수량 × 불량률 × 불량 1건 손실 + (불량률이 기준을 넘으면) 전수 검사 비용 — 손실 · 검사 비용 · 기준은 원문(PR-07) 인용에 있는 값."""
@@ -246,10 +253,11 @@ def source_procedures(text: str) -> dict:
 
 
 def timer_wait_s(definition: dict, boundary_id: str, time_scale: float) -> float:
-    """정의의 경계 타이머가 실제(벽시계) 몇 초 뒤에 울리나 — 엔진과 같은 규칙(process_engine.timer_scale: 사람 단계는 벽시계)."""
+    """정의의 경계 타이머가 실제(벽시계) 몇 초 뒤에 울리나 — 엔진과 같은 규칙(process_engine.timer_scale: 사람 단계는 벽시계). 수업 한 바퀴가 재는
+    흐름은 모두 가상 설비(HYD-01~03)의 처리 건이라 배속 · 압축이 걸리는 쪽이다(plant=True — 학생 현장의 처리 건은 벽시계)."""
     timer = next(e for e in definition.get("events") or [] if e.get("id") == boundary_id)
     host = next(a for a in definition.get("activities") or [] if a.get("id") == timer.get("attachedTo"))
-    return process_engine.iso_duration_seconds(timer["timer"]) / process_engine.timer_scale(host, time_scale)
+    return process_engine.iso_duration_seconds(timer["timer"]) / process_engine.timer_scale(host, time_scale, plant=True)
 
 
 def select_labs(codes: list[str], only: str, start: str) -> list[str]:
@@ -837,6 +845,22 @@ def confirm_ok(r: Round, timeout: float = 5) -> bool:
     return True
 
 
+def press_blocked(r: Round, button) -> str:
+    """수업 단계가 막은 단추를 학생처럼 누르고, 그 단추 바로 뒤에 나온 까닭 한 줄을 돌려준다(courseAccess.js: 막힌 단추는 꺼진 것이 아니라
+    aria-disabled · data-course-off 이고, 까닭은 늘 붙어 있지 않다 — 누를 때만 단추 뒤 span[data-course-why]에 서버 문장이 나온다).
+    막힌 표시가 없는 단추 · 화면에 보이지 않는 단추는 누르지 않고 ScreenMissing 이다. 까닭 줄이 나오지 않으면 빈 글을 돌려준다(부르는 쪽 판정이 실패한다).
+    force: Playwright 는 aria-disabled 단추가 눌릴 수 있게 되기를 기다린다 — 실제 마우스 누름은 그대로 간다(보이는 단추만 누른다)."""
+    button = button.first
+    if not button.count() or not button.is_visible():
+        raise ScreenMissing("막힌 단추가 화면에 보이지 않음")
+    if button.get_attribute("aria-disabled") != "true" or button.get_attribute("data-course-off") is None:
+        raise ScreenMissing("단추에 수업 단계 막힘 표시(aria-disabled · data-course-off)가 없음")
+    button.scroll_into_view_if_needed()
+    button.click(force=True)
+    r.page.wait_for_timeout(300)
+    return button.evaluate("n => { const x = n.nextElementSibling; return x && x.hasAttribute('data-course-why') && x.getClientRects().length ? x.textContent : ''; }").strip()
+
+
 def more_menu(r: Round, menu_id: str, item: str):
     """화면 머리 · 한 건 머리의 더 보기 메뉴(ui.js moreMenu — 키트 dropdown-menu)를 열고 그 안의 줄을 누른다. 「다시 읽기」처럼 자주 쓰지 않는 동작은
     이 메뉴 안에 있어, 메뉴를 열기 전에는 보이지 않는다."""
@@ -872,7 +896,9 @@ def select_instance(r: Round, pid: str) -> bool:
             card.click()
     else:
         r.page.evaluate("id => { location.hash = '#/instances/' + encodeURIComponent(id); }", pid)
-    return bool(r.wait(15, lambda: r.page.evaluate("id => { const I = window.hydInstances && hydInstances.I; return !!I && I.sel === id && !!I.view && I.view.instance.proc_inst_id === id && !!document.querySelector('#instDetail #casePath'); }", pid), every=0.5))
+    # 읽기가 끝난 뒤(!I.loading)에 본다 — 읽는 도중에는 I.view 가 먼저 새 건으로 바뀌고 한 건의 틀은 아직 앞 건의 것이라, 그때 「열렸다」고 하면
+    # 곧이어 틀이 새로 그려지면서 막 연 더 보기 메뉴가 닫힌다(2026-11-23 한 바퀴 14: 메뉴 줄을 누르지 못하고 시간 초과)
+    return bool(r.wait(15, lambda: r.page.evaluate("id => { const I = window.hydInstances && hydInstances.I; return !!I && !I.loading && I.sel === id && !!I.view && I.view.instance.proc_inst_id === id && !!document.querySelector('#instDetail #casePath'); }", pid), every=0.5))
 
 
 def open_task(r: Round, pid: str, task_id: str):
@@ -916,6 +942,56 @@ def card_decide(r: Round, pid: str, task: dict, approve: bool, reason: str = "")
             r.page.locator("#tdGo").click()
     done = r.wait(60, lambda: item_named(view_of(r, pid), task["activity_name"]).get("status") in ("DONE", "COMPLETED", "CANCELLED"), every=2)
     return bool(done), panel_msg(r)
+
+
+def card_choose(r: Round, pid: str, task: dict, *, option: str | None = None, fan: float | None = None, reason: str = "") -> tuple[bool, str]:
+    """학생이 추천 그대로가 아닌 선택을 하는 길: 「내가 할 일」 판의 [다른 안 고르기] → (option) 그 안의 단추 · (fan) 「조치 값 조정 · 미리 보기」의
+    팬 값 → [미리 보기] → 사유 → [승인](instances.js renderSelectPanel). 팬 값 칸은 끌어 놓는 칸(range)이라 화면이 듣는 input · change 를 그대로 낸다.
+    [승인]이 꺼져 있으면 (False, 화면의 까닭 줄) — 도구가 대신 승인하지 않는다. 돌려줌 = (승인 단계가 닫혔는가, 화면의 까닭 줄)."""
+    open_task(r, pid, task["id"])
+    if r.page.locator("#tdMore[aria-expanded='false']").count():
+        r.page.click("#tdMore"); r.page.wait_for_timeout(800)
+    if option:
+        pick = r.page.locator(f"#todoPanel input[name=hopt][value='{option}']")
+        if not pick.count():
+            raise ScreenMissing(f"[다른 안 고르기]에 안 {option} 이 없음")
+        pick.check(); r.page.wait_for_timeout(800)
+    if fan is not None:
+        if not r.page.locator("#tdFan").count():
+            raise ScreenMissing("「조치 값 조정 · 미리 보기」에 팬 값 칸이 없음")
+        # 팬 값 칸과 [미리 보기]는 접기 「조치 값 조정 · 미리 보기」 안에 있고 접기는 처음에 닫혀 있다 — 학생처럼 접기를 편 뒤 값을 바꾼다.
+        # (닫힌 채 값을 바꾸면 화면은 학생이 둔 접기 상태를 지켜 닫힌 채로 다시 그리고, [미리 보기]는 보이지 않는다 — 2026-11-23 한 바퀴 11 시간 초과)
+        open_fold(r.page.locator("#tdFan").locator("xpath=ancestor::details[1]"))
+        r.page.eval_on_selector("#tdFan", "(e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles: true})); "
+                                          "e.dispatchEvent(new Event('change', {bubbles: true})); }", str(fan))
+        r.page.wait_for_timeout(800)
+        r.page.click("#tdPreview")
+        if not r.wait(60, lambda: r.page.locator("#tdReviewed b").count() > 0 or bool(panel_msg(r)), every=1):
+            raise ScreenMissing("[미리 보기] 뒤 새 예측(검토본)이 나오지 않음")
+    if reason and r.page.locator("#tdReason").count():
+        r.page.fill("#tdReason", reason)
+    go = r.page.locator("#tdGo")
+    if not go.count() or go.is_disabled():
+        return False, panel_msg(r)
+    go.click()
+    r.page.wait_for_timeout(2500)
+    done = r.wait(60, lambda: item_named(view_of(r, pid), task["activity_name"]).get("status") in ("DONE", "COMPLETED", "CANCELLED"), every=2)
+    return bool(done), panel_msg(r)
+
+
+def different_end(base: dict, got: dict, report: dict) -> list[str]:
+    """학생이 추천과 다른 선택을 했을 때의 판정(빈 목록 = 맞음). 기대 결과를 정하지 않는다: 추천을 승인한 회차(base {outcome, amount})와 끝(결과
+    보고 이름) 또는 비용(승인 금액)이 달라야 하고, 결과 보고가 그 끝을 학생이 읽는 문장으로 말해야 한다. 둘 다 같으면 고른 것이 결과를 바꾸지
+    않은 것 — 숨은 해피패스다(CLAUDE.md 5절 「학생이 틀린 선택을 하면 결과가 달라지는가」)."""
+    if not base.get("outcome"):
+        return ["견줄 추천 승인 회차의 결과가 없음"]
+    bad = []
+    if got.get("outcome") == base.get("outcome") and got.get("amount") == base.get("amount"):
+        bad.append(f"추천 승인과 끝 「{got.get('outcome')}」 · 비용 {got.get('amount')} 이 모두 같음 — 다른 선택이 결과를 바꾸지 않음")
+    ok, why = human_text(report.get("summary"))
+    if not ok:
+        bad.append(f"결과 보고가 끝의 까닭을 학생 문장으로 말하지 않음({why})")
+    return bad
 
 
 def close_step(r: Round, pid: str, wid: str, reason: str) -> str:
@@ -1640,8 +1716,6 @@ def decide_screen(r: Round, **facts) -> str:
 @lab("04", [("통합", "운전 조건과 성과 기준에 따른 조치 결과 비교하기"), ("실전", "운전 조건과 성과 기준에 따른 조치 결과 비교하기")])
 def lab_04_rules_whatif_kpi(r: Round):
     resolve_rows(r, "04")
-    ent_before = ent(r)
-    graph_before = graph(r)
     # 조치 방법: 쿨러 조치의 수행 단계 · 담당 · 승인 역할 · 연결된 고장 유형 — 화면 = 지식 API = 원문 HM-8
     r.tab("skills")
     r.wait(20, lambda: r.page.locator("#skillList .row").count() > 0, every=1)
@@ -1667,6 +1741,92 @@ def lab_04_rules_whatif_kpi(r: Round):
                 and (k.get("approver") or {}).get("name") == want.get("approver") and shown_role == want.get("approver", "?")
                 and all(f["name"] in detail for f in k.get("failureModes") or []) and all(s["text"][:15] in detail for s in k.get("steps") or []),
                 f"원문 단계 {len(want.get('steps') or [])} · 승인 {want.get('approver')} / 지식 {len(k.get('steps') or [])} · {(k.get('approver') or {}).get('name')} / 화면 승인 역할 {shown_role} · {detail[:160]}")
+    # 규칙 판단 · 조건별 손익은 그 설비의 지금 값으로 원인을 진단한 뒤 조치를 견준다. 고장 없는 설비에서는 문서의 진단 규칙이 맞지 않아 판단을
+    # 보류하고(2026-11-22 C1 — 전에는 정상 설비에도 사전 확률로 핀 오염을 골라 후보를 냈다), 화면이 「유압 설비 화면에서 이 이상을 일으킨 뒤
+    # 다시 판단」하라고 말한다. 그래서 학생이 하는 차례대로: 고장 없는 설비의 보류를 먼저 보고 → [쿨러 열화 주입] → 열린 처리 건을 반려로 닫고 →
+    # 판단이 원인을 낼 때까지 기다린 뒤 모의 판단 · 조건 바꿔 보기 · 조건별 손익을 재고 → [쿨러 복구]로 되돌린다.
+    hold_on_healthy(r)
+    pid = fault_for_mock(r)
+    try:
+        if pid:
+            lab_04_judged(r)
+    finally:
+        restore_and_close(r, pid)
+        ensure_idle(r)                       # 반려 뒤 다시 열린 처리 건이 있으면 그것까지 닫고 다음 실습이 주입할 수 있는 대기 상태로
+
+
+DECIDE_A = {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "facts": {}}
+
+
+def hold_reason_true(r: Round, said: str) -> tuple[bool, str]:
+    """고장 없는 HYD-01 의 쿨러 판단 보류 글(said — 판단 엔진의 까닭이나 화면 글)이 사실인가. 엔진의 자기 보고가 아니라 원문 HM-8 의 진단 규칙 문장
+    (「냉각 효율이 n % 미만이면 핀 오염을 1순위 원인으로 둔다.」)과 설비가 지금 내는 냉각 효율로 가린다: 글이 그 원문 문장을 그대로 들고 「맞지
+    않아」 보류한다고 말하며, 설비의 냉각 효율이 실제로 n 이상이다. (사실인가, 견준 값)"""
+    source = (SAMPLES / DOCS["HM-8"]).read_text(encoding="utf-8")
+    m = re.search(r"냉각 효율이 (\d+(?:\.\d+)?) % 미만이면 핀 오염을 1순위 원인으로 둔다\.", source)
+    ce = float(plant_unit(r, "HYD-01")["tags"]["CE"])
+    return (bool(m) and m.group(0) in said and "맞지 않아" in said and ce >= float(m.group(1)),
+            f"설비 냉각 효율 {ce} % · 원문 기준 {m.group(1) if m else '원문에서 못 찾음'} % 미만")
+
+
+def hold_on_healthy(r: Round):
+    """고장 없는 HYD-01 의 [모의 판단]은 판단 보류이고, 그 까닭 문장이 사실이다. 사실인지는 엔진의 자기 보고가 아니라 원문 HM-8 의 진단 규칙
+    문장(「냉각 효율이 n % 미만이면 핀 오염을 1순위 원인으로 둔다」)과 설비가 지금 내는 냉각 효율로 가린다: 까닭이 그 원문 문장을 그대로 들고,
+    설비의 냉각 효율이 실제로 n 이상이다."""
+    if not ensure_idle(r):
+        r.check("04 시작: HYD-01 이 고장 없는 대기 상태(앞 처리 건 · 경보 없음)", False, "[쿨러 복구] 뒤에도 대기 상태가 되지 않음" + r.waited())
+        return
+    shown = decide_screen(r)
+    rows = r.page.locator("#decResult .opts tbody tr").count()
+    code, body = r.api("POST", f"{r.agent}/api/agent/decide", DECIDE_A)
+    detail = body.get("detail") if isinstance(body, dict) else None
+    detail = detail if isinstance(detail, dict) else {}
+    reason = str(detail.get("reason") or "")
+    true, note = hold_reason_true(r, reason)
+    r.check("고장 없는 설비의 [모의 판단] → 판단 엔진이 보류(409)하고, 까닭이 든 문서의 진단 규칙 문장이 원문 HM-8 에 있으며 설비의 지금 냉각 효율이 "
+            "실제로 그 규칙에 맞지 않는다", code == 409 and true, f"엔진 {code} · {note} · 까닭 {reason or str(body)[:300]}", kind="exception", axis=AXES[1])
+    r.human("고장 없는 설비의 [모의 판단] → 화면이 「판단 보류」와 할 일을 사람 글로 말하고 조치 후보 줄이 없다", shown,
+            "보류" in shown and rows == 0, axis=AXES[1], kind="exception")
+
+
+def fault_for_mock(r: Round) -> str | None:
+    """화면이 시키는 대로 이상을 일으킨다: [쿨러 열화 주입] → 열린 처리 건의 AI 판단을 기다려 조치 카드를 [반려]로 닫는다(명령이 나가지 않아 설비는
+    열화된 채 평형으로 간다 — 승인하면 팬 최대 운전이 설비 값을 바꾼다). 반려의 결과 판정은 실습 02 가 한다 — 여기서는 닫혔는지만 본다.
+    그 뒤 판단 엔진이 원인을 낼 때까지(문서의 진단 규칙이 설비 값에 맞을 때까지), 그리고 유온이 평형에 닿을 때까지 기다린다 — 모의 판단은 설비의
+    지금 값을 읽으므로, 값이 흐르는 동안에는 「같은 입력으로 다시 실행」이 같은 입력이 아니다. 돌려주는 것은 그 처리 건(주입하지 못했으면 None)."""
+    pid, got = a_case(r)
+    if not pid:
+        r.check("[쿨러 열화 주입] → 처리 건이 열린다(04 의 모의 판단이 쓸 이상 상태)", False, got["outcome"])
+        return None
+    if got["outcome"] == "승인 대기":
+        task = rows_of(got["view"]).get("T_approve") or {}
+        card_decide(r, pid, task, approve=False, reason="모의 판단으로 조건을 견줘 본 뒤 정하겠습니다")
+        end = wait_end(r, pid, 600)
+        if end["instance"]["status"] == "RUNNING":
+            r.check("04 가 연 처리 건을 [반려]로 닫는다", False, "반려 뒤 10분 안에 처리 건이 끝나지 않음")
+    else:
+        # AI 판단이 보류 · 실패로 멈춘 건은 끝의 [쿨러 복구]가 닫는다 — 모의 판단은 AI 를 쓰지 않으므로 이어서 잰다
+        r.check("04 가 연 처리 건의 AI 판단이 승인 대기까지 간다", False, f"{got['outcome']} {got.get('why') or ''}")
+    ready = r.wait(SECONDS["idle"], lambda: r.api("POST", f"{r.agent}/api/agent/decide", DECIDE_A)[0] == 200, every=5)
+    if not ready:
+        code, body = r.api("POST", f"{r.agent}/api/agent/decide", DECIDE_A)
+        r.check("[쿨러 열화 주입] 뒤 판단 엔진이 원인을 정한다(문서의 진단 규칙이 설비 값에 맞음)", False, f"{code} · {str(body)[:400]}" + r.waited())
+        return pid
+
+    def settled():
+        a = float(plant_unit(r, "HYD-01")["tags"]["TS1"])
+        time.sleep(10)
+        return abs(float(plant_unit(r, "HYD-01")["tags"]["TS1"]) - a) < 0.3
+    if not r.wait(SECONDS["idle"], settled, every=1):
+        r.check("[쿨러 열화 주입] 뒤 유온이 평형에 닿는다(모의 판단의 입력이 멈춘다)", False, f"TS1 {plant_unit(r, 'HYD-01')['tags']['TS1']}" + r.waited())
+    return pid
+
+
+def lab_04_judged(r: Round):
+    """쿨러 열화가 든 설비에서 모의 판단 · 조건 바꿔 보기 · 조건별 손익 · 성과 지표 시험 목표. 원본(업무 DB · 지식 · KPI)의 앞 상태는 열화가 연
+    처리 건이 닫힌 뒤에 읽는다 — 시험값이 원본을 바꾸는지를 재는 것이고, 처리 건이 남기는 기록은 시험값이 바꾼 것이 아니다."""
+    ent_before = ent(r)
+    graph_before = graph(r)
     base = decide_screen(r)
     r.human("[모의 판단](현재 값) → 결과가 한국어로 보인다", base, axis=AXES[0], kind="normal")
     n_cards = r.page.locator("#decResult .opts tbody tr").count()      # 조치 후보는 표 한 장(UI.optionsTable)의 줄이다 — 옛 조치 카드(.hitl-opts)는 없어졌다
@@ -1756,7 +1916,7 @@ def lab_04_rules_whatif_kpi(r: Round):
 
 
 # ====================================================================== 05 통합 39 · 실전 34
-@lab("05", [("통합", "현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기"), ("실전", "현장 매뉴얼을 검토해 근거 있는 지식으로 등록하기")])
+@lab("05", [("통합", "현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기"), ("실전", "현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기")])
 def lab_05_manual_to_knowledge(r: Round):
     resolve_rows(r, "05")
     page = r.page
@@ -1830,7 +1990,7 @@ def fabric_query(r: Round, label: str):
 
 
 # ====================================================================== 06 통합 40
-@lab("06", [("통합", "업무 DB 구조를 지식에 연결하고 현재값과 구분하기")])
+@lab("06", [("통합", "업무 DB 구조를 지식에 연결하고 현재값과 구분하기"), ("실전", "업무 DB 구조를 지식에 연결하고 현재값과 구분하기")])
 def lab_06_legacy_db(r: Round):
     resolve_rows(r, "06")
     page = r.page
@@ -1922,8 +2082,13 @@ def lab_06_legacy_db(r: Round):
     if batch_now:
         revert(2)
     meaning = page.locator("#legacyMeaning button").first
-    if meaning.count() and meaning.is_disabled():
-        r.human("옛 DB 뜻 복원(AI)은 수업에서 막히고 까닭이 사람 글로(악용 지점 아님 — PBL 기능)", meaning.get_attribute("title") or "", axis=AXES[1])
+    if meaning.count() and meaning.get_attribute("data-course-off") is not None:
+        # 막힌 단추의 까닭은 늘 붙어 있지 않고(도움말 title 도 없다) 학생이 누를 때 그 뒤 한 줄에 나온다 — 접기 「옛 DB 뜻 복원」을 펴고 눌러서 읽고,
+        # 누른 뒤 AI 작업(처리 건)이 시작되지 않았는지 본다
+        open_fold(page.locator("#legacyMeaning details").first)
+        runs0 = instance_ids(r)
+        why = press_blocked(r, meaning)
+        r.human("옛 DB 뜻 복원(AI)은 수업에서 막히고, 누르면 까닭이 사람 글로 나오며 AI 작업은 시작되지 않는다(악용 지점 아님 — PBL 기능)", why, instance_ids(r) == runs0, axis=AXES[1])
 
 
 # ====================================================================== 07 통합 50 · 실전 43
@@ -2025,7 +2190,7 @@ def lab_07_first_agent(r: Round):
 
 
 # ====================================================================== 08 통합 51
-@lab("08", [("통합", "센서 변화와 경보 시점을 실시간 화면에서 찾기")])
+@lab("08", [("통합", "센서 변화와 경보 시점을 실시간 화면에서 찾기"), ("실전", "센서 변화와 경보 시점을 실시간 화면에서 찾기")])
 def lab_08_trends(r: Round):
     resolve_rows(r, "08")
     page = r.page
@@ -2076,10 +2241,10 @@ def lab_08_trends(r: Round):
         r.check("설비 회로: 세 대의 회로가 같은 크기이고, 진행 중인 처리 건이 있는 HYD-01 의 머리 줄에 「처리 건에서 보기」 하나가 나온다",
                 len(sizes) == 3 and len(set(sizes)) == 1 and mine_open >= 1 and go_n == 1 and "처리 건에서 보기" in txt(r, "#scada .ucard[data-asset='HYD-01'] .hc-head"),
                 f"카드 크기 {sizes} · HYD-01 링크 {go_n} · API 진행 중 {mine_open}")
-        card_ = vars_of(view["instance"]).get("guide_card") or {}
-        evs = [e for c in card_.get("causes") or [] for e in c.get("evidence") or []]
-        alert_t = datetime.fromisoformat(str(alert.get("t")).replace("Z", "+00:00"))
+        # 근거는 판단 엔진이 판단을 등록할 때 다시 한 진단(판단 기록 origin.diagnosis)으로 잰다 — AI 가 결과 칸에 옮겨 적은 guide_card 가 아니다
         dec = decision_of(r, view)
+        evs = [e for c in ((dec.get("origin") or {}).get("diagnosis") or {}).get("causes") or [] for e in c.get("evidence") or []]
+        alert_t = datetime.fromisoformat(str(alert.get("t")).replace("Z", "+00:00"))
         made = datetime.fromisoformat(str(dec.get("created")).replace("Z", "+00:00"))
         r.check("에이전트가 근거로 든 측정값은 경보 뒤 · 판단 전 구간에서 읽은 값", bool(evs) and alert_t <= made and all(e.get("coverage", {}).get("covered") for e in evs[:2]),
                 f"경보 {alert_t:%H:%M:%S} · 판단 {made:%H:%M:%S} · 근거 {[(e.get('id'), round(float(e.get('value') or 0), 2)) for e in evs[:3]]}", kind="quality")
@@ -2116,7 +2281,7 @@ SKILL_MARK = "확인할 항목:"
 MY_SKILL = "cooler-evidence-check"
 
 
-@lab("09", [("통합", "포털에서 스킬을 만들어 에이전트에 붙이고 답의 차이 확인하기"), ("실전", "포털에서 스킬을 만들어 에이전트에 붙여 보기")])
+@lab("09", [("통합", "포털에서 스킬을 만들어 에이전트에 붙이고 답의 차이 확인하기"), ("실전", "포털에서 스킬을 만들어 에이전트에 붙이고 답의 차이 확인하기")])
 def lab_09_skill(r: Round):
     resolve_rows(r, "09")
     page = r.page
@@ -2245,14 +2410,19 @@ def lab_10_mcp_tools(r: Round):
     r.tab("mcp")
     r.wait(20, lambda: page.locator("#mcpServers .row[data-name='hyd-dmn']").count(), every=0.5)
     names = {s["name"] for s in r.get(f"{r.process}/api/mcp/servers").get("servers", [])}
-    # 기본 서버가 모두 있어야 한다 — 학생이 PBL에서 등록한 서버는 더 있어도 된다(같다로 재면 PBL에서 거짓 실패), 수업 단계는 등록이 막혀 기본뿐
+    # 기본 서버가 모두 있어야 한다 — 학생이 등록한 서버는 더 있어도 된다. 수업 단계에서도 그렇다: PBL 기간에 등록한 서버는 기간이 끝나도 남는다
+    # (수업 단계가 막는 것은 새 등록 · 고치기 · 지우기다). 「수업 단계면 기본뿐」으로 재면 PBL 을 지난 PC 에서 거짓 실패다(2026-11-23 한 바퀴: apu-ops)
     r.check("준비된 서버(에이전트가 쓰는 기본 서버 전부)가 연결 상태와 함께 보인다",
-            set(BASE_SERVERS) <= names and (phase == "pbl" or names == set(BASE_SERVERS))
-            and all(page.locator(f"#mcpServers [data-name='{n}']").count() for n in names), str(sorted(names)))
+            set(BASE_SERVERS) <= names and all(page.locator(f"#mcpServers [data-name='{n}']").count() for n in names),
+            f"{sorted(names)} · 기본 밖 {sorted(names - set(BASE_SERVERS))}")
     if phase == "course":
+        # 막힌 [서버 등록]은 머리에 보이는 채로 막혀 있고 까닭은 늘 적혀 있지 않다 — 누르면 등록 폼이 열리지 않고 그 뒤 한 줄에 서버 문장이 나온다(mcp.js · courseAccess.js)
         add = page.locator("#mcpAdd")
-        why = all_txt(r, "[data-mcp-why]").strip()                      # 화면 아래 설정 줄 「내 도구 서버」(mcp.js renderOperator)
-        r.check("수업 단계: 서버 직접 등록 단추는 꺼져 있고 까닭이 보인다", add.is_disabled() and bool(why), why, kind="exception", axis=AXES[1])
+        r.wait(10, lambda: add.get_attribute("data-course-off") is not None, every=0.5)
+        quiet = page.locator("#view-mcp [data-course-why]").count() == 0
+        why = press_blocked(r, add)
+        r.check("수업 단계: [서버 등록]은 막혀 있고, 누르기 전에는 까닭이 떠 있지 않으며, 누르면 등록 폼이 열리지 않고 까닭 한 줄이 나온다",
+                quiet and bool(why) and not page.locator("#mcpForm").inner_text().strip(), f"누르기 전 까닭 줄 없음 {quiet} · {why}", kind="exception", axis=AXES[1])
         r.human("등록을 막는 까닭이 사람 글", why)
     mcp_select(r, "hyd-dmn")
     page.locator("#mcpPane [data-try='inputs']").wait_for(timeout=15_000)
@@ -2312,7 +2482,7 @@ def lab_10_mcp_tools(r: Round):
 
 
 # ====================================================================== 11 통합 72 · 실전 56
-@lab("11", [("통합", "사람의 확인이 실제 업무 결과를 바꾸는 과정 확인하기"), ("실전", "사람 승인에 따라 업무가 달라지는 과정 확인하기")])
+@lab("11", [("통합", "사람의 확인이 실제 업무 결과를 바꾸는 과정 확인하기"), ("실전", "사람의 확인이 실제 업무 결과를 바꾸는 과정 확인하기")])
 def lab_11_human(r: Round):
     resolve_rows(r, "11")
     page = r.page
@@ -2368,49 +2538,152 @@ def lab_11_human(r: Round):
             r.not_measure("승인했던 처리 건과 비교", "02 를 함께 돌리지 않아 승인 처리 건이 없음")
     finally:
         restore_and_close(r, pid)
+    a_lowered(r, next((c for c in r.memo.get("02_cards") or [] if c.get("result")), None))
+
+
+def a_lowered(r: Round, base: dict | None):
+    """D-6: 승인자가 추천 카드의 팬 값을 낮춰(새 예측을 본 뒤) 승인한 길 — 추천 그대로 승인한 회차(02)와 끝이 달라지고 결과 보고가 그 까닭을
+    말하는가. 값은 카드의 값에서 30 %p 낮춘 것(카드 범위 안)이고, 결과를 정답으로 정하지 않는다(설비가 낸 값이 정한다)."""
+    if not base:
+        r.not_measure("A 팬 값을 낮춰 승인 → 추천 승인과 다른 끝", "02 를 함께 돌리지 않아 견줄 추천 승인 회차가 없음", axis=AXES[1])
+        return
+    pid, got = a_case(r)
+    if not pid or got["outcome"] != "승인 대기":
+        r.check("A 팬 값을 낮춰 승인: 승인 대기 건이 생긴다", False, f"{got['outcome']} {got.get('why') or ''}")
+        restore_and_close(r, pid)
+        return
+    try:
+        view = got["view"]
+        dec = decision_of(r, view)
+        rec = next((o for o in dec.get("options") or [] if o.get("id") == dec.get("recommended")), {})
+        fan = next((a for a in rec.get("actions") or [] if a.get("kind") == "command" and a.get("param") == "fan_pct"), None)
+        if not fan:
+            r.check("A 팬 값을 낮춰 승인: 추천 카드에 팬 값 명령이 있다", False, json.dumps(rec.get("actions"), ensure_ascii=False)[:300])
+            return
+        low = max(float(fan.get("min") or 0), float(fan["value"]) - 30)
+        task = rows_of(view).get("T_approve") or {}
+        done, text = card_choose(r, pid, task, fan=low, reason=f"팬을 {low:g} %까지만 올립니다")
+        if not done:
+            r.human(f"A 팬 {low:g} %로 바꿔 승인 → [승인]이 꺼지면 그 까닭을 화면이 말한다", text, human_text(text)[0], axis=AXES[1])
+            return
+        end = wait_end(r, pid, 600)
+        v = vars_of(end["instance"])
+        rep = v.get("result_report") or {}
+        sent = [a for a in v.get("commands") or [] if a.get("code") == fan.get("code")]
+        r.check(f"A 팬 {low:g} %로 바꿔 승인 → 설비에 그 값의 명령이 나감", [a.get("fan_pct") for a in sent] == [low], json.dumps(v.get("commands"), ensure_ascii=False)[:200],
+                axis=AXES[1])
+        bad = different_end({"outcome": base.get("result")}, {"outcome": rep.get("outcome")}, rep)
+        r.check(f"A 팬 {low:g} %로 바꿔 승인 → 추천 그대로 승인한 회차(「{base.get('result')}」)와 다른 끝 · 결과 보고가 그 까닭을 문장으로",
+                not bad, "; ".join(bad) or f"{rep.get('outcome')} — {str(rep.get('summary'))[:200]}", kind="exception", axis=AXES[1])
+    finally:
+        restore_and_close(r, pid)
 
 
 # ====================================================================== 12 통합 83 · 실전 61
-@lab("12", [("통합", "같은 입력으로 에이전트 판단을 비교하고 기대 결과로 채점하기"), ("실전", "같은 입력으로 판단을 비교하고 기대 결과로 채점하기")])
+@lab("12", [("통합", "같은 입력으로 에이전트 판단을 비교하고 기대 결과로 채점하기"), ("실전", "같은 입력으로 에이전트 판단을 비교하고 기대 결과로 채점하기")])
 def lab_12_compare_eval(r: Round):
     resolve_rows(r, "12")
     page = r.page
     mine = ensure_my_agent(r)
     if not mine:
         return
+    # 시험 비교 · 판단 채점은 그 설비의 지금 값으로 원인을 진단한다. 고장 없는 설비에서는 어느 구성이든 판단을 보류하고 채점은 0점이다 — 화면이
+    # 「유압 설비 화면에서 그 이상을 일으킨 뒤 시험」하라고 말한다(2026-11-23 한 바퀴: 정상 설비에서 돌아 시험 셋이 모두 보류 · 채점 0점인데 결과 칸의
+    # 모양만 보고 통과했다). 학생 차례대로: 고장 없는 설비의 보류를 먼저 보고 → 04 와 같은 길(fault_for_mock)로 이상을 일으킨 뒤 재고 → [쿨러 복구].
+    if not trial_hold_on_healthy(r, mine):
+        return
+    pid = fault_for_mock(r)
+    try:
+        if pid:
+            lab_12_judged(r, mine)
+    finally:
+        restore_and_close(r, pid)
+        ensure_idle(r)
+
+
+def trial_form(r: Round, mine: dict) -> bool:
+    """판단 실험 › 시험 비교 폼에 쿨러 성능 저하 · HYD-01, A = 기준 에이전트, B = 나의 에이전트를 고른다."""
+    r.tab("compare")
+    cv = lambda css: r.page.locator(f"#view-compare {css}")   # noqa: E731
+    r.wait(20, lambda: cv("[data-f='scenario']").count(), every=1)
+    # 시나리오 목록은 지식 지도의 설비 이상 경보 × 설비로 만든다(agent_trials.scenarios — 고정 셋 「cooler · pump · fan」이 아니다).
+    # 학생은 「쿨러 성능 저하 · HYD-01」 줄을 고른다 — 그 줄을 서버 목록에서 경보 · 설비로 찾아 고른다(목록에 없으면 여기서 멈춘다)
+    listed = r.get(f"{r.process}/api/agent-trials/options").get("scenarios") or []
+    cooler = next((s for s in listed if s.get("pattern") == "COOLER_DEGRADATION" and s.get("asset") == "HYD-01"), None)
+    if not cooler:
+        r.check("판단 실험 시나리오 목록에 쿨러 성능 저하 · HYD-01 이 있다", False, str([s.get("key") for s in listed])[:300]); return False
+    cv("[data-f='scenario']").select_option(cooler["key"])
+    cv("[data-f='a']").select_option("agent:cooling")
+    cv("[data-f='b']").select_option(mine["id"])
+    return True
+
+
+def trial_run(r: Round) -> tuple[str, bool, list[dict]]:
+    """[시험 실행] → 끝날 때까지 → (결과 자리의 글, 결과 판이 왔는가, 이번에 새로 남은 시험 기록 — 구성마다 한 줄: 찾은 원인 · 1순위 조치)."""
+    cv = lambda css: r.page.locator(f"#view-compare {css}")   # noqa: E731
+    seen = {t.get("id") for t in r.get(f"{r.process}/api/agent-trials?limit=50")}
+    cv("[data-act='run']").click()
+    # 도는 동안 결과 자리는 실시간 상자(data-cmp-track)이고 단추는 꺼져 있다. 끝나면 결과 판(머리 「결론」 한 문장)이나 오류 판이 그 자리에 온다(compare.js render)
+    headline = cv("[data-r='result'] .panel-head h2")
+    r.wait(300, lambda: cv("[data-cmp-track]").count() == 0 and not cv("[data-act='run']").is_disabled()
+           and (headline.count() or cv(".alert[data-variant='destructive']").count() or cv("[role='alert']").count()), every=2)
+    out = txt(r, "#view-compare [data-r='result']", 5000, required=True)
+    return out, headline.count() > 0, [t for t in r.get(f"{r.process}/api/agent-trials?limit=50") if t.get("id") not in seen]
+
+
+def trial_hold_on_healthy(r: Round, mine: dict) -> bool:
+    """고장 없는 HYD-01 로 시험 비교 → 두 구성 모두 판단 보류이고(시험 기록에 원인 · 1순위 조치가 없다), 화면의 까닭이 사실이다(hold_reason_true —
+    원문 HM-8 의 진단 규칙 문장과 설비의 지금 냉각 효율로). 폼을 못 채웠으면 False."""
+    if not ensure_idle(r):
+        r.check("12 시작: HYD-01 이 고장 없는 대기 상태(앞 처리 건 · 경보 없음)", False, "[쿨러 복구] 뒤에도 대기 상태가 되지 않음" + r.waited())
+        return False
+    if not trial_form(r, mine):
+        return False
+    out, shown, new = trial_run(r)
+    true, note = hold_reason_true(r, out)
+    r.check("고장 없는 설비의 시험 비교 → 두 구성 모두 판단 보류(기록에 원인 · 1순위 조치 없음)이고, 화면의 까닭이 든 문서의 진단 규칙 문장이 원문 "
+            "HM-8 에 있으며 설비의 지금 냉각 효율이 실제로 그 규칙에 맞지 않는다",
+            shown and "보류" in out and len(new) == 2 and not any(t.get("cause") or t.get("recommended") for t in new) and true,
+            f"{note} · 기록 {[(t.get('agent_id'), t.get('cause'), t.get('recommended')) for t in new]} · 화면 {out[:300]}", kind="exception", axis=AXES[1])
+    return True
+
+
+def lab_12_judged(r: Round, mine: dict):
+    """쿨러 열화가 든 설비에서 시험 비교 세 번 · 판단 채점 두 번. 「처리 건 · 설비 명령을 만들지 않는다」의 앞 상태는 열화가 연 처리 건이 닫힌 뒤에 읽는다."""
+    page = r.page
     before = instance_ids(r)
     cmds = lambda: {a: (u.get("status") or {}).get("cmdId") for a, u in r.get(r.plant + "/api/state")["units"].items()}   # noqa: E731 — 설비마다 마지막 명령
     gw0 = cmds()
-    r.tab("compare")
+    if not trial_form(r, mine):
+        return
     cv = lambda css: page.locator(f"#view-compare {css}")   # noqa: E731
-    r.wait(20, lambda: cv("[data-f='scenario']").count(), every=1)
-    cv("[data-f='scenario']").select_option("cooler")
-    cv("[data-f='a']").select_option("agent:cooling")
-    cv("[data-f='b']").select_option(mine["id"])
+    want_causes = expected_causes(graph(r), "cooler_degradation")
 
-    def run_trial(label: str, axis: str) -> str:
-        cv("[data-act='run']").click()
-        # 도는 동안 결과 자리는 실시간 상자(data-cmp-track)이고 단추는 꺼져 있다. 끝나면 결과 판(머리 「결론」 한 문장)이나 오류 판이 그 자리에 온다(compare.js render)
-        headline = cv("[data-r='result'] .panel-head h2")
-        r.wait(300, lambda: cv("[data-cmp-track]").count() == 0 and not cv("[data-act='run']").is_disabled()
-               and (headline.count() or cv(".alert[data-variant='destructive']").count() or cv("[role='alert']").count()), every=2)
-        out = txt(r, "#view-compare [data-r='result']", 5000, required=True)
-        ok = headline.count() > 0 and "결론" in out and "도구 호출 순서" in out and "1순위" in out
+    def run_trial(label: str, axis: str, judged: bool) -> str:
+        """judged: 두 구성이 모두 판단까지 가야 하는 시험인가(도구를 뺀 변형은 판단하지 못하는 것이 정상일 수 있어 내용을 정하지 않는다)."""
+        out, shown, new = trial_run(r)
+        ok = shown and "결론" in out and "도구 호출 순서" in out and "1순위" in out
         r.check(f"{label}: 결과에 결론 한 문장 · 「1순위」 · 「도구 호출 순서」 칸이 나온다", ok, out[:300], axis=axis)
+        if judged:
+            # 모양만이 아니라 내용: 두 구성이 실제로 원인을 냈고(주입한 외란을 흔드는 원인 — 그래프) 1순위 조치를 냈다. 보류 셋이 통과하지 않는다
+            r.check(f"{label}: 두 구성이 모두 원인(주입한 쿨러 열화의 원인 — 그래프)과 1순위 조치를 냈다(판단 보류가 아니다)",
+                    len(new) == 2 and all(t.get("cause") in want_causes and t.get("recommended") for t in new) and "판단 보류" not in out,
+                    f"기대 원인 {sorted(want_causes)} · 기록 {[(t.get('agent_id'), t.get('cause'), t.get('recommended')) for t in new]} · 화면 {out[:200]}",
+                    kind="quality", axis=axis)
         trials.append(ok)
+        hist.extend(new)
         return out
     trials: list[bool] = []
-    hist0 = {t.get("id") for t in r.get(f"{r.process}/api/agent-trials?limit=50")}
-    run_trial("기준 vs 나의 에이전트", AXES[0])
-    hist = [t for t in r.get(f"{r.process}/api/agent-trials?limit=50") if t.get("id") not in hist0]
+    hist: list[dict] = []
+    run_trial("기준 vs 나의 에이전트", AXES[0], True)
     open_fold(cv("details:has([data-drop='tool'])").first)      # 「B를 바꿔 보기」 접기는 기본 닫힘(compare.js formCard) — 학생도 펴고 고른다(한바퀴3)
     cv("[data-drop='tool']").first.uncheck()
     page.wait_for_timeout(500)
-    run_trial("도구 하나를 뺀 변형", AXES[0])
+    run_trial("도구 하나를 뺀 변형", AXES[0], False)
     dropped = txt(r, "#view-compare details[data-cmp-drop] > summary")     # 뺀 수는 「B에서 빼 보기」 접기의 머리에 적힌다(compare.js)
     r.check("뺀 도구가 「1개 뺌」으로 보인다", "1개 뺌" in dropped, dropped)
     cv("[data-act='reset']").click(); page.wait_for_timeout(500)
-    run_trial("원래대로 다시", AXES[3])
+    run_trial("원래대로 다시", AXES[3], True)
     r.check("시험 비교는 처리 건 · 설비 명령을 만들지 않는다", instance_ids(r) == before and cmds() == gw0,
             f"처리 건 {len(instance_ids(r) - before)} · 마지막 명령 {gw0} → {cmds()}", kind="exception", axis=AXES[1])
     r.check("방금 한 시험이 새 기록으로 남는다(앞 기록 id와 다른 행)", bool(hist), f"새 기록 {len(hist)}")
@@ -2489,11 +2762,25 @@ def lab_12_compare_eval(r: Round):
     opts = {o["id"]: o for o in ((eng.get("result") or eng).get("options") or [])}
     truly = all(not (opts.get(s["id"]) or {}).get("feasible", True) for s in remote)
     fb = (item.get("checks") or {}).get("forbidden") or {}
+    # 채점이 판단을 실제로 채점했는가 — 보류(0점)는 「평균 점수 = 실행 기록」을 0 = 0 으로 지난다. 원인 칸은 그래프의 기대 원인 · 판단 엔진의 1순위 원인과,
+    # 1순위 칸은 판단 엔진의 추천이 정답표의 허용 조치에 드는지와 같아야 하고, 네 칸이 모두 맞을 때만 100점이다
+    checks = item.get("checks") or {}
+    eng_cause = ((eng.get("causes") or [{}])[0]).get("id")
+    eng_rec = (eng.get("result") or eng).get("recommended")
+    all_ok = bool(checks) and all((checks.get(c) or {}).get("ok") for c in ("cause", "top", "forbidden", "evidence"))
+    r.check("채점이 판단을 실제로 채점했다(보류 0점이 아니다): 원인 칸 = 그래프의 기대 원인 = 판단 엔진의 원인, 1순위 칸 = 판단 엔진의 추천이 허용 조치에 "
+            "드는가, 네 칸이 모두 맞을 때만 100점",
+            item.get("status") not in ("WITHHELD", "ERROR", "EMPTY", "FAILED", "REJECTED_BY_GUARDRAIL") and (item.get("score") or 0) > 0
+            and (checks.get("cause") or {}).get("got") == eng_cause == cause and (checks.get("cause") or {}).get("ok") is True
+            and (checks.get("top") or {}).get("got") == eng_rec and (checks.get("top") or {}).get("ok") == (eng_rec in {x["id"] for x in allowed})
+            and (item.get("score") == 100) == all_ok,
+            f"상태 {item.get('status')} · 점수 {item.get('score')} · 원인 채점 {(checks.get('cause') or {}).get('got')} / 엔진 {eng_cause} / 그래프 {cause} · "
+            f"1순위 채점 {(checks.get('top') or {}).get('got')} / 엔진 {eng_rec} · 네 칸 { {c: (checks.get(c) or {}).get('ok') for c in checks} }", kind="quality")
     r.check("채점의 「빠질 조치」 판정이 판단 엔진 결과와 같다(기대와 다른 항목은 까닭과 함께)", bool(fb) and fb.get("ok") == truly,
             f"채점 {fb.get('ok')} · 엔진 제외 {truly} · {json.dumps(fb.get('detail'), ensure_ascii=False)[:200]}", kind="quality")
     ev(f"[data-run='{runs[0]['id']}']").click(); page.wait_for_timeout(1500)
     detail = txt(r, "#view-eval [data-r='detail']", 5000)
-    r.check("실행 기록 화면에 검사 네 칸(원인 · 1위 · 빠질 조치 · 근거)이 보인다", all(w in detail for w in ("원인 적중", "1위 허용", "빠질 조치", "근거")), detail[:300])
+    r.check("실행 기록 화면에 검사 네 칸(원인 · 1순위 · 빠질 조치 · 근거)이 보인다", all(w in detail for w in ("원인 적중", "1순위 허용", "빠질 조치 미추천", "근거 모두 포함")), detail[:300])
     r.check("채점은 처리 건 · 설비 명령을 만들지 않는다", instance_ids(r) == before and cmds() == gw0, "", kind="exception", axis=AXES[1])
     r.keyless("키 없는 PC: 이 실행의 시험 비교 세 번 · 판단 채점 두 번이 끝까지 됐다", len(trials) == 3 and all(trials) and len(runs) - runs0 == 2,
               f"시험 {trials} · 채점 기록 {len(runs) - runs0}")
@@ -2538,7 +2825,7 @@ def structurally_changed(xml: str) -> str:
     return ET.tostring(root, encoding="unicode")
 
 
-@lab("13", [("통합", "작성한 BPMN과 등록된 실행 흐름의 연결 비교하기"), ("실전", "작성한 BPMN과 등록된 작업의 실행 연결 비교하기")])
+@lab("13", [("통합", "작성한 BPMN과 등록된 실행 흐름의 연결 비교하기"), ("실전", "작성한 BPMN과 등록된 실행 흐름의 연결 비교하기")])
 def lab_13_flow_mapping(r: Round):
     resolve_rows(r, "13")
     page = r.page
@@ -2618,7 +2905,7 @@ def lab_13_flow_mapping(r: Round):
 
 
 # ====================================================================== 14 통합 99 · 실전 77
-@lab("14", [("통합", "실제 설비 이벤트로 프로세스를 실행하고 처리 이력 확인하기"), ("실전", "실제 설비 이벤트로 프로세스의 처리 결과 검증하기")])
+@lab("14", [("통합", "실제 설비 이벤트로 프로세스를 실행하고 처리 이력 확인하기"), ("실전", "실제 설비 이벤트로 프로세스를 실행하고 처리 이력 확인하기")])
 def lab_14_history(r: Round):
     resolve_rows(r, "14")
     page = r.page
@@ -2790,8 +3077,11 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
         rec.update(card_summary(dec))
         bad = card_findings(dec, source)
         if kind == "spare":
-            stock = r.get(f"{r.enterprise}/erp/spare_stock?part={(dec.get('origin') or {}).get('part', {}).get('partNo') or 'P-PMP-SEAL'}")["facts"]
-            bad += purchase_findings(dec, stock)
+            part = decision_part(dec)
+            if part:
+                bad += purchase_findings(dec, r.get(f"{r.enterprise}/erp/spare_stock?part={part}")["facts"])
+            else:
+                bad.append("판단에 구매할 부품 번호가 없어 업무 DB 재고와 대조하지 못함")
         else:
             biz = r.api("GET", f"{r.enterprise}/cmms/pm_status?asset={asset}")[1].get("facts") or {}
             if not biz.get("pm_alert"):
@@ -2809,6 +3099,7 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
         ok_d, pmsg = card_decide(r, pid, task, approve=(i == 1), reason=f"{label} 승인" if i == 1 else "이번 회차는 보류합니다")
         fin = wait_end(r, pid, 300)
         rec["outcome"] = (vars_of(fin["instance"]).get("result_report") or {}).get("outcome")
+        rec["approved_amount"] = vars_of(fin["instance"]).get("approved_amount")         # 실제로 승인된 금액(다른 안 고르기와 견준다 — biz_other_choice)
         check_effects("approve" if i == 1 else "reject", ent0, fin, i, dec)
         return rec
 
@@ -2825,7 +3116,7 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
     return runs
 
 
-@lab("15", [("통합", "정기 점검 프로세스를 실제 업무로 실행하기"), ("실전", "정비 프로세스를 실행하고 승인 조건 검증하기")])
+@lab("15", [("통합", "정기 점검 프로세스를 실제 업무로 실행하기"), ("실전", "정기 점검 프로세스를 실제 업무로 실행하기")])
 def lab_15_pm(r: Round):
     resolve_rows(r, "15")
 
@@ -2849,7 +3140,7 @@ def lab_15_pm(r: Round):
     biz_round(r, "pm", "HYD-02", effects)
 
 
-@lab("16", [("통합", "구매 프로세스를 실제 업무로 실행하기"), ("실전", "구매 프로세스를 실행하고 처리 결과 검증하기")])
+@lab("16", [("통합", "구매 프로세스를 실제 업무로 실행하기"), ("실전", "구매 프로세스를 실제 업무로 실행하기")])
 def lab_16_spare(r: Round):
     resolve_rows(r, "16")
 
@@ -2858,7 +3149,11 @@ def lab_16_spare(r: Round):
         ent1 = ent(r)
         pr0, pr1 = len(ent0["erp"]["purchase_requests"]), len(ent1["erp"]["purchase_requests"])
         gr0, gr1 = len(ent0["erp"]["goods_receipts"]), len(ent1["erp"]["goods_receipts"])
-        stock = r.get(f"{r.enterprise}/erp/spare_stock?part=P-PMP-SEAL")["facts"]
+        part = decision_part(dec)
+        if not part:
+            r.check(f"C {i + 1}회: 판단이 다룬 부품의 재고를 읽음", False, "판단에 구매할 부품 번호가 없어 그 부품의 재고를 읽지 못함")
+            return
+        stock = r.get(f"{r.enterprise}/erp/spare_stock?part={part}")["facts"]
         if stage == "reject":
             r.check(f"C {i + 1}회 반려 → ERP 발주 · 입고 없음 · 승인 값 비어 있음 · 재고 보충 필요 그대로", pr1 == pr0 and gr1 == gr0 and not v.get("purchase_order")
                     and not any(v.get(k) for k in ("approved_supplier", "approved_qty", "approved_amount")) and stock.get("below_reorder_point") is True,
@@ -2872,7 +3167,60 @@ def lab_16_spare(r: Round):
                     f"PR {pr0}→{pr1} GR {gr0}→{gr1} ref={ref} · 재고 {json.dumps({k: stock.get(k) for k in ('on_hand', 'available', 'on_order', 'reorder_point')})}")
             ok, note = process_screen_shows(r, [ref])
             r.check("업무 시스템 기록 화면: 발주 · 통지 · 입고 · 재고 반영의 변경 전 · 후", ok, note)
-    biz_round(r, "spare", "HYD-03", effects)
+    runs = biz_round(r, "spare", "HYD-03", effects)
+    biz_other_choice(r, "spare", "HYD-03", next((x for x in runs if x.get("outcome") and x.get("outcome") != "반려"), None))
+
+
+def biz_other_choice(r: Round, kind: str, asset: str, base: dict | None):
+    """D-6: [다른 안 고르기]로 추천이 아닌 안(실행할 수 있는 다음 순위)을 골라 승인한 길 — 추천을 승인한 회차(base)와 끝(결과 보고) 또는 비용(승인
+    금액)이 다르고 결과 보고가 그 까닭을 말하는가(different_end). 기대 결과를 정하지 않는다 — 업무 시스템(공급사 견적 · 입고 검수)이 정한다."""
+    did = {"pm": "c3_pm", "spare": "c3_spare"}[kind]
+    label = {"pm": "내 정기 정비", "spare": "내 예비품 구매"}[kind]
+    if not base:
+        r.not_measure(f"{label}: 추천이 아닌 안 승인 → 추천 승인과 다른 끝 · 비용", "추천을 승인한 회차가 없어 견줄 것이 없음", axis=AXES[1])
+        return
+    defn = class_definition(r, did)
+    approve = next((x for x in defn.get("activities") or [] if x.get("id") == "T_approve"), {})
+    msg = unit_button(r, asset, "biz-reset")
+    if msg.startswith("실패:"):
+        r.check(f"{label}: 다른 안을 고르기 전에 [초기화]", False, msg)
+        return
+    before = instance_ids(r)
+    msg = unit_button(r, asset, "biz-start")
+    inst = new_instance(r, before, None, 60)
+    if not inst:
+        r.check(f"{label}: 다른 안 고르기 — 처리 건이 열린다", False, msg)
+        return
+    pid = inst["proc_inst_id"]
+    state, why, view = wait_step(r, pid, approve.get("name"), SECONDS["agent"])
+    if state != "ready":
+        r.check(f"{label}: 다른 안 고르기 — 승인 차례가 온다", False, f"{state}: {why}")
+        open_w = next((w for w in view.get("workitems") or [] if w["status"] in ("PENDING", "IN_PROGRESS") and w.get("agent_mode")), None)
+        if view["instance"]["status"] == "RUNNING" and open_w:       # 다음 실습이 이 건에 막히지 않게 학생처럼 닫는다(biz_round 와 같은 길)
+            close_step(r, pid, open_w["id"], "멈춘 단계라 닫고 다음으로 넘어갑니다")
+        return
+    dec = decision_of(r, view)
+    alt = next((o for o in dec.get("options") or [] if o.get("id") != dec.get("recommended") and o.get("feasible") and o.get("executable") is not False), None)
+    task = item_named(view, approve["name"])
+    if not alt:
+        r.check(f"{label}: 판단에 추천과 다른 실행 가능한 안(지는 대안)이 있다", False, json.dumps(card_summary(dec), ensure_ascii=False)[:300], kind="quality")
+        card_decide(r, pid, task, approve=False, reason="고를 다른 안이 없어 닫습니다")
+        wait_end(r, pid, 300)
+        return
+    done, text = card_choose(r, pid, task, option=alt["id"], reason=f"추천 대신 「{alt.get('name')}」으로 승인합니다")
+    if not done:
+        r.human(f"{label}: 다른 안 「{alt.get('name')}」 승인 → [승인]이 꺼지면 그 까닭을 화면이 말한다", text, human_text(text)[0], axis=AXES[1])
+        card_decide(r, pid, task, approve=False, reason="다른 안을 승인하지 못해 닫습니다")
+        wait_end(r, pid, 300)
+        return
+    end = wait_end(r, pid, 600)
+    v = vars_of(end["instance"])
+    rep = v.get("result_report") or {}
+    r.check(f"{label}: 승인한 안이 고른 안 「{alt.get('name')}」이다(추천 안이 아니라)", (v.get("chosen_option") or {}).get("id") == alt["id"],
+            str((v.get("chosen_option") or {}).get("id")), axis=AXES[1])
+    bad = different_end({"outcome": base.get("outcome"), "amount": base.get("approved_amount")}, {"outcome": rep.get("outcome"), "amount": v.get("approved_amount")}, rep)
+    r.check(f"{label}: 추천이 아닌 안 승인 → 추천 승인(「{base.get('outcome')}」 · {base.get('approved_amount')})과 다른 끝 또는 비용 · 결과 보고가 그 까닭을 문장으로",
+            not bad, "; ".join(bad) or f"{rep.get('outcome')} · {v.get('approved_amount')} — {str(rep.get('summary'))[:200]}", kind="exception", axis=AXES[1])
 
 
 # ====================================================================== 17 통합 116~119 · 실전 94~97 교대 인수인계
@@ -3077,6 +3425,12 @@ def lab_17_shift_handover(r: Round):
     r.check('보충 자료 추가가 기존 제조 지식을 초기화하지 않음', all(after.get(name) == batch for name, batch in before.items() if name != DOCS['HI-01']), kind='quality',
             axis=AXES[3])
     taken = {x['skill_name'] for x in r.get(f'{r.process}/api/skills')}
+    if r.ai_mode == 'record' and 'my-shift-handover-review' in taken:
+        # 저장분은 그 실행이 연 스킬 이름을 싣고, 키 없는 PC 는 학생이 붙인 스킬 이름과 견준다(ai_replay — 다르면 「같은 답을 냅니다」 안내).
+        # 이미 쓴 설치에서 다시 받으면 아래가 다른 이름(my-shift-handover1-review)을 골라 저장분이 학생 안내와 어긋난다(2026-11-23 실측).
+        r.check('AI 응답 저장은 수업 시작 상태에서 — 교대 스킬 이름이 이미 있음', False,
+                'my-shift-handover-review 가 이미 있어 저장분의 스킬 이름이 학생 안내와 달라집니다. 수업 시작 상태의 새 폴더에서 다시 저장하세요')
+        return
     sid = next(f'my_shift_handover{n or ""}' for n in range(100) if f'my-shift-handover{n or ""}-review' not in taken)
     skill = sid.replace('_', '-') + '-review'
     r.tab('agents'); page.locator('[data-ag-tab="skills"]').click()
@@ -3172,8 +3526,13 @@ def lab_17_shift_handover(r: Round):
             # 이 PC에서 다시 해 견준 결과다(ai_replay.reads_said — 설비 측정값 조회가 있어 교대 인계안에는 늘 붙는다)
             notices = [str((e.get('data') or {}).get('content') or '') for e in r.get(f'{r.process}/api/events?proc_inst_id={pid}&limit=500')
                        if e.get('event_type') == 'task_working' and (e.get('data') or {}).get('type') == 'notice']
-            told = any('조회 결과는 준비 당시 값' in n for n in notices)
-            r.check('키 없는 PC: 재생한 인계안의 조회 결과가 준비 당시 값이고 이 PC 와 무엇이 다른지 알린다' + suffix, told, (notices[-1] if notices else '재생 안내 없음')[-200:])
+            told = any('결과 글 안의 조회 결과는 판단 때 값입니다' in n for n in notices)      # 서버 문장(ai_replay.reads_said) — 2026-11-20 39e93119a 가 「준비 당시」를 걷었다
+            r.check('키 없는 PC: 재생한 인계안의 조회 결과가 판단 때 값이고 이 PC 와 무엇이 다른지 알린다' + suffix, told, (notices[-1] if notices else '재생 안내 없음')[-200:])
+            # 안내대로 붙인 스킬(my-shift-handover-review)이 저장된 실행이 연 스킬과 같으면 「스킬을 붙이거나 떼어도 같은 답」 안내가 없어야 한다.
+            # 2026-11-23 재생 한 바퀴: 저장분이 연 스킬 이름이 달라(`hyd-course-skills:` 머리 · 다른 이름) 이 안내가 붙었는데 위 판정만 보아 통과였다
+            said = [n for n in notices if '같은 답을 냅니다' in n]
+            r.check('키 없는 PC: 안내대로 붙인 스킬이면 스킬 구성이 달라졌다고 말하지 않는다' + suffix,
+                    skill != 'my-shift-handover-review' or not said, (said[-1] if said else '')[-200:])
         else:
             open_orders, arriving = handover_facts(r, 'HYD-01')
             bad = handover_findings(data.get('checks') or [], open_orders, True, True, arriving)
@@ -3250,6 +3609,27 @@ def lab_91_config_bundle(r: Round):
     rt = routes(r)
     r.human("[기준으로 되돌리기] → 한국어 결과 · 수업 흐름(c3_*)은 경보 경로에 남음", txt(r, "#cfgResetMsg"),
             all((rt.get(p) or {}).get("class_flow") for p in ("COOLER_DEGRADATION", "PM_DUE", "SPARE_BELOW_MIN")), axis=AXES[1])
+    button = r.page.locator("#cfgImport")
+    if phase == "course":
+        # 수업 단계의 학생은 파일 고르기 창까지 가지 못한다: 막힌 [파일 골라 불러오기]를 누르면 창이 열리지 않고 그 뒤 한 줄에 서버 까닭이 나온다
+        # (configBundle.js · courseAccess.js press — 까닭은 늘 붙어 있지 않다). 숨은 파일 칸에 파일을 직접 넣는 것은 학생이 할 수 없는 길이라 여기서는 하지 않는다
+        choosers: list = []
+
+        def chooser_opened(chooser):        # Playwright 는 받은 함수에 표시를 붙여 둔다 — list.append 같은 내장 메서드는 붙일 수 없어 이름 있는 함수로 걸고 뗀다
+            choosers.append(chooser)
+        r.page.on("filechooser", chooser_opened)
+        quiet = r.page.locator("#configBundlePanel [data-course-why]").count() == 0
+        try:
+            reason = press_blocked(r, button)
+            r.page.wait_for_timeout(800)
+        finally:
+            r.page.remove_listener("filechooser", chooser_opened)
+        opened = bool(choosers) or r.page.locator("dialog.confirm-dialog[open]").count() > 0 or "불러오는 중" in txt(r, "#cfgImportMsg")
+        code, _ = r.api("POST", r.process + "/api/config/import", {"bundle": bundle, "by": ME})
+        r.human("수업 단계: 막힌 [파일 골라 불러오기]를 누르면 파일 고르기 · 불러오기 없이 PBL 에서 연다는 까닭이 사람 글로 · 누르기 전에는 까닭이 떠 있지 않음 · 서버도 거절(403)",
+                reason, "PBL" in reason and quiet and not opened and code == 403)
+        r.not_measure("깨진 파일을 고르면 출발본 파일인지 확인하라는 사람 글로 막는다", "수업 단계에서는 파일 고르기까지 갈 수 없다 — PBL 단계 실행에서 잰다", axis=AXES[1])
+        return
     bad = r.out / "broken.json"
     bad.write_text("{ 이건 JSON 이 아님", encoding="utf-8")
     r.page.set_input_files("#cfgFile", str(bad))
@@ -3258,20 +3638,6 @@ def lab_91_config_bundle(r: Round):
     r.human("깨진 파일을 고르면 출발본 파일인지 확인하라는 사람 글로 막는다", broken, "받은 출발본 파일 그대로인지 확인하세요" in broken)
     r.page.set_input_files("#cfgFile", str(path))
     r.page.wait_for_timeout(800)
-    button = r.page.locator("#cfgImport")
-    if phase == "course":
-        # 막힌 단추 옆에 서버가 준 까닭 한 줄이 있다(courseAccess.js attrs · apply — span[data-course-why])
-        reason = (r.page.evaluate("() => document.querySelector('#cfgImport').parentElement.querySelector('[data-course-why]')?.textContent || ''").strip()
-                  if button.is_disabled() else None)
-        if reason is None:
-            # 단추가 켜져 있으면 고른 파일의 확인 창이 떠 있다(파일을 고르면 무엇이 들었는지 말하고 확인을 받는다 — configBundle.js)
-            if r.page.locator("dialog.confirm-dialog button[value=ok]").count():
-                r.page.locator("dialog.confirm-dialog button[value=ok]").click()
-            r.wait(60, lambda: (t := txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=1)
-            reason = txt(r, "#cfgImportMsg")
-        code, _ = r.api("POST", r.process + "/api/config/import", {"bundle": bundle, "by": ME})
-        r.human("수업 단계: [파일 골라 불러오기]는 PBL 에서 연다는 까닭을 사람 글로 · 서버도 거절(403)", reason, "PBL" in (reason or "") and code == 403)
-        return
     # [파일 골라 불러오기]가 여는 파일 고르기 창을 위의 set_input_files 가 대신했다 — 고른 파일의 확인 창이 떠 있다
     r.page.locator("dialog.confirm-dialog button[value=ok]").click()
     r.wait(180, lambda: (t := txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
@@ -3349,17 +3715,9 @@ def lab_93_pump_fan(r: Round):
     r.check("[설비 초기화] → 설비를 정상 운전점으로", "정상 운전점으로 되돌렸습니다" in r.page.locator("#scenarioMsg").inner_text(), r.page.locator("#scenarioMsg").inner_text())
     fault_case(r, "HYD-02", "pump_leakage", "PUMP_LEAKAGE")
     reset_units(r)
-    # 팬 진동: 수업 문서 셋에 팬 진동 고장 유형 · 원인이 없다 — 지어내지 않고 보류하며 무엇이 없는지 사람 글로 말하는가
-    before = instance_ids(r)
-    got = r.api("POST", f"{r.plant}/api/fault", {"asset": "HYD-03", "type": "fan_vibration"})
-    inst = new_instance(r, before, None, 240)
-    r.check("팬 진동 주입 → 처리 건이 열림", got[0] == 200 and bool(inst), str(got)[:120])
-    if inst:
-        pid = inst["proc_inst_id"]
-        held = r.wait(SECONDS["agent"], lambda: next((w for w in view_of(r, pid)["workitems"] if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None), every=5)
-        r.human("팬 진동(지식 없음) → 지어내지 않고 보류, 무엇이 없는지 사람 글", ((held or {}).get("draft") or {}).get("_deferral", {}).get("reason", ""), bool(held))
-        if held:
-            close_step(r, pid, held["id"], "지식에 팬 진동 조치가 없어 닫습니다")
+    # 팬 진동도 펌프와 같은 판정이다 — 판단할 수 있는지는 지식이 정한다(판단 엔진의 답). 전에는 「수업 문서에 팬 진동 원인이 없다」를 전제로 보류를
+    # 정답으로 두었는데, 수업 지식에는 원인(팬 구동 불량)과 이 패턴의 후보 규칙(SOP-FAN-11)이 있다(2026-11-22 world 실측: 진단의 원인 후보 0 — 판정 F4 T-2)
+    fault_case(r, "HYD-03", "fan_vibration", "FAN_VIBRATION")
     reset_units(r)
 
 
@@ -3406,7 +3764,7 @@ def fault_case(r: Round, asset: str, fault: str, pattern: str):
         r.human(f"{pattern}: 지식에 조치 후보 없음(판단 엔진) → 다시 평가해도 지어내지 않고 보류 · 사람 글", why, state == "deferred")
         held = next((w for w in view.get("workitems", []) if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None)
         if held:
-            close_step(r, pid, held["id"], "지식에 펌프 조치가 없어 닫습니다")
+            close_step(r, pid, held["id"], "지식에 이 경보의 조치 후보가 없어 닫습니다")
         return
     r.check(f"{pattern}: AI 4단계 → 조치 선택 차례", state == "ready", f"{state} {why} {ai_s:.0f}초", seconds=ai_s)
     if state != "ready":

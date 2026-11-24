@@ -21,12 +21,12 @@ def test_적용될_수_있는_규칙의_모르는_사실만_확인할_수_없는
     assert approval.unresolved(RULE, facts) == missing
 
 
-SKILL = {'sopId': 'SOP-COOL-12', 'name': '팬 증속', 'actions': [{'kind': 'command', 'param': 'fan_pct', 'value': 80, 'min': 40, 'max': 100}]}
+SKILL = {'sopId': 'SOP-COOL-12', 'name': '팬 증속', 'actions': [{'kind': 'command', 'name': '팬 속도 설정', 'param': 'fan_pct', 'value': 80, 'min': 40, 'max': 100}]}
 
 
 def test_조치값_변경안은_명시_범위_안의_팬_부하만이고_원문과_구분된_이름을_단다():
     effective, normalized = approval._parameterized(SKILL, {'fan_pct': 100})
-    assert normalized == {'fan_pct': 100} and effective['actions'][0]['value'] == 100 and effective['name'] == 'SOP-COOL-12 변경안: 팬 100%'
+    assert normalized == {'fan_pct': 100} and effective['actions'][0]['value'] == 100 and effective['name'] == 'SOP-COOL-12 변경안: 팬 속도 설정 100%'
     assert SKILL['actions'][0]['value'] == 80                       # 원문 스킬은 그대로
 
 
@@ -45,9 +45,10 @@ def test_범위_밖이거나_SOP_에_없는_조치값_변경은_거절한다(par
 def test_팬_부하가_아닌_설정도_SOP_가_범위와_함께_밝혔으면_바꿀_수_있다():
     """설정 이름을 코드가 정하지 않는다 — 절차(SOP)의 명령 조치가 범위를 밝힌 값이면 받는다(수업 냉각 SOP 밖의 절차)."""
     skill = {'name': '밸브 개도 조정', 'sopId': 'SOP-VLV-01',
-             'actions': [{'kind': 'command', 'param': 'valve_pct', 'value': 40, 'min': 20, 'max': 60}]}
+             'actions': [{'kind': 'command', 'name': '밸브 개도 설정', 'param': 'valve_pct', 'value': 40, 'min': 20, 'max': 60}]}
     effective, normalized = approval._parameterized(skill, {'valve_pct': 55})
-    assert normalized == {'valve_pct': 55} and effective['actions'][0]['value'] == 55 and 'valve_pct 55%' in effective['name']
+    # 바꾼 값은 지식의 조치 이름으로 부른다 — 설정 이름(valve_pct)이나 수업 냉각 SOP 의 이름 사전(팬 · 부하)이 아니다(탐사 N11)
+    assert normalized == {'valve_pct': 55} and effective['actions'][0]['value'] == 55 and effective['name'] == 'SOP-VLV-01 변경안: 밸브 개도 설정 55%'
     with pytest.raises(ValueError) as e:
         approval._parameterized(skill, {'valve_pct': 61})
     assert 'valve_pct' in str(e.value)
@@ -103,7 +104,7 @@ def test_승인_역할이_모자라면_까닭과_함께_거절한다(decided):
 @pytest.fixture
 def pm_decided(world):
     """정기 점검(시나리오 B)의 에이전트 단계가 등록한 판단 — 승인 검사가 업무 시스템(CMMS 계획 · 정비 창)을 다시 읽는다."""
-    status, out = world.api('POST', '/api/scenario/B/start', {'by': 'user:kim-op', 'role': 'role:operator'}, source_loop=True)
+    status, out = world.api('POST', '/api/scenario/B/start', {'by': 'user:me', 'role': 'role:operator'}, source_loop=True)
     assert status == 200, out
     did = world.agent(out['instance'], 'T_agent')
     decision = world.main.book[did]

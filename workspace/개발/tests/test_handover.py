@@ -79,3 +79,42 @@ def test_인계자와_인수자의_선택은_정해진_값과_사유만_받는�
                          ids=['인계안 작성', '인계자 검토', '인수자 확인', '다른 폼'])
 def test_보완_메모는_그_단계가_받을_때만_선택_입력이다(contract, optional):
     assert h.optional_inputs({'contract': contract}) == optional
+
+
+def _tool_events(row, calls):
+    """워커가 남기는 도구 호출 기록(시작 · 끝 한 쌍씩) — 인자와 응답 전체가 기록 안에 있다."""
+    events = []
+    for n, (tool, arguments) in enumerate(calls):
+        common = {'job_id': 'run-1', 'todo_id': row['id'], 'proc_inst_id': row['proc_inst_id'], 'crew_type': 'agent'}
+        events += [dict(common, event_type='tool_usage_started', data={'tool': tool, 'tool_use_id': f'u-{n}', 'input': arguments}),
+                   dict(common, event_type='tool_usage_finished', data={'tool': tool, 'tool_use_id': f'u-{n}', 'output': {'result': 'ok'}})]
+    return events
+
+
+def test_돌려보내는_글은_맞지_않는_근거와_그_도구를_실제로_부른_인자를_짚는다(course):
+    """2026-11-23 실습 17: 근거 14개 중 하나가 실제 호출에 없는 인자(offset 0)를 적어 돌려보내졌는데, 글이 어느 근거인지 말하지 않아 AI가
+    차례마다 모든 조회를 다시 하고 같은 곳을 또 틀렸다(세 번째 차례가 한 번 실행의 입력 한도에 닿음). 실제 DB 의 호출 기록으로 판정한다."""
+    from conftest import start_handover
+    start_handover(course.rt)
+    [row] = course.rt.repo.fetch_pending_task('cliagents', 'test-worker:trace', tenant_id='hyd')
+    catalog = 'mcp__enterprise__describe_catalog'
+    course.rt.repo.record_events(_tool_events(row, [
+        (catalog, {'limit': 20, 'table': 'ent.work_orders'}),
+        (catalog, {'limit': 20, 'table': 'ent.purchase_requests'}),
+        ('mcp__enterprise__query', {'sql': 'select 1'}),
+        ('mcp__hyd-dmn__inputs', {}),
+    ]))
+    form = {'contract': h.DRAFT}
+    right = [{'tool': 'enterprise/query', 'query': {'sql': 'select 1'}, 'result': '1행'},
+             {'tool': catalog, 'query': {'table': 'ent.purchase_requests', 'limit': 20}, 'result': '열 목록'}]
+    h.validate_trace(course.rt.repo, row, form, _draft(evidence=right))          # 인자가 실제 호출과 같으면(열쇠 순서는 무관) 통과
+    wrong = [right[0], dict(right[1], query={'table': 'ent.purchase_requests', 'offset': 0, 'limit': 20}),
+             {'tool': 'mcp__hyd-dmn__timeseries_query', 'query': {'sql': 'select 2'}, 'result': '없음'}]
+    with pytest.raises(ValueError) as caught:
+        h.validate_trace(course.rt.repo, row, form, _draft(evidence=wrong))
+    text = str(caught.value)
+    assert '맞지 않는 근거 2개' in text and 'evidence[0]' not in text
+    # 틀린 근거의 번호 · 적은 인자와, 그 도구를 이 작업에서 실제로 부른 인자(옮겨 적으면 통과하는 값)
+    assert 'evidence[1] enterprise/describe_catalog 에 적은 query {"limit": 20, "offset": 0, "table": "ent.purchase_requests"}' in text
+    assert '성공적으로 부른 인자: {"limit": 20, "table": "ent.work_orders"} · {"limit": 20, "table": "ent.purchase_requests"})' in text
+    assert 'evidence[2] hyd-dmn/timeseries_query' in text and '이 도구를 성공적으로 부른 기록이 없습니다' in text

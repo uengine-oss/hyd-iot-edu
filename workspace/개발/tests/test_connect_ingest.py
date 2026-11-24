@@ -42,6 +42,8 @@ def test_계약_밖_설비_메시지는_버리고_까닭과_함께_센다(ingest
 def test_올바른_설비_메시지는_세지_않고_Kafka_기록으로_바꾼다(ingest):
     ktopic, key, value = ingest.to_kafka('plant/hyd01/tag/TS1', b'{"t": "2026-10-30T05:00:00.000Z", "v": 48.2, "q": "good"}')
     assert (ktopic, key, value) == (topics.K_TAG, 'hyd01', {'asset': 'HYD-01', 'name': 'TS1', 't': T, 'v': 48.2, 'q': 'good'})
+    _, _, flagged = ingest.to_kafka('plant/hyd01/tag/TS1', b'{"t": "2026-10-30T05:00:01.000Z", "v": 48.2, "q": "bad"}')
+    assert flagged['q'] == 'bad'            # 품질은 수집이 고치지 않고 그대로 넘긴다 — 좋음이 아닌 값은 감지기가 판정에서 뺀다(det.observations)
     _, _, status = ingest.to_kafka('plant/hyd02/status', b'{"t": "2026-10-30T05:00:00Z", "mode": "LOCAL", "state": "RUN"}')
     assert status['asset'] == 'HYD-02' and ingest.health()['malformed'] == 0
 
@@ -69,7 +71,15 @@ def test_브로커가_거절한_기록은_건강을_나쁘게_하고_받은_기�
     assert body['ok'] is False and body['kafka_last_error'].startswith(topics.K_STATUS)
 
 
-def test_대기열이_차면_버리고_센다(ingest):
+def test_대기열이_차서_설비_값을_버리면_센_뒤_1분_동안_건강이_나쁘다(ingest, monkeypatch):
+    """D-9: 전에는 버린 값이 셈(dropped)에만 남고 /healthz ok 는 그대로였다 — 판단의 데이터 신뢰 확인이 값이 빠진 동안에도 믿었다.
+    브리지 · MQTT 연결은 바깥이라 붙어 있다고 둔다(link.healthy), Kafka 송신기는 떠 있다고 둔다."""
+    monkeypatch.setattr(ingest.link, 'healthy', lambda: True)
+    ingest.state['kafka'] = True
+    assert ingest.health()['ok'] is True and ingest.health()['dropped_recently'] is False
     for _ in range(ingest.QUEUE_MAX + 2):
         ingest._enqueue((topics.K_TAG, 'hyd01', {}))
-    assert ingest.state['dropped'] == 2
+    body = ingest.health()
+    assert (body['dropped'], body['dropped_recently'], body['ok']) == (2, True, False), body
+    ingest.state['last_dropped_at'] -= ingest.ERROR_WINDOW_S + 1          # 버린 뒤 1분이 지남
+    assert ingest.health()['ok'] is True and ingest.health()['dropped'] == 2

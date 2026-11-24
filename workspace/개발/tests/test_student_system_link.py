@@ -442,7 +442,7 @@ def test_강제로_지운_서버를_부르는_단계는_아무것도_보내지_�
     외부 결과를 확인하라고 했고, 진짜 까닭(등록되지 않은 서버)은 가려졌다."""
     _, stopped = _stopped_without_server(world, system)
     said = world._failure(stopped)['friendly']
-    assert f"도구 서버 '{SERVER}'가 등록되어 있지 않습니다" in said and '[도구 연결]' in said and '다시 수행' in said, said
+    assert f"도구 서버 '{SERVER}'가 등록되어 있지 않습니다" in said and '[도구 연결]' in said and '[같은 내용 다시 전달]' in said, said
     assert '외부 쓰기' not in said and '외부 결과' not in said, said
     assert int(stopped['retry']) == 3                                            # 보내지 않은 실패는 정해진 횟수만큼 다시 해 본 뒤 멈춘다
 
@@ -489,3 +489,74 @@ def test_쓰기_요청을_받은_서버가_오류로_끝나면_다시_보내지_
     stopped = world.row(pid, 'T_order')
     assert stopped['status'] == 'PENDING' and system.called(WRITE_FAILS) == [{'item': ITEM, 'qty': 2}]      # 한 번만 보냈다
     assert '외부 결과를 확인' in world._failure(stopped)['friendly'], world._failure(stopped)
+
+
+# ---------------------------------------------------------------- 학생 에이전트의 질문 · 꺼진 학생 서버(탐사 S — 고침 F3 S-C)
+class QuestionCli:
+    """질문하기의 Claude Code 자리: 작업 폴더의 도구 서버 · 허용 목록대로 학생 서버의 읽기 도구를 실제로 부르고, 그 호출을 근거로 답을 낸다."""
+    accepts_check_stop = True
+
+    def __init__(self):
+        self.requests, self.attached, self.allowed = [], {}, []
+
+    def __call__(self, provider, request, env, *, check_stop=None):
+        from cliagents import ExecEvent, ExecEventKind
+        self.requests.append(request)
+        session = str(uuid.uuid4())
+        self.attached = json.loads((Path(request.workdir) / '.mcp.json').read_text(encoding='utf8'))['mcpServers']
+        self.allowed = StudentCli._flag(request.extra_args, '--allowedTools')
+        name = f'mcp__{SERVER}__{READ}'
+        if SERVER not in self.attached or name not in self.allowed:
+            yield ExecEvent(kind=ExecEventKind.RESULT, session_id=session,
+                            text=json.dumps({'status': 'cannot_answer', 'reason': '재고를 읽을 도구가 없습니다'}, ensure_ascii=False))
+            return
+        use = str(uuid.uuid4())
+        yield ExecEvent(kind=ExecEventKind.TOOL_START, tool=name, tool_input={'item': ITEM}, tool_use_id=use, session_id=session)
+        out = StudentCli._call(self.attached[SERVER], READ, {'item': ITEM})
+        yield ExecEvent(kind=ExecEventKind.TOOL_END, tool=name, tool_output=json.dumps(out, ensure_ascii=False), tool_use_id=use, session_id=session)
+        answer = {'status': 'answered', 'answer': f"{ITEM} 재고는 {out['on_hand']}개입니다.",
+                  'evidence': [{'tool': name, 'query': {'item': ITEM}, 'result': out}]}
+        yield ExecEvent(kind=ExecEventKind.RESULT, session_id=session, text=json.dumps(answer, ensure_ascii=False))
+
+
+def test_PBL에서_학생_에이전트에게_물으면_그_에이전트가_붙인_내_서버의_읽기_도구로_답한다(world, linked, system, relay):
+    """탐사 S: 질문하기는 정해진 조회 도구 표(기본 제공 서버)만 써서, 학생 에이전트에게 물어도 학생 서버가 연결 목록에서 빠졌다. 학생이 등록한
+    서버는 연결 검사가 찍은 읽기 도구로 붙고(쓰기 도구는 금지 목록), 근거 대조도 그 실제 호출로 한다. 질문 화면도 그 서버를 쓴다고 보인다."""
+    from procsvc import ask
+    [mine] = [a for a in ask.agents(world.rt.repo, TENANT) if a['id'] == linked['agent']]
+    assert SERVER in mine['servers'] and SERVER not in mine['left_out'], mine
+    system.calls.clear()
+    from conftest import DEFINITIONS
+    asked = ask.start(world.rt, f'{ITEM} 재고는 몇 개야?', linked['agent'], ME, definitions_dir=DEFINITIONS, worker_probe=lambda: {'reachable': True})
+    cli = QuestionCli()
+    assert world.runner('live', cli).poll_once() == 1
+    assert SERVER in cli.attached and 'url' in cli.attached[SERVER]                       # 내 서버에 바로(질문 창구가 아니라)
+    assert {f'mcp__{SERVER}__{READ}', f'mcp__{SERVER}__{UNMARKED}'} <= set(cli.allowed)       # 검사 도장 · 읽기로 확인한 도구
+    assert f'mcp__{SERVER}__{WRITE}' not in cli.allowed
+    assert system.called(READ) == [{'item': ITEM}] and system.called(WRITE) == []
+    world.poll(2)
+    view = ask.view(world.rt, asked['id'])
+    assert view['result']['kind'] == 'answered' and view['result']['verified'] == 1, view['result']
+
+
+def test_에이전트_단계의_도구_서버가_꺼져_있으면_그_도구_없이_안을_내지_않고_까닭을_말하며_멈춘다(world, linked, relay):
+    """탐사 S: CLI 는 도구 서버에 닿지 못해도 그 도구 없이 실행을 이어 가, 학생 PC의 서버가 꺼져 있으면 에이전트가 읽지 못한 자료로 안을 낼 수
+    있었다. 워커가 AI 단계를 시작하기 전에 붙인 서버마다 도구 목록을 받아 보고, 닿지 않으면 그 서버 이름과 할 일을 말하며 AI 를 부르지 않는다."""
+    other = StockSystem()
+    try:
+        _ok(world.api('POST', '/api/mcp/servers', {'name': 'my-stock-2', 'url': other.url, 'description': '두 번째 재고', 'by': ME}), 201)
+        agent = _ok(world.api('POST', '/api/agents', {'name': '두 번째 재고 에이전트', 'goal': '재고를 조회해 주문안을 낸다',
+                                                      'tools': ['my-stock-2'], 'by': ME}), 201)
+        did = 'office_down_' + uuid.uuid4().hex[:6]
+        _, version = _register(world, did, '비품 재주문(꺼진 서버)', agent=agent['id'])
+        pid = _start(world, did, version)
+    finally:
+        other.served.close()                                                            # 학생 PC 의 그 서버가 꺼졌다
+    relay.reset()
+    cli = StudentCli()
+    assert world.runner('live', cli).poll_once() == 1
+    step = world.row(pid, 'T_agent')
+    failure = world._failure(step)
+    assert step['status'] not in ('SUBMITTED', 'DONE') and failure['name'] == '도구 서버에 닿지 못함', failure
+    assert '「my-stock-2」에 닿지 못해' in failure['friendly'] and '다시 수행' in failure['friendly'], failure['friendly']
+    assert cli.requests == [] and relay.requests == []                                     # AI(모델)를 부르지 않았다

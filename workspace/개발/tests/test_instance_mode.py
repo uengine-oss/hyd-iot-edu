@@ -80,7 +80,7 @@ def test_사건_하나에_진행_중_처리_건은_하나뿐이다(world):
                    (f'c3_cooling.{uuid.uuid4()}', 'c3_cooling', psycopg.types.json.Jsonb(inst['variables_data']), inst['proc_def_version']))
 
 
-@pytest.mark.parametrize('method, path, body', [
+NOT_READY_PATHS = [
     ('GET', '/api/instances', None),                       # instance_mode
     ('GET', '/api/flows/deployments', None),               # flow_deploy
     ('GET', '/api/flows', None),                           # flows_api
@@ -91,24 +91,30 @@ def test_사건_하나에_진행_중_처리_건은_하나뿐이다(world):
     ('GET', '/api/agent-trials/options', None),            # agent_trials
     ('POST', '/api/human-alerts', {'pattern': 'OIL_ANALYSIS', 'asset': 'HYD-01'}),   # human_alert
     ('GET', '/api/kg/ddl/meanings/x', None),               # legacy_meaning_api
-])
-def test_처리_엔진이_준비되기_전에는_어느_화면이든_같은_쉬운_말로_503이다(world, method, path, body):
+]
+
+
+def test_처리_엔진이_준비되기_전에는_어느_화면이든_같은_쉬운_말로_503이다(world):
     """런타임을 받아 쓰는 경로가 저마다 문장을 갖던 것(지운 처리 엔진 스위치 이름을 학생에게 보이던 곳 포함)을 한 문장으로.
-    G5b-07: 우리 상태를 바꿔 끼우지 않고, 기동(시작 처리)을 하지 않은 process 앱을 따로 하나 띄워 판정한다 — 켜지는 중인 process 와 같다."""
+    G5b-07: 우리 상태를 바꿔 끼우지 않고, 기동(시작 처리)을 하지 않은 process 앱을 따로 하나 띄워 판정한다 — 켜지는 중인 process 와 같다.
+    경로마다 앱을 새 파이썬으로 띄우던 것(13B-13 — 열 번)을, 앱 하나를 한 번 띄워 그 안에서 모든 경로를 부른다."""
     import json
     import os
     import subprocess
     import sys
     from conftest import ROOT
     script = ("import json,sys\nfrom fastapi.testclient import TestClient\nfrom procsvc import main\n"
-              "m,p,b=json.loads(sys.argv[1])\nr=TestClient(main.app).request(m,p,json=b)\n"
-              "print(json.dumps([r.status_code,r.json()],ensure_ascii=False))")
+              "c=TestClient(main.app)\nout=[]\n"
+              "for m,p,b in json.loads(sys.argv[1]):\n    r=c.request(m,p,json=b)\n    out.append([p,r.status_code,r.json()])\n"
+              "print(json.dumps(out,ensure_ascii=False))")
     env = dict(os.environ, PYTHONUTF8='1', PYTHONPATH=os.pathsep.join(str(ROOT / d) for d in ('common', 'it/process')))
-    out = subprocess.run([sys.executable, '-c', script, json.dumps([method, path, body])], env=env, capture_output=True, text=True,
-                         encoding='utf8', timeout=120)
+    out = subprocess.run([sys.executable, '-c', script, json.dumps(NOT_READY_PATHS)], env=env, capture_output=True, text=True,
+                         encoding='utf8', timeout=180)
     assert out.returncode == 0, out.stderr[-2000:]
-    status, answer = json.loads(out.stdout.strip().splitlines()[-1])
-    assert (status, answer['detail']) == (503, instances.NOT_READY)
+    answers = json.loads(out.stdout.strip().splitlines()[-1])
+    assert [p for p, _, _ in answers] == [p for _, p, _ in NOT_READY_PATHS]
+    wrong = [(p, status, body) for p, status, body in answers if (status, (body or {}).get('detail')) != (503, instances.NOT_READY)]
+    assert not wrong, wrong
 
 
 def test_처리_방식_조회는_처리_방식_칸_없이_폴링_상태를_싣는다(world):
@@ -161,3 +167,41 @@ def test_에이전트_질문_답변에_담당자가_없으면_400_담당자_정�
     for body in ({'job_id': 'j', 'answer': '예'}, {'job_id': 'j', 'answer': '예', 'by': '  '}, {'job_id': 'j', 'answer': '예', 'by': None}):
         status, out = world.api('POST', f'/api/todolist/{uuid.uuid4()}/human-response', body)
         assert (status, out['detail']) == (400, NOT_A_PERSON), (body, out)
+
+
+def _startup(step, budget_s):
+    """기동 단계 하나를 기동과 같은 함수(retry_startup)로 돌린다. 돌려줌 = (올라온 예외, 기동 상태, 걸린 초)."""
+    import asyncio
+    import time
+    state, started = {}, time.monotonic()
+    try:
+        asyncio.run(instance_mode.retry_startup(step, 'probe', state, budget_s=budget_s, first_delay=1.0))
+    except Exception as exc:  # noqa: BLE001 — 올라온 예외를 판정한다
+        return exc, state, time.monotonic() - started
+    return None, state, time.monotonic() - started
+
+
+def test_기동은_서버가_받지_않은_연결을_쉬며_다시_하지_않고_참_까닭으로_곧장_실패한다(caplog):
+    """검토(2026-11-24): 기동의 다시 하기가 DbRefused(OperationalError 의 한 갈래)까지 일시 장애로 잡아, 틀린 암호도 2 · 4 · 8 · 16초 … 60초를 쉰 뒤에야
+    실패했다. 서버는 이 PC 의 실제 업무 DB 다(test_pg.server — 암호만 바꾼 주소)."""
+    import logging
+    from hydcommon import pg
+    from test_pg import server
+    caplog.set_level(logging.WARNING, logger='process.instance_mode')
+    exc, state, took = _startup(lambda: pg.connect(server(password='not-the-password'), name='업무 DB'), budget_s=60)
+    assert isinstance(exc, pg.DbRefused), exc
+    assert took < 10, f'{took:.1f} 초 — 쉬며 다시 했다'
+    assert not [r for r in caplog.records if 'retrying in' in r.getMessage()]
+    assert state['startup_db_error'].startswith('probe: DbRefused') and '계정 또는 암호가 맞지 않습니다' in state['startup_db_error']
+
+
+def test_기동은_닿지_않는_DB_를_예산_안에서_쉬며_다시_한_뒤_실패한다(caplog):
+    """일시 장애(닿지 않음)는 전과 같이 쉬며 다시 한다 — 망 안의 이름(db.supabase.internal)은 이 PC 에서 풀리지 않는다(서버의 답이 없다)."""
+    import logging
+    from hydcommon import pg
+    caplog.set_level(logging.WARNING, logger='process.instance_mode')
+    exc, state, took = _startup(lambda: pg.connect('postgresql://postgres:postgres@db.supabase.internal:5432/postgres', name='업무 DB'), budget_s=2)
+    assert type(exc) is pg.DbUnreachable, exc
+    waits = [r for r in caplog.records if 'retrying in' in r.getMessage()]
+    assert len(waits) >= 1 and took >= 2, (len(waits), took)
+    assert state['startup_db_error'].startswith('probe: DbUnreachable')

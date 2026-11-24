@@ -53,28 +53,83 @@ def test_새_결과가_생기기_전에는_닿아도_열지_않고_까닭을_남
     assert dependency_schedule.waiting(inst, list(fresh.values())), '흐름이 닿은 채 기다리는 TODO 는 열린 일이다(처리 건을 끝내지 않는다)'
 
 
-def test_같은_값을_내는_생산자가_둘이면_막고_까닭_코드를_준다():
+# ---------------------------------------------------------------- 막힘마다 학생이 읽는 문장 — 엔진이 실제로 그 막힘을 내는 처리 건에서
+def _branch_case():
+    """a → 분기(x == '1' 이면 b, 아니면 d) — x = '1' 로 끝난 처리 건(b 는 끝났고 d 는 흐름이 닿지 않은 채 취소)."""
+    acts = [{'id': 'a', 'name': 'a', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'outputData': ['x']},
+            {'id': 'b', 'name': 'b', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'inputData': ['x']},
+            {'id': 'd', 'name': 'd', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'inputData': ['x']}]
+    defn = _defn(gateways=[{'id': 'g', 'type': 'exclusiveGateway'}], activities=acts,
+                 sequences=[('s', 'a'), ('a', 'g'), ('g', 'b', "x == '1'"), ('g', 'd', "x != '1'"), ('b', 'e'), ('d', 'e')])
+    inst = engine.new_instance(defn, {}, now=T0)
+    rows = engine.start(defn, inst, now=T0).created
+    by = {w['activity_id']: w for w in rows}
+    for aid, out in (('a', {'x': '1'}), ('b', {})):
+        engine.submit(defn, inst, by[aid], out, now=T0)
+        engine.process_submitted(defn, inst, by[aid], rows, now=T0)
+    assert (by['d']['status'], inst['status']) == ('CANCELLED', 'COMPLETED')
+    return defn, inst, rows
+
+
+def _gateway_without_its_review():
+    """분기만 다시 판단하려 한다 — 분기 조건을 낼 앞 단계(a)는 다시 하지 않는다."""
+    defn, inst, rows = _branch_case()
+    return defn, inst, rows, {'g', 'b'}, {'b'}, 'b'
+
+
+def _two_producers():
+    """a 와 a2 가 같은 값 x 를 낸다 — 둘 다 다시 하면 b 는 어느 쪽의 새 x 를 기다릴지 정할 수 없다."""
     acts = [{'id': 'a', 'name': 'a', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'outputData': ['x']},
             {'id': 'a2', 'name': 'a2', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'outputData': ['x']},
             {'id': 'b', 'name': 'b', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'inputData': ['x']}]
     defn = _defn(sequences=[('s', 'a'), ('a', 'a2'), ('a2', 'b'), ('b', 'e')], activities=acts)
     inst = engine.new_instance(defn, {}, now=T0)
-    rows = engine.start(defn, inst, now=T0).created
-    _, blockers = dependency_schedule.propose(defn, inst, rows, {'a', 'a2', 'b'}, {'a'}, 'a')
-    assert {b['code'] for b in blockers} == {'ambiguous_dependency_producer'}
+    return defn, inst, engine.start(defn, inst, now=T0).created, {'a', 'a2', 'b'}, {'a'}, 'a'
 
 
-def test_시작_단계가_이번에_새로_만들_결과를_입력으로_받으면_막는다():
+def _reference_superseded():
+    """b 가 참조한 a 의 결과 뒤에 a 의 새 세대가 끝났다 — b 부터 다시 하면 b 가 참조한 결과는 이제 a 의 최신이 아니다."""
+    defn = _defn()
+    inst, rows, by = _done_case(defn)
+    redone = dict(engine.new_workitem(defn, inst, defn.activities['a'], T0), generation=1, status='DONE')
+    assert by['a']['id'] in by['b']['reference_ids']
+    return defn, inst, rows + [redone], {'b', 'c'}, set(), 'b'
+
+
+def _never_reached_entry():
+    """흐름이 닿지 않아 취소된 단계(분기의 가지 않은 쪽)부터 다시 하려 한다."""
+    defn, inst, rows = _branch_case()
+    return defn, inst, rows, {'d'}, set(), 'd'
+
+
+def _root_needs_new_result():
+    """b 부터 다시 하는데 a 도 다시 한다 — 시작 단계 b 가 이번에 새로 만들어질 a 의 결과를 입력으로 받는다."""
     defn = _defn()
     inst, rows, _ = _done_case(defn)
-    _, blockers = dependency_schedule.propose(defn, inst, rows, {'a', 'b', 'c'}, {'b'}, 'b')
-    assert 'rework_root_dependency_requires_review' in {b['code'] for b in blockers}
+    return defn, inst, rows, {'a', 'b', 'c'}, {'b'}, 'b'
 
 
-@pytest.mark.parametrize('code', ['condition_replay_requires_arrival', 'ambiguous_dependency_producer', 'dependency_reference_requires_review',
-                                  'dependency_control_arrival_unavailable', 'rework_root_dependency_requires_review',
-                                  'dependency_cycle_requires_review'])
-def test_막힘_코드마다_학생이_읽는_문장이_있다(code):
-    """P4-03 · W1-09: 막힘 문장의 주인은 rework.BLOCKER_TEXT 하나 — 이 모듈이 만드는 코드도 그 표에 있어야 화면이 뜻 없는 문장으로 메우지 않는다."""
+def _waiting_on_each_other():
+    """a 는 b 의 결과 y 를, b 는 a 의 결과 x 를 입력으로 받는다 — 둘 다 다시 하면 서로의 새 결과를 기다린다."""
+    acts = [{'id': 'a', 'name': 'a', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'inputData': ['y'], 'outputData': ['x']},
+            {'id': 'b', 'name': 'b', 'type': 'userTask', 'role': 'r', 'tool': 'formHandler:f', 'inputData': ['x'], 'outputData': ['y']}]
+    defn = _defn(sequences=[('s', 'a'), ('a', 'b'), ('b', 'e')], activities=acts)
+    inst = engine.new_instance(defn, {}, now=T0)
+    return defn, inst, engine.start(defn, inst, now=T0).created, {'a', 'b'}, set(), 'a'
+
+
+@pytest.mark.parametrize('codes, case', [
+    ({'condition_replay_requires_arrival'}, _gateway_without_its_review),
+    ({'ambiguous_dependency_producer'}, _two_producers),
+    ({'dependency_reference_requires_review'}, _reference_superseded),
+    ({'dependency_control_arrival_unavailable'}, _never_reached_entry),
+    ({'rework_root_dependency_requires_review'}, _root_needs_new_result),
+    ({'dependency_cycle_requires_review', 'rework_root_dependency_requires_review'}, _waiting_on_each_other),     # 시작 단계 a 도 b 의 새 결과를 기다린다
+], ids=['분기만 다시', '같은 값의 생산자 둘', '참조한 결과가 바뀜', '흐름이 닿지 않은 시작 단계', '시작 단계가 새 결과를 기다림', '서로 기다림'])
+def test_다시_수행을_막는_까닭마다_엔진이_그_막힘을_내고_학생이_읽는_문장이_있다(codes, case):
+    """P4-03 · W1-09: 막힘 문장의 주인은 rework.BLOCKER_TEXT 하나다. 다시 수행 계획(rework.plan)은 이 모듈이 낸 막힘을 rework.blocker 로 문장으로
+    바꾼다 — 표에 없는 코드는 그 자리에서 KeyError 다. 막힘마다 그것을 실제로 내는 처리 건에서 같은 길로 바꿔 문장이 있는지 본다."""
     from procsvc import rework
-    assert rework.blocker(code)['text'], '표에 없는 코드는 KeyError 로 실패한다'
+    _, blockers = dependency_schedule.propose(*case())
+    assert {b['code'] for b in blockers} == codes, blockers
+    assert all(rework.blocker(**b)['text'] for b in blockers)

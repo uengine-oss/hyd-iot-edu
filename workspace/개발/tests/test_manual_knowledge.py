@@ -174,6 +174,69 @@ def test_판단이_읽지_않는_입력을_견주는_규칙은_쓸_수_없는_�
     _, issues = mk.graph_semantics(plan, catalog)
     (said,) = [i['message'] for i in issues if i['code'] == 'RULE_INPUT_NOT_DECLARED']
     assert rule['id'] in said and 'in:legacy-scrap-rate' in said
-    assert '표 정의로 만든 입력은 판단 규칙에 쓸 수 없습니다' in said             # 안 되는 것은 안 된다고
+    assert '「지식 › 문서 등록 › 업무 DB 표 정의」로 만든 입력은 판단 규칙에 쓸 수 없습니다' in said             # 안 되는 것은 안 된다고 — 표 정의를 넣는 실제 메뉴 이름으로(C14)
     assert f"{usable['id']}({usable['name']})" in said                     # 바꿀 수 있는 입력은 id 와 사람이 읽는 이름으로
     assert 'REQUIRES_INPUT' not in said
+
+
+# ---------------------------------------------------------------- 새 항목 제안(다른 설비의 구성 요소 · 증상 · 센서) — 꼴 검사
+def _apu_validated(tmp_path):
+    """다른 설비의 실제 규모 문서(apu_document)를 보관소에 올리고 추출 계약을 지난 제안(인용 좌표가 채워진 것)."""
+    import apu_document as apu
+    from procsvc import manual_extraction
+    from procsvc.manual_sources import ManualSources
+    source = ManualSources(tmp_path / 'm.sqlite3').save('hyd', apu.FILENAME, apu.RAW)
+    return manual_extraction.validate_proposal(source, apu.proposal(source['source_id']))
+
+
+def test_새_항목은_추출_제안에는_승인_없이만_있고_검토본에는_넣기를_고른_것만_있다(tmp_path):
+    """새 항목은 몰래 만들지 않는다 — AI 가 낸 제안은 승인할 수 없고(approved 칸을 쓰면 거절), 사람이 검토한 본문은 넣기를 고른 항목(approved=true)만 받는다.
+    그 판정이 있는 문서에서 지식의 꼴은 새 항목 종류를 함께 돌려준다."""
+    p = _apu_validated(tmp_path)
+    out = check(deepcopy(p['knowledge']), p)
+    assert {k: len(out[k]) for k in mk.NEW_KINDS} == {'components': 9, 'symptoms': 7, 'sensors': 15}
+    smuggled = deepcopy(p['knowledge'])
+    smuggled['components'][0]['approved'] = True
+    with pytest.raises(ValueError, match='추출 제안은 새 구성 요소 「공기 압축기」를 승인하지 않습니다'):
+        check(smuggled, p)
+    unchosen = deepcopy(p['knowledge'])
+    for kind in mk.NEW_KINDS:
+        for item in unchosen[kind]:
+            item['approved'] = True
+    del unchosen['sensors'][0]['approved']
+    with pytest.raises(ValueError, match='새 센서 「압축기 압력」은 사람이 검토 화면에서 「넣기」를 골라야 적재됩니다'):
+        mk.validate(unchosen, sections=sections_of(p), sops=sops_of(p), anchor=lambda a: a, reviewed=True)
+    unchosen['sensors'][0]['approved'] = True
+    assert len(mk.validate(unchosen, sections=sections_of(p), sops=sops_of(p), anchor=lambda a: a, reviewed=True)['sensors']) == 15
+
+
+def test_새_항목이_없는_문서의_지식은_전과_같은_꼴이다():
+    """수업 문서의 적재 계획은 새 항목 종류의 빈 목록을 싣지 않는다 — 계획 · 영수증 · 검토 화면이 전과 같다."""
+    assert set(check(deepcopy(HM8['knowledge']))) == set(mk.KINDS)
+
+
+def test_증거는_수집_태그면_판단_엔진이_평가할_SQL을_갖고_센서_태그면_SQL이_없다(tmp_path):
+    p = _apu_validated(tmp_path)
+    apu_evidence = check(deepcopy(p['knowledge']), p)['evidence']
+    assert apu_evidence and all('sql' not in e for e in apu_evidence)
+    assert all(e['sql'].startswith('SELECT') for e in check(deepcopy(HM8['knowledge']))['evidence'])
+    bad = deepcopy(p['knowledge'])
+    bad['evidence'][0]['tag'] = '압력 값'
+    with pytest.raises(ValueError, match='tag는 수집 계약의 태그'):
+        check(bad, p)
+    note = mk.unevaluated_note('TP2', '압축기 압력')
+    assert '「압축기 압력」(태그 TP2)는' in note and '판단 엔진이 이 증거를 평가하지 않습니다' in note and '도구 서버' in note
+
+
+@pytest.mark.parametrize('change, says', [
+    (lambda s: s[0].update(tag='TS1'), '이 시스템이 수집하는 유압 설비 값의 이름이라 새 센서의 태그로 쓸 수 없습니다'),
+    (lambda s: s[1].update(tag=s[0]['tag']), '쓰는 새 센서가 둘 이상입니다'),
+    (lambda s: s[0].update(tag='TP 2'), '그 설비 시스템이 쓰는 센서 태그입니다'),
+    (lambda s: s[0].pop('component'), 'comp:… 형식의 온톨로지 id가 필요합니다'),
+], ids=['수집 태그와 같은 이름', '두 센서가 같은 태그', '태그 꼴', '붙은 구성 요소 없음'])
+def test_새_센서의_태그와_구성_요소가_틀리면_까닭과_함께_거절한다(tmp_path, change, says):
+    p = _apu_validated(tmp_path)
+    knowledge = deepcopy(p['knowledge'])
+    change(knowledge['sensors'])
+    with pytest.raises(ValueError, match=says):
+        check(knowledge, p)

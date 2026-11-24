@@ -41,6 +41,18 @@ def test_같은_시각_다른_값은_충돌이고_오래된_표본은_무시한�
     assert o.record('TS1', 100.0, 49.0) == ('invalid', False)
 
 
+def test_평가_시각보다_늦은_표본만_있으면_미래_값이고_그_앞_표본이_있으면_그것이_그_시각의_값이다():
+    """06-4: 다른 토픽의 다음 틱 기록이 먼저 처리된 경우 — 그 시각의 값은 늦은 표본이 밀어낸 바로 앞 표본이다."""
+    o = _obs()                                             # PLC_STATE 100.0 RUN
+    assert o.problems(('PLC_STATE',), 99.5, 99.5) == {'PLC_STATE': 'FUTURE_TIMESTAMP'}       # 앞 표본이 없다
+    o.record('PLC_STATE', 101.0, 'TRIP')
+    assert o.at_time('PLC_STATE', 100.0)['value'] == 'RUN' and o.problems(('PLC_STATE',), 100.0, 101.0) == {}
+    assert o.at_time('PLC_STATE', 101.0)['value'] == 'TRIP'
+    assert o.problems(('PLC_STATE',), 99.5, 101.0) == {'PLC_STATE': 'FUTURE_TIMESTAMP'}      # 앞 표본도 평가 시각보다 늦다
+    o.invalidate('PLC_STATE', 'INVALID_RECORD')            # 틀린 기록이 끼면 앞 표본으로 되돌아가 판정하지 않는다
+    assert o.problems(('PLC_STATE',), 100.0, 101.0) == {'PLC_STATE': 'INVALID_RECORD'}
+
+
 def test_보고_주기보다_긴_틈은_공백으로_알린다():
     o = _obs()
     assert o.record('TS1', 104.0, 48.0) == ('valid', True) and o.record('TS1', 105.0, 48.0) == ('valid', False)

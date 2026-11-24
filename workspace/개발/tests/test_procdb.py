@@ -18,6 +18,18 @@ def repo(pg_dsn):
         yield procdb.PgRepo(dsn)
 
 
+def test_업무_DB_주소가_없으면_지운_호스트_길로_돌지_않고_그_값의_이름을_말하며_실패한다(monkeypatch):
+    """process 의 업무 DB 주소(SUPABASE_DSN)는 compose 가 준다. 기본값(호스트에 연 업무 DB 포트 host.docker.internal:54322 — 지운 느린 길)이
+    있으면 값이 빠진 실행이 그 길로 조용히 돌았다 — 저장소를 만들 때도, 모듈에서 그 값을 읽을 때도 어느 값이 없는지 말하며 실패한다."""
+    monkeypatch.delenv('SUPABASE_DSN', raising=False)
+    with pytest.raises(RuntimeError, match='SUPABASE_DSN 이 설정되지 않았습니다'):
+        procdb.PgRepo()
+    with pytest.raises(RuntimeError, match='SUPABASE_DSN 이 설정되지 않았습니다'):
+        procdb.SUPABASE_DSN
+    monkeypatch.setenv('SUPABASE_DSN', 'postgresql://u:p@db.supabase.internal:5432/postgres')
+    assert procdb.PgRepo().dsn == procdb.SUPABASE_DSN == 'postgresql://u:p@db.supabase.internal:5432/postgres'
+
+
 def _definition(def_id, version, note=''):
     return {'processDefinitionId': def_id, 'processDefinitionName': def_id, 'version': version, 'description': note, 'forms': {},
             'activities': [], 'events': [{'id': 's', 'type': 'startEvent'}, {'id': 'e', 'type': 'endEvent'}],

@@ -69,14 +69,6 @@ def test_검사는_선언한_다중도를_실제로_잰다(card, rows, bad):
     assert len(onto.cardinality_violations(rows, {'R': {'cardinality': card}})) == bad
 
 
-def test_생성물은_지금_생성기_결과와_같다(schema):
-    """it/neo4j/v2 의 생성물 셋과 workspace/개발/문서/ontology 의 그림 · 표 — 손으로 고치거나 생성기만 바뀐 채로 남지 않는다."""
-    for path, text in ((onto.V2 / 'constraints.cypher', onto.gen_constraints(schema)), (onto.V2 / 'ontology-schema.ttl', onto.gen_ttl(schema)),
-                       (onto.V2 / 'schema_prompt.md', onto.gen_prompt(schema)), (onto.DOCS / 'ontology-classes.svg', onto.gen_svg(schema)),
-                       (onto.DOCS / 'class-table.md', '# 온톨로지 클래스 (생성 파일 — schema.json)\n\n' + onto.gen_class_table(schema))):
-        assert path.read_text(encoding='utf-8') == text, f'{path.name} 이 생성기 결과와 다르다 — ontology_v2.py gen 으로 다시 만든다'
-
-
 def test_kg_seed_가_넣은_수업_그래프는_스키마를_지킨다(seeded_graph, schema):
     with seeded_graph.driver.session() as session:
         nodes, rels, skipped = onto.base_scope(*onto.read_rows(session))

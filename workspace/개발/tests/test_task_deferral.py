@@ -91,12 +91,12 @@ def test_다시_평가는_그_보류를_기다리는_작업만_새_실행으로_
     wid = _task(repo)
     receipt = _defer(repo, wid)
     with pytest.raises(ValueError, match='그 보류에 대한 다시 평가'):
-        task_deferral.reassess(repo, TENANT, wid, deferral_id='other', request_id='R-1', by='user:kim-op', reason='새 근거')
-    done = task_deferral.reassess(repo, TENANT, wid, deferral_id=receipt['id'], request_id='R-1', by='user:kim-op', reason='재고 다시 확인')
+        task_deferral.reassess(repo, TENANT, wid, deferral_id='other', request_id='R-1', by='user:me', reason='새 근거')
+    done = task_deferral.reassess(repo, TENANT, wid, deferral_id=receipt['id'], request_id='R-1', by='user:me', reason='재고 다시 확인')
     row = repo.get_workitem(wid)
     assert (row['status'], row['draft'], row['draft_status'], row['consumer']) == ('IN_PROGRESS', None, None, None), '워커가 새로 집는다'
     assert '재고 다시 확인' in row['feedback']['text'] and done['status'] == 'QUEUED'
-    assert task_deferral.reassess(repo, TENANT, wid, deferral_id=receipt['id'], request_id='R-1', by='user:kim-op',
+    assert task_deferral.reassess(repo, TENANT, wid, deferral_id=receipt['id'], request_id='R-1', by='user:me',
                                   reason='재고 다시 확인') == done
 
 

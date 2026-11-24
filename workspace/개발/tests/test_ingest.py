@@ -79,7 +79,35 @@ def test_시스템을_알_수_없는_표는_확인하라고_경고한다():
     # 사람이 그 표의 출처 시스템을 고르면(같은 값이어도) 확인한 것이다 — 적재 뒤까지 「확인할 것」이 남았다
     picked = ingest.plan(ingest.parse_ddl(LEGACY), filename='legacy-plant-db.sql', batch='b', selection={'T_EQP01': ['C_TMP_O']},
                          systems={'T_EQP01': 'sys:db-hyd-enterprise'})
-    assert picked['inputs'][0]['system'] == 'sys:db-hyd-enterprise' and picked['warnings'] == []
+    assert picked['inputs'][0]['system'] == 'sys:db-hyd-enterprise' and not any('출처 시스템 표시' in w for w in picked['warnings'])
+    assert picked['warnings'] == [ingest.no_asset_key('public."T_EQP01"')]          # 설비 식별 열이 없다는 것은 시스템을 골라도 여전히 사실이다(C8)
+
+
+def test_설비별_값을_읽을_열은_설비_코드를_가리키는_외래_키이고_없으면_적재_전에_말한다():
+    """C8(2026-11-22): 설비 열을 이름이 asset 일 때만 알아봐, 설비 열 이름이 다른 학생 표(equipment_id → assets(code))의 판단 입력이 데이터 원천의 묶어 보기에서
+    말없이 빠졌다. 설비 표의 코드를 가리키는 외래 키 열이 그 열이고, 그런 열도 asset 열도 없으면 적재 전에 경고한다."""
+    ddl = '''CREATE TABLE ent.wo (id bigint PRIMARY KEY, equipment_id varchar(10) REFERENCES ent.assets(code), hours numeric);
+CREATE TABLE ent.readings (id bigint PRIMARY KEY, reading numeric);'''
+    plan = ingest.plan(ingest.parse_ddl(ddl), filename='mine.sql', batch='b', selection={'ent.wo': ['hours'], 'ent.readings': ['reading']}, systems={'ent.wo': 'sys:cmms', 'ent.readings': 'sys:cmms'})
+    by_column = {i['column']: i for i in plan['inputs']}
+    assert by_column['hours']['assetColumn'] == 'equipment_id' and by_column['reading']['assetColumn'] is None
+    assert plan['warnings'] == [ingest.no_asset_key('ent.readings')]
+    ingest.validate_plan(plan)
+
+
+def test_표_주석이_적은_시스템_이름은_알려진_여덟이_아니어도_그_시스템이_된다():
+    """C18(2026-11-22): 표 주석 머리 「-- WMS: 창고」를 시스템으로 알아보지 못해 원천 연결 이름(sys:db-…)이 출처 시스템이 됐고, 화면에서 새 시스템 이름을 정할
+    길이 없었다. 주석 머리의 대문자 낱말이 그 시스템이다(알려진 MES 등은 이미 있는 id 그대로). 표 이름으로 짐작하는 것은 알려진 이름만이다."""
+    ddl = '''CREATE TABLE ent.stock (id bigint PRIMARY KEY, qty integer);
+COMMENT ON TABLE ent.stock IS 'WMS: 창고 재고';
+CREATE TABLE ent.mes_lots (id bigint PRIMARY KEY, qty integer);
+CREATE TABLE ent.notes (id bigint PRIMARY KEY, qty integer);
+COMMENT ON TABLE ent.notes IS '창고 메모';'''
+    plan = ingest.plan(ingest.parse_ddl(ddl), filename='mine.sql', batch='b', selection={'ent.stock': ['qty'], 'ent.mes_lots': ['qty'], 'ent.notes': ['qty']})
+    assert {i['table']: i['system'] for i in plan['inputs']} == {'stock': 'sys:wms', 'mes_lots': 'sys:mes', 'notes': 'sys:db-hyd-enterprise'}
+    assert {s['id']: s['name'] for s in plan['systems']}['sys:wms'] == 'WMS'
+    assert any(w.startswith('ent.notes: 파일에 출처 시스템 표시가 없어') for w in plan['warnings'])
+    ingest.validate_plan(plan)
 
 
 @pytest.mark.parametrize('kwargs, says', [
@@ -113,7 +141,9 @@ def test_적재_계약은_미리보기와_다른_식별자_칸을_받지_않는�
         ingest.validate_plan(plan)
 
 
-def test_규칙_조건은_그_열의_원천_표에서_확인하는_SQL이_된다():
+def test_규칙_조건은_그_열의_원천_표에서_확인하는_SQL이_되고_그_SQL은_조건에_맞는_설비의_행만_낸다(scratch_db):
+    """13B-9: 전에는 만든 SQL 의 글자 모양만 봤다 — 따옴표 · 시각 열 파생 · 매개변수 이름이 틀려 실행이 깨져도 통과했다. 실제 DB 에 그 표를 만들어 돌린다."""
+    import psycopg
     plan = ingest.plan(ingest.parse_ddl(SHORT), filename='o.sql', batch='b', selection={'mes.orders': ['qty', 'due_at']})
     inputs = {i['variable']: i for i in plan['inputs']}
     qty, due = (next(i for i in plan['inputs'] if i['column'] == c) for c in ('qty', 'due_at'))
@@ -121,8 +151,19 @@ def test_규칙_조건은_그_열의_원천_표에서_확인하는_SQL이_된다
                                {'variable': due['variable'], 'operator': '<', 'value': 24},
                                {'variable': 'unknown', 'operator': '==', 'value': 1}], inputs)
     [query] = out['queries']
-    assert query['sql'].startswith('select "asset", "qty", round(') and '"qty" >= %(v0)s' in query['sql']
     assert query['params'] == {'asset': '<asset>', 'v0': 10, 'v1': 24} and out['unmapped'] == ['unknown']
+    with psycopg.connect(scratch_db, autocommit=True) as db:
+        db.execute('CREATE SCHEMA mes')
+        db.execute('CREATE TABLE mes.orders (id bigint PRIMARY KEY, asset text NOT NULL, due_at timestamptz, qty integer)')
+        db.execute("""INSERT INTO mes.orders VALUES (1, 'HYD-01', now() + interval '10 hours', 12),     -- 수량 · 납기 둘 다 맞음
+                                                    (2, 'HYD-02', now() + interval '10 hours', 5),      -- 수량이 모자람
+                                                    (3, 'HYD-03', now() + interval '50 hours', 12)""")  # 납기가 멀다
+
+        def rows(asset):
+            return db.execute(query['sql'], dict(query['params'], asset=asset)).fetchall()
+        [hit] = rows('HYD-01')
+        assert hit[0] == 'HYD-01' and hit[1] == 12 and 9 < float(hit[2]) <= 10          # 설비 · 수량 · 납기까지 남은 시간(파생 열)
+        assert rows('HYD-02') == [] and rows('HYD-03') == [] and rows('HYD-09') == []
 
 
 @pytest.mark.parametrize('test, says', [

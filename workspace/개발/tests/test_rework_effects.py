@@ -2,7 +2,7 @@
 import uuid
 
 from conftest import OPERATOR
-from procsvc import rework, rework_effects
+from procsvc import rework_effects
 
 
 def _evidence(**incident):
@@ -41,9 +41,45 @@ def test_설비_명령을_확인하면_효과가_정리돼_사건을_다시_열�
     assert plan['blockers'] == [], [b['code'] for b in plan['blockers']]
 
 
-def test_막힘은_만든_자리에서_문장을_갖는다(world):
-    alert, pid, decision = world.start_cooling()
-    world.approve(pid, decision, 'skill:sop-cool-11', OPERATOR)
-    world.commanded(pid)
-    plan = world.rt.preview_rework(pid, world.row(pid, 'T_agent')['id'])
-    assert plan['blockers'] and all(b['text'] == rework.BLOCKER_TEXT[b['code']] for b in plan['blockers'])
+def test_발주가_나간_예비품_구매_처리_건은_발주를_취소한_뒤에야_판단부터_다시_수행하고_사건이_승인_대기로_돌아간다(world):
+    """13C-17: 다시 수행의 실제 흐름 판정이 모두 흐름 A(설비 명령 효과)였다 — 업무 영수증 효과(발주)가 남은, 설비 명령이 없는 흐름은 재지 않았다.
+    흐름 C: 승인 → 발주(업무 DB 구매요청) → 입고 대기. 그때 판단 단계부터 다시 수행하려 하면 발주라는 효과가 남아 막히고, 발주를 업무 시스템의
+    역거래(구매요청 취소)로 되돌리면 막힘이 풀려 새 차수가 열리며, 「승인 — 흐름이 실행 중」이던 사건이 승인 대기로 돌아간다(새 판단 · 승인을 받는다)."""
+    import psycopg
+    import pytest
+    from test_instances import BUYER, ME, _button
+    world.main._entsim_post('/erp/spare/reset', {'part_no': 'P-PMP-SEAL'})
+    alert, pid = _button(world, 'C', dict(by='담당자', user_id=ME, roles=['role:purchasing']))
+    decision = world.agent(pid, 'T_agent')
+    world.approve(pid, decision, world.main.book[decision]['recommended'], BUYER)
+    world.poll(2)
+    inc = world.incident(pid)
+    assert world.row(pid, 'T_gr')['status'] == 'SUBMITTED' and inc.state == 'APPROVED_EXECUTING'
+    agent = world.row(pid, 'T_agent')
+
+    plan = world.rt.preview_rework(pid, agent['id'])
+    codes = [b['code'] for b in plan['blockers']]
+    assert 'effects_require_compensation_or_review' in codes and 'incident_not_active_for_rework' not in codes, codes
+    with pytest.raises(ValueError, match='다시 수행할 수 없습니다: '):
+        world.rt.request_rework(pid, agent['id'], str(uuid.uuid4()), plan['snapshot_token'], BUYER['by'], BUYER['role'], '수량을 다시 판단')
+    po = next(e for e in world.rt.effects_view(pid)['effects'] if (e.get('ref') or '').startswith('PR-'))
+    assert po['reversible'] is True, po
+    with psycopg.connect(world.dsn, autocommit=True) as db:
+        assert db.execute('SELECT status FROM ent.purchase_requests WHERE id=%s', (po['ref'],)).fetchone() == ('승인됨 → 발주',)
+
+    receipt = world.rt.compensate_effects(pid, str(uuid.uuid4()), BUYER['by'], BUYER['role'], '발주 취소 — 수량을 다시 판단', [po['id']])
+    assert receipt['status'] == 'DELIVERED', receipt
+    with psycopg.connect(world.dsn, autocommit=True) as db:
+        status = db.execute('SELECT status FROM ent.purchase_requests WHERE id=%s', (po['ref'],)).fetchone()[0]
+    assert status != '승인됨 → 발주', status                                                       # 업무 DB 의 발주가 실제로 취소됐다
+
+    plan = world.rt.preview_rework(pid, agent['id'])
+    assert plan['blockers'] == [] and plan['effects_resolution']['pending'] == [], plan['blockers']
+    result = world.rt.request_rework(pid, agent['id'], str(uuid.uuid4()), plan['snapshot_token'], BUYER['by'], BUYER['role'], '수량을 다시 판단')
+    assert result['generation'] == 1
+    new = next(w for w in world.rows(pid) if w['id'] == result['start_workitem'])
+    assert new['activity_id'] == 'T_agent' and new['supersedes_id'] == agent['id']
+    waits = sorted(w['status'] for w in world.rows(pid) if w['activity_id'] == 'T_gr')
+    assert waits == ['CANCELLED', 'TODO'], f'옛 차수의 입고 대기는 취소되고 새 차수의 것은 아직 닿지 않은 예정 행이다: {waits}'
+    assert world.incident(pid).state == 'AWAITING_APPROVAL', '새 판단 · 승인을 받도록 사건이 승인 대기로 돌아간다'
+

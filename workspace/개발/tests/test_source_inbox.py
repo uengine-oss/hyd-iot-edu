@@ -127,3 +127,36 @@ def test_관문_거절은_한_번만_접수되고_감사_기록은_행을_만들
     handled = world.main.source_inbox.get(first['id'])          # 어느 사건에도 없는 명령 — 처리기가 「할 일 없음」으로 끝낸다
     assert handled['status'] == 'HANDLED' and handled['result']['cmdId'] == cmd
     assert _count(world.dsn, 'AUDIT') == 0
+
+
+def test_보낸_때를_빼는_규칙_전에_받은_경보도_다시_보내면_같은_사건이고_내용이_다르면_그_칸을_말한다(world):
+    """검토 의심(2026-11-24): 같은 경보인지 가르는 규칙에서 보낸 때(t)를 뺐는데, 그 전 판이 받은 접수 행에는 t 까지 넣어 계산한 해시가 남는다 —
+    업그레이드 뒤 원천이 같은 경보를 다시 보내면 보낸 때만 달라도 「충돌 — 다른 칸: 없음」이었다. 처음 받은 행은 남은 원문으로 지금 규칙의 해시를
+    다시 계산해 견준다. 옛 판이 남긴 행은 그 판의 규칙(경보 원문 전체의 해시 = 원문 해시 payload_sha)으로 그 행의 해시를 바꿔 만든다(업무 DB 그대로)."""
+    alert, pid = world.raise_alert('COOLER_DEGRADATION', 'HYD-01', ts1=58.0, ce=0.62)
+    with psycopg.connect(world.dsn, autocommit=True) as db:
+        [(first,)] = db.execute("UPDATE process_source_inbox SET semantic_sha = payload_sha WHERE tenant_id = 'hyd' AND kind = 'RAISE' "
+                                "AND parent_id IS NULL AND payload->>'alertId' = %s RETURNING id", (alert['alertId'],)).fetchall()
+    world.clock.advance(30)
+    again = world.receive(topics.K_ALERTS, dict(alert, t=world.now_iso()))                       # 같은 경보 — 보낸 때만 다르다
+    assert (again['status'], again['parent_id'], again['error']) == ('DUPLICATE', first, None), again
+    changed = world.receive(topics.K_ALERTS, dict(alert, t=world.now_iso(), evidence={'ts1': 70.0, 'ce': 0.62}))
+    assert (changed['status'], changed['parent_id']) == ('CONFLICT', first) and '다른 칸: evidence)' in changed['error'], changed
+    assert world.inst(pid)['status'] == 'RUNNING'                                                  # 처음 받은 경보의 처리 건은 그대로
+
+
+def test_같은_경보를_보낸_때만_바꿔_다시_보내면_같은_사건이고_내용이_다르면_다른_칸을_말하며_거절한다(world):
+    """2026-11-23 학생 대역 실측: 바깥 프로그램(학생 감지 프로그램)이 같은 경보(같은 alertId)를 다시 보내자 보낸 때(t)만 달라도 「충돌」로 HTTP 400 —
+    영어 내부 문장(「same business event identity contains conflicting source data」)이 돌아왔다. 바깥 원천은 다시 켜지거나 재시도하면 같은 경보를 다시
+    보낸다. 같은 경보인지는 업무 내용으로 가리고(보낸 때는 뺀다 — 처음 받은 경보가 정본), 내용이 다르면 어느 칸이 다른지와 할 일을 말한다."""
+    alert, pid = world.raise_alert('COOLER_DEGRADATION', 'HYD-01', ts1=58.0, ce=0.62)
+    world.clock.advance(30)
+    again = world.receive(topics.K_ALERTS, dict(alert, t=world.now_iso()))                       # 원천 통로(Kafka)로 다시
+    assert again['status'] == 'DUPLICATE' and again['parent_id'] is not None, again
+    world.clock.advance(30)
+    status, body = world.api('POST', '/api/instances/start', {'alert': dict(alert, t=world.now_iso())}, source_loop=True)   # HTTP 입구로 다시
+    assert status == 409 and f'이 경보로 이미 열린 처리 건이 있습니다: {pid}' in body['detail'], (status, body)     # 같은 경보 = 같은 처리 건(B-10)
+    status, body = world.api('POST', '/api/instances/start', {'alert': dict(alert, evidence={'ts1': 70.0, 'ce': 0.62})}, source_loop=True)
+    detail = (body or {}).get('detail') or ''
+    assert status == 400 and alert['alertId'] in detail and '다른 칸: evidence' in detail and 'same business event' not in detail, (status, body)
+    assert world.inst(pid)['status'] == 'RUNNING'                                                  # 처음 받은 경보의 처리 건은 그대로

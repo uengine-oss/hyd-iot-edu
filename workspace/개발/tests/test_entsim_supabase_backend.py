@@ -34,12 +34,12 @@ def decision():
 
 
 def work_order(**params):
-    return {'decision': decision(), 'option': 'opt-1', 'skill': 'skill:schedule-maintenance', 'asset': 'HYD-01', 'by': 'user:park-maint',
-            'params': {'task': 'SOP-COOL-04 쿨러 핀 세척', 'window': '즉시', **params}}
+    return {'decision': decision(), 'option': 'opt-1', 'skill': 'skill:schedule-maintenance', 'asset': 'HYD-01', 'by': 'user:me',
+            'params': {'task': 'SOP-COOL-14 쿨러 핀 세척', 'window': '즉시', **params}}
 
 
 def purchase(part_no='P-PMP-SEAL', supplier='sup:b', qty=6, **extra):
-    return {'decision': decision(), 'option': 'opt-1', 'skill': 'skill:procure-part', 'asset': 'HYD-02', 'by': 'user:jung-buy',
+    return {'decision': decision(), 'option': 'opt-1', 'skill': 'skill:procure-part', 'asset': 'HYD-02', 'by': 'user:me',
             'params': {'supplier': supplier, 'part_no': part_no, 'qty': qty, **extra}}
 
 
@@ -78,7 +78,7 @@ def _refusals():
         (dict(work_order(), asset=None), '설비(asset)가 없습니다'),
         (dict(work_order(), asset='HYD-09'), '등록되지 않은 설비'),
         (dict(work_order(), params={'window': '즉시'}), '작업 내용(task)이 없습니다'),
-        (dict(work_order(), params={'task': 'SOP-COOL-04'}), '정비 시점'),                      # 옛 판은 카드 id 글자로 「즉시 / 야간」을 짐작했다
+        (dict(work_order(), params={'task': 'SOP-COOL-14'}), '정비 시점'),                      # 옛 판은 카드 id 글자로 「즉시 / 야간」을 짐작했다
         (dict(purchase(), params={'part_no': 'P-PMP-SEAL', 'qty': 6}), '공급사(supplier)가 없습니다'),   # 옛 판은 sup:b 로 대신 발주
         (purchase(supplier='sup:c'), '승인 공급사 목록(AVL)'),
         (purchase(qty=0), '발주 수량'),
@@ -120,7 +120,7 @@ def test_정비_완료는_표준_부품을_실물에서_소모하고_실물이_�
                  "'P-FAN-BRG', 1) ON CONFLICT (sop) DO NOTHING")
     sql(ent_dsn, "UPDATE ent.spare_stock SET on_hand=%s, reserved=0 WHERE part_no='P-FAN-BRG'", on_hand)
     wo = ent.execute(dict(work_order(), asset='HYD-03'))
-    complete = {'decision': decision(), 'skill': 'skill:complete-maintenance', 'asset': 'HYD-03', 'by': 'user:park-maint',
+    complete = {'decision': decision(), 'skill': 'skill:complete-maintenance', 'asset': 'HYD-03', 'by': 'user:me',
                 'params': {'ref': wo['ref'], 'sop': 'SOP-TEST-BRG'}}
     if done:
         tx = ent.execute(complete)
@@ -138,7 +138,7 @@ def test_입고는_시간_근거를_입고_기록과_발주에_남기고_거래_
     sql(ent_dsn, "UPDATE ent.spare_stock SET on_order=0 WHERE part_no='P-PMP-SEAL'")
     pr = ent.execute(purchase())
     basis = '업무 시간 리드타임 5일을 실제 60초로 줄여 기다린 뒤 입고했습니다'
-    gr = ent.execute({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'by': 'user:jung-buy',
+    gr = ent.execute({'decision': decision(), 'skill': 'skill:receive-goods', 'asset': 'HYD-02', 'by': 'user:me',
                       'params': {'ref': pr['ref'], 'basis': basis}})
     assert gr['detail'].endswith(' — ' + basis)
     assert sql(ent_dsn, 'SELECT g.basis, r.receipt_basis, r.status FROM ent.goods_receipts g JOIN ent.purchase_requests r ON r.id = g.pr_id '
@@ -186,7 +186,7 @@ def test_공급사_견적이_사라진_발주는_검수_결과를_지어내지_�
 # ---------------------------------------------------------------- 되돌리기
 def test_원거래_id가_실린_작업지시_취소는_오더를_취소로_닫는다(ent, ent_dsn):
     wo = ent.execute(work_order())
-    undo = ent.execute({'decision': wo['decision'], 'skill': 'skill:cancel-work-order', 'by': 'user:park-maint',
+    undo = ent.execute({'decision': wo['decision'], 'skill': 'skill:cancel-work-order', 'by': 'user:me',
                         'params': {'ref': wo['ref']}, 'compensates': wo['id']})
     assert undo['compensates'] == wo['id']
     assert sql(ent_dsn, 'SELECT status FROM ent.work_orders WHERE id=%s', wo['ref']) == [('취소',)]
@@ -195,7 +195,7 @@ def test_원거래_id가_실린_작업지시_취소는_오더를_취소로_닫�
 def test_구매요청_취소는_입고_예정을_되돌린다(ent, ent_dsn):
     sql(ent_dsn, "UPDATE ent.spare_stock SET on_order=0 WHERE part_no='P-FAN-BRG'")
     pr = ent.execute(purchase(part_no='P-FAN-BRG', qty=2))
-    ent.execute({'decision': pr['decision'], 'skill': 'skill:cancel-purchase-request', 'by': 'user:jung-buy',
+    ent.execute({'decision': pr['decision'], 'skill': 'skill:cancel-purchase-request', 'by': 'user:me',
                  'params': {'ref': pr['ref']}, 'compensates': pr['id']})
     assert sql(ent_dsn, "SELECT on_order FROM ent.spare_stock WHERE part_no='P-FAN-BRG'") == [(0,)]
 
@@ -207,7 +207,7 @@ def test_구매요청_취소는_입고_예정을_되돌린다(ent, ent_dsn):
 ], ids=['원거래_없음', '다른_원거래', '되돌리기_아님'])
 def test_되돌리기는_맞는_원거래가_있어야_한다(ent, case, reason):
     wo, pr = ent.execute(work_order()), ent.execute(purchase(part_no='P-FAN-BRG', qty=1))
-    body = {'decision': wo['decision'], 'skill': 'skill:cancel-work-order', 'by': 'user:park-maint', 'params': {'ref': wo['ref']},
+    body = {'decision': wo['decision'], 'skill': 'skill:cancel-work-order', 'by': 'user:me', 'params': {'ref': wo['ref']},
             'compensates': {'원거래_없음': None, '다른_원거래': pr['id'], '되돌리기_아님': wo['id']}[case]}
     if case == '되돌리기_아님':
         body['skill'] = 'skill:schedule-maintenance'
@@ -271,3 +271,23 @@ def test_건강_검사는_연결_한_번에_설비와_거래_수를_세고_실�
         assert h['ok'] is True and h['assets'] == 3 and h['transactions'] == sql(ent_dsn, 'SELECT count(*) FROM ent.transactions')[0][0]
     else:
         assert h['ok'] is False and h['error']
+
+
+def test_정기_정비가_도래한_설비에_낸_다른_정비_요청은_이번_정기_정비_요청이_되지_않고_계수기_리셋_거래는_없다(ent, ent_dsn):
+    """전에는 도래 설비에 예정된 정비 시간으로 잡힌 정비 요청이면 무엇이든 「이번 회차 정기 정비 요청」으로 표시됐다(047 트리거) — 쿨러 핀 세척 요청을
+    야간 정비 시간으로 내면 하지 않은 정기 정비가 잡힌 것으로 보여 「정기 점검 도래」가 꺼졌고, 그 요청을 끝낸 뒤 시운전이 통과하면 운전시간 계수기가
+    0 으로 · 「정기 정비 완료」 기록이 남았다(새2). 정기 정비 요청은 원문 정비 범위 거래만 표시하고, 성공할 길이 없어진 계수기 리셋 거래는 없다(082)."""
+    sql(ent_dsn, "UPDATE ent.pm_counters SET since_pm_h=1960, plan_wo=NULL, plan_window=NULL, planned_at=NULL WHERE asset='HYD-03'")
+    assert sql(ent_dsn, "SELECT pm_alert FROM ent.pm_status WHERE asset='HYD-03'") == [(True,)], '정기 정비 도래 · 이번 회차 요청 없음'
+    window = sql(ent_dsn, "SELECT id FROM ent.next_maintenance_windows('HYD-03', 14) ORDER BY starts_at LIMIT 1")[0][0]
+    cooler = ent.execute(dict(work_order(window_id=window), asset='HYD-03'))            # 정기 정비가 아닌 요청(쿨러 핀 세척)을 예정된 정비 시간으로
+    assert sql(ent_dsn, "SELECT plan_wo FROM ent.pm_counters WHERE asset='HYD-03'") == [(None,)]
+    assert sql(ent_dsn, "SELECT pm_alert FROM ent.pm_status WHERE asset='HYD-03'") == [(True,)], '정기 점검 도래는 그대로 켜져 있다'
+    ent.execute({'decision': decision(), 'skill': 'skill:complete-maintenance', 'asset': 'HYD-03', 'by': 'user:me',
+                 'params': {'ref': cooler['ref'], 'sop': 'SOP-COOL-14'}})
+    with pytest.raises(psycopg.Error) as err:
+        ent.execute({'decision': decision(), 'skill': 'skill:pm-reset', 'asset': 'HYD-03', 'by': 'user:me', 'params': {'ref': cooler['ref']}})
+    assert err.value.sqlstate == '22023' and '업무 시스템에 없는 거래입니다: skill:pm-reset' in str(err.value), str(err.value)
+    assert sql(ent_dsn, "SELECT since_pm_h, cycle FROM ent.pm_counters WHERE asset='HYD-03'")[0][0] == 1960
+    assert sql(ent_dsn, "SELECT count(*) FROM ent.skill_contracts WHERE skill='skill:pm-reset'") == [(0,)]
+    assert sql(ent_dsn, "SELECT count(*) FROM pg_trigger WHERE tgname='work_orders_mark_pm_plan'") == [(0,)]

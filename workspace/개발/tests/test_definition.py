@@ -19,13 +19,13 @@ def test_표에_없는_사건_상태는_좌표를_붙여_실패한다():
 
 
 @pytest.mark.parametrize('reason, words, reobserved', [
-    ('PLC REJECTED: INTERLOCK', 'PLC 에서 거절됐습니다(사유 INTERLOCK)', False),
+    ('PLC REJECTED: 보호 정지 중 (리셋만 가능)', 'PLC 에서 거절됐습니다(사유 보호 정지 중 (리셋만 가능))', False),
     ('GATEWAY_REJECTED: 설비가 원격 자동 모드가 아니어서 보내지 않았습니다', '명령 관문이 설비 명령을 넘기지 않고 거절했습니다 — 설비가 원격 자동', False),
     ('ACK_TIMEOUT', '30초 안에 오지 않았습니다', False),
     ('CMD_SEND_FAILED', '명령 통로(Kafka)에 싣지 못했습니다', False),
     ('PROCESS_RESTART_REVIEW', 'process 가 다시 시작돼', False),
     ('UNSUPPORTED_RECOVERY_CRITERION', '회복 기준이 없어 효과 확인으로 판정하지 못했습니다', True),
-    ('UNSUPPORTED_ALERT_PATTERN', '현장 검토로 넘겼습니다', False),
+    ('UNSUPPORTED_ALERT_PATTERN', '이 경보를 받는 배포 흐름이 없어 처리 흐름 대신 현장 검토로 넘겼습니다', False),   # 검토 나-4: 「회복 기준이 없어」가 아니다
     ('PROCESS_ENDED: 사람이 닫음', '「사람이 닫음」으로 끝나', False),
 ])
 def test_에스컬레이션_사유_코드마다_학생이_읽는_문장이_있다(reason, words, reobserved):

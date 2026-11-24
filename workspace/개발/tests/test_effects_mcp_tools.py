@@ -1,5 +1,4 @@
 """메일 도구 본체(it/effects-mcp/effects_mcp/tools.py) — 바깥(SMTP 메일함)만 FakeSmtp(conftest)로, 멱등 기록은 실제 SQLite 파일."""
-import smtplib
 import threading
 import uuid
 
@@ -12,7 +11,7 @@ GOOD = {'to': 'production@hyd.local', 'subject': '[정비 공지] 시험', 'body
 
 @pytest.fixture
 def mail(smtp, tmp_path):
-    tools = EffectTools(Ledger(str(tmp_path / 'effects.sqlite3')), smtp_factory=lambda: smtplib.SMTP('127.0.0.1', smtp.port, timeout=5))
+    tools = EffectTools(Ledger(str(tmp_path / 'effects.sqlite3')), smtp=('127.0.0.1', smtp.port))
     return tools, smtp
 
 
@@ -80,10 +79,10 @@ def test_같은_멱등_키가_동시에_와도_메일은_한_통이다(mail):
 
 def test_멱등_기록은_도구를_다시_만들어도_남는다(smtp, tmp_path):
     path, key = str(tmp_path / 'effects.sqlite3'), 'case:' + uuid.uuid4().hex
-    factory = lambda: smtplib.SMTP('127.0.0.1', smtp.port, timeout=5)
-    EffectTools(Ledger(path), factory).send_mail(**GOOD, idempotency_key=key)
+    address = ('127.0.0.1', smtp.port)
+    EffectTools(Ledger(path), address).send_mail(**GOOD, idempotency_key=key)
     before = len(smtp.messages)
-    again = EffectTools(Ledger(path), factory).send_mail(**GOOD, idempotency_key=key)
+    again = EffectTools(Ledger(path), address).send_mail(**GOOD, idempotency_key=key)
     assert again['document']['replayed'] is True and sent(smtp, before) == 0
 
 
@@ -100,8 +99,32 @@ def test_이전_판의_멱등_기록에는_같은_메일인지_가릴_수_없다
 @pytest.mark.parametrize('up', [True, False], ids=['메일함_켜짐', '메일함_꺼짐'])
 def test_메일함이_꺼져_있으면_보내기는_UNKNOWN이고_건강_검사는_실패를_알린다(smtp, tmp_path, up):
     port = smtp.port if up else 9
-    tools = EffectTools(Ledger(str(tmp_path / 'e.sqlite3')), smtp_factory=lambda: smtplib.SMTP('127.0.0.1', port, timeout=3))
+    tools = EffectTools(Ledger(str(tmp_path / 'e.sqlite3')), smtp=('127.0.0.1', port))
     out, health = tools.send_mail(**GOOD), tools.smtp_ready()
     assert (out['result'] == 'ok') is up and health['ok'] is up
     if not up:
-        assert out['error_kind'] == 'UNKNOWN' and '메일 서버에 보내지 못했습니다' in out['message'] and health['error']
+        assert out['error_kind'] == 'UNKNOWN' and '메일 서버에 보내지 못했습니다(127.0.0.1:9)' in out['message'] and health['error']
+    assert health['smtp'] == f'127.0.0.1:{port}'
+
+
+@pytest.mark.parametrize('env, missing', [({}, 'SMTP_HOST · SMTP_PORT'), ({'SMTP_HOST': 'inbucket'}, 'SMTP_PORT'), ({'SMTP_PORT': '1025'}, 'SMTP_HOST')],
+                         ids=['둘_다_없음', '포트_없음', '주소_없음'])
+def test_메일함_주소_값이_없으면_지운_호스트_길로_돌지_않고_없는_값의_이름을_말하며_켜지지_않는다(tmp_path, monkeypatch, env, missing):
+    """메일함 주소(SMTP_HOST · SMTP_PORT)는 compose 가 준다(업무 DB 망 안의 inbucket:1025). 기본값(호스트에 연 메일함 포트
+    host.docker.internal:54325 — 지운 길)이 있으면 값이 빠진 실행이 그 길로 조용히 돌았다."""
+    for name in ('SMTP_HOST', 'SMTP_PORT'):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    with pytest.raises(RuntimeError) as err:
+        EffectTools(Ledger(str(tmp_path / 'e.sqlite3')))
+    assert f'설정되지 않은 값: {missing}(' in str(err.value)
+
+
+def test_메일함_주소는_환경_값_그대로_쓴다(smtp, tmp_path, monkeypatch):
+    monkeypatch.setenv('SMTP_HOST', '127.0.0.1')
+    monkeypatch.setenv('SMTP_PORT', str(smtp.port))
+    tools = EffectTools(Ledger(str(tmp_path / 'e.sqlite3')))
+    before = len(smtp.messages)
+    out = tools.send_mail(**GOOD)
+    assert out['result'] == 'ok' and out['document']['smtp'] == f'127.0.0.1:{smtp.port}' and sent(smtp, before) == 1

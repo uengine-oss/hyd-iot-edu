@@ -230,6 +230,13 @@ def test_키_없는_PC의_교대_초안은_검사에_거절된_첫_답_뒤_녹�
     course.rt.poll_once()
     first = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert (first['status'], first['draft_status']) == ('IN_PROGRESS', 'FB_REQUESTED') and '[Rejected 1/3]' in (first['log'] or '')
+    # 다시 잡은 워커가 고칠 앞 결과는 돌려보낸 그 결과다(엔진이 output 을 비우고 draft 로 옮긴다) — 전에는 output 만 읽어 앞 결과 파일이 없었고,
+    # 「이전 결과를 고쳐」라는 교정 지시를 받은 AI가 처음부터 다시 썼다(2026-11-23 실측: 다른 설비 매뉴얼 추출이 세 차례 모두 새로 써 실패)
+    from worker import prompt
+    assert first.get('output') is None and prompt.rejected(first)
+    assert prompt.previous_result(first) == {k: v for k, v in first['draft'].items() if k != 'cliagents_session_id'}
+    text = prompt.build(first, {'summarized_feedback': (first.get('feedback') or {}).get('text')}, workdir='/w')
+    assert '결과 검사가 돌려보냄' in text and prompt.PREVIOUS_RESULT_FILE in text
     worker('replay', replay_dir=replay).poll_once()
     course.rt.poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
@@ -288,11 +295,11 @@ def test_재생의_스킬_안내는_학생이_스킬을_바꾼_실행에서만_�
     _, question = recorded_question()
     agent = None
     if own:
-        agent = agent_authoring.clone_agent(course.rt.repo, course.rt.tenant_id, ask.DEFAULT_AGENT, by='수강생')['id']
+        agent = agent_authoring.clone_agent(course.rt.repo, course.rt.tenant_id, ask.DEFAULT_AGENT, by='user:me')['id']
         agent_authoring.create_skill(course.rt.repo, course.rt.tenant_id, {
-            'skill_name': 'my-fan-check', 'description': '팬 점검 순서', 'content': '# 팬 점검\n1. 팬 회전수를 본다.'}, by='수강생')
+            'skill_name': 'my-fan-check', 'description': '팬 점검 순서', 'content': '# 팬 점검\n1. 팬 회전수를 본다.'}, by='user:me')
         agent_authoring.attach_skill(course.rt.repo, course.rt.tenant_id, agent, 'my-fan-check')
-    view = ask.start(course.rt, question, agent, '수강생', definitions_dir=__import__('conftest').DEFINITIONS,
+    view = ask.start(course.rt, question, agent, 'user:me', definitions_dir=__import__('conftest').DEFINITIONS,
                      worker_probe=lambda: {'reachable': True})
     worker('replay').poll_once()
     assert ask.view(course.rt, view['id'])['state'] in ('submitted', 'done')
@@ -380,7 +387,7 @@ def test_정기_정비_구매_에이전트에게_물어도_질문용_읽기_서�
     from hydcommon.handover_tools import QUESTION_READS
     from procsvc import ask
     doc, question = recorded_question()
-    view = ask.start(course.rt, question, agent, '수강생', definitions_dir=__import__('conftest').DEFINITIONS,
+    view = ask.start(course.rt, question, agent, 'user:me', definitions_dir=__import__('conftest').DEFINITIONS,
                      worker_probe=lambda: {'reachable': True})
     cli = RecordedCli(doc['runs'][0])
     worker('live', cli).poll_once()
@@ -428,7 +435,7 @@ def test_앞선_실행이_실패였으면_남긴_것이_없어_다시_실행하�
     assert ask.view(course.rt, first['id'])['state'] == 'failed'
     assert not list(w.s.ai_cache_dir.glob('*.json.gz'))              # 실패한 실행은 같은 요청 저장에 남지 않는다
     relay.reset()
-    ask.retry(course.rt, first['id'], str(uuid.uuid4()), '수강생', '중계가 다시 열려 재개합니다')
+    ask.retry(course.rt, first['id'], str(uuid.uuid4()), OPERATOR['by'], '중계가 다시 열려 재개합니다')      # 질문한 사람(ask_question)이 재개한다
     worker('live', RecordedCli(doc['runs'][0])).poll_once()
     assert len(relay.requests) == model_turns(doc['runs'][0])
     assert ask.view(course.rt, first['id'])['state'] in ('submitted', 'done')

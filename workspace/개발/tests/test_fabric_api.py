@@ -64,7 +64,7 @@ def test_제공_옛_설비_DB_파일을_잇고_되돌리면_원래_상태다(wor
                                                              'systems': {'T_EQP00': 'sys:cmms', 'T_EQP01': 'sys:cmms', 'T_MNT10': 'sys:cmms'}})
     assert status == 200 and plan['datasource'] == 'hyd-legacy' and plan['inputs'], plan
     assert {i['schema'] for i in plan['inputs']} == {'legacy'} and {o['id'] for o in plan['sourceOptions']} == {'hyd-enterprise', 'hyd-legacy'}
-    status, out = world.api('POST', '/api/kg/ddl/commit', dict(plan, by='시험'))
+    status, out = world.api('POST', '/api/kg/ddl/commit', dict(plan, by='user:me'))
     assert status == 200, out
     _, inputs = state()
     legacy = [i for i in inputs if i.get('datasource') == 'hyd-legacy']

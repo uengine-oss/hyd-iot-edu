@@ -9,7 +9,7 @@ from procsvc import engine
 T0 = datetime(2026, 10, 30, 9, 0, tzinfo=timezone.utc)
 
 
-def _defn(activities, sequences, gateways=(), events=None, roles=(('담당', 'user:kim-op'),), data=()):
+def _defn(activities, sequences, gateways=(), events=None, roles=(('담당', 'user:me'),), data=()):
     events = events or [{'id': 'start', 'type': 'startEvent'}, {'id': 'end', 'type': 'endEvent', 'name': '끝'}]
     return engine.Definition.from_dict({
         'processDefinitionId': 'probe', 'processDefinitionName': 'probe', 'version': '1',
@@ -62,9 +62,15 @@ def compression():
 def test_경계_타이머의_마감은_그_타이머가_감싼_일의_시계로_잰다(compression, activity, scale, expected_s):
     event = {'id': 'late', 'type': 'boundaryEvent', 'eventDefinition': 'timer', 'timer': 'PT10M'}
     defn = _defn([activity], [], events=[{'id': 'start', 'type': 'startEvent'}, {'id': 'end', 'type': 'endEvent'}, event])
-    row = engine.new_event_workitem(defn, {'proc_inst_id': 'p', 'tenant_id': 'hyd'}, event, T0, engine.timer_scale(activity, scale))
+    plant = {'proc_inst_id': 'p', 'tenant_id': 'hyd', 'variables_data': [{'key': 'asset', 'value': 'HYD-01'}]}
+    row = engine.new_event_workitem(defn, plant, event, T0, engine.timer_scale(activity, scale, plant=engine.plant_case(plant)))
     due = datetime.fromisoformat(row['due_date'].replace('Z', '+00:00'))
     assert due - T0 == timedelta(seconds=expected_s)
+    # S-A: 가상 설비 밖(학생 현장)의 설비를 다루는 처리 건 · 설비 없는 처리 건은 어느 단계든 벽시계(PT10M = 600초)
+    for values in ([{'key': 'asset', 'value': 'APU-01'}], []):
+        site = dict(plant, variables_data=values)
+        row = engine.new_event_workitem(defn, site, event, T0, engine.timer_scale(activity, scale, plant=engine.plant_case(site)))
+        assert datetime.fromisoformat(row['due_date'].replace('Z', '+00:00')) - T0 == timedelta(seconds=600)
 
 
 @pytest.mark.parametrize('factor', [0.5, 0, -1, float('nan'), float('inf')])
@@ -146,9 +152,11 @@ def _gauge():
                  gateways=[{'id': 'g', 'type': 'exclusiveGateway'}], data=[{'name': 'reading', 'type': 'Number'}])
 
 
-@pytest.mark.parametrize('reading, reached', [(75, 'high'), (70, 'low'), (None, 'low'), ('75', TypeError)])
+@pytest.mark.parametrize('reading, reached', [(75, 'high'), (70, 'low'), (None, None), ('75', TypeError)])
 def test_분기_조건은_값의_자료형이_맞으면_가지를_고르고_다르면_흐름_선_id를_붙여_실패한다(reading, reached):
-    """P1-03: 전에는 글 값 '75' > 70 이 TypeError 로 사람 제출을 500 으로 만들고 값이 사라졌다."""
+    """P1-03: 전에는 글 값 '75' > 70 이 TypeError 로 사람 제출을 500 으로 만들고 값이 사라졌다.
+    새10: 조건이 읽는 값이 없으면(앞 단계가 내지 않음) 「그 밖의 경우」로 보내지 않고 그 값 이름과 함께 멈춘다 — 전에는 없는 값이 「아님」이 되어
+    「낮음」 가지로 갔다(예: 에이전트가 위험도를 빠뜨리면 결과 보고 「정상」)."""
     defn = _gauge()
     inst, rows = _run(defn)
     engine.submit(defn, inst, rows['read'], {'reading': reading}, now=T0)
@@ -157,7 +165,54 @@ def test_분기_조건은_값의_자료형이_맞으면_가지를_고르고_다�
             engine.process_submitted(defn, inst, rows['read'], list(rows.values()), now=T0)
         return
     adv = engine.process_submitted(defn, inst, rows['read'], list(rows.values()), now=T0)
-    assert [w['activity_id'] for w in adv.reached] == [reached]
+    assert [w['activity_id'] for w in adv.reached] == ([reached] if reached else [])
+    if reached is None:
+        assert adv.pending and rows['read']['status'] == 'PENDING' and '판정할 값이 처리 건에 없어 판정하지 않았습니다(없는 값: reading)' in rows['read']['log'], rows['read']['log']
+
+
+def _approve_then_risk(otherwise=True):
+    """에이전트(선택 칸 risk) → 승인 → 승인? → 위험?: 승인이면 위험 분기로 가고, 위험 분기는 risk == 'high' 면 긴급 보고, 그 밖이면 일반 보고
+    (otherwise=False 면 「그 밖의 경우」 선 대신 risk == 'low' 조건 선)."""
+    tail = (dict(id='else', source='g_risk', target='normal') if otherwise
+            else dict(id='cold', source='g_risk', target='normal', condition="risk == 'low'"))
+    return _defn([_agent('assess', outputData=['risk']), _human('approve', outputData=['approval']),
+                  _human('urgent'), _human('normal'), _human('rejected')],
+                 [dict(source='start', target='assess'), dict(source='assess', target='approve'), dict(source='approve', target='g_ok'),
+                  dict(id='ok', source='g_ok', target='g_risk', condition="approval == '승인'"), dict(id='no', source='g_ok', target='rejected'),
+                  dict(id='hot', source='g_risk', target='urgent', condition="risk == 'high'"), tail,
+                  dict(source='urgent', target='end'), dict(source='normal', target='end'), dict(source='rejected', target='end')],
+                 gateways=[{'id': 'g_ok', 'type': 'exclusiveGateway', 'name': '승인?'},
+                           {'id': 'g_risk', 'type': 'exclusiveGateway', 'name': '위험?'}],
+                 data=[{'name': 'risk', 'type': 'Text'}, {'name': 'approval', 'type': 'Text'}])
+
+
+@pytest.mark.parametrize('risk, approval, otherwise, reached, says', [
+    (None, '승인', True, None, '분기(위험?)를 판정할 값이 처리 건에 없어 판정하지 않았습니다(없는 값: risk)'),
+    (None, '반려', True, 'rejected', None),            # 반려 길은 위험 분기를 지나지 않는다 — 그 값이 없어도 멈추지 않는다
+    ('high', '승인', True, 'urgent', None),
+    ('low', '승인', True, 'normal', None),
+    ('mid', '승인', False, None, '나가는 흐름의 조건이 모두 맞지 않아 다음 단계로 가지 못했습니다(분기: 위험?)'),
+], ids=['승인 뒤 분기의 값이 없음', '반려 길', '위험 높음', '그 밖의 경우', '뒤 분기에 나갈 선이 없음'])
+def test_없는_값으로는_이어진_분기_어디에서도_판정하지_않고_나갈_선이_없는_뒤_분기에서도_멈춘다(risk, approval, otherwise, reached, says):
+    """검토 가-3: 「없는 값으로 분기하지 않는다」가 단계 바로 뒤 분기 하나만 보았다 — 에이전트가 선택 칸 risk 를 비우고 사람이 승인하면, 승인 분기
+    뒤의 위험 분기는 없는 값을 「아님」으로 쳐 「그 밖의 경우」(일반 보고)로 갔다(값이 빠진 호출이 기본값으로 도는 해피패스). 나갈 선이 없는 뒤
+    분기는 아무 단계에도 닿지 않은 채 승인 단계를 끝냈다. 판정은 흐름이 실제로 갈 길을 따라 이어진 분기마다 한다 — 가지 않는 길(반려)의 값은
+    묻지 않는다."""
+    defn = _approve_then_risk(otherwise)
+    inst, rows = _run(defn)
+    engine.submit(defn, inst, rows['assess'], {} if risk is None else {'risk': risk}, now=T0)     # 선택 칸 risk 를 비운 에이전트 결과
+    assert not engine.process_submitted(defn, inst, rows['assess'], list(rows.values()), now=T0).pending
+    engine.submit(defn, inst, rows['approve'], {'approval': approval}, now=T0)
+    adv = engine.process_submitted(defn, inst, rows['approve'], list(rows.values()), now=T0)
+    assert [w['activity_id'] for w in adv.reached if w['activity_id'] in defn.activities] == ([reached] if reached else [])
+    if says:
+        assert adv.pending and rows['approve']['status'] == 'PENDING' and says in rows['approve']['log'], rows['approve']['log']
+        assert inst['status'] == 'RUNNING' and rows['normal']['status'] == 'TODO'
+    else:
+        assert not adv.pending and rows['approve']['status'] == 'DONE'
+        assert rows['approve']['gateway_decisions']['g_ok']['selected'] == (['ok'] if approval == '승인' else [])
+        if approval == '승인':
+            assert rows['approve']['gateway_decisions']['g_risk']['selected'] == (['hot'] if risk == 'high' else []), rows['approve']['gateway_decisions']
 
 
 @pytest.mark.parametrize('condition, words', [
@@ -287,3 +342,34 @@ def test_흐름_순서는_앞_단계가_먼저이고_붙은_이벤트는_그_단
                  events=[{'id': 'start', 'type': 'startEvent'}, {'id': 'end', 'type': 'endEvent'}, timer])
     order = engine.flow_order(defn)
     assert order['a'] < order['b'] < order['late'] and order['b'] < order['c']
+
+
+# ---------------------------------------------------------------- 승인 뒤 닿을 수 있는 단계(승인 화면 · 결과 보고의 「이 흐름은 이 안의 ○○를 실행하지 않습니다」)
+def test_승인_뒤_닿을_수_있는_단계는_아는_값으로_분기를_판정하고_모르는_값의_분기는_두_길_모두다():
+    """instances.skipped_actions 가 쓰는 길 찾기: 승인 결과(조치 종류)는 알고, 효과 확인의 회복은 아직 모른다. 아는 값의 분기는 엔진과 같은 판정
+    (참인 선, 없으면 기본 선), 모르는 값의 분기는 두 길 모두 갈 수 있다. 승인 단계 자신의 경계 타이머 길은 승인하면 취소되므로 빼고, 지나는 단계의
+    타이머 길은 넣는다."""
+    defn = _defn(
+        [_human('approve'), _service('cmd', 'incident:command'), _service('reobs', 'incident:reobserve'), _service('wo', 'enterprise:WO_CREATE'),
+         _service('fail', 'process:report'), _service('buy', 'enterprise:PR_CREATE'), _service('late', 'process:report'),
+         _service('other', 'process:report'), _human('chief')],
+        [{'source': 'start', 'target': 'approve'}, {'source': 'approve', 'target': 'kind'},
+         {'source': 'kind', 'target': 'cmd', 'condition': "chosen_skill_kind == 'control'"},
+         {'source': 'kind', 'target': 'buy', 'condition': "chosen_skill_kind == 'purchase'"},
+         {'source': 'kind', 'target': 'other', 'properties': {'default': True}},
+         {'source': 'cmd', 'target': 'reobs'}, {'source': 'reobs', 'target': 'ok'},
+         {'source': 'ok', 'target': 'wo', 'condition': 'recovered == True'}, {'source': 'ok', 'target': 'fail', 'properties': {'default': True}},
+         {'source': 'wo', 'target': 'end'}, {'source': 'fail', 'target': 'end'}, {'source': 'buy', 'target': 'end'},
+         {'source': 'other', 'target': 'end'}, {'source': 'timeout', 'target': 'chief'}, {'source': 'chief', 'target': 'end'},
+         {'source': 'late_t', 'target': 'late'}, {'source': 'late', 'target': 'end'}],
+        gateways=[{'id': 'kind', 'type': 'exclusiveGateway'}, {'id': 'ok', 'type': 'exclusiveGateway'}],
+        events=[{'id': 'start', 'type': 'startEvent'}, {'id': 'end', 'type': 'endEvent', 'name': '처리 완료'},
+                {'id': 'timeout', 'type': 'boundaryEvent', 'eventDefinition': 'timer', 'timer': 'PT10M', 'attachedTo': 'approve'},
+                {'id': 'late_t', 'type': 'boundaryEvent', 'eventDefinition': 'timer', 'timer': 'PT1H', 'attachedTo': 'reobs'}],
+        data=[{'name': 'chosen_skill_kind', 'type': 'Text'}, {'name': 'recovered', 'type': 'Boolean'}])
+    control = engine.reachable_activities(defn, 'approve', {'chosen_skill_kind': 'control'})
+    assert sorted(control) == ['cmd', 'fail', 'late', 'reobs', 'wo'], control        # 회복을 모른다 — 두 길 모두 · 효과 확인의 타이머 길
+    assert engine.reachable_activities(defn, 'approve', {'chosen_skill_kind': 'purchase'}) == ['buy']
+    assert engine.reachable_activities(defn, 'approve', {'chosen_skill_kind': 'other'}) == ['other']
+    assert sorted(engine.reachable_activities(defn, 'approve', {'chosen_skill_kind': 'control', 'recovered': True})) == ['cmd', 'late', 'reobs', 'wo']
+    assert 'chief' not in control, '승인 단계 자신의 시한 길은 승인하면 취소된다'

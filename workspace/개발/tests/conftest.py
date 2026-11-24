@@ -20,8 +20,9 @@ main 만 `test_main.py`), 포털 화면 JS 는 `test_www_<파일>.py`, 코드 �
   agent · dmn-mcp(+neo4j 도구) · enterprise-mcp 셋 · enterprise-sim · effects-mcp
                                    → 각 Dockerfile 의 실행 명령을 이 PC 의 하위 프로세스로(compose 환경, 주소만 이 PC)  stack
   AI 워커                          → 실제 worker.runner.Runner(이 프로세스 안)                                      worker · world.agent
-  설비(plant-sim)                  → 실제 plantsim.plant.Plant 모델(이 프로세스 안). 설비 상태 · 태그를 process 가 읽는
-                                     길(원천 접수 · tag_1s)로 보고한다                                              world.plant · world.report
+  설비(plant-sim)                  → 실제 plantsim.main 의 설비 한 대 · 장치 층(이 프로세스 안, HTTP 도 이 PC 포트 — 정비 복구 요청이
+                                     닿는 바로 그 설비). 설비 상태 · 태그를 process · 명령 관문이 읽는 길(원천 접수 · tag_1s)로 보고한다   world.plant · world.report
+  명령 관문(cmd-gateway)           → 실제 gw.main 의 명령 처리(일곱 검사 · 감사 기록). 통과한 명령은 위 장치 층 → PLC 로   world.forward
 바깥만 대체한다:
   강의 중계(LiteLLM)  → FakeRelay(이 PC 포트, 받은 요청을 남긴다 — 유료 중계를 부르지 않는다)
   Claude Code CLI     → 키 있는 PC: RecordedCli(녹화 이벤트 + 관문 실제 호출) · 키 없는 PC: 실제 재생기(worker.ai_replay)
@@ -32,7 +33,9 @@ main 만 `test_main.py`), 포털 화면 JS 는 `test_www_<파일>.py`, 코드 �
   process 의 Kafka 송수신 → KafkaRecorder: process 가 보낸 승인 원장 · 설비 명령을 남기고 테스트가 송신을 실패시킬 수 있다. 받는 쪽(경보 ·
                         설비 상태)은 테스트가 process 의 원천 접수 함수(main.receive_records — consume 과 같은 함수)로 넣는다. 브로커(brokers)는
                         떠 있어 connect-ingest 가 붙고, consume() 자체의 구독은 test_main 이 실제 redpanda 로 잰다
-  감지기(detector) · 명령 관문(cmd-gateway) → 경보와 명령 확인(ACK)은 테스트가 원천 접수로 넣는다(world.raise_alert · world.ack)
+  감지기(detector)        → 감지 판정은 실제 코드(det.pattern_runtime — 지식 지도의 이상 패턴, world.settle 동안 설비의 1초 보고마다)이고,
+                        경보를 process 에 넣는 때는 테스트가 정한다(world.raise_alert · raise_detected). 감지기가 푼 경보의 해제는 world.pass_time 이
+                        넣는다. 브로커 위의 감지기 서비스 자체는 test_det_main 이 잰다. 명령 응답(ACK)은 설비 PLC 가 낸다(world.forward)
 주소: 묶음이 시작할 때 서비스마다 이 PC 의 빈 포트를 하나씩 정하고(PORTS), process(이 프로세스 안)는 compose 의 process 환경을 그 주소로
 바꿔 받는다(pytest_configure — 끝나면 되돌림). 하위 프로세스 서비스는 이 묶음이 시작하기 전의 환경(HOST_ENV)에 compose 환경을 더해 받는다.
 """
@@ -40,6 +43,7 @@ import asyncio
 import contextlib
 import itertools
 import json
+import math
 import os
 import re
 import shlex
@@ -75,13 +79,16 @@ FINGERPRINT_KEY = 'engine-test-fingerprint-' + 'f' * 24          # 승인 장부
 HOST_ENV = dict(os.environ)            # 이 묶음이 바꾸기 전의 환경 — 하위 프로세스 서비스 · 도구 시험의 바탕
 
 COOLING = ('COOLER_DEGRADATION', 'HYD-01')
+HISTORY_S = 1800                       # world 가 열릴 때 이미 있던 설비 기록(초) — 근거 규칙의 가장 긴 관측 구간(reported_for 와 같은 30분)을 덮는다
 OPERATOR = dict(by='user:me', role='role:operator')
 
 
 # ---------------------------------------------------------------- 공통 도우미
 def _free_port():
+    """모든 주소에서 빈 포트. 시험 서비스(MCP 서버)는 0.0.0.0 에 묶고 Docker 는 시험 컨테이너 포트를 0.0.0.0 에 연다 — 127.0.0.1 에서만 확인하면
+    Windows 는 다른 프로세스가 0.0.0.0 에 쥔 포트도 내줘, 앞 묶음이 남긴 컨테이너의 포트와 겹친 서비스가 켜지지 못했다(2026-11-24, WinError 10048)."""
     with socket.socket() as s:
-        s.bind(('127.0.0.1', 0))
+        s.bind(('0.0.0.0', 0))
         return s.getsockname()[1]
 
 
@@ -156,12 +163,13 @@ _ADDRESS = re.compile(r"(?P<scheme>[a-z][a-z0-9+]*)://(?P<auth>[^@/\s'\"]+@)?(?P
 
 def here(value):
     """compose 값 안의 서비스 주소를 이 PC 의 테스트 자리로: `http://<서비스>:<포트>` → 127.0.0.1:<PORTS>, 업무 DB
-    (`postgresql://…@host.docker.internal:…/postgres`) → HYD_TEST_DSN 의 서버 · DB(계정은 그대로). 모르는 주소는 그대로 둔다."""
+    (`postgresql://…@db.supabase.internal:5432/postgres` — compose 망 business-db 안의 이름) → HYD_TEST_DSN 의 서버 · DB(계정은 그대로).
+    모르는 주소는 그대로 둔다."""
     test_db = urlsplit(os.environ.get(DSN_ENV) or HOST_ENV.get(DSN_ENV) or '')
 
     def swap(m):
         scheme, auth, host, path = m['scheme'], m['auth'] or '', m['host'], m['path'] or ''
-        if scheme.startswith('postgres') and host == 'host.docker.internal':
+        if scheme.startswith('postgres') and host == 'db.supabase.internal':
             return f'{scheme}://{auth}{test_db.hostname}:{test_db.port}{test_db.path}' if test_db.hostname else m[0]
         if host in PORTS:
             return f'{scheme}://{auth}127.0.0.1:{PORTS[host]}{path}'
@@ -884,23 +892,34 @@ def seeded_graph(graph_server, _seed_snapshot):
     return Graph(graph_server)
 
 
+def _manual_archive():
+    """문서 원문 보관소 파일(process 의 ManualSources — PROCESS_STATE_PATH 옆 manuals.sqlite3, stack 이 그 자리를 정한다)."""
+    return Path(os.environ['PROCESS_STATE_PATH']).with_name('manuals.sqlite3')
+
+
 @pytest.fixture(scope='session')
 def _course_snapshot(graph_server, _seed_snapshot, stack, tmp_path_factory):
-    """시작이 끝난 그래프: kg-seed 뒤 시작과 같은 `scripts/class_knowledge.ensure`(이 묶음 process 의 지식 적재 API)로 수업 지식을 넣은 상태."""
+    """시작이 끝난 그래프: kg-seed 뒤 시작과 같은 `scripts/class_knowledge.ensure`(이 묶음 process 의 지식 적재 API)로 수업 지식을 넣은 상태.
+    그 적재가 문서 원문 보관소에 남긴 원문(그래프의 문서 · 절 · 인용 id 가 가리키는 것)도 함께 잡아 둔다 — 그래프만 되돌리면 앞 시험이 보관소에
+    올려 둔 같은 제공 문서가 남아, 비운 뒤 다시 채우는 시험의 문서 id 가 묶음 차례에 따라 달라졌다(2026-11-23, test_manual_approved_cache 뒤의
+    test_class_knowledge)."""
     import class_knowledge
     graph_server.restore(_seed_snapshot)
+    archive = _manual_archive()
+    archive.unlink(missing_ok=True)                 # 이 스냅숏의 보관소는 시작 적재가 올린 원문만 가진다
     world = EngineWorld(stack, tmp_path_factory.mktemp('course-knowledge'))
     try:
         class_knowledge.ensure(class_knowledge.http_call(world.url))      # 시작(start_all.sh)과 같은 적재 — 이 묶음의 process 로
     finally:
         world.close()
-    return graph_server.snapshot()
+    return _NS(graph=graph_server.snapshot(), archive=archive, sources=archive.read_bytes())
 
 
 @pytest.fixture
 def course_graph(graph_server, _course_snapshot):
-    """시작이 끝난 학생 PC 의 그래프(kg-seed + 수업 지식) — 테스트마다 그 상태로 되돌린다."""
-    graph_server.restore(_course_snapshot)
+    """시작이 끝난 학생 PC 의 그래프(kg-seed + 수업 지식)와 그 적재가 남긴 문서 원문 보관소 — 테스트마다 둘 다 그 상태로 되돌린다."""
+    graph_server.restore(_course_snapshot.graph)
+    _course_snapshot.archive.write_bytes(_course_snapshot.sources)
     return Graph(graph_server)
 
 
@@ -1372,8 +1391,8 @@ def stack(pg_dsn, graph_server, timescale, brokers, smtp, relay, worker_key, tmp
         for service in services.values():
             service.wait()
         process = Served(main.app, port=PORTS['process'], lifespan='off')     # 기동은 테스트가 main.restore_and_build 로(EngineWorld)
-        # 설비 시뮬레이터 HTTP(plant-sim — 정비 수행 모사 svc:maintenance 의 복구 요청 POST /api/fault 를 받는 자리). 시작 훅을 부르지 않아
-        # MQTT 로 상태를 내지 않는다 — 설비 상태 · 태그는 EngineWorld.plant · tag 가 보고한다(그 보고와 겹치지 않게)
+        # 설비 시뮬레이터 HTTP(plant-sim — 정비 수행 모사 svc:maintenance 의 복구 요청 · [쿨러 복구] 등이 POST /api/fault 로 닿는 자리). 시작 훅을
+        # 부르지 않아 MQTT 로 상태를 내지 않는다 — 이 설비(plantsim.main.plant)가 EngineWorld.plant 이고, 상태 · 태그는 EngineWorld.report 가 보고한다
         with pytest.MonkeyPatch.context() as env:                            # 가져올 때 읽는 compose 의 plant-sim 환경(배속 · DAQ 판)
             for key, value in _compose_service('plant-sim')['environment'].items():
                 if key != 'MQTT_HOST':
@@ -1585,28 +1604,88 @@ def make_runner(dsn, process_url, worker_key, mode, cli=None, *, root, replay_di
                   exec_fn=cli, schema_prompt='(테스트 스키마 설명)', resolve_provider=lambda: _NS(id='claude-code', display_name='Claude Code'))
 
 
+class _PlantSide:
+    """명령 관문이 설비로 넘기는 길(DMZ 브로커 → 공장 쪽 브리지 → 공장 브로커 → 가상 설비의 장치 층) 자리: 관문이 낸 MQTT 메시지를 가상 설비의
+    장치 층(plantsim edge — 실제 코드: 토픽으로 명령 주인을 정하고 PLC 검사 · 쓰기)에 그대로 건넨다. 브리지가 받았으니 True."""
+    def __init__(self, edge):
+        self.edge = edge
+
+    def publish(self, topic, payload, qos=0, retain=False):
+        self.edge._on_message(None, _NS(topic=topic, payload=payload.encode(), retain=retain))
+        return True
+
+
 class EngineWorld:
     """process 한 번의 기동(시드 테넌트 hyd). restart() 는 같은 DB · 같은 사건 저장 파일로 process 를 다시 켠 것과 같다.
-    plant 는 실제 설비 모델(plantsim.plant.Plant) — report() 가 그 상태 · 태그를 process 가 읽는 길로 보고한다."""
+    plant 는 실제 가상 설비 한 대(이 묶음이 띄운 plant-sim HTTP 의 plantsim.main.plant — 정비 수행 모사의 복구 요청이 닿는 바로 그 설비).
+    report() 가 그 상태 · 태그를 process · 명령 관문이 읽는 길로 보고하고, forward() 가 process 의 설비 명령을 실제 관문 코드 → 장치 층 → PLC 로
+    넘겨 설비가 낸 응답을 돌려보낸다. 감지기 자리(detected)는 설비가 1초마다 낸 값을 실제 감지 규칙으로 본다."""
 
     def __init__(self, stack, tmp_path):
+        import importlib
         import psycopg
-        from plantsim.plant import Plant
+        import gw.main as gateway
+        import plantsim.main as plant_main
         self.stack, self.tmp, self.dsn, self.url = stack, tmp_path, stack.dsn, stack.process_url
         self.clock, self.kafka = EngineClock(), KafkaRecorder()
         self.offsets = itertools.count(int(time.time() * 1000))
         self.tick = 0
-        self.plant = Plant(time_scale=float(os.environ['TIME_SCALE']))
+        plant_main.plant.reset()                                     # 앞 시험이 남긴 결함 · 지령 · PLC 상태를 지운다(설비 초기화와 같은 함수)
+        self.plant, self.edge = plant_main.plant, plant_main.edge
+        self.gateway = importlib.reload(gateway)                     # 관문 한 대의 기억(받은 설비 상태 · 승인 장부 · 넘긴 명령)은 이 world 의 것
+        self.gateway.link = _PlantSide(self.edge)
+        self._ledger_read, self._forwarded = 0, set()
+        self.detector, self.detected, self._detector_at = None, [], time.time()
+        self._raised = {}                                            # (설비, 패턴) → 시험이 넣은 열린 경보(감지기가 풀면 pass_time 이 해제를 넣는다)
+        self._history_lock, self._reported = threading.Lock(), {}    # 설비별 시계열에 마지막으로 남긴 1초 보고 (시계열 DB 시각, 태그 값)
         with psycopg.connect(self.dsn, autocommit=True) as db:      # 앞 시험의 진행 중 일 · 설비 최신 상태가 이 시험에 끼지 않게
             db.execute("UPDATE bpm_proc_inst SET status='CANCELLED' WHERE status='RUNNING'")
             db.execute("UPDATE process_source_inbox SET status='FAILED', error='앞 시험의 남은 접수' "
                        "WHERE status IN ('PENDING','WAITING','CLAIMED')")
             db.execute('DELETE FROM process_source_state WHERE tenant_id=%s', (TENANT,))
         stack.timescale.clear()
+        # 설비는 이 world 전에도 켜져 돌며 1초마다 보고했다(실제 plant-sim) — 판단의 근거 규칙 · 진단 규칙이 읽는 관측 구간(가장 긴 창 30분)을
+        # 정상 운전의 기록으로 채운다. 그 뒤의 기록은 settle · report · reporting 이 설비가 낸 값으로 잇는다(_record)
+        self._record({a: [self.plant.tags(a)] * HISTORY_S for a in self.plant.units})
         from procsvc import engine
         self._compression_before = engine.wait_compression()     # 기동(instance_mode.build)이 프로세스 전역 대기 압축을 정한다 — 닫을 때 되돌린다
         self._boot()
         self.install_course_flows()
+        # 설비는 벽시계 1초마다 상태를 낸다(plant-sim → DMZ 브로커의 보존 메시지) — 관문은 그 마지막 상태가 STATUS_MAX_AGE_S(10초) 안이어야 명령을
+        # 넘긴다. 시험이 부른 보고(report)만으로는 승인 → 넘김 사이가 바쁜 PC 에서 10초를 넘어, 정상 설비가 멈춘 설비처럼 거절됐다(2026-11-23 시험
+        # 전체 — 따로 돌리면 통과). 그래서 관문 쪽 상태는 실제처럼 1초마다 이어 간다. 처리 건(process)으로 가는 상태와 시계열은 시험이 정한 때
+        # (report · reporting)만 간다 — 엔진이 무엇을 언제 받는지는 시험이 정한다.
+        self._status_lock, self._status_paused, self._status_stop = threading.Lock(), False, threading.Event()
+        self._status_thread = threading.Thread(target=self._status_loop, name='plant-status', daemon=True)
+        self._status_thread.start()
+
+    def _status_to_gateway(self, asset, status=None):
+        """설비 상태 한 번을 관문이 받는다(DMZ 브로커의 plant/{설비}/status 보존 메시지 — 관문의 실제 처리기)."""
+        from hydcommon import topics
+        status = status or self.plant.status(asset)
+        self.gateway._on_message(None, _NS(topic=topics.mqtt_status(topics.asset_key(asset)), payload=json.dumps(status).encode(), retain=True))
+        return status
+
+    def _status_loop(self):
+        while not self._status_stop.wait(1.0):
+            with self._status_lock:
+                if not self._status_paused:
+                    for asset in tuple(self.plant.units):
+                        self._status_to_gateway(asset)
+
+    @contextlib.contextmanager
+    def between_reports(self):
+        """설비의 두 1초 보고 사이: 지금 한 번 보고한 뒤 다음 보고가 오기 전(이 블록 동안) — 관문은 블록 앞의 상태를 마지막 상태로 본다.
+        현장 패널 조작이 다음 보고보다 먼저 명령과 엇갈리는 틈(1초 안)을 재는 시험용."""
+        with self._status_lock:
+            for asset in tuple(self.plant.units):
+                self._status_to_gateway(asset)
+            self._status_paused = True
+        try:
+            yield
+        finally:
+            with self._status_lock:
+                self._status_paused = False
 
     # ------------------------------------------------------------ 기동
     def _boot(self):
@@ -1617,19 +1696,40 @@ class EngineWorld:
         self.rt = _run_async(main.restore_and_build(main.instance_context(), state_path=str(self.tmp / 'process.sqlite3'),
                                                     repo=procdb.PgRepo(self.dsn), clock=self.clock))
 
-    def restart(self):
-        """process 를 다시 켠다: 메모리(사건 · 판단 사전, 이벤트 루프)는 사라지고 사건 저장 파일 · DB 는 남는다."""
-        self.close()
+    def restart(self, while_down=None):
+        """process 를 다시 켠다: 메모리(사건 · 판단 사전, 이벤트 루프)는 사라지고 사건 저장 파일 · DB 는 남는다(설비는 계속 보고한다).
+        while_down: 꺼진 동안 할 일(예: 사건 저장 파일을 잡고 있던 잠금을 놓기 — incident_store_lock)."""
+        self._stop_process()
+        if while_down is not None:
+            while_down()
         self._boot()
 
+    def incident_store_lock(self):
+        """사건 저장 파일(process.sqlite3)을 다른 쪽이 쓰기 잠금으로 잡는다 — 그동안 process 의 사건 저장(persist)은 잠금 대기(sqlite 5초) 뒤 실패한다.
+        우리 코드는 그대로 두고 바깥(그 파일의 다른 연결)만 막는다. 돌려줌 = release() 로 잠금을 놓는 객체(놓기 전에는 사건 저장이 실패한다)."""
+        import sqlite3
+        db = sqlite3.connect(self.tmp / 'process.sqlite3', timeout=0, isolation_level=None, check_same_thread=False)
+        db.execute('BEGIN IMMEDIATE')
+
+        class Held:
+            def release(self):
+                db.execute('ROLLBACK')
+                db.close()
+        return Held()
+
     def close(self):
+        self._status_stop.set()
+        self._status_thread.join(timeout=5)
+        self._stop_process()
+
+    def _stop_process(self):
         from procsvc import engine
         # 끄기(main._shutdown)와 같은 차례: 작업 스레드의 처리 건 갱신이 끝난 뒤 루프를 멈추고 저장소를 닫는다 — 기다리지 않으면 앞 world 의
         # on_incident_update 가 다음 테스트 준비 중에 돌았다(FA1 검증 §4-6, 관측 9번)
         asyncio.run_coroutine_threadsafe(self.main.drain_scheduled_updates(), self.loop_thread.loop).result(timeout=120)
         self.loop_thread.close()
         self.main.store.db.close()
-        engine.configure_wait_compression(self._compression_before)   # world 뒤에 도는 테스트가 기동의 압축(60)을 물려받지 않게
+        engine.configure_wait_compression(self._compression_before)   # world 뒤에 도는 테스트가 기동이 정한 compose 의 대기 압축을 물려받지 않게
 
     def install_course_flows(self):
         """제공 수업 흐름 A · B · C 를 시작과 같은 길로 설치(scripts/c3_flows.ensure → POST /api/course-bootstrap). 이미 설치돼 있으면 서버가 건너뛴다."""
@@ -1713,34 +1813,67 @@ class EngineWorld:
         _run_async(drain())
 
     def report(self, *assets):
-        """설비가 지금 보고한다(plant-sim 의 1초 보고 한 번): 설비 상태(plant.status — 벽시계 시각)는 원천 접수로, 태그 값은 시계열 tag_1s 로."""
+        """설비가 지금 보고한다(plant-sim 의 1초 보고 한 번): 설비 상태(plant.status — 벽시계 시각)는 원천 접수와 명령 관문(그 설비의 마지막 상태 —
+        관문 검사 ⑥ 운전 모드)으로, 태그 값은 시계열 tag_1s 로."""
         from hydcommon import topics
         for asset in assets or tuple(self.plant.units):
-            self.stack.timescale.write(asset, self.plant.tags(asset))
-            self.receive(topics.K_STATUS, self.plant.status(asset))
+            self._record({asset: [self.plant.tags(asset)]})
+            self.receive(topics.K_STATUS, self._status_to_gateway(asset))
 
-    def reported_for(self, asset, seconds=1800):
-        """설비가 지난 seconds 초 동안 1초마다 지금 태그 값을 보고한 시계열(connect-sink 가 tag_1s 에 쓰는 것과 같은 행) — 근거 규칙의
-        관측 구간(windowSeconds)을 덮는다. 한 번 보고로는 구간이 비어 근거가 「관측 공백」이 된다. 끝에 지금 보고 한 번."""
-        import psycopg
-        tags = self.plant.tags(asset)
-        with psycopg.connect(self.stack.timescale.dsn, autocommit=True) as db:
-            db.execute('INSERT INTO tag_1s(time, asset, name, value) SELECT now() - make_interval(secs => s), %s, t.name, t.value::double precision '
-                       'FROM generate_series(1, %s) s, jsonb_each_text(%s::jsonb) AS t(name, value)',
-                       (asset, seconds, json.dumps({k: float(v) for k, v in tags.items()})))
+    def reported_for(self, asset, seconds=HISTORY_S):
+        """설비가 지난 seconds 초 동안 1초마다 보고한 시계열(connect-sink 가 tag_1s 에 쓰는 것과 같은 행)이 근거 규칙의 관측 구간을 덮게 한다.
+        world 는 열릴 때부터 설비의 1초 보고를 남긴다(_record — 열기 전 HISTORY_S 초의 정상 운전, settle 동안 설비가 낸 값, 빈 초는 그동안의 값).
+        그래서 여기서는 지금까지의 빈 초를 채우고 지금 한 번 보고한다. 전에는 지금 값을 지난 30분에 지어 넣어, 결함이 진행한 흐름(유온이 오르는
+        모양)과 다른 기록이 근거 구간에 섞였다."""
+        assert seconds <= HISTORY_S, f'world 의 설비 기록은 열기 전 {HISTORY_S}초부터다 — {seconds}초 기록은 없다'
         self.report(asset)
 
+    def _record(self, samples):
+        """설비의 1초 보고를 시계열 tag_1s 에 그 시각으로 남긴다(connect-sink 가 쓰는 것과 같은 행). samples = {설비: [태그 값, …]} — 오래된 것부터
+        1초 간격이고 마지막이 시계열 DB 의 지금이다. 지난번 보고와 이번 첫 보고 사이에 빈 초가 있으면 그동안 설비가 낸 값(지난번 값 — world 의
+        설비는 settle 밖에서는 바뀌지 않는다)으로 채우고, 이번 보고와 겹치는 지난 기록은 이번 것으로 바꾼다. 그래서 판단이 읽는 관측 구간에
+        공백이 없고(실제 설비처럼), settle 동안의 값의 흐름(유온이 오르는 모양)이 그 시각들에 남는다."""
+        import psycopg
+        with self._history_lock, psycopg.connect(self.stack.timescale.dsn, autocommit=True) as db:
+            (now,) = db.execute('SELECT now()').fetchone()
+            for asset, rows in samples.items():
+                start = now - timedelta(seconds=len(rows) - 1)
+                last = self._reported.get(asset)
+                if last is not None and last[0] < start:
+                    # 빈 초 = 이번 첫 보고에서 1초씩 거꾸로 가며 지난번 마지막 보고보다 뒤인 시각들(둘 사이가 1초 이하면 없다). 전에는 int(사이) - 1 이라
+                    # 사이가 1초 미만이면 -1 이 되어 이번 보고가 1초 미래 시각에 들어갔다(근거 조회가 시각 어긋남 허용으로 덮었다)
+                    gap = math.ceil((start - last[0]).total_seconds()) - 1
+                    rows, start = [last[1]] * gap + list(rows), start - timedelta(seconds=gap)
+                runs = []                                            # 같은 값이 이어진 초는 한 줄로(정상 운전 30분 · 빈 초 채우기)
+                for at, tags in enumerate(rows):
+                    if runs and runs[-1]['tags'] == tags:
+                        runs[-1]['n'] += 1
+                    else:
+                        runs.append({'at': at, 'n': 1, 'tags': tags})
+                db.execute('DELETE FROM tag_1s WHERE asset = %s AND time >= %s', (asset, start))
+                db.execute("INSERT INTO tag_1s(time, asset, name, value) SELECT %s + make_interval(secs => (r.e->>'at')::int + g), %s, t.name, "
+                           "t.value::double precision FROM jsonb_array_elements(%s::jsonb) AS r(e), generate_series(0, (r.e->>'n')::int - 1) AS g, "
+                           "jsonb_each_text(r.e->'tags') AS t(name, value)",
+                           (start, asset, json.dumps([dict(r, tags={k: float(v) for k, v in r['tags'].items()}) for r in runs])))
+                self._reported[asset] = (now, dict(rows[-1]))
+
     @contextlib.contextmanager
-    def reporting(self, asset):
+    def reporting(self, *assets):
         """이 블록 동안 설비가 실제처럼 1초마다 태그 값을 계속 보고한다(plant-sim 의 1초 보고 — 시계열 tag_1s). 판단 엔진의 관측 구간 근거는
         마지막 값과 지금 사이가 보고 간격 + 여유(약 3초)를 넘으면 「관측 공백」으로 보류한다(agentsvc mcp_tsdb.observation_coverage) —
-        한 번 넣은 30분 기록만으로는 판단을 여러 번 도는 사이 그 3초가 지나 보류됐다(2026-11-01 전체 실행 6, test_eval_api)."""
-        stop = threading.Event()
+        한 번 넣은 30분 기록만으로는 판단을 여러 번 도는 사이 그 3초가 지나 보류됐다(2026-11-01 전체 실행 6, test_eval_api).
+        첫 보고는 블록이 열릴 때 한다 — 지난 보고 뒤의 빈 초도 그때 채워져, 블록 안의 일은 고리의 첫 보고(1초 뒤)를 기다리지 않는다(전에는 시험이
+        그 첫 보고를 1.5초 잠으로 기다려, 바쁜 PC 에서 첫 보고가 늦으면 판단이 「관측 공백」으로 멈췄다)."""
+        stop, reported = threading.Event(), assets or tuple(self.plant.units)
+
+        def report():
+            self._record({a: [self.plant.tags(a)] for a in reported})
 
         def loop():
             while not stop.wait(1.0):
-                self.stack.timescale.write(asset, self.plant.tags(asset))
-        worker = threading.Thread(target=loop, name=f'report-{asset}', daemon=True)
+                report()
+        report()
+        worker = threading.Thread(target=loop, name='report-' + '-'.join(assets or ('all',)), daemon=True)
         worker.start()
         try:
             yield
@@ -1749,28 +1882,132 @@ class EngineWorld:
             worker.join(timeout=5)
 
     def settle(self, sim_seconds):
-        """설비 모델을 설비 시간으로 sim_seconds 만큼 돌린다(배속 그대로 — 벽시계 sim_seconds / TIME_SCALE 초 분량)."""
-        self.plant.tick(sim_seconds / self.plant.time_scale)
+        """설비 모델을 설비 시간으로 sim_seconds 만큼 돌린다(배속 그대로 — 벽시계 sim_seconds / TIME_SCALE 초 분량). 그동안 설비가 벽시계 1초마다
+        내는 값을 감지기 자리가 본다(_detect). 감지 결과는 detected 에 쌓일 뿐 process 로 가지 않는다 — 경보를 언제 넣는지는 시험이 정한다."""
+        whole, rest = divmod(sim_seconds / self.plant.time_scale, 1.0)
+        reported = {a: [] for a in self.plant.units}
+        for _ in range(int(whole)):
+            self.plant.tick(1.0)
+            self._detect()
+            for asset in reported:
+                reported[asset].append(self.plant.tags(asset))
+        if rest:
+            self.plant.tick(rest)
+            for asset in reported:
+                reported[asset].append(self.plant.tags(asset))
+        if any(reported.values()):
+            self._record(reported)             # 그 1초 보고들이 시계열에 지금까지의 마지막 whole 초로 남는다(설비가 지금 막 이만큼 돈 것)
+
+    def _detect(self):
+        """감지기 자리: 설비의 지금 값(태그 전부 · PLC 상태)을 감지기의 실제 판정 코드(det.pattern_runtime — 지식 지도의 이상 패턴 정의, 감지기와 같은
+        수집 계약 · 배속)에 1초 보고 하나로 넣는다. 평가 시계는 TS1 이라 TS1 을 마지막에 넣는다. 낸 경보(RAISE · CLEAR)는 detected 에 쌓인다."""
+        if self.detector is None:
+            from det import pattern_source
+            from det.pattern_runtime import PatternRuntime
+            from hydcommon.daq_contract import OBSERVATION_GRACE_S
+            q = self.rt.hooks.query_cypher                           # 감지기의 읽기(pattern_source.read_patterns)와 같은 두 질의
+            rows = [dict(r['pattern'], tests=r['tests']) for r in q(pattern_source.QUERY)]
+            names = {r['code']: r['name'] for r in q(pattern_source.NAMES) if isinstance(r['name'], str) and r['name']}
+            self.detector = PatternRuntime(None, self.edge.daq.profile, self.plant.time_scale, OBSERVATION_GRACE_S)
+            self.detector_rejected = self.detector.replace(rows, names)   # 감지기처럼: 틀린 패턴은 빼고(그 목록을 남김) 나머지로 감지한다
+        self._detector_at += 1.0
+        at = self._detector_at
+        for asset in self.plant.units:
+            self.detector.observe(asset, 'PLC_STATE', self.plant.units[asset].ctrl.state, at, now=at)
+            tags = self.plant.tags(asset)
+            for name, value in tags.items():
+                if name != 'TS1':
+                    self.detector.observe(asset, name, value, at, now=at)
+            self.detected += self.detector.observe(asset, 'TS1', tags['TS1'], at, now=at)[1]
 
     def raise_alert(self, pattern, asset, **evidence):
+        """경보(RAISE) 하나를 process 에 넣는다. 설비 보고는 하지 않는다 — 수집이 밀려 설비 상태가 늦게 온 경우를 재는 시험(test_decide)이 그 순서를
+        스스로 정한다. 효과 확인까지 가는 시험은 결함을 넣은 뒤 이 호출 앞에서 설비가 보고하게 한다(report · reported_for — start_cooling ·
+        raise_detected 는 스스로 한다): 실제 설비는 1초마다 보고하므로 사건은 그 최신 상태(바깥 변화 기록 포함) 뒤에 열린다. 보고 없이 열면 사건이
+        결함 전 기록을 기준으로 잡아, 효과 확인이 그 결함 주입을 「처리 건이 열린 뒤의 바깥 변화」로 본다."""
         from hydcommon import topics
         alert = {'alertId': f'ALT-{asset}-{uuid.uuid4().hex[:10]}', 'asset': asset, 'pattern': pattern, 'state': 'RAISE',
                  't': self.now_iso(), 'severity': 'WARN', **({'evidence': evidence} if evidence else {})}
         receipt = self.receive(topics.K_ALERTS, alert)
         assert receipt['status'] == 'HANDLED', receipt
+        self._raised[(asset, pattern)] = alert
+        return alert, receipt['result']['instance']
+
+    def raise_detected(self, pattern, asset):
+        """감지기 자리가 설비 값에서 실제로 낸 경보(RAISE) 하나를 process 에 넣는다 — 근거는 감지기가 본 값 그대로. 감지기가 그 경보를 내지 않았으면
+        (설비 값이 감지 규칙에 닿지 않음) 그 사실로 실패한다. 돌려줌 = (경보, 처리 건 id)."""
+        from hydcommon import topics
+        raised = [e for e in self.detected if (e['asset'], e['pattern'], e['state']) == (asset, pattern, 'RAISE')]
+        assert raised, f'감지기가 {asset} 의 {pattern} 경보를 내지 않았다(설비 값이 감지 규칙에 닿지 않음): ' \
+                       f'{[(e["asset"], e["pattern"], e["state"]) for e in self.detected]}'
+        alert = dict(raised[-1], t=self.now_iso())                  # 낸 때 = 엔진의 지금(감지기 평가 시계는 이 world 안의 1초 보고 차례)
+        self.report(asset)                                          # 감지기가 본 값은 설비가 이미 보고한 값이다 — 사건은 그 최신 상태 뒤에 열린다
+        receipt = self.receive(topics.K_ALERTS, alert)
+        assert receipt['status'] == 'HANDLED', receipt
+        self._raised[(asset, pattern)] = alert
         return alert, receipt['result']['instance']
 
     def clear_alert(self, alert):
+        """해제(CLEAR) 하나를 process 에 넣는다. 해제의 시각은 감지기처럼 설비 시각이다: 실제 감지기는 관측한 설비 보고의 시각(벽시계 — 설비의 바깥
+        변화 기록과 같은 시계)을 싣고, 처리 엔진은 해제를 그 시각까지의 바깥 변화와 견준다. 이 world 의 엔진 시계는 시험이 옮기는 가짜라 벽시계보다
+        늦거나(설비를 켜고 판단을 받는 동안) 앞선다(pass_time) — 둘 중 늦은 쪽을 실어, 바깥 조작 뒤의 해제가 그 조작 앞의 시각을 달지 않고 엔진이
+        이미 지난 시각도 달지 않게 한다."""
         from hydcommon import topics
-        return self.receive(topics.K_ALERTS, dict(alert, state='CLEAR', t=self.now_iso()))
+        self._raised.pop((alert['asset'], alert['pattern']), None)
+        at = max(self.clock(), datetime.now(timezone.utc)).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+        return self.receive(topics.K_ALERTS, dict(alert, state='CLEAR', t=at))
 
-    def ack(self, asset, cmd_id, result='DONE', reason=None):
-        """설비의 명령 응답(plant.status 에 실림 — report() 의 설비 상태와 같은 설비 시계 = 벽시계). 엔진 시계를 쓰면 두 시계가 섞인다:
-        엔진 시계가 뒤면 앞선 보고보다 옛 상태로 버려지고, 앞서 있으면 그 뒤 보고가 최신 상태를 못 고친다(source_inbox._keep_latest_state)."""
+    def pass_time(self, wall_s):
+        """벽시계 wall_s 초가 모두에게 흐른다: 설비가 그만큼(배속) 돌고(감지기 자리가 1초마다 본다) → 설비가 지금 값을 보고한다 → 그동안 감지기가
+        해제한 경보 가운데 시험이 넣은 열린 경보는 해제를 원천 접수로 넣는다 → 엔진 시계를 옮겨 폴링한다. 회복 여부는 시험이 아니라 설비 값과
+        감지 규칙이 정한다. 돌려줌 = 실패한 엔진 일 이름들."""
+        seen = len(self.detected)
+        self.settle(wall_s * self.plant.time_scale)
+        self.report()
+        for event in self.detected[seen:]:
+            alert = self._raised.get((event['asset'], event['pattern']))
+            if event['state'] == 'CLEAR' and alert is not None:
+                self.clear_alert(alert)
+        self.clock.advance(wall_s)
+        return self.poll(3)
+
+    def forward(self, cmd_id=None):
+        """명령 관문 → 공장 쪽 다리 → 설비: process 가 보낸 설비 명령(action.cmd) 가운데 아직 넘기지 않은 것(cmd_id 를 주면 그 하나)을 실제 관문 코드
+        (gw.main.handle_command — 일곱 검사 · 감사 기록)로 받는다. 관문의 승인 장부는 process 가 감사 토픽에 먼저 실은 승인 기록(관문의 장부 소비와
+        같은 함수 record_approval)이고, 운전 모드는 설비가 마지막으로 보고한 상태(report)다. 통과한 명령은 가상 설비의 장치 층 → PLC 가 검사하고
+        쓴다. 관문의 감사 기록(넘김 · 거절)과 명령 직후 설비 상태(PLC 응답이 실림)는 process 의 원천 받기로 들어간다. 응답을 시험이 정하지 않는다.
+        돌려줌 = 마지막 명령의 접수 행(PLC 응답 ACK 또는 관문 거절 REJECT)."""
         from hydcommon import topics
+        audits = self.kafka.of(topics.K_AUDIT)
+        for record in audits[self._ledger_read:]:
+            self.gateway.gw.record_approval(self.gateway.gstate, record)
+        self._ledger_read = len(audits)
+        pending = [c for c in self.kafka.of(topics.K_CMD) if c['cmdId'] not in self._forwarded and cmd_id in (None, c['cmdId'])]
+        assert pending, f'관문에 넘길 process 의 설비 명령이 없다(명령 {cmd_id or "전부"} · 이미 넘긴 것 {sorted(self._forwarded)})'
+        receipt = None
+        for cmd in pending:
+            self._forwarded.add(cmd['cmdId'])
+            said = KafkaRecorder()
+            decision = _run_async(self.gateway.handle_command(said, cmd))
+            for record in said.of(topics.K_AUDIT):
+                receipt = self.receive(topics.K_AUDIT, record) or receipt
+            if decision.ok:
+                receipt = self.receive(topics.K_STATUS, self.plant.status(cmd['asset']))     # 장치 층이 명령 직후 내는 상태(edge.publish_status)
+        return receipt
+
+    def ack(self, asset, cmd_id):
+        """설비 상태에 실려 온 명령 응답 하나. process 가 보낸 명령이면 응답을 지어내지 않는다 — 그 명령을 관문 · PLC 로 넘겨(forward) 설비가 낸
+        응답이 온다. process 가 낸 적 없는 명령(운전 화면 FUXA 의 수동 쓰기처럼 현장 쪽 조작)의 응답이면, 설비의 지금 상태(모드 · 운전 상태는
+        설비 값 그대로)에 그 명령의 완료 응답을 실어 보낸다 — 그 조작을 설비에 하지는 않는다(처리 건과 상관없는 응답을 받는 길만 재는 시험용).
+        응답 시각은 report() 의 설비 상태와 같은 설비 시계 = 벽시계다. 엔진 시계를 쓰면 두 시계가 섞인다: 엔진 시계가 뒤면 앞선 보고보다 옛 상태로
+        버려지고, 앞서 있으면 그 뒤 보고가 최신 상태를 못 고친다(source_inbox._keep_latest_state)."""
+        from hydcommon import topics
+        issued = [c for c in self.kafka.of(topics.K_CMD) if c['cmdId'] == cmd_id]
+        if issued:
+            assert issued[0]['asset'] == asset, (issued[0]['asset'], asset)
+            return self.forward(cmd_id)
         at = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
-        return self.receive(topics.K_STATUS, {'asset': asset, 't': at, 'cmdId': cmd_id, 'result': result,
-                                              'reason': reason, 'mode': 'REMOTE_AUTO', 'state': 'RUN'})
+        return self.receive(topics.K_STATUS, dict(self.plant.status(asset, at), cmdId=cmd_id, result='DONE', reason=None, source='FUXA'))
 
     def tag(self, asset, name, value):
         """시계열 tag_1s 에 1초 값 하나(시각 = 시계열 DB 의 지금) — 재관측 · 시운전이 읽는다."""
@@ -1816,7 +2053,8 @@ class EngineWorld:
         cli 가 없으면 키 없는 PC(재생 모드 — 강사 녹화를 이 처리 건 값으로 내고, 쓰기 도구는 이 PC 의 dmn-mcp 를 다시 불러 판단을 실제로 등록),
         있으면 키 있는 PC(cli = RecordedCli — 관문 · 강의 중계 자리를 실제로 지난다). 돌려줌 = 이 처리 건에 등록된 판단 id(없으면 None)."""
         self.report()
-        handled = self.runner('live' if cli else 'replay', cli).poll_once()
+        with self.reporting():                 # AI 단계가 도는 동안에도 설비는 1초마다 보고한다(근거 조회의 관측 구간이 그 사이 비지 않게)
+            handled = self.runner('live' if cli else 'replay', cli).poll_once()
         row = self.row(pid, activity)
         assert handled == 1 and row['status'] in ('SUBMITTED', 'DONE'), (handled, row['status'], self._failure(row))
         self.poll()
@@ -1827,12 +2065,12 @@ class EngineWorld:
         errors = [e for e in self.events(todo=row['id']) if e['event_type'] == 'error']
         return errors[-1]['data'] if errors else None
 
-    def approve(self, pid, decision, option, who):
-        """사람이 승인 카드를 고른다(포털의 승인과 같은 함수). 설비는 그동안에도 보고하고 있다 — 승인 현재 조건 검사(실제 agent)가 읽는
-        최신 보고를 먼저 넣는다."""
+    def approve(self, pid, decision, option, who, **choice):
+        """사람이 승인 카드를 고른다(포털의 승인과 같은 함수 — choice 는 값을 바꾼 검토본 review_id 등 그 함수의 나머지 인자). 설비는 그동안에도
+        보고하고 있다 — 승인 현재 조건 검사(실제 agent)가 읽는 최신 보고를 먼저 넣는다."""
         self.report()
         approve = self.row(pid, 'T_approve', 'IN_PROGRESS')
-        return self.rt.select(approve['id'], decision, option, **who)
+        return self.rt.select(approve['id'], decision, option, **who, **choice)
 
     def commanded(self, pid):
         """승인 뒤 process 가 보낸 마지막 설비 명령(사건은 ACK 대기)."""
@@ -1847,6 +2085,7 @@ class EngineWorld:
         pattern, asset = COOLING
         self.plant.inject(asset, 'cooler_degradation', severity='moderate')
         self.settle(1800)
+        self.report(asset)                         # 설비는 감지기가 경보를 내기 전에도 1초마다 보고한다 — 사건은 그 최신 상태 뒤에 열린다
         tags = self.plant.tags(asset)
         alert, pid = self.raise_alert(pattern, asset, ts1=tags['TS1'], ce=tags['CE'])
         assert self.inst(pid)['proc_def_id'] == 'c3_cooling'
@@ -1902,7 +2141,7 @@ def start_handover(rt, *, asset='HYD-01', definition='shift_handover', version=N
 
 def ask_question(rt, question):
     from procsvc import ask
-    return ask.start(rt, question, None, '수강생', definitions_dir=DEFINITIONS, worker_probe=lambda: {'reachable': True})
+    return ask.start(rt, question, None, OPERATOR['by'], definitions_dir=DEFINITIONS, worker_probe=lambda: {'reachable': True})
 
 
 def events_of(rt, todo_id, event_type=None):

@@ -52,8 +52,8 @@ def test_연결_배치를_되돌리면_이력을_다시_그린_뒤에도_되돌�
             assert 'legacy-plant-db.sql' in line and '입력 데이터 20' in line and BATCH not in page.inner_text('#ddlHistory')
             row_menu(page, f"#ddlHistory .row-act:has([data-batch='{BATCH}'])", f"[data-clear='{BATCH}']")
             page.locator("dialog.confirm-dialog button[value='ok']").click()      # 포털 확인 대화상자(UI.confirm)
+            # 되돌린 뒤 이력을 다시 읽어 그린 때(되돌린 줄이 사라진 그 그리기 — 전에는 그 그리기가 문장을 지웠다)를 기다린 뒤에 문장을 본다
             page.wait_for_function("document.querySelectorAll('#ddlHistory [data-clear]').length === 0", timeout=15000)
-            page.wait_for_timeout(300)
             assert page.inner_text('#ddlHistoryMsg') == '되돌렸습니다. 지운 항목 20개 · 되살린 항목 0개 · 남긴 항목 1개'
             b.close()
     finally:
@@ -390,6 +390,8 @@ class _Docs:
     def __init__(self, provided, uploads=(), not_ready=()):
         self.provided, self.uploads, self.not_ready = list(provided), list(uploads), set(not_ready)
         self.commits, self.rollbacks, self.previews, self.polls = [], [], [], {}
+        self.more_catalog = {}      # 그 시험이 더 싣는 지금 지식 목록(세부 동작 actions · 원인 causes …)
+        self.failure_modes = [{'id': 'fm:x', 'name': '벨트 느슨함', 'component': 'comp:fan'}]      # 서버 GET /api/kg/manuals/catalog 의 failure_modes(지금 지식의 고장 유형)
 
     def doc_of(self, name):
         return next((u['document_id'] for u in self.uploads if u['filename'] == name), 'doc-' + name.split('_')[0].lower())
@@ -432,7 +434,8 @@ class _Docs:
             return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'total': 0, 'next_offset': None})
         if path.endswith('/api/kg/manuals/catalog'):
             return route.fulfill(json={'parts': [{'id': 'part:seal', 'name': '펌프 축 씰', 'partNo': 'P-1'}], 'suppliers': [{'id': 'sup:b', 'name': 'B사'}], 'skills': [],
-                                       'roles': [{'id': 'role:buyer', 'name': '구매 담당'}, {'id': 'role:operator', 'name': '운전원'}]})
+                                       'roles': [{'id': 'role:buyer', 'name': '구매 담당'}, {'id': 'role:operator', 'name': '운전원'}], 'failure_modes': list(self.failure_modes),
+                                       **self.more_catalog})
         if path.endswith('/api/kg/catalog'):
             return route.fulfill(json={'roles': [{'id': 'role:operator', 'name': '운전원'}], 'failureModes': [{'id': 'fm:x', 'name': '벨트 느슨함'}]})
         if path.endswith('/api/kg/manuals'):
@@ -596,7 +599,7 @@ class _KindDocs(_Docs):
         if path.endswith('/api/kg/manuals/catalog'):
             return route.fulfill(json={'parts': [{'id': 'part:seal', 'name': '펌프 축 씰', 'partNo': 'P-1'}], 'suppliers': [{'id': 'sup:b', 'name': 'B사'}],
                                        'skills': [{'id': 'skill:sop-a-03', 'name': '교대 상태 확인', 'reference_contract': self.CONTRACT}],
-                                       'roles': [{'id': 'role:buyer', 'name': '구매 담당'}, {'id': 'role:operator', 'name': '운전원'}]})
+                                       'roles': [{'id': 'role:buyer', 'name': '구매 담당'}, {'id': 'role:operator', 'name': '운전원'}], 'failure_modes': list(self.failure_modes)})
         return super().__call__(route)
 
 
@@ -701,6 +704,7 @@ def test_여럿을_골라_한_번에_적재하면_문서마다_진행이_흐르�
             assert len(docs.commits) == 2
             by_hand, at_once = dict(docs.commits[1]), dict(docs.commits[0])
             assert by_hand.pop('previous_batch') == 'b0' and at_once.pop('previous_batch') is None      # 두 번째는 방금 적재한 문서의 개정이다 — 그 밖은 글자 하나 다르지 않다
+            assert at_once.pop('review_scope') == 'automatic' and 'review_scope' not in by_hand     # 한 번에 적재는 사람이 검토하지 않았다는 사실만 더 싣는다(C10)
             assert by_hand == at_once
         finally:
             b.close()
@@ -853,12 +857,19 @@ def test_새_조치_방법의_종류_칸에서_고를_수_있는_것은_정비_�
         assert len(kinds) == 1 and kinds[0][1] in listed and '제어' not in kinds[0][1], (kinds, listed)      # 하나뿐이고, 그 이름은 목록 거르기의 「정비 요청」과 같은 말
         page.fill('#skName', '벨트 장력 조정'); page.select_option('#skRole', 'role:operator'); page.fill('#skSop', 'SOP-NEW-1')
         page.select_option('#skFm', 'fm:x'); page.fill('#skSteps', '현장 제어로 전환한다.\n장력을 조정한다.')
+        # 고장 유형과의 관계는 사람이 고른다: 「근본 조치」가 미리 골라져 있지 않고, 고르지 않으면 저장 요청이 나가지 않으며 그 칸을 고르라고 한다(C15 — 검토 화면의 관계 칸과 같은 규칙)
+        assert page.input_value('#skRel') == ''
+        page.click('#skSave')
+        page.wait_for_function("document.querySelector('#skMsg').textContent.includes('고장 유형과의 관계를 고르세요')", timeout=5000)
+        assert posted == []
+        page.select_option('#skRel', 'MITIGATED_BY')
         page.click('#skSave')
         for _ in range(60):
             if posted:
                 break
             page.wait_for_timeout(50)
         assert len(posted) == 1 and posted[0]['kind'] == kinds[0][0] == 'work_order', posted                 # 서버가 받는 종류로 나간다
+        assert posted[0]['relation'] == 'MITIGATED_BY', posted                                                # 고른 관계 그대로
 
 
 def test_표_정의에서_열이나_출처_시스템을_바꾸면_다시_읽기_전에는_적재가_꺼지고_그_자리에_까닭이_있다():
@@ -1072,6 +1083,277 @@ def test_검토_체크_없이_적재를_누르면_까닭이_누른_단추의_줄
             page.click('#manualCommit')
             page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
             assert len(docs.commits) == 1 and page.evaluate("document.querySelector('#manualCommitWhy')?.textContent || ''") == ''
+        finally:
+            b.close()
+            served.close()
+
+
+class _KnowDocs(_Docs):
+    """지식 후보가 서로를 가리키는 문서 대역: 원인 「원인 하나」(고장 유형 fm:x)를 증거 「증거 하나」와 절차 SOP-A-01 의 대상 원인이 가리키고, 규칙 하나가
+    SOP-A-01 을 조치 후보로 낸다. SOP-A-01 의 정비 요청 값은 그 절차 번호다. 적재가 끝나면 그 문서의 고장 유형이 지금 지식(GET …/manuals/catalog)에 생긴다."""
+    held, issues = (), ()
+    tweak = None      # 그 시험이 추출 결과(preview)를 더 고치는 함수
+
+    def __call__(self, route):
+        path = route.request.url.split('?')[0]
+        if '/extractions/' in path and self.polls.get(path.rsplit('/', 1)[1][len('inst-'):], 0) >= 1:
+            doc = path.rsplit('/', 1)[1][len('inst-'):]
+            name = next(f for f in self.provided if self.doc_of(f) == doc)
+            r = _proposal(doc, name)
+            r['procedures'][0]['link'].update(addresses=['cause:c1'], actions=[{'action': 'action:work-order', 'value': 'SOP-A-01'}])
+            r['knowledge'] = {
+                'failure_modes': [{'id': f'fm:{doc}-new', 'name': f'{doc} 새 고장', 'component': 'comp:fan', 'symptoms': [], 'leads_to': [], 'anchor': None}],
+                'causes': [{'id': 'cause:c1', 'name': '원인 하나', 'prior': 0.5, 'failure_mode': 'fm:x', 'anchor': None}],
+                'evidence': [{'id': 'evd:e1', 'name': '증거 하나', 'cause': 'cause:c1', 'tag': 'TS1', 'aggregate': 'avg', 'window_seconds': 30, 'expect': 'gt', 'threshold': 55, 'anchor': None}],
+                'rules': [{'id': 'rule:a-cand', 'table': 'dt:action-candidates', 'effect': 'SELECT', 'outputs': ['SOP-A-01'], 'applies_to': [], 'anchor': None,
+                           'annotation': '벨트가 느슨하면 벨트 교체를 후보로 낸다'}]}
+            if self.held:      # 이 문서가 다시 정의한, 이미 지식에 있는 항목(서버 manual_knowledge.conflicts 의 꼴)
+                r['knowledge_conflicts'] = list(self.held)
+                r['validation'] = dict(r['validation'], technical_ready=False, issues=list(self.issues))
+            if self.tweak:
+                self.tweak(r)
+            return route.fulfill(json={'status': 'DONE', 'instance': 'inst-' + doc, 'segments': [], 'preview': r})
+        if path.endswith('/api/kg/manuals/commit'):
+            body = route.request.post_data_json
+            self.failure_modes += [f for f in body['knowledge'].get('failure_modes', []) if f['id'] not in {x['id'] for x in self.failure_modes}]
+        return super().__call__(route)
+
+
+def test_검토본_안의_참조를_한_번에_대조하고_번호를_고치면_가리키는_곳도_따라가며_앞_문서가_넣은_고장_유형을_다음_문서에서_고른다():
+    """C2 · C3 · C7 · C15(2026-11-22) — 학생이 검토에서 할 수 있는 선택이 엉뚱한 까닭으로 막히지 않는다.
+    ① 원인을 [적재에서 제외]했는데 증거 · 절차가 그 원인을 가리키면, 적재 요청을 보내지 않고 무엇이 가리키는지 이름으로 말한다(전에는 서버가 영문 레이블로 거절).
+    ② 규칙이 조치 후보로 내는 절차를 「참고 절차」로 바꾸면 그 규칙을 말한다. ③ AI가 관계를 비운(여기서는 종류를 바꿨다 되돌려 비운) 고장 조치는 「근본 조치」로
+    미리 골라지지 않고 고르라고 한다. ④ 절차 번호를 고치면 규칙의 결과 · 정비 요청 값도 새 번호로 실린다. ⑤ 같은 화면에서 앞 문서를 적재하면 그 문서가
+    넣은 고장 유형이 다음 문서 검토의 고르기 칸에 바로 있다(전에는 한 번 읽은 목록을 써서 새로 고침해야 보였다)."""
+    from playwright.sync_api import sync_playwright
+    first, second = 'HI-01_shift-inspection-supplement.md', 'HM-8_cooler-fan-manual.md'
+    docs = _KnowDocs([first, second])
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, first)
+            why = lambda: page.inner_text('#manualCommitWhy')
+            commit = lambda: (page.check('#manualReviewed'), page.click('#manualCommit'))
+            # ① 원인 제외 → 가리키는 증거 · 절차를 이름으로
+            page.click("[data-review-kind='know']")
+            page.click("#manualItems [data-item='know:causes:cause:c1']")
+            page.check("[data-know-drop='causes'][value='cause:c1']")
+            commit()
+            said = why()
+            assert '적재에서 제외한 원인 「원인 하나」를 남은 항목이 가리킵니다' in said and '증거 「증거 하나」' in said and '절차 「벨트 교체」(SOP-A-01)의 대상 원인' in said, said
+            assert docs.commits == [] and page.get_attribute('#manualUpload', 'data-stage') == '3'
+            page.uncheck("[data-know-drop='causes'][value='cause:c1']")
+            # ② 후보로 나오는 절차를 참고 절차로
+            page.click("[data-review-kind='proc']")
+            page.click("#manualItems [data-item='proc:SOP-A-01']")
+            page.select_option("select[data-kind='SOP-A-01']", 'reference')
+            page.select_option("[data-reference-executable='SOP-A-01']", 'false')
+            commit()
+            said = why()
+            assert '「벨트 교체」(SOP-A-01): 원문만 보관하는 참고 절차로 바꾸면' in said and '규칙 「벨트가 느슨하면 벨트 교체를 후보로 낸다」' in said, said
+            assert docs.commits == []
+            # ③ 종류를 되돌리면 관계가 비어 있다 — 「근본 조치」로 미리 골라 보내지 않는다
+            page.select_option("select[data-kind='SOP-A-01']", 'work_order')
+            commit()
+            assert '고장 유형과의 관계를 고르세요: SOP-A-01' in why() and docs.commits == []
+            page.select_option("select[data-rel='SOP-A-01']", 'MITIGATED_BY')
+            # ④ 번호를 회사 번호로
+            page.fill("[data-manual-id='SOP-A-01']", 'SOP-B-07')
+            commit()
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
+            sent = docs.commits[-1]
+            assert [p_['id'] for p_ in sent['procedures']][0] == 'SOP-B-07' and 'SOP-A-01' not in sent['links']
+            assert sent['links']['SOP-B-07']['actions'] == [{'action': 'action:work-order', 'value': 'SOP-B-07'}]
+            assert sent['knowledge']['rules'][0]['outputs'] == ['SOP-B-07']
+            # ⑤ 다음 문서: 앞 문서가 넣은 고장 유형을 고를 수 있다
+            page.click('#manualNext')
+            _open_review(page, docs, second)
+            options = page.locator("select[data-fm='SOP-A-01'] option").all_inner_texts()
+            assert f'{docs.doc_of(first)} 새 고장' in options, options
+        finally:
+            b.close()
+            served.close()
+
+
+def test_이미_지식에_있는_항목을_다시_정의한_제안은_그_정의를_빼면_남은_항목이_있는_항목을_가리킨_채_적재된다():
+    """학생 문서의 추출이 이미 지식에 있는 원인(다른 문서가 넣은 같은 id)을 다시 정의하면 그 정의는 덮어쓰기라 적재되지 않는다 — 할 일은 [적재에서 제외]다.
+    그런데 화면이 「제외한 원인을 남은 항목이 가리킵니다」로 막아, 그 원인은 둘 수도 뺄 수도 없었다(2026-11-23). 서버가 이미 있다고 알린 항목(knowledge_conflicts)은
+    빼도 남은 증거 · 절차가 이미 있는 그 원인을 가리킨다: 요청이 나가고, 요청의 지식에 그 원인 정의는 없으며 증거 · 절차의 대상 원인은 그대로다.
+    이 문서만의 항목(같은 문서의 규칙)은 전처럼 이름으로 막는다."""
+    from playwright.sync_api import sync_playwright
+    name = 'HI-01_shift-inspection-supplement.md'
+    docs = _KnowDocs([name])
+    docs.held = [{'id': 'cause:c1', 'label': 'Cause', 'owner': 'tenant:other-doc', 'kind': 'other_document', 'owner_name': 'HM-8_cooler-fan-manual.md'}]
+    # 서버 적재 전 검사(manual_preflight)가 내는 문장 그대로: 이미 있는 항목, 그리고 지금 지식에 없는 id 를 가리킨 항목
+    docs.issues = [
+        {'code': 'KNOWLEDGE_OWNERSHIP_CONFLICT', 'sop': 'cause:c1', 'field': 'knowledge_conflicts',
+         'message': 'cause:c1: 같은 원인이 이미 지식에 있습니다(다른 문서 「HM-8_cooler-fan-manual.md」가 넣은 것) — 이 문서로 덮어쓰지 않으니 이 항목을 적재에서 제외하세요. '
+                    '이 문서의 다른 항목은 이미 있는 그 항목을 가리킵니다'},
+        {'code': 'REFERENCE_NOT_FOUND', 'sop': 'evd:e1', 'field': 'cause',
+         'message': 'evd:e1: 원인 칸에 적은 cause:valve-stuck이 지금 지식에 없습니다 — 이 문서의 원인 목록에 넣거나 지금 지식에 있는 원인을 고르세요'}]
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, name)
+            # 검사 문장: 항목은 이름으로 부르고(내부 id 를 내지 않는다), 가진 문서의 파일 이름은 그대로, 이름을 모르는 id(지금 지식에 없는 것)는 종류 이름으로
+            # 바꾸지 않고 그대로 둔다(C12 — 바꾸면 AI가 무엇을 적었는지가 사라진다)
+            shown = page.locator('.doc-valid > ul.doc-issues > li').all_inner_texts()
+            assert shown[0].startswith('원인 하나: 같은 원인이 이미 지식에 있습니다(다른 문서 「HM-8_cooler-fan-manual.md」가 넣은 것)') and '적재에서 제외하세요' in shown[0], shown
+            assert shown[1].startswith('증거 하나: 원인 칸에 적은 cause:valve-stuck이 지금 지식에 없습니다'), shown
+            page.click("[data-review-kind='proc']")
+            page.click("#manualItems [data-item='proc:SOP-A-01']")
+            if not page.input_value("select[data-rel='SOP-A-01']"):
+                page.select_option("select[data-rel='SOP-A-01']", 'REMEDIED_BY')
+            page.click("[data-review-kind='know']")
+            page.click("#manualItems [data-item='know:causes:cause:c1']")
+            page.check("[data-know-drop='causes'][value='cause:c1']")
+            page.check('#manualReviewed')
+            page.click('#manualCommit')
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
+            sent = docs.commits[-1]
+            assert sent['knowledge']['causes'] == [] and [e['cause'] for e in sent['knowledge']['evidence']] == ['cause:c1'], sent['knowledge']
+            assert sent['links']['SOP-A-01']['addresses'] == ['cause:c1']
+        finally:
+            b.close()
+            served.close()
+
+
+def test_절차_판은_AI가_정한_세부_동작_값과_대상_원인과_정책을_고칠_칸_없이_한_줄씩_보이고_값이_없는_절차에는_줄이_없다():
+    """2026-11-13 03-21 · 사용자 2026-11-23: 세부 동작 값(팬 속도 100 % 등) · 대상 원인 · 정기 정비와 구매 비교 기준은 AI가 낸 값 그대로 적재되는데 화면에는
+    「절차 연결 원문」 접기의 JSON 에만 있었다. 고칠 칸은 두지 않고, 절차 판에 접기 밖의 읽기 전용 줄로 보인다. 세부 동작은 지금 지식의 이름과 값으로, 대상 원인은
+    이름으로, 이름을 모르는 id 는 그대로(C12), 그 절차의 「원문 수치 확인 필요」 알림은 같은 자리에. 값이 없는 절차(참고 절차)에는 줄도 묶음도 없고, 고칠 칸(input ·
+    select)도 없다. 사람이 종류를 「참고 절차」로 바꾸면 적재되지 않을 그 값은 가려진다."""
+    from playwright.sync_api import sync_playwright
+    name = 'HI-01_shift-inspection-supplement.md'
+    docs = _KnowDocs([name])
+    docs.more_catalog = {'actions': [{'id': 'action:set-fan', 'name': '팬 속도 설정', 'code': 'FAN_SET', 'kind': 'command', 'param': 'fan_pct', 'min': 0, 'max': 100},
+                                     {'id': 'action:work-order', 'name': '정비 작업지시 발행', 'code': 'WO_CREATE', 'kind': 'transaction'},
+                                     {'id': 'action:purchase-request', 'name': '구매 요청', 'code': 'PR_CREATE', 'kind': 'transaction'}],
+                         'causes': [{'id': 'cause:known', 'name': '지식에 있는 원인', 'failureModes': ['fm:x']}]}
+    warn = 'SOP-A-01 · action:set-fan.value=100: 해당 인용에서 같은 수치를 찾지 못했습니다. 원문의 값·단위 환산·계산 근거를 확인하세요'
+
+    def tweak(r):
+        r['procedures'][0]['link'].update(
+            actions=[{'action': 'action:set-fan', 'value': 100}, {'action': 'action:work-order', 'value': 'SOP-A-01'}, {'action': 'action:valve-open', 'value': 3}],
+            addresses=['cause:c1', 'cause:known', 'cause:not-there'],
+            maintenance_policy={'version': 1, 'scope': 'bundle', 'stock_effect': 'reserve', 'interval_h': 2000, 'tolerance_pct': 10, 'model_assets': ['HYD-01', 'HYD-02'],
+                                'packages': [{'interval_h': 2000, 'sop': 'SOP-A-01', 'name': '기본 점검', 'parts': []}]})
+        r['procedures'][1]['link']['purchase_comparison_policy'] = {'version': 1, 'loss_per_failure': 500, 'inspection_threshold': 0.1, 'inspection_cost': 30}
+        r['validation'] = dict(r['validation'], source_value_warnings=[warn, 'SOP-A-02 · maintenance_policy.interval_h=1: 다른 절차의 알림'])
+    docs.tweak = tweak
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, name)
+            facts = lambda sop: page.evaluate("""sop => { const box = document.querySelector(`[data-link-facts="${sop}"]`);
+                return box && { rows: Object.fromEntries([...box.querySelectorAll('dl.kv dt')].map(dt => [dt.textContent.trim(), dt.nextElementSibling.textContent.trim()])),
+                                warns: [...box.querySelectorAll('[data-link-warn] li')].map(li => li.textContent.trim()), edits: box.querySelectorAll('input, select, textarea').length,
+                                inFold: !!box.closest('details'), hidden: box.hidden }; }""", sop)
+            one = facts('SOP-A-01')
+            assert one['rows'] == {
+                '세부 동작': '팬 100 % · 정비 요청 SOP-A-01 · action:valve-open 3',
+                '대상 원인': '원인 하나 · 지식에 있는 원인 · cause:not-there',
+                '정기 정비 기준': '정비 주기 2,000시간 · 허용 오차 10 % · 적용 설비 HYD-01 · HYD-02 · 여러 대를 묶어 시행 · 부품 출고 예약 · 정비 묶음 2,000시간 기본 점검'}, one
+            assert one['warns'] == [warn] and one['edits'] == 0 and one['inFold'] is False and one['hidden'] is False, one
+            two = facts('SOP-A-02')
+            assert two['rows'] == {'세부 동작': '구매 요청 B사', '구매 비교 기준': '불량 1건 손실 500만 원 · 전수 검사로 바꾸는 불량률 10 % · 전수 검사 비용 30만 원'}, two
+            assert two['warns'] == ['SOP-A-02 · maintenance_policy.interval_h=1: 다른 절차의 알림']
+            assert facts('SOP-A-03') is None                      # 참고 절차 — 값이 없다: 빈 줄 · 「없음」 자리표를 만들지 않는다
+            page.click("[data-review-kind='proc']")
+            page.click("#manualItems [data-item='proc:SOP-A-01']")
+            assert page.locator("[data-link-facts='SOP-A-01']").is_visible()
+            page.select_option("select[data-kind='SOP-A-01']", 'reference')
+            assert facts('SOP-A-01')['hidden'] is True
+            page.select_option("select[data-kind='SOP-A-01']", 'work_order')
+            assert facts('SOP-A-01')['hidden'] is False
+        finally:
+            b.close()
+            served.close()
+
+
+class _NewItemDocs(_Docs):
+    """다른 설비 문서의 대역: 지금 지식에 없는 그 설비의 구성 요소 둘(「흡기 밸브」 — 고장 유형 · 센서가 가리킴, 「구동 모터」 — 아무것도 가리키지 않음) ·
+    증상 하나 · 센서 하나(태그 TP2)를 새 항목으로 제안하고, 그 고장 유형 「흡기 밸브 고착」에 SOP-A-01 을 잇는다(서버 manual_knowledge.NEW_KINDS 의 꼴)."""
+
+    def __call__(self, route):
+        path = route.request.url.split('?')[0]
+        if '/extractions/' in path and self.polls.get(path.rsplit('/', 1)[1][len('inst-'):], 0) >= 1:
+            doc = path.rsplit('/', 1)[1][len('inst-'):]
+            name = next(f for f in self.provided if self.doc_of(f) == doc)
+            r = _proposal(doc, name)
+            r['procedures'][0]['link'] = {'failureMode': 'fm:apu-intake-stuck', 'relation': 'REMEDIED_BY', 'kind': 'work_order', 'approver': 'role:operator',
+                                          'addresses': ['cause:apu-piston']}
+            r['knowledge'] = {
+                'failure_modes': [{'id': 'fm:apu-intake-stuck', 'name': '흡기 밸브 고착', 'component': 'comp:apu-intake-valve', 'symptoms': ['sym:apu-tp2-no-rise'], 'leads_to': [], 'anchor': None}],
+                'causes': [{'id': 'cause:apu-piston', 'name': '흡기 밸브 피스톤 오염', 'prior': 0.7, 'failure_mode': 'fm:apu-intake-stuck', 'anchor': None}],
+                'evidence': [{'id': 'evd:apu-tp2', 'name': '압축기 압력 기동 기준 미달', 'cause': 'cause:apu-piston', 'tag': 'TP2', 'aggregate': 'max', 'window_seconds': 600,
+                              'expect': 'lt', 'threshold': 8.2, 'anchor': None}],
+                'components': [{'id': 'comp:apu-intake-valve', 'name': '흡기 밸브', 'aliases': [], 'anchor': None},
+                               {'id': 'comp:apu-motor', 'name': '구동 모터', 'aliases': [], 'anchor': None}],
+                'symptoms': [{'id': 'sym:apu-tp2-no-rise', 'name': '압축기 압력 오르지 않음', 'sensors': ['sen:apu-tp2'], 'anchor': None}],
+                'sensors': [{'id': 'sen:apu-tp2', 'name': '압축기 압력', 'tag': 'TP2', 'unit': 'bar', 'component': 'comp:apu-intake-valve', 'anchor': None}]}
+            return route.fulfill(json={'status': 'DONE', 'instance': 'inst-' + doc, 'segments': [], 'preview': r})
+        return super().__call__(route)
+
+
+def test_새_항목_제안은_사람이_항목마다_넣기_제외를_골라야_적재되고_제외한_항목을_남은_항목이_가리키면_이름으로_막힌다():
+    """다른 설비 문서(학생 PBL)의 새 항목(구성 요소 · 증상 · 센서)은 지식 후보처럼 미리 넣어 두지 않는다 — 몰래 만들지 않는다.
+    ① 검토 화면에 「새 항목 제안」 묶음이 생기고 줄마다 「넣기 · 제외 고르기」가 붙는다 ② 하나도 고르지 않고 적재를 누르면 요청을 보내지 않고 처음 고를 항목을 연다
+    ③ 고장 유형 · 센서가 가리키는 구성 요소를 제외하면 무엇이 가리키는지 이름으로 말한다 ④ 넣기를 고른 항목만 approved 표시와 함께 적재 요청에 실리고,
+    제외한 항목(아무것도 가리키지 않는 구동 모터)은 빠진다 ⑤ 한 번에 적재(사람이 고르지 않는 길)는 그런 문서를 적재하지 않고 검토 필요로 멈춘다."""
+    from playwright.sync_api import sync_playwright
+    name, other = 'HI-01_shift-inspection-supplement.md', 'HM-8_cooler-fan-manual.md'
+    docs = _NewItemDocs([name, other])
+
+    def pick(group, nid, choice):
+        """학생처럼: 목록의 그 줄을 눌러 판을 열고 넣기 · 제외를 고른다."""
+        page.click(f"#manualItems [data-item='new:{group}:{nid}']")
+        page.check(f"[data-new-pick='{group}'][value='{nid}'][data-choice='{choice}']")
+    with sync_playwright() as p:
+        served, b, page = _open_docs(p, docs)
+        try:
+            _open_review(page, docs, name)
+            commit = lambda: (page.check('#manualReviewed'), page.click('#manualCommit'))      # noqa: E731
+            why = lambda: page.inner_text('#manualCommitWhy')      # noqa: E731
+            # ① 묶음과 줄
+            assert '새 항목 제안 4개' in page.inner_text('#manualReview .result-main')
+            page.click("[data-review-kind='new']")
+            rows = page.locator("#manualItems [data-group='new']")
+            assert rows.count() == 4 and all('넣기 · 제외 고르기' in t for t in rows.all_inner_texts()), rows.all_inner_texts()
+            assert '새 센서 · 태그 TP2 · bar · 흡기 밸브' in page.inner_text("#manualItems [data-item='new:sensors:sen:apu-tp2']")
+            # ② 고르지 않고 적재
+            commit()
+            assert why() == '새 항목 제안 4개는 넣을지 사람이 하나씩 골라야 적재합니다 — 새 구성 요소 「흡기 밸브」부터 「넣기」 또는 「제외」를 고르세요.', why()
+            assert docs.commits == [] and page.locator("#manualPanes [data-pane='new:components:comp:apu-intake-valve']").is_visible()
+            # ③ 가리키는 항목이 남은 구성 요소를 제외
+            pick('components', 'comp:apu-intake-valve', 'drop')
+            pick('components', 'comp:apu-motor', 'drop')
+            pick('symptoms', 'sym:apu-tp2-no-rise', 'keep')
+            pick('sensors', 'sen:apu-tp2', 'keep')
+            assert page.inner_text("#manualItems [data-item='new:components:comp:apu-motor'] [data-item-tag]") == '제외'
+            commit()
+            said = why()
+            assert said.startswith('적재에서 제외한 새 구성 요소 「흡기 밸브」를 남은 항목이 가리킵니다 — 고장 유형 「흡기 밸브 고착」의 구성 요소 · 센서 「압축기 압력」의 구성 요소.') \
+                and '이 새 항목의 「넣기」를 고르세요.' in said, said
+            assert docs.commits == []
+            # ④ 넣기를 고른 것만 실린다
+            pick('components', 'comp:apu-intake-valve', 'keep')
+            commit()
+            page.wait_for_function("document.querySelector('#manualCommitTitle')?.textContent === '지식 지도에 적재했습니다'", timeout=15000)
+            [sent] = docs.commits
+            k = sent['knowledge']
+            assert [(c['id'], c['approved']) for c in k['components']] == [('comp:apu-intake-valve', True)]
+            assert [(s['id'], s['approved']) for s in k['symptoms']] == [('sym:apu-tp2-no-rise', True)] and [s['approved'] for s in k['sensors']] == [True]
+            assert all('approved' not in x for g in ('failure_modes', 'causes', 'evidence') for x in k[g])      # 지식 후보는 그대로(넣기 표시는 새 항목만)
+            # ⑤ 한 번에 적재는 새 항목이 있는 문서를 멈춘다
+            page.click('#manualNext')
+            page.wait_for_selector(f"#providedDocs [data-provided='{other}']:not([disabled])", timeout=5000)
+            docs.polls.clear()
+            page.locator(f"#providedDocs [data-batch-pick='{other}']").check(timeout=5000)
+            page.click('#manualBatchRun')
+            page.wait_for_selector('#manualBatchClose', timeout=30000)
+            done = page.inner_text('#manualBatch')
+            assert '검토 필요 — 새 항목 제안 4개는 넣을지 사람이 하나씩 골라야 적재합니다' in done and len(docs.commits) == 1, done
         finally:
             b.close()
             served.close()

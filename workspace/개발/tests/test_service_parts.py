@@ -53,17 +53,18 @@ def test_흐름_C의_입고는_리드타임을_줄여_기다린_근거를_업무
 
 
 def test_결과_보고는_회복_기준_측정값을_싣고_못_읽은_까닭이_없으면_빈칸을_두지_않는다(world):
+    """결과 보고의 회복 기준 측정값은 설비가 낸 값이다 — 승인한 팬 최대가 관문 · PLC 를 거쳐 설비의 지령이 되고, 설비 모형이 그 지령으로 낸 유온을
+    효과 확인 · 결과 보고가 읽는다. 전에는 시험이 유온 50 ℃를 시계열에 넣고 경보 해제도 넣었다(명령이 설비에 닿지 않아도 같은 값이었다)."""
+    from test_instances import _effect, _recovered_on_plant
     alert, pid, decision = world.start_cooling()
     world.approve(pid, decision, 'skill:sop-cool-11', OPERATOR)
-    cmd = world.commanded(pid)
-    world.ack('HYD-01', cmd['cmdId'])
-    world.tag('HYD-01', 'TS1', 50.0)
-    world.clear_alert(alert)
-    world.clock.advance(15 * 60 / 20 + 1)
-    world.poll()
+    world.forward(world.commanded(pid)['cmdId'])
+    _effect(world, pid)
     report = world.values(pid)['result_report']
     ts1 = next(r for r in report['values'] if r['name'] == '유온 (TS1)')
-    assert (ts1['value'], ts1['unit'], ts1['limit'], ts1['ok']) == (50.0, ' ℃', '< 55 ℃', True), ts1
+    plant_ts1 = world.plant.tags('HYD-01')['TS1']
+    assert abs(ts1['value'] - plant_ts1) < 0.06 and (ts1['unit'], ts1['limit']) == (' ℃', '< 55 ℃'), (ts1, plant_ts1)
+    assert ts1['ok'] is _recovered_on_plant(world, pid) is True and report['outcome'] == '정상', (ts1, report['outcome'])
     assert 'values_error' not in report
 
 

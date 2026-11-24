@@ -94,7 +94,8 @@ def test_원문_판의_복사_단추는_원문_전체를_클립보드에_넣는�
     box.locator('summary').click()
     box.locator('[data-raw-copy]').click()
     page.wait_for_function("async () => (await navigator.clipboard.readText()).includes('\"note\": \"한 줄\"')")
-    assert page.evaluate('() => navigator.clipboard.readText()') == '{\n  "a": 1,\n  "note": "한 줄"\n}'
+    # Windows 클립보드는 줄바꿈을 \r\n 으로 바꿔 돌려준다(운영체제의 일 — 넣은 글은 \n) — 줄바꿈만 맞춰 견준다
+    assert page.evaluate('() => navigator.clipboard.readText()').replace('\r\n', '\n') == '{\n  "a": 1,\n  "note": "한 줄"\n}'
 
 
 @pytest.mark.parametrize('expr, shown', [

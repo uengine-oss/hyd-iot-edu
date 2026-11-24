@@ -22,7 +22,8 @@ def test_유온_경고와_정지선은_감지_규칙과_PLC_인터록_값이다(
 
 def test_IT_경보_알람_문구는_특정_패턴이나_개발자_말을_박지_않는다():
     texts = [a['highhigh']['text'] for a in fuxa.build_project()['alarms'] if a['name'].endswith('IT ALERT')]
-    assert len(texts) == 3
+    from hydcommon.topics import ASSETS
+    assert len(texts) == len(ASSETS)                              # 설비마다 하나
     assert not [t for t in texts if any(w in t for w in ('Flink', 'CEP', 'RAISE', '쿨러 성능 저하'))]
 
 

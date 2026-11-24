@@ -106,6 +106,14 @@ def test_선언한_업무_DB_칸에서_그_설비의_한_행_값을_읽는다(db
     assert physical.read_physical_fact(binding, 'HYD-01') == (want, None)
 
 
+def test_옛_설비_DB_표에_이은_입력도_같은_읽기_연결로_그_설비의_한_행을_읽는다(db, pg_dsn):
+    """탐사 N4: 옛 설비 DB(실라버스 통합 40행 제공 덤프)는 데이터 원천 화면에서 「연결됨」이고 표 정의를 적재해 판단 입력에 이을 수 있는데, 판단은
+    그 입력을 「등록된 출처가 아닙니다」로 멈췄다. 같은 읽기 계정으로 읽힌다."""
+    (want,), = admin(pg_dsn, 'SELECT "EQP_NM" FROM legacy."T_EQP00" WHERE "EQP_CD" = %s', 'HYD-01')
+    binding = item(db, 'T_EQP00', 'EQP_NM', 'string', datasource='hyd-legacy', schema='legacy', assetColumn='EQP_CD')
+    assert want and physical.read_physical(binding, 'HYD-01') == want
+
+
 def test_시각_칸을_남은_시간으로_바꾸면_지금부터의_부호_있는_시간과_저장된_시각을_함께_낸다(db, pg_dsn):
     (due_at,), = admin(pg_dsn, "SELECT due_at FROM ent.production_orders WHERE asset = %s", 'HYD-01')
     hours, anchor = physical.read_physical_fact(item(db, 'production_orders', 'due_at', 'number', derive='hours_from_now'), 'HYD-01')
@@ -121,15 +129,17 @@ def test_남은_시간으로_바꿀_시각_칸이_비어_있으면_값도_기준
 
 @pytest.mark.parametrize('over, asset, phrase', [
     ({'derive': 'days_from_now'}, 'HYD-01', '값 변환(days_from_now)을 엔진이 지원하지 않습니다'),
-    ({'datasource': 'other-db'}, 'HYD-01', '등록된 것(hyd-enterprise · ent)이 아닙니다'),
-    ({'schema': 'public'}, 'HYD-01', '등록된 것(hyd-enterprise · ent)이 아닙니다'),
+    ({'datasource': 'other-db'}, 'HYD-01', '등록된 원천(업무 DB(hyd-enterprise · ent), 옛 설비 DB(hyd-legacy · legacy))이 아닙니다'),
+    ({'schema': 'public'}, 'HYD-01', '등록된 원천(업무 DB(hyd-enterprise · ent), 옛 설비 DB(hyd-legacy · legacy))이 아닙니다'),
+    ({'datasource': 'hyd-legacy'}, 'HYD-01', '등록된 원천'),                      # 옛 설비 DB 는 legacy 스키마다
+    ({'datasource': 'hyd-timeseries', 'schema': 'public'}, 'HYD-01', '등록된 원천'),   # 시계열 DB 는 이 읽기 연결의 원천이 아니다
     ({'catalog': ''}, 'HYD-01', 'catalog 칸이 없습니다'),
     ({'table': None}, 'HYD-01', 'table 칸이 없습니다'),
     ({'column': 'since\x00pm'}, 'HYD-01', 'column 칸이 없습니다'),
     ({'assetColumn': 3}, 'HYD-01', 'assetColumn 칸이 없습니다'),
     ({}, '', '설비가 정해지지 않았습니다'),
     ({}, None, '설비가 정해지지 않았습니다'),
-], ids=['모르는 값 변환', '등록 안 된 데이터 원본', '등록 안 된 스키마', 'DB 이름 없음', '표 없음', '열 이름에 NUL', '설비 칸이 글자가 아님',
+], ids=['모르는 값 변환', '등록 안 된 데이터 원본', '등록 안 된 스키마', '옛 설비 DB 에 업무 스키마', '시계열 DB', 'DB 이름 없음', '표 없음', '열 이름에 NUL', '설비 칸이 글자가 아님',
         '빈 설비', '설비 없음'])
 def test_지식의_출처_선언이_모자라거나_등록_밖이면_업무_DB_에_닿기_전에_까닭과_함께_실패한다(db, over, asset, phrase):
     binding = item(db, 'pm_counters', 'since_pm_h', 'number')

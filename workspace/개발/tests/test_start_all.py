@@ -7,6 +7,9 @@
   · 지식 지도 내용 검사(kg-seed 되읽기)가 실패해 AI 판단 서비스가 켜지지 않으면, 검사가 짚은 줄과 그 까닭(지식 지도를 직접 고침)과 되돌리는 길을 말한다.
   · 끄기는 이 폴더의 업무 DB 이름 기록이 없어 기본 이름의 업무 DB 를 껐으면 그렇게 말한다.
 Docker · Supabase CLI 는 바깥이라 대역을 PATH 앞에 둔다: 스크립트가 묻는 명령에만 답하고(모르는 명령은 실패), 실패는 그 도구가 실제로 내는 꼴의 글로 낸다.
+Docker Desktop 이 깔린 PC 에서도 대역이 이긴다 — 시작은 PATH 에 docker 가 있으면 Docker Desktop 자리를 앞에 끼우지 않고(windows_paths.sh), 파이썬 보조도
+PATH 차례로 docker 를 찾는다(prepare_ports.docker_exe). 전에는 진짜 docker 가 대역을 가려 이 PC 의 진짜 Docker 에 망을 만들었다(2026-11-24 남은 망
+hyd-business-db-hyd-portal-latest).
 스크립트 · 파이썬 보조(scripts/*) · git 은 실제 것이다. 이 PC 값은 임시 저장소 안(.env · .hyd-runtime · it/supabase/.env)에만 쓰인다.
 """
 import os
@@ -25,7 +28,10 @@ case "$*" in
   "compose up -d --build --remove-orphans") printf '%s\n' "${FAKE_UP_OUTPUT:-}" >&2; exit "${FAKE_UP_EXIT:-0}";;
   "compose restart ot-broker dmz-broker ot-bridge") exit 0;;
   compose\ logs*kg-seed) printf '%s\n' "${FAKE_SEED_LOG:-}";;
-  "compose config --format json") echo '{"name": "hyd-fake"}';;
+  "compose config --format json") printf '{"name": "hyd-fake", "networks": {"business-db": {"name": "hyd-business-db-%s"}}, "services": {}}\n' "$(sed -n 's/^HYD_SUPABASE_PROJECT=//p' .env)";;
+  network\ inspect\ -f*) echo fake-net-id;;
+  network\ inspect\ *) exit 0;;
+  inspect\ -f*NetworkSettings.Networks*) printf '{"hyd-business-db-%s": {}}\n' "$(sed -n 's/^HYD_SUPABASE_PROJECT=//p' .env)";;      # 업무 DB · 메일함은 이미 그 망에 붙어 있다
   volume\ ls*neo4j-data*) echo hyd-fake_neo4j-data;;
   "compose --profile * stop") exit 0;;
   compose\ ps*|ps*|volume\ ls*) ;;
@@ -44,7 +50,8 @@ esac
 @pytest.fixture
 def pc(tmp_path):
     """학생 PC 하나: 저장소에서 시작 · 끄기가 읽는 파일만 담은 git 저장소 + Docker · npx 대역. run(스크립트, **대역 답) → (종료 코드, 화면 글)."""
-    if shutil.which('bash') is None:
+    bash = shutil.which('bash')      # PATH 의 bash(Git bash) — 이름만 주면 Windows 는 PATH 보다 System32 를 먼저 찾아 WSL bash 를 부른다
+    if bash is None:
         pytest.fail('bash 가 없어 시작 스크립트를 돌릴 수 없습니다')
     repo, bin_dir = tmp_path / 'repo', tmp_path / 'bin'
     shutil.copytree(ROOT / 'scripts', repo / 'scripts', ignore=shutil.ignore_patterns('__pycache__'))
@@ -58,11 +65,13 @@ def pc(tmp_path):
     for name, body in (('docker', DOCKER), ('npx', NPX)):
         (bin_dir / name).write_text(body, encoding='utf-8', newline='\n')
         (bin_dir / name).chmod(0o755)
+    if os.name == 'nt':      # 파이썬 보조(prepare_ports)는 셸과 같은 PATH 차례로 docker 를 찾는다(shutil.which — PATHEXT) — 같은 대역으로 잇는다
+        (bin_dir / 'docker.cmd').write_text(f'@"{bash}" "%~dp0docker" %*\r\n', encoding='oem', newline='')
     keep = {k: v for k, v in os.environ.items() if k not in ('LLM_API_KEY', 'OPENAI_BASE_URL', 'LLM_MODEL', 'AI_MODE', 'COMPOSE_PROFILES')}
 
     def run(script, **fake):
         env = dict(keep, PATH=f'{bin_dir}{os.pathsep}{keep["PATH"]}', **{f'FAKE_{k.upper()}': str(v) for k, v in fake.items()})
-        out = subprocess.run(['bash', f'scripts/{script}'], cwd=repo, env=env, capture_output=True, text=True, encoding='utf-8', timeout=120)
+        out = subprocess.run([bash, f'scripts/{script}'], cwd=repo, env=env, capture_output=True, text=True, encoding='utf-8', timeout=120)
         return out.returncode, out.stdout + out.stderr
     run.repo = repo
     return run
@@ -106,11 +115,12 @@ def test_지식_지도_내용_검사가_실패하면_검사가_짚은_줄과_까
     """전수 대조 12-3: 학생이 Neo4j Browser 에서 적재 지식의 관계 하나를 지우면 다음 시작에서 kg-seed 가 실패해 AI 판단 서비스(agent · dmn-mcp)가 뜨지
     않는데, 시작 창은 「시스템을 켜지 못했습니다 … docker compose logs」만 말했고 까닭은 kg-seed 로그의 영문 한 줄뿐이었다. kg-seed 의 실제 출력
     꼴(it/neo4j/seed.sh — 「CHECK FAILED: …」 · 「kg-seed FAILED read-back」)로 판정한다."""
-    seed_log = 'CHECK FAILED: cause without failure mode cause:fin-fouling\nread-back: 31 checks, 1 failed\nkg-seed FAILED read-back'
+    seed_log = 'CHECK FAILED: rule when does not state exactly its TESTS rule:ts1-hard: forecast_ts1 >= 60\nread-back: 25 checks, 1 failed\nkg-seed FAILED read-back'
     code, text = pc('start_all.sh', up_exit=1, up_output='service "kg-seed" didn\'t complete successfully: exit 1', seed_log=seed_log)
     said = stopped(text)
     assert code == 1 and '지식 지도의 내용 검사가 실패' in said and 'AI 판단 서비스' in said
-    assert '  CHECK FAILED: cause without failure mode cause:fin-fouling' in text       # 검사가 짚은 줄을 그대로 보인다
+    assert '  CHECK FAILED: rule when does not state exactly its TESTS rule:ts1-hard' in text       # 검사가 짚은 줄을 그대로 보인다
+    assert '포털에서 넣은 문서' in said                         # 포털로 넣은 지식은 이 검사에 걸리지 않는다(seed_checks 머리말) — 그것을 까닭으로 대지 않는다
     assert 'Neo4j Browser' in said and '다시 만든 뒤' in said                            # 까닭과 첫째 길(지운 것을 다시 만든다)
     assert "docker volume rm hyd-fake_neo4j-data" in said                               # 둘째 길: 이 PC 의 실제 볼륨 이름으로
     assert '다시 넣어야 합니다' in said                                                   # 그 길이 지우는 것(직접 적재한 지식)을 말한다

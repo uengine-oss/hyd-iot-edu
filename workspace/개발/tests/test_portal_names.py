@@ -24,7 +24,7 @@ def test_수업_그래프에서_만든_사전은_시드_수업_지식_업무_스
 
 def test_실행_기록이나_학생이_만든_노드가_더해져도_사전은_같다(course_graph):
     before = build(course_graph)
-    course_graph.query("CREATE (:ExecutionActor {id: 'execution-actor:hyd:user%3Akim-op', name: '김운전'}), "
+    course_graph.query("CREATE (:ExecutionActor {id: 'execution-actor:hyd:user%3Ame', name: '김운전'}), "
                        "(:Skill {id: 'skill:student-made', name: '학생이 만든 조치'})")
     assert build(course_graph) == before
 

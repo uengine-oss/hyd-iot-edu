@@ -30,7 +30,7 @@ def test_카드의_승인_역할_또는_더_높은_역할만_승인한다(option
     if ok:
         plan = decisions.approve(d, option, 'user:x', role, '확인')
         assert d['state'] == 'APPROVED' and d['chosen'] == option and d['override'] is (option != 'a')
-        assert [i['code'] for i in plan['ot']] == ['FAN_SET'] and [i['code'] for i in plan['enterprise']] == ['WO_CREATE']
+        assert plan == {'option': next(o for o in d['options'] if o['id'] == option)}, plan       # 승인은 안을 정할 뿐 — 명령 · 거래는 흐름 단계가 낸다
     else:
         with pytest.raises(PermissionError, match='반장 이상'):
             decisions.approve(d, option, 'user:x', role)

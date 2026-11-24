@@ -36,11 +36,25 @@ def test_펌프_누설은_60_설비_초_유지_뒤_한_번_울리고_이름이_�
     assert [(e['pattern'], e['state'], e['name']) for e in events] == [('PUMP_LEAKAGE', 'RAISE', '펌프 내부 누설')]
 
 
-def test_상태가_태그보다_조금_늦게_찍혀도_유지가_끊긴다_그래서_edge는_틱_시각을_하나로_쓴다(_runtime):
-    """G3b-4: 상태 시각이 태그보다 1 ms 늦으면 그 틱의 PLC 상태가 「미래 값」이 되어 후보가 IDLE 로 돌아갔다."""
+@pytest.mark.parametrize('ahead', [0.001, 1.0], ids=['1 ms 늦게 찍힌 상태', '다음 틱의 상태가 먼저 옴'])
+def test_평가_시각보다_늦은_상태가_먼저_와도_그_시각까지의_마지막_상태로_판정해_유지가_끊기지_않는다(_runtime, ahead):
+    """G3b-4 · 06-4: 상태와 태그는 다른 토픽이라 처리 차례가 정해져 있지 않다. 감지기가 1초 밀려 다음 틱의 상태를 먼저 처리하면(또는 상태 시각이
+    태그보다 1 ms 늦으면) 그 틱의 PLC 상태가 「미래 값」이 되어 틱마다 후보가 IDLE 로 돌아가 경보가 오르지 않았다. 평가 시각의 상태는 그 늦은
+    표본이 밀어낸 바로 앞 표본이다 — 첫 틱(앞 표본이 없음)만 평가하지 못하고 그 뒤로는 유지가 이어져 한 번 울린다."""
     late = _runtime()
-    assert not [e for t in range(1000, 1010) for e in _tick(late, float(t), 48.0, ps1=160.0, fs1=7.5, status_at=t + 0.001)]
-    assert late.assets['HYD-02'].runs['PUMP_LEAKAGE'].quality['problems'] == {'PLC_STATE': 'FUTURE_TIMESTAMP'}
+    events = [e for t in range(1000, 1012) for e in _tick(late, float(t), 48.0, ps1=160.0, fs1=7.5, status_at=t + ahead)]
+    assert [(e['pattern'], e['state']) for e in events] == [('PUMP_LEAKAGE', 'RAISE')]
+    assert late.assets['HYD-02'].runs['PUMP_LEAKAGE'].quality['status'] == 'VALID'
+
+
+def test_평가_시각까지의_상태가_보호_정지였으면_늦게_온_운전_상태로_덮어_판정하지_않는다(_runtime):
+    """같은 규칙의 반대쪽: 밀어낸 앞 표본이 「운전 중」이 아니면(펌프 누설은 운전 중에만 본다) 뒤에 온 운전 상태를 그 시각의 상태로 쓰지 않는다."""
+    rt = _runtime()
+    events = []
+    for t in range(1000, 1012):
+        events += _tick(rt, float(t), 48.0, ps1=160.0, fs1=7.5, state='RUN' if t % 2 else 'TRIP', status_at=t + 1.0)
+    # 틱 t 의 평가가 읽는 상태는 틱 t-1 이 넣은 것(시각 t) — 짝 · 홀이 번갈아 운전 조건이 이어지지 않는다
+    assert not [e for e in events if e['pattern'] == 'PUMP_LEAKAGE']
 
 
 def test_목록을_읽기_전에도_관측은_쌓이고_평가만_하지_않는다(catalog):
@@ -59,6 +73,28 @@ def test_무효_표본은_후보를_끊고_울린_경보는_해제하지_않는�
     rt.invalidate('HYD-02', 'PS1', 'INVALID_RECORD')
     run = rt.assets['HYD-02'].runs['PUMP_LEAKAGE']
     assert run.state.phase == 'RAISED' and run.quality['problems'] == {'PS1': 'INVALID_RECORD'}
+
+
+def test_지식의_패턴_기준이_바뀌면_다시_읽은_뒤의_감지가_그_기준으로_달라진다(_runtime, catalog):
+    """T-7: 감지기는 15초마다 지식 지도의 이상 패턴을 다시 읽어 실행 목록을 바꾼다(main.refresh_catalog → 이 runtime.replace). 전에는 다시 읽기
+    호출이 성공하는지만 봤고, 바뀐 정의로 감지가 실제로 달라지는지를 재는 시험이 없었다. 펌프 누설의 토출 압력 기준(지금 165 bar 미만)을
+    150 bar 미만으로 고친 지식을 다시 읽으면, 전에 울리던 값(160 bar)에서는 울리지 않고 새 기준 아래(148 bar)에서 울린다."""
+    rows, names = catalog
+    rt = _runtime(['PUMP_LEAKAGE'])
+    leaking = dict(ps1=160.0, fs1=7.5)
+    assert [e['state'] for t in range(1000, 1010) for e in _tick(rt, float(t), 48.0, asset='HYD-02', **leaking)] == ['RAISE']
+    changed = []
+    for row in rows:
+        if row['code'] == 'PUMP_LEAKAGE':
+            pressure = [t for t in row['tests'] if t['operator'] == '<' and t['value'] == 165]
+            assert len(pressure) == 1, row['tests']
+            row = dict(row, tests=[dict(t, value=150) if t is pressure[0] else t for t in row['tests']])
+            changed.append(row)
+    assert rt.replace(changed, names) == []
+    # 같은 값(160 bar)이 다른 설비에서: 새 기준(150 미만)에 닿지 않아 울리지 않는다. 이미 울린 HYD-02 의 경보는 울릴 때의 정의에 묶여 그대로다
+    assert not [e for t in range(1000, 1010) for e in _tick(rt, float(t), 48.0, asset='HYD-03', **leaking)]
+    assert rt.assets['HYD-02'].runs['PUMP_LEAKAGE'].state.phase == 'RAISED'
+    assert [e['state'] for t in range(1010, 1020) for e in _tick(rt, float(t), 48.0, asset='HYD-03', ps1=148.0, fs1=7.5)] == ['RAISE']
 
 
 def test_기울기는_정의가_쓰는_창에서만_나온다(_runtime):

@@ -44,6 +44,31 @@ def test_쓸_수_없는_관계는_학생이_고를_말로_거절한다(session):
     assert "관계 'CAUSED_BY'" in str(refused.value) and '근본 조치 · 완화 조치 · 예방 조치' in str(refused.value)
 
 
+def test_다른_설비의_고장에는_이_시스템_정비_시스템의_조치_방법을_만들지_않고_까닭과_길을_말한다(session):
+    """화면 조치 방법은 이 시스템의 CMMS 가 정비 요청을 내는 조치다 — 문서가 새 항목으로 넣은 다른 설비(설비에 딸리지 않은 구성 요소)의 고장에 만들면
+    그 설비의 정비를 이 시스템 CMMS 가 한다고 지식 지도에 적게 된다(문서 적재의 수행 시스템 판정과 같은 규칙). 이 시스템 설비의 고장은 그대로 만들어진다."""
+    s, graph = session
+    graph.query("CREATE (:Component {id:'comp:test-apu-piping', name:'시험 배관'}) "
+                "WITH 1 AS x MATCH (c:Component {id:'comp:test-apu-piping'}) "
+                "CREATE (:FailureMode {id:'fm:test-apu-leak', name:'시험 공기 누설'})-[:OCCURS_IN]->(c)")
+    with pytest.raises(ValueError) as refused:
+        skill_graph.write(s, SKILL_Q, 'skill:test-apu', dict(VALUES, failureMode='fm:test-apu-leak'), create=True, by='user:me')
+    assert '이 시스템이 운영하는 설비의 고장이 아니라' in str(refused.value) and '승인 뒤 MCP 호출' in str(refused.value)
+    assert graph.query("MATCH (k:Skill {id:'skill:test-apu'}) RETURN k.id AS id") == []
+    made = skill_graph.write(s, SKILL_Q, 'skill:test-plant', dict(VALUES, failureMode=fm_id(graph), sopId='SOP-TEST-02'), create=True, by='user:me')
+    assert made and graph.query("MATCH (:System {id:'sys:cmms'})-[:HAS_SKILL]->(k:Skill {id:'skill:test-plant'}) RETURN k.id AS id")
+    # 만든 조치 방법을 다른 고장 유형으로 옮기는 길(고치기)도 같은 판정이다 — 그 길로 다른 설비의 고장에 붙이면 만들기에서 막은 것과 같은 지식이 됐다.
+    # 거절 문장은 고장 유형을 이름으로 부르고, 조치 방법은 원래 고장 유형에 그대로 이어져 있다
+    with pytest.raises(ValueError) as moved:
+        skill_graph.write(s, SKILL_Q, 'skill:test-plant', dict(name='시험 조치', description='시험', failureMode='fm:test-apu-leak', relation='REMEDIED_BY'),
+                          expected_revision=made['revision'], by='user:me')
+    assert '고장 유형 「시험 공기 누설」은 이 시스템이 운영하는 설비의 고장이 아니라' in str(moved.value) and '옮길 수 없습니다' in str(moved.value), str(moved.value)
+    assert graph.query("MATCH (f:FailureMode)-[:REMEDIED_BY]->(:Skill {id:'skill:test-plant'}) RETURN f.id AS id") == [{'id': fm_id(graph)}]
+    with pytest.raises(ValueError, match='고른 고장 유형이 지금 지식에 없거나'):
+        skill_graph.write(s, SKILL_Q, 'skill:test-plant', dict(name='시험 조치', description='시험', failureMode='fm:test-none', relation='REMEDIED_BY'),
+                          expected_revision=made['revision'], by='user:me')
+
+
 def test_없는_스킬을_고치면_그_스킬_이름으로_KeyError(session):
     s, _ = session
     with pytest.raises(KeyError) as missing:
@@ -108,6 +133,32 @@ def test_같은_고장_유형에_둘째_조치_방법을_연결하면_같은_후
     rules = course_graph.query("MATCH (:DecisionTable {id:'dt:action-candidates'})-[:HAS_RULE]->(r:Rule)-[t:TESTS]->(:InputData {id:'in:failure-mode'}) "
                                     "WHERE t.value = $fm RETURN r.id AS id, r.`when` AS w", fm=COOLING_LOSS)
     assert rules == [{'id': 'rule:cand-cooler-cooling-loss', 'w': "failure_mode == 'fm:cooler-cooling-loss'"}]
+
+
+def test_문서가_고장_유형만으로_고르는_후보_규칙을_적재했어도_화면_조치_방법은_화면_몫의_규칙에만_잇는다(world, course_graph):
+    """탐사 C4 · 2026-11-13 03-19: 화면 조치 방법이 「고장 유형만 보는 후보 규칙 전부」(문서가 적재한 것 포함)에 OUTPUTS 로 이어져, 그 관계가 문서
+    그래프의 것으로 세어져 문서의 개정 · 되돌리기를 묶었다. 화면 몫의 규칙(rule:cand-…)을 따로 두고 그것에만 잇는다."""
+    course_graph.query("MATCH (t:DecisionTable {id:'dt:action-candidates'}), (i:InputData {id:'in:failure-mode'}) "
+                       "CREATE (r:Rule {id:'rule:doc-cooling-loss-any', order:900, effect:'SELECT', `when`:\"failure_mode == 'fm:cooler-cooling-loss'\", "
+                       "_manual_document:'doc-x'}) CREATE (t)-[:HAS_RULE]->(r) CREATE (r)-[:TESTS {operator:'==', value:$fm}]->(i)", fm=COOLING_LOSS)
+    status, made = _new_skill(world)
+    assert status == 200 and [r['id'] for r in made['rules']] == ['rule:cand-cooler-cooling-loss'], made
+    assert course_graph.query("MATCH (r:Rule {id:'rule:doc-cooling-loss-any'})-[:OUTPUTS]->(k:Skill {sopId:'SOP-MY-21'}) RETURN k.id AS id") == [],         '문서의 후보 규칙에 화면 조치 방법을 이었다'
+
+
+@pytest.mark.parametrize('relation', [None, ''], ids=['관계 없음', '빈 관계'])
+def test_조치_방법을_고장_유형에_다시_이을_때_관계가_비면_근본_조치로_채우지_않고_고르라고_한다(session, relation):
+    """전수검사 02-4 · 코디네이터(F1 → F3): 고치기 길이 관계가 비면 「근본 조치」를 넣었다 — 사람이 고르지 않은 값이 후보 규칙 합류와 근본 조치
+    판정을 정했다. 그래프 쓰기는 비어 있는 관계를 받지 않는다 — 포털의 고치기 길이 먼저 거치는 관계 검사(kgadmin.validate_skill)도 같은 기본값을 지우고 비면
+    거절한다(그 판정은 test_kgadmin 이 본다)."""
+    s, graph = session
+    fm = fm_id(graph)
+    made = skill_graph.write(s, SKILL_Q, 'skill:test-relink', dict(VALUES, sopId='SOP-TEST-09', failureMode=fm), create=True, by='user:me')
+    rev = next(r['revision'] for r in made if r['skillId'] == 'skill:test-relink') if isinstance(made, list) else made['revision']
+    with pytest.raises(ValueError) as refused:
+        skill_graph.write(s, SKILL_Q, 'skill:test-relink', dict(VALUES, failureMode=fm, relation=relation), create=False, expected_revision=rev, by='user:me')
+    assert '관계를 고르세요' in str(refused.value), refused.value
+    assert graph.query("MATCH (:FailureMode {id:$fm})-[m]->(:Skill {id:'skill:test-relink'}) RETURN type(m) AS t", fm=fm) == [{'t': 'REMEDIED_BY'}]
 
 
 def test_예방_조치로_연결한_조치_방법은_경보_대응_후보_규칙을_만들지_않는다(world, course_graph):

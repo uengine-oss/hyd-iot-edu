@@ -254,9 +254,18 @@ PM_OPTS = [{'id': 'skill:sop-pm-11', 'name': '이번 예정된 정비 시간에 
            {'id': 'skill:sop-pm-12', 'name': '지금 바로 정지하고 시행', 'sopId': 'SOP-PM-12', 'score': -2.04, 'feasible': True, 'rank': 2}]
 
 
-def _pm_decision(route='prevention', recommended='skill:sop-pm-11'):
+#: 판단 엔진이 판단을 등록할 때 다시 한 원인 진단(판단 기록 origin.diagnosis — dmn-mcp _submitted_diagnosis 의 꼴)
+SEAL_DX = {'top_cause': 'cause:pump-shaft-seal-wear', 'failure_mode': 'fm:pump-volumetric-efficiency-loss', 'evidence_status': {'status': 'PASS'},
+           'causes': [{'id': 'cause:pump-shaft-seal-wear', 'name': '펌프 축 씰 마모', 'score': 0.8, 'prior': 0.5, 'rules': [],
+                       'evidence': [{'id': 'evd:flow', 'name': '유량 저하', 'status': 'PASS', 'passed': True, 'value': 5.1, 'expect': 'lt', 'threshold': 6}]}],
+           'citations': [], 'summary': '펌프 축 씰 마모'}
+
+
+def _pm_decision(route='prevention', recommended='skill:sop-pm-11', diagnosis=None):
+    origin = {'cause': 'cause:pump-shaft-seal-wear', 'failureMode': 'fm:pump-volumetric-efficiency-loss'}
+    origin.update({'cause_route': route} if route else {}, **({'diagnosis': diagnosis} if diagnosis else {}))
     return {'id': 'D1', 'recommended': recommended, 'options': PM_OPTS, 'facts': {},
-            'scenario': {'cause': '펌프 축 씰 마모', 'failureMode': '주 펌프 체적 효율 저하'}, 'origin': {'cause_route': route} if route else {}}
+            'scenario': {'cause': '펌프 축 씰 마모', 'failureMode': '주 펌프 체적 효율 저하'}, 'origin': origin}
 
 
 def test_결과_글의_점수가_등록한_판단과_달라도_AI_단계의_결론은_그_단계가_등록한_판단의_추천안을_말한다():
@@ -292,9 +301,13 @@ def test_정기_정비처럼_센서로_진단하지_않은_판단의_결론은_�
     line = pm['evid'][0]
     assert '관측값과 맞습니다' not in ' '.join(pm['evid']) and '정기 정비로 막는 원인은 펌프 축 씰 마모입니다' in line and '정기 정비로 막는 고장: 주 펌프 체적 효율 저하' in line
     assert '센서 값으로 진단한 것이 아닙니다' in line
-    sensed = _agent_front(_pm_decision('diagnosis'), made)
+    sensed = _agent_front(_pm_decision('diagnosis', diagnosis=SEAL_DX), made)
     assert sensed['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ') and '관측값과 맞습니다' in sensed['evid'][0]
+    assert '유량 저하 5.1 — 기준 &lt; 6, 맞음' in sensed['evid'], sensed['evid']                 # 잰 값은 판단 기록의 서버 진단에서
     assert _agent_front(_pm_decision(None), made)['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ')      # 이 칸이 생기기 전의 판단 기록은 진단으로 읽는다
+    # 서버 진단 기록이 없는 판단(그 칸이 생기기 전의 기록)에는 「관측값과 맞습니다」를 말하지 않는다 — 말할 근거가 화면에 없다(2026-11-22 탐사 N1)
+    unrecorded = _agent_front(_pm_decision('diagnosis'), made)
+    assert unrecorded['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ') and not any('관측값' in x or '센서 값으로 진단한 것이 아닙니다' in x for x in unrecorded['evid']), unrecorded
 
 
 def test_긴_단계_문장은_괄호_밖의_첫_마디에서_결론과_근거로_갈리고_글은_빠지지_않는다():
@@ -364,9 +377,14 @@ def test_사람을_기다리는_단계는_멈춘_내가_할_일_모양이고_알
 def test_끝난_AI_단계의_줄은_결론_한_문장이고_옆_판의_첫_보기가_결론_근거_후보_비교다():
     """DoD 13 — 결론 먼저 · 근거 다음: 단계 줄에는 AI 의 결론 한 문장만 서고, 줄을 누르면 열리는 옆 판의 첫 보기 「판단」에 결론 → 근거 → 후보 비교가 차례로 있다."""
     opt = lambda i, name, score: {'id': f'skill:{i}', 'name': name, 'feasible': True, 'rank': i, 'score': score, 'actions': [], 'kind': 'control', 'approver': {'id': 'role:operator', 'name': '운전원'}}
-    d = {'id': 'D-1', 'recommended': 'skill:1', 'options': [opt(1, '팬 최대 운전', 3.4), opt(2, '부하 낮춤', 2.1)], 'origin': {'cause_route': 'diagnosis'}, 'evaluation_mode': 'execution', 'execution_checked': True,
-         'explanation': '1순위 팬 최대 운전.', 'scenario': {}}
-    guide = {'topCause': 'cause:fin', 'causes': [{'id': 'cause:fin', 'name': '쿨러 핀 오염', 'failureMode': '쿨러 냉각 성능 상실', 'evidence': [{'name': '냉각 효율 저하', 'tag': 'CE', 'expect': 'lt', 'threshold': 70, 'value': 46.2, 'passed': True, 'status': 'PASS'}]}]}
+    # 원인 · 근거는 판단 기록의 서버 진단(origin.diagnosis)에서 읽는다. AI 가 결과 칸에 옮겨 적은 guide_card 는 다르게 적혀도 화면의 근거가 되지 않는다(탐사 N1)
+    dx = {'top_cause': 'cause:fin', 'failure_mode': 'fm:cool', 'evidence_status': {'status': 'PASS'}, 'citations': [], 'summary': '쿨러 핀 오염',
+          'causes': [{'id': 'cause:fin', 'name': '쿨러 핀 오염', 'score': 0.9, 'prior': 0.5, 'rules': [],
+                      'evidence': [{'id': 'evd:ce', 'name': '냉각 효율 저하', 'expect': 'lt', 'threshold': 70, 'value': 46.2, 'passed': True, 'status': 'PASS'}]}]}
+    d = {'id': 'D-1', 'recommended': 'skill:1', 'options': [opt(1, '팬 최대 운전', 3.4), opt(2, '부하 낮춤', 2.1)], 'evaluation_mode': 'execution', 'execution_checked': True,
+         'origin': {'cause_route': 'diagnosis', 'cause': 'cause:fin', 'failureMode': 'fm:cool', 'diagnosis': dx},
+         'explanation': '1순위 팬 최대 운전.', 'scenario': {'cause': '쿨러 핀 오염', 'failureMode': '쿨러 냉각 성능 상실'}}
+    guide = {'topCause': 'cause:fin', 'causes': [{'id': 'cause:fin', 'name': '쿨러 핀 오염', 'failureMode': '쿨러 냉각 성능 상실', 'evidence': [{'name': '꾸며 적은 증거', 'tag': 'CE', 'expect': 'lt', 'threshold': 70, 'value': 1.0, 'passed': True, 'status': 'PASS'}]}]}
     wis = [{'id': 'wa', 'activity_id': 'T_agent', 'activity_name': '원인 진단', 'start_date': T, 'end_date': T, 'agent_orch': 'cliagents', 'agent_mode': 'COMPLETE', 'user_id': 'agent:cooling', 'reached_at': T}]
     v = view(wis, ['T_agent'], variables=[('decision_id', 'D-1'), ('cause', 'cause:fin'), ('guide_card', guide)])
     got = run(FILES, """const m = hydRecord.build(DATA.v, { agents: [], people: [], decision: DATA.d }, []); const s = m.steps.find(x => x.type === 'agent');
@@ -377,6 +395,7 @@ def test_끝난_AI_단계의_줄은_결론_한_문장이고_옆_판의_첫_보�
     assert got['tabs'][0] == 'judge' and got['tabs'][-1] == 'raw' and 'io' in got['tabs'], got
     j = got['judge']
     assert j.index('결론') < j.index(verdict) < j.index('근거') < j.index('냉각 효율 저하') < j.index('후보 비교') < j.index('부하 낮춤'), j
+    assert '꾸며 적은 증거' not in j and '고장 유형: 쿨러 냉각 성능 상실' in j, j
 
 
 def test_정비_요청_결과는_같은_말을_두_번_적지_않고_업무_시스템에_남긴_거래가_있을_때만_그_기록으로_가는_길을_둔다():

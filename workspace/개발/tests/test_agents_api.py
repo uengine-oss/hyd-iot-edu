@@ -17,7 +17,7 @@ def test_교대_인계_에이전트의_실행_설정은_교대_단계의_정해�
 
 def test_배정을_바꾸면_그_단계를_맡는_에이전트가_바로_바뀐다(world):
     status, _ = world.api('PUT', '/api/agent-assignments', {'definition_id': 'shift_handover', 'activity_id': 'task:draft',
-                                                            'agent_id': 'agent:cooling', 'by': '수강생'})
+                                                            'agent_id': 'agent:cooling', 'by': 'user:me'})
     try:
         assert status == 200
         run = next(s for s in agents_api.step_runs(world.rt) if (s['definition_id'], s['activity_id']) == ('shift_handover', 'task:draft'))

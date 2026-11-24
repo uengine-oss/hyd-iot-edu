@@ -13,7 +13,7 @@ from hydcommon.handover_tools import QUESTION_READS
 from hydcommon.timeutil import parse_iso
 from procsvc import ask, procdb
 
-INTERNAL = re.compile(r'AGENT_BRIDGE|PROCESS_MODE|legacy|\.env|http://|Error\b|Exception|[A-Z][a-z]+Error|RuntimeError|워커|엔진|계약|세션')
+INTERNAL = re.compile(r'AGENT_BRIDGE|PROCESS_MODE|legacy|\.env|http://|Error\b|Exception|[A-Z][a-z]+Error|RuntimeError|워커|일꾼|엔진|계약|세션')
 
 
 @pytest.mark.parametrize('probe, ready', [
@@ -21,7 +21,7 @@ INTERNAL = re.compile(r'AGENT_BRIDGE|PROCESS_MODE|legacy|\.env|http://|Error\b|E
     ({'reachable': False, 'url': 'http://agent-worker:8097', 'error': 'HTTPError: HTTP Error 503: Service Unavailable'}, False),
     ({'reachable': False, 'url': 'http://agent-worker:8097', 'error': 'URLError: <urlopen error [Errno 111] Connection refused>'}, False),
 ], ids=['켜짐(재생)', '켜지는 중(503)', '꺼짐'])
-def test_질문_준비_상태는_AI_일꾼_상태만으로_정하고_학생이_할_일을_말한다(probe, ready):
+def test_질문_준비_상태는_AI_실행기_상태만으로_정하고_학생이_할_일을_말한다(probe, ready):
     out = ask.readiness(lambda: probe)
     assert out['ready'] is ready
     if ready:
@@ -74,15 +74,15 @@ def test_에이전트마다_질문에_쓰는_도구_서버와_쓰지_않는_서�
 
 
 # ---------------------------------------------------------------- 실제 처리 건(학생 PC 구성)
-def test_AI_일꾼이_닿지_않으면_질문을_처리_건으로_만들지_않는다(course):
+def test_AI_실행기가_닿지_않으면_질문을_처리_건으로_만들지_않는다(course):
     with pytest.raises(ask.WorkerUnavailable) as caught:
-        ask.start(course.rt, '설비 HYD-01 의 최근 경보는?', None, '수강생', definitions_dir=DEFINITIONS,
+        ask.start(course.rt, '설비 HYD-01 의 최근 경보는?', None, 'user:me', definitions_dir=DEFINITIONS,
                   worker_probe=lambda: {'reachable': False, 'error': 'URLError: refused'})
     assert str(caught.value) == ask.NOT_READY
     assert course.rt.repo.list_source_runs('hyd', ask.DEFINITION_ID, ask.EVENT_PREFIX, limit=10) == []
 
 
-def test_실패한_질문은_AI_일꾼이_적은_학생_문장만_보이고_원문은_보이지_않는다(course):
+def test_실패한_질문은_AI_실행기가_적은_학생_문장만_보이고_원문은_보이지_않는다(course):
     """B-09: 옛 화면은 hint 가 없으면 raw_error(「RuntimeConnectionError: …」 같은 예외 이름)를 그대로 보였다."""
     view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
     task = task_of(course.rt, view['id'])
@@ -95,8 +95,8 @@ def test_실패한_질문은_AI_일꾼이_적은_학생_문장만_보이고_원�
     assert (after['state'], after['message']) == ('failed', 'AI 에이전트의 실행기 인증 파일을 읽지 못했습니다.')
 
 
-@pytest.mark.parametrize('reachable, expected', [(False, ask.NOT_PICKED), (True, ask.BUSY)], ids=['일꾼 꺼짐', '일꾼 바쁨'])
-def test_아무도_맡지_않은_질문은_그_시간과_AI_일꾼_상태로_까닭을_말한다(course, reachable, expected):
+@pytest.mark.parametrize('reachable, expected', [(False, ask.NOT_PICKED), (True, ask.BUSY)], ids=['실행기 꺼짐', '실행기 바쁨'])
+def test_아무도_맡지_않은_질문은_그_시간과_AI_실행기_상태로_까닭을_말한다(course, reachable, expected):
     view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
     started = parse_iso(task_of(course.rt, view['id'])['start_date'])
     later = started + timedelta(seconds=ask.WAIT_PROBE_AFTER_S + 5)
@@ -105,10 +105,10 @@ def test_아무도_맡지_않은_질문은_그_시간과_AI_일꾼_상태로_까
     assert not INTERNAL.search(after['message'])
 
 
-def test_일꾼_상태를_확인하는_동안_에이전트가_질문을_맡으면_확인_뒤의_상태로_답한다(course):
+def test_실행기_상태를_확인하는_동안_에이전트가_질문을_맡으면_확인_뒤의_상태로_답한다(course):
     """화면 쪽 실측(2026-11-14): 처리 과정에는 이미 에이전트의 조회가 흘러나오는데 질문 상태는 뒤늦게 「대기 — 아직 질문을 맡지 않았습니다」로
-    왔다. 상태를 읽은 뒤에 일꾼 연결을 확인하는데(바쁜 일꾼은 몇 초 뒤에 답한다), 그 확인 전에 읽은 상태를 그대로 돌려줬기 때문이다.
-    확인하는 동안 일꾼이 질문을 집으면(실제 점유 — claim_process_workitems) 확인 뒤에 다시 읽은 상태로 답한다."""
+    왔다. 상태를 읽은 뒤에 실행기 연결을 확인하는데(바쁜 실행기는 몇 초 뒤에 답한다), 그 확인 전에 읽은 상태를 그대로 돌려줬기 때문이다.
+    확인하는 동안 실행기가 질문을 집으면(실제 점유 — claim_process_workitems) 확인 뒤에 다시 읽은 상태로 답한다."""
     view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
     started = parse_iso(task_of(course.rt, view['id'])['start_date'])
     later = started + timedelta(seconds=ask.WAIT_PROBE_AFTER_S + 5)

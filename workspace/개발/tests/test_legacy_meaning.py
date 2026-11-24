@@ -22,7 +22,7 @@ def tables():
 @pytest.fixture(scope='module')
 def req(tables):
     return lm.request(filename='legacy-plant-db.sql', text=LEGACY, tables=tables, ontology=ONTOLOGY,
-                      datasource='hyd-enterprise', catalog='postgres', by='수강생')
+                      datasource='hyd-enterprise', catalog='postgres', by='user:me')
 
 
 def column(req, key):
@@ -83,7 +83,7 @@ def test_관찰에_없는_근거나_추측한_뜻은_교정_사유로_거절한�
 def review(req, *decisions):
     key = 'public.T_EQP01.C_TMP_O'
     candidates = lm.validate_candidates(req, answers(req, **{key: candidate(key, link={'kind': 'represents', 'target': 'sv:ts1'})}))['items']
-    return lm.validate_review(req, candidates, {'by': '수강생', 'decisions': list(decisions)})
+    return lm.validate_review(req, candidates, {'by': 'user:me', 'decisions': list(decisions)})
 
 
 def test_승인한_뜻만_주석_SQL과_입력_이름_REPRESENTS로_반영된다(req, tables):
@@ -107,12 +107,12 @@ def test_사람이_고친_뜻은_그_사람의_말로_반영된다(req):
 
 
 @pytest.mark.parametrize('decisions, body, says', [
-    ([], {'by': '수강생'}, '하나 이상'),
+    ([], {'by': 'user:me'}, '하나 이상'),
     ([{'column': 'public.T_EQP01.C_TMP_O', 'verdict': 'APPROVE'}], {'by': ''}, '검토자'),
-    ([{'column': 'nope', 'verdict': 'APPROVE'}], {'by': '수강생'}, '후보에 없는'),
-    ([{'column': 'public.T_EQP01.C_TMP_O', 'verdict': 'MAYBE'}], {'by': '수강생'}, '결정은'),
-    ([{'column': 'public.T_EQP01.C_PRS_A', 'verdict': 'APPROVE'}], {'by': '수강생'}, '근거 없음 후보'),
-    ([{'column': 'public.T_EQP01.C_TMP_O', 'verdict': 'APPROVE'}] * 2, {'by': '수강생'}, '두 번'),
+    ([{'column': 'nope', 'verdict': 'APPROVE'}], {'by': 'user:me'}, '후보에 없는'),
+    ([{'column': 'public.T_EQP01.C_TMP_O', 'verdict': 'MAYBE'}], {'by': 'user:me'}, '결정은'),
+    ([{'column': 'public.T_EQP01.C_PRS_A', 'verdict': 'APPROVE'}], {'by': 'user:me'}, '근거 없음 후보'),
+    ([{'column': 'public.T_EQP01.C_TMP_O', 'verdict': 'APPROVE'}] * 2, {'by': 'user:me'}, '두 번'),
 ], ids=['결정 없음', '검토자 없음', '없는 열', '없는 결정', '근거 없음을 승인', '같은 열 두 번'])
 def test_사람_결정의_빈틈은_거절한다(req, decisions, body, says):
     key = 'public.T_EQP01.C_TMP_O'
@@ -138,3 +138,23 @@ def test_전부_비어_있는_열은_샘플_분포를_근거로_뜻을_낼_수_�
     assert blank['samples']['nulls'] == blank['samples']['rows']
     with pytest.raises(ValueError, match='샘플 값 분포 관찰이 없습니다'):
         lm.validate_candidates(req, answers(req, **{key: candidate(key, evidence=[{'kind': 'sample', 'text': '값 범위'}])}))
+
+
+def test_설비_식별_열은_지식_지도의_설비_코드와_겹치면_받고_겹치지_않으면_거절한다(seeded_graph, tables):
+    """C5(2026-11-22): 설비 목록을 그래프에 없는 속성(Asset.tag)으로 읽어 늘 비었고, 옛 덤프의 설비 코드 열(T_EQP01.EQP_CD = HYD-01~03)을 AI가
+    설비 식별 열로 내면 「샘플 값이 설비 태그와 하나도 겹치지 않습니다」로 돌려보냈다(손으로 만든 {'tag': …} 시험만 통과). 설비 목록은 kg-seed 가 넣은
+    실제 그래프에서 read_ontology 로 읽는다 — 그 코드와 겹치는 열은 받고, 겹치지 않는 열(측정 값 열)은 같은 까닭으로 거절한다."""
+    from procsvc.legacy_meaning_api import read_ontology
+    with seeded_graph.driver.session() as session:
+        ontology = read_ontology(session)
+    assert sorted(a['tag'] for a in ontology['assets']) == ['HYD-01', 'HYD-02', 'HYD-03']
+    req = lm.request(filename='legacy-plant-db.sql', text=LEGACY, tables=tables, ontology=ontology, datasource='hyd-enterprise', catalog='postgres', by='user:me')
+    key = 'public.T_EQP01.EQP_CD'
+    assert column(req, key)['assetTags'] == {'matched': 3, 'of': 3}
+    as_key = lambda k, token: candidate(k, meaning='설비 코드', unit=None, evidence=[{'kind': 'name', 'text': token}], link={'kind': 'asset_key', 'target': None})
+    out = lm.validate_candidates(req, answers(req, **{key: as_key(key, 'EQP')}))
+    assert next(i for i in out['items'] if i['column'] == key)['link'] == {'kind': 'asset_key', 'target': None}
+    other = 'public.T_EQP01.ST_CD'                                   # 상태 코드 열: 문자열이지만 설비 코드와 하나도 겹치지 않는다
+    assert column(req, other)['assetTags']['matched'] == 0
+    with pytest.raises(ValueError, match='설비 식별 열이라는 근거'):
+        lm.validate_candidates(req, answers(req, **{other: as_key(other, 'ST')}))

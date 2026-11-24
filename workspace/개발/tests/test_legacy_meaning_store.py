@@ -17,20 +17,20 @@ def store(tmp_path):
 
 
 def test_검토를_쌓고_그_id로_그대로_다시_읽는다(store):
-    row = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('수강생'))
+    row = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('user:me'))
     again = store.get('hyd', row['id'])
-    assert again['review'] == decided('수강생') and (again['by'], again['filename'], again['sha256']) == ('수강생', SOURCE['filename'], SOURCE['sha256'])
+    assert again['review'] == decided('user:me') and (again['by'], again['filename'], again['sha256']) == ('user:me', SOURCE['filename'], SOURCE['sha256'])
 
 
 def test_같은_후보를_다시_결정하면_새_기록이_되고_둘_다_남는다(store):
-    first = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('수강생'))
-    second = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('수강생', 'REJECT'))
+    first = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('user:me'))
+    second = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('user:me', 'REJECT'))
     rows = store.list('hyd', 'inst-1')
     assert {r['id'] for r in rows} == {first['id'], second['id']} and first['id'] != second['id']
 
 
 def test_다른_교육_공간의_검토는_읽지_않는다(store):
-    row = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('수강생'))
+    row = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('user:me'))
     with pytest.raises(KeyError):
         store.get('other', row['id'])
     assert store.list('other', 'inst-1') == []
@@ -43,11 +43,11 @@ def test_없는_검토_id는_KeyError다(store):
 
 def test_파일을_다시_열어도_기록이_남는다(tmp_path):
     path = tmp_path / 'legacy.sqlite3'
-    row = LegacyMeaningStore(path).add('hyd', 'inst-1', 'wi-1', SOURCE, decided('수강생'))
-    assert LegacyMeaningStore(path).get('hyd', row['id'])['by'] == '수강생'
+    row = LegacyMeaningStore(path).add('hyd', 'inst-1', 'wi-1', SOURCE, decided('user:me'))
+    assert LegacyMeaningStore(path).get('hyd', row['id'])['by'] == 'user:me'
 
 
 def test_메모리_저장소도_같은_규칙이다():
     store = LegacyMeaningStore(':memory:')
-    row = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('수강생'))
-    assert store.get('hyd', row['id'])['review'] == decided('수강생')
+    row = store.add('hyd', 'inst-1', 'wi-1', SOURCE, decided('user:me'))
+    assert store.get('hyd', row['id'])['review'] == decided('user:me')

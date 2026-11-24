@@ -8,6 +8,7 @@ import json
 import pytest
 
 from procsvc.course_policy import HANDOVER, TEXT_MAX
+from test_student_system_link import pbl          # noqa: F401 — pbl 은 고정물(PBL 단계를 연다)
 
 FLOW = 'ShiftHandover'
 ME = 'user:me'                     # 이 PC의 담당자(시드 사용자 표의 사람 한 명) — 누른 사람 칸은 이 user id 만 받는다
@@ -30,6 +31,54 @@ def test_수업_단계에서_제공_교대_그림을_가져오면_잠긴_칸까�
     잠긴 칸을 채울 길이 없어 등록할 수 없었다. 시험은 매핑을 API 로 직접 넣어(학생에게 없는 길) 이 틈을 못 봤다."""
     assert handover['mapping'] == HANDOVER['mapping']
     assert handover['register'] == {'allowed': True, 'reason': None}
+    # 새6: 기본 제공 흐름(수업 흐름 · 기준 흐름)과 같은 흐름 이름은 막지만, 경보로 열리지 않는 제공 교대의 이름(「교대 인수인계」)은 실습 그대로 받는다
+    assert not [p for p in handover['check']['problems'] if p.get('field') == 'name'], handover['check']['problems']
+
+
+@pytest.mark.parametrize('picture, definition, name', [
+    ('c3_cooling', 'my_cooling_copy', '냉각 긴급 대응'),
+    ('anomaly_response', 'my_base_copy', '설비 이상 조치'),
+], ids=['수업 흐름 그림', '기준 흐름 그림'])
+def test_PBL에서_제공_그림을_그대로_가져오면_기본_제공_흐름과_같은_이름을_칸_좌표와_함께_막고_다른_이름은_받는다(world, pbl, picture, definition, name):
+    """새6: 학생 흐름이 배포되지 않아도 경보는 기본 제공 흐름으로 열린다 — 이름이 같으면 처리 건 머리(흐름 이름)만으로는 내 흐름이 돈 줄 안다.
+    포털의 가져오기 · 검사 길(flows_api — 기본 제공 흐름의 이름은 서버가 배포된 수업 흐름과 기준 흐름에서 읽는다)이 흐름 이름 칸에서 막는다."""
+    from conftest import DEFINITIONS
+    from hydcommon.words import particle
+    from procsvc import course_policy as cp
+    xml = cp.COURSE_FLOWS[picture][1] if picture in cp.COURSE_FLOWS else (DEFINITIONS / f'{picture}.bpmn').read_text(encoding='utf-8')
+    try:
+        status, view = world.api('POST', '/api/flows/import', {'xml': xml, 'file_name': f'{picture}.bpmn', 'definition_id': definition})
+        assert status == 200, view
+        said = [p for p in view['check']['problems'] if p.get('field') == 'name']
+        assert [p['reason'] for p in said] == [f'흐름 이름 「{name}」{particle(name, "은")} 기본 제공 흐름의 이름입니다 — 처리 건 화면에서 어느 흐름이 돌았는지 가를 수 있게 '
+                                              f'다른 이름을 적으세요(예: 「내 {name}」)'], said
+        assert said[0]['where']['kind'] == 'process', said
+        mapping = dict(view['mapping'], name=f'내 {name}')
+        status, view = world.api('POST', f'/api/flows/{definition}/check', {'mapping': mapping})
+        assert status == 200 and not [p for p in view['check']['problems'] if p.get('field') == 'name'], view['check']['problems']
+    finally:
+        world.api('DELETE', f'/api/flows/{definition}?by={ME}')
+
+
+def test_PBL에서_받는_흐름이_없는_경보가_가는_현장_검토_흐름의_이름도_내_흐름에_쓰지_못한다(world, pbl):
+    """새6 의 남은 이름: 받는 배포 흐름이 없는 경보는 기본 제공 「미지원 경보 현장 검토」로 열린다 — 내 흐름이 그 이름이면 배포가 빠져 현장 검토로 간
+    처리 건을 내 흐름이 돈 것으로 읽는다. 그 이름은 서버가 기준 흐름 id(rt.reference_ids)의 등록 정의에서 읽는다."""
+    from conftest import DEFINITIONS
+    import json
+    from procsvc import course_policy as cp
+    triage = json.loads((DEFINITIONS / 'alert_triage_v1.json').read_text(encoding='utf-8'))['processDefinitionName']
+    xml = cp.COURSE_FLOWS['c3_cooling'][1]
+    definition = 'my_triage_named'
+    try:
+        status, view = world.api('POST', '/api/flows/import', {'xml': xml, 'file_name': 'cooling-emergency.bpmn', 'definition_id': definition})
+        assert status == 200, view
+        status, view = world.api('POST', f'/api/flows/{definition}/check', {'mapping': dict(view['mapping'], name=triage)})
+        said = [p for p in view['check']['problems'] if p.get('field') == 'name']
+        assert status == 200 and len(said) == 1 and said[0]['reason'].startswith(f'흐름 이름 「{triage}」')             and '기본 제공 흐름의 이름입니다' in said[0]['reason'], view['check']['problems']
+        status, view = world.api('POST', f'/api/flows/{definition}/check', {'mapping': dict(view['mapping'], name=f'내 {triage}')})
+        assert status == 200 and not [p for p in view['check']['problems'] if p.get('field') == 'name'], view['check']['problems']
+    finally:
+        world.api('DELETE', f'/api/flows/{definition}?by={ME}')
 
 
 def test_다시_가져오면_앞_초안의_흐름_이름과_고른_에이전트를_잇는다(world, handover):

@@ -190,10 +190,10 @@ def _id(case):
     return f'{w}x{h}-{tab}'
 
 
-def test_주_메뉴는_여덟이고_화면_22개가_빠짐없이_딸려_있으며_하나도_잠겨_있지_않다(tours):
+def test_주_메뉴와_딸린_화면은_메뉴_정의와_같고_하나도_잠겨_있지_않다(tours):
     page = tours(SIZES[0]).page
     menus = page.evaluate('() => hydMenu.list.map(m => ({ menu: m.id, tabs: m.tabs }))')      # 화면이 index.html 의 메뉴 정의에서 읽은 표
-    assert len(menus) == 8 and [(m['menu'], m['tabs']) for m in menus] == MENU
+    assert [(m['menu'], m['tabs']) for m in menus] == MENU
     # 메뉴 줄에는 화면마다 줄이 하나씩 있고(링크라 잠기지 않는다) 꺼진 것이 없다
     assert page.eval_on_selector_all('#menuList a[data-tab]', "ls => ls.filter(a => a.getAttribute('aria-disabled') !== 'true').map(a => a.dataset.tab)") == MENUS
     views = page.eval_on_selector_all('main .view', "vs => vs.map(v => v.id.replace(/^view-/, ''))")

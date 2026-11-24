@@ -30,6 +30,11 @@ def browser():
         b.close()
 
 
+# 설비 결함 주입의 범위 — 서버(scenario_buttons.fault_scope)가 상태에 싣는 그대로. 화면은 이 값으로 결함 카드를 그린다(손으로 적지 않는다)
+FAULT = {'asset': 'HYD-01', 'fault': 'cooler_degradation', 'severity': 'moderate', 'pattern': 'COOLER_DEGRADATION',
+         'buttons': {'degrade': '쿨러 열화 주입', 'restore': '쿨러 복구'}}
+
+
 def unit(asset, ts1=48.0, health=1.0, faults=()):
     return {'tags': {'TS1': ts1, 'TS3': 39.0, 'CE': 84.0, 'CP': 8.1, 'PS1': 182.0, 'FS1': 9.0, 'VS1': 0.58, 'EPS1': 2.9, 'FanSpeedSP': 60.0, 'LoadSP': 90.0},
             'status': {'asset': asset, 'mode': 'REMOTE_AUTO', 'state': 'RUN', 'cooler_health': health, 'pump': 'A', 'cmdId': None, 'result': None, 'reason': None, 'trip_text': '–'},
@@ -43,7 +48,7 @@ class World:
         self.phase, self.alert, self.incidents, self.down, self.extra = 'IDLE', None, [], set(), {}
         self.broker, self.left_out, self.asked = {'plant-sim', 'connect-ingest', 'cmd-gateway'}, [], []      # 자기 브로커에 붙었다고 답하는 서비스(가상 설비 = 공장 브로커, 나머지 = DMZ 브로커) · 감지기가 뺀 패턴 · 화면이 부른 주소
         self.legs = {'broker': True, 'dmz': True}      # DMZ 의 두 서비스가 DMZ 브로커에서 들었다고 답하는 공장 쪽 브리지의 다리 상태
-        self.scen = {'scenarios': {}, 'presses': {}}      # 업무 사건의 상태(GET /api/scenario/status)
+        self.scen = {'scenarios': {}, 'presses': {}, 'fault': FAULT}      # 결함 시뮬레이션의 사건 상태(GET /api/scenario/status — 설비 결함 범위 포함)
         self.conflict, self.oil, self.sent_oil = None, None, None      # 시작을 409 로 거절할 때의 응답 · 오일 분석 입력의 응답 · 화면이 보낸 입력
 
     def answer(self, route):
@@ -84,7 +89,7 @@ class World:
             self.sent_oil = json.loads(req.post_data)
             return send(self.oil)
         if path == '/svc/process/api/scenario/A/degrade':
-            return send({'at': '2026-01-01T00:00:00Z'})
+            return send({'at': '2026-01-01T00:00:00Z', 'button': '쿨러 열화 주입'})
         if path == '/svc/process/api/todolist':
             return send([])
         if path == '/svc/cmd-gateway/api/gateway/log':
@@ -492,7 +497,8 @@ LAB_ROWS = '''() => [...document.querySelectorAll('#units .unit')].map(c => { co
 
 
 def lab_world(w, **more):
-    w.scen = {'scenarios': {'B': dict(SCEN_B, **more.get('B', {})), 'C': dict(SCEN_C, **more.get('C', {}))}, 'presses': {}, 'reset_button': '업무 데이터 초기화'}
+    w.scen = {'scenarios': {'B': dict(SCEN_B, **more.get('B', {})), 'C': dict(SCEN_C, **more.get('C', {}))}, 'presses': {}, 'reset_button': '업무 데이터 초기화',
+              'fault': FAULT}
 
 
 def test_결함_시뮬레이션_카드_셋은_같은_종류의_단추가_같은_줄_같은_차례에_서고_줄_수가_같다(world):
@@ -621,6 +627,31 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추의_도�
     page.click('#scenarioHeadMore-trigger'); page.click('#btnReset')
     page.wait_for_selector('dialog.confirm-dialog[open] button[value=ok]', state='attached')
     assert '설비 3기를 정상 운전점으로' in page.inner_text('dialog.confirm-dialog[open] form')
+
+
+RESET_DONE = {'ok': True, 'button': '설비 초기화', 'at': '2026-11-24T01:00:00+00:00'}
+NOT_RECORDED = '진행 중인 처리 건 1건에 이 누름을 기록하지 못했습니다 — 까닭: OperationalError: 업무 DB 연결이 끊김'
+
+
+@pytest.mark.parametrize('status, answer, line, failed', [
+    (200, dict(RESET_DONE, instances=['c3_cooling.7'], record_error=None), '설비 3기를 정상 운전점으로 되돌렸습니다 · 진행 중인 처리 건 1건에 기록했습니다', False),
+    (200, dict(RESET_DONE, instances=[], record_error=NOT_RECORDED), f'설비 3기를 정상 운전점으로 되돌렸습니다. 다만 {NOT_RECORDED}', True),
+    (502, {'detail': '설비 시뮬레이터(plant-sim)에 닿지 못했습니다(/api/reset): URLError: 연결 거부'},
+     '설비를 되돌리지 못했습니다: 설비 시뮬레이터(plant-sim)에 닿지 못했습니다(/api/reset): URLError: 연결 거부', True),
+], ids=['되돌리고 기록함', '되돌렸지만 처리 건에 기록하지 못함', '되돌리지 못함'])
+def test_설비_초기화의_결과_줄은_설비를_되돌렸는지와_처리_건에_기록했는지를_따로_말한다(world, status, answer, line, failed):
+    """검토 나-3: 서버가 설비를 되돌린 뒤 처리 건 기록에 실패하면 화면이 「설비 초기화 실패」라고 했다 — 설비는 이미 되돌려졌다. 서버는 설비를 먼저
+    되돌리고(되돌리지 못했으면 요청이 실패한다), 되돌린 뒤 기록하지 못한 까닭은 record_error 로 준다. 화면의 한 줄이 그 둘을 따로 말한다."""
+    w, page = world, world.page
+    lab_world(w)
+    page.route('**/svc/process/api/scenario/plant-reset', lambda route: route.fulfill(status=status, content_type='application/json', body=json.dumps(answer)))
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_selector("#units .unit[data-asset='HYD-01'] button[data-act='degrade']")
+    page.click('#scenarioHeadMore-trigger'); page.click('#btnReset')
+    page.click('dialog.confirm-dialog[open] button[value=ok]')
+    page.wait_for_function("!document.querySelector('#scenarioMsg').textContent.includes('되돌리는 중') && document.querySelector('#scenarioMsg').textContent.trim()", timeout=8000)
+    assert page.inner_text('#scenarioMsg').strip() == line
+    assert (page.get_attribute('#scenarioMsg', 'data-tone') == 'danger') is failed
 
 
 def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_꺼져_있고_서버가_겹쳐_열기를_거절하면_그_처리_건으로_가는_길을_준다(world):

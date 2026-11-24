@@ -1,4 +1,5 @@
-"""agent 서비스 앱(it/agent/agentsvc/main.py) — 상태 확인은 물을 때마다 그래프를 재고(H-1), 읽기 평가는 매번 새 실행이며 쌓지 않는다(G1-07).
+"""agent 서비스 앱(it/agent/agentsvc/main.py) — 상태 확인은 물을 때마다 그래프를 재고(H-1), 읽기 평가는 원천 RAISE 경보만 받으며 업무 경보는
+센서 원인 진단으로 돌리지 않는다(탐사 N9), 판단 요청은 빠진 칸을 수업 사례로 메우지 않는다.
 실제 agent 서비스(stack — Dockerfile 의 실행 명령 그대로) · 실제 Neo4j 컨테이너."""
 import contextlib
 import json
@@ -126,14 +127,23 @@ def test_온톨로지_읽기는_정한_템플릿과_이름_공간_형식만_받�
     assert call(stack.services['agent'].url + path)[0] == status
 
 
-def test_같은_경보를_두_번_평가하면_서로_다른_실행이고_서비스에_쌓이지_않는다(world):
-    """G1-07: 평가 실행이 메모리 장부에 쌓였고 읽는 곳이 없었다(지운 /api/runs)."""
+def test_수동_판단에서_진단_지식에_없는_원인을_가정하면_1순위로_대신_판단하지_않고_원인_후보를_말하며_거절한다(world):
+    """탐사 N10: 없는 원인을 가정해도 조용히 1순위 원인으로 판단을 냈다 — 학생이 가정한 원인의 결과라고 믿게 된다. 원인 후보에 있는 원인을
+    가정하면 그 원인으로 판단한다."""
+    world.plant.inject('HYD-01', 'cooler_degradation', severity='moderate')
+    world.settle(1800)
     world.report('HYD-01')
-    url = world.stack.services['agent'].url
-    alert = {'alertId': 'EVAL-HYD-01', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'state': 'RAISE'}
-    (s1, a), (s2, b) = call(url + '/api/agent/evaluate', {'alert': alert}, 120), call(url + '/api/agent/evaluate', {'alert': alert}, 120)
-    assert s1 == s2 == 200 and a['id'] != b['id'] and a['status'] and b['status']
-    assert call(url + '/api/runs')[0] == 404
+    url = world.stack.services['agent'].url + '/api/agent/decide'
+    body = {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}
+    with world.reporting('HYD-01'):
+        status, plain = call(url, body, 120)
+        assert status == 200 and len(plain['causes']) >= 2, plain
+        status, refused = call(url, dict(body, facts={'cause': 'cause:no-such-cause'}), 120)
+        assert status == 422, refused
+        assert 'cause:no-such-cause' in refused['detail'] and all(c['name'] in refused['detail'] for c in plain['causes']), refused
+        other = plain['causes'][-1]['id']                                  # 1순위가 아닌 원인 후보
+        status, assumed = call(url, dict(body, facts={'cause': other}), 120)
+    assert status == 200 and assumed['causes'][0]['id'] == other != plain['causes'][0]['id'], assumed['causes']
 
 
 @pytest.mark.parametrize('path, body, missing', [
@@ -147,3 +157,15 @@ def test_설비나_경보_패턴이_빠진_판단_요청은_수업_사례로_대
     """가짜 · 해피패스 조사 8: 인자가 빠진 호출이 오류 대신 HYD-01 · 쿨러 열화로 돌아, 다른 설비를 물은 쪽이 그 답을 자기 설비의 것으로 읽었다."""
     status, out = call(stack.services['agent'].url + path, body)
     assert status == 422 and any(missing in (d.get('loc') or []) for d in out['detail']), out
+
+
+@pytest.mark.parametrize('pattern', ['PM_DUE', 'SPARE_BELOW_MIN'], ids=['정기 정비 도래', '재고 기준 이탈'])
+def test_읽기_평가는_업무_경보를_센서_진단_길로_돌리지_않고_그_까닭으로_보류한다(world, pattern):
+    """탐사 N9: 업무 표 감시가 낸 경보(정기 정비 도래 · 재고 기준 이탈)를 센서 원인 진단 길로 돌려, 늘 빈 원인 후보로 보류되고 까닭이 「원인 지식이
+    없어 매뉴얼을 적재하라」였다 — 매뉴얼을 넣어도 풀리지 않는 엉뚱한 까닭이다. 규칙 판단 길과 같은 문장(card.no_cause_message)으로 보류하고
+    진단 단계(신선도 · 원인 후보)는 돌지 않는다. 그 경보를 받는 배포 흐름(평가가 지나는 경보 정책)은 world 가 시작처럼 설치해 둔다."""
+    alert = {'alertId': f'EVAL-{pattern}', 'asset': 'HYD-02', 'pattern': pattern, 'state': 'RAISE'}
+    status, run = call(world.stack.services['agent'].url + '/api/agent/evaluate', {'alert': alert}, 120)
+    assert status == 200 and run['status'] == 'WITHHELD', run
+    assert '고장 원인을 진단하는 이상 패턴이 아닙니다' in run['error'] and '업무 흐름' in run['error'], run['error']
+    assert '매뉴얼을 적재' not in run['error'] and [s['name'] for s in run['steps']] == ['alert_policy'], run

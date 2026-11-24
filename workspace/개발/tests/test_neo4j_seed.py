@@ -2,7 +2,6 @@
 
 시드는 kg-seed 와 같은 명령(seed.sh)을 그 컨테이너 안에서 돌린다(conftest graph_server). 그래프 비교는 노드 id 기준이다(elementId 는 적재마다 다르다).
 """
-import importlib.util
 import io
 import json
 import shutil
@@ -169,20 +168,6 @@ def test_neo4j에_닿지_못하면_kg_seed가_주소와_기다린_시간을_내�
     assert 'kg-seed FAILED: Neo4j(bolt://localhost:1)에 6초 동안 닿지 못했다' in out, out[-2000:]
 
 
-def _ontology_v2():
-    spec = importlib.util.spec_from_file_location('ontology_v2', ROOT / 'workspace' / '개발' / 'scripts' / 'ontology_v2.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_적재한_시드는_스키마를_지킨다(seeded_graph):
-    tool = _ontology_v2()
-    with seeded_graph.driver.session() as s:
-        nodes, rels = tool.read_rows(s)
-    assert tool.validate(nodes, rels, tool.load_schema()) == []
-
-
 def test_감지기는_시드의_감지_패턴_셋을_그대로_실행_정의로_읽는다(seeded_graph):
     from det.pattern_source import read_patterns
     from det.patterns import compile_catalog
@@ -193,9 +178,11 @@ def test_감지기는_시드의_감지_패턴_셋을_그대로_실행_정의로_
     assert {code: p.summary for code, p in catalog.items()} == {r['code']: r['rule'] for r in rows}
 
 
-def test_감지_기준이_수업_문서_절을_출처로_대면_그_절에_그_기준이_있고_문서에_있는_기준은_회사_설정이라고_하지_않는다(seeded_graph):
+def test_감지_기준의_출처는_회사_설정이고_매뉴얼_절에서_옮긴_값이면_그_절에_그_값이_있다(seeded_graph):
     """FK 검증: 패턴 출처가 모두 「감시 임계값 회사 설정값 (수업 문서에 없음)」이었는데 쿨러 값은 HM-8.3, 펌프 165 bar · 8.0 l/min 은 PM-2.10,
-    재고 경보는 PR-7.2 에 있다(it/portal/www/samples). 출처가 절 번호(ref)면 그 절 본문에 출처 이름이 든 값(또는 패턴 코드)이 있어야 한다."""
+    재고 경보는 PR-7.2 에 있다(it/portal/www/samples). 출처가 절 번호(ref)면 그 절 본문에 출처 이름이 든 값(또는 패턴 코드)이 있어야 한다.
+    C16(2026-11-22): 감지기는 이 시드 값으로 돌고 매뉴얼 적재와 무관하다 — 출처 이름은 「회사 설정 · 그 절에서 옮긴 값」이라고 말한다(매뉴얼을 비우거나
+    기준을 고친 판을 올려도 감지 기준이 그 매뉴얼에서 온다고 하지 않는다)."""
     import re
     samples = ROOT / 'it' / 'portal' / 'www' / 'samples'
     rows = seeded_graph.query("MATCH (p:AnomalyPattern)-[:DERIVED_FROM]->(k:KnowledgeSource) WHERE p.ns IS NULL AND k.ref =~ '[A-Z]+-[0-9]+[.][0-9]+' "
@@ -209,7 +196,25 @@ def test_감지_기준이_수업_문서_절을_출처로_대면_그_절에_그_�
         end = text.find('\n## ', start + 1)
         return text[start:end if end > 0 else None]
     for r in rows:
+        assert '(회사 설정)' in r['name'] and '에서 옮긴' in r['name'], r
         body = section(r['name'], r['ref'])
         values = re.findall(r'(\d+(?:\.\d+)?) ?(℃|%|bar|l/min|mm/s)', r['name'])
         assert (values and all(f'{v} {u}' in body or f'{v}{u}' in body for v, u in values)) or r['code'] in body, r
     assert {r['code'] for r in rows} >= {'COOLER_DEGRADATION', 'OVERHEAT_TRIP', 'PUMP_LEAKAGE', 'FAN_VIBRATION', 'SPARE_BELOW_MIN'}, rows
+
+
+def test_포털로_넣은_지식의_꼴은_다음_시작의_되읽기_검사를_멈추지_않는다(seeded_graph):
+    """C6 · 전수 대조 12-3(2026-11-22): 되읽기 검사가 문서가 적재한 지식(고장 유형 · 원인 · 조치 방법의 연결)을 단언해, 포털이 받은 학생 문서 하나가
+    다음 시작의 kg-seed 를 멈추고 AI 판단 서비스가 뜨지 않았다. ① PBL 문서의 「베어링 마모를 두면 축 손상으로 이어진다」처럼 원인 · 절차 없이 다른 고장
+    유형이 이어 가리키기만 하는 고장 유형(스키마상 N:M — 0개도 된다) ② 원문 값이 작은 소수인 규칙(파이썬 '0.0005' · Cypher toString '5.0E-4').
+    두 꼴 모두 적재가 쓰는 그대로 그래프에 넣어도 검사가 문제를 내지 않는다. 같은 규칙의 조건이 TESTS 와 다르면(값을 바꿈) 그대로 짚는다."""
+    from procsvc import manual_knowledge
+    seeded_graph.query("MATCH (c:Component) WITH c LIMIT 1 CREATE (f:FailureMode {id:'fm:test-shaft-damage', name:'축 손상'})-[:OCCURS_IN]->(c)")
+    tests = [{'variable': 'forecast_ts1', 'operator': '>=', 'value': 0.0005}]
+    seeded_graph.query("MATCH (t:DecisionTable {id:'dt:compliance'}), (i:InputData {id:'in:forecast-ts1'}) "
+                       "CREATE (t)-[:HAS_RULE]->(r:Rule {id:'rule:test-small-value', order:900, effect:'WARN', when:$when})-[:TESTS {operator:'>=', value:0.0005}]->(i)",
+                       when=manual_knowledge.when_text(tests))
+    assert manual_knowledge.when_text(tests) == 'forecast_ts1 >= 0.0005'
+    assert problems(seeded_graph) == []
+    seeded_graph.query("MATCH (r:Rule {id:'rule:test-small-value'}) SET r.when = 'forecast_ts1 >= 0.0006'")
+    assert any(p.startswith('rule when does not state exactly its TESTS rule:test-small-value') for p in problems(seeded_graph))

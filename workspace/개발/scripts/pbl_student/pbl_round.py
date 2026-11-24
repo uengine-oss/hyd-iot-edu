@@ -89,7 +89,7 @@ BRANCHES = {
     'server-down-ai': dict(at='leak', speed=20, decide='reject', reason='도구 서버가 꺼진 채 낸 판단이라 정비하지 않음', server='down_ai',
                            about='학생 도구 서버를 끈 채 AI 단계 → 까닭을 말하고 멈추는가, 값 없이 판정하는가'),
     'server-down-write': dict(at='leak', speed=20, decide='recommended', server='down_write',
-                              about='AI 단계 뒤 도구 서버를 끄고 승인 → 정비 기록 등록이 보내지 못하고 까닭과 멈추는가 → 서버를 켜고 [다시 수행]'),
+                              about='AI 단계 뒤 도구 서버를 끄고 승인 → 정비 기록 등록이 보내지 못하고 까닭과 멈추는가 → 서버를 켜고 [같은 내용 다시 전달]'),
     'overlap': dict(at='leak', speed=20, decide='recommended', overlap=True, reason='같은 누설의 두 번째 경보 — 앞 처리 건에서 정비함',
                     about='같은 설비에 두 경보: 같은 경보를 다시 보냄 · 두 번째 감지 프로그램이 다른 경보를 보냄'),
     'changed-data': dict(at='other_leak', speed=20, decide='recommended', compare='leak-approve',
@@ -897,18 +897,18 @@ def lead_check(run: Run, view: dict, by: str) -> None:
     run.say('책임자 확인', DONE, f'제출 — {LEAD_NOTE}')
 
 
-def rework(run: Run, pid: str, view: dict, by: str, role: str, reason: str) -> None:
-    """포털 처리 건의 [다시 수행] — 멈춘 단계부터(승인은 그대로)."""
-    step = next(s for s in (view.get('attention') or {}).get('steps') or [] if 'rework' in (s.get('actions') or []))
+def effect_retry(run: Run, view: dict, by: str, role: str) -> None:
+    """포털 처리 건의 [같은 내용 다시 전달] — 재시도를 다 쓰고 멈춘 승인 뒤 바깥 호출(정비 기록 등록 = 「승인 뒤 MCP 호출」)을 승인한 내용
+    그대로 다시 보낸다(instances.retry_effect_step, 승인했던 역할로). 사건이 있는 처리 건에서 그 단계 하나만 [다시 수행]하는 길은 새 판단을
+    요구해 막힌다(rework_effects.admit) — 이 갈래가 재는 것은 「도구 서버를 다시 켠 뒤 같은 승인으로 이어지는가」다."""
+    step = next((s for s in (view.get('attention') or {}).get('steps') or [] if 'effect_retry' in (s.get('actions') or [])), None)
+    if step is None:
+        raise Stop('같은 내용 다시 전달', f"멈춘 단계에 [같은 내용 다시 전달]이 없습니다 — {stuck_text(view)}")
     try:
-        preview = api('GET', f"/api/instances/{pid}/rework-preview?workitem_id={step['workitem']}")
-        if preview.get('blockers'):
-            raise Stop('다시 수행', f"막는 것: {preview['blockers']}")
-        api('POST', f'/api/instances/{pid}/rework', {'workitem_id': step['workitem'], 'snapshot_token': preview['snapshot_token'],
-                                                    'request_id': str(uuid.uuid4()), 'by': by, 'role': role, 'reason': reason}, timeout=60)
+        api('POST', f"/api/todolist/{step['workitem']}/effect-retry", {'by': by, 'role': role}, timeout=60)
     except cs.ApiError as exc:
-        raise Stop('다시 수행', said(exc)) from None
-    run.say('다시 수행', DONE, f"「{step.get('name')}」부터 — 다시 쓸 값 {[r.get('variable') for r in preview.get('retained_outputs') or []]}")
+        raise Stop('같은 내용 다시 전달', said(exc)) from None
+    run.say('같은 내용 다시 전달', DONE, f"「{step.get('name')}」 — 승인한 내용 그대로 다시 보냄")
 
 
 def result(run: Run, pid: str, view: dict, clock: Path | None) -> dict:
@@ -1107,7 +1107,7 @@ def run_case(name: str, args) -> Run:
 
 
 def finish(run: Run, pid: str, by: str, role: str, clock: Path, spec: dict, student: Student, timeout: float) -> None:
-    """승인 뒤 끝까지: 책임자 확인은 제출하고, 도구 서버를 끈 갈래는 멈춘 까닭을 찍고 서버를 켜 [다시 수행]."""
+    """승인 뒤 끝까지: 책임자 확인은 제출하고, 도구 서버를 끈 갈래는 멈춘 까닭을 찍고 서버를 켜 [같은 내용 다시 전달]."""
     reworked = False
     while True:
         view, got = follow(run, pid, until_after, timeout, clock, '승인 뒤')
@@ -1120,7 +1120,7 @@ def finish(run: Run, pid: str, by: str, role: str, clock: Path, spec: dict, stud
                 run.data['stopped_write'] = stuck_text(view)
                 student.server_up(clock)
                 run.say('학생 도구 서버', DONE, '다시 켬')
-                rework(run, pid, view, by, role, '도구 서버를 다시 켬')
+                effect_retry(run, view, by, role)
                 reworked = True
                 continue
             raise Stop('승인 뒤', stuck_text(view))

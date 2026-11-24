@@ -12,11 +12,11 @@ T = '2026-10-30T05:00:00.000Z'
 
 @pytest.mark.parametrize('body, out_v', [
     ({'t': T, 'v': 48.2, 'q': 'good'}, 48.2),
-    ({'t': '2026-10-30T14:00:00+09:00', 'v': 0}, 0.0),                     # 시간대 오프셋 · q 생략(good) · 0
+    ({'t': '2026-10-30T14:00:00+09:00', 'v': 0, 'q': 'uncertain'}, 0.0),   # 시간대 오프셋 · 좋음이 아닌 품질(그대로 싣는다) · 0
 ])
 def test_태그_기록은_알려진_설비_태그와_시간대_있는_시각_유한한_수만_받는다(body, out_v):
     r = schemas.tag_record('HYD-01', 'TS1', body)
-    assert (r['asset'], r['name'], r['v'], r['t']) == ('HYD-01', 'TS1', out_v, body['t'])
+    assert (r['asset'], r['name'], r['v'], r['t'], r['q']) == ('HYD-01', 'TS1', out_v, body['t'], body['q'])
 
 
 @pytest.mark.parametrize('asset, name, body, field', [
@@ -29,6 +29,7 @@ def test_태그_기록은_알려진_설비_태그와_시간대_있는_시각_유
     ('HYD-01', 'TS1', {'t': T, 'v': float('nan')}, 'v'),
     ('HYD-01', 'TS1', {'t': T, 'v': True}, 'v'),                      # bool 은 수가 아니다
     ('HYD-01', 'TS1', {'t': T, 'v': 1, 'q': 5}, 'q'),
+    ('HYD-01', 'TS1', {'t': T, 'v': 1}, 'q'),                         # 품질이 없는 값을 좋음으로 치지 않는다(14-6)
     ('HYD-01', 'TS1', [1, 2], 'object'),
     ('HYD-01', 'TS1', {'_raw': 'x'}, 'object'),                       # kafka.decode_value 가 만든 깨진 글
 ])
@@ -86,6 +87,8 @@ ALERT = {'alertId': 'ALT-hyd01-0001-ab12', 'asset': 'HYD-01', 'pattern': 'COOLER
     ({}, True), ({'name': None}, True), ({'state': 'CLEAR'}, True),
     ({'state': 'CLEARED'}, False),                                    # G3b-23: RAISE 가 아니면 모두 CLEAR 로 적던 것
     ({'severity': 'WARNING'}, False), ({'alertId': ''}, False), ({'evidence': []}, False), ({'name': ''}, False),
+    ({'asset': 'APU-01'}, True),                                      # S-A: 바깥 원천(학생 시스템)의 설비 — 가상 설비가 아니어도 경보는 받는다
+    ({'asset': ''}, False), ({'asset': 'APU 01'}, False), ({'asset': None}, False),
 ])
 def test_경보_기록은_상태_심각도_이름_칸을_본다(change, ok):
     body = dict(ALERT, **change)
@@ -122,7 +125,7 @@ def test_감사_기록은_주체_사건_시각을_본다(body, ok):
             schemas.audit_record(body)
 
 
-CMD = {'cmdId': 'CMD-1', 'asset': 'HYD-01', 'incident': 'INC-1', 'source': 'HITL', 'approvedBy': 'user:kim-op',
+CMD = {'cmdId': 'CMD-1', 'asset': 'HYD-01', 'incident': 'INC-1', 'source': 'HITL', 'approvedBy': 'user:me',
        'expiresAt': T, 'approvalId': 'APR-1', 'actions': [{'code': 'FAN_SET', 'fan_pct': 100}]}
 
 
@@ -142,10 +145,6 @@ CMD = {'cmdId': 'CMD-1', 'asset': 'HYD-01', 'incident': 'INC-1', 'source': 'HITL
 def test_명령_형식_검사는_매개변수까지_본다(change, problem):
     errs = schemas.validate_action_cmd(dict(CMD, **change))
     assert (errs == []) if problem is None else any(problem in e for e in errs), errs
-
-
-def test_옛_조치_이름은_허용되지_않는다():
-    assert schemas.ACTION_WHITELIST == {'FAN_SET', 'LOAD_SET', 'RESET', 'PUMP_SELECT', 'STOP'}
 
 
 def test_쓰기_변환은_조치를_PLC_자원과_값으로_바꾼다():

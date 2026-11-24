@@ -5,11 +5,15 @@ conftest stack 이 Dockerfile 의 실행 명령 그대로 이 PC 에 띄운 서�
 """
 import json
 import os
+import subprocess
+import sys
 import uuid
 
 import httpx
 import psycopg
 import pytest
+
+from conftest import HOST_ENV, ROOT
 
 CALLER = {'X-HYD-Process-Caller': os.environ['PROCESS_CALLER_TOKEN']}
 WRITES = [('/api/exec', {'decision': 'D-x', 'option': 'o', 'skill': 'skill:없는-스킬', 'asset': 'HYD-01', 'params': {}}),
@@ -35,7 +39,7 @@ def exec_(stack, body):
 
 def work_order(decision=None, **params):
     return {'decision': decision or 'DEC-' + uuid.uuid4().hex[:10], 'option': 'opt-1', 'skill': 'skill:schedule-maintenance',
-            'asset': 'HYD-01', 'by': 'user:park-maint', 'params': {'task': 'SOP-COOL-04 쿨러 핀 세척', 'window': '즉시', **params}}
+            'asset': 'HYD-01', 'by': 'user:me', 'params': {'task': 'SOP-COOL-14 쿨러 핀 세척', 'window': '즉시', **params}}
 
 
 @pytest.mark.parametrize('path, body', WRITES, ids=[w[0] for w in WRITES])
@@ -74,7 +78,7 @@ def test_같은_판단의_같은_거래를_다른_입력으로_다시_보내면_
 
 def test_원거래_id가_실린_되돌리기는_업무_DB의_되돌리기_함수가_처리한다(stack):
     forward = exec_(stack, work_order()).json()
-    r = exec_(stack, {'decision': forward['decision'], 'skill': 'skill:cancel-work-order', 'asset': 'HYD-01', 'by': 'user:park-maint',
+    r = exec_(stack, {'decision': forward['decision'], 'skill': 'skill:cancel-work-order', 'asset': 'HYD-01', 'by': 'user:me',
                       'params': {'ref': forward['ref']}, 'compensates': forward['id']})
     assert r.status_code == 200, r.text
     assert r.json()['compensates'] == forward['id'] and r.json()['after']['status'] == '취소'
@@ -83,7 +87,7 @@ def test_원거래_id가_실린_되돌리기는_업무_DB의_되돌리기_함수
 def test_원문_정비_범위_취소는_되돌리기_함수로_가서_원거래를_따진다(stack):
     """G2-01: entsim 의 손 표에 원문 정비 범위 취소가 빠져 「없는 거래」(exec_skill)로 거절됐다 — 이제 되돌리기 함수가 원거래를 확인한다."""
     forward = exec_(stack, work_order()).json()             # 원문 범위 오더가 아닌 거래를 원거래로 대 본다
-    r = exec_(stack, {'decision': forward['decision'], 'skill': 'skill:cancel-maintenance-scoped', 'asset': 'HYD-01', 'by': 'user:park-maint',
+    r = exec_(stack, {'decision': forward['decision'], 'skill': 'skill:cancel-maintenance-scoped', 'asset': 'HYD-01', 'by': 'user:me',
                       'params': {'ref': forward['ref']}, 'compensates': forward['id']})
     assert r.status_code == 400
     assert 'skill:schedule-maintenance-scoped' in r.json()['detail'] and '업무 시스템에 없는 거래' not in r.json()['detail']
@@ -109,6 +113,38 @@ def test_건강_검사는_업무_DB의_실제_거래_수를_센다(stack):
         finally:
             db.execute('DELETE FROM ent.transactions WHERE decision_id LIKE %s', (tag + '-%',))
     assert count > 300 and h['ok'] is True and h['transactions'] == count and h['assets'] == 3
+
+
+@pytest.mark.parametrize('dsn, starts', [(None, False), ('', False), ('postgresql://u:p@127.0.0.1:9/postgres', True)],
+                         ids=['값_없음', '빈_값', '값_있음'])
+def test_업무_DB_주소가_없으면_지운_호스트_길로_돌지_않고_그_값의_이름을_말하며_켜지지_않는다(dsn, starts):
+    """업무 DB 주소(SUPABASE_DSN)는 compose 가 준다. 기본값(호스트에 연 업무 DB 포트 host.docker.internal:54322 — 지운 느린 길)이 있으면 값이
+    빠진 실행이 그 길로 조용히 돌았다. 서비스를 가져오는 것(컨테이너가 켜질 때와 같다)을 하위 프로세스로 실제로 해 본다 — 연결은 하지 않는다."""
+    env = dict(HOST_ENV, PYTHONUTF8='1', PROCESS_CALLER_TOKEN='t',
+               PYTHONPATH=os.pathsep.join([str(ROOT / 'common'), str(ROOT / 'it' / 'enterprise-sim')]))
+    env.pop('SUPABASE_DSN', None)
+    if dsn is not None:
+        env['SUPABASE_DSN'] = dsn
+    done = subprocess.run([sys.executable, '-c', 'import entsim.main'], capture_output=True, env=env, timeout=120)
+    err = done.stderr.decode('utf8', 'replace')
+    assert (done.returncode == 0) is starts, err[-800:]
+    assert starts or 'SUPABASE_DSN 이 설정되지 않아 enterprise-sim 을 띄우지 않습니다' in err, err[-800:]
+
+
+def test_켜질_때_업무_DB가_연결을_받지_않으면_기다리지_않고_참_까닭으로_실패한다(monkeypatch, pg_dsn):
+    """틀린 암호는 기다려도 같다 — 시작 훅이 60초(START_WAIT_S) 동안 다시 해 본 뒤 「잠시 뒤 다시 시도하세요」로 끝나지 않고 곧장 그 까닭으로
+    실패한다(Docker 가 다시 켜도 같은 한 줄이 로그에 남는다). 업무 DB 서버는 이 PC 의 실제 서버(테스트 DB), 암호만 틀리다. 앱을 실제로 켠다."""
+    import time
+    from urllib.parse import urlsplit
+    from starlette.testclient import TestClient
+    import entsim.main as entsim_main
+    parts = urlsplit(pg_dsn)
+    monkeypatch.setattr(entsim_main, 'SUPABASE_DSN', parts._replace(netloc=f'postgres:not-the-password@{parts.hostname}:{parts.port}').geturl())
+    started = time.monotonic()
+    with pytest.raises(RuntimeError) as err, TestClient(entsim_main.app):
+        pass
+    assert time.monotonic() - started < entsim_main.START_WAIT_S / 2, '틀린 암호를 기다렸다'
+    assert str(err.value) == 'enterprise-sim 을 켜지 못했습니다 — ' + entsim_main.pg.refused_text('업무 DB', '계정 또는 암호가 맞지 않습니다')
 
 
 def test_켜질_때_업무_DB가_끝내_답하지_않으면_정한_시간만_기다리고_까닭_한_줄로_실패한다(monkeypatch):
@@ -146,9 +182,9 @@ def test_승인한_원문_정비_범위_오더는_묶음_전체를_취소하고_
         before = dict(db.execute('SELECT part_no, reserved FROM ent.spare_stock WHERE part_no = ANY(%s)', (list(parts),)).fetchall())
     decision = 'DEC-' + uuid.uuid4().hex[:10]
     forward = exec_(stack, {'decision': decision, 'option': plans[0]['id'], 'skill': 'skill:schedule-maintenance-scoped', 'asset': 'HYD-02',
-                            'by': 'user:park-maint', 'params': {'task': plans[0]['name'], 'plan': plan}})
+                            'by': 'user:me', 'params': {'task': plans[0]['name'], 'plan': plan}})
     assert forward.status_code == 200, forward.text
-    undo = exec_(stack, {'decision': decision, 'skill': 'skill:cancel-maintenance-scoped', 'asset': 'HYD-02', 'by': 'user:park-maint',
+    undo = exec_(stack, {'decision': decision, 'skill': 'skill:cancel-maintenance-scoped', 'asset': 'HYD-02', 'by': 'user:me',
                          'params': {'ref': forward.json()['ref']}, 'compensates': forward.json()['id']})
     assert undo.status_code == 200, undo.text
     with psycopg.connect(stack.dsn) as db:

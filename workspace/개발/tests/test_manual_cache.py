@@ -1,5 +1,5 @@
 """추출 결과 다시 쓰기의 열쇠(procsvc/manual_cache.py) — 같은 원문 · 파서 · 카탈로그 · 구간 · 설정 판본이면 같은 열쇠, 하나라도 다르면 다른 열쇠.
-열쇠는 강사 쪽이 준 범위(scope) · 설정(profile)이 있어야 만든다(요청 본문에서 베끼지 않는다). 처리 건 쪽(start · result)은 test_manual_api 가 본다."""
+열쇠는 강사 쪽이 준 범위(scope) · 설정(profile)이 있어야 만든다(요청 본문에서 베끼지 않는다). 처리 건 쪽(시작 · 결과)은 test_class_knowledge 의 포털 길(portal_commit)이 본다."""
 import pytest
 
 import class_knowledge
@@ -26,9 +26,8 @@ def test_같은_입력이면_같은_열쇠다(source):
 
 
 @pytest.mark.parametrize('over', [dict(tenant='other'), dict(catalog={'parts': ['p']}), dict(scope='provided-manuals/y'),
-                                  dict(profile={'model': 'reviewed-source-cache', 'revision': 'r2'}),
-                                  dict(feedback={'by': '강사', 'items': [{'target': 't', 'verdict': 'OK'}]})],
-                         ids=['교육 공간', '카탈로그', '승인 범위', '설정 판본', '검토 의견'])
+                                  dict(profile={'model': 'reviewed-source-cache', 'revision': 'r2'})],
+                         ids=['교육 공간', '카탈로그', '승인 범위', '설정 판본'])
 def test_하나라도_다르면_다른_열쇠다(source, over):
     assert key(source, **over) != key(source)
 

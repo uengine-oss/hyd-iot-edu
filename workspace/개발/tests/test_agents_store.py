@@ -37,6 +37,29 @@ def test_실행이_쓰는_도구_서버는_선택과_단계의_정해진_조회_
     assert agents_store.run_servers(tools, TENANT_SERVERS, contract) == expected
 
 
+def _student(url, read_tools, *, stale=False):
+    """학생이 등록한 서버의 설정 — 연결 검사가 그 설정에 찍은 도장(mcp_registry.gate_of 꼴)과 함께. stale: 검사한 뒤 설정이 바뀜."""
+    from procsvc import mcp_registry
+    spec = {'type': 'http', 'url': url}
+    stamp = {'fingerprint': mcp_registry.fingerprint(spec), 'read_tools': read_tools, 'blocked_tools': ['place_order']}
+    return dict(spec, url=url + ('/v2' if stale else ''), hyd={'origin': 'user', 'gate': stamp})
+
+
+@pytest.mark.parametrize('contract, table', [(agents_store.QUESTION_CONTRACT, QUESTION_READS), (agents_store.HANDOVER_CONTRACT, HANDOVER_READS)],
+                         ids=['질문', '교대 초안'])
+def test_정해진_조회_단계도_학생이_등록하고_읽기_도구를_검사받은_서버는_그_도장의_읽기_도구로_쓴다(contract, table):
+    """탐사 S: 정해진 조회 도구 표는 기본 제공 서버의 것이라(수업 녹화가 쓰는 도구), 학생 에이전트에게 물어도 학생 서버가 빠졌다. 학생 서버는
+    흐름 단계처럼 연결 검사가 지금 설정에 찍은 읽기 도구로 쓴다(None — 워커가 그 도장으로 허용). 도장이 없거나 설정이 바뀐 서버, 표에 없는 기본
+    제공 서버는 그대로 빠진다."""
+    servers = {'neo4j': {'type': 'http', 'url': 'http://neo4j-mcp/mcp'}, 'enterprise-maint': {'type': 'http', 'url': 'http://maint/mcp'},
+               'my-stock': _student('http://host.docker.internal:8311/mcp', ['find_stock']),
+               'my-old': _student('http://host.docker.internal:8312/mcp', ['find_stock'], stale=True),
+               'my-unchecked': {'type': 'http', 'url': 'http://host.docker.internal:8313/mcp', 'hyd': {'origin': 'user'}}}
+    plan = agents_store.run_servers(None, servers, contract)
+    assert plan == {'neo4j': list(table['neo4j']), 'my-stock': None}, plan
+    assert agents_store.stamped_reads(servers, 'my-stock') == ['find_stock'] and agents_store.stamped_reads(servers, 'my-old') == []
+
+
 def test_단계의_폼_계약을_정의에서_읽는다():
     definition = {'activities': [{'id': 'task:draft', 'tool': 'formHandler:handover_draft', 'tools': ['neo4j']}, {'id': 'task:other'}],
                   'forms': {'handover_draft': {'contract': agents_store.HANDOVER_CONTRACT}}}

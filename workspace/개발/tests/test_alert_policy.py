@@ -26,7 +26,7 @@ def _with(**changes):
 @pytest.mark.parametrize('raw, error', [
     ({}, None),                                                   # 정책 없는 정의(교대 · 질문)는 경보 정책 검사 대상이 아니다
     ({'alertPolicy': POLICY}, None),
-    ({'alertPolicy': {'patterns': {}}}, '명시 경보/회복 기준'),
+    ({'alertPolicy': {'patterns': {}}}, '이 흐름이 받는 경보 종류가 필요'),
     (_with(op='>'), '지원 비교 연산'),
     (_with(tag=''), '지원 비교 연산'),
     (_with(limit=float('nan')), '유한 임계치'),

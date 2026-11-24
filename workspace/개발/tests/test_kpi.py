@@ -178,15 +178,17 @@ def test_표준_작업표에_없는_SOP는_비용을_지어내지_않고_그_SOP
 
 
 def test_정기_정비_범위_오더는_실제_정비_패키지의_SOP로_찾는다(db, pg_dsn):
-    """흐름 B 의 범위 정비 오더는 task 글 머리가 판단 SOP(SOP-PM-11)이고 실제 패키지 SOP 는 package.package_sop 에 있다 — 패키지를 본다."""
+    """흐름 B 의 범위 정비 오더는 task 글 머리가 판단 SOP(SOP-PM-11)이고 실제 패키지 SOP 는 package.package_sop 에 있다 — 패키지를 본다.
+    패키지는 흐름 B 가 실제로 싣는 것(강사 서명 정책의 2,000 h 정기 점검 SOP-PM-21 — maintenance_policy.service)이다. 그 작업비는 표준 작업표에
+    없어(069 §9: 정기 정비 패키지는 그 표에 두지 않는다) 흐름 B 의 보전비는 지어내지 않고 「셀 수 없음」으로 남는다."""
     wo = 'WO-TEST-' + uuid.uuid4().hex[:12].upper()
     with _window(db) as box:
         db.execute("""INSERT INTO ent.work_orders (id, asset, task, window_label, decision_id, option_id, requested_by, package)
                       VALUES (%s, 'HYD-02', 'SOP-PM-11 이번 예정된 정비 시간에 단독 시행 → 작업지시 SOP-PM-11', '즉시', 'test', 'test', 'kpi-test', %s::jsonb)""",
-                   [wo, json.dumps({'package_sop': 'SOP-FAN-12', 'package_name': '벨트 교체 절차'})])
+                   [wo, json.dumps({'package_sop': 'SOP-PM-21', 'package_name': '2,000 h 정기 점검'})])
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
-    assert calc.detail[0]['작업 SOP'] == 'SOP-FAN-12'                      # 판단 SOP(SOP-PM-11)가 아니라 패키지 SOP 로 찾았다
-    assert (calc.status, calc.value) == ('partial', 0) and calc.reason.endswith(': SOP-FAN-12'), calc.reason   # 그 패키지 작업비는 원문에 없다(070)
+    assert calc.detail[0]['작업 SOP'] == 'SOP-PM-21'                       # 판단 SOP(SOP-PM-11)가 아니라 패키지 SOP 로 찾았다
+    assert (calc.status, calc.value) == ('partial', 0) and calc.reason.endswith(': SOP-PM-21'), calc.reason    # 그 패키지 작업비는 표준 작업표에 없다(069 §9)
 
 
 def test_작업지시가_없으면_보전비는_0이다(db, pg_dsn):
@@ -272,3 +274,35 @@ def test_코드가_낸_KeyError는_없는_성과_지표_404로_보이지_않는�
         return {}['rows']                                  # 코드 결함 대역: 없는 열쇠 읽기
     monkeypatch.setattr(kpi, 'definitions', broken)
     assert kpi_api.get('/api/kpi/definitions').status_code == 500
+
+
+@pytest.mark.parametrize('extra', [0, 1], ids=['한도까지', '한도를 하나 넘음'])
+def test_기간의_처리_건이_읽는_한도를_넘으면_잘라_세지_않고_까닭을_말한다(extra):
+    """전수검사 12-13: 처리 건을 2,000건에서 조용히 잘라 판단 선례 축적 지표가 실제보다 작게 나왔고 잘렸다는 표시가 없었다."""
+    from datetime import datetime
+    count, asked = kpi.INSTANCE_LIMIT + extra, {}
+
+    def fetch(kind, name, query, params=None):
+        if name != 'instances':
+            return []
+        asked.update(params)
+        return [{'proc_inst_id': f'p{n}', 'proc_def_id': 'c3_cooling', 'status': 'COMPLETED', 'start_date': datetime(2026, 11, 1), 'end_date': None,
+                 'end_event': None, 'variables_data': [{'key': 'asset', 'value': 'HYD-01'}, {'key': 'chosen_skill', 'value': 'skill:x'}]}
+                for n in range(min(count, params['limit']))]
+    w = kpi.window('24h')
+    if extra:
+        with pytest.raises(kpi.SourceError, match='넘어 모두 읽지 못했습니다'):
+            kpi.calc_precedent(fetch, w, {'tenant': 'hyd'})
+    else:
+        assert kpi.calc_precedent(fetch, w, {'tenant': 'hyd'}).value == kpi.INSTANCE_LIMIT
+    assert asked['limit'] == kpi.INSTANCE_LIMIT + 1
+
+
+def test_처리_건_읽기는_한도를_인자로_받는_질의로_실제_DB에서_돈다(pg_dsn):
+    """한도를 질의 인자로 넘기게 바꾼 질의(LIMIT %(limit)s)가 실제 업무 DB 에서 도는지 — 가짜 조회만으로는 질의문이 틀려도 통과한다."""
+    src = kpi.PgSources(pg_dsn, pg_dsn, driver_factory=None)
+    try:
+        found = kpi.instances(kpi.Fetch(src), kpi.window('24h'), 'hyd-no-such-tenant')
+    finally:
+        src.close()
+    assert found == []

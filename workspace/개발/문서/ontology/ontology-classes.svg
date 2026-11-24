@@ -4,7 +4,7 @@
 <marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0L12 6L0 12z" fill="#fff" stroke="#374151"/></marker>
 </defs>
 <rect width="2336" height="1550" fill="#ffffff"/>
-<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.7.0 — 클래스 48개 · 관계 64종</text>
+<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.8.0 — 클래스 48개 · 관계 64종</text>
 <text x="30" y="58" font-size="13" fill="#4b5563">BSC(관점 · 전략 목표 · 성과 지표) → 프로세스(BPMN) → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = Skill = SOP · 규칙(DMN) → 외부 변수 · 예측 · 운영 기록. 화살표 = 관계 방향, 점선 삼각형 = 상속</text>
 <text x="30" y="120" font-size="14" font-weight="700" fill="#6d28d9">가치 계층 (BSC)</text>
 <text x="430" y="120" font-size="14" font-weight="700" fill="#1d4ed8">프로세스 계층</text>

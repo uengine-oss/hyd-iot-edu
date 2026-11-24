@@ -38,8 +38,8 @@ def test_승인_전달_상태는_단계_보류와_다른_이름이다(status, la
 
 
 @pytest.mark.parametrize('people, who, expected', [
-    ({'user:kim-op': '김운전'}, 'user:kim-op', '김운전'),
-    ({}, 'user:kim-op', '담당자 (이름 확인 안 됨)'),        # 사람 목록을 못 읽었을 때 원래 id 를 보이지 않는다(W1-13)
+    ({'user:me': '김운전'}, 'user:me', '김운전'),
+    ({}, 'user:me', '담당자 (이름 확인 안 됨)'),        # 사람 목록을 못 읽었을 때 원래 id 를 보이지 않는다(W1-13)
     ({}, 'agent:u-030be032', 'AI 에이전트'),
     ({}, 'role:operator', '운전원'),
     ({}, '', '–'),

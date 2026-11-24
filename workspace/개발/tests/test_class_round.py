@@ -156,7 +156,7 @@ def test_사람_승인_단계의_지연_타이머는_20배속에서도_벽시계
 ], ids=['에이전트_단계', '재관측', '시간_대기', '명령'])
 def test_경계_타이머의_실제_초는_도구가_따로_적지_않고_엔진_규칙을_따른다(host):
     definition = {'activities': [host], 'events': [{'id': 'B', 'timer': 'PT10M', 'attachedTo': 'T'}]}
-    assert cr.timer_wait_s(definition, 'B', 20.0) == 600.0 / cr.process_engine.timer_scale(host, 20.0)
+    assert cr.timer_wait_s(definition, 'B', 20.0) == 600.0 / cr.process_engine.timer_scale(host, 20.0, plant=True)
 
 
 @pytest.mark.parametrize('only, start, chosen', [
@@ -297,3 +297,25 @@ def test_업무_시스템_기록의_거래_줄을_펼_때_줄_안의_원문_접�
             b.close()
     finally:
         served.close()
+
+
+@pytest.mark.parametrize('dec, part', [
+    ({'origin': {'part': {'partNo': 'P-VALVE-9'}}}, 'P-VALVE-9'),
+    ({'origin': {'part': {'partNo': ''}}}, None), ({'origin': {}}, None), ({}, None),
+], ids=['판단이 실은 부품', '빈 부품 번호', '부품 없음', '출처 없음'])
+def test_구매_판단의_부품은_판단이_실은_것만이고_없으면_수업_부품으로_대신하지_않는다(dec, part):
+    """D-7: 전에는 판단에 부품이 없으면 수업 부품(P-PMP-SEAL)의 재고로 대조해, 판단이 부품을 빠뜨린 결함이 가려졌다."""
+    assert cr.decision_part(dec) == part
+
+
+@pytest.mark.parametrize('base, got, summary, ok', [
+    ({'outcome': '입고 완료', 'amount': 420}, {'outcome': '미달', 'amount': 380}, '6개 중 5개 입고 · 1개 검수 불합격 반품이라 입고 완료가 아닙니다', True),
+    ({'outcome': '정상'}, {'outcome': '미달'}, '효과 확인에서 유온이 기준까지 내려가지 않았습니다', True),
+    ({'outcome': '입고 완료', 'amount': 420}, {'outcome': '입고 완료', 'amount': 450}, '6개를 모두 입고했습니다', True),
+    ({'outcome': '정상'}, {'outcome': '정상'}, '유온이 기준 안으로 돌아왔습니다', False),
+    ({'outcome': '정상'}, {'outcome': '미달'}, 'MITIGATION_FAILED', False),
+    ({}, {'outcome': '미달'}, '효과 확인에서 유온이 기준까지 내려가지 않았습니다', False),
+], ids=['다른 끝', '다른 끝(냉각)', '같은 끝 · 다른 비용', '같은 끝 · 같은 비용 — 선택이 결과를 바꾸지 않음', '까닭이 학생 문장이 아님', '견줄 추천 회차 없음'])
+def test_추천과_다른_선택은_끝이나_비용이_달라야_하고_결과_보고가_그_까닭을_문장으로_말해야_통과다(base, got, summary, ok):
+    """D-6: 한 바퀴는 추천 카드만 승인했다 — 지는 대안을 고른 학생의 길을 실제 스택에서 재지 않았다. 기대 결과를 정하지 않고 추천 승인과 견준다."""
+    assert (cr.different_end(base, got, {'summary': summary}) == []) is ok

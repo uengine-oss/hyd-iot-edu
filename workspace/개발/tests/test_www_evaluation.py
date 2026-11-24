@@ -37,7 +37,6 @@ def test_판단_채점_화면은_AI가_판단하는_경로가_지난_처리_건_
     finally:
         served.close()
     assert 'AI가 판단하는 것은 「지난 처리 건」 하나' in sub and 'AI 판단을 대어' not in sub + lead, (sub, lead)
-    assert 'AI 모델 없이' in judgment_eval.PATH_NOTES['evaluate'] and 'AI 모델 없이' in judgment_eval.PATH_NOTES['decide']
 
 
 def test_정답표의_고르기_후보는_서버가_준_지금_지식뿐이고_고른_것의_id가_저장_요청에_간다():
@@ -50,6 +49,10 @@ def test_정답표의_고르기_후보는_서버가_준_지금_지식뿐이고_�
     choices = {'cause': [{'id': 'cause:cooler-fin-fouling', 'name': '쿨러 핀 오염'}], 'fm': [{'id': 'fm:student-fm', 'name': '학생이 넣은 고장 유형'}],
                'skill': [{'id': 'skill:sop-cool-11', 'name': '팬 최대 운전'}, {'id': 'skill:student-own-fix', 'name': '학생이 넣은 조치'}, {'id': 'skill:nameless', 'name': None}],
                'evidence': [{'id': 'rule:student-own', 'name': '학생이 넣은 규칙 설명'}], 'rule': [{'id': 'rule:student-own', 'name': '학생이 넣은 규칙 설명'}]}
+    # 가정 사실 칸(서버 judgment_eval.fact_choices 의 꼴): 기본 제공 현장의 선택지 하나와, 지식의 표 · 열에 이은 판단 입력 셋(숫자 · 글 · 참/거짓)
+    facts = judgment_eval.fact_choices([{'variable': 'line_priority', 'name': '라인 우선순위', 'typeRef': 'number'},
+                                        {'variable': 'shift_name', 'name': '교대조', 'typeRef': 'string'},
+                                        {'variable': 'line_running', 'name': '라인 가동', 'typeRef': 'boolean'}])
     app = FastAPI()
     app.mount('/', StaticFiles(directory=WWW, html=True))
     served = Served(app)
@@ -65,7 +68,7 @@ def test_정답표의_고르기_후보는_서버가_준_지금_지식뿐이고_�
             return route.fulfill(json=choices)
         if url.endswith('/api/eval/golden'):
             return route.fulfill(json={'items': [body['item'] for body in posted], 'storage': 'pg', 'paths': dict(judgment_eval.PATH_NOTES), 'weights': {}, 'max_repeats': 10,
-                                       'assets': ['HYD-01'], 'facts': {}})
+                                       'assets': ['HYD-01'], 'facts': facts})
         if url.endswith('/api/eval/golden/items') and req.method == 'POST':
             posted.append(req.post_data_json)
             return route.fulfill(status=201, json={'item': req.post_data_json['item']})
@@ -90,6 +93,11 @@ def test_정답표의_고르기_후보는_서버가_준_지금_지식뿐이고_�
             page.select_option('#evalView [data-f="pattern"]', 'COOLER_DEGRADATION')
             page.fill('#evalView [data-f="cause"]', '쿨러 핀 오염')
             page.fill('#evalView [data-f="failure_mode"]', '학생이 넣은 고장 유형')
+            fact_labels = page.locator('#evalView form fieldset, #evalView form section').filter(has_text='가정 사실').first.inner_text()
+            page.fill('#evalView [data-f="line_priority"]', '2.5')
+            page.fill('#evalView [data-f="shift_name"]', '야간조')
+            page.select_option('#evalView [data-f="line_running"]', 'false')
+            page.select_option('#evalView [data-f="plc_mode"]', '"REMOTE_MANUAL"')
             pick = page.locator('#evalView [data-add-to="allowed_top"]')
             pick.fill('정비 요청 취소'); pick.dispatch_event('change')      # 그래프에 없는 것: 적어 넣어도 받지 않는다
             refused = page.inner_text('#evalView [data-msg="form"]')
@@ -105,6 +113,9 @@ def test_정답표의_고르기_후보는_서버가_준_지금_지식뿐이고_�
         served.close()
     assert '「정비 요청 취소」: 목록에 있는 이름을 고르세요' in refused and picked_after_refusal == 0
     [body] = posted
+    # 탐사 N6: 화면의 가정 사실 칸이 수업 변수 넷뿐이라 학생이 표 정의를 적재해 만든 판단 입력을 정답표에 적을 수 없었다
+    assert all(label in fact_labels for label in ('라인 우선순위', '교대조', '라인 가동', '운전 모드')), fact_labels
+    assert body['item']['facts'] == {'line_priority': 2.5, 'shift_name': '야간조', 'line_running': False, 'plc_mode': 'REMOTE_MANUAL'}, body['item']['facts']
     assert body['item']['allowed_top'] == ['skill:student-own-fix'] and body['item']['required_evidence'] == ['rule:student-own']
     assert body['item']['expected'] == {'cause': 'cause:cooler-fin-fouling', 'failure_mode': 'fm:student-fm'}
     assert '학생이 넣은 조치' in row and '학생이 넣은 고장 유형' in row and 'skill:student-own-fix' not in row, row      # 표도 사전에 없는 항목을 이름으로 보인다

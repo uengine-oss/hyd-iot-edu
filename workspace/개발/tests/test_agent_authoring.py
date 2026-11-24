@@ -95,12 +95,6 @@ def test_연결_검사를_통과하지_않은_학생_서버는_폼에서_까닭�
     assert option['reason'] in refused.value.message
 
 
-@pytest.mark.parametrize('versions, latest', [(['1', '2', '9', '10'], '10'), (['1.9', '1.10'], '1.10'), (['2.2', '10.0'], '10.0')],
-                         ids=['열 번째 판', '마디 열', '큰 판'])
-def test_흐름의_최신_판본은_글자_순이_아니라_숫자_순으로_고른다(versions, latest):
-    assert max(versions, key=A.version_key) == latest
-
-
 def test_에이전트가_맡는_단계는_에이전트_모드와_워커_실행인_단계만이다():
     raw = {'roles': [{'name': '에이전트', 'endpoint': 'sys:agent'}, {'name': '운전원', 'endpoint': 'role:operator'}],
            'activities': [{'id': 'T_agent', 'name': '판단', 'role': '에이전트', 'agentMode': 'COMPLETE', 'orchestration': 'cliagents'},
@@ -118,7 +112,7 @@ def test_등록된_흐름의_최신_판본으로_배정_단계를_정한다(worl
     rows = world.rt.repo.list_definitions(TENANT)
     for def_id, version in latest.items():
         mine = [r['prod_version'] for r in rows if r['id'] == def_id]
-        assert not mine or version == max(mine, key=A.version_key)
+        assert not mine or version == max(mine, key=procdb.version_key)
 
 
 def test_기준으로_되돌리기는_만든_에이전트_스킬_역할을_지우고_센_수를_돌려준다(world):
@@ -127,7 +121,7 @@ def test_기준으로_되돌리기는_만든_에이전트_스킬_역할을_지�
     A.create_skill(repo, TENANT, {'skill_name': 'reset-check', 'description': '점검', 'content': '# 점검\n1. 본다'})
     A.attach_skill(repo, TENANT, agent['id'], 'reset-check')
     role = A.create_role(repo, TENANT, {'name': '되돌리기 시험 역할'})
-    out = A.reset(world.rt, by='수강생')
+    out = A.reset(world.rt, by='user:me')
     assert (out['agents'], out['skills'], out['attachments'], out['roles']) == (1, 1, 1, 1)
     assert not repo.list_users([agent['id'], role['id']], TENANT)
 
@@ -158,12 +152,12 @@ def test_기본_담당을_찾을_수_없는_열린_단계가_있으면_에이전
     inst = None
     try:
         rt.repo.put_agent_map({'tenant_id': TENANT, 'proc_def_id': 'orphan_test', 'activity_id': 'task:draft', 'agent_id': agent['id'],
-                               'origin': A.USER, 'by_user': '수강생'})
+                               'origin': A.USER, 'by_user': 'user:me'})
         inst = start_handover(rt, definition='orphan_test', version=raw['version'])
         [row] = [w for w in rt.repo.list_workitems(proc_inst_id=inst['proc_inst_id'], limit=None) if w['activity_id'] == 'task:draft']
         assert row['user_id'] == agent['id']
         with pytest.raises(AuthoringError) as refused:
-            A.delete_agent(rt, agent['id'], by='수강생')
+            A.delete_agent(rt, agent['id'], by='user:me')
         assert refused.value.status == 409 and '기본 담당을 찾을 수 없는 열린 단계' in refused.value.message
         assert A.get_agent(rt.repo, TENANT, agent['id'])                       # 지우지 않았다
     finally:
@@ -176,7 +170,7 @@ def test_기본_담당을_찾을_수_없는_열린_단계가_있으면_에이전
             with psycopg.connect(world.dsn) as db, db.transaction():
                 db.execute("UPDATE todolist SET status='CANCELLED' WHERE proc_inst_id=%s AND status NOT IN ('DONE','CANCELLED')", (inst['proc_inst_id'],))
                 db.execute("UPDATE bpm_proc_inst SET status='CANCELLED' WHERE proc_inst_id=%s", (inst['proc_inst_id'],))
-        A.delete_agent(rt, agent['id'], by='수강생')
+        A.delete_agent(rt, agent['id'], by='user:me')
 
 
 # ---------------------------------------------------------------- 역할의 정본은 업무 DB 하나 — 지식 그래프의 Role 은 그 투영(전수검사 11-#8)

@@ -1,5 +1,5 @@
-"""수업 흐름 설치(procsvc/course_bootstrap.py · POST /api/course-bootstrap) — 시작 6단계. 배포된 수업 흐름이 course_flows.json 과 같으면 그대로,
-옛 판(강사가 흐름을 고쳐 push 하기 전의 PC)이면 새 판본을 등록 · 배포한다(P2-09). 실제 process 앱(world)에서 판정한다 — world 가 켜질 때 이미
+"""수업 흐름 설치(procsvc/course_bootstrap.py · POST /api/course-bootstrap) — 시작 6단계. 배포된 수업 흐름이 지금 코드가 course_flows.json 으로
+만드는 정의와 같으면 그대로, 옛 판(강사가 흐름을 고쳐 push 하기 전의 PC · 가져오기가 정의에 넣는 것이 바뀌기 전의 PC)이면 새 판본을 등록 · 배포한다(P2-09). 실제 process 앱(world)에서 판정한다 — world 가 켜질 때 이미
 시작과 같은 설치를 한 번 했다. 옛 PC 상태는 같은 설치 함수(install)에 옛 흐름 내용(구매팀장 보고가 들어오기 전의 예비품 구매 연결)을 넣어 만든다."""
 import asyncio
 from copy import deepcopy
@@ -7,7 +7,6 @@ from copy import deepcopy
 import pytest
 
 from procsvc import course_bootstrap as cb
-from procsvc.bpmn_import import xml_sha256
 
 
 def flows(world):
@@ -54,13 +53,13 @@ def test_옛_판_흐름이_배포된_PC는_다음_시작_때_지금_판을_새_�
     """P2-09: 「이미 수업 흐름이면 건너뜀」이라 흐름을 고쳐 push 해도 시작한 적 있는 PC는 옛 흐름을 썼다."""
     old = _install_old(world)
     version, definition = deployed(world, 'c3_spare')
-    assert version == old and not cb.same_content(definition, *cb.FLOWS['c3_spare'][1:])
+    assert version == old and definition['bpmnImport']['mapping'] != cb.FLOWS['c3_spare'][2]
     status, body = world.api('POST', '/api/course-bootstrap', {})
     assert status == 200, body
     row = next(r for r in body['flows'] if r['definition'] == 'c3_spare')
     assert (row['reused'], row['replaced']) == (False, old) and row['version'] != old
     version, definition = deployed(world, 'c3_spare')
-    assert version == row['version'] and cb.same_content(definition, *cb.FLOWS['c3_spare'][1:])
+    assert version == row['version'] and definition['bpmnImport']['mapping'] == cb.FLOWS['c3_spare'][2]
     assert all(r['reused'] for r in body['flows'] if r['definition'] != 'c3_spare')
 
 
@@ -80,20 +79,62 @@ def test_수업_흐름_설치는_설정값을_받지_않는다(world, body):
     assert box['r'].status_code == 422
 
 
+def _threaded(coro_factory):
+    import threading
+    box = {}
+    t = threading.Thread(target=lambda: box.update(v=asyncio.run(coro_factory())))
+    t.start(); t.join()
+    return box['v']
+
+
+def test_그림과_연결이_같아도_배포된_정의가_지금_코드가_만드는_정의와_다르면_새_판본을_배포한다(world):
+    """이미 쓰던 PC: 수업 흐름 B 가 옛 코드로 등록돼 경보 정책에 시계열에 없는 자리표 회복 기준(CMMS_PM_DUE)을 가진 채 배포돼 있다 — 그림 · 연결은
+    지금과 같다. 그대로 두면 그 PC 만 처리 건 화면에 가짜 회복 기준이 보인다(새 PC 는 없음). 다음 시작이 지금 코드의 정의로 새 판본을 배포한다."""
+    version, definition = deployed(world, 'c3_pm')
+    assert definition['alertPolicy']['patterns']['PM_DUE'] == {'requireClear': True}, '지금 코드의 정기 정비 경보에는 시계열 회복 기준이 없다'
+    stale = deepcopy(definition)
+    stale['alertPolicy']['patterns']['PM_DUE'] = {'tag': 'CMMS_PM_DUE', 'op': '<', 'limit': 1, 'requireClear': True}
+    from procsvc.bpmn_store import FlowStore
+    filename, xml, _ = cb.FLOWS['c3_pm']
+    stale = FlowStore(world.rt.repo, 'hyd').register(stale, xml, filename)            # 가져온 흐름의 등록 길 그대로(판본은 다음 번호)
+    world.rt.definitions_changed()
+
+    async def put_stale():
+        async with cb.internal_client(world.main.app) as client:
+            return await cb._call(client, 'POST', '/api/process/definitions/c3_pm/deploy',
+                                  {'version': stale['version'], 'by': 'test', 'reason': '옛 코드가 등록한 판', 'class_flow': True}, '배포')
+    _threaded(put_stale)
+    old, now = deployed(world, 'c3_pm')
+    assert old == stale['version'] and now['alertPolicy']['patterns']['PM_DUE'].get('tag') == 'CMMS_PM_DUE'
+    assert now['bpmnImport'] == definition['bpmnImport'], '그림 지문 · 연결은 지금과 같다'
+    status, body = world.api('POST', '/api/course-bootstrap', {})
+    assert status == 200, body
+    row = next(r for r in body['flows'] if r['definition'] == 'c3_pm')
+    assert (row['reused'], row['replaced']) == (False, old) and row['version'] != old, row
+    version, definition = deployed(world, 'c3_pm')
+    assert version == row['version'] and definition['alertPolicy']['patterns']['PM_DUE'] == {'requireClear': True}
+    assert all(r['reused'] for r in body['flows'] if r['definition'] != 'c3_pm')
+    status, body = world.api('POST', '/api/course-bootstrap', {})
+    assert status == 200 and [r['reused'] for r in body['flows']] == [True] * len(cb.FLOWS), '한 번 맞춘 뒤에는 다시 배포하지 않는다'
+
+
 @pytest.mark.parametrize('change, same', [
-    (lambda xml, mapping: (xml, mapping), True),
-    (lambda xml, mapping: (xml + ' ', mapping), False),
-    (lambda xml, mapping: (xml, dict(mapping, name='다른 이름')), False),
-], ids=['같은 그림 · 연결', '그림 글자 하나 다름', '연결 다름'])
-def test_같은_내용인지는_정의에_남긴_그림_지문과_연결로_본다(change, same):
-    filename, xml, mapping = cb.FLOWS['c3_cooling']
-    definition = {'bpmnImport': {'sha256': xml_sha256(xml), 'mapping': deepcopy(mapping)}}
-    assert cb.same_content(definition, *change(xml, mapping)) is same
-
-
-def test_설치_흔적이_없는_정의는_다른_내용으로_본다():
-    _, xml, mapping = cb.FLOWS['c3_cooling']
-    assert not cb.same_content({}, xml, mapping) and not cb.same_content(None, xml, mapping)
+    (lambda d: d, True),
+    (lambda d: dict(d, version='7'), True),
+    (lambda d: dict(d, alertPolicy={'patterns': {'PM_DUE': {'tag': 'CMMS_PM_DUE', 'op': '<', 'limit': 1, 'requireClear': True}}}), False),
+    (lambda d: dict(d, bpmnImport=dict(d['bpmnImport'], sha256='0' * 64)), False),
+    (lambda d: dict(d, bpmnImport=dict(d['bpmnImport'], mapping={'name': '다른 이름'})), False),
+    (lambda d: dict(d, bpmnImport=dict(d['bpmnImport'], base={'id': 'anomaly_response', 'version': '2.8'})), True),
+    (lambda d: dict(d, activities=[{'id': 'T_agent', 'outputData': ['decision']}]), False),
+    (lambda d: None, False),
+    (lambda d: {}, False),
+], ids=['같은 정의', '판본 번호만 다름', '경보 정책 다름', '그림 지문 다름', '연결 다름', '기준 흐름 판본 기록만 다름', '가져온 부품의 계약 다름',
+        '배포된 정의 없음', '빈 정의'])
+def test_같은_내용인지는_판본_번호와_기준_흐름_판본_기록만_빼고_정의_전체로_본다(change, same):
+    built = {'processDefinitionId': 'c3_pm', 'version': '3', 'alertPolicy': {'patterns': {'PM_DUE': {'requireClear': True}}},
+             'bpmnImport': {'sha256': 'a' * 64, 'mapping': {'name': '정기 정비'}, 'base': {'id': 'anomaly_response', 'version': '2.9'}},
+             'activities': [{'id': 'T_agent'}]}
+    assert cb.same_definition(change(deepcopy(built)), built) is same
 
 
 # ---------------------------------------------------------------- 흐름 그림(사람이 배치한 그림 정보)이 화면이 읽는 길로 나온다

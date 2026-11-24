@@ -73,7 +73,7 @@ def test_두_실행의_지식_차이는_끊긴_관계와_바뀐_항목을_보인
     assert d['changed'] and d['removed_rels'] == [{'from': 'x', 'type': 'R', 'to': 'y'}] and d['changed_nodes'] == ['x']
 
 
-@pytest.mark.parametrize('path, by, says', [('other', '강사', 'path'), ('decide', ' ', '누가 실행했는지')], ids=['없는 경로', '실행자 없음'])
+@pytest.mark.parametrize('path, by, says', [('other', 'user:me', 'path'), ('decide', ' ', '누가 실행했는지')], ids=['없는 경로', '실행자 없음'])
 def test_실행_기록은_경로와_실행자가_있어야_만든다(path, by, says):
     result = je.aggregate(ITEM, [judged()])
     with pytest.raises(ValueError) as refused:
@@ -92,8 +92,8 @@ def test_되돌리기는_이_테넌트의_정답표와_채점_실행을_지운�
     item = je.validate_item(ITEM)
     for s in (store, other):
         s.reset()
-        s.golden_put(item, '강사', create=True)
-        s.put(je.new_run(path='decide', by='강사', repeats=1, knowledge={'fingerprint': None}, results=[je.aggregate(item, [judged()])]))
+        s.golden_put(item, 'user:me', create=True)
+        s.put(je.new_run(path='decide', by='user:me', repeats=1, knowledge={'fingerprint': None}, results=[je.aggregate(item, [judged()])]))
     assert store.reset() == {'golden_items': 1, 'runs': 1}
     assert (store.golden_list(), store.list(10)) == ([], [])
     assert len(other.golden_list()) == 1 and len(other.list(10)) == 1                 # 다른 테넌트는 그대로
@@ -118,7 +118,8 @@ def test_지식_차이와_한쪽에만_있는_정답표_항목은_id_와_함께_
 
 
 def test_지난_처리_건에_맞는_정답표_항목이_없거나_여럿이면_처리_건_안쪽_번호와_경보_코드_없이_까닭을_말한다():
-    candidate = {'instance': 'c3_cooling.a5727cb6-0000-4000-8000-000000000000', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {}}
+    candidate = {'instance': 'c3_cooling.a5727cb6-0000-4000-8000-000000000000', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {},
+                 'judged_facts': {'plc_mode': 'REMOTE_AUTO'}}
     with pytest.raises(ValueError) as none:
         je.match_item([], candidate)
     with pytest.raises(ValueError) as many:
@@ -126,3 +127,73 @@ def test_지난_처리_건에_맞는_정답표_항목이_없거나_여럿이면_
     for said in (str(none.value), str(many.value)):
         assert 'c3_cooling' not in said and 'COOLER_DEGRADATION' not in said and 'cooler-auto' not in said, said
     assert '「쿨러 성능 저하 · 둘째」' in str(many.value)
+
+
+# ---------------------------------------------------------------- 지난 처리 건: 원인 · 근거는 등록된 판단의 기록에서
+def _case(**variables):
+    return {'proc_inst_id': 'c3_cooling.x', 'proc_inst_name': '쿨러', 'status': 'RUNNING', 'start_date': 't',
+            'variables_data': [{'key': k, 'value': v} for k, v in variables.items()]}
+
+
+DIAGNOSED = {'id': 'DEC-1', 'asset': 'HYD-01', 'status': 'SUBMITTED', 'recommended': 'skill:sop-cool-11', 'facts': {'plc_mode': 'REMOTE_AUTO'},
+             'options': [{'id': 'skill:sop-cool-11', 'rank': 1, 'feasible': True, 'score': 3, 'violations': []}],
+             'origin': {'pattern': 'COOLER_DEGRADATION', 'cause': 'cause:fouling', 'failureMode': 'fm:cooler-cooling-loss', 'cause_route': 'diagnosis',
+                        'diagnosis': {'top_cause': 'cause:fouling', 'failure_mode': 'fm:cooler-cooling-loss', 'citations': ['rule:r1'],
+                                      'causes': [{'id': 'cause:fouling', 'evidence': [{'id': 'evd:ts1', 'passed': True}, {'id': 'evd:vs1', 'passed': False}]}]}}}
+
+
+def test_지난_처리_건의_원인과_근거는_에이전트가_옮겨_적은_글이_아니라_등록된_판단의_진단_기록에서_읽는다():
+    """탐사 N1: 에이전트 결과의 cause · guide_card 는 모델이 옮겨 적은 글이고 서버가 대조하지 않는다 — 다른 원인 · 지어낸 근거를 적어도 채점에
+    그대로 쓰였다. 원인은 판단 등록 도구가 진단 지식으로 확인해 받은 판단 기록(origin)의 것, 근거는 그 자리에서 다시 한 진단(origin.diagnosis)의 것이다."""
+    case = _case(decision_id='DEC-1', asset='HYD-01', pattern='COOLER_DEGRADATION', cause='cause:fan-drive', failure_mode='fm:x',
+                 guide_card={'citations': ['evd:made-up'], 'causes': [{'evidence': [{'id': 'evd:vs1', 'passed': True}]}]})
+    cand = je.instance_candidate(case, {'DEC-1': DIAGNOSED}.get)
+    assert (cand['cause'], cand['failure_mode']) == ('cause:fouling', 'fm:cooler-cooling-loss') and 'guide_card' not in cand
+    j = je.worker_judgement(cand, DIAGNOSED)
+    assert (j['cause'], j['failure_mode']) == ('cause:fouling', 'fm:cooler-cooling-loss')
+    assert 'evd:ts1' in j['cited'] and 'rule:r1' in j['cited'] and 'evd:made-up' not in j['cited'] and 'evd:vs1' not in j['cited'], j['cited']
+    assert je.score_judgement(ITEM, j)['checks']['cause']['ok']
+
+
+def test_진단_기록이_없는_센서_진단_판단은_옮겨_적은_가이드_카드로_메우지_않고_채점하지_못한_까닭을_말한다():
+    old = dict(DIAGNOSED, origin={k: v for k, v in DIAGNOSED['origin'].items() if k != 'diagnosis'})
+    j = je.worker_judgement(je.instance_candidate(_case(decision_id='DEC-1'), {'DEC-1': old}.get), old)
+    assert j['status'] == 'EMPTY' and '원인 진단' in j['reason'] and j['options'] == []
+
+
+def test_부품으로_정한_구매_판단은_원인_채점_후보가_아니다():
+    bought = dict(DIAGNOSED, origin={'pattern': 'SPARE_BELOW_MIN', 'cause_route': 'purchase-part', 'part': {'id': 'part:x'}})
+    assert je.instance_candidate(_case(decision_id='DEC-1'), {'DEC-1': bought}.get) is None
+
+
+@pytest.mark.parametrize('judged, found', [
+    ({'plc_mode': 'REMOTE_AUTO', 'line_priority': 2}, 'cooler-line'),     # 정답표 화면의 넷 밖 사실도 판단 기록과 견준다
+    ({'plc_mode': 'REMOTE_AUTO', 'line_priority': 1}, None),              # 다른 사실값의 처리 건은 그 항목에 맞지 않는다
+    ({'plc_mode': 'REMOTE_AUTO'}, None),                                  # 판단이 읽지 않은 사실을 적은 항목은 대조하지 못한다
+], ids=['사실 같음', '사실 다름', '판단이 읽지 않은 사실'])
+def test_지난_처리_건은_정답표_항목의_가정_사실을_하나하나_판단_기록과_견줘_고른다(judged, found):
+    """탐사 N6: 정답표가 적은 사실 가운데 화면의 넷(운전 모드 · 설비 상태 · 예비 펌프 · 팬 연속 운전) 밖의 것은 견주지 않아, PBL 학생이 자기 판단 입력을
+    가정 사실로 적은 항목이 사실값이 다른 처리 건에도 맞는다고 보고 채점했다."""
+    item = dict(ITEM, id='cooler-line', title='라인 우선순위 2', facts={'plc_mode': 'REMOTE_AUTO', 'line_priority': 2})
+    candidate = {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {}, 'judged_facts': judged}
+    if found:
+        assert je.match_item([item], candidate)['id'] == found
+        return
+    with pytest.raises(ValueError) as e:
+        je.match_item([item], candidate)
+    said = str(e.value)
+    assert ('읽지 않아 대조할 수 없습니다' in said and 'line_priority' in said) if 'line_priority' not in judged else '정답표 항목이 없습니다' in said, said
+
+
+def test_가정_사실_칸은_기본_제공_현장의_넷에_표_열에_이은_판단_입력을_그_형식의_칸으로_더한다():
+    """탐사 N6. 같은 변수는 기본 제공 현장의 선택지가 이기고(값의 영역이 그 설비의 것), 판단 엔진이 가정으로 받지 않는 형식은 칸이 없다."""
+    out = je.fact_choices([{'variable': 'line_priority', 'name': '라인 우선순위', 'typeRef': 'number'}, {'variable': 'shift_name', 'name': None, 'typeRef': 'enum'},
+                           {'variable': 'plc_mode', 'name': '다른 이름', 'typeRef': 'string'}, {'variable': 'line_blob', 'name': '첨부', 'typeRef': 'json'},
+                           {'variable': None, 'name': '변수 없음', 'typeRef': 'number'}])
+    assert list(out) == [*je.FACT_CHOICES, 'line_priority', 'shift_name']
+    assert out['plc_mode'] == je.FACT_CHOICES['plc_mode'] and out['line_priority'] == {'label': '라인 우선순위', 'number': True}
+    assert out['shift_name'] == {'label': 'shift_name', 'text': True}
+    candidate = {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {}, 'judged_facts': {'plc_mode': 'REMOTE_AUTO'}}
+    with pytest.raises(ValueError) as refused:
+        je.match_item([dict(ITEM, facts={'line_priority': 2})], candidate, out)
+    assert '가정 사실(라인 우선순위)' in str(refused.value), refused.value      # 문장은 변수 이름이 아니라 그 입력의 이름으로 말한다

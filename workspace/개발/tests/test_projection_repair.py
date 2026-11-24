@@ -39,8 +39,8 @@ def test_실행_반영의_어긋남은_원천과_그래프가_다른_칸마다_�
 
 @pytest.mark.parametrize('by, reason, tamper, words', [
     ('', '다시 보냄', False, 'actor and reason'),
-    ('강사', ' ', False, 'actor and reason'),
-    ('강사', '다시 보냄', True, 'integrity mismatch'),
+    ('user:me', ' ', False, 'actor and reason'),
+    ('user:me', '다시 보냄', True, 'integrity mismatch'),
 ])
 def test_수리_의도는_누가_왜를_적고_검토한_원천이_그대로일_때만_만든다(by, reason, tamper, words):
     plan = {'source': {'a': 1}, 'source_hash': repair.digest({'a': 1}), 'dependents': []}
@@ -76,12 +76,12 @@ def test_실행_반영_수리는_검토한_계획대로_한_번만_다시_보내
     q = world.rt.hooks.query_cypher
     plan = repair.inspect_execution(world.rt.repo, q, 'hyd', pid)
     rid = str(uuid.uuid4())
-    first = repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='강사', reason='그래프 다시 보냄', plan=plan, request_id=rid)
+    first = repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='user:me', reason='그래프 다시 보냄', plan=plan, request_id=rid)
     assert first['status'] == 'QUEUED' and world.rt.repo.projection_status('hyd', pid)['pending'] == 1
-    again = repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='강사', reason='그래프 다시 보냄', plan=plan, request_id=rid)
+    again = repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='user:me', reason='그래프 다시 보냄', plan=plan, request_id=rid)
     assert again == first and world.rt.repo.projection_status('hyd', pid)['pending'] == 1
     with pytest.raises(ValueError, match='reused with a different intent'):
-        repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='강사', reason='다른 까닭', plan=plan, request_id=rid)
+        repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='user:me', reason='다른 까닭', plan=plan, request_id=rid)
     # 보통 반영기가 실제 영수증으로 끝낸다. 반영기는 오래된 대기부터 한 번에 limit 건만 보내므로, 앞 테스트 · 지식 다시 넣기
     # (enqueue_knowledge_projections — 테넌트의 모든 처리 건)가 쌓은 대기가 limit 보다 많으면 한 번으로는 이 처리 건까지 닿지 않는다(전체 테스트 1)
     backlog = len(world.rt.repo.pending_projections('hyd', 100000))
@@ -101,7 +101,7 @@ def test_원천이_조회_뒤에_바뀌면_수리하지_않고_다시_조회하�
     world.poll(3)
     world.rt.reconcile_projections(limit=200)
     with pytest.raises(ValueError, match='inspect again'):
-        repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='강사', reason='다시 보냄', plan=plan, request_id=str(uuid.uuid4()))
+        repair.repair_execution(world.rt.repo, q, 'hyd', pid, by='user:me', reason='다시 보냄', plan=plan, request_id=str(uuid.uuid4()))
 
 
 def test_사건_반영_수리는_울타리_위_판번호로_다시_넣는다(tmp_path, neo4j_graph):
@@ -113,7 +113,7 @@ def test_사건_반영_수리는_울타리_위_판번호로_다시_넣는다(tmp
         neo4j_graph.query('CREATE (:CaseProjection {id:"Incident:INC-REPAIR-1", revision: 999, payload_hash: "x"})')   # 그래프의 울타리가 원천보다 앞섰다
         plan = repair.inspect_case(store, neo4j_graph.query, 'Incident', inc.id)
         assert plan['graph']['fence']['revision'] == 999 and plan['pending']
-        out = repair.repair_case(store, neo4j_graph.query, 'Incident', inc.id, by='강사', reason='울타리 앞섬', plan=plan,
+        out = repair.repair_case(store, neo4j_graph.query, 'Incident', inc.id, by='user:me', reason='울타리 앞섬', plan=plan,
                                  request_id=str(uuid.uuid4()))
         assert out['status'] == 'QUEUED' and out['revision'] > 999                                  # 다음 판번호가 울타리 위
         assert store.case_projection_batch()[0]['revision'] == out['revision']

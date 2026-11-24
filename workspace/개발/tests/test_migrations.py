@@ -436,3 +436,64 @@ def test_테넌트가_없는_새_DB에서는_역할_마이그레이션이_아무
     with _db_before_076(scratch_db) as conn:
         conn.execute(next(MIGRATIONS.glob(ROLES_ONE_SOURCE + '_*.sql')).read_text(encoding='utf8'))
         assert _roles(conn) == ([], [])
+
+
+PM_PLAN_ORDER_ONLY = '20261123000082'
+HANDOVER_ROLE_BINDINGS = '20261123000083'
+
+
+def _db_before(scratch_db, cut):
+    import psycopg
+    conn = psycopg.connect(scratch_db, autocommit=True)
+    for sql in sorted(MIGRATIONS.glob('*.sql')):
+        if sql.name >= cut:
+            break
+        conn.execute(sql.read_text(encoding='utf8'))
+    return conn
+
+
+def test_이미_쓰던_DB에서_정기_정비가_아닌_요청에_붙은_이번_회차_표시는_지워지고_원문_정비_범위_요청의_표시는_남는다(scratch_db):
+    """047 의 트리거가 도래 설비의 예정된 정비 시간 요청이면 무엇이든 이번 회차 정기 정비 요청으로 표시해 둔 DB — 082 가 트리거를 지우고, 정기 정비가
+    아닌 요청(원문 정비 범위가 없는 요청)을 가리키는 표시만 비운다. 그 설비의 「정기 점검 도래」가 다시 켜진다."""
+    with _db_before(scratch_db, PM_PLAN_ORDER_ONLY) as conn:
+        conn.execute("UPDATE ent.pm_counters SET since_pm_h=1960, plan_wo=NULL, plan_window=NULL, planned_at=NULL WHERE asset IN ('HYD-02', 'HYD-03')")
+        window = conn.execute("SELECT id, starts_at FROM ent.next_maintenance_windows('HYD-03', 14) ORDER BY starts_at LIMIT 1").fetchone()
+        conn.execute("INSERT INTO ent.work_orders(id, asset, task, window_label, window_id, window_starts_at) "
+                     "VALUES ('WO-COOLER', 'HYD-03', 'SOP-COOL-14 쿨러 핀 세척', '야간', %s, %s)", window)
+        assert conn.execute("SELECT plan_wo FROM ent.pm_counters WHERE asset='HYD-03'").fetchone() == ('WO-COOLER',), '옛 트리거가 표시한다(고치기 전 상태)'
+        conn.execute("INSERT INTO ent.work_orders(id, asset, task, window_label, maintenance_plan) "
+                     "VALUES ('WO-PM-SCOPE', 'HYD-02', '2,000 h 정기 점검', '야간', '{\"scope\": \"single\"}'::jsonb)")
+        conn.execute("UPDATE ent.pm_counters SET plan_wo='WO-PM-SCOPE', plan_window='야간', planned_at=now() WHERE asset='HYD-02'")
+        path = next(MIGRATIONS.glob(PM_PLAN_ORDER_ONLY + '_*.sql'))
+        conn.execute(path.read_text(encoding='utf8'))
+        marks = dict(conn.execute("SELECT asset, plan_wo FROM ent.pm_counters WHERE asset IN ('HYD-02', 'HYD-03')").fetchall())
+        assert marks == {'HYD-02': 'WO-PM-SCOPE', 'HYD-03': None}
+        alerts = dict(conn.execute("SELECT asset, pm_alert FROM ent.pm_status WHERE asset IN ('HYD-02', 'HYD-03')").fetchall())
+        assert alerts == {'HYD-02': False, 'HYD-03': True}
+        conn.execute("INSERT INTO ent.work_orders(id, asset, task, window_label, window_id, window_starts_at) "
+                     "VALUES ('WO-COOLER-2', 'HYD-03', 'SOP-COOL-14 쿨러 핀 세척', '야간', %s, %s)", window)
+        assert conn.execute("SELECT plan_wo FROM ent.pm_counters WHERE asset='HYD-03'").fetchone() == (None,), '082 뒤에는 표시하지 않는다'
+        conn.execute(path.read_text(encoding='utf8'))                                                        # 다시 적용해도 같다
+        assert dict(conn.execute("SELECT asset, plan_wo FROM ent.pm_counters WHERE asset IN ('HYD-02', 'HYD-03')").fetchall()) == marks
+
+
+def test_진행_중이던_교대_처리_건의_역할_묶음에_남은_지운_직원은_역할로_바뀌고_끝난_처리_건은_그대로다(scratch_db):
+    """04 D5: 072 는 열린 작업 · 알림만 담당자에게 넘겼다 — 진행 중 교대 처리 건이 들고 있는 역할 묶음(처리 건의 묶음이 정의의 묶음보다 먼저다)에는
+    지운 직원 id 가 남아, 다음 사람 단계가 없는 사람 앞으로 열렸다."""
+    from psycopg.types.json import Jsonb
+    old = [{'name': '인계자', 'endpoint': 'user:kim-op', 'resolutionRule': '옛 판'}, {'name': '인수자', 'endpoint': 'user:choi-op'},
+           {'name': '에이전트', 'endpoint': 'agent:handover'}]
+    with _db_before(scratch_db, HANDOVER_ROLE_BINDINGS) as conn:
+        conn.execute("INSERT INTO tenants(id, name) VALUES ('hyd', '시험 공장')")
+        for pid, status, bindings in (('P-RUN', 'RUNNING', old), ('P-DONE', 'COMPLETED', old), ('P-NULL', 'RUNNING', None),
+                                      ('P-OTHER', 'RUNNING', [{'name': '운전원', 'endpoint': 'role:operator'}])):
+            conn.execute("INSERT INTO bpm_proc_inst(proc_inst_id, proc_def_id, tenant_id, status, start_date, variables_data, current_activity_ids, role_bindings) "
+                         "VALUES (%s, 'shift_handover', 'hyd', %s, now(), %s, %s, %s)",
+                         (pid, status, Jsonb([]), ['T'], Jsonb(bindings) if bindings is not None else None))
+        path = next(MIGRATIONS.glob(HANDOVER_ROLE_BINDINGS + '_*.sql'))
+        conn.execute(path.read_text(encoding='utf8'))
+        now = dict(conn.execute('SELECT proc_inst_id, role_bindings FROM bpm_proc_inst').fetchall())
+        assert now['P-RUN'] == [{'name': '인계자', 'endpoint': 'role:shift-out', 'resolutionRule': '옛 판'}, {'name': '인수자', 'endpoint': 'role:shift-in'},
+                                {'name': '에이전트', 'endpoint': 'agent:handover'}]
+        assert now['P-DONE'] == old and now['P-NULL'] is None and now['P-OTHER'] == [{'name': '운전원', 'endpoint': 'role:operator'}]
+

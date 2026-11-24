@@ -5,7 +5,7 @@ import psycopg
 import pytest
 
 from procsvc import procdb
-from procsvc.knowledge_projection import INVENTORY_Q, KnowledgeReconciler, digest
+from procsvc.knowledge_projection import KnowledgeReconciler, digest
 from procsvc.store import Store
 
 
@@ -52,7 +52,15 @@ def test_지문은_목록_차례와_레이블_차례에_상관없다():
     assert digest(rows) == digest(flipped) != digest(rows[:1])
 
 
-def test_검사_주기_전에는_다시_보지_않는다(reconciler):
+def test_검사_주기_전에는_지식이_바뀌어도_다시_보지_않고_주기가_지나면_본다(seeded_graph, pg_dsn, tmp_path):
+    """주기는 다시 잇기가 받는 시계로 잰다 — 시험은 벽시계를 기다리지 않고 그 시계를 옮긴다(전에는 주기 1초 · 1.1초 잠이라, 첫 검사의 그래프
+    질의와 지식 바꾸기가 1초를 넘는 바쁜 PC 에서 둘째 검사가 주기 밖이 되어 깨졌다)."""
+    now = [1000]
+    reconciler = KnowledgeReconciler(Store(str(tmp_path / 'process.sqlite3')), seeded_graph.query, 'hyd', procdb.PgRepo(pg_dsn),
+                                     monotonic=lambda: now[0])
     assert reconciler.poll() is True
-    assert reconciler.poll() is False                       # 주기(15초) 안
-    assert 'MATCH (n)' in INVENTORY_Q
+    seeded_graph.query("CREATE (:Skill {id:'skill:test-interval', name:'주기 시험 조치'})")
+    now[0] += reconciler.interval - 1
+    assert reconciler.poll() is False                       # 주기 안 — 지식이 바뀌었어도 아직 보지 않는다
+    now[0] += 1
+    assert reconciler.poll() is True                        # 주기가 다 되면 바뀐 지식을 본다

@@ -7,9 +7,12 @@ import prepare_ports
 
 
 def test_실제_process에_설치를_부르면_흐름마다_지금_판이_있다고_알린다(world, capsys):
+    """world 가 이미 설치했다 — 다시 부르면 기본 제공 흐름(정본 course_flows.json → course_policy.COURSE_FLOWS)마다 한 줄씩 「그대로 둠」."""
+    from procsvc.course_policy import COURSE_FLOWS
     assert c3_flows.ensure(world.url) == 0
     lines = capsys.readouterr().out.splitlines()
-    assert len(lines) == 3 and all('지금 판' in line and '그대로 둠' in line for line in lines)
+    assert sorted(line.split(':')[0] for line in lines) == sorted(COURSE_FLOWS), lines
+    assert all('지금 판' in line and '그대로 둠' in line for line in lines), lines
 
 
 @pytest.mark.parametrize('row, line', [

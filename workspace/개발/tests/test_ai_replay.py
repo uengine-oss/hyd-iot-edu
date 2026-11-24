@@ -14,7 +14,7 @@ from cliagents import ExecEvent, ExecEventKind, ExecRequest
 from conftest import rejected_first_replay, REPLAY_DIR
 from student_words import WORKER_TALK
 from procsvc import course_policy
-from worker import ai_replay
+from worker import ai_replay, result_check
 from worker.ai_replay import COURSE, REUSE, Library, NotRecorded, Responses
 
 COURSE_LIB = Library(REPLAY_DIR, COURSE)
@@ -77,7 +77,7 @@ def test_읽기_자리는_녹화를_이_처리_건의_값으로_다시_낸다(tm
 
 def _scenario(key):
     def start(world):
-        status, out = world.api('POST', f'/api/scenario/{key}/start', {'by': 'user:kim-op', 'role': 'role:operator'}, source_loop=True)
+        status, out = world.api('POST', f'/api/scenario/{key}/start', {'by': 'user:me', 'role': 'role:operator'}, source_loop=True)
         assert status == 200, out
         return out['instance'], world.agent(out['instance'], 'T_agent')
     return start
@@ -133,8 +133,30 @@ def test_지금_계산이_녹화와_같은_판단이면_재생_안내를_남기�
 def test_재생이_보이는_스킬_파일_읽기_결과는_이_실행의_작업_폴더에_있는_지금_본문이다(world, tmp_path):
     """한 바퀴 실측(2026-11-14): 냉각 판단의 처리 과정에서 「읽은 스킬 파일」을 펼치면 녹화 당시의 옛 본문(「… 카드 (시나리오 A)」)이 보였다 —
     스킬의 이름 · 설명은 그 뒤 고쳤다(마이그레이션 078). 워커는 실행 전에 에이전트의 스킬을 작업 폴더에 쓰므로, 그 파일을 통째로 읽은 호출의
-    결과는 그 파일의 지금 본문으로 보인다. 작업 폴더에 없는 스킬(학생이 뗀 스킬)이나 일부만 읽은 호출은 저장된 결과 그대로다."""
-    pid, _ = world.start_cooling()[1:]
+    결과는 그 파일의 지금 본문으로 보인다. 작업 폴더에 없는 스킬(학생이 뗀 스킬)이나 일부만 읽은 호출은 저장된 결과 그대로다.
+    2026-11-23 저장분은 그 스킬을 Read 가 아니라 Skill 도구(`hyd-course-skills:cooling-emergency-response`)로 연다 — 본문이 결과로 나오지 않는
+    호출이다. 그래서 Read 로 옛 본문을 읽은 실행은 저장분의 그 호출을 옛 본문을 읽은 Read 로 바꾼 녹화 묶음으로 세운다."""
+    old_body = '0\t---\n1\tname: cooling-emergency-response\n2\tdescription: 쿨러 과열 경보 — 원인 진단 · 냉각 조치 카드 (시나리오 A)\n3\t---\n4\t\n5\t# 옛 제목'
+
+    def read_instead_of_skill_tool(run):
+        ids = set()
+        for e in run['events']:
+            if e['kind'] == 'tool_start' and e.get('tool') == 'Skill' and 'cooling-emergency-response' in json.dumps(e.get('tool_input')):
+                ids.add(e['tool_use_id'])
+                e.update(tool='Read', tool_input={'file_path': '/workspace/hyd/rec/.claude/skills/cooling-emergency-response/SKILL.md',
+                                                  'offset': 0, 'limit': 2000})
+            elif e['kind'] == 'tool_end' and e.get('tool_use_id') in ids:
+                e.update(tool='Read', text=old_body, tool_output=old_body)
+                (run.get('tool_outputs_full') or {}).pop(e['tool_use_id'], None)
+        assert ids, '냉각 저장분에 그 스킬을 여는 호출이 없다'
+    made = _replay_recorded_edited(tmp_path, 'c3_cooling/T_agent', read_instead_of_skill_tool)
+    world.plant.inject('HYD-01', 'cooler_degradation', severity='moderate')
+    world.settle(1800)
+    tags = world.plant.tags('HYD-01')
+    _, pid = world.raise_alert('COOLER_DEGRADATION', 'HYD-01', ts1=tags['TS1'], ce=tags['CE'])
+    world.report()
+    with world.reporting('HYD-01'):
+        assert world.runner('replay', replay_dir=made).poll_once() == 1
     skill = world.rt.repo.get_skill(world.rt.tenant_id, 'cooling-emergency-response')
     shown = json.dumps([e['data'] for e in world.events(pid)], ensure_ascii=False)
     assert 'cooling-emergency-response/SKILL.md' in shown                       # 그 스킬 파일을 읽는 호출이 처리 과정에 있다
@@ -151,23 +173,29 @@ def test_재생이_보이는_스킬_파일_읽기_결과는_이_실행의_작업
     assert ai_replay.skill_file_now(tmp_path, 'Bash', read, recorded) is None
 
 
-def _replay_recorded_under_another_state(tmp_path, slot, change):
-    """시험이 만든 녹화 묶음: 저장소 녹화를 복사하되 그 자리의 녹화가 등록했던 판단 문서만 바꾼다(change) — 다른 설비 · 업무 상태에서 뜬 녹화의 대역."""
+def _replay_recorded_edited(tmp_path, slot, edit):
+    """시험이 만든 녹화 묶음: 저장소 녹화를 복사하되 그 자리 녹화의 첫 실행을 edit(run)으로 고친다."""
     import shutil
-    out = tmp_path / 'replay-other-state'
+    out = tmp_path / 'replay-edited'
     shutil.copytree(REPLAY_DIR, out)
     doc = next(d for key, d in docs().items() if key.startswith(slot + '|'))
-    run = doc['runs'][0]
-    for e in run['events']:
-        if e['kind'] == 'tool_end' and (e.get('tool') or '').endswith(('submit_decision', 'submit_purchase')) and not e.get('is_error'):
-            full = run.setdefault('tool_outputs_full', {})
-            body = ai_replay._as_json(full.get(e['tool_use_id']) or e.get('tool_output'))
-            if ai_replay._failed(body):
-                continue
-            change(body['document'])
-            full[e['tool_use_id']] = json.dumps(body, ensure_ascii=False)
+    edit(doc['runs'][0])
     Library(out, COURSE).file_of(ai_replay.course_key(doc['slot'], doc['case'])).write_bytes(gzip.compress(json.dumps(doc, ensure_ascii=False).encode('utf8')))
     return out
+
+
+def _replay_recorded_under_another_state(tmp_path, slot, change):
+    """시험이 만든 녹화 묶음: 그 자리의 녹화가 등록했던 판단 문서만 바꾼다(change) — 다른 설비 · 업무 상태에서 뜬 녹화의 대역."""
+    def edit(run):
+        for e in run['events']:
+            if e['kind'] == 'tool_end' and (e.get('tool') or '').endswith(('submit_decision', 'submit_purchase')) and not e.get('is_error'):
+                full = run.setdefault('tool_outputs_full', {})
+                body = ai_replay._as_json(full.get(e['tool_use_id']) or e.get('tool_output'))
+                if ai_replay._failed(body):
+                    continue
+                change(body['document'])
+                full[e['tool_use_id']] = json.dumps(body, ensure_ascii=False)
+    return _replay_recorded_edited(tmp_path, slot, edit)
 
 
 def test_지금_계산의_권장_조치가_녹화와_다르면_그_설명을_이_처리_건에_쓰지_않고_까닭을_말하며_멈춘다(world, tmp_path):
@@ -180,7 +208,8 @@ def test_지금_계산의_권장_조치가_녹화와_다르면_그_설명을_이
     tags = world.plant.tags('HYD-01')
     _, pid = world.raise_alert('COOLER_DEGRADATION', 'HYD-01', ts1=tags['TS1'], ce=tags['CE'])
     world.report()
-    assert world.runner('replay', replay_dir=made).poll_once() == 1
+    with world.reporting('HYD-01'):             # 설비는 1초마다 보고한다 — 판단 등록이 그 자리에서 다시 하는 원인 진단의 관측 구간이 비지 않게
+        assert world.runner('replay', replay_dir=made).poll_once() == 1
     row = world.row(pid, 'T_agent')
     text = json.dumps(world._failure(row), ensure_ascii=False)
     assert row['status'] not in ('SUBMITTED', 'DONE'), row['status']
@@ -213,8 +242,34 @@ def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_
         assert ('skills', next(t for k, t in c.notices()[1] if k == 'skills')) in c.notices()[1] and c.notices()[0] == 'replay'
     else:
         assert '같은 답을 냅니다' not in (text or '')
-    if slot == 'question':                      # 표를 돌려준 조회가 없는 저장분 — 견줄 것이 없어 조회 말이 없다
-        assert '조회 결과' not in (text or '')
+    # 조회 말(읽기 조회 견주기)은 이 PC의 지식 · 업무 상태에 따라 붙는다 — 지식 지도 조회도 견준다(아래 시험). 여기서는 스킬 말만 본다
+
+
+def test_질문_답이_읽은_지식_지도를_이_PC에서_다시_조회해_같으면_말이_없고_비우면_무엇이_다른지_말한다(world, course_graph, tool_servers):
+    """질문하기의 준비된 답은 그 답을 만들 때 읽은 지식 지도 조회 결과를 사실로 적는다. 전에는 표 꼴 조회만 견주어, 이 PC에서 HM-8을 비운
+    뒤 물어도 이 PC에 없는 절차 번호를 인용한 답이 아무 말 없이 나갔다(2026-11-22 조사). 시작이 끝난 PC(세 문서 적재)에서는 같은 조회가
+    같으므로 말이 없고(PC마다 다른 문서 판본 id · 테넌트 해시는 견주지 않는다), HM-8을 비우면 어느 조회가 지금 몇 건인지 말한다."""
+    import class_knowledge as ck
+    doc = next(d for key, d in docs().items() if key.startswith('question|') and 'HM-8' in d['case'])
+
+    def asked():
+        wd, _ = workdir_for(world.tmp / ('q-' + uuid.uuid4().hex[:6]), doc['runs'][0], tool_servers)
+        c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot='question', case=doc['case'], attempt=(0, 0), request_key=None,
+                                                        step=doc['step'], provider='claude-code', source={}, accepted=lambda s: True, skills=[],
+                                                        skills_changed=False)
+        play(c, wd)
+        return c.notice() or ''
+
+    said = asked()
+    assert '조회 결과' not in said, said
+    hm8 = next(i for i in ck.reviewed() if i['doc'] == 'HM-8')
+    status, rows = world.api('GET', '/api/kg/manuals')
+    current = next(r for r in rows if r.get('current') and r['filename'] == hm8['filename'])
+    status, out = world.api('POST', f"/api/kg/manuals/batches/{current['batch']}/rollback", {'by': 'user:me'})
+    assert status == 200, out
+    said = asked()
+    assert said.startswith('결과 글 안의 조회 결과는 판단 때 값입니다') and '지식 지도 조회(KnowledgeSource · ManualSection' in said, said
+    assert '지금 0건' in said and 'neo4j' not in said and 'MATCH' not in said and not FORBIDDEN.search(said), said
 
 
 # ---------------------------------------------------------------- 사람이 넣은 글 견주기
@@ -325,6 +380,37 @@ def test_저장된_조회가_이_PC의_지금_값과_같으면_말이_없고_다
     assert f"업무 DB 조회(ent.spare_stock) — {len(stock['rows'])}건으로 같고 값이 다름" in said and 'updated_at 조회' not in said, said
     assert '견주지 못했습니다' not in said
     assert not FORBIDDEN.search(said) and not WORKER_TALK.search(said) and 'mcp__' not in said and '{' not in said and 'query' not in said, said
+
+
+def test_전문_검색의_관련도_점수만_다른_조회는_같다고_보고_찾은_항목이_다르면_다르다고_본다(seeded_graph):
+    """질문하기의 AI는 이름 전문 검색(db.index.fulltext.queryNodes — 결과에 관련도 score)을 자주 쓴다. 점수는 찾은 항목이 같아도 그 그래프에 든 것
+    전체를 따라 달라져, 학생 PC마다 「값이 다름」 알림이 늘 붙었다(2026-11-23 실측: 질문 「고객센터 전화번호」의 검색 두 개 — 같은 28건 · 같은 이름,
+    점수만 다름). 실제 그래프의 같은 검색을 두 상태로: 검색어와 상관없는 지식 노드가 늘면 점수만 바뀌고(같다고 봄), 찾은 항목의 이름이 바뀌면 다르다."""
+    import time
+    query = "CALL db.index.fulltext.queryNodes('ont_names', '쿨러 팬 모터') YIELD node, score RETURN labels(node) AS labels, node.id AS id, node.name AS name, score"
+    args = {'query': query}
+    table = lambda: ai_replay._table(json.dumps({'result': json.dumps(seeded_graph.query(query), ensure_ascii=False)}, ensure_ascii=False))
+    before = table()
+    assert before and 'score' in before[0] and len(before[1]) >= 3, before
+    seeded_graph.query("UNWIND range(1, 40) AS i CREATE (:Role {id: 'role:zz-score-' + i, name: '야간 근무 기록 담당 ' + i})")
+    deadline, after = time.monotonic() + 60, before
+    while time.monotonic() < deadline and ai_replay.read_gap(before, after) is None:      # 전문 색인은 쓰기 뒤 잠시 뒤에 바뀐다
+        time.sleep(1)
+        after = table()
+    ranked = ai_replay.ranked_columns(args)
+    assert ranked == {'score'}
+    assert ai_replay.read_gap(before, after) == (len(before[1]), len(before[1])), '검색어와 상관없는 노드가 늘어도 점수가 바뀌지 않았다 — 이 시험의 전제가 틀렸다'
+    assert ai_replay.read_gap(before, after, ranked) is None                                       # 같은 항목 · 같은 이름 — 알림 없음
+    name = next(r for r in seeded_graph.query(query) if r['name'])
+    seeded_graph.query('MATCH (n {id: $id}) SET n.name = n.name + " (바뀜)"', id=name['id'])
+    deadline, renamed = time.monotonic() + 60, after
+    while time.monotonic() < deadline and ai_replay.read_gap(after, renamed, ranked) is None:
+        time.sleep(1)
+        renamed = table()
+    assert ai_replay.read_gap(after, renamed, ranked) == (len(after[1]), len(renamed[1]))          # 찾은 항목의 이름이 바뀜 — 알림
+    # 점수를 다른 이름으로 바꿔 부른 검색도 그 이름의 칸을 뺀다 — 검색이 아닌 조회의 score 칸은 그대로 견준다
+    assert ai_replay.ranked_columns({'query': "CALL db.index.fulltext.queryNodes('ont_names', $q) YIELD node, score RETURN node.id AS id, score AS relevance"}) == {'score', 'relevance'}
+    assert ai_replay.ranked_columns({'query': 'MATCH (n:Measure) RETURN n.id AS id, n.score AS score'}) == set()
 
 
 def test_이_PC에서_다시_조회하지_못한_조회는_다르다고_지어내지_않고_견주지_못했다고_말한다(tmp_path, tool_servers):
@@ -601,30 +687,262 @@ def test_모드에서_이어_받을_수_없는_세션이면_이어_하기_없이
 
 
 # ---------------------------------------------------------------- 같은 요청 저장(키 있는 PC)
-def test_같은_설정_같은_입력이면_앞선_실행을_다시_쓰고_실제_CLI_를_부르지_않는다(tmp_path, tool_servers):
-    """키 있는 PC: 같은 설정 · 같은 입력이면 앞선 실행을 다시 쓴다(새로 추론하지 않음). 읽기 자리로 — 쓰기 도구의 실제 재등록은 위 처리 건 시험이 본다.
-    화면에 남는 한 줄은 저장 사정(「다시 썼습니다 · 새로 추론하지 않음 · 언제 실행」)이 아니라 사실과 할 일이다(2026-11-20)."""
-    draft = COURSE_LIB.load(ai_replay.course_key('handover/draft-1', ''))
-    cache = Library(tmp_path / 'cache', REUSE)
-    cache.write('k' * 32, {'request': 'k' * 32, 'step': draft['step'], 'case': '', 'provider': 'claude-code',
-                           'source': {'todo_id': 't', 'generation': 0}, 'runs': draft['runs']}, [])
-    wd, _ = workdir_for(tmp_path, draft['runs'][0], tool_servers)
-    c = claim('live', slot='handover/draft-1', cache=cache, cli=lambda *a, **k: pytest.fail('실제 CLI 를 불렀다'))
-    events = play(c, wd)
-    assert events[0].session_id.startswith(REUSE)
-    said = c.notice()
-    assert said.startswith('같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.') and said.endswith('새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.'), said
-    assert '다시 썼습니다' not in said and '저장' not in said, said
+LIVE_SESSION = 'live-session-now'
 
 
-def _cached(tmp_path, slot):
+def _live_run(tools=()):
+    """키 있는 PC 의 실제 CLI 한 번 — tools: 그 실행이 부른 MCP 도구 이름(mcp__<서버>__<도구>)."""
+    def cli(provider, request, env, check_stop=None):
+        for n, tool in enumerate(tools):
+            yield ExecEvent(kind=ExecEventKind.TOOL_START, tool=tool, tool_use_id=f'u{n}', tool_input={}, session_id='s1')
+            yield ExecEvent(kind=ExecEventKind.TOOL_END, tool=tool, tool_use_id=f'u{n}', tool_output='{"result":"ok","document":{}}', session_id='s1')
+        yield ExecEvent(kind=ExecEventKind.ASSISTANT_TEXT, text='문서의 절차를 정리했습니다.', session_id='s1')
+        yield ExecEvent(kind=ExecEventKind.RESULT, text='{"ok": true}', session_id='s1')
+    return cli
+
+
+def _task_folder(path):
+    """Runner 가 실행 전에 쓰는 작업 기록(workspace.provision 의 context/task.json)이 있는 작업 폴더 — claim() 의 작업(todo_id 't')이다.
+    저장기 · 재생기는 그 기록으로 처리 건의 값을 받아 두고 견준다(_task_context — 기록이 없으면 실패한다)."""
+    (path / 'context').mkdir(parents=True, exist_ok=True)
+    task = {'id': 't', 'proc_inst_id': 'shift_handover.t', 'process_scope': {'tenant': 'hyd', 'instance': 'shift_handover.t', 'workitem': 't'},
+            'query': '지시'}
+    (path / 'context' / 'task.json').write_text(json.dumps(task, ensure_ascii=False), encoding='utf8')
+    return path
+
+
+def _cached(tmp_path, tools=(), slot='handover/draft-1'):
+    """실제 저장 길(실제 CLI 실행 → 제출로 끝난 점유 → keep)로 만든 같은 요청 저장."""
     cache = Library(tmp_path / 'cache', REUSE)
-    doc = COURSE_LIB.load(next(k for k, d in COURSE_LIB.docs() if d['slot'] == slot))
-    cache.write('k' * 32, dict(doc, request='k' * 32, source={'todo_id': 't', 'generation': 0}), [])
+    c = claim('live', slot=slot, cache=cache, cli=_live_run(tools))
+    play(c, _task_folder(tmp_path))
+    c.keep('submitted', [])
     return cache
 
 
-LIVE_SESSION = 'live-session-now'
+def test_같은_설정_같은_입력이면_앞선_실행을_다시_쓰고_실제_CLI_를_부르지_않는다(tmp_path):
+    """키 있는 PC: 같은 설정 · 같은 입력이면 앞선 실행을 다시 쓴다(새로 추론하지 않음) — 결과가 설정 · 입력만으로 정해지는 실행(도구 서버를 부르지
+    않은 실행)이다. 화면에 남는 한 줄은 저장 사정(「다시 썼습니다 · 새로 추론하지 않음 · 언제 실행」)이 아니라 사실과 할 일이다(2026-11-20)."""
+    cache = _cached(tmp_path)
+    assert cache.file_of('k' * 32).exists()
+    c = claim('live', slot='handover/draft-1', cache=cache, cli=lambda *a, **k: pytest.fail('실제 CLI 를 불렀다'))
+    events = play(c, tmp_path)
+    assert events[0].session_id.startswith(REUSE) and [e.text for e in events if e.kind == ExecEventKind.RESULT] == ['{"ok": true}']
+    said = c.notice()
+    assert said == '같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다. 새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.', said
+
+
+@pytest.mark.parametrize('slot, tools, kept', [
+    ('c3_cooling/T_agent', ['mcp__hyd-dmn__diagnose', 'mcp__hyd-dmn__submit_decision'], True),
+    ('handover/draft-1', ['mcp__enterprise__query'], True),
+    ('question', ['mcp__hyd-question__kg_query'], False),
+    (None, ['mcp__enterprise__query'], False),
+    (None, [f'mcp__{result_check.SERVER}__{result_check.TOOL}'], False),
+    (None, [], False),
+], ids=['수업 판단 자리', '수업 인계안 자리', '질문 자리', '학생 흐름 · PBL 의 조회', '학생 흐름 · PBL 의 문법 검사만', '학생 흐름 · PBL 의 도구 없음'])
+def test_같은_요청_저장은_수업_녹화와_같은_수업_AI_자리에서만_남고_그_밖은_늘_실제_AI다(tmp_path, slot, tools, kept):
+    """사용자 2026-11-22 「재생모드는 수업한정인거고, 캐시랑 재생모드랑 … 뿌리는 같다」 · 탐사 N2: 같은 요청 저장의 열쇠는 설정 · 입력뿐이고 도구가 읽는
+    지식 · 업무 · 설비 상태는 열쇠에 없다. 수업 녹화와 같은 장치라 같은 곳(서버가 준 수업 AI 자리 — PBL 단계에서는 자리가 없다)에서만 쓰고, 다시 쓸 때도
+    수업 녹화와 같은 가드(쓰기 도구를 이 PC에서 다시 불러 판단을 견줌)를 지난다. 학생 흐름 · PBL 단계의 AI 단계는 결과가 같은 입력만으로 정해져도
+    남기지 않는다 — 실제 AI 로 돈다. 질문 자리는 G1-09 그대로."""
+    cache = _cached(tmp_path, tools, slot=slot)
+    assert cache.file_of('k' * 32).exists() is kept
+    if not kept:
+        out = play(claim('live', slot=slot, cache=cache, cli=_real_cli()), tmp_path)
+        assert [e.session_id for e in out if e.kind == ExecEventKind.RESULT] == [LIVE_SESSION]      # 같은 요청도 실제 AI 가 새로 답한다
+
+
+def test_다시_쓰던_같은_요청_저장의_판단이_지금_계산과_다르면_그_저장을_버리고_다음_실행이_실제_AI라고_말한다(tmp_path):
+    """탐사 N2: 키 있는 PC에서 지식을 고친 뒤 [다시 수행]하면 같은 요청 저장이 맞아 앞선 판단 설명이 그대로 나왔고, 다시 부른 판단 등록이 다른 조치를
+    권해도 멈추지 않았다(수업 녹화에서만 멈췄다). 같은 규칙으로 멈추되, 키 있는 PC의 할 일은 다음 실행이 실제 AI 로 새로 판단하는 것이다."""
+    cache = _cached(tmp_path, [], slot='c3_cooling/T_agent')
+    gap = {'changed': ['권장 조치가 준비된 판단은 「팬 최대 운전」인데 지금 계산은 「쿨러 핀 세척」입니다'], 'numbers': [], 'rules': [],
+           'gone': ['조치 후보 「팬 최대 운전」'], 'judged': True, 'same_knowledge': False}   # decision_gap 의 꼴
+    with pytest.raises(ai_replay.ReuseDropped) as e:
+        ai_replay.decision_changed(cache, 'k' * 32, '원인 진단 · 냉각 조치 제안', gap, 'DEC-1')
+    said = str(e.value)
+    assert not cache.file_of('k' * 32).exists()                      # 다음 [다시 수행]은 저장이 없어 실제 AI
+    assert '앞서 실행한 판단이 지금과 맞지 않습니다' in said and '「쿨러 핀 세척」' in said and '지금 지식에 없습니다' in said and '실제 AI로 새로 판단' in said, said
+    assert '판단 DEC-1은 승인 단계로 넘어가지 않습니다' in said and '앞선 판단 때와 다릅니다' not in said, said      # 없어진 지식을 말하면 지문 말은 겹쳐 쓰지 않는다
+    assert ai_replay.REPLAY not in said and not FORBIDDEN.search(said) and '녹화' not in said
+    with pytest.raises(NotRecorded) as course:                       # 수업 녹화(키 없는 PC)는 재생 모드의 할 일로 멈추고 녹화는 지우지 않는다
+        ai_replay.decision_changed(COURSE_LIB, ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION'), '원인 진단 · 냉각 조치 제안', gap, None)
+    assert str(course.value).startswith(ai_replay.REPLAY) and COURSE_LIB.file_of(ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION')).exists()
+
+
+def test_같은_요청_저장은_규정_판정이나_지식이_달라진_판단을_다시_쓰지_않고_버리며_수치만_다르면_그_사실을_말한다(tmp_path):
+    """2026-11-24 검토 가-3: 키 있는 PC에서 규칙을 뺀 문서를 다시 적재하고 [다시 수행]하면, 권장안이 같아 같은 요청 저장이 다시 쓰였다 — 승인 카드에는
+    그 규칙이 없는데 AI 설명은 그 규칙을 말했고, 화면은 「같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다」라고만 했다(지식은 요청 열쇠에 없다).
+    실제 저장분의 판단 기록으로: 규정 판정만 달라진 지금 계산 → 저장을 버리고 다음 실행이 실제 AI 라고 말한다. 같은 판단 → 그대로 쓴다.
+    수업 녹화(키 없는 PC)는 새로 판단할 길이 없어 같은 차이를 알리며 쓴다. 다시 쓸 때 수치만 다르면 그 사실을 숨기지 않는다."""
+    import copy
+    old, seen = _recorded('c3_cooling/T_agent', 'submit_decision'), _recorded('c3_cooling/T_agent', 'evaluate_cards')
+    same = _now_view(seen, keep=[o['id'] for o in ai_replay._created(seen)['options']])
+    warned = copy.deepcopy(same)
+    card = next(o for o in warned['document']['options'] if o['id'] == warned['document']['recommended'])
+    card['warnings'] = [*(card.get('warnings') or []), {'rule': 'rule:test-warning', 'annotation': '시험 경고 — 지금 지식에만 있는 규칙'}]
+    # 지금 지식의 규칙 목록 = 지금 계산에 걸린 규칙(그 밖의 차이 없이). 지금 판단 서비스는 지식 지문도 싣는다(dmn-mcp agent_view) — 같은 지식이면
+    # 저장분과 같은 지문, 규칙이 하나 더 있는 지식이면 다른 지문
+    digest = ai_replay._created(old)['knowledge']['digest']
+    for doc, mark in ((same, digest), (warned, digest[::-1])):
+        doc['document']['knowledge']['rules'] = sorted({r['rule'] for o in doc['document']['options'] for k in ai_replay.RULE_KINDS for r in o.get(k) or []})
+        doc['document']['knowledge']['digest'] = mark
+    gap_same, gap_rules = ai_replay.decision_gap(old, same, seen), ai_replay.decision_gap(old, warned, seen)
+    assert not gap_same['changed'] and not gap_same['rules'] and not gap_rules['changed'] and gap_rules['rules'], (gap_same, gap_rules)
+    step = '원인 진단 · 냉각 조치 제안'
+    cache = _cached(tmp_path, [], slot='c3_cooling/T_agent')
+    ai_replay.check_decision(cache, 'k' * 32, step, gap_same, None)                     # 같은 판단 — 다시 쓴다
+    assert cache.file_of('k' * 32).exists()
+    with pytest.raises(ai_replay.ReuseDropped) as e:
+        ai_replay.check_decision(cache, 'k' * 32, step, gap_rules, 'DEC-1')
+    said = str(e.value)
+    assert not cache.file_of('k' * 32).exists() and '시험 경고' in said and '실제 AI로 새로 판단' in said, said
+    key = ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION')
+    ai_replay.check_decision(COURSE_LIB, key, step, gap_rules, None)                    # 수업 녹화는 멈추지 않고(새로 판단할 길이 없다) 알린다
+    shown = ai_replay.notice({'library': COURSE, 'rules': gap_rules['rules'], 'differs': [], 'gone': [], 'reads': [], 'typed': []})
+    assert '시험 경고' in shown and '승인 카드의 규정 판정이 지금 계산' in shown, shown
+    reused = ai_replay.notice({'library': REUSE, 'differs': ['「팬 최대 운전」 비교 총비용 30 → 45만 원'], 'rules': [], 'gone': [], 'reads': []})
+    assert reused.startswith('같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.') and '앞선 실행 때 값입니다 — 그때 → 지금 값: 「팬 최대 운전」 비교 총비용 30 → 45만 원' in reused, reused
+
+
+def test_같은_요청_저장은_판단을_계산한_지식이_바뀌면_권장과_규정_판정이_같아도_버리고_수업_녹화는_그대로_쓴다(tmp_path, course_graph):
+    """감독관 재검토(2026-11-24): 같은 요청 저장은 권장 · 규정 판정이 달라질 때만 버려, 학생이 문서 규칙의 기준값만 바꿔(70 → 65 ℃) 다시 적재하고 그
+    규칙의 판정이 그대로면 저장이 다시 쓰였다 — 옛 기준값을 말하는 AI 설명이 「같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다」로 나갔다. 판단
+    기록은 그 판단을 계산한 지식의 지문을 싣는다(agentsvc.decide.knowledge_of). 시작이 끝난 이 PC 의 그래프로 냉각 판단(저장분의 판단 인자)의 지문을 실제로
+    계산하고, 인터록 규칙(rule:ts1-hard — 예측 유온 65 ℃ 이상이면 제외)의 기준값만 64 ℃ 로 바꾼 그래프로 다시 계산한다 — 규칙 · 후보 목록은 같고 지문만
+    다르다. 실제 저장분의 냉각 판단 기록에 그 지문을 실어(같은 PC 가 저장하고 등록한 판단) 견준다: 같은 지문 → 다시 쓴다, 다른 지문 → 버리고 다음 실행이
+    실제 AI 라고 말한다, 앞선 판단에 지문이 없음(옛 판의 저장분) → 견줄 수 없어 버린다. 수업 녹화(키 없는 PC)는 새로 판단할 길이 없어 판단이 같으면 쓴다."""
+    import copy
+    from agentsvc import decide
+    from agentsvc.tools import mcp_kg
+    known = {'pattern': 'COOLER_DEGRADATION', 'cause': 'cause:cooler-fin-fouling', 'failure_mode': 'fm:cooler-cooling-loss'}   # 저장분이 판단 도구에 준 인자
+
+    def knowledge():
+        ctx = decide.judgment_context(mcp_kg.KnowledgeGraph(), known)
+        return decide.knowledge_of(ctx['dmn'], ctx['skills'], ctx['candidate_ids'], ctx['tradeoffs'])
+    here = knowledge()
+    moved = course_graph.query("MATCH (:Rule {id: 'rule:ts1-hard'})-[x:TESTS]->(:InputData {id: 'in:forecast-ts1'}) SET x.value = 64 RETURN x.value AS value")
+    assert moved == [{'value': 64}], moved
+    after = knowledge()
+    assert (after['rules'], after['candidates']) == (here['rules'], here['candidates']) and after['digest'] != here['digest'], (here, after)
+
+    old, seen = _recorded('c3_cooling/T_agent', 'submit_decision'), _recorded('c3_cooling/T_agent', 'evaluate_cards')
+
+    def registered(digest, made):
+        """저장분과 같은 판단(권장 · 카드 · 규정 판정 · 지식 목록 그대로)을 이 PC가 등록한 것 — 그 판단을 계산한 지식의 지문만 digest(None 이면 싣지 않은 옛 판)."""
+        doc = copy.deepcopy(old)
+        doc['document']['id'] = made
+        doc['document']['knowledge'].pop('digest')
+        if digest is not None:
+            doc['document']['knowledge']['digest'] = digest
+        return doc
+    saved = registered(here['digest'], ai_replay._created(old)['id'])
+    gap_same = ai_replay.decision_gap(saved, registered(here['digest'], 'DEC-now'), seen)
+    gap_moved = ai_replay.decision_gap(saved, registered(after['digest'], 'DEC-now'), seen)
+    gap_unknown = ai_replay.decision_gap(registered(None, ai_replay._created(old)['id']), registered(here['digest'], 'DEC-now'), seen)
+    for gap in (gap_same, gap_moved, gap_unknown):        # 권장 · 실행할 수 있는 후보 · 수치 · 규정 판정 · 지식 목록은 모두 같다
+        assert gap['judged'] and not (gap['changed'] or gap['numbers'] or gap['rules'] or gap['gone']), gap
+    assert (gap_same['same_knowledge'], gap_moved['same_knowledge'], gap_unknown['same_knowledge']) == (True, False, None)
+
+    step = '원인 진단 · 냉각 조치 제안'
+    cache = _cached(tmp_path, [], slot='c3_cooling/T_agent')
+    ai_replay.check_decision(cache, 'k' * 32, step, gap_same, 'DEC-now')              # 같은 지식 — 다시 쓴다
+    assert cache.file_of('k' * 32).exists()
+    for gap, why in ((gap_moved, '판단에 쓰는 지식(규칙 · 조치 방법 · 성과 지표 경로)이 앞선 판단 때와 다릅니다'),
+                     (gap_unknown, '앞선 판단에는 그 판단을 계산한 지식의 기록이 없어 지금 지식과 같은지 견줄 수 없습니다')):
+        cache = _cached(tmp_path, [], slot='c3_cooling/T_agent')
+        with pytest.raises(ai_replay.ReuseDropped) as e:
+            ai_replay.check_decision(cache, 'k' * 32, step, gap, 'DEC-now')
+        said = str(e.value)
+        assert not cache.file_of('k' * 32).exists(), said                            # 다음 [다시 수행]은 저장이 없어 실제 AI
+        assert said.startswith(f'「{step}」의 같은 설정 · 같은 입력으로 앞서 실행한 판단이 지금과 맞지 않습니다 — {why}. 앞선 실행 결과는 버렸습니다'), said
+        assert '실제 AI로 새로 판단합니다(지금 계산으로 등록된 판단 DEC-now은 승인 단계로 넘어가지 않습니다).' in said, said
+        assert ai_replay.REPLAY not in said and not FORBIDDEN.search(said) and not WORKER_TALK.search(said), said
+    key = ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION')
+    for gap in (gap_moved, gap_unknown):
+        ai_replay.check_decision(COURSE_LIB, key, step, gap, None)                    # 수업 녹화는 멈추지 않고 녹화도 지우지 않는다
+    assert COURSE_LIB.file_of(key).exists()
+
+
+KG_SLOT = 'handover/draft-2'      # 저장분이 지식 지도 조회(매뉴얼 절에서 설비 이력 번호 hi-01 찾기 — 그때 0건)를 한 교대 인계안
+
+
+@pytest.mark.parametrize('change', ['같은 지식', '바뀐 지식', '다시 조회하지 못함'])
+def test_같은_요청_저장은_그_실행이_읽은_지식_지도가_지금과_다르거나_견주지_못하면_버리고_수업_녹화는_알리며_쓴다(tmp_path, tool_servers, course_graph, change):
+    """감독관 재검토(2026-11-24): 판단 도구를 부르지 않는 교대 인계안은 조회 결과가 곧 근거인데, 같은 요청 저장은 그 실행이 읽은 지식 지도가 지금과 달라도
+    「같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다」로 다시 쓰였다. 판단의 지식 지문과 같은 원칙으로, 지식 지도 조회가 지금과 다르거나 다시
+    조회하지 못해 견주지 못했으면 버리고 다음 실행이 실제 AI 라고 말한다. 업무 · 설비 상태 조회(정비 요청 · 재고 · 설비 측정값 — 측정값은 다시 부르면
+    늘 다르다)의 차이는 버리지 않고 알린다. 실제 저장분을 이 PC 의 실제 도구 서버와 시작이 끝난 그래프로: 같은 지식 → 다시 쓴다, 그 번호가 든 매뉴얼
+    절이 생긴 지식 → 버린다, 그 조회가 이 PC 에서 오류(없는 함수)라 견주지 못함 → 버린다. 수업 녹화(키 없는 PC)는 같은 상황에서 멈추지 않고 알린다."""
+    import copy
+    doc = copy.deepcopy(COURSE_LIB.load(ai_replay.course_key(KG_SLOT, '')))
+    run = doc['runs'][0]
+    read = next(e for e in run['events'] if e['kind'] == 'tool_start' and e.get('tool') == 'mcp__neo4j__read_neo4j_cypher')
+    if change == '바뀐 지식':
+        course_graph.query("CREATE (:ManualSection {id: 'ms:test-hi-01', ref: 'HI-01.1', title: '설비 이력 HI-01', excerpt: '시험으로 넣은 절'})")
+    elif change == '다시 조회하지 못함':            # 뜬 PC 에서는 된 조회가 이 PC 에서는 오류 — 저장된 결과(0건)는 그대로
+        read['tool_input'] = {'query': 'MATCH (n:ManualSection) RETURN hyd.noSuchFunction(n.id) AS id'}
+    course = Library(tmp_path / 'course', COURSE)
+    course.root.mkdir()
+    course.file_of(ai_replay.course_key(KG_SLOT, '')).write_bytes(gzip.compress(json.dumps(doc, ensure_ascii=False).encode('utf8')))
+    cache = Library(tmp_path / 'cache', REUSE)       # 키 있는 PC 가 같은 단계를 실제 AI 로 실행해 제출한 저장(Claim.keep 이 남기는 꼴)
+    cache.write('k' * 32, {'request': 'k' * 32, 'step': doc['step'], 'case': '', 'provider': doc['provider'],
+                           'source': {'todo_id': 't', 'generation': 0}, 'runs': doc['runs']}, [])
+    wd, _ = workdir_for(tmp_path, run, tool_servers)
+    c = claim('live', slot=KG_SLOT, cache=cache, step=doc['step'], cli=lambda *a, **k: pytest.fail('실제 CLI 를 불렀다'))
+    if change == '같은 지식':
+        assert play(c, wd) and (wd / 'output' / 'result.json').is_file() and cache.file_of('k' * 32).exists()
+        said = c.notice()
+        assert said.startswith('같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.') and '지식 지도 조회' not in said, said
+        assert '결과 글 안의 조회 결과는 앞선 실행 때 값입니다' in said and '시계열 DB 조회(public.tag_1s) — ' in said, said   # 설비 측정값은 달라도 버리지 않고 알린다
+        return
+    with pytest.raises(ai_replay.ReuseDropped) as e:
+        play(c, wd)
+    said = str(e.value)
+    assert not cache.file_of('k' * 32).exists() and not (wd / 'output' / 'result.json').exists(), said
+    why = ('읽은 지식이 지금과 다릅니다: 지식 지도 조회(ManualSection) — 앞선 실행 때 0건 · 지금 1건.' if change == '바뀐 지식' else
+           '읽은 지식을 이 PC에서 다시 조회하지 못해 지금 지식과 같은지 견주지 못했습니다: 지식 지도 조회(ManualSection).')
+    assert said.startswith(f'「{doc["step"]}」을 같은 설정 · 같은 입력으로 앞서 실행할 때 {why} 앞선 실행 결과는 버렸습니다'), said
+    assert said.endswith('「다시 수행」으로 다시 실행하면 실제 AI로 새로 실행합니다.'), said
+    assert ai_replay.REPLAY not in said and not FORBIDDEN.search(said) and not WORKER_TALK.search(said) and 'neo4j' not in said and 'MATCH' not in said, said
+    wd, _ = workdir_for(tmp_path, run, tool_servers)                            # 키 없는 PC 의 같은 처리 건
+    c = claim('replay', slot=KG_SLOT, step=doc['step'], course=course)
+    assert play(c, wd) and (wd / 'output' / 'result.json').is_file()
+    told = c.notice() or ''
+    assert (('지식 지도 조회(ManualSection) — 판단 때 0건 · 지금 1건' in told) if change == '바뀐 지식' else ('다시 조회하지 못해 지금 값과 견주지 못했습니다' in told)), told
+
+
+@pytest.mark.parametrize('broken', ['작업 기록 없음', '지시 꼴이 깨짐'])
+def test_작업_기록을_읽지_못하면_입력_대조를_건너뛰지_않고_그_자리를_대며_실패한다(tmp_path, tool_servers, broken):
+    """감독관 재검토(2026-11-24): 작업 기록(context/task.json)의 지시를 처리 엔진의 꼴로 읽지 못하면 ValueError 를 삼키고 입력 대조를 건너뛰었다 —
+    기록이 없을 때도 빈 값으로 넘어가, 저장된 실행의 처리 건 id · 입력을 이 처리 건의 값과 견주지도 바꿔 끼우지도 않은 채 결과를 냈다. Runner 는 실행 전에
+    늘 그 기록을 쓰므로(workspace.provision) 닿지 않는 길이지만, 그 자리(파일 · 작업 · 칸)를 대며 실패한다. 도구 서버는 이 PC의 실제 서버다 — 고치기
+    전 동작이 도구 서버가 없다는 딴 까닭으로 멈추지 않고 저장된 결과까지 내는 길을 이 시험이 잡는다."""
+    doc = COURSE_LIB.load(ai_replay.course_key('handover/draft-1', ''))
+    run = doc['runs'][0]
+    wd, task = workdir_for(tmp_path, run, tool_servers)
+    path = wd / 'context' / 'task.json'
+    if broken == '작업 기록 없음':
+        path.unlink()
+    else:                                                   # [InputData] 값 뒤에 처리 엔진이 붙이지 않는 글
+        path.write_text(json.dumps(dict(task, query=task['query'] + '\n덧붙은 글'), ensure_ascii=False), encoding='utf8')
+    with pytest.raises(RuntimeError) as e:
+        play(claim(slot='handover/draft-1', step=doc['step']), wd)
+    said = str(e.value)
+    assert str(path) in said, said
+    if broken == '지시 꼴이 깨짐':
+        assert f"작업 {task['id']} 의 지시" in said and 'query 칸' in said and '[InputData] 값 뒤에 모르는 글' in said, said
+    assert not (wd / 'output' / 'result.json').exists()
+
+
+def test_PBL_단계의_AI_단계는_키_없는_PC에서_재생하지_않고_실제_AI로_하라고_말한다(tmp_path):
+    """서버는 PBL 단계의 AI 단계에 자리를 주지 않는다(course_policy.ai_slot). 키 없는 PC가 수업 때의 응답을 내지 않고 그 까닭을 말한다."""
+    c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot=None, case='', attempt=(0, 0), request_key=None, step='원인 진단 · 냉각 조치 제안',
+                                                     provider='claude-code', source={}, accepted=lambda s: True, phase='pbl')
+    with pytest.raises(NotRecorded) as e:
+        play(c, tmp_path)
+    said = str(e.value)
+    assert said.startswith(ai_replay.REPLAY) and 'PBL 기간' in said and 'AI 키' in said and '기본 제공 흐름' not in said, said
 
 
 def _real_cli():
@@ -635,20 +953,10 @@ def _real_cli():
 
 
 def test_저장한_실행이_처리_흐름에서_받아들여지지_않았으면_버리고_실제_AI로_실행한다(tmp_path):
-    cache = _cached(tmp_path, 'handover/draft-1')
+    cache = _cached(tmp_path)
     out = play(claim('live', slot='handover/draft-1', cache=cache, accepted=lambda source: False, cli=_real_cli()), tmp_path)
     assert [e.session_id for e in out if e.kind == ExecEventKind.RESULT] == [LIVE_SESSION]     # 결과는 실제 AI 의 것(저장 실행의 세션 아님)
     assert not cache.file_of('k' * 32).exists()
-
-
-def test_질문은_같은_요청_저장을_읽지도_쓰지도_않고_지금_상태로_답한다(tmp_path):
-    """G1-09: 세계 상태(지식 적재 · 업무 값)가 열쇠에 없어 같은 질문에 옛 답을 냈다 — 질문 자리는 저장 대상이 아니다."""
-    cache = _cached(tmp_path, 'question')
-    c = claim('live', slot='question', cache=cache, cli=_real_cli())
-    out = play(c, tmp_path)
-    c.keep('submitted', [])
-    assert [e.session_id for e in out if e.kind == ExecEventKind.RESULT] == [LIVE_SESSION]      # 저장 답이 아니라 지금 실행의 답
-    assert cache.file_of('k' * 32).exists() and len(cache.docs()) == 1
 
 
 @pytest.mark.parametrize('mode, outcome, kept', [
@@ -661,7 +969,7 @@ def test_녹화와_같은_요청_저장은_정한_끝으로_끝난_점유만_남
     c = Responses(mode, course=course_dir, cache=cache).claim(
         cli=lambda *a, **k: iter([ExecEvent(kind=ExecEventKind.RESULT, text='{}', session_id='s1')]), slot='handover/draft-1', case='',
         attempt=(0, 0), request_key='k' * 32, step='인계안 작성', provider='claude-code', source={}, accepted=lambda s: True)
-    play(c, tmp_path)
+    play(c, _task_folder(tmp_path))
     c.keep(outcome, [])
     assert len((course_dir if mode == 'record' else cache).docs()) == (1 if kept else 0)
     assert (cache if mode == 'record' else course_dir).docs() == []
@@ -746,20 +1054,137 @@ def test_같은_요청_저장은_작업이_없어지거나_보존_기간_동안_
     """G1-09: 작업 행이 지워질 때만 지워 끝난 처리 건의 저장이 끝없이 쌓였다."""
     import os
     import time
-    cache = _cached(tmp_path, 'handover/draft-1')
+    cache = _cached(tmp_path)
     now = time.time()
     os.utime(cache.file_of('k' * 32), (now - age_h * 3600, now - age_h * 3600))
     removed = ai_replay.sweep_cache(cache, lambda todo: todo_exists and todo == 't', 72 * 3600, now=now)
     assert cache.file_of('k' * 32).exists() is kept and removed == ([] if kept else ['k' * 32])
 
 
-def test_다시_쓴_같은_요청_저장은_보존_기간을_그때부터_다시_센다(tmp_path, tool_servers):
+def test_다시_쓴_같은_요청_저장은_보존_기간을_그때부터_다시_센다(tmp_path):
     import os
     import time
-    cache = _cached(tmp_path, 'handover/draft-1')
+    cache = _cached(tmp_path)
     old = time.time() - 73 * 3600
     os.utime(cache.file_of('k' * 32), (old, old))
-    wd, _ = workdir_for(tmp_path, cache.load('k' * 32)['runs'][0], tool_servers)
-    out = play(claim('live', slot='handover/draft-1', cache=cache, cli=_real_cli()), wd)         # 끝난 작업의 같은 요청 → 저장을 다시 낸다
+    out = play(claim('live', slot='handover/draft-1', cache=cache, cli=_real_cli()), tmp_path)   # 끝난 작업의 같은 요청 → 저장을 다시 낸다
     assert LIVE_SESSION not in [e.session_id for e in out if e.kind == ExecEventKind.RESULT]     # 실제 AI 가 아니라 저장을 냈다
     assert ai_replay.sweep_cache(cache, lambda todo: True, 72 * 3600) == [] and cache.file_of('k' * 32).exists()
+
+
+# ---------------------------------------------------------------- 다시 등록한 판단과 준비된 판단의 차이(decision_gap) — 까닭이 지식인지 설비 · 업무 상태인지
+def _recorded(slot, tool):
+    """저장소 녹화의 그 자리 첫 실행에서 판단 도구 결과 하나(마지막 것)."""
+    run = next(d for _, d in COURSE_LIB.docs() if d['slot'] == slot)['runs'][0]
+    ends = [e for e in run['events'] if e['kind'] == 'tool_end' and (e.get('tool') or '').endswith(tool)]
+    return ai_replay._as_json((run.get('tool_outputs_full') or {}).get(ends[-1].get('tool_use_id')) or ends[-1].get('tool_output'))
+
+
+def _now_view(seen, *, keep, knowledge=True, drop_rules=()):
+    """이 PC가 지금 계산한 판단(dmn-mcp agent_view 꼴): 준비된 평가에서 keep 카드만 남기고 첫째를 권장, drop_rules 규칙 판정은 뺀다.
+    knowledge=False 는 지금 지식 목록을 싣지 않는 옛 판 판단 서비스다 — 저장된 평가가 지식(knowledge)을 실었어도 뺀다(2026-11-23 저장분은 싣는다)."""
+    doc = dict(ai_replay._created(seen))
+    doc['options'] = [dict(o, **{k: [r for r in o.get(k) or [] if r['rule'] not in drop_rules] for k in ai_replay.RULE_KINDS})
+                      for o in doc['options'] if o['id'] in keep]
+    doc['recommended'] = doc['options'][0]['id']
+    doc.pop('knowledge', None)
+    if knowledge:
+        doc['knowledge'] = {'candidates': list(keep), 'rules': sorted({r['rule'] for o in ai_replay._created(seen)['options'] for k in ai_replay.RULE_KINDS
+                                                                       for r in o.get(k) or [] if r['rule'] not in drop_rules})}
+    return {'result': 'ok', 'document': doc}
+
+
+def test_후보_규칙을_뺀_지식으로_다시_계산한_판단은_지식이_바뀐_까닭과_할_일로_멈춘다():
+    """메인 실측 2026-11-22: HM-8 의 냉각 조치 후보 규칙을 빼고 다시 적재하자 지금 계산이 「쿨러 핀 세척」 하나가 됐고 재생이 멈췄는데, 문장이
+    「설비 · 업무 상태를 시작 상태로 되돌리라」고 했다 — 학생이 바꾼 것은 지식이다. 지금 계산이 준비된 판단의 조치 후보가 지금 지식에 없다고
+    말하면 지식 때문이고, 그 근거가 없으면(옛 판 판단 서비스) 둘 다 말한다."""
+    old, seen = _recorded('c3_cooling/T_agent', 'submit_decision'), _recorded('c3_cooling/T_agent', 'evaluate_cards')
+    gap = ai_replay.decision_gap(old, _now_view(seen, keep=['skill:sop-cool-14']), seen)
+    assert gap['changed'] and set(gap['gone']) == {'조치 후보 「팬 최대 운전」', '조치 후보 「부하 70 %와 야간 핀 세척」', '조치 후보 「팬 최대 운전과 부하 80 %」'}, gap
+    said = ai_replay.changed_because(gap['gone'])
+    assert '지금 지식에 없습니다' in said and '제안 그대로 다시 적재' in said and '시작 상태로 되돌린' not in said, said
+    unknown = ai_replay.decision_gap(old, _now_view(seen, keep=['skill:sop-cool-14'], knowledge=False), seen)
+    assert unknown['changed'] and unknown['gone'] is None
+    both = ai_replay.changed_because(unknown['gone'])
+    assert '지금 지식' in both and '설비 · 업무 상태' in both and '제안 그대로 다시 적재' in both and '시작 상태로 되돌린' in both, both
+    for text in (said, both):
+        assert not FORBIDDEN.search(text) and '강사' not in text and '녹화' not in text
+
+
+def test_두_판단의_지식_지문이_같으면_달라진_까닭을_설비_업무_상태_한쪽으로_말한다():
+    """탐사 N7 의 남은 것: 준비된 판단과 지금 계산이 다를 때 지식이 같아도 「지식이나 설비 · 업무 상태」 둘 다를 말했다 — 학생이 무엇을 되돌릴지 고르지
+    못한다. 판단 기록은 그 판단을 계산한 지식의 내용 지문을 싣고(agentsvc.decide.knowledge_of), 준비된 판단의 지문과 지금 계산의 지문이 같으면 설비 ·
+    업무 상태만 말한다. 지문이 다르거나 준비된 판단에 지문이 없으면(옛 판의 저장분) 한쪽으로 단정하지 않고 전처럼 둘 다 말한다."""
+    old, seen = _recorded('c3_cooling/T_agent', 'submit_decision'), _recorded('c3_cooling/T_agent', 'evaluate_cards')
+    keep = [o['id'] for o in ai_replay._created(seen)['options']]
+
+    def judged(doc, digest):
+        out = {'result': 'ok', 'document': dict(ai_replay._created(doc))}
+        out['document']['knowledge'] = dict(out['document'].get('knowledge') or {'candidates': keep, 'rules': []}, digest=digest)
+        return out
+    now = _now_view(seen, keep=keep)                                       # 같은 지식(후보 모두)인데 권장이 다르다 = 설비 · 업무 상태가 다르다
+    now['document']['recommended'] = next(i for i in keep if i != ai_replay._created(old)['recommended'])
+    same = ai_replay.decision_gap(judged(old, 'a' * 64), judged(now, 'a' * 64), seen)
+    assert same['changed'] and same['gone'] == [] and same['same_knowledge'] is True, same
+    said = ai_replay.changed_because(same['gone'], same['same_knowledge'])
+    assert '준비된 판단 때와 같고' in said and '설비 · 업무 상태를 시작 상태로 되돌린' in said and '다시 적재' not in said, said
+    assert not FORBIDDEN.search(said) and '강사' not in said and '녹화' not in said
+    # 둘 다 지문을 실었는데 다름 → False, 한쪽이라도 싣지 않음(옛 판의 저장분) → None(견줄 수 없음). 수업 녹화는 둘 다 한쪽으로 단정하지 않는다
+    without_knowledge = {'result': 'ok', 'document': {k: v for k, v in ai_replay._created(old).items() if k != 'knowledge'}}
+    for before, after, expected in ((judged(old, 'a' * 64), judged(now, 'b' * 64), False), (old, judged(now, 'a' * 64), False),
+                                    (judged(old, ''), judged(now, ''), None), (without_knowledge, judged(now, 'a' * 64), None)):
+        gap = ai_replay.decision_gap(before, after, seen)
+        assert gap['changed'] and gap['judged'] is True and gap['same_knowledge'] is expected, gap
+        both = ai_replay.changed_because(gap['gone'], gap['same_knowledge'])
+        assert '다시 적재' in both and '시작 상태로 되돌린' in both, both
+    gone = ai_replay.decision_gap(judged(old, 'a' * 64), judged(_now_view(seen, keep=keep[-1:]), 'a' * 64), seen)      # 사라진 지식이 있으면 지식이 먼저다
+    assert gone['gone'] and '지금 지식에 없습니다' in ai_replay.changed_because(gone['gone'], gone['same_knowledge'])
+
+
+def test_권장이_같아도_AI_설명이_든_규정_판정이_지금_계산에_없으면_처리_과정에_그_차이를_말한다():
+    """탐사 N7: 권장 조치 · 실행할 수 있는 후보가 같으면 재생은 멈추지 않는데, 학생이 감점 · 경고 규칙을 뺀 뒤에도 AI 설명은 그 규칙 때문에 이 안이
+    졌다고 말했다(승인 카드에는 그 규칙이 없다). 녹화의 정기 정비 평가가 든 경고 규칙 하나를 뺀 지금 계산으로 본다."""
+    old, seen = _recorded('c3_pm/T_agent', 'submit_decision'), _recorded('c3_pm/T_agent', 'evaluate_cards')
+    keep = [o['id'] for o in ai_replay._created(seen)['options']]
+    now = _now_view(seen, keep=keep, drop_rules=('rule:pm-seal-kit-reorder-warning',))
+    now['document']['recommended'] = ai_replay._created(old)['recommended']
+    gap = ai_replay.decision_gap(old, now, seen)
+    assert gap['changed'] == [] and gap['rules'] and gap['gone'] and gap['gone'][0].startswith('규칙 「'), gap
+    parts = ai_replay.notice_parts({'library': COURSE, 'rules': gap['rules'], 'gone': gap['gone']})
+    (kind, text), = parts
+    assert kind == 'values_differ' and '판단 때 걸린' in text and '지금 계산에는 없음' in text and '지금 지식에 없습니다' in text, text
+    assert 'rule:' not in text and not FORBIDDEN.search(text), text
+
+
+def test_앞_조회가_돌려준_PC마다_다른_식별자를_조건에_적은_뒤_조회는_이_PC의_식별자로_다시_부른다():
+    """2026-11-23: 다시 받은 질문 답(HM-8)은 첫 조회가 돌려준 문서 판본 id 를 다음 조회의 조건에 적었다. 그 조회문을 글자 그대로 다시 부르면 다른 PC 에는 그
+    id 가 없어 0건이 되고, 지식이 같은데도 「판단 때 8건 · 지금 0건」 알림이 붙는다. 같다고 본 조회 결과에서 식별자를 짝지어 뒤 조회의 입력을 이 PC 의
+    것으로 바꾼다. 식별자를 빼면 같은 행이 둘이면 짝짓지 않고, 모르는 식별자는 그대로 둔다."""
+    saved_id = 'ks:manual:' + 'a' * 64 + ':11111111-1111-4111-8111-111111111111:' + 'c' * 64
+    here_id = 'ks:manual:' + 'a' * 64 + ':22222222-2222-4222-8222-222222222222:' + 'c' * 64
+    twin_a, twin_b = '33333333-3333-4333-8333-333333333333', '44444444-4444-4444-8444-444444444444'
+    old = (['id', 'name'], [[saved_id, 'HM-8 유압 설비 고장 매뉴얼'], [twin_a, '같은 이름'], [twin_b, '같은 이름']])
+    new = (['id', 'name'], [['55555555-5555-4555-8555-555555555555', '같은 이름'], [here_id, 'HM-8 유압 설비 고장 매뉴얼'],
+                            ['66666666-6666-4666-8666-666666666666', '같은 이름']])
+    assert ai_replay.read_gap(old, new) is None
+    known = {}
+    ai_replay.pair_generated(old, new, known)
+    assert known == {'11111111-1111-4111-8111-111111111111': '22222222-2222-4222-8222-222222222222'}, known
+    query = {'query': "MATCH (k:KnowledgeSource {id: '%s'})<-[:PART_OF]-(m) WHERE m.note <> '%s' RETURN m.ref AS ref" % (saved_id, twin_a), 'limit': 50}
+    again = ai_replay.with_generated(query, known)
+    assert again == {'query': "MATCH (k:KnowledgeSource {id: '%s'})<-[:PART_OF]-(m) WHERE m.note <> '%s' RETURN m.ref AS ref" % (here_id, twin_a), 'limit': 50}
+    assert ai_replay.with_generated(query, {}) is query
+
+
+def test_칸_안에_모은_묶음은_안쪽의_PC마다_다른_식별자와_모은_차례를_빼고_견준다():
+    """2026-11-23: 다시 받은 질문 답의 조회는 절마다 단계를 collect 로 모아 한 칸에 담는다. 그 칸 안의 인용에는 문서 판본 id 가 있고 모은 차례는 조회마다
+    다를 수 있다 — 맨 바깥 글만 식별자를 가리던 때는 지식이 같아도 「8건으로 같고 값이 다름」이었다. 안쪽 글이 다르면 여전히 다르다."""
+    def step(doc, n, text):
+        return {'step_id': f'skill:sop-cool-13:{n}', 'order': n, 'text': text,
+                'citation': json.dumps({'source_id': f'manual:{doc}:' + 'c' * 64, 'start': 100 * n}, ensure_ascii=False)}
+    a, b = '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'
+    old = (['ref', 'steps'], [['HM-8.5', [step(a, 2, '부하를 70 %로 낮춘다'), step(a, 4, '세척 작업지시를 건다')]]])
+    same = (['ref', 'steps'], [['HM-8.5', [step(b, 4, '세척 작업지시를 건다'), step(b, 2, '부하를 70 %로 낮춘다')]]])
+    other = (['ref', 'steps'], [['HM-8.5', [step(b, 4, '세척 작업지시를 건다'), step(b, 2, '부하를 80 %로 낮춘다')]]])
+    assert ai_replay.read_gap(old, same) is None
+    assert ai_replay.read_gap(old, other) == (1, 1)

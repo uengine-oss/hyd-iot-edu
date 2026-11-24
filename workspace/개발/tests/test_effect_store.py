@@ -14,7 +14,7 @@ def _pid(world):
 
 def _receipt(pid, **changes):
     return dict({'tenant_id': 'hyd', 'proc_inst_id': pid, 'request_id': str(uuid.uuid4()), 'kind': 'review', 'status': 'RECORDED',
-                 'request': {'kind': 'review', 'by': 'user:kim-op'}, 'effects': [{'id': 'plc:CMD-1'}], 'results': [], 'error': None,
+                 'request': {'kind': 'review', 'by': 'user:me'}, 'effects': [{'id': 'plc:CMD-1'}], 'results': [], 'error': None,
                  'history': [{'status': 'RECORDED'}]}, **changes)
 
 

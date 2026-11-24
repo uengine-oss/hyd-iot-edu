@@ -227,12 +227,17 @@ def test_직접_쓴_SQL_은_원천별_사전이어야_한다(fab, sql):
 
 
 def test_교차_조회의_기준값은_지식_그래프의_이상_패턴_임계값이다(fab, seeded_graph, tags):
-    (limit,) = seeded_graph.query(fabric.LIMIT_Q, variable='ts1')
+    (limit,) = seeded_graph.query(fabric.LIMIT_Q, pattern='COOLER_DEGRADATION', variable='ts1')
     out = fab.query('HYD-01', 'hot-lots-vs-ts1')
     ts1 = next(p for p in out['parts'] if p['id'] == 'ts1')
     assert ts1['params'] == {'asset': 'HYD-01', 'ts1_limit': limit['value']} and limit['pattern'] in out['notes'][0]
     assert ts1['rows'][0][1] == 51.25                                    # 최근 60분 최고 유온 = 넣은 값
     assert [a['label'] for a in out['answer']][:2] == ['QMS 기록 고온 시간', '출하 대기 로트']
+    # 06-14: 같은 입력(유온)을 보는 패턴이 더 생겨도(id 가 앞서도) 기준은 이 조회가 가리킨 패턴의 값 그대로다 — 전에는 id 차례 첫째의 값이 됐다
+    seeded_graph.query("MATCH (i:InputData {variable: 'ts1'}) CREATE (:AnomalyPattern {id: 'ap:0-student', code: 'MY_HOT', name: '내 고온 경보'})"
+                       "-[:TESTS {operator: '>', value: 30.0, unit: '℃'}]->(i)")
+    again = next(p for p in fab.query('HYD-01', 'hot-lots-vs-ts1')['parts'] if p['id'] == 'ts1')
+    assert again['params']['ts1_limit'] == limit['value'] != 30.0
 
 
 def test_지식_그래프에_임계값이_없으면_교차_조회를_하지_않는다(readers, neo4j_graph):
@@ -255,6 +260,21 @@ def test_온톨로지_클래스의_식별_키를_살아_있는_원천에_대어_
     sensor = rows[('Sensor', TS, 'tag_1s')]
     assert sensor['state'] == 'OK' and {m['key'] for m in sensor['matched']} == {'TS1', 'VS1'}       # 최근 10분에 들어온 태그만
     assert {'PS1', 'FS1', 'CE'} <= {m['key'] for m in sensor['unmatched']}
+
+
+def test_다른_설비의_센서는_원천에서_찾지_않고_그_까닭과_함께_따로_싣는다(fab, seeded_graph, tags):
+    """S-B 다른 영역(2026-11-22): 학생이 자기 설비(이 시스템이 운영하지 않는 설비) 문서를 넣으면 그 센서가 「센서 ↔ 시계열 tag_1s」의 「원천에 없음」에 이 시스템
+    수집 값이 빠진 것처럼 섞였다. 그 센서는 이 시스템이 운영하는 설비(Asset -HAS_COMPONENT-> 구성 요소)를 재지 않아 수집 계약 밖이고, 값은 그 설비 시스템을 연결한
+    도구 서버가 낸다. 이제 그런 센서는 원천에서 찾지 않고 까닭과 함께 따로 싣는다 — 이 시스템 설비의 센서는 그대로 찾는다(TS1 있음 · PS1 없음)."""
+    seeded_graph.query("CREATE (c:Component {id:'comp:test-other-tank', name:'다른 설비 탱크'})-[:MONITORED_BY]->(:Sensor {id:'sen:test-other', name:'다른 설비 압력', tag:'Reservoirs', unit:'bar'})")
+    try:
+        sensor = next(c for c in fab.links()['classes'] if (c['klass'], c['source']) == ('Sensor', TS))
+    finally:
+        seeded_graph.query("MATCH (n) WHERE n.id IN ['comp:test-other-tank', 'sen:test-other'] DETACH DELETE n")
+    assert sensor['other'] == [{'id': 'sen:test-other', 'name': '다른 설비 압력', 'key': 'Reservoirs'}] and sensor['other_reason'] == fabric.OTHER_EQUIPMENT
+    assert 'Reservoirs' not in {m['key'] for m in sensor['matched'] + sensor['unmatched']}
+    assert 'TS1' in {m['key'] for m in sensor['matched']} and 'PS1' in {m['key'] for m in sensor['unmatched']}
+    assert all('other' not in c for c in fab.links()['classes'])        # 다른 설비의 센서가 없으면 그 칸도 없다(수업 상태의 화면은 그대로)
 
 
 def test_그래프가_없으면_연결_판정은_그래프_사유를_달고_원천은_그대로_본다(readers):
@@ -349,3 +369,20 @@ def test_옛_설비_DB_가드는_legacy_표만_읽는다():
     for sql in ('select * from ent.assets', 'delete from "T_EQP01"'):
         with pytest.raises(SqlRejected):
             fabric.guard_for(fabric.LEGACY, sql, 5)
+
+
+def test_표_열로_이은_판단_입력은_설비별로_읽지_못해도_빼지_않고_까닭과_함께_묶어_보기에_나온다(fab, seeded_graph, tags):
+    """C8(2026-11-22): 묶어 보기는 설비 열(assetColumn)이 없는 입력 · 업무 DB(ent) 밖 원천의 입력을 말없이 빼서, 묶음 머리가 「지식 지도에 이어진
+    값 0개」 · 「연결된 값이 없습니다」라고 했다(연결은 있었다). 이제 그 입력은 값 없이 그 까닭의 상태로 나온다 — 설비 열이 있는 입력은 지금처럼 값을 읽는다."""
+    seeded_graph.query("UNWIND $rows AS r CREATE (i:InputData {id: r.id, name: r.name, variable: r.id, typeRef: 'number', datasource: r.ds, catalog: 'postgres', "
+                       "schema: r.schema, table: r.table, column: r.column, assetColumn: r.key})",
+                       rows=[dict(id='in:test-no-key', name='표에 설비 열이 없는 입력', ds=ENT, schema='ent', table='assets', column='code', key=None),
+                             dict(id='in:test-legacy', name='옛 DB 측정값', ds=fabric.LEGACY, schema='legacy', table='T_EQP01', column='C_TMP_O', key='EQP_CD'),
+                             dict(id='in:test-keyed', name='설비 열이 있는 입력', ds=ENT, schema='ent', table='assets', column='name', key='code')])
+    try:
+        got = {v['field']: v for v in fab.query('HYD-01')['answer'] if v['klass'] == 'InputData'}
+    finally:
+        seeded_graph.query("MATCH (i:InputData) WHERE i.id STARTS WITH 'in:test-' DETACH DELETE i")
+    assert (got['in:test-no-key']['state'], got['in:test-no-key']['value']) == ('NO_ASSET_KEY', None) and '설비 식별 열' in got['in:test-no-key']['reason']
+    assert (got['in:test-legacy']['state'], got['in:test-legacy']['source']) == ('NOT_IN_VIEW', fabric.LEGACY) and '옛 설비 DB' in got['in:test-legacy']['reason']
+    assert got['in:test-keyed'].get('state') is None and got['in:test-keyed']['value']                    # 설비 열이 있으면 그 설비 행의 값을 읽는다

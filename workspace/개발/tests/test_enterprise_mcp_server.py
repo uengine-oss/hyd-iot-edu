@@ -17,9 +17,13 @@ ALL = sorted(['mes_orders', 'erp_contract', 'erp_inventory', 'cmms_history', 'qm
               'part_quotes', 'maintenance_windows', 'pm_status', 'describe_schema', 'describe_catalog', 'query'])
 
 
-def tools_of(toolset):
+def tools_of(toolset, dsn='postgresql://r:p@127.0.0.1:9/postgres'):
+    """서버를 가져와(컨테이너가 켜질 때와 같다) 도구 목록을 낸다 — 업무 DB 에는 연결하지 않는다. dsn=None 이면 업무 DB 주소 값을 주지 않는다."""
     env = dict(HOST_ENV, PYTHONUTF8='1', ENTERPRISE_MCP_TOOLSET=toolset,
                PYTHONPATH=os.pathsep.join([str(ROOT / 'common'), str(ROOT / 'it' / 'enterprise-mcp')]))
+    env.pop('ENTERPRISE_DSN', None)
+    if dsn is not None:
+        env['ENTERPRISE_DSN'] = dsn
     return subprocess.run([sys.executable, '-c', LIST], capture_output=True, env=env, timeout=120)
 
 
@@ -37,6 +41,15 @@ def test_도구_묶음은_나눈_서버마다_자기_읽기만_두고_자유_SQL
 def test_모르는_도구_묶음이면_서버가_켜지지_않고_까닭을_말한다():
     done = tools_of('everything')
     assert done.returncode != 0 and 'all | maintenance | purchasing' in done.stderr.decode('utf8', 'replace')
+
+
+@pytest.mark.parametrize('dsn', [None, ''], ids=['값_없음', '빈_값'])
+def test_업무_DB_읽기_주소가_없으면_지운_호스트_길로_돌지_않고_그_값의_이름을_말하며_켜지지_않는다(dsn):
+    """업무 DB 전용 읽기 계정 주소(ENTERPRISE_DSN)는 compose 가 준다. 기본값(호스트에 연 업무 DB 포트 host.docker.internal:54322 — 지운 느린
+    길)이 있으면 값이 빠진 실행이 그 길로 조용히 돌았다."""
+    done = tools_of('all', dsn=dsn)
+    err = done.stderr.decode('utf8', 'replace')
+    assert done.returncode != 0 and 'ENTERPRISE_DSN 이 설정되지 않아 enterprise-mcp 를 띄우지 않습니다' in err, err[-800:]
 
 
 @pytest.mark.parametrize('service', ['enterprise-mcp', 'enterprise-mcp-maint', 'enterprise-mcp-purchase'])

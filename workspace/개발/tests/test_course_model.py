@@ -113,6 +113,9 @@ def test_장부가_거절한_토큰_요청은_워커가_고를_사유_코드와_
     (401, {'error': {'message': 'Authentication Error, Invalid proxy server token passed'}}, 'relay_auth', 'false'),
     (400, {'error': {'message': 'Budget has been exceeded! Current cost: 5.1', 'type': 'budget_exceeded'}}, 'relay_budget', 'false'),
     (403, {'error': {'message': 'key not allowed to access model. This key can only access models=[coding]'}}, 'relay_model', 'false'),
+    # 2026-11-23 새 강의 중계(LiteLLM v1.106.6)의 답 둘 — 키 한도는 422, 모델 거절은 글이 바뀌어 403 「키 문제」로 읽혔다
+    (422, {'error': {'message': 'Budget has been exceeded! Current cost: 0.0, Max budget: 0', 'type': 'budget_exceeded'}}, 'relay_budget', 'false'),
+    (403, {'error': {'message': 'coding is not available for this API key, or the model name is invalid'}}, 'relay_model', 'false'),
     (429, {'error': {'message': 'Rate limit reached for coding'}}, 'relay_busy', 'true'),
     # 2026-10-31 실제 강의 중계(LiteLLM 1.90.2)의 비스트리밍 답 — 뒤쪽 OpenAI 계정 잔액 소진. 429 라 「붐빔 · 다시 실행」으로 읽혔다
     (429, {'error': {'message': 'litellm.RateLimitError: RateLimitError: OpenAIException - {"error": {"message": "You have no credits '
@@ -120,8 +123,10 @@ def test_장부가_거절한_토큰_요청은_워커가_고를_사유_코드와_
                      'type': 'throttling_error', 'code': '429'}}, 'relay_budget', 'false'),
     (529, {'error': {'type': 'overloaded_error', 'message': 'Overloaded'}}, 'relay_busy', 'true'),
     (400, {'error': {'message': 'messages: text content blocks must be non-empty'}}, 'relay_rejected', 'false'),
+    (404, {'detail': 'Not Found'}, 'relay_address', 'false'),
+    (404, {'error': {'message': 'litellm.NotFoundError: model coding-x not found'}}, 'relay_model', 'false'),
     (500, b'<html>upstream exploded</html>', 'relay_failed', 'true'),
-], ids=['키 틀림', '예산 소진', '모델 거절', '혼잡 429', '중계 계정 잔액 소진', '과부하 529', '요청 거절', '중계 내부 오류'])
+], ids=['키 틀림', '예산 소진', '모델 거절', '예산 소진 422', '모델 거절(새 글)', '혼잡 429', '중계 계정 잔액 소진', '과부하 529', '요청 거절', '주소 틀림 404', '모델 없음 404', '중계 내부 오류'])
 def test_강의_중계의_거절은_종류별_학생_문장과_다시_보내도_되는지로_바뀐다(course, relay, status, body, code, retry):
     """B-05: 옛 관문은 400/408/429 말고는 모두 502 「요청을 완료하지 못했습니다」 한 문장이라 키 오류 · 예산 소진을 가르지 못했다."""
     relay.answer(status, body)
@@ -129,7 +134,8 @@ def test_강의_중계의_거절은_종류별_학생_문장과_다시_보내도_
     response = call(client, permit(client, claimed(course)).json()['token'])
     assert (code_of(response), response.headers['x-should-retry']) == (code, retry)
     assert response.json()['error']['message'].endswith(REASONS[code].text)
-    upstream = body['error']['message'] if isinstance(body, dict) else body.decode()
+    # 중계 원문: LiteLLM 오류는 error.message, 주소가 없을 때(FastAPI 404)는 detail — 어느 꼴이든 그 글이 학생 응답에 새면 안 된다
+    upstream = (body.get('error') or {}).get('message') or body['detail'] if isinstance(body, dict) else body.decode()
     assert upstream not in response.text                     # 중계 원문은 넘기지 않는다
 
 
@@ -181,6 +187,23 @@ def test_고친_토큰은_받지_않는다(course):
     token = permit(client, claimed(course)).json()['token']
     forged = token[:-4] + ('0000' if not token.endswith('0000') else '1111')
     assert code_of(call(client, forged)) == 'token'
+
+
+def test_단계_칸이_없는_옛_꼴_토큰은_500이_아니라_토큰_거절이고_다시_받은_토큰으로_이어진다(course, relay):
+    """검토 의심(2026-11-24): 토큰 묶음에 단계(phase)를 더한 뒤, 그 전 판이 낸 토큰(최대 30분)은 서명 키가 다시 켜도 그대로인 파일이라 서명을
+    통과하고 장부에 적는 자리에서 KeyError → 500 이었다. 칸이 다른 토큰은 「token」 거절(다시 보내도 소용없음)이고 중계 · 장부에 닿지 않으며,
+    같은 점유가 토큰을 다시 받으면 그 토큰으로 이어 부른다. 옛 꼴 토큰은 지금 토큰에서 단계 칸만 뺀 묶음을 같은 키로 서명해 만든다."""
+    import base64
+    client = gateway(course)
+    row = claimed(course)
+    fresh = permit(client, row).json()['token']
+    binding = json.loads(base64.urlsafe_b64decode(fresh[len(course_model.PREFIX):].split('.')[0]))
+    raw = base64.urlsafe_b64encode(json.dumps({k: v for k, v in binding.items() if k != 'phase'}, separators=(',', ':')).encode()).decode()
+    response = call(client, course_model.PREFIX + raw + '.' + course_model._sign(raw))
+    assert (response.status_code, code_of(response), response.headers['x-should-retry']) == (403, 'token', 'false'), response.text
+    assert calls_on_ledger(course.dsn) == 0 and relay.requests == []
+    again = permit(client, row).json()['token']
+    assert call(client, again).status_code == 200 and calls_on_ledger(course.dsn) == 1 and len(relay.requests) == 1
 
 
 def test_워커가_점유를_끝내면_그_실행이_닫힌다(course):

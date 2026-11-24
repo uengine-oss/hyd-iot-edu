@@ -120,12 +120,39 @@ def test_규칙_판단의_보류는_실패가_아닌_판단_보류로_보이고_
     try:
         open_screen(page, 'decision')
         page.wait_for_function("document.querySelectorAll('#decAsset option').length > 0 && document.querySelectorAll('#decPattern option').length > 0", timeout=8000)
+        # 「유압 설비」 화면의 결함 단추로 일으킬 수 있는 범위(서버의 GET /api/scenario/status 의 fault) — 먼저 지금 고른 설비 · 경보가 그 범위 안인 경우
+        in_scope = {'asset': page.input_value('#decAsset'), 'pattern': page.input_value('#decPattern'), 'fault': 'seal_wear', 'severity': 'moderate', 'buttons': {}}
+        answers['/api/scenario/status'] = {'scenarios': {}, 'presses': {}, 'fault': in_scope}
+        page.evaluate('state.biz = undefined')                # 첫 화면이 읽어 둔 시나리오 상태(이 시험의 가짜 응답에는 그때 범위가 없었다)를 비워 판단 화면이 새로 읽게
         page.locator('#decRun').click()
         page.wait_for_selector('#decResult .panel-head h2', timeout=8000)
         said = page.inner_text('#decResult')
         assert '판단 보류' in said and '실패가 아닙니다' in said and '판단 실패' not in said
         assert '토출 압력 평균 165 bar 미만' in said and '조건 미충족' in said      # 무엇을 확인했고 왜 원인으로 삼지 않았는지
         assert page.locator("#decResult [role='alert']").count() == 0 and page.locator('#decResult [data-retry]').count() == 0
+        # 보류의 까닭은 서버가 말한 문장 그대로다(화면이 제 글 「지금 관측 값으로 뒷받침되는 원인이 없습니다」로 바꿔 말하지 않는다). 원인 후보의 증거를 다 읽고도
+        # 보류했고 그 설비 · 경보가 결함 단추로 일으킬 수 있는 범위라 「이상을 일으킨 뒤 다시」 안내가 붙는다
+        assert page.inner_text('#decResult [data-dec-why]') == held['detail']['reason'] and '지금 관측 값으로 뒷받침되는 원인이 없습니다' not in said
+        assert '이 이상을 일으킨 뒤 다시 판단하면' in said
+        # 결함 단추로 일으킬 수 없는 설비 · 경보(다른 설비의 결함 · 학생 현장)의 같은 보류에는 그 안내를 붙이지 않는다(2026-11-24 검토 나-2)
+        answers['/api/scenario/status'] = {'scenarios': {}, 'presses': {}, 'fault': dict(in_scope, asset='HYD-01', pattern='COOLER_DEGRADATION')}
+        page.evaluate('state.biz = undefined')
+        page.locator('#decResult').evaluate('n => n.innerHTML = ""')
+        page.locator('#decRun').click()
+        page.wait_for_selector('#decResult [data-dec-why]', timeout=8000)
+        other = page.inner_text('#decResult')
+        assert '판단 보류' in other and '이 이상을 일으킨 뒤' not in other, other
+        # 원인 지식이 비어 보류한 때: 서버 까닭(evidence_status 에만 있어도)을 보이고, 이상을 일으키라는 안내는 붙이지 않는다(일으켜도 같은 답이다)
+        answers['/api/agent/decide'] = (409, {'detail': {'evidence_status': {'reason': '이 경보의 원인 지식이 지식 지도에 없어 조치를 보류합니다.'}, 'causes': []}})
+        page.locator('#decRun').click()
+        page.wait_for_function("document.querySelector('#decResult [data-dec-why]')?.textContent.includes('원인 지식이 지식 지도에 없어')", timeout=8000)
+        empty = page.inner_text('#decResult')
+        assert '이 이상을 일으킨 뒤' not in empty and '견줄 원인 후보가 없습니다' in empty and page.locator('#decResult [data-retry]').count() == 0
+        # 서버 글이 없을 때만 화면의 안내를 쓴다
+        answers['/api/agent/decide'] = (409, {'detail': {'causes': held['detail']['causes']}})
+        page.locator('#decRun').click()
+        page.wait_for_function("document.querySelector('#decResult .panel-head h2')?.textContent.includes('뒷받침되는 원인이 없습니다')", timeout=8000)
+        assert page.locator('#decResult [data-dec-why]').count() == 0
 
         answers['/api/agent/decide'] = (404, {'detail': "'씰 마모'의 원인 지식이 아직 없습니다"})
         page.locator('#decRun').click()
@@ -141,12 +168,14 @@ def test_규칙_판단의_보류는_실패가_아닌_판단_보류로_보이고_
         close()
 
 
-def _trial(side, status, *, cause=None, top=None, skills=(), calls=(), asset='HYD-01', pattern='COOLER_DEGRADATION', reason=None, tools=('hyd-dmn',)):
+def _trial(side, status, *, cause=None, top=None, skills=(), calls=(), asset='HYD-01', pattern='COOLER_DEGRADATION', reason=None, tools=('hyd-dmn',),
+           causes=None):
     """에이전트 시험 한쪽의 기록(process /api/agent-trials/run 응답의 a · b 꼴)."""
     return {'id': f'TRY-{side}', 'created_at': '2026-11-14T00:00:00Z', 'snapshot_id': 'SNAP-1', 'asset': asset, 'pattern': pattern, 'agent_id': f'agent:{side}',
             'setting': {'name': f'에이전트 {side}', 'skills': [{'name': k['name']} for k in skills]}, 'variant': {}, 'status': status, 'fingerprint': side * 12,
             'result': {'status': status, 'reason': reason, 'explanation': None, 'calls': list(calls), 'citations': [], 'facts': [], 'ranking': [],
-                       'diagnosis': {'top': {'id': cause, 'failureModeId': 'fm:x'}} if cause else None, 'recommended': {'id': top, 'sopId': 'SOP-1'} if top else None,
+                       'diagnosis': ({'top': {'id': cause, 'failureModeId': 'fm:x'}} if cause else {'top': None, 'causes': causes}) if cause or causes is not None else None,
+                       'recommended': {'id': top, 'sopId': 'SOP-1'} if top else None,
                        'agent': {'tools': list(tools), 'skills': list(skills)}}}
 
 
@@ -171,8 +200,18 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
             b = _trial('b', 'EVALUATED', cause='cause:x', top='skill:x', calls=[diagnose, blocked], skills=[{'name': 'my-skill', 'applied': True, 'reason': None, 'steps': 1}])
             return {'snapshot': {'created_at': '2026-11-14T00:00:00Z'}, 'a': a, 'b': b,
                     'diff': _diff(a, b, same_result=False, rows=[{'a': 0, 'b': 0, 'same': True}, {'a': None, 'b': 1, 'same': False}], order_same=False)}
-        if body['scenario'] == 'pump':         # 두 쪽 모두 보류 → 지문은 같다
-            a, b = (_trial(s, 'WITHHELD', asset='HYD-02', pattern='PUMP_LEAKAGE', reason='현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.', calls=[diagnose]) for s in 'ab')
+        if body['scenario'] == 'pump':         # 두 쪽 모두 보류 → 지문은 같다(원인 지식은 있고 근거를 다 읽었는데 뒷받침이 없다)
+            failed = [{'id': 'cause:seal', 'evidence': [{'id': 'evd:ps1', 'status': 'FAIL'}]}]
+            a, b = (_trial(s, 'WITHHELD', asset='HYD-02', pattern='PUMP_LEAKAGE', reason='현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.', calls=[diagnose],
+                           causes=failed) for s in 'ab')
+            return {'snapshot': {'created_at': '2026-11-14T00:00:00Z'}, 'a': a, 'b': b, 'diff': _diff(a, b, same_result=True, rows=[{'a': 0, 'b': 0, 'same': True}], order_same=True)}
+        if body['scenario'] == 'cooler-hold':  # 두 쪽 모두 보류 — 결함 단추로 일으킬 수 있는 범위(HYD-01 쿨러 열화) 안이고 원인 지식 · 근거는 있다
+            failed = [{'id': 'cause:cooler', 'evidence': [{'id': 'evd:ts1', 'status': 'FAIL'}]}]
+            a, b = (_trial(s, 'WITHHELD', reason='현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.', calls=[diagnose], causes=failed) for s in 'ab')
+            return {'snapshot': {'created_at': '2026-11-14T00:00:00Z'}, 'a': a, 'b': b, 'diff': _diff(a, b, same_result=True, rows=[{'a': 0, 'b': 0, 'same': True}], order_same=True)}
+        if body['scenario'] == 'empty':        # 탐사 N8: 원인 지식이 비어 보류 — 서버의 까닭을 말하고 「이상을 일으키라」고 하지 않는다
+            a, b = (_trial(s, 'WITHHELD', reason='이 경보의 원인 지식이 지식 지도에 없어 조치를 보류합니다 — 「지식 › 문서 등록」에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 평가하세요.',
+                           calls=[diagnose], causes=[]) for s in 'ab')
             return {'snapshot': {'created_at': '2026-11-14T00:00:00Z'}, 'a': a, 'b': b, 'diff': _diff(a, b, same_result=True, rows=[{'a': 0, 'b': 0, 'same': True}], order_same=True)}
         a = _trial('a', 'EVALUATED', asset='HYD-03', pattern='FAN_VIBRATION', cause='cause:x', top='skill:x', calls=[diagnose])      # B 는 판단 도구 서버가 없다
         b = _trial('b', 'NO_ENGINE_TOOL', asset='HYD-03', pattern='FAN_VIBRATION', tools=(), reason='판단 엔진 도구(hyd-dmn)가 없어 원인 진단·조치 판단을 할 수 없습니다',
@@ -181,12 +220,17 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
 
     options = {'scenarios': [{'key': 'cooler', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'label': '쿨러 성능 저하 · HYD-01'},
                              {'key': 'pump', 'asset': 'HYD-02', 'pattern': 'PUMP_LEAKAGE', 'label': '펌프 내부 누설 · HYD-02'},
-                             {'key': 'fan', 'asset': 'HYD-03', 'pattern': 'FAN_VIBRATION', 'label': '팬 진동 상승 · HYD-03'}],
+                             {'key': 'fan', 'asset': 'HYD-03', 'pattern': 'FAN_VIBRATION', 'label': '팬 진동 상승 · HYD-03'},
+                             {'key': 'empty', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'label': '쿨러 성능 저하 · HYD-01(지식 비움)'},
+                             {'key': 'cooler-hold', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'label': '쿨러 성능 저하 · HYD-01(보류)'}],
                'agents': [{'id': 'agent:a', 'name': '에이전트 a', 'tools': ['hyd-dmn'], 'skills': []},
                           {'id': 'agent:b', 'name': '에이전트 b', 'tools': ['hyd-dmn'], 'skills': [{'name': 'my-skill', 'description': '내 스킬 설명'}]}]}
     history = [{'id': 'TRY-1', 'created_at': '2026-11-14T00:00:00Z', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'agent_id': 'agent:a', 'agent_name': '에이전트 a', 'variant': {}, 'status': 'EVALUATED', 'recommended': 'skill:x'},
                {'id': 'TRY-2', 'created_at': '2026-11-14T00:01:00Z', 'asset': 'HYD-02', 'pattern': 'PUMP_LEAKAGE', 'agent_id': 'agent:a', 'agent_name': '에이전트 a', 'variant': {}, 'status': 'WITHHELD', 'recommended': None}]
-    page, close = _page({'/api/agent-trials/options': options, '/api/agent-trials/run': run, '/api/agent-trials': history}, [])
+    # 「유압 설비」 화면의 결함 단추로 일으킬 수 있는 범위(서버의 GET /api/scenario/status 의 fault) — HYD-01 쿨러 열화 하나
+    fault = {'asset': 'HYD-01', 'fault': 'cooler_degradation', 'severity': 'moderate', 'pattern': 'COOLER_DEGRADATION', 'buttons': {'degrade': '쿨러 열화 주입', 'restore': '쿨러 복구'}}
+    page, close = _page({'/api/agent-trials/options': options, '/api/agent-trials/run': run, '/api/agent-trials': history,
+                         '/api/scenario/status': {'scenarios': {}, 'presses': {}, 'fault': fault}}, [])
     try:
         open_screen(page, 'compare')
         page.wait_for_selector("#compareView [data-f='scenario']", timeout=8000)
@@ -203,8 +247,13 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
         assert '부르지 못한 호출 1회 포함' in body and 'hyd-dmn' not in body
         assert body.count('부르지 못한 호출 1회 포함') == 1 and '1순위는 같습니다' not in body      # 숫자 넷이 말한 것(원인 · 1순위 · 호출 순서)을 그 아래 줄에서 되풀이하지 않는다
         title, body = trial('pump')
-        assert title.startswith('두 구성 모두 판단을 보류했습니다') and '같습니다' not in title
+        assert title.startswith('두 구성 모두 판단을 보류했습니다 — 현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다') and '같습니다' not in title
         assert '실패가 아니라 판단하지 않은 것입니다' in body
+        assert '일으킨 뒤 시험하면' not in body      # 이 경보(HYD-02 펌프 누설)는 결함 단추로 일으킬 수 있는 범위(HYD-01 쿨러) 밖이다 — 그 안내는 범위 안에서만(2026-11-24 검토 나-2)
+        title, body = trial('cooler-hold')
+        assert title.startswith('두 구성 모두 판단을 보류했습니다 — 현재 관측 근거로 뒷받침되는 원인이 없어') and '「유압 설비」 화면에서 그 이상을 일으킨 뒤 시험하면 판단까지 갑니다.' in body, body
+        title, body = trial('empty')
+        assert title.startswith('두 구성 모두 판단을 보류했습니다 — 이 경보의 원인 지식이 지식 지도에 없어') and '이상을 일으킨 뒤' not in body, (title, body)
         title, body = trial('fan')
         assert title.startswith('B만 판단에 이르지 못했습니다') and '판단 서비스 도구 서버가 없어' in title and 'hyd-dmn' not in body
         # 이 시험이 무엇을 하지 않는지: 스킬 문서의 뜻을 읽지 않는다 · 지금 이상 값이 없으면 보류한다

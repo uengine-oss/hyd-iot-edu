@@ -5,7 +5,8 @@
     사용자 정보 · 쿼리 · 조각 없음). 아니면 묻지 않고 실패.
   · 묻는 길: 기본 GET <주소>/v1/models(키가 받아들여지고 수업 모델이 목록에 있는가), --call 이면 POST <주소>/v1/messages(관문이 부르는 길).
     머리글 x-api-key 는 관문과 같다.
-  · 401 · 403 · 404 · 429 는 바로 판정(학생이 할 일이 다르다), 네트워크 · 5xx 는 세 번까지 다시 묻고 「닿지 않음」.
+  · 4xx 는 바로 판정(학생이 할 일이 다르다) — 종류는 관문의 course_model.classify_relay(응답 번호가 아니라 글), 문장은 course_ledger.REASONS.
+    네트워크 · 5xx 는 세 번까지 다시 묻고 「닿지 않음」.
   · 묻는 클라이언트는 관문의 것(course_model.relay_client)이다 — 믿는 인증서 · 프록시 설정이 같아, 실제 AI 호출이 실패하는 망에서는
     확인도 실패한다(2026-11-17 클라우드 VM: urllib 로 재던 확인은 컨테이너 환경의 인증서를 믿어 통과, 실제 AI 호출은 모두 relay_failed).
     인증서 확인 실패는 다시 묻지 않고, 관문과 같은 코드(relay_untrusted — course_model.transport_refusal)와 같은 문장(course_ledger.REASONS).
@@ -44,10 +45,17 @@ MODELS = {'data': [{'id': 'coding'}, {'id': 'other'}]}
 @pytest.mark.parametrize('plan, ok, code, words', [
     ([(200, MODELS)], True, 'listed', '연결됨'),
     ([(200, {'data': [{'id': 'other'}]})], False, 'model', '수업 모델(coding)을 쓸 수 없습니다'),
-    ([(401, {'error': 'bad key'})], False, '401', 'LLM_API_KEY'),
-    ([(403, {'error': 'blocked'})], False, '403', '강사에게'),
-    ([(404, {'error': 'no route'})], False, '404', '주소'),
-    ([(429, {'error': 'budget'})], False, '429', '한도'),
+    ([(401, {'error': 'bad key'})], False, 'relay_auth', REASONS['relay_auth'].text),
+    ([(403, {'error': 'blocked'})], False, 'relay_auth', REASONS['relay_auth'].text),
+    ([(404, {'error': 'no route'})], False, 'relay_address', 'AI 중계 서버의 주소가 맞지 않습니다'),
+    ([(400, {'error': 'bad request'})], False, 'relay_rejected', REASONS['relay_rejected'].text + ' (응답 400)'),
+    ([(429, {'error': 'budget'})], False, 'relay_budget', REASONS['relay_budget'].text),
+    # 2026-11-23 새 강의 중계(LiteLLM v1.106.6)의 실제 답 둘 — 422 를 세 번 다시 묻고 「닿지 않습니다 · 인터넷 연결을 확인」이라 했다(까닭은 키 한도)
+    ([(422, {'error': {'message': 'Budget has been exceeded! Current cost: 0.0, Max budget: 0', 'type': 'budget_exceeded'}})],
+     False, 'relay_budget', REASONS['relay_budget'].text),
+    ([(403, {'error': {'message': 'coding is not available for this API key, or the model name is invalid'}})],
+     False, 'relay_model', REASONS['relay_model'].text),
+    ([(429, {'error': {'message': 'Rate limit reached for coding'}})], False, 'relay_busy', REASONS['relay_busy'].text),
     ([(502, {}), (502, {}), (200, MODELS)], True, 'listed', '연결됨'),       # 중계가 쉬다 깨어날 때 — 세 번째에 닿는다
     ([(500, {}), (500, {}), (500, {})], False, 'unreachable', '닿지 않습니다'),
 ])

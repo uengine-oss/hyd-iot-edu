@@ -2,11 +2,13 @@
 
 L7 온톨로지의 설계 문서다. 이 문서는 스키마(클래스와 관계의 틀)를 설명한다. 인스턴스는 스키마에 맞춰 따로 만든다.
 
-지금 판은 `schema.json`의 `version` 2.7.0이다(클래스 · 관계 수는 [class-table.md](class-table.md)). 쓰는 곳이 없어 지운 요소(판 번호는 그대로): 조치별 예측 클래스 Forecast(FORECASTS · ASSUMES · GIVEN), 손으로 옮겨 적은 업무 흐름이 쓰던 관계(READS · PRODUCES · INVOKES · PERFORMED_BY · CORRELATES · ATTACHED_TO), 실행 투영의 MAPS_TO. 시드도 한 벌이다(구조판 · 전체판 두 판을 없앴다).
+지금 판은 `schema.json`의 `version` 2.8.0이다(클래스 · 관계 수는 [class-table.md](class-table.md)). 쓰는 곳이 없어 지운 요소(판 번호는 그대로): 조치별 예측 클래스 Forecast(FORECASTS · ASSUMES · GIVEN), 손으로 옮겨 적은 업무 흐름이 쓰던 관계(READS · PRODUCES · INVOKES · PERFORMED_BY · CORRELATES · ATTACHED_TO), 실행 투영의 MAPS_TO. 시드도 한 벌이다(구조판 · 전체판 두 판을 없앴다).
 
 v2.6은 관계 하나만 더했다: `(:FailureMode)-[:PREVENTED_BY]->(:Skill)` 예방 조치(정기 정비). 기존 클래스 · 관계는 이름도 뜻도 그대로다(아래 "조치 방법" 절).
 
 v2.7은 기존 Skill에 명시 업무 범위 `scope=purchase`와 실행 후보 여부 `executable`을 더했다. 클래스는 그대로이며 INVOLVES_PART의 기존 Cause→Part에 Skill→Part 끝점을 가산했다. 구매 SOP는 검증된 보관 원문·단계·Part 범위와 ERP 수행 관계가 필요하다. 참고 보관(false)과 PR_CREATE 실행 후보(true)를 구분하며 실행 후보는 구매 승인 역할·공급사/부품 공급 관계를 추가 검사한다. 고장 유형을 지어내지 않고, 기존 scope 없는 고장 조치의 FM 필수 조건은 유지한다. 검사는 `validate`(구매 범위 — `hydcommon.skill_scope.purchase_graph_issues`)가 한다.
+
+v2.8은 Evidence의 `sql`을 수집 계약의 태그를 읽는 증거에만 두고(필수에서 뺐다) `note`를 더했다. 문서가 다른 설비(가상 설비에 딸리지 않은 구성 요소)의 지식을 넣을 때, 그 설비 시스템의 센서 태그를 읽는 증거는 판단 엔진이 평가할 시계열 질의가 없으므로 `note`에 그 사실을 적는다(아래 「문서가 넣는 다른 설비의 구조」). 클래스 · 관계는 그대로다.
 
 v2.1은 세 표준(BPMN · DMN · BSC)을 시나리오가 쓰는 만큼의 미니멀 셋으로 다듬었다(3절의 미니멀 셋 표).
 
@@ -173,6 +175,10 @@ flowchart TB
 - **스키마가 강제한다:** 단계가 없거나 고장 유형에 매칭되지 않은 스킬은 `validate`에서 위반으로 잡힌다(구매 SOP는 Part 범위 · ERP 수행, 참고 보관은 실행 · 후보 관계 없음으로 따로 잰다).
 - **어느 SOP가 어느 고장 유형에 붙는가:** 시드에 없다 — 수업 문서(HM-8 · PM-02 · PR-07)의 강사 서명 추출 묶음 `it/process/procsvc/course_extractions.json`을 시작이 적재해 만든다(`scripts/class_knowledge.py`). 지금 그래프의 목록은 질의 `q2b-failure-mode-skills`(고장 유형 · 종류 · SOP · 단계 수 · 원인 한정)로 본다 — 이 문서에 사본을 두지 않는다.
 
+### 문서가 넣는 다른 설비의 구조
+
+학생이 PBL에서 올리는 문서는 가상 설비(HYD-01~03)가 아닌 설비의 매뉴얼일 수 있다. 그 문서의 고장 유형이 일어나는 구성 요소 · 증상 · 증거가 읽는 센서가 지금 지식에 없으면, 추출이 원문 인용과 함께 「새 항목 제안」(Component · Symptom · Sensor)으로 내고 사람이 검토 화면에서 항목마다 넣기 · 제외를 고른다. 넣기를 고른 항목만 적재되고 그 문서가 고장 유형 · 원인과 같은 규칙(적재 기록 · 되돌리기 · 개정)으로 가진다(`it/process/procsvc/manual_knowledge.py` 머리말 — Ontology Studio의 틀 바꾸기 제안과 같은 자리). 설비(Asset) 한 대와 그 운영 데이터는 그 현장의 시스템이 도구 서버로 주므로 문서는 Asset을 만들지 않는다 — 문서가 넣은 구성 요소는 어느 설비에도 딸리지 않는다(HAS_COMPONENT 없음). 가상 설비의 구조는 넓히지 않는다: 새 증상 · 새 센서 · 수집하지 않는 값을 읽는 증거는 설비에 딸린 구성 요소의 고장 유형에 잇지 않고, 설비에 딸리지 않은 구성 요소의 고장 유형은 경보 패턴이 감지하는 증상과 수집 태그를 쓰지 않는다(그 설비의 경보 · 판단이 다른 설비의 지식에 닿지 않게 — `manual_knowledge.new_item_issues`). 다른 설비의 절차는 이 시스템의 업무 시스템(SCADA · CMMS · ERP)을 수행자로 잇지 않고(`manual_knowledge.performers` — 그 실행은 그 설비 시스템을 연결한 흐름의 「승인 뒤 MCP 호출」이 한다), 다른 설비의 원인 · 절차는 이 시스템 설비의 부품 · 상태 변수 · 원자 조치를 가리키지 않는다. 「지식 › 조치 방법」 화면도 이 시스템 설비의 고장에만 정비 요청 조치 방법을 만든다(`skill_graph.write`).
+
 ### 원문 참고와 정확한 기존 SOP 재참조
 
 `kind=reference`와 `executable=false`를 명시한 매뉴얼 절차는 원문 보관만 한다. FM·승인 역할이 미상이어도 Section·Step·실제 인용을 보존하지만 실행 시스템·Action·후보 Rule 연결은 만들지 않는다. 기존 fault 실행의 FM 요구와 purchase의 Part/ERP/승인/공급 계약은 유지한다.
@@ -236,7 +242,7 @@ schema_prompt.md (스키마) ─┘
 2. **경로 질의:** 증상에서 고장 유형과 원인, 증거를 찾고, 그 고장 유형에 매칭된 조치 방법(스킬 = SOP)과 원자 조치, 단계, 매뉴얼까지 한 번에 가져온다.
 3. **카드 작성:** 고장 유형에 맞는 후보 스킬을 결정표 규칙으로 고르고, 규정 규칙으로 거르고, 예측값과 득실 성과 지표를 붙인다.
 4. **사람 확인:** 카드마다 출처(규칙의 근거 문서, SOP 단계의 매뉴얼 절, 원인의 증거)를 보여 준다.
-5. **선례:** 사람의 선택은 DecisionCase로 남고, 다음 판단에서 같은 원인의 선택 이력으로 읽힌다. 단, 교육용 고정: 선례 몫은 미리 넣은 예시(`seeded = true`)만 센다 — 수업 그래프에는 그런 예시가 없어 선례 몫은 늘 0이고, 승인으로 투영된 사례는 그래프에 남지만 순위에 들어가지 않는다(`templates/t3_precedents.cypher`의 `WHERE dc.seeded = true` 한 줄을 빼면 제품처럼 쌓이는 학습이 켜진다).
+5. **선례:** 사람의 선택은 DecisionCase로 남고, 다음 판단에서 같은 원인의 선택 이력으로 읽힌다. 판단 사례와 사건은 고른 조치 방법 · 진단한 원인을 관계(`CHOSE` · `DIAGNOSED_AS`)와 함께 제 속성(`chosenSkill` · `diagnosedCause`)으로도 갖는다 — 그 지식을 넣은 문서를 되돌려 비우면 기록은 남고 관계만 빠지며, 같은 id 의 지식이 다시 들어오면 관계가 다시 선다(`procsvc/manual_graph.py` `detach_history` · `reattach_history`). 판단 이력은 문서를 비우거나 개정하는 것을 막지 않는다. 단, 교육용 고정: 선례 몫은 미리 넣은 예시(`seeded = true`)만 센다 — 수업 그래프에는 그런 예시가 없어 선례 몫은 늘 0이고, 승인으로 투영된 사례는 그래프에 남지만 순위에 들어가지 않는다(`templates/t3_precedents.cypher`의 `WHERE dc.seeded = true` 한 줄을 빼면 제품처럼 쌓이는 학습이 켜진다).
 
 질의 예시는 [queries.cypher](../../../../it/neo4j/v2/queries.cypher)에 있다. 블록마다 자연어 질문과 정답 Cypher가 있다.
 
@@ -295,7 +301,7 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123 — 이 PC의 바깥 
 
 | 무엇을 | 테스트 |
 |---|---|
-| 생성물(제약 · OWL · 설명문 · 그림 · 표) = 지금 스키마로 생성기를 돌린 결과 | `test_neo4j_schema.py`, `test_ontology_v2.py::test_생성물은_지금_생성기_결과와_같다` |
+| 생성물(제약 · OWL · 설명문 · 그림 · 표) = 지금 스키마로 생성기를 돌린 결과 | `test_neo4j_schema.py` |
 | kg-seed가 넣은 수업 그래프가 스키마(속성 · 끝점 · 다중도 · 필수 관계)를 지킨다 | `test_ontology_v2.py::test_kg_seed_가_넣은_수업_그래프는_스키마를_지킨다`(`seeded_graph`) |
 | 다중도 검사 · 깨진 글자 멈춤 · 전문 검색 색인 대상 · 클래스별 OWL 설명 · 제약 중복 없음 | `test_ontology_v2.py`의 나머지 |
 
@@ -321,7 +327,7 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123 — 이 PC의 바깥 
 
 | 서비스 | v2에서 하는 일 | 쓰는 템플릿 |
 |---|---|---|
-| 에이전트 · 판단 엔진(agent · dmn-mcp) | 경보 → 원인 후보 · 증거 → 고장 유형의 SOP 스킬 → 가이드 카드 → DMN 후보 · 규정 규칙 → 조치 후 예측(설비 모델) · BSC 득실 · 선례로 카드 순위 → 처리 엔진에 제출. 구매 카드는 부품 · 공급사 · 승인 역할을 읽는다 | t1_causes, t2_skills, t3_skills, t3_dmn, t3_inputs, t3_tradeoffs, t3_forecast_model, t3_precedents, t3_roles, t3_perspectives, t3_suppliers, t3_purchase_part |
+| 에이전트 · 판단 엔진(agent · dmn-mcp) | 경보 → 원인 후보 · 증거 → 고장 유형의 SOP 스킬 → 가이드 카드 → DMN 후보 · 규정 규칙 → 조치 후 예측(설비 모델) · BSC 득실 · 선례로 카드 순위 → 처리 엔진에 제출. 구매 카드는 부품 · 공급사 · 승인 역할을 읽는다 | t1_causes, t2_skills, t3_skills, t3_dmn, t3_inputs, t3_tradeoffs, t3_forecast_model, t3_precedents, t3_roles, t3_perspectives, t3_suppliers, t3_purchase_part, t0_codes(판단 실험이 스킬 본문이 가리키는 설비 코드 · 부품 번호를 알아볼 때) |
 | 처리 엔진(process) | 사람이 카드(SOP) 하나를 고르면 역할 권한 검사 → 설비 명령은 관문으로, 정비 요청 · 구매는 업무 시스템으로 → 사건 · 판단 사례(Incident · DecisionCase)와 처리 건 실행(ProcessInstance · WorkItem · ProcessVersion · 흐름 노드)을 그래프에 투영. 수업 문서 적재(매뉴얼 → 진단 지식 · SOP 스킬)도 여기서 한다 | — (쓰기 질의) |
 | 포털 | 지식 지도(계층별 열 · 이상 패턴 경로 · 이름 공간), 질의 보기(템플릿 원문 여덟), 조치 판단 규칙(사실을 바꿔 규칙 반응 실습), 조치 선택, 스킬(SOP) 카탈로그, 문서 등록 · 적재 | t0_patterns, t0_graph_nodes, t0_graph_edges, t0_namespaces(에이전트 API 경유) |
 

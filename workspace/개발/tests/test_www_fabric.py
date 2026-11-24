@@ -138,3 +138,44 @@ def test_표와_열이_정해지지_않은_판단_입력의_문서_등록_열기
             b.close()
     finally:
         served.close()
+
+
+OTHER_REASON = '다른 설비의 센서입니다 — 이 시스템이 운영하는 설비의 구성 요소를 재지 않아 시계열 DB에서 찾지 않습니다'
+
+
+@pytest.mark.parametrize('other', [[{'id': 'sen:apu-reservoirs', 'name': '저장 탱크 압력', 'key': 'Reservoirs'}], None], ids=['다른 설비 센서 있음', '없음'])
+def test_지식_지도와_표_보기는_다른_설비의_센서를_원천에_없는_값과_섞지_않고_그_까닭과_함께_보인다(other):
+    """S-B 다른 영역(2026-11-22): 다른 설비(학생 설비)의 센서가 「원천에 없음」 목록에 이 시스템 원천의 빠진 값과 함께 섞였다. 서버가 그 센서를 따로(other) 싣고
+    까닭 한 문장(fabric.OTHER_EQUIPMENT — 여기서는 대역 글)을 주면, 화면은 그 칸에서 빠진 값 목록 뒤에 그 까닭과 센서를 따로 적는다. 없으면 그 줄이 없다."""
+    sensor = {'klass': 'Sensor', 'label': '센서', 'key': 'tag', 'key_label': '태그', 'source': 'hyd-timeseries', 'source_label': '시계열 DB', 'table': 'tag_1s',
+              'column': 'name', 'state': 'OK', 'matched': [{'key': 'TS1'}], 'unmatched': [{'key': 'PS1', 'name': '토출 압력 센서'}],
+              **({'other': other, 'other_reason': OTHER_REASON} if other else {})}
+    links = {'graph': {'ok': True}, 'classes': [sensor], 'inputs': []}
+    # 화면이 다는 이벤트를 받아 두고(보기 탭 누르기), 서버 응답만 대역으로 둔다
+    el = ("const handlers = {}; const el = { innerHTML: '', addEventListener: (t, f) => { handlers[t] = f; }, querySelector: () => null };"
+          "const settle = async () => { for (let i = 0; i < 50; i++) await Promise.resolve(); };")
+    html = run(FILES, el + "hydFabric.mount(el); await settle();"
+               "handlers.click({ target: { closest: s => s === '[data-fab-tab]' ? { dataset: { fabTab: 'links' } } : null } }); out(el.innerHTML)",
+               data={'links': links},
+               prelude="globalThis.API = { process: '' }; globalThis.getJ = url => Promise.resolve(url.endsWith('/links') ? DATA.links : []);")
+    cell = html.split('PS1 (토출 압력 센서)', 1)[1].split('</td>', 1)[0]
+    if other:
+        missing, shown = cell.split('<small data-fab-other>', 1)
+        assert 'Reservoirs' not in missing and OTHER_REASON in shown and '1개: Reservoirs (저장 탱크 압력)' in shown, cell
+    else:
+        assert 'data-fab-other' not in html and 'Reservoirs' not in html, cell
+
+
+def test_두_DB_묶어_보기의_설비는_서버가_준_설비_목록에서_고르고_화면이_정해_둔_설비_코드가_없다():
+    """탐사 C 9(남음): 「두 DB 묶어 보기」의 설비 고르기가 화면에 적어 둔 HYD-01 을 목록 맨 앞에 넣고 골라 두었다 — 서버의 설비 목록에 그 설비가 없어도 보였다.
+    이제 서버가 준 설비 목록(지식 지도 ↔ 업무 DB 설비 표)의 첫 설비를 고른다."""
+    links = {'graph': {'ok': True}, 'inputs': [], 'classes': [{'klass': 'Asset', 'label': '설비', 'key': 'code', 'source': 'hyd-enterprise', 'source_label': '업무 DB',
+             'table': 'assets', 'column': 'code', 'state': 'OK', 'matched': [{'key': 'HYD-02'}], 'unmatched': [{'key': 'HYD-03'}]}]}
+    el = ("const handlers = {}; const el = { innerHTML: '', addEventListener: (t, f) => { handlers[t] = f; }, querySelector: () => null };"
+          "const settle = async () => { for (let i = 0; i < 50; i++) await Promise.resolve(); };")
+    html = run(FILES, el + "hydFabric.mount(el); await settle();"
+               "handlers.click({ target: { closest: s => s === '[data-fab-tab]' ? { dataset: { fabTab: 'join' } } : null } }); out(el.innerHTML)",
+               data={'links': links},
+               prelude="globalThis.API = { process: '' }; globalThis.getJ = url => Promise.resolve(url.endsWith('/links') ? DATA.links : []);")
+    select = html.split('id="fabAsset">', 1)[1].split('</select>', 1)[0]
+    assert select == '<option selected>HYD-02</option><option>HYD-03</option>', select

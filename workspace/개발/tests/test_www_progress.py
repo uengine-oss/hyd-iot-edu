@@ -221,7 +221,7 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             for line in summary['removed'] + summary['kept']:
                 assert line in shown, line
             assert '적재한 문서 판본 1개' in shown and '화면에서 만든 조치 방법 1개' in shown and '내 도구 서버 1개와 비밀 값 1개' in shown and '지금 단계에서는 도구 서버를 등록할 수 없습니다' in shown
-            assert 'HM-8_cooler-fan-manual.md' in page.inner_text('#cfgResetResult [data-reset-missing]') and '시작 파일을 다시 실행' in shown
+            assert 'HM-8_cooler-fan-manual.md' in page.inner_text('#cfgResetResult [data-reset-missing]') and '「지식 › 문서 등록」의 제공 문서에서 골라 다시 넣으세요' in shown
             assert page.locator('#cfgResetResult details.fold').count() == 1 and not page.locator('#cfgResetResult details.fold .evid').is_visible()      # 단계별 결과는 접혀 있다
             assert page.locator('#cfgResetResult .lv-step').count() == 0 and not page.locator('#cfgReset').is_disabled()
             page.wait_for_timeout(1200)
@@ -371,7 +371,8 @@ def test_시험_비교_화면은_서버가_적는_단계를_채우고_화면이_
     """에이전트 시험 비교(compare.js) — 이 화면은 무엇이든 바뀌면 통째로 다시 그린다. 도는 중의 진행 목록이 그때 사라지지 않아야 한다."""
     from playwright.sync_api import sync_playwright
     from procsvc import agent_trials
-    options = {'scenarios': agent_trials.SCENARIOS, 'tenant_servers': [],
+    # 시나리오 목록은 서버가 지식 지도의 이상 패턴으로 만든다(agent_trials.scenarios) — 패턴 한 줄로 같은 꼴을 만든다
+    options = {'scenarios': agent_trials.scenarios([{'code': 'COOLER_DEGRADATION', 'name': '쿨러 열화'}]), 'tenant_servers': [],
                'agents': [{'id': 'sys:agent', 'name': '판단 에이전트', 'goal': '설비 이상 판단', 'model': None, 'tools': [], 'skills': [], 'trial_note': None}]}
     job, wire = Job(), Wire('/api/agent-trials/run', {'/api/agent-trials/options': options})
     served = _serve(job, '/api/agent-trials/run')
@@ -384,12 +385,13 @@ def test_시험_비교_화면은_서버가_적는_단계를_채우고_화면이_
             page.goto(served.url + '/index.html')
             _open(page, 'compare')
             page.wait_for_selector("#compareView [data-f='scenario']", timeout=8000)
-            page.select_option("#compareView [data-f='scenario']", 'cooler')
+            key = options['scenarios'][0]['key']                                            # 「패턴@설비」 — 서버가 준 목록의 열쇠 그대로
+            page.select_option("#compareView [data-f='scenario']", key)
             page.locator("#compareView [data-act='run']").click()
             job.do(lambda p: (p.plan(plan), p.start('input')))
             _wait_steps(page, "#compareView [data-r='result']", ['run:입력 스냅숏 준비', 'wait:에이전트 A 시험', 'wait:에이전트 B 시험', 'wait:두 결과 비교'])
             [body] = job.bodies
-            assert body['scenario'] == 'cooler' and progress.read(body['request_id'])['state'] == 'running'
+            assert body['scenario'] == key and progress.read(body['request_id'])['state'] == 'running'
             page.select_option("#compareView [data-f='input']", 'latest')                # 화면이 통째로 다시 그려진다
             job.do(lambda p: (p.done('input', '새 입력 스냅숏을 만듦'), p.start('side:0')))
             _wait_steps(page, "#compareView [data-r='result']", ['ok:입력 스냅숏 준비', 'run:에이전트 A 시험', 'wait:에이전트 B 시험', 'wait:두 결과 비교'])

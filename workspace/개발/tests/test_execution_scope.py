@@ -60,8 +60,27 @@ def _pm_option(**change):
     {}, {'kind': 'control', 'pattern': 'COOLER_DEGRADATION'}, {'evaluation_mode': 'execution', 'execution_checked': True},
     {'kind': 'work_order', 'executable': True},
 ], ids=['표시 없음', '설비 조치', '실행 검사 표시', '실행 가능 표시'])
-def test_보통_조치는_실행_검사_표시가_없거나_맞으면_통과한다(option):
+def test_판단_장부_밖의_안은_실행_검사_표시가_없거나_맞으면_통과한다(option):
+    """흐름의 승인 단계가 고른 안(학생 에이전트의 제안 — 판단 엔진의 카드가 아니다)에는 실행 검사 표시가 없다. 판단 장부의 카드는 아래
+    require_decision_option 이 표시를 요구한다."""
     assert require_executable(option) is None
+
+
+CHECKED = {'evaluation_mode': 'execution', 'execution_checked': True}
+
+
+@pytest.mark.parametrize('decision, option, word', [
+    ({}, CHECKED, '이 판단에는'),
+    ({'origin': {'pattern': 'COOLER_DEGRADATION'}}, CHECKED, '이 판단에는'),
+    (CHECKED, {}, '이 조치 후보에는'),
+    (CHECKED, {'kind': 'control', 'pattern': 'COOLER_DEGRADATION'}, '이 조치 후보에는'),
+], ids=['판단에 표시 없음', '패턴만 있는 판단', '카드에 표시 없음', '설비 조치 카드에 표시 없음'])
+def test_판단_장부의_판단과_카드는_실행_검사_표시가_없으면_승인_실행하지_않는다(decision, option, word):
+    """13A-3: 표시가 둘 다 없는 판단 · 카드가 검사 없이 통과했다(안전 관문이 열린 쪽으로 실패)."""
+    with pytest.raises(ValueError) as refused:
+        require_decision_option(decision, option)
+    assert word in str(refused.value) and '실행 준비를 검사했다는 표시가 없어' in str(refused.value)
+    assert require_decision_option(dict(decision, **CHECKED), dict(option, **CHECKED)) is None
 
 
 @pytest.mark.parametrize('option, word', [
@@ -129,6 +148,7 @@ def test_업무_감시_계약의_정기_정비_경보면_실행_관문이_정비
 ], ids=['출처 패턴', '시나리오 패턴', '사실 패턴', '출처가 사실보다 먼저'])
 def test_판단의_패턴이_정기_정비면_카드에_패턴이_없어도_정비_계획을_요구한다(decision):
     option = {'evaluation_mode': 'execution', 'execution_checked': True, 'pattern': 'COOLER_DEGRADATION'}
+    decision = dict(decision, **CHECKED)
     with pytest.raises(ValueError, match='PM 실행에는'):
         require_decision_option(decision, option)
     plan = {'evaluation_mode': 'execution', 'execution_checked': True, 'maintenancePlan': _real_plan()}
@@ -144,13 +164,13 @@ def test_판단_자체가_규칙_비교_결과면_카드가_실행_검사_표시
 def test_판단에_패턴이_없으면_카드의_패턴으로_판정한다():
     option = {'pattern': PM_PATTERN, 'evaluation_mode': 'execution', 'execution_checked': True}
     with pytest.raises(ValueError, match='PM 실행에는'):
-        require_decision_option({}, option)
-    assert require_decision_option({}, dict(option, pattern='COOLER_DEGRADATION')) is None
+        require_decision_option(CHECKED, option)
+    assert require_decision_option(CHECKED, dict(option, pattern='COOLER_DEGRADATION')) is None
 
 
 def test_관문은_카드를_바꾸지_않는다():
     option = _pm_option()
     before = copy.deepcopy(option)
     require_executable(option)
-    require_decision_option({'origin': {'pattern': PM_PATTERN}}, option)
+    require_decision_option(dict(CHECKED, origin={'pattern': PM_PATTERN}), option)
     assert option == before

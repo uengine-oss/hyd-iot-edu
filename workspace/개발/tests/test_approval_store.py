@@ -15,7 +15,7 @@ def _case(world):
 
 def _row(pid, wid, **changes):
     return dict({'todo_id': wid, 'proc_inst_id': pid, 'tenant_id': 'hyd', 'decision_id': 'dec-' + uuid.uuid4().hex[:8],
-                 'payload': {'option': 'x', 'by': 'user:kim-op'}, 'status': 'PENDING', 'attempts': 0, 'results': [], 'error': None,
+                 'payload': {'option': 'x', 'by': 'user:me'}, 'status': 'PENDING', 'attempts': 0, 'results': [], 'error': None,
                  'history': [{'status': 'PENDING'}]}, **changes)
 
 
@@ -24,7 +24,7 @@ def test_승인_의도는_그_처리_건의_단계에만_하나_넣고_그대로
     repo = world.rt.repo
     repo.insert_approval(_row(pid, wi['id']))
     got = repo.get_approval(wi['id'], 'hyd')
-    assert (got['status'], got['payload'], got['attempts']) == ('PENDING', {'option': 'x', 'by': 'user:kim-op'}, 0)
+    assert (got['status'], got['payload'], got['attempts']) == ('PENDING', {'option': 'x', 'by': 'user:me'}, 0)
     assert [a['todo_id'] for a in repo.list_approvals(pid, 'hyd')] == [wi['id']]
 
 

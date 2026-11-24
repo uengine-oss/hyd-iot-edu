@@ -24,8 +24,9 @@ def _incident(state='AWAITING_APPROVAL', cause=CAUSE):
     return inc
 
 
-def _decision(state='APPROVED'):
+def _decision(state='APPROVED', model='dec:rank-actions'):
     return {'id': 'DEC-CASE-1', 'state': state, 'chosen': SKILL if state != 'PENDING_APPROVAL' else None,
+            'scenario': {'id': model, 'name': '시험 조치 판단'},          # 판단 엔진이 판단 원문에 적는 판단 모델(agentsvc.decide)
             'approvedRole': 'role:operator', 'origin': {'incident': 'INC-CASE-1'}, 'created': '2026-10-30T09:00:00+00:00',
             'history': [{'state': 'APPROVED', 't': '2026-10-30T09:05:00+00:00'}], 'override': False, 'reason': '시험'}
 
@@ -111,6 +112,19 @@ def test_사건이_아직_그래프에_없으면_판단은_실패로_남았다�
     case_node = _node(graph, 'DecisionCase', 'case:DEC-CASE-1')
     assert sorted(case_node['out']) == [f'CHOSE>{SKILL}', 'DECIDED_BY>role:operator', 'FOR_INCIDENT>INC-CASE-1',
                                         'INSTANCE_OF>dec:rank-actions']
+
+
+def test_판단_사례는_판단_원문이_적은_판단_모델에_잇고_모델이_그래프에_없으면_경고로_남긴다(case):
+    """전수검사 12-10: 투영이 판단 모델 id 를 따로 박아 두어(dec:rank-actions) 원문이 무엇을 적었든 그 모델에 이었다 — 원문의 모델 id 로 잇는다."""
+    store, projector, graph, _ = case
+    store.save({'INC-CASE-1': _incident()}, {'DEC-CASE-1': _decision(model='dec:no-such-model')}, [])
+    projector.drain()
+    _retry_now(store)                                                                          # 판단이 사건보다 먼저 집혔으면 사건 뒤에 다시
+    projector.drain()
+    assert store.case_projection_status()['pending'] == 0
+    node = _node(graph, 'DecisionCase', 'case:DEC-CASE-1')
+    assert node['n']['projection_warnings'] == ['decision model missing: dec:no-such-model']
+    assert sorted(node['out']) == [f'CHOSE>{SKILL}', 'DECIDED_BY>role:operator', 'FOR_INCIDENT>INC-CASE-1']
 
 
 def _retry_now(store):

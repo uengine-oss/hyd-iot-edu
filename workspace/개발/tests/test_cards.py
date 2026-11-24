@@ -162,3 +162,17 @@ def test_순위_근거의_점수_계산_방법_한_줄은_화면이_쓰는_말�
     for text in cards.CONDITION_MODES.values():
         assert not re.search(r'TRUE|FALSE|UNKNOWN|;', text) and text.endswith('니다.'), text
     assert all(word in cards.CONDITION_MODES['tradeoff'] for word in ('적용', '미적용', '미확인'))
+
+
+@pytest.mark.parametrize('failure_mode, relation', [
+    ('fm:pump-volumetric-efficiency-loss', 'PREVENTED_BY'), ('fm:pump-seal-leak', 'REMEDIED_BY'), ('fm:other', None), (None, None),
+], ids=['정비가 막는 고장', '근본 조치하는 고장', '이어지지 않은 고장', '고장 유형 없음'])
+def test_조치_방법의_관계는_이_판단의_고장_유형에_대한_것이다(failure_mode, relation):
+    """탐사 N13: 지식 질의가 (고장 유형, 관계) 짝 가운데 하나를 임의로 골라, 고장 유형 둘에 이어진 조치 방법의 관계가 다른 고장 유형의 것이 될 수
+    있었다 — 정기 정비 후보 거름(PREVENTED_BY)과 손익의 근본 조치 판정(REMEDIED_BY)이 그 값을 쓴다."""
+    skills = {'skill:x': {'skillId': 'skill:x', 'relations': [{'failureModeId': 'fm:pump-volumetric-efficiency-loss', 'relation': 'PREVENTED_BY'},
+                                                             {'failureModeId': 'fm:pump-seal-leak', 'relation': 'REMEDIED_BY'}]}}
+    got = cards.with_relation(skills, failure_mode)['skill:x']
+    assert (got['relation'], got['failureModeId']) == (relation, failure_mode if relation else None)
+    pm = cards.scoped_skills('PM_DUE', cards.with_relation(skills, failure_mode))
+    assert ('skill:x' in pm) is (relation == 'PREVENTED_BY')

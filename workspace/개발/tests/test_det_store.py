@@ -1,5 +1,4 @@
 """감지기 상태 파일(it/detector/det/store.py) — 체크포인트 · 오프셋(+ 가장 새 기록 시각) · 경보 outbox(G3b-12 · 13)."""
-import json
 import sqlite3
 
 from det.store import Store
@@ -44,4 +43,4 @@ def test_NaN은_저장하지_않는다(tmp_path):
         raise AssertionError('NaN 이 저장됐다')
     except ValueError:
         pass
-    assert store.load() is None and json.dumps({}) == '{}'
+    assert store.load() is None

@@ -1,4 +1,4 @@
-"""문서 검토(procsvc/manual_review.py) — 줄 구조 읽기(번호 붙은 매뉴얼의 편의 파서)와 적재 전 전체 검증(인용 · 절 · 단계 · 연결 · 지식).
+"""문서 검토(procsvc/manual_review.py) — 적재 전 전체 검증(인용 · 절 · 단계 · 연결 · 지식).
 원문은 실제 보관소(ManualSources, 임시 파일)에 제공 문서를 올려 만들고, 검토본은 강사 서명 묶음(course_extractions.json)을 시작과 같은
 길(scripts/class_knowledge.commit_body)로 바꾼 것이다 — 시작 지식이 이 검증을 지나는지가 판정 대상이다."""
 from copy import deepcopy
@@ -102,3 +102,42 @@ def test_같은_원문을_다시_올려도_검토본은_같은_계획이다(arch
             return {k: ('S' if k == 'source_id' else rebase(v, sid)) for k, v in value.items()}
         return [rebase(v, sid) for v in value] if isinstance(value, list) else value
     assert rebase(strip(deepcopy(first)), first['source_id']) == rebase(strip(deepcopy(second)), second['source_id'])
+
+
+def test_자동_검증만_거친_적재는_계획과_적재_기록에_그_사실이_남고_다른_값은_받지_않는다(archive):
+    """C10(2026-11-22): 「한 번에 적재」는 사람이 검토 화면을 열지 않는데, 적재 기록은 「담당자가 검토함」(reviewed=true · by)으로만 남았다. 그 길은
+    review_scope='automatic' 을 싣고, 계획과 적재 영수증(manual_graph._receipt)이 그것을 남긴다. 기본 제공 판 표시(review_method)와는 다른 칸이다."""
+    from procsvc import manual_graph
+    b = {k: v for k, v in body(archive, 'HM-8').items() if k not in ('review_method', 'provided_revision')}      # 포털의 검토본(기본 제공 판 표시 없음)
+    assert 'review_scope' not in manual_review.validate(archive, 'hyd', b)
+    plan = manual_review.validate(archive, 'hyd', dict(b, review_scope='automatic'))
+    assert plan['review_scope'] == 'automatic' and 'review_method' not in plan
+    assert manual_graph._receipt(dict(plan, candidate_rules={}), 'now')['review_scope'] == 'automatic'
+    with pytest.raises(ValueError, match='검토 범위'):
+        manual_review.validate(archive, 'hyd', dict(b, review_scope='skipped'))
+
+
+def _apu_preview(archive):
+    """다른 설비의 실제 규모 문서(apu_document)를 올려 추출 계약을 지난 제안 — 화면이 받는 추출 결과의 꼴(원문 id · 문서 id · 파일 이름)."""
+    import apu_document as apu
+    from procsvc import manual_extraction
+    source = archive.save('hyd', apu.FILENAME, apu.RAW)
+    checked = manual_extraction.validate_proposal(source, apu.proposal(source['source_id']))
+    return dict(checked, document_id=source['document_id'], filename=source['filename'])
+
+
+def test_새_항목은_넣기를_고른_검토본만_받고_자동_검증만_거친_적재에는_싣지_않는다(archive):
+    """다른 설비 문서의 새 항목(구성 요소 · 증상 · 센서)은 사람이 항목마다 넣기를 고른 것만 계획에 들어간다. 「제외」를 고른 항목은 검토본에 없고,
+    넣기 표시가 없는 새 항목은 거절된다. 검토 화면을 열지 않은 적재(한 번에 적재 — review_scope automatic)는 새 항목을 싣지 못한다."""
+    import apu_document as apu
+    preview = _apu_preview(archive)
+    plan = manual_review.validate(archive, 'hyd', apu.reviewed(preview, drop={'sen:apu-caudal-impulses'}))
+    assert len(plan['knowledge']['sensors']) == 14 and 'sen:apu-caudal-impulses' not in {s['id'] for s in plan['knowledge']['sensors']}
+    assert {k: len(plan['knowledge'][k]) for k in ('components', 'symptoms')} == {'components': 9, 'symptoms': 7}
+    unchosen = apu.reviewed(preview)
+    del unchosen['knowledge']['symptoms'][0]['approved']
+    with pytest.raises(ValueError, match='「넣기」를 골라야 적재됩니다'):
+        manual_review.validate(archive, 'hyd', unchosen)
+    automatic = dict(apu.reviewed(preview), review_scope='automatic')
+    with pytest.raises(ValueError, match=r'자동 검증만 거친 적재에는 새 항목\(구성 요소 · 증상 · 센서\) 31개를 넣지 않습니다'):
+        manual_review.validate(archive, 'hyd', automatic)

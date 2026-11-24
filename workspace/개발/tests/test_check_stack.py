@@ -7,6 +7,8 @@
   · AI 단계: 워커가 .env 의 AI_MODE 로 켜져야 한다. 키 없음(replay)은 저장된 응답이 있으면 「해당 없음」(강의 중계를 부르지 않는다 —
     옛 점검은 「건너뜀」을 「통과」로 표시), 없으면 실패. 키 있음은 process 안의 중계 확인 결과 그대로.
   · 쿨러 한 바퀴의 승인은 추천 카드의 승인 역할을 가진 사람으로 한다(포털에서 「나」를 그 사람으로 고르고 [승인]).
+  · 쿨러 한 바퀴는 쿨러 경보를 기본 제공 흐름이 맡을 때만 돈다(경보 경로표). 학생이 배포한 자기 흐름이 맡으면 그 흐름의 승인을 점검이 대신하지
+    않아 「해당 없음」, 기본 제공 흐름이 배포되지 않았으면 실패와 시작 안내.
   · AI 판단 단계가 멈추면(보류 · 실패) 서버가 판정한 멈춤(처리 건 보기의 attention — 포털 「사람 조치 필요」 알림과 같은 것)과 그 까닭을
     그대로 말한다. 점검이 까닭을 짐작하지 않는다(옛 점검: 보류면 늘 「기본 지식이 없는 것 같다」 — 실제 AI 는 시작 직후 「관측 공백」으로
     보류했다. 실패는 서버에 없는 상태 값을 보아 7분 뒤 「닿지 않았다」).
@@ -186,8 +188,12 @@ def test_AI_판단_단계가_승인에_닿았는지_아직인지_가른다(v, ex
     (deferred(GAP), 'live', GAP, '기본 지식'),                                          # 보류 — AI 가 남긴 까닭 그대로
     (deferred('', event=False), 'live', '까닭을 남기지 않았습니다', '기본 지식'),            # 까닭이 없으면 없다고
     (failed('이 AI 단계는 수업에서 허용한 흐름이 아니라 실행하지 않았습니다'), 'live', '수업에서 허용한 흐름이 아니라', 'README'),
-    (failed('준비된 AI 응답 가운데 이 요청에 맞는 것이 없습니다'), 'replay', '새 판 받기', 'LLM_API_KEY'),
-], ids=['보류_까닭', '보류_까닭없음', '실패_키', '실패_재생'])
+    (view(('T_agent', 'IN_PROGRESS', dict(AI, draft_status='FAILED'))), 'replay', '새 판 받기', 'LLM_API_KEY'),      # 까닭이 기록되지 않은 실패
+    (failed("「원인 진단 · 냉각 조치 제안」의 결과를 이 PC에 등록하지 못했습니다 — '쿨러 성능 저하'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 …"),
+     'replay', '까닭에 적힌 대로 고친 뒤', '새 판 받기'),
+    (failed('AI 키가 없을 때 쓰는 재생 모드에서는 「원인 진단 · 냉각 조치 제안」의 준비된 AI 판단을 이 처리 건에 쓸 수 없습니다. 권장 조치가 …'),
+     'replay', '준비된 AI 판단을 이 처리 건에 쓸 수 없습니다', '새 판 받기'),
+], ids=['보류_까닭', '보류_까닭없음', '실패_키', '실패_재생_까닭없음', '실패_지식없음_재생', '실패_판단다름_재생'])
 def test_AI_판단_단계가_멈추면_서버가_판정한_멈춤의_까닭을_그대로_말한다(v, ai_mode, said, not_said):
     with pytest.raises(cs.CheckError) as caught:
         cs.agent_outcome(v, ai_mode)
@@ -212,8 +218,8 @@ def test_처리_건이_승인에_닿기_전에_끝나면_기다리지_않고_어
 def test_추천_카드는_그_승인_역할을_가진_사람으로_승인한다():
     decision = {'recommended': 'fan-up', 'options': [{'id': 'derate', 'approver': {'id': 'role:prod-mgr'}},
                                                      {'id': 'fan-up', 'approver': {'id': 'role:operator'}}]}
-    people = [{'id': 'user:lee-prod', 'roles': ['role:prod-mgr']}, {'id': 'user:kim-op', 'roles': ['role:operator']}]
-    assert cs.pick_approval(decision, people) == ('fan-up', 'role:operator', 'user:kim-op')
+    people = [{'id': 'sys:process', 'roles': []}, {'id': 'user:me', 'roles': ['role:prod-mgr', 'role:operator']}]     # 사람은 이 PC의 담당자 한 명(모든 역할)
+    assert cs.pick_approval(decision, people) == ('fan-up', 'role:operator', 'user:me')
 
 
 @pytest.mark.parametrize('decision, people', [
@@ -289,7 +295,7 @@ def services():
             self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
 
         def do_GET(self):
-            self._send([{'id': 'user:kim-op', 'roles': ['role:operator']}] if self.path == '/api/inbox/users' else {})
+            self._send([{'id': 'user:me', 'roles': ['role:operator']}] if self.path == '/api/inbox/users' else {})
 
         def do_POST(self):
             posts.append((self.path, _json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')))
@@ -315,8 +321,121 @@ def test_점검_정리는_서버가_멈췄다고_판정한_AI_단계를_닫고_�
     closed = lambda: any(path == '/api/todolist/w-T_agent/close' for path, _ in posts)
     current = lambda pid: view(stopped, status='COMPLETED' if closed() else 'RUNNING')       # 닫으면 처리 건이 「사람이 닫음」으로 끝난다
     cs.cleanup(url, url, 'c3_cooling.x', None, current, lambda *row: results.append(row))
-    assert ('/api/todolist/w-T_agent/close', {'by': 'user:kim-op', 'reason': '시스템 점검이 연 처리 건 정리'}) in posts
+    assert ('/api/todolist/w-T_agent/close', {'by': 'user:me', 'reason': '시스템 점검이 연 처리 건 정리'}) in posts
     assert results == [('점검 정리', PASS, '쿨러 · 설비를 되돌리고 점검이 연 처리 건을 닫았습니다')]
+
+
+# ---------------------------------------------------------------- 쿨러 한 바퀴의 앞: 쿨러 경보의 원인 지식이 있는가
+@pytest.mark.parametrize('patterns, outcome, said', [
+    ([{'code': 'COOLER_DEGRADATION', 'judgeable': True, 'reason': None}], None, None),
+    ([{'code': 'COOLER_DEGRADATION', 'judgeable': False, 'reason': "'쿨러 성능 저하'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 …"}],
+     NA, "한 바퀴를 돌리지 않았습니다 — '쿨러 성능 저하'의 원인 지식이 아직 없습니다"),
+    ([{'code': 'PM_DUE', 'judgeable': False}], FAIL, '지식 지도에 이상 패턴 COOLER_DEGRADATION이 없습니다'),
+], ids=['원인 지식 있음 — 돌린다', '학생이 쿨러 문서를 비움 — 해당 없음과 서버의 까닭', '바탕 지식의 패턴 없음 — 실패'])
+def test_쿨러_원인_지식이_없으면_결함을_넣지_않고_서버가_말한_까닭으로_한_바퀴를_돌리지_않는다(patterns, outcome, said):
+    """비운 지식에서 점검이 결함을 넣고 처리 건을 연 뒤 AI 단계에서 멈추며 「준비된 AI 응답이 든 새 판을 받았는지」라는 엉뚱한 까닭을 붙였다."""
+    import http.server
+    import json as _json
+    import threading
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            data = _json.dumps(patterns if self.path == '/api/ontology/patterns' else {}, ensure_ascii=False).encode()
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        got = cs.cooler_knowledge(f'http://127.0.0.1:{server.server_address[1]}')
+    finally:
+        server.shutdown()
+    assert (got is None) if outcome is None else (got[0] == outcome and said in got[1]), got
+
+
+def _route(pattern, definition, name, source, class_flow):
+    """경보 경로표 한 줄(procsvc.flow_deploy.routes 의 routes[] 모양)."""
+    return {'pattern': pattern, 'definition': definition, 'name': name, 'version': '1', 'reference': False, 'class_flow': class_flow, 'source': source}
+
+
+@pytest.mark.parametrize('rows, outcome, said, not_said', [
+    ([_route('COOLER_DEGRADATION', 'c3_cooling', '냉각 긴급 대응', '기본 제공 흐름', True)], None, None, None),
+    ([_route('COOLER_DEGRADATION', 'my_cooling', '우리 공장 냉각 대응', '내가 배포한 흐름', False)],
+     NA, '쿨러 경보를 여는 흐름이 지금 내가 배포한 흐름 「우리 공장 냉각 대응」입니다', '시작 파일'),
+    ([_route('COOLER_DEGRADATION', 'anomaly_response', '이상 대응', '기준 흐름', False)],
+     FAIL, '시작 파일을 다시 실행하면 기본 제공 흐름을 배포합니다', '내가 배포한'),
+    ([_route('PUMP_LEAKAGE', 'anomaly_response', '이상 대응', '기준 흐름', False)], FAIL, '여는 흐름이 없습니다', None),
+], ids=['기본 제공 흐름 — 돌린다', '학생이 배포한 자기 냉각 흐름 — 해당 없음', '기본 제공 흐름이 배포되지 않음 — 실패와 시작 안내', '경로표에 쿨러 경보 없음'])
+def test_쿨러_경보를_학생이_배포한_자기_흐름이_맡으면_결함을_넣지_않고_해당_없음이다(rows, outcome, said, not_said):
+    """PBL 에서 학생이 자기 냉각 흐름을 배포하면 쿨러 경보는 가장 최근 배포가 맡는다. 전에는 점검이 결함을 넣고 처리 건을 연 뒤 「수업 흐름이
+    아님 — 시작 파일을 다시 실행하면 수업 흐름을 배포합니다」로 실패했다(시작은 같은 내용의 기본 제공 흐름을 다시 배포하지 않아 계속 실패)."""
+    import http.server
+    import json as _json
+    import threading
+    seen = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append(self.path)
+            data = _json.dumps({'routes': rows, 'flows': []} if self.path == '/api/flows/deployments' else {}, ensure_ascii=False).encode()
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        got = cs.cooler_route(f'http://127.0.0.1:{server.server_address[1]}')
+    finally:
+        server.shutdown()
+    assert seen == ['/api/flows/deployments']
+    if outcome is None:
+        assert got is None
+    else:
+        assert got[0] == outcome and said in got[1] and (not_said is None or not_said not in got[1]), got
+
+
+@pytest.mark.parametrize('patterns, rows, asked, said', [
+    ([{'code': 'COOLER_DEGRADATION', 'judgeable': True, 'reason': None}],
+     [_route('COOLER_DEGRADATION', 'my_cooling', '우리 공장 냉각 대응', '내가 배포한 흐름', False)],
+     ['/api/ontology/patterns', '/api/flows/deployments'], '쿨러 경보를 여는 흐름이 지금 내가 배포한 흐름 「우리 공장 냉각 대응」입니다'),
+    ([{'code': 'COOLER_DEGRADATION', 'judgeable': False, 'reason': "'쿨러 성능 저하'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 …"}],
+     [_route('COOLER_DEGRADATION', 'c3_cooling', '냉각 긴급 대응', '기본 제공 흐름', True)],
+     ['/api/ontology/patterns'], "'쿨러 성능 저하'의 원인 지식이 아직 없습니다"),
+], ids=['경로표가 학생 흐름', '원인 지식이 없음'])
+def test_점검_한_바퀴는_경로표나_원인_지식이_막으면_설비와_처리_건을_건드리지_않는다(tmp_path, patterns, rows, asked, said):
+    """막히면 설비 초기화 · 결함 주입 · 정리를 하나도 하지 않고 그 한 줄만 남긴다(학생 처리 건 · 설비를 바꾸지 않는다). 처리 엔진 · 에이전트 ·
+    설비 · 감지기는 바깥이라 그 API 의 실제 모양으로 답하는 실제 HTTP 서버 하나가 맡고, 받은 요청을 모두 남긴다. 그 서버의 포트를 이 PC 의
+    포트 표(.hyd-runtime/ports.json)와 AI 모드(.env)에 적은 저장소 자리에서 점검이 그대로 돈다."""
+    import http.server
+    import json as _json
+    import threading
+    seen = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def _answer(self):
+            seen.append((self.command, self.path))
+            data = {'/api/ontology/patterns': patterns, '/api/flows/deployments': {'routes': rows, 'flows': []}}.get(self.path, {})
+            body = _json.dumps(data, ensure_ascii=False).encode()
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(body)
+        do_GET = do_POST = _answer
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    port = server.server_address[1]
+    (tmp_path / '.hyd-runtime').mkdir()
+    (tmp_path / '.hyd-runtime' / 'ports.json').write_text(_json.dumps({str(p): port for p in (8080, 8000, 8092, 8091)}), encoding='utf-8')
+    (tmp_path / '.env').write_text('AI_MODE=replay\n', encoding='utf-8')
+    results = []
+    try:
+        cs.cooler_round(tmp_path, lambda *row: results.append(row))
+    finally:
+        server.shutdown()
+    assert seen == [('GET', path) for path in asked], seen
+    assert len(results) == 1 and results[0][:2] == ('쿨러 사건', NA) and results[0][2].startswith('한 바퀴를 돌리지 않았습니다 — ') and said in results[0][2], results
 
 
 # ---------------------------------------------------------------- 키 있는 PC: 결함 전에 AI가 판단에 쓰는 설비 기록이 쌓이기를 기다린다
@@ -443,7 +562,7 @@ def process_api():
     server.shutdown()
 
 
-APPROVAL = {'decision': 'd1', 'option': 'fan-up', 'by': 'user:kim-op', 'role': 'role:operator', 'reason': '점검'}
+APPROVAL = {'decision': 'd1', 'option': 'fan-up', 'by': 'user:me', 'role': 'role:operator', 'reason': '점검'}
 
 
 def test_예측이_낡았다는_거절_코드면_미리_보기로_다시_검토해_그_검토로_승인한다(process_api):
@@ -473,3 +592,4 @@ def test_포털은_화면과_포털을_거쳐_process에_닿는_길을_둘_다_�
     answers.update({'/': screen, '/svc/process/healthz': process})
     found = cs.portal_problems(root)
     assert (found == []) if problem is None else (len(found) == 1 and problem.strip() in found[0])
+

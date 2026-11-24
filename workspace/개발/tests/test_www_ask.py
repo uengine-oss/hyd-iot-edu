@@ -77,3 +77,45 @@ def test_빈_대화의_질문_예를_보내면_입력창_위에_부르는_도구
             b.close()
     finally:
         served.close()
+
+
+def test_실제_AI_로_답할_때의_질문_예는_그_질문에_답할_기본_제공_도구_서버를_쓰는_에이전트에게만_보인다():
+    """질문 예 둘은 기본 제공 현장(업무 시스템의 재고 · 가상 설비의 진동)을 묻는다 — 전에는 어느 에이전트를 골라도 보여, 내 도구 서버만 붙인 에이전트에게
+    답할 수 없는 질문을 권했다. 에이전트의 질문용 도구 서버(servers)에 그 서버가 있을 때만 그 예가 보인다."""
+    from playwright.sync_api import sync_playwright
+    mine = dict(AGENT, id='agent:mine', name='내 설비 에이전트', default=False, mine=True, servers=['my-plant'])
+    half = dict(AGENT, id='agent:half', name='재고 에이전트', default=False, mine=True, servers=['enterprise', 'my-plant'])
+    base = dict(AGENT, servers=['neo4j', 'enterprise', 'hyd-dmn'])
+    status = dict(STATUS, agents=[base, half, mine], worker={'ai_mode': 'live', 'replay_questions': []})
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+
+    def answer(route):
+        url = route.request.url.split('?')[0]
+        if url.endswith('/api/ask/status'):
+            return route.fulfill(json=status)
+        if url.endswith('/api/ask'):
+            return route.fulfill(json=[])
+        if url.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'ask')
+            picks = page.locator('[data-ask-picks] [data-ask-pick]')
+            picks.first.wait_for(timeout=15000)
+            shown = {}
+            for agent in ('sys:agent', 'agent:half', 'agent:mine'):
+                page.select_option('#askAgent', agent)
+                page.wait_for_function("n => document.querySelectorAll('[data-ask-picks] [data-ask-pick]').length === n", arg={'sys:agent': 2, 'agent:half': 1, 'agent:mine': 0}[agent])
+                shown[agent] = picks.all_inner_texts()
+            b.close()
+    finally:
+        served.close()
+    assert len(shown['sys:agent']) == 2 and shown['agent:half'] == [shown['sys:agent'][0]] and '재고' in shown['agent:half'][0], shown
+    assert shown['agent:mine'] == [], shown

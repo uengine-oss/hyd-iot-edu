@@ -18,7 +18,7 @@
 | 4 빌드 · 기동 | `docker compose up -d --build --remove-orphans` — 처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있다. 새 판에 없는 서비스의 옛 컨테이너(예: 공장 브로커를 mosquitto `ot-broker`로 바꾸기 전의 `emqx`)는 이때 지운다 — 남으면 계속 돌며 바깥 포트 1883 · 8083을 쥐어 새 공장 브로커가 뜨지 못한다(그 컨테이너의 이미지가 만든 익명 볼륨은 남는다, `emqx`는 약 260 KB). 그다음 `docker compose restart ot-broker dmz-broker ot-bridge` — 세 브로커는 붙여 쓰는 설정 폴더를 켤 때 한 번 읽는데 compose 는 그 파일 내용이 바뀐 것을 보지 않아, 떠 있는 스택에 설정만 바뀐 새 판을 받으면 옛 설정으로 계속 돈다(그래서 시작마다 다시 켠다). 지운 옛 볼륨(`<이름>_enterprise-data`)은 기동 뒤 스스로 지운다 |
 | 5 서비스 확인 | 최대 3분, 포털 응답까지 |
 | 6 수업 흐름 A · B · C | `scripts/c3_flows.py ensure` — 배포된 수업 흐름이 정본(`it/process/procsvc/course_flows.json`)과 같으면 그대로, 다르면 새 판본 등록 · 배포 |
-| 7 수업용 기본 지식 | `scripts/class_knowledge.py ensure` — 강사 서명 묶음(`it/process/procsvc/course_extractions.json`)의 HM-8 · PM-02 · PR-07 검토본을 AI 없이 넣는다. 옛 시작 판은 다음 시작 때 묶음 판으로 바꿔 넣고, 학생이 다시 넣은 판은 그대로 둔다 |
+| 7 수업용 기본 지식 | `scripts/class_knowledge.py ensure` — 강사 서명 묶음(`it/process/procsvc/course_extractions.json`)의 HM-8 · PM-02 · PR-07 검토본을 AI 없이 넣는다. 넣는 것은 이 PC에서 그 문서가 한 번도 적재되지 않았을 때뿐이다. 옛 시작 판은 다음 시작 때 묶음 판으로 바꿔 넣고, 학생이 다시 넣은 판과 학생이 문서 등록 이력에서 비운 문서는 그대로 둔다(비운 문서는 포털의 제공 문서에서 다시 넣는다) |
 | 8 AI 단계 확인 | 키 없음: 저장 응답이 있는지. 키 있음: process가 받은 중계 주소 · 키로 강의 중계에 닿는지(거절 · 무응답이면 멈춤) |
 
 - 두 번 눌러도 시작은 하나만 돈다. 두 번째 시작은 아무것도 바꾸지 않는다.
@@ -67,9 +67,10 @@ cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다�
 |---|---|
 | 단위 · 통합 테스트 전부 | `. workspace/개발/scripts/host_libpq.sh; HYD_TEST_DSN=postgresql://postgres:postgres@127.0.0.1:<업무 DB 포트>/hyd_test HYD_TEST_PORTAL_URL=http://127.0.0.1:<포털 포트> PYTHONUTF8=1 .venv314/Scripts/python.exe -m pytest -c workspace/개발/pytest.ini workspace/개발/tests` — `hyd_test`로 시작하는 버리는 DB만 받는다(테스트가 지우고 다시 만든다). 그래프 · 시계열 · 서비스는 테스트가 버릴 컨테이너 · 하위 프로세스로 띄운다(conftest 머리말) |
 | 수업 한 바퀴(실라버스 포털 실습을 학생처럼, 키 있는 · 없는 모드) | `.venv314/Scripts/python.exe workspace/개발/scripts/class_round.py --out 작업/<날짜>_<제목>/실행/<이름>` — 결과 `summary.md` 맨 위가 실라버스 행 × 네 축(지원 · 끝까지 안전 · 키 없는 PC · 여러 번)의 됨 · 안 됨 · 확인 못 함. 펌프 · 팬 사건은 실습 93(PBL 단계에서 AI까지) |
+| PBL 학생 자기 시나리오 실측(유압이 아닌 설비 — 지하철 공기 공급 장치, PBL 단계 · 워커 실제 AI) | `.venv314/Scripts/python.exe workspace/개발/scripts/pbl_student/pbl_round.py <명령> --work 작업/<날짜>_<제목>`(명령은 scan · check · prepare · case · branches · resume · close) — 데이터(MetroPT-3)는 git 밖 `<작업 폴더>/데이터/`에 받는다. 받는 명령 · 갈래 · 결과 자리는 그 파일 머리말 |
 | 강사 AI 응답 저장 | `bash workspace/개발/scripts/record_replay.sh 작업/<날짜>_<제목>/실행/녹화`(키 필요, 처리 건 0인 새 상태에서) → `재생모드.md` |
 | 개발용 호스트 워커 | `bash workspace/개발/scripts/run_worker_host.sh`(컨테이너 워커가 켜져 있으면 멈춘다 — 워커는 하나), 멈추기 `powershell -NoProfile -ExecutionPolicy Bypass -File workspace/개발/scripts/stop_worker_host.ps1`(워커 인증 파일 사본도 지운다). 포털 「에이전트 현황」이 호스트 워커를 보게 하려면 `compose.override.yaml`에 `services: process: environment: {WORKER_URL: http://host.docker.internal:<8097의 이 PC 포트>}` |
-| AI 사용 한도에 닿았을 때(학생 화면 「…강사에게 알려 주세요」) | 업무 DB(psql · Supabase CLI)에서 PC 한도 `UPDATE hyd_course_grants SET calls=0, input_bytes=0, output_tokens=0 WHERE account='hyd';`, 한 단계만 `DELETE FROM hyd_course_runs WHERE account='hyd' AND todo_id='<작업 id>' AND state<>'OPEN';`. 비용 경계는 중계 키 한도라 풀어도 그대로다 |
+| AI 사용 한도에 닿았을 때(학생 화면 「…시스템 관리자에게 알려 주세요」) | 업무 DB(psql · Supabase CLI)에서 PC 한도 `UPDATE hyd_course_grants SET calls=0, input_bytes=0, output_tokens=0 WHERE account='hyd';`, 한 단계만 `DELETE FROM hyd_course_runs WHERE account='hyd' AND todo_id='<작업 id>' AND state<>'OPEN';`. 비용 경계는 중계 키 한도라 풀어도 그대로다 |
 | 온톨로지 생성물 다시 만들기 · 그래프 검사 | `.venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py gen` · `validate` · `queries`(접속은 이 PC 스택 — 파일 머리) |
 | 포털 id → 이름 사전 다시 만들기 | `portal_names.py` → `it/portal/www/names.json`(시작이 끝난 수업 그래프에서, 고정 재료로 — 파일 머리) |
 | FUXA · Grafana 생성물 다시 만들기 | `build_fuxa_project.py` → `ot/fuxa/project.json`, `build_grafana_dashboard.py` → `it/grafana/provisioning/dashboards/hyd-trend.json` |
@@ -119,7 +120,7 @@ cat .hyd-runtime/ports.json     # 기본 포트 → 이 PC의 바깥 포트(다�
   - 서버를 지우기 전에 그 서버를 쓰는 에이전트와 흐름 단계(「승인 뒤 MCP 호출」 — 최신 판본과, 옛 판본으로 진행 중인 처리 건의 판본)를 함께 본다(`mcp_dependencies.steps_using`). 쓰는 것이 있으면 409, `force=true`면 지우고 그 단계는 실행될 때 「도구 서버 '…'가 등록되어 있지 않습니다 — [도구 연결]에서 같은 이름으로 등록한 뒤 이 단계를 다시 수행하세요」로 멈춘다.
   - 「승인 뒤 MCP 호출」의 실패는 둘로 가른다. 쓰기 요청을 서버에 보내지 않은 것이 확실한 실패(등록 없는 서버 · 꺼진 서버 · 없는 도구 · 맞지 않는 입력 — `mcp_check.call_effect`의 `sent: false`)는 정해진 횟수만큼 다시 시도하고 그 까닭으로 멈춘다. 보낸 뒤의 실패는 서버가 같은 호출을 알아볼 열쇠(`idempotency_key` 입력)를 받지 않으면 다시 보내지 않고 「외부 결과를 확인」하라고 멈춘다.
   - 역할의 정본은 업무 DB(`users`의 `role:*` 행과 `role_members`)다. 지식 그래프의 Role 노드는 process가 그 목록으로 맞춘다(`agent_authoring.project_roles` — 역할을 만들고 지울 때와 1분마다). 그래프가 아는 것은 등급(level)과 소속 부서뿐이고, 포털에서 만든 역할의 등급은 종류에서 정한다(operator 1 · manager 2). 조치 방법이 승인 역할로 쓰는 역할은 지우지 않는다.
-  - [기준으로 되돌리기](`POST /api/config/reset`)는 지식도 되돌린다: 포털의 검토 화면으로 적재한 문서 판(기본 제공 판이 맨 위가 될 때까지), 화면에서 만든 조치 방법(`DELETE /api/kg/skills/{id}` — `skill_graph.remove`), 업무 DB 표 정의 묶음. 이미 있는 묶음별 되돌리기를 차례로 부르며(`config_bundle.knowledge_reset`), 어느 하나가 되돌려지지 않으면 구성을 지우기 전에 멈추고 무엇이 왜인지 말한다. 응답의 `removed` · `kept`가 실제로 지운 것과 남긴 것이다. 처리 건 기록, 모의 업무 시스템과 가상 설비의 상태는 건드리지 않는다(결함 시뮬레이션의 [초기화]).
+  - [기준으로 되돌리기](`POST /api/config/reset`)는 지식도 되돌린다: 포털의 검토 화면으로 적재한 문서 판(기본 제공 판이 맨 위가 될 때까지 — 기본 제공 판이 없는 내 문서는 비운다), 화면에서 만든 조치 방법(`DELETE /api/kg/skills/{id}` — `skill_graph.remove`), 업무 DB 표 정의 묶음. 이미 있는 묶음별 되돌리기를 차례로 부르며(`config_bundle.knowledge_reset`), 어느 하나가 되돌려지지 않으면 구성을 지우기 전에 멈추고 무엇이 왜인지 말한다. 판단 이력은 되돌리기를 막지 않는다 — 처리 건에서 고른 조치 방법 · 진단한 원인이 빠지면 그 기록은 남고 지식 지도의 연결만 빠진다(같은 지식을 다시 넣으면 다시 이어진다, `manual_graph.detach_history`). 학생이 등록 이력에서 비운 기본 제공 문서는 되돌리기도 시작도 다시 채우지 않고 응답의 `base_missing`으로 알린다. 응답의 `removed` · `kept`가 실제로 지운 것과 남긴 것이다. 처리 건 기록, 모의 업무 시스템과 가상 설비의 상태는 건드리지 않는다(결함 시뮬레이션의 [초기화]).
 
 **사용자 결정 대기(선택지 · 지금 상태)**
 - 교대 인수인계 정의가 두 벌이다(학생이 가져오는 `ShiftHandover`, 제공 정의 `shift_handover` — 같은 녹화 자리). 제공 정의를 지우면 관리할 곳이 줄지만 녹화 도구 · 교재 참조를 함께 고쳐야 한다.

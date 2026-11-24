@@ -116,7 +116,7 @@ def test_도구_지도와_저장_검사는_같은_붙일_수_있음_판정을_�
         f"my-rows: {view['my-rows']['reason']}", 'nope: 등록되지 않은 도구 서버입니다']
 
 
-def test_읽기_표시가_없는_도구는_강사가_읽기로_확인해야_도장에_든다(store, student_url):
+def test_읽기_표시가_없는_도구는_담당자가_읽기로_확인해야_도장에_든다(store, student_url):
     mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     out = mcp_registry.confirm_read(store, TENANT, 'my-rows', 'search_docs', by='user:me', reason='검색 결과만 돌려준다')
     assert sorted(out['gate']['read_tools']) == ['find_rows', 'search_docs'] and out['gate']['confirmed_tools'] == ['search_docs']
@@ -125,10 +125,35 @@ def test_읽기_표시가_없는_도구는_강사가_읽기로_확인해야_도�
     assert refused.value.status == 422
 
 
+def test_읽기_확인과_취소는_누가_했는지_없으면_아무것도_바꾸지_않고_거절한다(store, student_url, pg_dsn):
+    """전수검사 02-14: 확인 기록의 「누가」가 본문의 글 그대로였고(담당자 확인을 거치지 않음), 취소는 그 칸이 비어도 먼저 저장한 뒤에야 400 이 났다 —
+    확인은 지워졌는데 화면에는 실패로 보였다. 실제 등록 API(mount) · 실제 DB · 실제 학생 HTTP 도구 서버."""
+    from types import SimpleNamespace
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    app, audits = FastAPI(), []
+    mcp_registry.mount(app, runtime_factory=lambda: SimpleNamespace(repo=procdb.PgRepo(pg_dsn), tenant_id=TENANT),
+                       audit=lambda target, by, action, detail: audits.append((by, action, detail)))
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
+    api = TestClient(app)
+    path = '/api/mcp/servers/my-rows/read-confirm'
+    assert api.post(path, json={'tool': 'search_docs', 'reason': '검색 결과만 돌려준다', 'by': '  '}).status_code == 400
+    assert mcp_registry.confirmed_of(store.servers(TENANT)['my-rows']) == {} and audits == []
+    done = api.post(path, json={'tool': 'search_docs', 'reason': '검색 결과만 돌려준다', 'by': ' user:me '})
+    assert done.status_code == 200 and done.json()['read_confirmed']['search_docs']['by'] == 'user:me'
+    assert [(by, action) for by, action, _ in audits] == [('user:me', 'MCP_READ_CONFIRMED')]
+    assert api.post(path, json={'tool': 'search_docs', 'on': False}).status_code == 400            # 누가 취소하는지 없음
+    kept = store.servers(TENANT)['my-rows']
+    assert list(mcp_registry.confirmed_of(kept)) == ['search_docs'] and 'search_docs' in kept[mcp_registry.META_KEY]['gate']['read_tools']
+    assert api.post(path, json={'tool': 'search_docs', 'on': False, 'by': 'user:me'}).status_code == 200
+    assert mcp_registry.confirmed_of(store.servers(TENANT)['my-rows']) == {} and audits[-1][:2] == ('user:me', 'MCP_READ_UNCONFIRMED')
+
+
 # ---------------------------------------------------------------- 되돌리기 · 보관 · 다시 쓰기
 @pytest.mark.parametrize('secrets, left', [(True, {}), (False, {'MY_TOKEN': 'sk-1234'})], ids=['관리 되돌리기', '내 구성 파일 불러오기 안'])
 def test_되돌리기는_학생_서버를_지우고_비밀_값은_불러오기_안에서는_남긴다(store, student_url, secrets, left):
-    mcp_secrets.put(store.repo, TENANT, 'MY_TOKEN', 'sk-1234', '강사', 'now')
+    mcp_secrets.put(store.repo, TENANT, 'MY_TOKEN', 'sk-1234', 'user:me', 'now')
     mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     out = mcp_registry.reset(store, TENANT, secrets=secrets)
     assert out['removed_servers'] == ['my-rows'] and sorted(store.servers(TENANT)) == sorted(mcp_registry.BASE_SERVERS)
@@ -240,7 +265,7 @@ def test_진행_기록에_적는_글에서도_채운_비밀_값을_지운다(sto
         return {'rows': list(range(limit))}
     served = Served(app.http_app(path='/mcp'), host=STUDENT_HOST)
     try:
-        mcp_secrets.put(store.repo, TENANT, 'MY_TOKEN', 'sk-live-7777', '수강생', 'now')
+        mcp_secrets.put(store.repo, TENANT, 'MY_TOKEN', 'sk-live-7777', 'user:me', 'now')
         rid, work = _tracked('mcp_check', lambda p: mcp_registry.dry_check(
             store, TENANT, {'name': 'my-rows', 'url': served.url + '/mcp', 'headers': {'Authorization': 'Bearer ${SECRET:MY_TOKEN}'}}, progress=p))
         work()

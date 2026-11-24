@@ -80,5 +80,5 @@ def test_이전_배포_판본으로_되돌리기는_담당자를_못_읽었으�
 
 
 def test_담당자_칸은_고른_나의_이름을_읽기만으로_보인다():
-    got = js(PANEL, {'values': {'deployBy': '아무 이름'}, 'me': {'id': 'user:kim-op', 'name': '김운영', 'roles': []}})
+    got = js(PANEL, {'values': {'deployBy': '아무 이름'}, 'me': {'id': 'user:me', 'name': '김운영', 'roles': []}})
     assert got['by'] == '김운영' and got['readOnly'] is True and got['fetched'] == []

@@ -105,3 +105,23 @@ def test_기준과_비교는_같은_흐름이면_같다고_하고_기준이_없�
     assert same['summary'] == f"「{same['reference']['name']}」와 같습니다"
     status, out = world.api('GET', '/api/flows/deploy-compare?definition=c3_cooling')
     assert status == 409 and '견줄 기준 흐름이 없습니다' in out['detail'], out
+
+
+def test_수업_흐름의_새_판본이_배포돼도_학생_흐름이_맡은_경보를_가져가지_않는다(world, student_cooling):
+    """D-5: 강사가 수업 흐름을 고쳐 push 하면 다음 시작 6단계가 그 흐름의 새 판본을 배포한다. 전에는 그 배포가 「가장 최근 배포」가 되어 학생이
+    배포해 둔 냉각 흐름의 경보 경로를 말없이 가져갔다. 학생 흐름을 경로에서 내리는 길은 [기준 흐름으로 되돌리기] 하나다."""
+    from procsvc.bpmn_store import FlowStore
+    from procsvc.course_policy import COURSE_FLOWS
+    rt = world.rt
+    assert flow_deploy.route_definition(rt, 'COOLER_DEGRADATION').id == student_cooling
+    head = next(h for h in rt.repo.deployed_heads('hyd') if h['id'] == 'c3_cooling')
+    raw = copy.deepcopy(rt.repo.get_proc_def('c3_cooling', 'hyd', version=head['prod_version'])['definition'])
+    filename, xml, _ = COURSE_FLOWS['c3_cooling']
+    raw = FlowStore(rt.repo, 'hyd').register(raw, xml, filename)                    # 시작 6단계가 등록하는 길(흐름 가져오기 등록)과 같은 새 판본
+    rt.deploy_definition('c3_cooling', raw['version'], 'c3-assembly', '기본 제공 흐름 설치', class_flow=True)   # 시작 6단계의 새 판본 배포
+    try:
+        assert flow_deploy.route_definition(rt, 'COOLER_DEGRADATION').id == student_cooling
+        row = next(r for r in flow_deploy.routes(rt)['routes'] if r['pattern'] == 'COOLER_DEGRADATION')
+        assert (row['definition'], row['source']) == (student_cooling, '내가 배포한 흐름'), row
+    finally:
+        rt.deploy_definition('c3_cooling', head['prod_version'], 'c3-assembly', '시험 전 판으로', class_flow=True)

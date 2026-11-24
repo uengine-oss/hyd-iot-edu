@@ -6,7 +6,6 @@
 문지기(쓰기 요청 판정)는 실제 미들웨어를 작은 FastAPI 앱에 붙여 확인한다 — 뒤 라우트는 통과했다는 표시만 돌려준다.
 """
 import base64
-import gzip
 import json
 import re
 from copy import deepcopy
@@ -19,7 +18,7 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from procsvc import ask, course_ledger, course_policy as cp
-from conftest import REPLAY_DIR as REPLAY, SAMPLES, EngineClock as Clock, definition_version
+from conftest import SAMPLES, EngineClock as Clock, definition_version
 
 NOW = datetime(2026, 11, 2, 9, 0, tzinfo=timezone.utc)
 HERE = Path(__file__).resolve().parent
@@ -152,18 +151,8 @@ def test_수업_단계에서_준비된_흐름의_AI_단계는_수업_자리로_�
     assert COURSE.ai_slot(definition, activity, inputs) == slot
 
 
-def _recorded_slots():
-    return {json.loads(gzip.decompress(p.read_bytes()))['slot'] for p in REPLAY.glob('*.json.gz')}
-
-
-def test_수업_AI_자리는_모두_강사_녹화가_있거나_녹화_없이_멈추는_자리로_정해져_있다():
-    slots = set(cp.AI_SLOTS.values())
-    assert slots - cp.UNRECORDED_SLOTS <= _recorded_slots()          # 녹화가 빠진 수업 자리 없음
-    assert cp.UNRECORDED_SLOTS <= slots and not cp.UNRECORDED_SLOTS & _recorded_slots()
-
-
-def test_강사_녹화는_모두_지금_수업_AI_자리의_것이다():
-    assert _recorded_slots() <= set(cp.AI_SLOTS.values())
+# 수업 AI 자리 ↔ 저장소 녹화의 대응(빠진 자리 없음 · 녹화 없이 멈추는 자리 · 수업 자리가 아닌 녹화 없음)은 그 목록을 만드는 도구의 시험 한 곳이 잰다 —
+# test_ai_replay.test_목록_도구는_수업_자리를_process_에서_읽고_저장소_녹화로_빠진_자리가_없다
 
 
 @pytest.mark.parametrize('definition, activity', [
@@ -178,8 +167,11 @@ def test_수업_단계에서_수업_밖_AI_단계는_까닭과_함께_거절된�
 
 
 @pytest.mark.parametrize('definition, activity', [('anomaly_response', 'task:diagnose'), ('my_cooling', 'T_agent'),
-                                                  ('manual_source_extraction', 'task:extract')])
-def test_PBL_단계에서는_수업_밖_AI_단계도_실행된다(definition, activity):
+                                                  ('manual_source_extraction', 'task:extract'),
+                                                  ('c3_cooling', 'T_agent'), ('shift_handover', 'task:draft')])
+def test_PBL_단계에서는_어느_AI_단계든_자리_없이_실제_AI로_실행된다(definition, activity):
+    """수업 밖 단계도 실행되고, 제공 흐름의 단계도 자리(저장된 응답 — 재생 · 같은 요청 저장을 찾는 열쇠)를 주지 않는다. PBL 의 판단은 학생 지식 ·
+    학생 도구 서버로 하므로 수업 때의 응답이 끼어들면 옛 결과가 된다(사용자 2026-11-22 「재생모드는 수업한정인거고 … 뿌리는 같다」)."""
     assert PBL.ai_slot(definition, activity, {}) is None
 
 
@@ -196,7 +188,7 @@ def test_PBL_단계에서는_수업_밖_AI_단계도_실행된다(definition, ac
 @pytest.mark.parametrize('policy', [COURSE, PBL], ids=['수업', 'PBL'])
 def test_질문은_두_단계_모두_질문_계약의_길이_안에서만_AI가_답한다(policy, question, ok):
     if ok:
-        assert policy.ai_slot('ask_agent', 'task:answer', {'question': question}) == 'question'
+        assert policy.ai_slot('ask_agent', 'task:answer', {'question': question}) == (None if policy is PBL else 'question')
     else:
         with pytest.raises(cp.AccessDenied, match=f'1~{LIMIT}자'):
             policy.ai_slot('ask_agent', 'task:answer', {'question': question})
@@ -451,7 +443,7 @@ def test_표의_제공_문서는_포털이_내주는_파일이고_그_파일만_
     import hashlib
     samples = SAMPLES
     files = COURSE.view()['provided_documents']
-    assert files == PBL.view()['provided_documents'] and len(files) == 4 and files[:3] == [f'{d}_' + f.split('_', 1)[1] for d, f in zip(('HM-8', 'PM-02', 'PR-07'), files)]
+    assert files == PBL.view()['provided_documents'] and len(files) == len(cp.DOCUMENTS) and files[:3] == [f'{d}_' + f.split('_', 1)[1] for d, f in zip(('HM-8', 'PM-02', 'PR-07'), files)]
     assert all(cp.provided_document(hashlib.sha256((samples / f).read_bytes()).hexdigest()) for f in files)
 
 
@@ -631,10 +623,12 @@ def test_흐름_A의_실행하지_않는_조치_종류_보고는_코드_값을_�
     """마지막고침 검증 H3: 「알 수 없음」 갈래(R_kind) 보고 글이 chosen_skill_kind 값을 그대로 넣어 (other) · (purchase)가 학생 화면에 보였다.
     실제 보고 렌더러에 승인 결과 값을 넣고 나온 글을 본다."""
     from procsvc.effect_parts import render_report
-    from procsvc.instances import ACTION_KINDS
+    from procsvc.instances import action_kind
+    actions = {'purchase': [{'kind': 'transaction', 'code': 'PR_CREATE'}], 'other': []}[kind]
+    value = action_kind({'actions': actions})                       # 이 흐름의 「그 밖」 갈래로 오는 승인 결과 값 그대로
     task = cp.COURSE_FLOWS['c3_cooling'][2]['tasks']['R_kind']
-    out = render_report(task['config']['summary'], {'chosen_skill_kind': kind, 'chosen_skill': 'skill:x'})
-    assert out and not any(k in out for k in ACTION_KINDS), out
+    out = render_report(task['config']['summary'], {'chosen_skill_kind': value, 'chosen_skill': 'skill:x'})
+    assert value == kind and out and value not in out and 'skill:x' not in out, out
 
 
 @pytest.mark.parametrize('action', sorted(cp.Policy.REASONS) + sorted(cp.Policy.ACTIONS))

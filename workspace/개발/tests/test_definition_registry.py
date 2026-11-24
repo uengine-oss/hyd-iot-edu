@@ -24,7 +24,7 @@ def _flow(activities, sequences, gateways=(), events=None, data=(), forms=None, 
     return {'processDefinitionId': 'probe', 'processDefinitionName': '시험 흐름', 'version': '1', 'forms': forms,
             'activities': activities, 'gateways': list(gateways), 'data': list(data),
             'events': events or [{'id': 'start', 'type': 'startEvent'}, {'id': 'end', 'type': 'endEvent'}],
-            'roles': [{'name': '담당', 'endpoint': 'user:kim-op'}],
+            'roles': [{'name': '담당', 'endpoint': 'user:me'}],
             'sequences': [{'id': f's{i}', **s} for i, s in enumerate(sequences)], **top}
 
 
@@ -41,7 +41,7 @@ def _chain(second_gateway_outgoing):
             'events': [{'id': 'start', 'type': 'startEvent'}, {'id': 'ok', 'type': 'endEvent'}, {'id': 'no', 'type': 'endEvent'},
                        {'id': 'other', 'type': 'endEvent'}],
             'gateways': [{'id': 'g1', 'type': 'exclusiveGateway'}, {'id': 'g2', 'type': 'exclusiveGateway', 'name': '회복 분기'}],
-            'roles': [{'name': '담당', 'endpoint': 'user:kim-op'}],
+            'roles': [{'name': '담당', 'endpoint': 'user:me'}],
             'data': [{'name': 'approval', 'type': 'text'}, {'name': 'recovered', 'type': 'text'}],
             'sequences': [{'id': 's0', 'source': 'start', 'target': 'pick'}, {'id': 's1', 'source': 'pick', 'target': 'g1'},
                           {'id': 's2', 'source': 'g1', 'target': 'g2', 'condition': "approval == '승인'"},

@@ -15,6 +15,7 @@ import psycopg
 import pytest
 
 from conftest import PORTS, REPLAY_DIR, TENANT, ServiceProcess, until
+from hydcommon import pg
 from worker import ai_replay
 
 NEEDED = ('SUPABASE_DSN', 'PROCESS_URL', 'HYD_WORKER_RUNTIME_KEY_FILE')
@@ -150,4 +151,5 @@ def test_업무_DB_에_닿지_않으면_상태가_오류와_그_까닭으로_바
     until(errored, f'워커 상태가 오류로 바뀌지 않았다:\n{service.tail()}', 60)
     code, _, body = seen['reply']
     kind = body['error'].split(':', 1)[0]
-    assert code == 503 and issubclass(getattr(psycopg.errors, kind, None) or getattr(psycopg, kind), psycopg.OperationalError), body
+    # 연결 실패는 공용 연결(hydcommon.pg.connect)이 다시 맺어 본 뒤의 DbUnreachable(psycopg 연결 오류의 한 갈래)이고 문장은 학생이 읽는 까닭이다
+    assert code == 503 and issubclass(getattr(psycopg.errors, kind, None) or getattr(pg, kind, None) or getattr(psycopg, kind), psycopg.OperationalError), body

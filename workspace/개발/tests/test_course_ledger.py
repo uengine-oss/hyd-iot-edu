@@ -48,26 +48,27 @@ def runs(dsn):
         return db.execute('SELECT * FROM hyd_course_runs ORDER BY created_at').fetchall()
 
 
-def use(ledger, run, row, n=1, *, input_bytes=1000, output_tokens=1000):
+def use(ledger, run, row, n=1, *, input_bytes=1000, output_tokens=1000, phase='course'):
     for _ in range(n):
-        ledger.charge(run['run_id'], todo_id=row['id'], consumer=row['consumer'], input_bytes=input_bytes, output_tokens=output_tokens)
+        ledger.charge(run['run_id'], todo_id=row['id'], consumer=row['consumer'], input_bytes=input_bytes, output_tokens=output_tokens,
+                      phase=phase)
 
 
 def test_같은_점유는_토큰을_다시_받아도_같은_실행이다(course, ledger):
     row = claim(course.rt)
-    assert ledger.open_run('hyd', row)['run_id'] == ledger.open_run('hyd', row)['run_id']
+    assert ledger.open_run('hyd', row, phase='course')['run_id'] == ledger.open_run('hyd', row, phase='course')['run_id']
     assert len(runs(course.dsn)) == 1
 
 
 def test_같은_작업을_새로_점유하면_첫_실행_기한이_지나도_새_실행이_열린다(course, ledger, clock):
     """B-01: 옛 장부는 작업 행 · 세대 하나에 실행 하나라, 첫 예약 10분 뒤 이어 하기(사람 답 · 재평가 · 재개 · 교정)는 영구 거절이었다."""
     row = claim(course.rt)
-    first = ledger.open_run('hyd', row)
+    first = ledger.open_run('hyd', row, phase='course')
     use(ledger, first, row, 3)
     ledger.end('hyd', row['id'], row['consumer'])
     clock.advance(POLICY['run']['seconds'] + 60)
     again = reclaim(course.rt, row)
-    second = ledger.open_run('hyd', again)
+    second = ledger.open_run('hyd', again, phase='course')
     use(ledger, second, again)
     assert second['run_id'] != first['run_id']
     assert [(r['consumer'], r['calls']) for r in runs(course.dsn)] == [(row['consumer'], 3), (again['consumer'], 1)]
@@ -130,23 +131,23 @@ def _run_time_passed(clock):
 def test_끝난_점유의_실행은_작업_행으로_닫히고_동시_한도에_세지_않는다(course, ledger, clock, end, state):
     """B-01 ②: 워커가 끝을 알리지 못해도(죽음) 작업 행이 정본이다. 끝난 점유는 PC의 하나뿐인 동시 실행 자리를 막지 않는다."""
     row = claim(course.rt)
-    ledger.open_run('hyd', row)
+    ledger.open_run('hyd', row, phase='course')
     end(clock)(course.rt, row)
     other = claim(course.rt)
-    ledger.open_run('hyd', other)
+    ledger.open_run('hyd', other, phase='course')
     assert [r['state'] for r in runs(course.dsn)] == [state, 'OPEN']
 
 
 def test_살아_있는_다른_점유가_있으면_동시_한도로_거절한다(course, ledger):
-    ledger.open_run('hyd', claim(course.rt))
+    ledger.open_run('hyd', claim(course.rt), phase='course')
     with pytest.raises(Denied) as caught:
-        ledger.open_run('hyd', claim(course.rt))
+        ledger.open_run('hyd', claim(course.rt), phase='course')
     assert (caught.value.code, str(caught.value)) == ('concurrent', REASONS['concurrent'].text)
 
 
 def test_워커가_점유를_끝내면_그_실행만_닫는다(course, ledger):
     row = claim(course.rt)
-    ledger.open_run('hyd', row)
+    ledger.open_run('hyd', row, phase='course')
     assert ledger.end('hyd', row['id'], 'someone-else') == 0
     assert ledger.end('hyd', row['id'], row['consumer']) == 1
     assert [r['state'] for r in runs(course.dsn)] == ['ENDED']
@@ -158,12 +159,28 @@ def test_한_번의_실행_상한을_넘는_호출은_보내기_전에_거절한
     small['run'][field] = 3 * amount
     ledger = CourseLedger(ledger.connect, small)
     row = claim(course.rt)
-    run = ledger.open_run('hyd', row)
+    run = ledger.open_run('hyd', row, phase='course')
     use(ledger, run, row, 3, **({field: amount} if field != 'calls' else {}))
     with pytest.raises(Denied) as caught:
         use(ledger, run, row, 1, **({field: amount} if field != 'calls' else {}))
     assert caught.value.code == 'run_limit'
     assert runs(course.dsn)[0]['calls'] == 3
+
+
+def test_수업_실행의_입력_한도는_호출_수_한도보다_먼저_막지_않는다(course, ledger):
+    """제품 한도(POLICY) 그대로, 수업에서 잰 가장 큰 실행으로 판정한다 — 2026-11-23 실습 17 교대 인계안이 결과 검사에서 두 번 돌려보내진 뒤의
+    세 번째 차례: 같은 대화를 이어 가 호출 하나가 평균 639,464바이트(끝에는 713 KB)였고, 그 12번(합 7,673,568)에서 한 번 실행의 입력 한도
+    8,000,000 이 호출 수 한도(48)의 4분의 1 자리에서 먼저 막았다. 그 크기의 호출이 호출 수 한도까지 가고, 막는 것은 호출 수다."""
+    row = claim(course.rt)
+    run = ledger.open_run('hyd', row, phase='course')
+    use(ledger, run, row, 12, input_bytes=639_464)
+    use(ledger, run, row, POLICY['run']['calls'] - 12, input_bytes=713_000)        # 13번째부터 — 전에는 여기서 run_limit
+    with pytest.raises(Denied) as caught:
+        use(ledger, run, row, 1, input_bytes=713_000)
+    assert caught.value.code == 'run_limit'
+    [spent] = runs(course.dsn)
+    assert (spent['calls'], spent['input_bytes']) == (48, 12 * 639_464 + 36 * 713_000)
+    assert spent['input_bytes'] < POLICY['run']['input_bytes']          # 49번째를 막은 것은 입력 합이 아니라 호출 수다
 
 
 @pytest.mark.parametrize('field', ['calls', 'input_bytes', 'output_tokens'])
@@ -174,11 +191,11 @@ def test_작업_단위_누적_상한은_이어_한_실행을_모두_더해_막�
     small['task'][field] = 2 * per
     ledger = CourseLedger(ledger.connect, small)
     row = claim(course.rt)
-    use(ledger, ledger.open_run('hyd', row), row, 2)
+    use(ledger, ledger.open_run('hyd', row, phase='course'), row, 2)
     ledger.end('hyd', row['id'], row['consumer'])
     again = reclaim(course.rt, row)
     with pytest.raises(Denied) as caught:
-        ledger.open_run('hyd', again)
+        ledger.open_run('hyd', again, phase='course')
     assert (caught.value.code, str(caught.value)) == ('task_limit', REASONS['task_limit'].text)
 
 
@@ -187,7 +204,7 @@ def test_PC_전체_상한을_넘으면_다른_작업도_거절한다(course, led
     small['pc']['calls'] = 2
     ledger = CourseLedger(ledger.connect, small)
     row = claim(course.rt)
-    run = ledger.open_run('hyd', row)
+    run = ledger.open_run('hyd', row, phase='course')
     use(ledger, run, row, 2)
     with pytest.raises(Denied) as caught:
         use(ledger, run, row, 1)
@@ -197,12 +214,12 @@ def test_PC_전체_상한을_넘으면_다른_작업도_거절한다(course, led
 def test_코드의_정책_판본이_바뀌면_장부_정책을_바꾸고_사용량은_그대로다(course, ledger, caplog):
     """B-10: 첫 기동 때 넣은 정책이 영영 남아(ON CONFLICT DO NOTHING) 상한을 고쳐 배포해도 이미 켠 PC는 옛 상한이었다."""
     row = claim(course.rt)
-    use(ledger, ledger.open_run('hyd', row), row, 2)
+    use(ledger, ledger.open_run('hyd', row, phase='course'), row, 2)
     ledger.end('hyd', row['id'], row['consumer'])
     newer = copy.deepcopy(POLICY)
     newer['revision'] = POLICY['revision'] + '-next'
     newer['pc']['calls'] = 5
-    CourseLedger(ledger.connect, newer).open_run('hyd', claim(course.rt))
+    CourseLedger(ledger.connect, newer).open_run('hyd', claim(course.rt), phase='course')
     with psycopg.connect(course.dsn, row_factory=dict_row) as db:
         grant = db.execute("SELECT * FROM hyd_course_grants WHERE account='hyd'").fetchone()
     assert (grant['policy']['revision'], grant['policy']['pc']['calls'], grant['calls']) == (newer['revision'], 5, 2)
@@ -213,7 +230,7 @@ def test_코드의_정책_판본이_바뀌면_장부_정책을_바꾸고_사용�
                          ids=['기한 1초 전 — 적힘', '기한 그 시각 — 시간 초과'])
 def test_실행_기한까지만_같은_점유의_호출을_적는다(course, ledger, clock, after, code):
     row = claim(course.rt)
-    run = ledger.open_run('hyd', row)
+    run = ledger.open_run('hyd', row, phase='course')
     clock.advance(after)
     if code is None:
         use(ledger, run, row)
@@ -224,11 +241,53 @@ def test_실행_기한까지만_같은_점유의_호출을_적는다(course, led
         assert caught.value.code == code
 
 
+def test_PBL_단계의_실행은_긴_문서_한_구간이_끝나는_시간을_받고_수업_전체를_잰_PC_한도에_막히지_않는다(course, ledger, clock):
+    """탐사 S: 관문 장부 한도가 PBL 에도 수업 값 그대로였다 — 한 번 실행 600초는 긴 문서 한 구간(워커 실행 한도 1,800초에 맞춰 정한 크기,
+    82,795자 실측 1,180초)을 「한 번 실행 시간을 넘었습니다」로 다시 해도 또 멈추게 했고, PC 전체 600회 · 1억 바이트(이 PC의 수업 전체)가
+    실제 규모 문서 · 실데이터 일을 막았다. PBL 단계의 실행은 그 단계의 한도로 열고 적는다(비용의 최종 방어는 중계 키 한도)."""
+    from worker.settings import Settings
+    row = claim(course.rt)
+    with psycopg.connect(course.dsn, autocommit=True) as db:      # 이 PC 는 수업에서 PC 한도를 다 썼다
+        db.execute('INSERT INTO hyd_course_grants(account, policy, calls) VALUES (%s, %s, %s) ON CONFLICT (account) DO UPDATE SET calls = excluded.calls',
+                   ('hyd', psycopg.types.json.Jsonb(POLICY), POLICY['pc']['calls']))
+    with pytest.raises(Denied) as course_phase:
+        ledger.open_run('hyd', row, phase='course')
+    assert course_phase.value.code == 'pc_limit'
+    run = ledger.open_run('hyd', row, phase='pbl')
+    assert run['deadline'] - clock().timestamp() == pytest.approx(Settings().run_timeout_s, abs=1)     # 워커의 한 번 실행 한도와 같다
+    clock.advance(POLICY['run']['seconds'] + 60)                                                      # 수업 한도(600초)를 넘긴 때에도
+    use(ledger, run, row, phase='pbl', input_bytes=course_ledger.CALL_INPUT_BYTES)                  # 큰 호출이 적힌다
+    assert runs(course.dsn)[0]['calls'] == 1
+    with pytest.raises(ValueError):
+        ledger.open_run('hyd', claim(course.rt), phase='holiday')                                     # 모르는 단계는 한도를 짐작하지 않는다
+
+
+def test_PBL_에서_쓴_사용량은_수업_단계의_PC_한도에_더하지_않는다(course, ledger):
+    """PC 누적은 「이 PC의 수업 전체」를 재는 값이다 — 단계를 가리지 않고 더하던 때는 PBL 의 실제 규모 일이 그 값을 채워, PBL 기한 뒤 수업 단계로
+    돌아온 PC 의 수업 AI 단계가 PC 한도로 막혔다. PBL 사용량은 그 실행 행에만 남고, 수업 단계의 사용량은 전처럼 PC 누적에 든다."""
+    small = copy.deepcopy(POLICY)
+    small['pc']['calls'] = 2
+    ledger = CourseLedger(ledger.connect, small)
+    row = claim(course.rt)
+    run = ledger.open_run('hyd', row, phase='pbl')
+    use(ledger, run, row, 3, phase='pbl')                                                             # 수업 PC 한도(2회)보다 많이
+    ledger.end('hyd', row['id'], row['consumer'])
+    with psycopg.connect(course.dsn, row_factory=dict_row) as db:
+        grant = db.execute("SELECT calls, input_bytes, output_tokens FROM hyd_course_grants WHERE account='hyd'").fetchone()
+    assert grant == {'calls': 0, 'input_bytes': 0, 'output_tokens': 0} and runs(course.dsn)[0]['calls'] == 3
+    again = reclaim(course.rt, row)                                                                   # PBL 기한 뒤 수업 단계의 실행
+    back = ledger.open_run('hyd', again, phase='course')
+    use(ledger, back, again, 2)
+    with pytest.raises(Denied) as caught:
+        use(ledger, back, again, 1)
+    assert caught.value.code == 'pc_limit'                                                            # 수업 단계의 사용량은 PC 누적에 든다
+
+
 def test_다른_점유의_이름으로는_그_실행에_적을_수_없다(course, ledger):
     row = claim(course.rt)
-    run = ledger.open_run('hyd', row)
+    run = ledger.open_run('hyd', row, phase='course')
     with pytest.raises(Denied) as caught:
-        ledger.charge(run['run_id'], todo_id=row['id'], consumer='someone-else', input_bytes=10, output_tokens=10)
+        ledger.charge(run['run_id'], todo_id=row['id'], consumer='someone-else', input_bytes=10, output_tokens=10, phase='course')
     assert caught.value.code == 'claim_ended'
 
 

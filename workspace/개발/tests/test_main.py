@@ -57,11 +57,14 @@ def producing(world):
     return world.values(pid)['incident'], scope, alert
 
 
+CHECKED = {'evaluation_mode': 'execution', 'execution_checked': True}      # 판단 엔진이 판단과 카드에 늘 싣는 실행 검사 표시
+
+
 def _decision(incident, scope, alert, **change):
     body = {'id': 'DEC-TEST-' + uuid.uuid4().hex[:10], 'schema': 'v2', 'asset': alert['asset'],
             'origin': {'kind': 'alert', 'incident': incident, 'alertId': alert['alertId'], 'pattern': alert['pattern'], 'process_scope': scope},
-            'options': [{'id': 'skill:sop-cool-11', 'sopId': 'SOP-COOL-11'}, {'id': 'skill:sop-cool-04', 'sopId': 'SOP-COOL-04'}],
-            'recommended': 'skill:sop-cool-11'}
+            'options': [{'id': 'skill:sop-cool-11', 'sopId': 'SOP-COOL-11', **CHECKED}, {'id': 'skill:sop-cool-14', 'sopId': 'SOP-COOL-14', **CHECKED}],
+            'recommended': 'skill:sop-cool-11', **CHECKED}
     for key, value in change.items():
         if value is ...:
             body.pop(key, None)
@@ -159,12 +162,12 @@ def test_감사_기록_한_번에_읽는_줄_수의_경계(world, limit, status)
 
 # ---------------------------------------------------------------- 바깥 서비스의 거절 까닭(P5-04 · G2-12)
 def test_업무_시스템이_거래를_거절하면_그_까닭을_그대로_실패_사유로_남긴다(world):
-    d = {'id': 'DEC-EXEC-' + uuid.uuid4().hex[:8], 'asset': 'HYD-03', 'chosen': 'skill:purchase', 'approvedBy': 'user:kim-op',
-         'options': [{'id': 'skill:purchase', 'name': '씰 키트'}], 'origin': {'pattern': 'SPARE_BELOW_MIN'}}
+    d = {'id': 'DEC-EXEC-' + uuid.uuid4().hex[:8], 'asset': 'HYD-03', 'chosen': 'skill:purchase', 'approvedBy': 'user:me',
+         'options': [{'id': 'skill:purchase', 'name': '씰 키트', **CHECKED}], 'origin': {'pattern': 'SPARE_BELOW_MIN'}, **CHECKED}
     item = {'skill': 'skill:purchase', 'code': 'PR_CREATE', 'system': 'sys:erp', 'value': 'sup:none', 'part_no': 'P-PMP-SEAL', 'qty': 1,
             'amount': 1}
     body = {'decision': d['id'], 'option': 'skill:purchase', 'skill': 'skill:procure-part', 'system': 'sys:erp', 'asset': 'HYD-03',
-            'by': 'user:kim-op', 'params': {'supplier': 'sup:none', 'part': '씰 키트', 'part_no': 'P-PMP-SEAL', 'qty': 1, 'amount': 1}}
+            'by': 'user:me', 'params': {'supplier': 'sup:none', 'part': '씰 키트', 'part_no': 'P-PMP-SEAL', 'qty': 1, 'amount': 1}}
     request = urllib.request.Request(world.main.ENTERPRISE_URL + '/api/exec', data=json.dumps(body).encode(), method='POST',
                                      headers={'Content-Type': 'application/json', **world.instance_mode.caller_headers()})
     with pytest.raises(urllib.error.HTTPError) as direct:                 # 업무 시스템이 스스로 주는 거절 까닭(바깥에서 직접)
@@ -177,9 +180,9 @@ def test_업무_시스템이_거래를_거절하면_그_까닭을_그대로_실�
 
 def test_정비_시점을_싣지_않은_작업지시는_카드_id_글자와_상관없이_즉시다(world):
     """G2-09: 정비 시점이 없으면 카드 id 에 night 가 들어 있는지로 「야간」을 짐작했다."""
-    d = {'id': 'DEC-WO-' + uuid.uuid4().hex[:8], 'asset': 'HYD-01', 'chosen': 'skill:sop-cool-night', 'approvedBy': 'user:kim-op',
-         'options': [{'id': 'skill:sop-cool-night', 'name': '쿨러 핀 세척', 'sopId': 'SOP-COOL-04'}], 'origin': {'pattern': 'COOLER_DEGRADATION'}}
-    item = {'skill': 'skill:sop-cool-night', 'code': 'WO_CREATE', 'system': 'sys:cmms', 'value': '핀 세척', 'sop': 'SOP-COOL-04'}
+    d = {'id': 'DEC-WO-' + uuid.uuid4().hex[:8], 'asset': 'HYD-01', 'chosen': 'skill:sop-cool-night', 'approvedBy': 'user:me',
+         'options': [{'id': 'skill:sop-cool-night', 'name': '쿨러 핀 세척', 'sopId': 'SOP-COOL-14', **CHECKED}], 'origin': {'pattern': 'COOLER_DEGRADATION'}, **CHECKED}
+    item = {'skill': 'skill:sop-cool-night', 'code': 'WO_CREATE', 'system': 'sys:cmms', 'value': '핀 세척', 'sop': 'SOP-COOL-14'}
     out = world.main.exec_skill(d, item)
     assert out['ok'] is True, out
     with psycopg.connect(world.dsn) as db:
@@ -267,8 +270,9 @@ def test_큰_DDL을_해석하는_동안에도_process는_다른_요청에_답한
         return response, took, max(gaps)
     response, took, longest = _run_async(measure())
     assert response.status_code == 200, response.text
-    assert took > 1.0, took                                   # 해석이 루프를 멈췄다면 보일 만큼 무거운 글이다
-    assert longest < took / 3, (longest, took)                # 그동안 루프는 계속 돌았다(전에는 가장 긴 틈 ≈ 해석 시간)
+    # 그동안 루프는 계속 돌았다(전에는 가장 긴 틈 ≈ 해석 시간). 해석 시간의 하한(1초)은 두지 않는다 — 빠른 PC 에서는 재려는 것과 상관없이 실패했다
+    # (13B-13). 받는 글의 상한 크기(TEXT_MAX)라 이보다 무거운 요청은 없다: 해석이 루프를 멈췄다면 가장 긴 틈이 해석 시간만큼 나온다.
+    assert longest < max(took / 3, 0.1), (longest, took)
 
 
 # ---------------------------------------------------------------- 수업 버튼(P5-18 · P4-24)
@@ -278,12 +282,12 @@ def _night_anchor(dsn):
 
 
 def test_거절된_재고_보충_누름은_업무_시각을_옮기지_않고_감사_기록에_까닭이_남는다(world):
-    flow_deploy.deploy_reset(world.rt, 'user:kim-op', '거절 확인', include_class=True)      # 재고 보충 흐름이 배포돼 있지 않은 상태
+    flow_deploy.deploy_reset(world.rt, 'user:me', '거절 확인', include_class=True)      # 재고 보충 흐름이 배포돼 있지 않은 상태
     try:
         # 재고 보충 표시가 있는 수업 시작 상태 — 앞 테스트가 흐름 C 를 끝내 표시를 지웠으면 「이미 처리됐습니다」로 다른 까닭의 거절이 된다(전체 테스트 1)
         world.main._entsim_post(*sb.SCENARIOS['C']['reset'])
         before = _night_anchor(world.dsn)
-        status, out = world.api('POST', '/api/scenario/C/start', {'by': 'user:kim-op'})
+        status, out = world.api('POST', '/api/scenario/C/start', {'by': 'user:me'})
         assert status == 409 and '배포되어 있지 않습니다' in out['detail'], out
         assert _night_anchor(world.dsn) == before
         press = next(e for e in world.main.audit_log if e['event'] == 'SCENARIO_BUTTON')
@@ -334,7 +338,7 @@ def test_판단_조회는_안마다_승인할_수_있는_역할을_싣고_장부
     roles = {'role:operator': {'level': 1}, 'role:maint-mgr': {'level': 2}, 'role:plant-mgr': {'level': 3}}
     body = _decision(*producing, roles=roles, options=[
         {'id': 'skill:sop-cool-11', 'sopId': 'SOP-COOL-11', 'approver': {'id': 'role:maint-mgr', 'level': 2}},
-        {'id': 'skill:sop-cool-04', 'sopId': 'SOP-COOL-04'}])                            # 승인 역할이 없는 안 = 역할 표 전부
+        {'id': 'skill:sop-cool-14', 'sopId': 'SOP-COOL-14'}])                            # 승인 역할이 없는 안 = 역할 표 전부
     status, out = world.api('POST', '/api/decisions', body)
     assert status == 200, out
     status, got = world.api('GET', f"/api/decisions/{body['id']}")
@@ -478,6 +482,75 @@ def test_다른_사이트의_양식이_본문_없는_수업_버튼_경로를_부
     assert (r.status_code, r.json()) == (403, {'detail': CROSS_SITE_REFUSED})
 
 
+class _DbLine:
+    """process 와 업무 DB 사이의 연결선(바깥 — 호스트 망): 처음 refusals 번 들어온 연결은 받자마자 끊고(망이 잠깐 끊김 — 맺는 순간의 연결 오류),
+    그 뒤 연결은 실제 업무 DB 로 잇는다. dsn = 그 선을 지나는 업무 DB 주소."""
+
+    def __init__(self, dsn, refusals):
+        import socket
+        import threading
+        from urllib.parse import urlsplit, urlunsplit
+        parts = urlsplit(dsn)
+        self.target, self.refusals = (parts.hostname, parts.port), refusals
+        self.server = socket.create_server(('127.0.0.1', 0))
+        port = self.server.getsockname()[1]
+        self.dsn = urlunsplit(parts._replace(netloc=f'{parts.username}:{parts.password}@127.0.0.1:{port}'))
+        threading.Thread(target=self._accept, daemon=True).start()
+
+    def _accept(self):
+        import socket
+        import threading
+        while True:
+            try:
+                client, _ = self.server.accept()
+            except OSError:
+                return
+            if self.refusals > 0:
+                self.refusals -= 1
+                client.close()
+                continue
+            upstream = socket.create_connection(self.target)
+            for src, dst in ((client, upstream), (upstream, client)):
+                threading.Thread(target=self._pipe, args=(src, dst), daemon=True).start()
+
+    @staticmethod
+    def _pipe(src, dst):
+        try:
+            while data := src.recv(65536):
+                dst.sendall(data)
+        except OSError:
+            pass
+        for sock in (src, dst):
+            try:
+                sock.close()
+            except OSError:
+                pass
+
+    def close(self):
+        self.server.close()
+
+
+@pytest.mark.parametrize('refusals', [2, 99], ids=['잠깐 끊김 — 다시 맺어 그 요청이 된다', '계속 끊김 — 503 과 읽을 문장'])
+def test_업무_DB_연결이_잠깐_끊기면_요청이_되고_계속_끊기면_503과_읽을_문장으로_답한다(world, monkeypatch, refusals):
+    """2026-11-23: 호스트 망이 잠깐 늦어 연결 한 번이 시간 초과였을 때 GET /api/todolist/<id> 가 raw 500(포털 「서버 내부 오류」)이었다. 실제 처리
+    엔진(world — 실행 중인 처리 건의 단계)과 실제 업무 DB 사이에 끊기는 연결선을 둔다(바깥만 대체). 다시 맺는 쉬는 시간은 실제 시계로 지난다."""
+    from conftest import start_handover
+    pid = start_handover(world.rt)['proc_inst_id']
+    wid = world.rows(pid)[0]['id']
+    line = _DbLine(world.dsn, refusals)
+    monkeypatch.setattr(world.rt.repo, 'dsn', line.dsn)          # 업무 DB 를 그 연결선 너머에서 부른다
+    try:
+        status, body = world.api('GET', f'/api/todolist/{wid}')   # 처리기가 없으면 예외가 그대로 올라와 여기서 실패한다
+    finally:
+        line.close()
+    if refusals < 99:
+        assert status == 200 and (body['id'], body['proc_inst_id']) == (wid, pid), (status, body)
+        assert line.refusals == 0, '연결선이 끊은 연결이 없다 — 다시 맺기를 재지 못했다'
+    else:
+        assert (status, body) == (503, {'detail': '업무 DB에 지금 연결되지 않습니다. 잠시 뒤 다시 해 보세요. 계속 이러면 시작 파일을 다시 실행하거나, '
+                                                  '점검 파일로 업무 DB가 켜져 있는지 확인하세요.'})
+
+
 def test_끄기는_작업_스레드에_맡긴_처리_건_갱신이_끝날_때까지_기다린다(world):
     """FA1 검증 §4-6 · FA2 검증 P5-17: 끄기(main._shutdown)와 world 닫기가 작업 스레드의 사건 갱신(instance_mode._schedule)을 기다리지 않고
     저장소를 닫아, 끄는 순간의 갱신이 닫힌 저장소에 부딪히거나 다음 테스트 준비 중에 앞 world 의 갱신이 돌았다."""
@@ -522,3 +595,69 @@ def test_설비의_일이_아닌_감사_기록은_HYD_01_의_키로_보내지_�
         return {v['event']: k for t, k, v in world.kafka.sent if t == topics.K_AUDIT and v['event'].startswith('KEY_TEST')}
     until(lambda: len(keys()) == 2, '감사 기록 둘이 송신기에 닿음')
     assert keys() == {'KEY_TEST_NO_ASSET': None, 'KEY_TEST_ASSET': 'hyd02'}
+
+
+# ---------------------------------------------------------------- 다시 켠 뒤 늦게 처리한 해제(검토 나-2) — 바깥 변화를 모르면 모른다고 남긴다
+PRESS = {'by': '담당자', 'user_id': 'user:me', 'roles': ['role:operator']}
+
+
+def _receive_clear(world, alert):
+    """감지기의 해제 하나를 원천 접수로 받기만 한다(처리기는 아직 돌지 않는다 — 접수 처리 대기 · 다시 켬 사이에 남은 해제). 해제의 시각은 감지기가
+    싣는 설비 시계(벽시계)다. 앞뒤의 바깥 변화와 시각이 겹치지 않게 앞뒤로 조금 쉰다."""
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+    from hydcommon import topics
+    time.sleep(0.01)
+    cleared = dict(alert, state='CLEAR', t=datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'))
+    record = SimpleNamespace(topic=topics.K_ALERTS, partition=0, offset=next(world.offsets), value=json.dumps(cleared, ensure_ascii=False).encode())
+    _run_async(world.main.receive_records([record]))
+    time.sleep(0.01)
+
+
+def test_다시_켠_뒤_늦게_처리한_해제는_그_전의_바깥_변화_기록이_끊겼으면_자연_회복이라_하지_않고_모른다고_책임자_확인이다(world):
+    """검토 나-2: 바깥 변화 기록은 설비가 보고할 때 메모리에만 쌓인다. 해제를 접수한 뒤 처리하기 전에 process 가 다시 켜지면 업무 DB 의 최신 상태가
+    실은 기록 하나(해제 뒤의 것)만 남아, 해제 전에 누른 [설비 초기화]가 사라진 채 「조치 전 자연 회복」으로 닫혔다. 처리 건이 열릴 때의 기록과 해제 뒤
+    처음 받은 기록 사이의 번호가 비면 받지 못한 변화가 있다 — 해제 전인지 뒤인지 알 수 없으므로 그 까닭으로 책임자 확인이다(다시 오지 않으니 기다리지 않는다).
+    설비 · 원천 접수 · 업무 DB · 다시 켬은 모두 실제 길이다."""
+    from procsvc import definition
+    alert, pid, decision = world.start_cooling()
+    world.plant.reset(button='설비 초기화', by=PRESS['by'])          # 해제 전의 바깥 변화 — 설비가 보고해 process 도 받는다
+    world.report('HYD-01')
+    _receive_clear(world, alert)
+    world.plant.reset(button='설비 초기화', by=PRESS['by'])          # 해제 뒤에 한 번 더 — 업무 DB 의 최신 상태는 이 기록을 싣는다
+    world.report('HYD-01')
+    assert not world.incident(pid).cleared
+    world.restart()                                                 # 메모리의 기록이 사라진다
+    world.deliver()                                                 # 이제 해제를 처리한다
+    inc = world.incident(pid)
+    assert inc.cleared and inc.state == 'ESCALATED' and inc.reason.startswith(definition.OUTSIDE_UNKNOWN + ':'), (inc.state, inc.reason)
+    text = definition.escalation_cause(inc.reason)[0]
+    assert '알 수 없습니다' in text and '앞의 변화 1건을 받지 못해' in text and '[설비 초기화]' in text and 'OUTSIDE' not in text, text
+
+
+@pytest.mark.parametrize('while_down, state, reason', [
+    (False, 'RESOLVED_WITHOUT_ACTION', None),
+    (True, 'ESCALATED', 'OUTSIDE_CHANGE:'),
+], ids=['꺼져 있던 동안 바깥 조작 없음', '꺼져 있던 동안 해제 전에 설비 초기화'])
+def test_다시_켠_뒤_그_설비의_상태를_아직_받지_못했으면_해제를_기다렸다가_처음_받은_상태로_가른다(world, while_down, state, reason):
+    """검토 나-2: 다시 켠 process 가 가진 설비 상태는 꺼지기 전에 업무 DB 에 남긴 것뿐이다 — 그 뒤(꺼져 있던 동안)의 바깥 변화는 모른다. 전에는 그
+    상태의 기록만 보고 해제를 「조치 전 자연 회복」으로 닫아, 꺼져 있던 동안 해제 전에 누른 [설비 초기화]가 사라졌다. 설비는 1초마다 보고하므로 해제를
+    기다리게 두고(원천 접수 WAITING — 그 까닭), 다시 켠 뒤 설비가 처음 보고한 상태로 가른다: 그 뒤로 바뀐 적이 없으면 자연 회복, 해제 전에
+    바뀌었으면 그 바깥 변화로 책임자 확인."""
+    alert, pid, decision = world.start_cooling()
+    if while_down:
+        world.plant.reset(button='설비 초기화', by=PRESS['by'])      # process 가 받지 못한 바깥 변화(그 상태가 오기 전에 꺼졌다)
+    _receive_clear(world, alert)
+    world.restart()
+    world.deliver()
+    [waiting] = world.main.source_inbox.list(status='WAITING')
+    assert waiting['kind'] == 'CLEAR' and '다음 설비 상태를 기다립니다' in waiting['error'], waiting
+    assert not world.incident(pid).cleared and world.incident(pid).state == 'AWAITING_APPROVAL'
+    world.report('HYD-01')                                          # 다시 켠 뒤 설비가 처음 보고한다
+    deadline = time.monotonic() + 30
+    while not world.incident(pid).cleared and time.monotonic() < deadline:     # 원천 처리기는 기다리는 접수를 5초 뒤 다시 한다
+        time.sleep(0.5)
+        world.deliver()
+    inc = world.incident(pid)
+    assert inc.cleared and inc.state == state, (inc.state, inc.reason)
+    assert (inc.reason is None) if reason is None else (inc.reason.startswith(reason) and '[설비 초기화]' in inc.reason), inc.reason

@@ -9,13 +9,16 @@ import pytest
 from agentsvc import trial
 
 PATTERNS = ['COOLER_DEGRADATION', 'PUMP_WEAR', 'PM_DUE']
+ASSETS = ['HYD-01', 'HYD-02', 'HYD-03', 'APU-01']      # 지식 지도의 설비 코드 — 가상 설비 셋과 문서가 넣은 다른 설비 하나
 
 
 @pytest.mark.parametrize('server, business', [
     ('enterprise', True), ('enterprise-maint', True), ('enterprise-purchase', True), ('enterprisex', False), ('hyd-dmn', False),
-], ids=['업무', '정비 C2', '구매 C2', '이름만 비슷', '판단 엔진'])
+    ('enterprise-stock', False),
+], ids=['업무', '정비 C2', '구매 C2', '이름만 비슷', '판단 엔진', '학생 서버가 enterprise- 로 시작'])
 def test_업무_도구_서버_계열은_enterprise_와_그것을_나눈_서버다(server, business):
-    """P3-14: 정비 · 구매로 나눈 서버를 가진 에이전트는 시험 실행에서 업무 사실을 못 읽었다."""
+    """P3-14: 정비 · 구매로 나눈 서버를 가진 에이전트는 시험 실행에서 업무 사실을 못 읽었다. N12: 학생이 「enterprise-」로 시작하게 지은 자기
+    서버를 기본 제공 업무 서버로 보면 판단 실험이 그 서버 대신 기본 제공 업무 시스템을 읽었다 — 이름표(hydcommon)에 든 서버만 업무 계열이다."""
     assert trial.enterprise_family(server) is business
 
 
@@ -24,9 +27,13 @@ def test_업무_도구_서버_계열은_enterprise_와_그것을_나눈_서버�
     ('HYD-02 펌프만', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}, False, '다른 설비(HYD-02)'),
     ('PUMP_WEAR 일 때', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}, False, '다른 이상 패턴(PUMP_WEAR)'),
     ('HYD-01 COOLER_DEGRADATION', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}, True, None),
-], ids=['가리키는 곳 없음', '다른 설비', '다른 패턴', '이 설비 이 패턴'])
+    ('APU-01 압축기의 공기 누설만', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}, False, '다른 설비(APU-01)'),
+    ('HYD-010 은 지식 지도에 없는 글자다', {'asset': 'HYD-02', 'pattern': 'COOLER_DEGRADATION'}, True, None),
+], ids=['가리키는 곳 없음', '다른 설비', '다른 패턴', '이 설비 이 패턴', '수업 설비 이름 꼴이 아닌 다른 설비', '더 긴 코드의 일부'])
 def test_스킬은_본문이_가리키는_설비_패턴에서만_적용된다(text, scenario, applies, why):
-    ok, reason = trial.skill_scope({'name': 's', 'content': text}, scenario, PATTERNS)
+    """전수검사 02-10: 설비를 수업 이름 꼴(HYD-0n)의 정규식으로만 알아봐, 다른 이름의 설비만 가리키는 스킬이 모든 시나리오에 적용됐다 — 지식 지도의
+    설비 코드로 알아본다."""
+    ok, reason = trial.skill_scope({'name': 's', 'content': text}, scenario, PATTERNS, ASSETS)
     assert ok is applies and (why is None or why in reason)
 
 
@@ -110,8 +117,9 @@ def test_판단_엔진_도구가_없는_에이전트는_원인_진단을_할_수
 @pytest.mark.parametrize('content, status, part, reason', [
     ('`scm_suppliers` 로 P-PMP-SEAL 의 공급사를 본다', 'DONE', 'P-PMP-SEAL', None),
     ('`scm_suppliers` 로 P-PMP-SEAL 과 P-RTN-FLT 의 공급사를 본다', 'FAILED', None, '하나로 정할 수 없습니다(P-PMP-SEAL, P-RTN-FLT)'),
-    ('`scm_suppliers` 로 공급사를 본다', 'FAILED', None, '본문에 P-로 시작하는 부품 번호가 없음'),
-], ids=['부품 하나', '부품 둘', '부품 없음'])
+    ('`scm_suppliers` 로 공급사를 본다', 'FAILED', None, '본문에 지식 지도의 부품 번호가 없음'),
+    ('`scm_suppliers` 로 P-NOT-A-PART 의 공급사를 본다', 'FAILED', None, '본문에 지식 지도의 부품 번호가 없음'),
+], ids=['부품 하나', '부품 둘', '부품 없음', '부품 번호 꼴이지만 지식 지도에 없는 글자'])
 def test_공급사_조회_스킬은_본문에_적힌_부품_하나로_부르고_못_정하면_그_까닭으로_막힌다(cooling, content, status, part, reason):
     """G1-28: 공급사 조회 인자가 P-CLR-CORE 로 고정돼 스킬이 적은 부품이 무시됐다."""
     skill = {'name': 'supplier-check', 'description': '공급사 확인', 'content': content}

@@ -14,7 +14,7 @@ def _pid(world):
 
 def _receipt(pid, generation, **changes):
     return dict({'tenant_id': 'hyd', 'proc_inst_id': pid, 'request_id': str(uuid.uuid4()), 'generation': generation,
-                 'request': {'workitem_id': 'w', 'by': 'user:kim-op'}, 'result': {'generation': generation}}, **changes)
+                 'request': {'workitem_id': 'w', 'by': 'user:me'}, 'result': {'generation': generation}}, **changes)
 
 
 def test_다시_수행_영수증은_요청_id로_읽히고_목록은_차수_순이다(world):

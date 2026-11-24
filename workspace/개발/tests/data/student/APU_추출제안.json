@@ -1,0 +1,1612 @@
+{
+ "source_id": "manual:SOURCE",
+ "sections": [
+  {
+   "ref": "APU-1",
+   "title": "문서 정보와 적용 범위",
+   "excerpt": "이 매뉴얼은 지하철 차량 한 편성에 한 대씩 실린 공기 공급 장치(APU, Air Production Unit)의 운전 확인 · 점검 · 고장 조치를 정한다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-1 문서 정보와 적용 범위"
+   }
+  },
+  {
+   "ref": "APU-1.1",
+   "title": "안전 수칙",
+   "excerpt": "APU 안에는 정지 후에도 압축 공기와 뜨거운 오일이 남아 있다. 정비 작업 전에는 반드시 아래 네 가지를 지킨다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-1.1 안전 수칙"
+   }
+  },
+  {
+   "ref": "APU-1.2",
+   "title": "용어",
+   "excerpt": "누설 시험 | 압축기를 멈춘 채 저장 탱크 압력이 얼마나 빨리 떨어지는지 재는 시험",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-1.2 용어"
+   }
+  },
+  {
+   "ref": "APU-2",
+   "title": "장치 구성",
+   "excerpt": "APU는 아래 구성 요소로 이루어진다. 고장 진단(APU-6)은 이 구성 요소 단위로 적는다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-2 장치 구성"
+   }
+  },
+  {
+   "ref": "APU-3",
+   "title": "계측 신호",
+   "excerpt": "차량 데이터 수집 장치는 아래 신호를 정해진 주기로 재어 운영사 설비 관리 시스템으로 보낸다. 신호 이름은 그 시스템에서 쓰는 이름이다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-3 계측 신호"
+   }
+  },
+  {
+   "ref": "APU-4",
+   "title": "운전",
+   "excerpt": "APU 압력이 8.2 bar 아래로 떨어지면 부하 기동 신호 MPG가 켜져 압축기가",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-4 운전"
+   }
+  },
+  {
+   "ref": "APU-4.1",
+   "title": "출고 전 점검",
+   "excerpt": "이 절의 점검은 운전원이 출고 전에 날마다 하는 상태 확인이며, 고장 조치의 실행 후보가 아니다. 상태 확인을 위한 참고 절차로 보관한다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-4.1 출고 전 점검"
+   }
+  },
+  {
+   "ref": "APU-5",
+   "title": "정기 정비",
+   "excerpt": "정기 정비는 차량 주행 거리와 APU 운전 시간 가운데 먼저 닿는 것을 기준으로 한다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-5 정기 정비"
+   }
+  },
+  {
+   "ref": "APU-6.1",
+   "title": "고장 표",
+   "excerpt": "진단은 이 순서로 한다. 먼저 설비 관리 시스템의 경고와 신호로 어느 고장인지 고른다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-6.1 고장 표"
+   }
+  },
+  {
+   "ref": "APU-6.2",
+   "title": "공기 누설",
+   "excerpt": "공기 누설은 공압 배관에서 생기는 고장이며 부하 운전 비율 증가와 무부하 때 저장 탱크 압력 하강으로 나타난다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-6.2 공기 누설"
+   }
+  },
+  {
+   "ref": "APU-6.3",
+   "title": "오일 누설",
+   "excerpt": "오일 누설은 오일 계통에서 생기는 고장이며 오일 부족 신호와 오일 온도 상승으로 나타난다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-6.3 오일 누설"
+   }
+  },
+  {
+   "ref": "APU-6.4",
+   "title": "건조 타워 전환 불량",
+   "excerpt": "건조 타워 전환 불량은 공기 건조 타워에서 생기는 고장이며 건조 타워 전환 멈춤으로 나타난다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-6.4 건조 타워 전환 불량"
+   }
+  },
+  {
+   "ref": "APU-6.5",
+   "title": "흡기 밸브 고착",
+   "excerpt": "흡기 밸브 고착은 흡기 밸브에서 생기는 고장이며 압축기 압력 오르지 않음으로 나타난다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-6.5 흡기 밸브 고착"
+   }
+  },
+  {
+   "ref": "APU-7",
+   "title": "조치 절차",
+   "excerpt": "모든 조치 절차는 APU-1.1의 안전 수칙을 지킨 뒤 시작한다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-7 조치 절차"
+   }
+  },
+  {
+   "ref": "APU-8",
+   "title": "승인과 기록",
+   "excerpt": "모든 조치는 정비 기록에 작업자, 시각, 조치 전후의 신호 값을 남긴다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-8 승인과 기록"
+   }
+  },
+  {
+   "ref": "APU-9",
+   "title": "교체 부품",
+   "excerpt": "부품은 구매 부서가 설비 관리 시스템의 재고 기준에 따라 주문한다. 이 매뉴얼은 부품의 주문 절차를 정하지 않는다.",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "## APU-9 교체 부품"
+   }
+  }
+ ],
+ "procedures": [
+  {
+   "id": "SOP-APU4-1",
+   "name": "출고 전 점검",
+   "section": "APU-4.1",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### APU-4.1 출고 전 점검"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "오일 탱크의 유면계에서 오일이 기준선 안에 있는지 확인한다.",
+     "manual": "APU-4.1",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "오일 탱크의 유면계에서 오일이 기준선 안에 있는지 확인한다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "차량 전원을 넣은 뒤 APU가 기동해 TP3가 8.2 bar 이상으로 오르는지 확인한다.",
+     "manual": "APU-4.1",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "차량 전원을 넣은 뒤 APU가 기동해 TP3가 8.2 bar 이상으로 오르는지 확인한다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "무부하 운전으로 바뀐 뒤 모터 전류가 약 4 A로 내려오는지 확인한다.",
+     "manual": "APU-4.1",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "무부하 운전으로 바뀐 뒤 모터 전류가 약 4 A로 내려오는지 확인한다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "사이클론 분리 필터와 건조 타워가 배출할 때 배출구에서 공기 소리가 나는지 확인한다.",
+     "manual": "APU-4.1",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "사이클론 분리 필터와 건조 타워가 배출할 때 배출구에서 공기 소리가 나는지 확인한다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "확인한 값을 출고 점검표에 적는다.",
+     "manual": "APU-4.1",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "확인한 값을 출고 점검표에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "kind": "reference",
+    "executable": false
+   }
+  },
+  {
+   "id": "SOP-APU-05",
+   "name": "운행 중 저압 신호 대응",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-05 운행 중 저압 신호 대응"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "저압 신호 LPS가 켜지면 운전 사령에 알리고 공압 패널 압력 TP3를 확인한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "저압 신호 LPS가 켜지면 운전 사령에 알리고 공압 패널 압력 TP3를 확인한다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "TP3가 7 bar 아래에 머물면 다음 역에서 승객을 내리게 하고 차량 기지로 회송한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "TP3가 7 bar 아래에 머물면 다음 역에서 승객을 내리게 하고 차량 기지로 회송한다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "회송 중에는 출입문 여닫기를 줄여 공기 사용을 줄인다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "회송 중에는 출입문 여닫기를 줄여 공기 사용을 줄인다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "차량 기지에 도착하면 설비보전팀장에게 저압 신호가 켜진 시각과 TP3 값을 알린다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "차량 기지에 도착하면 설비보전팀장에게 저압 신호가 켜진 시각과 TP3 값을 알린다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-air-leak",
+    "relation": "MITIGATED_BY",
+    "kind": "work_order",
+    "approver": "role:operator",
+    "addresses": [
+     "cause:apu-joint-leak"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-11",
+   "name": "누설 시험과 누설 위치 찾기",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-11 누설 시험과 누설 위치 찾기"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "저장 탱크 압력이 10 bar에 이를 때까지 압축기를 돌린 뒤 차량의 APU 차단 스위치로 압축기를 멈춘다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "저장 탱크 압력이 10 bar에 이를 때까지 압축기를 돌린 뒤 차량의 APU 차단 스위치로 압축기를 멈춘다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "10분 동안 저장 탱크 압력 Reservoirs가 얼마나 떨어지는지 기록한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "10분 동안 저장 탱크 압력 Reservoirs가 얼마나 떨어지는지 기록한다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "압력이 0.5 bar 넘게 떨어졌으면 공압 배관 이음부마다 비눗물을 발라 거품이 생기는 곳을 찾는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압력이 0.5 bar 넘게 떨어졌으면 공압 배관 이음부마다 비눗물을 발라 거품이 생기는 곳을 찾는다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "거품이 생긴 이음부가 없으면 저장 탱크 배수 밸브 출구에서 공기가 나오는지 확인한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "거품이 생긴 이음부가 없으면 저장 탱크 배수 밸브 출구에서 공기가 나오는지 확인한다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "찾은 누설 위치를 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "찾은 누설 위치를 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-air-leak",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:operator",
+    "addresses": [
+     "cause:apu-joint-leak"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-12",
+   "name": "배관 이음부 수리",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-12 배관 이음부 수리"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 공압 계통을 배기하고 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 공압 계통을 배기하고 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "누설한 이음부의 피팅을 풀어 실과 오링을 꺼낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "누설한 이음부의 피팅을 풀어 실과 오링을 꺼낸다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "새 오링(품번 APU-OR-12)을 끼우고 피팅을 정해진 토크로 조인다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "새 오링(품번 APU-OR-12)을 끼우고 피팅을 정해진 토크로 조인다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "압축기를 돌려 저장 탱크 압력을 10 bar까지 올린 뒤 그 이음부에 비눗물을 발라 거품이 없는지 확인한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 돌려 저장 탱크 압력을 10 bar까지 올린 뒤 그 이음부에 비눗물을 발라 거품이 없는지 확인한다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "누설 시험을 다시 해 10분 동안 압력 하강이 0.5 bar 이하인지 확인해 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "누설 시험을 다시 해 10분 동안 압력 하강이 0.5 bar 이하인지 확인해 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-air-leak",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-joint-leak"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-13",
+   "name": "배수 밸브 교체",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-13 배수 밸브 교체"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 공압 계통을 배기하고 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 공압 계통을 배기하고 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "저장 탱크 바닥의 배수 밸브를 풀어 떼어 낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "저장 탱크 바닥의 배수 밸브를 풀어 떼어 낸다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "새 배수 밸브(품번 APU-DV-13)를 실 테이프를 감아 단다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "새 배수 밸브(품번 APU-DV-13)를 실 테이프를 감아 단다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "압축기를 돌린 뒤 배수 밸브 출구에서 공기가 새지 않는지 확인해 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 돌린 뒤 배수 밸브 출구에서 공기가 새지 않는지 확인해 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-air-leak",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-drain-valve-stuck"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-21",
+   "name": "오일 실 교체",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-21 오일 실 교체"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "압축기의 오일을 받아 내고 축 쪽 덮개를 연다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기의 오일을 받아 내고 축 쪽 덮개를 연다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "낡은 오일 실을 빼내고 새 오일 실(품번 APU-OS-21)을 끼운다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "낡은 오일 실을 빼내고 새 오일 실(품번 APU-OS-21)을 끼운다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "덮개를 닫고 지정 오일을 유면계의 기준선까지 채운다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "덮개를 닫고 지정 오일을 유면계의 기준선까지 채운다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "압축기를 30분 돌린 뒤 축 둘레에 오일이 새지 않고 오일 온도가 75 ℃ 아래인지 확인해 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 30분 돌린 뒤 축 둘레에 오일이 새지 않고 오일 온도가 75 ℃ 아래인지 확인해 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-oil-leak",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-oil-seal-wear"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-22",
+   "name": "오일 보충과 드레인 마개 조임",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-22 오일 보충과 드레인 마개 조임"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "압축기를 멈추고 압축기 압력 TP2가 0 bar가 된 것을 확인한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 멈추고 압축기 압력 TP2가 0 bar가 된 것을 확인한다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "드레인 마개를 정해진 토크로 다시 조인다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "드레인 마개를 정해진 토크로 다시 조인다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "오일 주입구 마개를 천천히 열어 지정 오일을 유면계의 기준선까지 채운다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "오일 주입구 마개를 천천히 열어 지정 오일을 유면계의 기준선까지 채운다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "압축기를 10분 돌린 뒤 오일 부족 신호 Oil_level이 꺼져 있는지 확인한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 10분 돌린 뒤 오일 부족 신호 Oil_level이 꺼져 있는지 확인한다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "채운 오일의 양을 정비 기록에 적는다. 일주일 안에 다시 보충하게 되면 오일 실 점검을 설비보전팀장에게 요청한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "채운 오일의 양을 정비 기록에 적는다. 일주일 안에 다시 보충하게 되면 오일 실 점검을 설비보전팀장에게 요청한다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-oil-leak",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:operator",
+    "addresses": [
+     "cause:apu-drain-plug-loose"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-31",
+   "name": "타워 전환 밸브 교체",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-31 타워 전환 밸브 교체"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "건조 타워 위의 전환 밸브 커넥터를 뽑고 밸브를 떼어 낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "건조 타워 위의 전환 밸브 커넥터를 뽑고 밸브를 떼어 낸다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "새 전환 밸브(품번 APU-TV-31)를 달고 커넥터를 꽂는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "새 전환 밸브(품번 APU-TV-31)를 달고 커넥터를 꽂는다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "압축기를 부하 운전으로 돌리며 건조 타워 신호 Towers가 번갈아 바뀌는지 확인한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 부하 운전으로 돌리며 건조 타워 신호 Towers가 번갈아 바뀌는지 확인한다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "바뀌는 간격을 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "바뀌는 간격을 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-tower-fault",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-tower-valve-stuck"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-32",
+   "name": "건조제 교체",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-32 건조제 교체"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "두 건조 타워의 덮개를 열어 낡은 건조제를 모두 쏟아 낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "두 건조 타워의 덮개를 열어 낡은 건조제를 모두 쏟아 낸다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "타워 안쪽의 오일 자국을 마른 천으로 닦는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "타워 안쪽의 오일 자국을 마른 천으로 닦는다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "새 건조제(품번 APU-DS-32)를 기준선까지 채우고 덮개를 닫는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "새 건조제(품번 APU-DS-32)를 기준선까지 채우고 덮개를 닫는다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "압축기를 돌려 두 타워가 번갈아 배출하는지 확인해 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 돌려 두 타워가 번갈아 배출하는지 확인해 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-tower-fault",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-desiccant-fouled"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-41",
+   "name": "흡기 밸브 분해 청소",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-41 흡기 밸브 분해 청소"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 압력을 빼고 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "흡기 밸브 덮개를 열고 피스톤을 꺼낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "흡기 밸브 덮개를 열고 피스톤을 꺼낸다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "피스톤과 실린더의 오일 찌꺼기를 세척제로 씻어 낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "피스톤과 실린더의 오일 찌꺼기를 세척제로 씻어 낸다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "피스톤 오링을 새것(품번 APU-IV-41)으로 바꾸고 다시 조립한다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "피스톤 오링을 새것(품번 APU-IV-41)으로 바꾸고 다시 조립한다."
+     }
+    },
+    {
+     "order": 5,
+     "text": "압축기를 기동해 부하 기동 신호 MPG가 켜진 뒤 압축기 압력 TP2가 8.2 bar 위로 오르는지 확인해 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 기동해 부하 기동 신호 MPG가 켜진 뒤 압축기 압력 TP2가 8.2 bar 위로 오르는지 확인해 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-intake-stuck",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-intake-piston-fouled"
+    ]
+   }
+  },
+  {
+   "id": "SOP-APU-42",
+   "name": "흡기 밸브 솔레노이드 교체",
+   "section": "APU-7",
+   "anchor": {
+    "source_id": "manual:SOURCE",
+    "page": 1,
+    "quote": "### SOP-APU-42 흡기 밸브 솔레노이드 교체"
+   },
+   "steps": [
+    {
+     "order": 1,
+     "text": "APU-1.1의 안전 수칙에 따라 전원을 잠근다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "APU-1.1의 안전 수칙에 따라 전원을 잠근다."
+     }
+    },
+    {
+     "order": 2,
+     "text": "흡기 밸브 솔레노이드의 커넥터를 뽑고 코일을 떼어 낸다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "흡기 밸브 솔레노이드의 커넥터를 뽑고 코일을 떼어 낸다."
+     }
+    },
+    {
+     "order": 3,
+     "text": "새 솔레노이드 코일(품번 APU-SC-42)을 달고 커넥터를 꽂는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "새 솔레노이드 코일(품번 APU-SC-42)을 달고 커넥터를 꽂는다."
+     }
+    },
+    {
+     "order": 4,
+     "text": "압축기를 기동해 흡기 밸브 신호 COMP가 부하 운전 동안 꺼지는지 확인해 정비 기록에 적는다.",
+     "manual": "APU-7",
+     "anchor": {
+      "source_id": "manual:SOURCE",
+      "page": 1,
+      "quote": "압축기를 기동해 흡기 밸브 신호 COMP가 부하 운전 동안 꺼지는지 확인해 정비 기록에 적는다."
+     }
+    }
+   ],
+   "link": {
+    "failureMode": "fm:apu-intake-stuck",
+    "relation": "REMEDIED_BY",
+    "kind": "work_order",
+    "approver": "role:maint-mgr",
+    "addresses": [
+     "cause:apu-intake-solenoid-fault"
+    ]
+   }
+  }
+ ],
+ "page_reviews": [
+  {
+   "page": 1,
+   "note": "APU-1~9장과 부록을 읽음. APU-4.1 출고 전 점검은 원문이 실행 후보가 아니라고 밝혀 참고 절차로, APU-7의 절차는 APU-6의 원인별 조치로 연결함. APU-5 · APU-9 · 부록은 기준표라 절로만 보관함"
+  }
+ ],
+ "warnings": [
+  "APU-4.1에는 SOP 번호가 없어 절 번호로 SOP-APU4-1을 지었습니다",
+  "원인 「배수 밸브 고착」 · 「드레인 마개 풀림」 · 「건조제 오염」 · 「흡기 밸브 솔레노이드 고장」은 원문이 사람이 확인한다고 적어 증거를 만들지 않았습니다",
+  "원문의 「한 시간에 압축기 기동이 6번을 넘으면」은 신호 하나의 구간 집계(평균 · 최대 · 최소 · 범위)로 옮길 수 없어 증거로 만들지 않았습니다",
+  "판단 규칙: 이 설비의 판단 입력이 지금 지식에 없어 결정표의 행을 만들지 않았습니다",
+  "지금 지식에 없는 구성 요소 9개 · 증상 7개 · 센서 15개를 원문 인용과 함께 새 항목으로 제안합니다(넣을지는 검토에서 고릅니다)"
+ ],
+ "knowledge": {
+  "components": [
+   {
+    "id": "comp:apu-compressor",
+    "name": "공기 압축기",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공기 압축기 | 오일 분사식 압축기. 대기의 공기를 빨아들여 압축한다"
+    }
+   },
+   {
+    "id": "comp:apu-intake-valve",
+    "name": "흡기 밸브",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "흡기 밸브 | 압축기의 흡기구를 여닫아 부하 운전과 무부하 운전을 바꾼다"
+    }
+   },
+   {
+    "id": "comp:apu-motor",
+    "name": "구동 모터",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "구동 모터 | 압축기를 돌리는 전동기"
+    }
+   },
+   {
+    "id": "comp:apu-oil-system",
+    "name": "오일 계통",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "오일 계통 | 압축기를 윤활 · 냉각하는 오일과 그 탱크 · 실 · 드레인 마개"
+    }
+   },
+   {
+    "id": "comp:apu-cyclone-filter",
+    "name": "사이클론 분리 필터",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "사이클론 분리 필터 | 압축 공기의 물방울과 오일 방울을 원심력으로 걸러 낸다"
+    }
+   },
+   {
+    "id": "comp:apu-dryer-tower",
+    "name": "공기 건조 타워",
+    "aliases": [
+     "건조 타워"
+    ],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공기 건조 타워 | 건조제가 든 타워 두 개"
+    }
+   },
+   {
+    "id": "comp:apu-reservoir",
+    "name": "저장 탱크",
+    "aliases": [
+     "공기 탱크"
+    ],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "저장 탱크 | 압축 공기를 모아 두는 탱크(Reservoirs)"
+    }
+   },
+   {
+    "id": "comp:apu-pneumatic-panel",
+    "name": "공압 패널",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공압 패널 | 저장 탱크의 공기를 차량의 각 공압 장치로 나눠 보내는 밸브 묶음"
+    }
+   },
+   {
+    "id": "comp:apu-piping",
+    "name": "공압 배관",
+    "aliases": [],
+    "section": "APU-2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공압 배관 | 압축기에서 저장 탱크와 공압 패널까지 이어지는 배관과 이음부"
+    }
+   }
+  ],
+  "sensors": [
+   {
+    "id": "sen:apu-tp2",
+    "name": "압축기 압력",
+    "tag": "TP2",
+    "component": "comp:apu-compressor",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| TP2 | 압축기 압력 | bar |"
+    },
+    "unit": "bar"
+   },
+   {
+    "id": "sen:apu-tp3",
+    "name": "공압 패널 압력",
+    "tag": "TP3",
+    "component": "comp:apu-pneumatic-panel",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| TP3 | 공압 패널 압력 | bar |"
+    },
+    "unit": "bar"
+   },
+   {
+    "id": "sen:apu-h1",
+    "name": "사이클론 필터 배출 압력 강하",
+    "tag": "H1",
+    "component": "comp:apu-cyclone-filter",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| H1 | 사이클론 필터 배출 압력 강하 | bar |"
+    },
+    "unit": "bar"
+   },
+   {
+    "id": "sen:apu-dv-pressure",
+    "name": "건조 타워 배출 압력 강하",
+    "tag": "DV_pressure",
+    "component": "comp:apu-dryer-tower",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| DV_pressure | 건조 타워 배출 압력 강하 | bar |"
+    },
+    "unit": "bar"
+   },
+   {
+    "id": "sen:apu-reservoirs",
+    "name": "저장 탱크 압력",
+    "tag": "Reservoirs",
+    "component": "comp:apu-reservoir",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Reservoirs | 저장 탱크 압력 | bar |"
+    },
+    "unit": "bar"
+   },
+   {
+    "id": "sen:apu-motor-current",
+    "name": "모터 전류",
+    "tag": "Motor_current",
+    "component": "comp:apu-motor",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Motor_current | 모터 전류 | A |"
+    },
+    "unit": "A"
+   },
+   {
+    "id": "sen:apu-oil-temperature",
+    "name": "오일 온도",
+    "tag": "Oil_temperature",
+    "component": "comp:apu-oil-system",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Oil_temperature | 오일 온도 | ℃ |"
+    },
+    "unit": "℃"
+   },
+   {
+    "id": "sen:apu-comp",
+    "name": "흡기 밸브 신호",
+    "tag": "COMP",
+    "component": "comp:apu-intake-valve",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| COMP | 흡기 밸브 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-dv-eletric",
+    "name": "출구 밸브 신호",
+    "tag": "DV_eletric",
+    "component": "comp:apu-compressor",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| DV_eletric | 출구 밸브 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-towers",
+    "name": "건조 타워 신호",
+    "tag": "Towers",
+    "component": "comp:apu-dryer-tower",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Towers | 건조 타워 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-mpg",
+    "name": "부하 기동 신호",
+    "tag": "MPG",
+    "component": "comp:apu-compressor",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| MPG | 부하 기동 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-lps",
+    "name": "저압 신호",
+    "tag": "LPS",
+    "component": "comp:apu-pneumatic-panel",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| LPS | 저압 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-pressure-switch",
+    "name": "타워 배출 감지 신호",
+    "tag": "Pressure_switch",
+    "component": "comp:apu-dryer-tower",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Pressure_switch | 타워 배출 감지 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-oil-level",
+    "name": "오일 부족 신호",
+    "tag": "Oil_level",
+    "component": "comp:apu-oil-system",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Oil_level | 오일 부족 신호 |"
+    }
+   },
+   {
+    "id": "sen:apu-caudal-impulses",
+    "name": "유량 펄스",
+    "tag": "Caudal_impulses",
+    "component": "comp:apu-pneumatic-panel",
+    "section": "APU-3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "| Caudal_impulses | 유량 펄스 |"
+    }
+   }
+  ],
+  "symptoms": [
+   {
+    "id": "sym:apu-load-ratio-rise",
+    "name": "부하 운전 비율 증가",
+    "sensors": [
+     "sen:apu-dv-eletric"
+    ],
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공기 누설은 공압 배관에서 생기는 고장이며 부하 운전 비율 증가와 무부하 때 저장 탱크 압력 하강으로 나타난다."
+    }
+   },
+   {
+    "id": "sym:apu-reservoir-drop",
+    "name": "무부하 때 저장 탱크 압력 하강",
+    "sensors": [
+     "sen:apu-reservoirs"
+    ],
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공기 누설은 공압 배관에서 생기는 고장이며 부하 운전 비율 증가와 무부하 때 저장 탱크 압력 하강으로 나타난다."
+    }
+   },
+   {
+    "id": "sym:apu-low-pressure",
+    "name": "저압 신호",
+    "aliases": [
+     "LPS 켜짐"
+    ],
+    "sensors": [
+     "sen:apu-lps",
+     "sen:apu-tp3"
+    ],
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "누설이 커지면 압력이 7 bar 아래로"
+    }
+   },
+   {
+    "id": "sym:apu-oil-low",
+    "name": "오일 부족 신호",
+    "sensors": [
+     "sen:apu-oil-level"
+    ],
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "오일 누설은 오일 계통에서 생기는 고장이며 오일 부족 신호와 오일 온도 상승으로 나타난다."
+    }
+   },
+   {
+    "id": "sym:apu-oil-temp-rise",
+    "name": "오일 온도 상승",
+    "sensors": [
+     "sen:apu-oil-temperature"
+    ],
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "오일 누설은 오일 계통에서 생기는 고장이며 오일 부족 신호와 오일 온도 상승으로 나타난다."
+    }
+   },
+   {
+    "id": "sym:apu-tower-stopped",
+    "name": "건조 타워 전환 멈춤",
+    "sensors": [
+     "sen:apu-towers"
+    ],
+    "section": "APU-6.4",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "건조 타워 전환 불량은 공기 건조 타워에서 생기는 고장이며 건조 타워 전환 멈춤으로 나타난다."
+    }
+   },
+   {
+    "id": "sym:apu-tp2-no-rise",
+    "name": "압축기 압력 오르지 않음",
+    "sensors": [
+     "sen:apu-tp2",
+     "sen:apu-comp"
+    ],
+    "section": "APU-6.5",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "흡기 밸브 고착은 흡기 밸브에서 생기는 고장이며 압축기 압력 오르지 않음으로 나타난다."
+    }
+   }
+  ],
+  "failure_modes": [
+   {
+    "id": "fm:apu-air-leak",
+    "name": "공기 누설",
+    "component": "comp:apu-piping",
+    "symptoms": [
+     "sym:apu-load-ratio-rise",
+     "sym:apu-reservoir-drop",
+     "sym:apu-low-pressure"
+    ],
+    "leads_to": [],
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "공기 누설은 공압 배관에서 생기는 고장이며 부하 운전 비율 증가와 무부하 때 저장 탱크 압력 하강으로 나타난다."
+    }
+   },
+   {
+    "id": "fm:apu-oil-leak",
+    "name": "오일 누설",
+    "component": "comp:apu-oil-system",
+    "symptoms": [
+     "sym:apu-oil-low",
+     "sym:apu-oil-temp-rise"
+    ],
+    "leads_to": [],
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "오일 누설은 오일 계통에서 생기는 고장이며 오일 부족 신호와 오일 온도 상승으로 나타난다."
+    }
+   },
+   {
+    "id": "fm:apu-tower-fault",
+    "name": "건조 타워 전환 불량",
+    "component": "comp:apu-dryer-tower",
+    "symptoms": [
+     "sym:apu-tower-stopped"
+    ],
+    "leads_to": [],
+    "section": "APU-6.4",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "건조 타워 전환 불량은 공기 건조 타워에서 생기는 고장이며 건조 타워 전환 멈춤으로 나타난다."
+    }
+   },
+   {
+    "id": "fm:apu-intake-stuck",
+    "name": "흡기 밸브 고착",
+    "component": "comp:apu-intake-valve",
+    "symptoms": [
+     "sym:apu-tp2-no-rise"
+    ],
+    "leads_to": [],
+    "section": "APU-6.5",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "흡기 밸브 고착은 흡기 밸브에서 생기는 고장이며 압축기 압력 오르지 않음으로 나타난다."
+    }
+   }
+  ],
+  "causes": [
+   {
+    "id": "cause:apu-joint-leak",
+    "name": "배관 이음부 누설",
+    "prior": 0.7,
+    "failure_mode": "fm:apu-air-leak",
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "배관 이음부 누설: 진동으로 배관 이음부의 실이 닳거나 피팅이 풀려 공기가 샌다. 보전 기록에서 이 고장의 원인 가운데 70 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-drain-valve-stuck",
+    "name": "배수 밸브 고착",
+    "prior": 0.3,
+    "failure_mode": "fm:apu-air-leak",
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "배수 밸브 고착: 저장 탱크 바닥의 배수 밸브가 녹이나 이물로 조금 열린 채 굳어 공기가 샌다. 보전 기록에서 30 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-oil-seal-wear",
+    "name": "오일 실 마모",
+    "prior": 0.6,
+    "failure_mode": "fm:apu-oil-leak",
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "오일 실 마모: 압축기 축의 오일 실이 닳아 오일이 샌다. 보전 기록에서 60 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-drain-plug-loose",
+    "name": "드레인 마개 풀림",
+    "prior": 0.4,
+    "failure_mode": "fm:apu-oil-leak",
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "드레인 마개 풀림: 오일 교환 뒤 드레인 마개가 덜 조여져 오일이 샌다. 보전 기록에서 40 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-tower-valve-stuck",
+    "name": "타워 전환 밸브 고착",
+    "prior": 0.6,
+    "failure_mode": "fm:apu-tower-fault",
+    "section": "APU-6.4",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "타워 전환 밸브 고착: 두 타워를 바꾸는 전환 밸브가 굳어 움직이지 않는다. 보전 기록에서 60 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-desiccant-fouled",
+    "name": "건조제 오염",
+    "prior": 0.4,
+    "failure_mode": "fm:apu-tower-fault",
+    "section": "APU-6.4",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "건조제 오염: 건조제에 오일이 묻어 굳으면 타워를 바꿔도 공기가 마르지 않는다. 보전 기록에서 40 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-intake-piston-fouled",
+    "name": "흡기 밸브 피스톤 오염",
+    "prior": 0.7,
+    "failure_mode": "fm:apu-intake-stuck",
+    "section": "APU-6.5",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "흡기 밸브 피스톤 오염: 오일 찌꺼기가 피스톤에 쌓여 밸브가 움직이지 않는다. 보전 기록에서 70 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   },
+   {
+    "id": "cause:apu-intake-solenoid-fault",
+    "name": "흡기 밸브 솔레노이드 고장",
+    "prior": 0.3,
+    "failure_mode": "fm:apu-intake-stuck",
+    "section": "APU-6.5",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "흡기 밸브 솔레노이드 고장: 밸브를 움직이는 솔레노이드 코일이 끊어졌다. 보전 기록에서 30 %를 차지한다."
+    },
+    "aliases": [],
+    "parts": [],
+    "disturbs": []
+   }
+  ],
+  "evidence": [
+   {
+    "id": "evd:apu-load-ratio-high",
+    "cause": "cause:apu-joint-leak",
+    "name": "부하 운전 비율 높음",
+    "tag": "DV_eletric",
+    "aggregate": "avg",
+    "window_seconds": 3600,
+    "expect": "gt",
+    "threshold": 0.6,
+    "weight": 0.6,
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "최근 한 시간(3,600초) 동안 출구 밸브 신호 DV_eletric의 평균이 0.6을 넘으면(부하 운전 비율 60 % 초과) 배관 이음부 누설을 의심한다."
+    }
+   },
+   {
+    "id": "evd:apu-leak-test-drop",
+    "cause": "cause:apu-joint-leak",
+    "name": "누설 시험 압력 하강",
+    "tag": "Reservoirs",
+    "aggregate": "range",
+    "window_seconds": 600,
+    "expect": "gt",
+    "threshold": 0.5,
+    "weight": 1.0,
+    "section": "APU-6.2",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "압축기를 멈춘 누설 시험 10분(600초) 동안 저장 탱크 압력 Reservoirs의 최댓값과 최솟값 차이가 0.5 bar를 넘으면 공기 누설로 본다."
+    }
+   },
+   {
+    "id": "evd:apu-oil-level-low",
+    "cause": "cause:apu-oil-seal-wear",
+    "name": "오일 부족 신호 켜짐",
+    "tag": "Oil_level",
+    "aggregate": "max",
+    "window_seconds": 600,
+    "expect": "gte",
+    "threshold": 1,
+    "weight": 1.0,
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "최근 10분(600초) 동안 오일 부족 신호 Oil_level이 한 번이라도 켜졌으면(최댓값 1) 오일 누설로 본다."
+    }
+   },
+   {
+    "id": "evd:apu-oil-temp-high",
+    "cause": "cause:apu-oil-seal-wear",
+    "name": "오일 온도 높음",
+    "tag": "Oil_temperature",
+    "aggregate": "avg",
+    "window_seconds": 600,
+    "expect": "gt",
+    "threshold": 85,
+    "weight": 0.5,
+    "section": "APU-6.3",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "최근 10분(600초) 동안 오일 온도 Oil_temperature의 평균이 85 ℃를 넘으면 오일 실 마모를 함께 의심한다."
+    }
+   },
+   {
+    "id": "evd:apu-tower-not-switching",
+    "cause": "cause:apu-tower-valve-stuck",
+    "name": "건조 타워 전환 없음",
+    "tag": "Towers",
+    "aggregate": "range",
+    "window_seconds": 3600,
+    "expect": "lt",
+    "threshold": 1,
+    "weight": 1.0,
+    "section": "APU-6.4",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "부하 운전을 하는 동안 한 시간(3,600초) 동안 건조 타워 신호 Towers가 한 번도 바뀌지 않으면(최댓값과 최솟값 차이 1 미만) 타워 전환 밸브 고착으로 본다."
+    }
+   },
+   {
+    "id": "evd:apu-tp2-below-start",
+    "cause": "cause:apu-intake-piston-fouled",
+    "name": "압축기 압력 기동 기준 미달",
+    "tag": "TP2",
+    "aggregate": "max",
+    "window_seconds": 600,
+    "expect": "lt",
+    "threshold": 8.2,
+    "weight": 1.0,
+    "section": "APU-6.5",
+    "anchor": {
+     "source_id": "manual:SOURCE",
+     "page": 1,
+     "quote": "부하 기동 신호 MPG가 켜진 뒤 10분(600초) 동안 압축기 압력 TP2의 최댓값이 8.2 bar에 못 미치면 흡기 밸브 피스톤 오염으로 본다."
+    }
+   }
+  ],
+  "rules": []
+ }
+}

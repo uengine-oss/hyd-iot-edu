@@ -274,16 +274,11 @@ def test_포털_포트가_겹치면_옮기고_업무_DB_로그인_주소도_따�
     assert portal != 8088 and db != 54322
     env, supa = hyd_env.read(root / '.env'), hyd_env.read(root / 'it' / 'supabase' / '.env')
     assert env['HYD_PORT_8088'] == str(portal) and f'8088={portal}' in env['HYD_PORTS'].split()
-    assert f':{db}/' in env['SUPABASE_DSN'] and supa['SUPABASE_DB_PORT'] == str(db)
+    record = json.loads((root / '.hyd-runtime' / 'project.json').read_text(encoding='utf-8'))
+    assert supa['SUPABASE_DB_PORT'] == str(db) and env['HYD_SUPABASE_PROJECT'] == record['supabase'] == supa['SUPABASE_PROJECT_ID']
+    assert 'SUPABASE_DSN' not in env                     # 컨테이너는 업무 DB 를 망 안의 이름으로 부른다 — 바깥 포트가 옮겨도 주소는 같다(compose.yaml)
     assert supa['SUPABASE_AUTH_SITE_URL'] == f'http://localhost:{portal}'
     assert any(f'8088→{portal}' in n for n in notes)
-
-
-def test_원격_업무_DB_주소는_바꾸지_않는다(tmp_path):
-    remote = 'postgresql://u:p@db.example.com:5432/postgres'
-    root = make_checkout(tmp_path / 'hyd', env=f'SUPABASE_DSN={remote}\n')
-    run(root, probe=lambda p: p != 54322)
-    assert hyd_env.read(root / '.env')['SUPABASE_DSN'] == remote
 
 
 def test_빈_포트가_없으면_무엇을_할지_알리고_멈춘다():
@@ -351,6 +346,27 @@ def test_compose가_시작에게_요구하는_값은_시작이_모두_env에_적
     assert required and not {k for k in required if not env.get(k)}
 
 
+def test_업무_DB_이름이_없는_env로는_compose가_기본_이름의_망에_붙지_않고_까닭과_함께_멈춘다(tmp_path):
+    """업무 DB 망 이름에 기본값이 있으면 그 줄이 없는 .env 로 compose 를 직접 부른 PC 가 같은 기본 이름을 쓰는 다른 폴더의 업무 DB 에 말없이
+    붙었다 — 그 값은 시작 파일만 정하고, 없으면 compose 가 어느 값이 없는지 말하며 멈춘다(다른 셋도 같은 규칙)."""
+    root = make_checkout(tmp_path / 'hyd', env='LLM_API_KEY=\nAI_MODE=replay\nPROCESS_CALLER_TOKEN=t\nCMD_FINGERPRINT_KEY=k\n')
+    out = docker('compose', '--project-directory', str(root), '-f', str(root / 'compose.yaml'), 'config', '--format', 'json', check=False)
+    assert out.returncode != 0 and 'HYD_SUPABASE_PROJECT' in out.stderr and '시작 파일이 정합니다' in out.stderr, (out.returncode, out.stderr[-300:])
+
+
+def test_아직_시작하지_않은_새_판의_env에서도_끄기는_compose_파일을_읽는다(tmp_path):
+    """끄기는 시작이 정하는 값을 쓰지 않지만 compose 는 파일 전체를 읽는다 — 새 판을 받고 시작하기 전(.env 에 학생 키 줄만)에도 끄기의
+    compose 가 파일을 읽어야 한다. 끄기 스크립트의 compose 함수 줄을 그대로 가져와 실제 docker compose 로 읽는다."""
+    bash = shutil.which('bash')
+    if bash is None:
+        pytest.fail('bash 가 없어 끄기 스크립트의 compose 함수를 돌리지 못했다', pytrace=False)
+    root = make_checkout(tmp_path / 'hyd')
+    (define,) = [line for line in (REPO / 'scripts' / 'stop_all.sh').read_text(encoding='utf-8').splitlines() if line.startswith('compose() {')]
+    out = subprocess.run([bash, '-c', define + '\ncompose config --quiet'], cwd=root, env=SHELL_ENV, capture_output=True, text=True,
+                         encoding='utf-8', errors='replace', timeout=120)
+    assert out.returncode == 0, out.stderr[-500:]
+
+
 def test_내부_확인_값은_처음_한_번_만들고_다음_시작은_그대로_둔다(tmp_path):
     root = make_checkout(tmp_path / 'hyd', env='LLM_API_KEY=\nCMD_FINGERPRINT_KEY=teacher-key\n')    # 강사가 정해 둔 값
     run(root)
@@ -380,8 +396,12 @@ def test_라벨에서_폴더를_읽고_업무_DB_볼륨을_compose_볼륨으로_
 
 # ---------------------------------------------------------------- 수업 구성은 compose 한 곳(옛 판 .env 줄)
 OLD_ENV = ('LLM_API_KEY=\nTIME_SCALE=1\nLLM_RELAY_URL=https://old.example\nPROCESS_MODE=instance\nHYD_PORT_54322=54322\n'
+           # 2026-11-24 앞 판이 적던 업무 DB 주소 · 메일함 포트(호스트 포트로 돌아 부르던 길) — 이제 compose 가 망 안의 이름을 정한다
+           'SUPABASE_DSN=postgresql://postgres:postgres@host.docker.internal:64322/postgres\n'
+           'ENTERPRISE_READ_DSN=postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:64322/postgres\nEFFECTS_SMTP_PORT=64325\n'
            'HYD_MCP_OAUTH_CALLBACK_URL=http://localhost:8088/api/mcp/connections/callback\n')
-OLD_KEYS = {'TIME_SCALE', 'LLM_RELAY_URL', 'PROCESS_MODE', 'HYD_PORT_54322', 'HYD_MCP_OAUTH_CALLBACK_URL'}
+OLD_KEYS = {'TIME_SCALE', 'LLM_RELAY_URL', 'PROCESS_MODE', 'HYD_PORT_54322', 'HYD_MCP_OAUTH_CALLBACK_URL', 'SUPABASE_DSN', 'ENTERPRISE_READ_DSN',
+            'EFFECTS_SMTP_PORT'}
 
 
 # 학생이 시작 파일을 연 셸처럼 — 이 테스트 묶음이 넣은 환경 값(TIME_SCALE 등)은 compose 가 .env 보다 먼저 쓰므로 넘기지 않는다
@@ -402,13 +422,17 @@ def docker(*args, check=True):
 
 def test_env에_옛_수업_값_줄이_있어도_컨테이너는_compose의_값을_받는다(tmp_path):
     import yaml
-    root = make_checkout(tmp_path / 'hyd', env=OLD_ENV + 'AI_MODE=replay\nPROCESS_CALLER_TOKEN=t\nCMD_FINGERPRINT_KEY=k\n')
+    root = make_checkout(tmp_path / 'hyd', env=OLD_ENV + 'AI_MODE=replay\nPROCESS_CALLER_TOKEN=t\nCMD_FINGERPRINT_KEY=k\nHYD_SUPABASE_PROJECT=hyd-test\n')
     resolved = json.loads(docker('compose', '--project-directory', str(root), '-f', str(root / 'compose.yaml'), 'config', '--format', 'json').stdout)['services']
     declared = yaml.safe_load((REPO / 'compose.yaml').read_text(encoding='utf-8'))
     scale = declared['x-class']['time-scale']
     timed = ('plant-sim', 'detector', 'process')
     assert {s: resolved[s]['environment']['TIME_SCALE'] for s in timed} == dict.fromkeys(timed, scale)
     assert resolved['process']['environment']['LLM_RELAY_URL'] == declared['services']['process']['environment']['LLM_RELAY_URL'] != 'https://old.example'
+    # 업무 DB · 메일함: 옛 줄(호스트 포트 64322 · 64325)이 남아 있어도 망 안의 이름
+    db = {s: e[k] for s, svc in resolved.items() for k in ('SUPABASE_DSN', 'ENTERPRISE_READ_DSN', 'ENTERPRISE_DSN') if k in (e := svc.get('environment') or {})}
+    assert db and all('@db.supabase.internal:5432/' in v for v in db.values()), db
+    assert (resolved['effects-mcp']['environment']['SMTP_HOST'], resolved['effects-mcp']['environment']['SMTP_PORT']) == ('inbucket', '1025')
 
 
 def test_compose가_읽지_않는_옛_줄은_시작이_주석으로_끄고_한_번_알린다(tmp_path):
@@ -438,7 +462,7 @@ def test_업무_DB_포트는_env가_아니라_업무_DB_env에만_적는다(tmp_
     env, supa = hyd_env.read(root / '.env'), hyd_env.read(root / 'it' / 'supabase' / '.env')
     db = ports(root)[54322]
     assert not {f'HYD_PORT_{d}' for d, _ in pp.DB_FIELDS.values()} & set(env)
-    assert supa['SUPABASE_DB_PORT'] == str(db) and f':{db}/' in env['SUPABASE_DSN']
+    assert supa['SUPABASE_DB_PORT'] == str(db) and 'SUPABASE_DSN' not in env
 
 
 # ---------------------------------------------------------------- compose 에서 뺀 볼륨
@@ -493,3 +517,15 @@ def test_지울_볼륨을_컨테이너가_붙들고_있으면_그_이름과_확�
         assert retired in err and f'docker ps -a --filter volume={retired}' in err and listed(retired)
     finally:
         docker('rm', '-f', holder, check=False)
+
+
+# ---------------------------------------------------------------- 업무 DB 망(시작 3단계 db-net)
+def test_업무_DB_망의_지금_판에_붙지_않은_서비스_컨테이너만_다시_만든다():
+    """끄기 · Docker 정리로 망이 지워졌다 다시 만들어지면 멈춰 둔 컨테이너는 옛 망을 기억해 「network … not found」로 켜지지 못했다(2026-11-24 실측) —
+    그 망을 쓰는 서비스 가운데 지금 판에 붙지 않은 것만 고른다(다른 망만 쓰는 서비스는 고르지 않는다)."""
+    def box(service, *net_ids):
+        return {'Config': {'Labels': {'com.docker.compose.service': service}},
+                'NetworkSettings': {'Networks': {f'net{i}': {'NetworkID': n} for i, n in enumerate(net_ids)}}}
+    containers = [box('process', 'now', 'it'), box('agent', 'gone', 'it'), box('enterprise-sim'), box('neo4j', 'it')]
+    assert pp.stale_services(containers, 'now', {'process', 'agent', 'enterprise-sim'}) == ['agent', 'enterprise-sim']
+    assert pp.stale_services(containers, 'now', set()) == []

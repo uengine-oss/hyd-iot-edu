@@ -23,14 +23,14 @@ def store(tmp_path):
 def approved(store, verdict='APPROVE'):
     tables = ingest.parse_ddl(LEGACY)
     req = lm.request(filename='legacy-plant-db.sql', text=LEGACY, tables=tables, ontology=ONTOLOGY, datasource='hyd-enterprise',
-                     catalog='postgres', by='수강생')
+                     catalog='postgres', by='user:me')
     items = [{'column': c['key'], 'status': 'no_evidence', 'meaning': None, 'confidence': 0.1, 'evidence': [], 'reason': '근거 부족'}
              for c in req['columns']]
     items[[c['key'] for c in req['columns']].index(KEY)] = {'column': KEY, 'status': 'proposed', 'meaning': '작동유 온도', 'unit': '℃',
                                                             'link': {'kind': 'represents', 'target': 'sv:ts1'},
                                                             'evidence': [{'kind': 'name', 'text': 'TMP'}], 'confidence': 0.8}
     candidates = lm.validate_candidates(req, {'items': items})['items']
-    review = lm.validate_review(req, candidates, {'by': '수강생', 'decisions': [{'column': KEY, 'verdict': verdict}]})
+    review = lm.validate_review(req, candidates, {'by': 'user:me', 'decisions': [{'column': KEY, 'verdict': verdict}]})
     return store.add('hyd', 'inst-1', 'wi-1', req['source'], review)
 
 

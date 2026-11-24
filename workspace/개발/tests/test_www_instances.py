@@ -958,3 +958,59 @@ def test_효과_확인의_판정_문장은_판정_근거인_마지막_값을_먼
         say = page.locator('dialog.sheet[data-cr-sheet-box] .cr-say').inner_text()
         assert say == '유온의 마지막 값(51.4 ℃)이 기준(55 ℃ 아래) 안이고 경보도 꺼져 회복으로 판정했습니다 (설비 시간 15분 + 연장 5분 (실제 1분 2초) 동안 61.5→51.4 ℃ · 기준 안에 있던 시간 60 %).', say
         assert say.index('마지막 값') < say.index('회복으로 판정') < say.index('기준 안에 있던 시간 60 %'), say
+
+
+# ------------------------------------------------------------------ 감독관 재검토(2026-11-24): 승인한 내용 그대로 다시 보내기의 판정과 역할은 서버의 것
+RESEND_WHY = ("'정비 요청 등록' 단계가 3번 실패해 멈췄습니다 — CMMS 가 응답하지 않습니다. 원인을 고친 뒤 승인한 내용 그대로 [같은 내용 다시 전달]하거나, "
+              "더 진행할 수 없으면 [닫기]로 닫으세요")
+
+
+def _approval(todo, decision, role):
+    """전달된 조치 카드 승인 기록(procsvc approvals 행의 꼴 — 승인 원문 payload.plan._snapshot 에 판단의 승인 역할 등급)."""
+    return {'todo_id': todo, 'proc_inst_id': 'ai', 'decision_id': decision, 'status': 'DELIVERED', 'attempts': 1, 'error': None, 'history': [],
+            'payload': {'role': role, 'by': 'user:me', 'option': 'skill:sop-cool-14',
+                        'plan': {'option': {'id': 'skill:sop-cool-14', 'name': '정지 · 핀 세척'}, '_snapshot': {'roles': {'role:operator': 1, 'role:maint-mgr': 2}}}}}
+
+
+def test_승인한_내용_그대로_다시_보내기는_서버가_정한_단계에만_나오고_서버가_읽어_준_그_승인의_역할로_보낸다():
+    """서버(instances.attention)가 멈춘 단계에 effect_retry 행동과 다시 보낼 승인의 역할(retry_role — 이 처리 건의 판단으로 전달된 승인)을 싣는다.
+    전에는 화면이 승인 기록을 다시 뒤져 처음 찾은 전달된 승인의 역할을 넣었다 — 재분석 뒤 새 판단 · 새 승인을 받은 처리 건(전달된 승인 둘)에서는 지금
+    판단을 승인한 역할(정비팀장)이 아니라 앞 승인의 역할(운전원)로 다시 보내기를 요청했다. 멈췄어도 서버가 이 행동을 싣지 않은 단계(승인 앞 읽기 확인 등)에는
+    다시 보내기 판을 그리지 않는다."""
+    items = [_wi('r1', 'T_agent', 'DONE', 41, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling'),
+             _wi('r2', 'T_approve', 'DONE', 41, agent_orch=None, user_id='role:maint-mgr', tool='formHandler:select_card', output={'chosen_skill': 'skill:sop-cool-14'}),
+             _wi('r3', 'T_cmd', 'PENDING', 41, activity_name='정비 요청 등록', tool='enterprise:WO_CREATE', retry=3, log='[Error] ServiceExecutionError: CMMS down; '),
+             _wi('r4', 'R_ok', 'PENDING', 41, tool='process:report', retry=3, log='[Error] ValueError: 보고 실패; ')]
+    attention = {'state': 'stuck', 'label': '멈춤 — 사람 조치 필요',
+                 'steps': [{'workitem': 'r3', 'activity': 'T_cmd', 'name': '정비 요청 등록', 'kind': 'pending', 'label': '단계가 멈춤', 'reason': RESEND_WHY,
+                            'actions': ['effect_retry', 'rework', 'close'], 'retry_role': 'role:maint-mgr'},
+                           {'workitem': 'r4', 'activity': 'R_ok', 'name': '결과 보고: 정상', 'kind': 'pending', 'label': '단계가 멈춤', 'reason': '보고 실패',
+                            'actions': ['rework', 'close']}]}
+    approvals = [_approval('old-approve', 'DEC-1', 'role:operator'), _approval('r2', 'DEC-2', 'role:maint-mgr')]
+    variables = [{'key': 'decision_id', 'value': 'DEC-2'}, {'key': 'approved_by', 'value': 'user:me'}, {'key': 'approved_role', 'value': 'role:maint-mgr'}]
+    sent = []
+
+    def answer(route):
+        from urllib.parse import urlparse
+        api = urlparse(route.request.url).path.split('/api/', 1)[-1]
+        if api == 'instances/ai':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'ai')
+            return route.fulfill(json={'instance': {**row, 'variables_data': variables, 'end_event': None, 'variable_sources': {}, 'initial_variables': {}},
+                                       'definition': CASE_DEF, 'workitems': items, 'events': [], 'approvals': approvals, 'reworks': [], 'attention': attention,
+                                       'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        if api.startswith('todolist/') and api.endswith('/effect-retry') and route.request.method == 'POST':
+            sent.append((api, route.request.post_data_json))
+            return route.fulfill(json={})
+        return _answer(route)
+    with _case_page(height=1400) as page:
+        page.route('**/svc/process/api/**', answer)
+        _pick(page, 'ai')
+        page.wait_for_selector('[data-effect-retry="r3"]', state='attached', timeout=15000)
+        got = page.evaluate("""() => ({ panels: [...document.querySelectorAll('[data-effect-retry]')].map(b => b.dataset.effectRetry),
+                                        role: document.querySelector('[data-retry-role="r3"]').value,
+                                        disabled: document.querySelector('[data-effect-retry="r3"]').disabled })""")
+        assert got == {'panels': ['r3'], 'role': 'role:maint-mgr', 'disabled': False}, got
+        page.locator('[data-effect-retry="r3"]').scroll_into_view_if_needed()
+        page.locator('[data-effect-retry="r3"]').click()
+        page.wait_for_function('() => !hydInstances.I.busy', timeout=10000)
+        assert sent == [('todolist/r3/effect-retry', {'by': 'user:me', 'role': 'role:maint-mgr'})], sent

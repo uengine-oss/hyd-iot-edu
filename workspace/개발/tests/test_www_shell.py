@@ -293,13 +293,14 @@ def test_실시간_점은_연결_상태만_말하고_다시_이어지면_연결�
     끊긴 뒤 활동을 한 번이라도 받았던 화면도 다시 이어지면 「실시간 연결됨」(살아 있는 초록 점)으로 돌아온다(앞 판은 다음 활동이 올 때까지 「끊김」이 남았다)."""
     page = portal
     pill = """() => { const t = document.getElementById('streamTicker'), d = t.querySelector('summary .dot');
-      return { text: t.querySelector('summary > span').textContent.trim(), tone: d.dataset.tone || '', live: d.hasAttribute('data-live'), detail: t.querySelector('.ticker-detail').textContent }; }"""
+      return { text: t.querySelector('summary > span').textContent.trim(), tone: d.dataset.tone || '', live: d.hasAttribute('data-live'), detail: t.querySelector('.ticker-detail').textContent,
+               conn: hydStream.conn().text }; }"""      # conn: 같은 순간의 연결 상태 — 「다시 연결 중」은 10초 · 세 번 실패 뒤 「끊김」으로 넘어가므로 따로 읽으면 그 사이에 바뀐다
     page.wait_for_function("() => ['retry', 'off'].includes(hydStream.conn().state)", timeout=20000)      # 이 포털은 서비스 요청이 모두 끊겨 있다
     down = page.evaluate(pill)
-    assert down['text'] == page.evaluate('() => hydStream.conn().text') and down['text'] in ('다시 연결 중', '끊김 · 다시 연결을 시도하는 중') and down['live'] is False
+    assert down['text'] == down['conn'] and down['text'] in ('다시 연결 중', '끊김 · 다시 연결을 시도하는 중') and down['live'] is False
     page.evaluate("() => hydStream.push({ id: 'pill-probe', event_type: 'human_asked', timestamp: new Date().toISOString(), data: { text: '팬 속도를 올려도 됩니까?' } }, true)")
     got = page.evaluate(pill)
-    assert (got['text'], got['live']) == (down['text'], False)                    # 점과 그 이름표는 연결 상태 그대로
+    assert (got['text'], got['live']) == (got['conn'], False) and got['text'] in ('다시 연결 중', '끊김 · 다시 연결을 시도하는 중')      # 점과 그 이름표는 연결 상태 그대로(활동 이름이 아니다)
     assert '사람에게 질문' in got['detail'] and '팬 속도를 올려도 됩니까?' in got['detail'] and got['detail'].count('사람에게 질문') == 1
     # 실시간 통로만 이어 준다: 이어진 순간의 알약을 적어 둔다(이 대역은 답을 보내고 곧 끊으므로 그 뒤에는 다시 「다시 연결 중」이 된다)
     page.evaluate(f"() => {{ window.pillSeen = []; hydStream.onConn(c => window.pillSeen.push([c.state, ({pill})()])); }}")

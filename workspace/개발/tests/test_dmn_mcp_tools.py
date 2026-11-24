@@ -6,7 +6,7 @@ import importlib
 import psycopg
 import pytest
 
-from conftest import _compose_default, _compose_service, _dockerfile, _image_env, here
+from conftest import ROOT, _compose_default, _compose_service, _dockerfile, _image_env, here
 
 
 @pytest.fixture(scope='module')
@@ -110,14 +110,32 @@ def test_평가_근거_조각_읽기는_잘못된_참조_칸_자리를_거절한
 
 
 def test_정기_정비_도래의_원인은_정비가_막는_고장의_원인이다(dmn, course_graph):
-    """PREVENTED_BY 는 시작이 넣는 수업 지식(정기 정비 원문)에서 온다 — 학생 PC 의 시작 뒤 그래프(course_graph)로 본다."""
+    """PREVENTED_BY 는 시작이 넣는 수업 지식(정기 정비 원문)에서 온다 — 학생 PC 의 시작 뒤 그래프(course_graph)로 본다. 기대값은 도구와 같은 질의를
+    다시 돌려 얻지 않고(전수검사 02-11 — 같은 질의를 정답으로 지켰다) 그 지식을 넣은 문서(제공 문서 서명 묶음의 제안)에서 읽는다: 정기 정비 절차가
+    막는 고장 유형과, 문서가 그 고장 유형의 원인으로 적은 것(사전 확률 순). 정비가 막지 않는 고장(쿨러 냉각 성능 상실)의 원인은 들지 않는다."""
+    import json
     tools = dmn.DmnTools(kg=importlib.import_module('agentsvc.tools.mcp_kg').KnowledgeGraph())
-    seeded_graph = course_graph
+    bundle = json.loads((ROOT / 'it/process/procsvc/course_extractions.json').read_text(encoding='utf-8'))['payload']['documents'].values()
+    proposals = [doc['proposal'] for doc in bundle]
+    prevented = {(p.get('link') or {}).get('failureMode') for pr in proposals for p in pr.get('procedures') or []
+                 if (p.get('link') or {}).get('relation') == 'PREVENTED_BY'}
+    causes = sorted(((c['prior'], c['id'], c['failure_mode']) for pr in proposals for c in (pr.get('knowledge') or {}).get('causes') or []
+                     if c['failure_mode'] in prevented), reverse=True)
+    assert prevented == {'fm:pump-volumetric-efficiency-loss'} and causes, '제공 문서의 정기 정비가 막는 고장 · 그 원인이 바뀌었다 — 이 시험의 기대도 함께 본다'
     out = tools.business_causes('HYD-02', 'PM_DUE')
-    expected = seeded_graph.query('MATCH (fm:FailureMode)-[:PREVENTED_BY]->(:Skill) WITH DISTINCT fm MATCH (c:Cause)-[:CAUSES]->(fm) '
-                                  'RETURN c.id AS causeId ORDER BY c.prior DESC')
-    assert expected, '시작 뒤 그래프에 정비가 막는 고장(PREVENTED_BY)이 없다'
-    assert [c['causeId'] for c in out['causes']] == [r['causeId'] for r in expected] and out['top_cause'] == expected[0]['causeId']
+    assert [(c['causeId'], c['failureModeId']) for c in out['causes']] == [(cid, fm) for _, cid, fm in causes]
+    assert (out['top_cause'], out['failure_mode']) == (causes[0][1], causes[0][2])
+    assert 'cause:cooler-fin-fouling' not in {c['causeId'] for c in out['causes']}
+    # 다른 설비(문서가 새 항목으로 넣은 설비 — 가상 설비에 딸리지 않은 구성 요소)의 예방 절차가 막는 고장의 원인은 이 설비 정기 정비의 후보가 아니다.
+    # 사전 확률이 가장 높아도 들지 않는다(전수검사 02-11 — 설비를 묻지 않던 질의는 이 원인을 1순위로 냈다)
+    course_graph.query("CREATE (a:Asset {id:'asset:test-apu', code:'APU-T1', name:'시험 압축기'})-[:HAS_COMPONENT]->(c:Component {id:'comp:test-apu-valve', name:'시험 밸브'}) "
+                       "CREATE (fm:FailureMode {id:'fm:test-apu-valve-stuck', name:'시험 밸브 고착'})-[:OCCURS_IN]->(c) "
+                       "CREATE (fm)-[:PREVENTED_BY]->(:Skill {id:'skill:test-apu-pm', sopId:'SOP-TEST-APU-PM', kind:'work_order'}) "
+                       "CREATE (:Cause {id:'cause:test-apu-valve-wear', name:'시험 밸브 마모', prior:0.99})-[:CAUSES]->(fm)")
+    again = tools.business_causes('HYD-02', 'PM_DUE')
+    assert again == out, [c['causeId'] for c in again['causes']]
+    other = tools.business_causes('APU-T1', 'PM_DUE')
+    assert [(c['causeId'], c['failureModeId']) for c in other['causes']] == [('cause:test-apu-valve-wear', 'fm:test-apu-valve-stuck')]
 
 
 @pytest.mark.parametrize('call', ['business_causes', 'evaluate_cards'])
@@ -133,11 +151,18 @@ def test_재고_기준_이탈은_원인_경로가_아니라_구매_도구로_보
     ('dmn_rules', ('dec:없는-판단',), '등록되지 않은 Decision id'),
     ('precedents', ('fm:없는-고장',), '등록되지 않은 FailureMode id'),
     ('tradeoffs', (['skill:없는-스킬'],), '등록되지 않은 Skill id'),
-    ('evaluate_cards', ('HYD-02', 'PM_DUE', 'cause:없는-원인', 'fm:x'), '업무 근거'),
-], ids=['센서_경보', '없는_판단', '없는_고장', '없는_스킬', '근거_없는_원인'])
+], ids=['센서_경보', '없는_판단', '없는_고장', '없는_스킬'])
 def test_지식에_없는_id는_빈_결과가_아니라_까닭과_함께_거절한다(dmn, tools, call, args, phrase):
     with pytest.raises(ValueError, match=phrase):
         getattr(tools, call)(*args)
+
+
+def test_업무_근거에_없는_원인은_빈_결과가_아니라_까닭과_함께_거절한다(dmn, course_graph):
+    """정기 정비 도래의 원인은 정비가 막는 고장의 원인만 받는다 — 그 지식(정기 정비 원문)은 시작이 넣는 수업 지식이라 시작 뒤 그래프로 본다
+    (기본 시드만 있는 그래프에서는 예방 정비 지식이 없다는 까닭이 먼저 나온다 — card.business_knowledge_missing)."""
+    tools = dmn.DmnTools(kg=importlib.import_module('agentsvc.tools.mcp_kg').KnowledgeGraph())
+    with pytest.raises(ValueError, match='업무 근거'):
+        tools.evaluate_cards('HYD-02', 'PM_DUE', 'cause:없는-원인', 'fm:x')
 
 
 @pytest.mark.parametrize('incident', ['', '  ', None], ids=['빈_값', '공백', '없음'])
@@ -159,3 +184,85 @@ def test_건강은_지금_그래프에_닿는지다(dmn, seeded_graph, monkeypat
         monkeypatch.setenv('NEO4J_URI', 'bolt://127.0.0.1:9')      # 바깥(그래프)이 꺼진 자리
     assert dmn.DmnTools(kg=importlib.import_module('agentsvc.tools.mcp_kg').KnowledgeGraph()).health() == {'neo4j': reachable}
 
+
+
+# ---------------------------------------------------------------- 판단 등록은 지금 진단의 1순위 원인으로만(실제 dmn-mcp · 설비 · 그래프)
+from test_decide import cooling  # noqa: E402,F401 — HYD-01 쿨러 오염이 진행돼 유온이 경보선 위에 머문 설비(30분 보고)
+
+
+def _submit(cooling, asset, cause):
+    from procsvc import mcp_check
+    cooling.report(asset)                    # 설비는 1초마다 보고한다 — 등록 도구가 그 자리에서 하는 원인 진단의 관측 구간이 지금까지 이어진다
+    spec = mcp_check.normalize({'type': 'http', 'url': cooling.stack.tools['hyd-dmn']['url']})
+    out = mcp_check.call_effect(spec, 'submit_decision', {'asset': asset, 'pattern': 'COOLER_DEGRADATION', 'cause': cause,
+                                                          'failure_mode': 'fm:cooler-cooling-loss', 'incident': 'INC-없는-사건'}, timeout=60)
+    assert out['status'] == 'ok', out
+    import json
+    return json.loads(out['result']['text'])
+
+
+def test_판단_등록은_지금_원인_진단의_1순위가_아닌_원인이나_보류된_진단으로는_하지_않는다(dmn, cooling):
+    """전수검사 02-2 · 탐사 N1: 판단 등록은 원인이 진단 지식(T1)에 있기만 하면 받아, 보류된 진단 뒤에도 · 1순위가 아닌 원인으로도 판단이 등록됐다.
+    등록 도구가 그 자리에서 진단을 다시 해 1순위 원인만 받는다. 1순위 원인은 진단을 지나 카드를 process 에 보내는 데까지 간다 — 처리 건의 에이전트
+    단계 밖에서 부른 등록이라 process 가 그 까닭으로 접수하지 않는다(다른 까닭으로 막혔으면 그 문장이 아니다).
+    냉각 효율이 정상인 설비(HYD-03)는 문서의 진단 규칙(냉각 효율 70 % 미만이면 핀 오염)이 맞지 않아 진단이 보류다(탐사 C1)."""
+    not_top = _submit(cooling, 'HYD-01', 'cause:fan-drive-fault')
+    assert not_top['result'] == 'error' and '1순위가 아닙니다' in not_top['message'] and '「쿨러 핀 오염」' in not_top['message'], not_top
+    top = _submit(cooling, 'HYD-01', 'cause:cooler-fin-fouling')
+    assert top['result'] == 'error' and top['message'].startswith('판단을 등록하지 못했습니다 — process 가 판단 등록을 거절했습니다 (HTTP 409): '
+                                                                  '판단은 경보로 열린 처리 건의 에이전트 단계 안에서만 접수합니다'), top
+    healthy = _submit(cooling, 'HYD-03', 'cause:cooler-fin-fouling')
+    assert healthy['result'] == 'error' and '원인 진단이 보류라' in healthy['message'] and '진단 규칙' in healthy['message'], healthy
+
+
+# ---------------------------------------------------------------- 보류된 진단: 다시 부를 수 있는가(UNAVAILABLE) · 다시 불러도 같은가(INVALID)
+class _Tsdb:
+    """시계열 DB 자리(판단 엔진 밖): 그 설비의 유온(TS1) 최신 값과 나이(초). age=None 이면 그 설비의 값이 하나도 없다."""
+    def __init__(self, age):
+        self.age = age
+
+    def latest(self, asset, tag):
+        return (None, None) if self.age is None else (55.0, self.age)
+
+
+@pytest.fixture
+def ingest(dmn, monkeypatch):
+    """설비 데이터 수집기(connect-ingest)의 /healthz 자리(판단 엔진 밖) — 실제 HTTP 로 답한다. state['ok'] 로 정상 · 이상을 바꾼다."""
+    import http.server
+    import json
+    import threading
+    from agentsvc.tools import mcp_prom
+    state = {'ok': True}
+
+    class Health(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = json.dumps({'ok': state['ok']}).encode()
+            self.send_response(200 if state['ok'] else 503)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Health)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setattr(mcp_prom, 'INGEST_URL', f'http://127.0.0.1:{server.server_port}/healthz')
+    yield state
+    server.shutdown()
+
+
+@pytest.mark.parametrize('asset, age, ingest_ok, kind, phrase', [
+    ('APU-01', None, True, 'INVALID', '이 시스템이 수집하지 않는 설비는'),     # 학생 현장의 설비 — 유온 값이 앞으로도 없다
+    ('HYD-01', None, True, 'UNAVAILABLE', '유온(TS1) 값이 시계열 DB에 없습니다'),  # 수집하는 설비의 첫 값이 아직(켜진 직후)
+    ('HYD-01', 999, True, 'UNAVAILABLE', '초 전 것입니다'),                       # 낡은 값 — 수집이 다시 돌면 풀린다
+    ('APU-01', None, False, 'UNAVAILABLE', '수집기(connect-ingest)가 정상이 아니라'),   # 수집기 이상 — 그 까닭으로 말한다
+], ids=['수집하지_않는_설비', '수집하는_설비_첫_값_전', '낡은_값', '수집기_이상'])
+def test_보류된_진단은_다시_불러도_같을_때만_INVALID이고_풀릴_수_있으면_UNAVAILABLE이다(dmn, ingest, asset, age, ingest_ok, kind, phrase):
+    """판단 등록 도구는 원인 진단이 보류면 등록하지 않는다. 다시 부를 수 있다(UNAVAILABLE)고 하면 에이전트가 같은 호출을 되풀이한다 — 이 시스템이
+    수집하지 않는 설비는 유온 값이 아예 없어 다시 불러도 같은데도 늘 UNAVAILABLE 이었다. 진단(diagnose)과 등록 검사는 실제 코드다."""
+    ingest['ok'] = ingest_ok
+    tools = dmn.DmnTools(kg=object(), tsdb=_Tsdb(age))            # 데이터 신뢰 검사에서 보류되므로 지식 지도는 부르지 않는다
+    out = dmn.enveloped(lambda: tools._submitted_diagnosis(asset, 'COOLER_DEGRADATION', 'cause:x', 'fm:x', None))()
+    assert out['result'] == 'error' and out['error_kind'] == kind, out
+    assert '원인 진단이 보류라 판단을 등록하지 않았습니다' in out['message'] and phrase in out['message'], out

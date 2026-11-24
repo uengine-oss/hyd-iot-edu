@@ -17,6 +17,7 @@ def _incident(state, **fields):
 
 @pytest.mark.parametrize('state, after, reason', [
     ('AWAITING_APPROVAL', 'AWAITING_APPROVAL', None),
+    ('APPROVED_EXECUTING', 'APPROVED_EXECUTING', None),           # 설비 명령 없는 승인 — 흐름의 단계가 저장한 작업 행으로 이어 간다
     ('CMD_ISSUED', 'ESCALATED', 'PROCESS_RESTART_REVIEW'),        # 명령을 보냈는지 모른다 — 사람 검토
     ('AWAITING_ACK', 'ESCALATED', 'PROCESS_RESTART_REVIEW'),      # 설비가 실행했는지 모른다 — 사람 검토
     ('RE_OBSERVING', 'RE_OBSERVING', None),                       # 재관측은 읽기 — 저장한 마감으로 이어 간다(A-02)

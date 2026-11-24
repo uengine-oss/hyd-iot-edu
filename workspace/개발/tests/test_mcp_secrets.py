@@ -24,7 +24,7 @@ def repo(pg_dsn):
 ], ids=['가운데 줄바꿈', '탭', '빈 값', '자리표시자', '너무 긺'])
 def test_넣을_수_없는_비밀_값은_까닭과_함께_거절되고_저장되지_않는다(repo, value, says):
     with pytest.raises(SecretError) as refused:
-        mcp_secrets.put(repo, TENANT, 'MY_TOKEN', value, '강사', 'now')
+        mcp_secrets.put(repo, TENANT, 'MY_TOKEN', value, 'user:me', 'now')
     assert refused.value.status == 422 and says in refused.value.reason
     assert mcp_secrets.load(repo, TENANT) == {}
 
@@ -34,10 +34,10 @@ def test_넣을_수_없는_비밀_값은_까닭과_함께_거절되고_저장되
     ('x' * mcp_secrets.MAX_VALUE, 'x' * mcp_secrets.MAX_VALUE),
 ], ids=['앞뒤 공백', '상한 길이'])
 def test_비밀_값은_앞뒤_공백을_지워_표에_저장하고_목록에는_값을_싣지_않는다(repo, value, stored):
-    mcp_secrets.put(repo, TENANT, 'MY_TOKEN', value, '강사', 'now')
+    mcp_secrets.put(repo, TENANT, 'MY_TOKEN', value, 'user:me', 'now')
     assert mcp_secrets.load(repo, TENANT) == {'MY_TOKEN': stored}
     view = mcp_secrets.overview(repo, TENANT, {'my-drive': {'headers': {'Authorization': 'Bearer ${SECRET:MY_TOKEN}'}}})
-    assert view['secrets'] == [{'key': 'MY_TOKEN', 'stored': True, 'updated_at': view['secrets'][0]['updated_at'], 'updated_by': '강사',
+    assert view['secrets'] == [{'key': 'MY_TOKEN', 'stored': True, 'updated_at': view['secrets'][0]['updated_at'], 'updated_by': 'user:me',
                                 'used_by': ['my-drive'], 'missing': False}]
     assert stored not in str(view)
 
@@ -51,7 +51,7 @@ def test_값이_없는_참조로_부르면_도구_연결_화면에_넣으라고_
 
 
 def test_부르기_직전에만_참조를_채우고_채운_값을_돌려준다(repo):
-    mcp_secrets.put(repo, TENANT, 'MY_TOKEN', 'sk-live-5678', '강사', 'now')
+    mcp_secrets.put(repo, TENANT, 'MY_TOKEN', 'sk-live-5678', 'user:me', 'now')
     entry = {'type': 'url', 'url': 'https://x/mcp', 'headers': {'Authorization': 'Bearer ${SECRET:MY_TOKEN}', 'Accept': 'x'}}
     spec, used = mcp_secrets.runtime_spec(repo, TENANT, 'my-drive', entry)
     assert (spec['headers'], used) == ({'Authorization': 'Bearer sk-live-5678', 'Accept': 'x'}, ['sk-live-5678'])

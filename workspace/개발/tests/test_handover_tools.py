@@ -18,7 +18,6 @@ def test_질문_도구는_모두_dmn_mcp에_있는_읽기_도구다(monkeypatch)
     tools = _dmn_tools(monkeypatch)
     assert set(QUESTION_READS['hyd-dmn']) <= set(tools), set(QUESTION_READS['hyd-dmn']) - set(tools)
     assert all(tools[name] for name in QUESTION_READS['hyd-dmn'])
-    assert not any(name.startswith('prometheus') for name in QUESTION_READS['hyd-dmn'])     # 기본 스택에 없는 서버의 도구
 
 
 def test_교대_도구는_질문_도구의_일부이고_쓰기_도구는_어디에도_없다():

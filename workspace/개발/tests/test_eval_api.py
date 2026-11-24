@@ -19,17 +19,27 @@ def golden(world, course_graph):
     item = {'id': 'cooler-auto', 'title': '쿨러 성능 저하', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {},
             'expected': {'cause': row['cause'], 'failure_mode': row['fm']}, 'allowed_top': [row['skill']], 'forbidden': [],
             'required_evidence': [row['skill']]}
-    status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': '수강생'})
+    status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': 'user:me'})
     assert status == 201, body
     yield item
     judgment_eval.PgEvalStore(world.dsn, TENANT).reset()
 
 
-def test_정답표는_설비_목록과_가정_사실_선택지를_서버에서_준다(world):
+def test_정답표는_설비_목록과_가정_사실_선택지를_서버에서_주고_그_값은_판단_엔진이_그_판단_입력으로_받는다(world, course_graph):
+    """표 · 열에 이은 판단 입력이 없는 시작 상태의 가정 사실 칸은 기본 제공 현장의 넷이다. 칸마다 지식 그래프의 판단 입력(InputData)이고, 칸이 내는
+    값(선택지 · 숫자 칸의 하한)은 판단 엔진이 가정 사실로 받는 그 입력의 형식이다(agentsvc.decide.check_overrides — 정답표 실행이 그 값을 판단에
+    넣는다). 칸 이름이나 선택지 값이 지식 · 판단 엔진과 어긋나면 학생이 고른 정답표가 채점 때 거절된다."""
+    from agentsvc import decide
     status, body = world.api('GET', '/api/eval/golden')
     assert status == 200
-    assert body['assets'] == ['HYD-01', 'HYD-02', 'HYD-03']
-    assert {'plc_mode', 'plc_state', 'standby_ready', 'fan100_hours'} == set(body['facts'])
+    from hydcommon.topics import ASSETS
+    assert body['assets'] == list(ASSETS)                         # 설비 목록의 정본(hydcommon.topics)
+    assert set(body['facts']) == {'plc_mode', 'plc_state', 'standby_ready', 'fan100_hours'}, body['facts']
+    inputs = course_graph.query('MATCH (i:InputData) WHERE i.variable IS NOT NULL RETURN i.variable AS variable, i.name AS name, i.typeRef AS typeRef')
+    for key, field in body['facts'].items():
+        values = [value for value, _ in field['choices']] if 'choices' in field else [field.get('min', 0)]
+        for value in values:
+            assert decide.check_overrides(inputs, {key: value}) == {key: value}, (key, value)
     assert all('/api/' not in note for note in body['paths'].values())
 
 
@@ -37,7 +47,7 @@ def test_그래프에_없는_이름을_적은_정답표는_저장하지_않는�
     item = {'id': 'bad-names', 'title': '없는 이름', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {},
             'expected': {'cause': 'cause:no-such', 'failure_mode': 'fm:no-such'}, 'allowed_top': ['skill:no-such'], 'forbidden': [],
             'required_evidence': ['evd:no-such']}
-    status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': '수강생'})
+    status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': 'user:me'})
     assert status == 400 and body['detail'].startswith('지금 지식 그래프에 없는 항목이 있습니다: cause:no-such, fm:no-such, skill:no-such, evd:no-such'), body
     assert '다시 고르세요' in body['detail'] and ' id ' not in body['detail']      # 학생이 할 일을 말하고, 안쪽 말(id)을 쓰지 않는다
 
@@ -62,7 +72,7 @@ def test_정답표_후보는_지금_그래프에_있는_것뿐이고_어느_것�
             'forbidden': [{'skill': skills[-1], 'expect': 'excluded', 'rule': choices['rule'][0]['id']}],
             'required_evidence': [c['id'] for c in choices['evidence']]}
     try:
-        status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': '수강생'})
+        status, body = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': 'user:me'})
         assert status == 201, body
     finally:
         judgment_eval.PgEvalStore(world.dsn, TENANT).reset()
@@ -80,7 +90,7 @@ def test_규칙_판단으로_여러_번_채점하면_검사마다_맞은_횟수�
     world.settle(1800)
     world.reported_for('HYD-01')                               # 설비 값이 없으면 판단은 「근거 조회 불완전」으로 보류된다(규칙대로)
     with world.reporting('HYD-01'):                            # 판단을 두 번 도는 동안에도 설비는 1초마다 보고한다(실제 설비처럼)
-        status, run = world.api('POST', '/api/eval/runs', {'path': 'decide', 'by': '수강생', 'repeats': 2})
+        status, run = world.api('POST', '/api/eval/runs', {'path': 'decide', 'by': 'user:me', 'repeats': 2})
     assert status == 201, run
     [item] = run['items']
     assert item['status'] not in judgment_eval.NOT_JUDGED, (item['status'], item['reason'])  # 판단이 실제로 났는지부터
@@ -94,7 +104,7 @@ def test_채점이_적은_진행_기록에_항목마다_결과와_끝난_수가_
     import uuid
     rid = str(uuid.uuid4())
     assert world.api('GET', f'/api/progress/{rid}')[1]['state'] == 'none'              # 요청 전: 404 가 아니다
-    status, run = world.api('POST', '/api/eval/runs', {'path': 'decide', 'by': '수강생', 'repeats': 2, 'request_id': rid})
+    status, run = world.api('POST', '/api/eval/runs', {'path': 'decide', 'by': 'user:me', 'repeats': 2, 'request_id': rid})
     assert status == 201, run
     status, seen = world.api('GET', f'/api/progress/{rid}')
     assert status == 200 and seen['state'] == 'done' and seen['kind'] == 'eval_run'
@@ -110,7 +120,7 @@ def test_채점이_적은_진행_기록에_항목마다_결과와_끝난_수가_
 def test_없는_항목을_채점하라는_요청은_진행_기록에도_실패로_남는다(world, golden):
     import uuid
     rid = str(uuid.uuid4())
-    status, body = world.api('POST', '/api/eval/runs', {'path': 'decide', 'by': '수강생', 'items': ['no-such-item'], 'request_id': rid})
+    status, body = world.api('POST', '/api/eval/runs', {'path': 'decide', 'by': 'user:me', 'items': ['no-such-item'], 'request_id': rid})
     assert status == 404, body
     seen = world.api('GET', f'/api/progress/{rid}')[1]
     assert seen['state'] == 'failed' and 'no-such-item' in seen['error']
@@ -155,3 +165,33 @@ def test_채점이_말하는_지식_항목_수는_지식_지도가_그리는_항
     assert now['scope'] and '설비 3기' in now['scope']
     status, later = world.api('GET', '/api/eval/knowledge')
     assert later['fingerprint'] == now['fingerprint']       # 아무것도 고치지 않았다 — 같은 지식이다
+
+
+def test_표_정의를_적재해_만든_판단_입력은_정답표의_가정_사실_칸에_그_형식으로_나온다(world, course_graph):
+    """탐사 N6: 정답표 화면의 가정 사실 칸이 수업 변수 넷뿐이라, 학생이 지식 › 데이터 원천에서 표 정의를 적재해 만든 판단 입력(업무 DB 표 · 열에 이은
+    InputData)을 가정 사실로 적을 수 없었다. 칸은 지금 지식에서 읽는다 — 숫자 · 참/거짓 · 글 형식이 그 칸이 되고, 표 · 열에 잇지 않은 입력과 판단 엔진이
+    가정으로 받지 않는 형식은 나오지 않는다. 그 칸으로 적은 항목은 저장된다."""
+    from procsvc import judgment_eval
+    judgment_eval.PgEvalStore(world.dsn, TENANT).reset()
+    course_graph.query("UNWIND [['in:test-line-priority','라인 우선순위','line_priority','number','line_priority'],"
+                       "['in:test-shift','교대조','shift_name','string','shift_name'],['in:test-running','라인 가동','line_running','boolean','running'],"
+                       "['in:test-blob','첨부','line_blob','json','blob'],['in:test-unbound','표에 잇지 않은 입력','line_note','string',null]] AS r "
+                       "CREATE (i:InputData {id:r[0], name:r[1], variable:r[2], typeRef:r[3]}) "
+                       "FOREACH (_ IN CASE WHEN r[4] IS NULL THEN [] ELSE [1] END | SET i.table='line_status', i.column=r[4])")
+    status, body = world.api('GET', '/api/eval/golden')
+    assert status == 200
+    added = {k: v for k, v in body['facts'].items() if k not in judgment_eval.FACT_CHOICES}
+    assert added == {'line_priority': {'label': '라인 우선순위', 'number': True}, 'shift_name': {'label': '교대조', 'text': True},
+                     'line_running': {'label': '라인 가동', 'choices': [[True, '참'], [False, '거짓']]}}, added
+    assert {k: body['facts'][k] for k in judgment_eval.FACT_CHOICES} == judgment_eval.FACT_CHOICES
+    row = course_graph.query("MATCH (c:Cause)-[:CAUSES]->(f:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(k:Skill) RETURN c.id AS cause, f.id AS fm, k.id AS skill ORDER BY c.id LIMIT 1")[0]
+    item = {'id': 'line-facts', 'title': '라인 우선순위 2 · 야간조', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION',
+            'facts': {'line_priority': 2, 'shift_name': '야간조', 'line_running': False}, 'expected': {'cause': row['cause'], 'failure_mode': row['fm']},
+            'allowed_top': [row['skill']], 'forbidden': [], 'required_evidence': [row['skill']]}
+    try:
+        status, saved = world.api('POST', '/api/eval/golden/items', {'item': item, 'by': 'user:me'})
+        assert status == 201, saved
+        status, again = world.api('GET', '/api/eval/golden')
+        assert [it['facts'] for it in again['items'] if it['id'] == 'line-facts'] == [item['facts']]
+    finally:
+        judgment_eval.PgEvalStore(world.dsn, TENANT).reset()

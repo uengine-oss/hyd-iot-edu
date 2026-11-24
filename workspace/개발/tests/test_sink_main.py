@@ -84,7 +84,7 @@ def test_다시_만든_토픽의_새_기록은_체크포인트에_가려지지_�
 
 
 def _forwarded(cmd_id, incident='INC-1', actions=None):
-    cmd = {'cmdId': cmd_id, 'asset': 'HYD-01', 'incident': incident, 'source': 'HITL', 'approvedBy': 'user:kim-op',
+    cmd = {'cmdId': cmd_id, 'asset': 'HYD-01', 'incident': incident, 'source': 'HITL', 'approvedBy': 'user:me',
            'approvalId': 'APR-1', 'expiresAt': '2026-10-30T05:02:00Z', 'actions': actions or [{'code': 'FAN_SET', 'fan_pct': 100}]}
     return {'t': T, 'incident': incident, 'actor': 'cmd-gateway', 'event': 'CMD_FORWARDED', 'detail': {'cmdId': cmd_id, 'command': cmd}}
 

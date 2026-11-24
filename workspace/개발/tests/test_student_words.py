@@ -11,6 +11,7 @@ import pytest
 
 from conftest import COOLING, OPERATOR
 from student_words import WORKER_TALK
+from test_instances import _effect
 
 
 def talk(value, where=''):
@@ -47,11 +48,8 @@ def test_냉각_경보_한_건이_승인과_효과_확인을_거쳐_끝나는_�
     assert talk(made.get('explanation'), 'decision.explanation') == []
     assert '장 중' not in made['explanation'] and '권한다' not in made['explanation'], made['explanation']      # 화면 용어: 조치 후보 N개 · 권장
     world.approve(pid, decision, 'skill:sop-cool-11', OPERATOR)
-    world.ack(COOLING[1], world.commanded(pid)['cmdId'])
-    world.tag(COOLING[1], 'TS1', 50.0)
-    world.clear_alert(alert)
-    world.clock.advance(15 * 60 / 20 + 1)
-    world.poll()
+    world.forward(world.commanded(pid)['cmdId'])           # 승인한 팬 최대가 관문 · PLC 를 거쳐 설비를 식힌다
+    _effect(world, pid)                                    # 효과 확인이 설비가 낸 값으로 판정할 때까지(시험은 값 · 해제를 넣지 않는다)
     status, view = world.api('GET', f'/api/instances/{pid}')
     assert status == 200 and view['instance']['status'] == 'COMPLETED', [(w['activity_id'], w['status']) for w in world.rows(pid)]
     assert talk(shown_of(world.events(pid)), 'events') == []

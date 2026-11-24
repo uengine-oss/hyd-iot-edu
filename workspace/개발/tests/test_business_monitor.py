@@ -32,9 +32,11 @@ def test_업무_경보는_패턴과_그_패턴의_업무_시스템_출처가_맞
     assert bm.is_business_alert(alert) is expected
 
 
-def test_흐름_가져오기에_보탤_업무_경보_패턴은_경보_정책_계약을_만족한다():
+def test_흐름_가져오기에_보탤_업무_경보_패턴은_경보_정책_계약을_만족하고_시계열에_없는_회복_기준을_지어_넣지_않는다():
+    """S-A: 전에는 계약을 채우려고 시계열에 없는 이탈 표시 태그(ERP_SPARE_BELOW_MIN · CMMS_PM_DUE)를 회복 기준으로 넣었다 — 효과 확인이 늘 「값 없음」."""
     patterns = bm.policy_patterns()
     assert set(patterns) == {'SPARE_BELOW_MIN', 'PM_DUE'}
     alert_policy.validate({'alertPolicy': {'patterns': patterns, 'unsupported': {'definition': 'alert_triage', 'version': '1.0'}}})
-    patterns['PM_DUE']['limit'] = 99
-    assert bm.PATTERNS['PM_DUE']['policy']['limit'] == 1.0, '돌려준 것은 사본이다'
+    assert all(p == {'requireClear': True} for p in patterns.values()), patterns
+    patterns['PM_DUE']['tag'] = 'X'
+    assert 'tag' not in bm.PATTERNS['PM_DUE']['policy'], '돌려준 것은 사본이다'

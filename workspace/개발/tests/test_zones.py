@@ -50,6 +50,15 @@ def test_모든_서비스는_한_영역에만_있다():
     assert DMZ == {DMZ_BROKER, 'connect-ingest', 'cmd-gateway'}       # 영역을 넘는 일은 수집 중계 · 명령 관문만 하고, DMZ 브로커는 공장이 접속해 오는 자리다
 
 
+def test_업무_DB_망에는_IT_서비스만_있고_업무_DB를_부르는_서비스는_모두_그_망_안의_이름으로_부른다():
+    """업무 DB(Supabase)는 IT 영역의 업무 시스템이다 — 그 망(business-db)에 OT · DMZ 서비스는 없다. 업무 DB · 메일함을 부르는 서비스는 호스트에
+    연 포트로 돌지 않고 그 망 안의 이름(db.supabase.internal · inbucket)으로 부른다(2026-11-24: 호스트 중계가 PC 전체에서 몇 초씩 멎어 승인이 503)."""
+    env = {s: {k: str(v) for k, v in (svc.get('environment') or {}).items()} for s, svc in SERVICES.items()}
+    users = {s for s, e in env.items() if any('@db.supabase.internal:5432/' in v or (k == 'SMTP_HOST' and v == 'inbucket') for k, v in e.items())}
+    assert users and members('business-db') == users and users <= IT, (members('business-db'), users)
+    assert [(s, k) for s, e in env.items() for k, v in e.items() if 'host.docker.internal' in v] == []
+
+
 def test_OT와_IT는_가상_설비_API_망_말고는_닿지_않는다():
     touching = {(o, i): shared(o, i) for o in OT for i in IT if shared(o, i)}
     assert touching == {(o, i): {SIM_NET} for o, callers in SIM_API.items() for i in callers}
@@ -118,6 +127,20 @@ def _addresses(box):
     return {net: info['IPAddress'] for net, info in nets.items()}
 
 
+def _holders(opened):
+    """열린 주소마다 그 순간 그 주소를 가진 컨테이너와 망(이 PC 의 모든 망) — 실패 글에 싣는 관측(2026-11-24 한 번, 열린 주소가 나중에 보니 다른
+    시험 자리의 것이었다 — 그 순간의 주인을 남긴다)."""
+    ips = {item.rsplit(':', 1)[0] for item in opened}
+    found = {}
+    for net in _docker('network', 'ls', '-q').split():
+        info = json.loads(_docker('network', 'inspect', net))[0]
+        for box in (info.get('Containers') or {}).values():
+            ip = (box.get('IPv4Address') or '').split('/')[0]
+            if ip in ips:
+                found.setdefault(ip, []).append(f"{box.get('Name')} @ {info['Name']}")
+    return found
+
+
 def _opens_from(nets, targets):
     """nets(compose 망 이름들)에 붙은 새 컨테이너 안에서 (주소, 포트)마다 TCP 연결을 열어 본다 → 열린 것들."""
     script = '; '.join(f'nc -z -w 2 {host} {port} 2>/dev/null && echo {host}:{port}' for host, port in targets) + '; true'
@@ -128,7 +151,7 @@ def _opens_from(nets, targets):
             _docker('network', 'connect', site_network(net), name)
         return set(_docker('start', '-a', name).split())
     finally:
-        _docker('rm', '-f', name)
+        _docker('rm', '-f', '-v', name)                 # -v: 탐침 이미지(mosquitto)의 익명 볼륨까지
 
 
 def test_DMZ_자리에서_공장_쪽_어느_입구로도_연결이_열리지_않는다(plant_mqtt):
@@ -140,7 +163,8 @@ def test_DMZ_자리에서_공장_쪽_어느_입구로도_연결이_열리지_않
     assert all(len(found) >= 2 for found in hosts.values()), hosts                       # 이름 + 실제 주소를 읽었다
     targets = [(host, port) for service, found in hosts.items() for host in sorted(found) for port in PLANT_SIDE_PORTS[service]]
     control = (DMZ_BROKER, 1883)
-    assert _opens_from(dmz_nets, targets + [control]) == {f'{control[0]}:{control[1]}'}
+    opened = _opens_from(dmz_nets, targets + [control])
+    assert opened == {f'{control[0]}:{control[1]}'}, (opened, _holders(opened))
 
 
 def test_공장_자리에서는_공장_브로커와_DMZ_브로커_양쪽으로_연결이_열린다(plant_mqtt):
@@ -173,12 +197,12 @@ def test_시스템_구성_화면의_부품마다_붙은_망이_compose와_같다
 def test_시스템_구성_화면의_망_목록과_영역이_compose에서_나온_것과_같다():
     diagram = _diagram()
     compose_nets = list(yaml.safe_load((ROOT / 'compose.yaml').read_text(encoding='utf8'))['networks'])
-    assert diagram['nets'] == compose_nets                           # 망 다섯의 이름과 차례
+    assert diagram['nets'] == compose_nets                           # 망 여섯의 이름과 차례
     zone_of = {**{s: 'ot' for s in OT}, **{s: 'dmz' for s in DMZ}, **{s: 'it' for s in IT}}
     assert {c['name']: c['zone'] for c in diagram['comps'] if c['zone'] != zone_of[c['name'].lower()]} == {}
 
 
 def test_IT_망_밖의_망에_붙는_서비스는_모두_그림에_있다():
     drawn = {c['name'].lower() for c in _diagram()['comps']}
-    outside = {s for s, nets in NETS.items() if nets - {IT_NET}}      # OT · 경계 망 둘 · 가상 설비 API 망 가운데 하나에라도 붙는 서비스
+    outside = {s for s, nets in NETS.items() if nets - {IT_NET, 'business-db'}}      # OT · 경계 망 둘 · 가상 설비 API 망 가운데 하나에라도 붙는 서비스(업무 DB 망은 IT 영역)
     assert outside - drawn == set(NOT_DRAWN)

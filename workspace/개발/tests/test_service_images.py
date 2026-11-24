@@ -117,14 +117,22 @@ def test_이미지에_넣는_파이썬_파일은_이미지_판_문법이다(dock
     assert not bad, f'Python {IMAGE_PYTHON[0]}.{IMAGE_PYTHON[1]} 에서 읽히지 않는 파일: ' + '; '.join(bad)
 
 
-def test_가져오기에_실패하는_모듈은_잡힌다(tmp_path):
-    """이 테스트가 무엇을 잡는지의 확인: 진입 모듈이 없는 모듈을 가져오면 같은 방식의 실행이 실패한다."""
-    (tmp_path / 'svc').mkdir()
-    (tmp_path / 'svc' / '__init__.py').write_text('', encoding='utf8')
-    (tmp_path / 'svc' / 'main.py').write_text('from svc import removed_module\n', encoding='utf8')
-    run = subprocess.run([sys.executable, '-I', '-c', 'import sys; sys.path.insert(0, "."); import svc.main'],
-                         cwd=tmp_path, capture_output=True, text=True, encoding='utf8', errors='replace')
-    assert run.returncode != 0 and 'ImportError' in run.stderr
+def test_COPY_한_줄이_빠진_Dockerfile이면_같은_길의_가져오기가_실패한다(tmp_path):
+    """이 검사가 실제로 잡는지(13C-11 — 전에는 이 파일의 길을 타지 않고 파이썬이 없는 모듈을 못 가져온다는 사실만 봤다): 진짜 Dockerfile
+    (connect-ingest)에서 공용 모듈 폴더를 넣는 COPY 한 줄만 뺀 사본을 위 시험과 같은 길(build_srv → 진입 모듈 가져오기)로 돈다."""
+    real = BUILT['connect-ingest']
+    lines = real.read_text(encoding='utf8').splitlines()
+    kept = [line for line in lines if not re.match(r'^COPY\s+common/hydcommon\s', line)]
+    assert len(kept) == len(lines) - 1, f'{real.relative_to(ROOT)}: 공용 모듈 COPY 줄이 하나가 아니다'
+    broken = tmp_path / 'Dockerfile'
+    broken.write_text('\n'.join(kept) + '\n', encoding='utf8')
+    srv = tmp_path / 'srv'
+    srv.mkdir()
+    env, module = build_srv(broken, srv)
+    env |= {k: os.environ[k] for k in OS_ENV if k in os.environ}
+    run = subprocess.run([sys.executable, '-I', '-c', f'import sys; sys.path.insert(0, "."); import {module}'],
+                         cwd=srv, env=env, capture_output=True, text=True, encoding='utf8', errors='replace', timeout=180)
+    assert run.returncode != 0 and "No module named 'hydcommon'" in run.stderr, run.stderr[-600:]
 
 
 # ---------------------------------------------------------------- 라이브러리 판(정본 = 서비스 요구 파일)

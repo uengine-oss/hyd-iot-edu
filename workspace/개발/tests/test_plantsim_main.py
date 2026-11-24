@@ -57,6 +57,8 @@ def test_다른_출처에_CORS로_답하지_않는다(api):
 
 def test_배속이_없으면_켜지지_않는다(monkeypatch):
     monkeypatch.delenv('TIME_SCALE', raising=False)
-    sys.modules.pop('plantsim.main', None)
+    # 시험이 끝나면 원래 모듈을 되돌린다(monkeypatch) — 빼 둔 채로 두면 뒤의 world 시험이 가상 설비를 환경 없이 다시 불러 「DAQ_PROFILE 없음」으로
+    # 멈추고, 불러와져도 묶음이 띄운 plant-sim HTTP 의 설비와 다른 새 설비가 된다(world 는 그 한 대를 쓴다)
+    monkeypatch.delitem(sys.modules, 'plantsim.main', raising=False)
     with pytest.raises(ValueError, match='TIME_SCALE'):
         importlib.import_module('plantsim.main')
