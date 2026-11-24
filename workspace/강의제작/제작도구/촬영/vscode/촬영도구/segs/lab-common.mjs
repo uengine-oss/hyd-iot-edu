@@ -19,7 +19,8 @@ export const TOKEN_FILE = 'D:/work/study/hyd-iot-edu-system/작업/촬영/vscode
 export const page = lab => 'file:///' + lab + '/output/result.html';
 
 // 랩마다 촬영 폴더 · 정본 ZIP · app/features 시작 파일 수 · 큐 JSON. 촬영 폴더 경로는 이 표 한 곳에만 둔다(구간 모듈 · 되돌리기는 LABS.<접두>.dir을 읽는다).
-// 촬영 폴더는 ZIP을 새로 푼 D:/HYD-Practice/<접두>p-<ZIP sha256 앞 8자리>/<랩>이다. ZIP이 바뀌면 resetLab이 멈추므로, 새 ZIP을 새 폴더에 풀고 이 표를 고친다.
+// 촬영 폴더는 ZIP을 새로 푼 D:/HYD-Practice/<접두>p-<ZIP sha256 앞 8자리>/<랩>이다. 작업 폴더가 아니라 ZIP 판에 묶여 있어 `동기화.py 정리 --실행`이 지우지 않는다(CLAUDE.md 1절).
+// ZIP이 바뀌면 resetLab이 멈춘다. 그때 표를 고치는 작업자는 새 ZIP을 새 폴더에 풀어 이 표를 고치고, 옛 폴더를 그 안 랩 DB(.lab_connection.json의 id와 라벨 hyd.practice.id가 같은 컨테이너, docker rm -f -v)와 함께 지운다.
 const OUT = 'D:/work/study/hyd-iot-edu-system/workspace/강의제작/산출물/';
 const CUES = decodeURIComponent(new URL('../../', import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1');
 export const LABS = {

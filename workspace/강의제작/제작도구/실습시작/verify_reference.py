@@ -248,6 +248,7 @@ class Lab:
                 self.run('RETURN 1'); break
             except Exception:
                 if time.monotonic() > deadline:
+                    self.close()   # 뜨지 않은 컨테이너도 익명 볼륨째 지운다 — 부른 쪽은 Lab을 받지 못해 지울 수 없다
                     raise RuntimeError('Neo4j 시작 대기 시간 초과')
                 time.sleep(2)
 

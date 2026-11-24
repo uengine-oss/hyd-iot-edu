@@ -6,13 +6,13 @@
 # 사용(이 폴더에서, Git Bash): MSYS_NO_PATHCONV=1 bash cypher_확인.sh > cypher_확인_결과.txt 2>&1
 set -u
 NAME=hyd-deck-u3-cypher-check
-docker rm -f "$NAME" >/dev/null 2>&1
+docker rm -f -v "$NAME" >/dev/null 2>&1
 docker run -d --name "$NAME" --memory 900m \
   -e NEO4J_AUTH=none \
   -e NEO4J_server_memory_heap_initial__size=256m -e NEO4J_server_memory_heap_max__size=256m \
   -e NEO4J_server_memory_pagecache_size=64m \
   neo4j:5.26-community >/dev/null || { echo "컨테이너를 띄우지 못했다"; exit 1; }
-trap 'docker rm -f "$NAME" >/dev/null 2>&1; echo "== 임시 컨테이너 지움: $NAME"' EXIT
+trap 'docker rm -f -v "$NAME" >/dev/null 2>&1; echo "== 임시 컨테이너 지움: $NAME"' EXIT
 for i in $(seq 1 60); do
   docker exec "$NAME" cypher-shell -a bolt://localhost:7687 "RETURN 1;" >/dev/null 2>&1 && break
   sleep 2

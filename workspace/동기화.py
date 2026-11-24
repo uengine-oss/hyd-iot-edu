@@ -12,10 +12,13 @@
                                       둘 다 바꾼 글 파일은 서로 다른 줄만 고쳤으면 세 판으로 합쳐 디스크에 두고(이 PC의 고침은 미커밋으로 남는다),
                                       같은 줄을 고쳤거나 글 파일이 아니면 아무것도 쓰지 않고 멈춘다
     세션                               세션 시작 훅: 열린 작업 폴더의 상태 · 오래됨(STALE_DAYS일 넘게 안 바뀜) · origin보다 뒤처졌는지
-    정리 [--실행]                       스펙.md 「상태: 끝」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다.
-                                      상태 줄 꼴이 틀린 폴더가 하나라도 있으면 아무것도 지우지 않고 그 목록으로 실패한다
+    정리 [--실행]                       스펙.md 「상태: 끝」 작업 폴더를 지운다(--실행 없으면 목록만). 같은 이름의 연습 폴더와 그 안 랩 DB 연결 파일이
+                                      가리키는 컨테이너(라벨 hyd.practice.id)도 익명 볼륨째 함께 지운다. 폴더 밖의 문서가 그 작업 폴더나 연습 폴더를
+                                      가리키면 지우지 않는다. 상태 줄 꼴이 틀린 폴더가 하나라도 있으면 아무것도 지우지 않고 그 목록으로 실패한다
 - 작업 폴더: 작업/<날짜>_<제목>/와 근거/<날짜>_<제목>/(클라우드) 모두. 스펙.md에 `상태: 진행|중단|끝` 줄이 있어야 한다(STATES).
   commit은 열린 작업 폴더의 기록.md에 `## 지금`이 둘 이상이거나 `~~` 취소선 항목이 남았으면 경고한다(기록은 고쳐 쓴다).
+- 연습 폴더: 학생 AI가 저장소 규칙 파일을 읽지 않게 저장소 밖에 두는 학생 경로 시험 자리 PRACTICE(CLAUDE.md 1절). 작업 하나가 만드는 연습 폴더는
+  PRACTICE/<작업 폴더 이름>/ 아래에 둔다 — 리허설 준비 · 장난감 시험 · 계정 채팅 시험이 task_of로 그 자리를 잡고, 정리가 작업 폴더와 함께 지운다.
 - 받기(새 PC, main을 clone한 폴더에서, Git Bash): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` →
   `PYTHONUTF8=1 python 동기화.py pull` → `rm 동기화.py`. PowerShell의 `>`는 인코딩을 바꿀 수 있어 쓰지 않는다.
 - 빼는 것: .env 전부(.env.example은 넣음) · 캐시 · node_modules · worktrees · 슬라이드/ · 조각_저장/ · .claude/settings.local.json · .inspect.ndjson.
@@ -25,7 +28,7 @@
 - 이력은 다시 쓰지 않는다(노션 링크가 커밋을 가리킨다) · 강제 push 없음 · 100 MiB 넘는 파일이 든 커밋, 학생 영상(산출물/영상/의 mp4)을 새로 넣는 커밋은
   만들지 않는다(영상은 Release 「영상」 — CLAUDE.md 2절, 도구 기존제작/tools/video/영상올리기.py).
 """
-import contextlib, datetime, os, re, shutil, subprocess, sys, tempfile
+import contextlib, datetime, json, os, re, shutil, stat, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -49,6 +52,9 @@ SIZE_LIMIT = 7_000_000_000
 VIDEO_DIR = "workspace/강의제작/산출물/영상/"
 WORK = ROOT / "작업"
 CLOUD_WORK = ROOT / "workspace" / "강의제작" / "제작도구" / "근거"   # 클라우드 작업 폴더의 부모 — VM이 회수돼도 커밋으로 남는다(CLAUDE.md 7절)
+PRACTICE = Path("D:/HYD-Practice") if os.name == "nt" else Path.home() / "HYD-Practice"   # 연습 폴더 자리(저장소 밖 — CLAUDE.md 1절)
+LAB_STATES = (".lab_connection.json", "랩_연결.json")   # 랩 DB 연결 파일(새 구조 · 옛 구조 랩) — 그 id가 그 폴더 컨테이너의 라벨 값이다
+LAB_LABEL = "hyd.practice.id"
 REF_SUFFIXES = {".md", ".json", ".py", ".sh", ".txt", ".csv", ".yaml", ".yml", ".mjs", ".js", ".html"}
 PATHS = ["workspace", ".claude", ".codex/hooks.json", "CLAUDE.md", "AGENTS.md"]
 SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees", "슬라이드", "조각_저장"}   # 둘 다 도구가 다시 만든다
@@ -279,6 +285,51 @@ def tasks():
     """열린 작업 폴더: 작업/<날짜>_<제목>/와 근거/<날짜>_<제목>/(클라우드 작업 폴더). 근거/의 날짜 폴더도 스펙.md가 있어야 하고, 없으면 꼴 틀림이다."""
     pat = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*"
     return sorted((p for base in (WORK, CLOUD_WORK) if base.is_dir() for p in base.glob(pat) if p.is_dir()), key=lambda p: p.name)
+
+
+def task_of(path):
+    """path(작업/<이름>/… · 근거/<이름>/… · PRACTICE/<이름>/…)가 속한 작업 폴더. 연습 폴더는 작업 폴더 이름 아래에만 만든다(CLAUDE.md 1절) —
+    그 꼴이 아니거나 그 이름의 작업 폴더가 없으면 까닭과 함께 끝낸다. 리허설 준비 · 장난감 시험 · 계정 채팅 시험이 자리를 잡을 때 부른다."""
+    p = Path(path).resolve()
+    for base in (WORK, CLOUD_WORK, PRACTICE):
+        base = base.resolve()
+        if p != base and p.is_relative_to(base):
+            name = p.relative_to(base).parts[0]
+            found = [t for t in tasks() if t.name == name]
+            if not found:
+                sys.exit(f"{p.as_posix()}: 이름이 「{name}」인 작업 폴더가 없다 — `동기화.py 시작 \"제목\"`으로 연 작업 폴더 이름 아래에 둔다(CLAUDE.md 1절)")
+            return found[0]
+    sys.exit(f"{p.as_posix()}: 작업 폴더(작업/<날짜>_<제목>/) 안도, 연습 폴더 자리({PRACTICE.as_posix()}/<작업 폴더 이름>/) 아래도 아니다(CLAUDE.md 1절)")
+
+
+def docker(*args):
+    exe = shutil.which("docker")
+    if not exe:
+        sys.exit(f"docker 명령이 없어 연습 폴더의 랩 DB 컨테이너를 지우지 못했다 — Docker를 켠 뒤 다시(docker {' '.join(args[:2])})")
+    r = subprocess.run([exe, *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode:
+        sys.exit(f"docker {' '.join(args[:2])}: {(r.stderr or r.stdout).strip()} — 아무것도 더 지우지 않았다")
+    return r.stdout
+
+
+def lab_containers(folder):
+    """연습 폴더 안 랩 DB 연결 파일(LAB_STATES)의 id와 라벨 hyd.practice.id가 같은 컨테이너 이름. 다른 폴더의 랩 DB는 고르지 않는다."""
+    ids = set()
+    for f in folder.rglob("*"):
+        if f.name in LAB_STATES and f.is_file():
+            try:
+                ids.add(json.loads(f.read_text(encoding="utf-8"))["id"])
+            except (OSError, ValueError, KeyError, TypeError) as e:
+                sys.exit(f"{f.as_posix()}: 랩 DB 연결 파일에서 id를 읽지 못했다({e!r}) — 그 폴더의 컨테이너를 가릴 수 없어 아무것도 지우지 않았다")
+    return [n for i in sorted(ids) for n in docker("ps", "-a", "--filter", f"label={LAB_LABEL}={i}", "--format", "{{.Names}}").split()]
+
+
+def remove_tree(p):
+    """폴더를 지운다. 읽기 전용 파일(실습 폴더 안 .git 등)은 쓰기를 풀고 다시 지우고, 그래도 안 되면 그 경로로 실패한다."""
+    def again(fn, path, _exc):
+        os.chmod(path, stat.S_IWRITE)
+        fn(path)
+    shutil.rmtree(p, onexc=again)
 
 
 def state(task):
@@ -530,15 +581,16 @@ def push():
 
 
 def referrers(task):
-    """작업 폴더 밖의 규칙 · 작업 자료 가운데 이 폴더 경로(작업/<이름> · 근거/<이름>)를 적은 파일 — 지우면 그 링크가 끊긴다."""
-    key, out = f"{task.parent.name}/{task.name}", []
+    """작업 폴더 밖의 규칙 · 작업 자료 가운데 이 폴더 경로(작업/<이름> · 근거/<이름>)나 그 연습 폴더(HYD-Practice/<이름>)를 적은 파일 — 지우면 그 링크가 끊긴다."""
+    keys, out = (f"{task.parent.name}/{task.name}", f"{PRACTICE.name}/{task.name}"), []
     for top in (ROOT / "workspace", ROOT / ".claude", ROOT / "CLAUDE.md", ROOT / "AGENTS.md"):
         files = [top] if top.is_file() else (f for f in top.rglob("*") if f.is_file()) if top.is_dir() else []
         for f in files:
             # 같은 작업의 짝 폴더(작업/<이름> · 근거/<이름>)는 함께 지우므로 밖으로 세지 않는다
             if f.suffix in REF_SUFFIXES and not any(p.name == task.name for p in f.parents) and not SKIP_DIRS & set(f.parts):
                 with contextlib.suppress(OSError, UnicodeDecodeError):
-                    if key in f.read_text(encoding="utf-8"):
+                    text = f.read_text(encoding="utf-8")
+                    if any(k in text for k in keys):
                         out.append(f.relative_to(ROOT).as_posix())
     return out
 
@@ -557,13 +609,25 @@ def clean(run):
         if refs:
             print(f"못 지움 {t.name} — 폴더 밖에서 가리킨다(정본에 쓸 것은 정본 자리로 옮기고 링크를 지운 뒤 다시): " + " · ".join(refs[:10]))
             continue
+        practice = PRACTICE / t.name
+        boxes = lab_containers(practice) if practice.is_dir() else []
+        what = ("연습 폴더 없음" if not practice.is_dir() else f"연습 폴더 {practice.as_posix()}"
+                + (f" · 랩 DB 컨테이너 {len(boxes)}개(익명 볼륨째): {' '.join(boxes)}" if boxes else " · 랩 DB 컨테이너 없음"))
         if run:
-            shutil.rmtree(t)
-            print(f"지움 {t.name}")
+            for box in boxes:
+                docker("rm", "-f", "-v", box)   # -v: 이미지가 만든 익명 볼륨(neo4j의 /data · /logs)까지 — 없으면 볼륨만 남는다
+            if practice.is_dir():
+                remove_tree(practice)
+            remove_tree(t)
+            print(f"지움 {t.name} · {what}")
         else:
-            print(f"지울 것 {t.name} — `정리 --실행`으로 지운다")
+            print(f"지울 것 {t.name} · {what} — `정리 --실행`으로 지운다")
     if not done:
         print("「상태: 끝」인 작업 폴더가 없다")
+    names = {t.name for t in tasks()}
+    stray = sorted(p.name for p in PRACTICE.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*") if p.is_dir() and p.name not in names)
+    if stray:
+        print(f"작업 폴더가 없는 연습 폴더(지우지 않음 — 만든 사람이 쓰임을 보고 지운다): {PRACTICE.as_posix()}/ " + " · ".join(stray))
 
 
 def tree_blobs(ref):

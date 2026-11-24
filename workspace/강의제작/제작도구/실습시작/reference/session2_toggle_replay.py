@@ -153,11 +153,11 @@ def main():
             for course in ['실전반']:
                 L = B.graph_lab(course)
                 folder = copy_lab(course, B.LAB4, root)
-                up = subprocess.run([PY, 'lab_db.py', '--no-open'], cwd=folder, capture_output=True, text=True, encoding='utf-8', errors='replace')
-                if up.returncode:
-                    bad.append(f'{course}/실습4: lab_db.py 실패 {up.stdout[-500:]} {up.stderr[-500:]}')
-                    continue
-                try:
+                try:   # 정리 범위 안에서 켠다 — lab_db.py는 컨테이너를 만든 뒤 시작을 기다리다 실패할 수 있다
+                    up = subprocess.run([PY, 'lab_db.py', '--no-open'], cwd=folder, capture_output=True, text=True, encoding='utf-8', errors='replace')
+                    if up.returncode:
+                        bad.append(f'{course}/실습4: lab_db.py 실패 {up.stdout[-500:]} {up.stderr[-500:]}')
+                        continue
                     log, rc, states, out = replay(L, folder)
                     page = (folder / '결과/보기.html').read_text(encoding='utf-8')
                     differ = len(re.findall(r'data-st="(다름|실제 없음|기대 밖)"', page))
@@ -166,8 +166,12 @@ def main():
                     if not ok:
                         bad.append(f'{course}/실습4: rc {rc}, 상태 {[(x["step"], x["state"]) for x in log if x["state"] not in ("채움", "볼 것 없음", "결과 보기")]}, 대조 다른 줄 {differ}\n{out[-2500:]}')
                 finally:
-                    state = json.loads((folder / '랩_연결.json').read_text(encoding='utf-8'))
-                    subprocess.run(['docker', 'rm', '-f', '-v', state['container']], capture_output=True)
+                    state_path = folder / '랩_연결.json'
+                    if state_path.is_file():   # lab_db.py가 컨테이너를 만들기 전에 실패했으면 지울 것이 없다
+                        name = json.loads(state_path.read_text(encoding='utf-8'))['container']
+                        gone = subprocess.run(['docker', 'rm', '-f', '-v', name], capture_output=True, text=True, encoding='utf-8', errors='replace')
+                        if gone.returncode:
+                            raise RuntimeError(f'{name}: 랩 DB를 지우지 못했다 — {gone.stderr.strip()}')
     finally:
         if '--keep' not in sys.argv:
             shutil.rmtree(root, ignore_errors=True)

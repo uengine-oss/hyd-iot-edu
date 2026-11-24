@@ -1062,10 +1062,14 @@ GRAPH_ORDER = {False: ['db', 'sources', 'expected', 'plan', 'load', 'other', 'qu
 
 
 def drop_db(folder):
+    """이 폴더의 랩 DB 컨테이너를 익명 볼륨(neo4j 이미지의 /data · /logs)째 지운다 → 지운 이름. -v가 없으면 볼륨만 남는다
+    (2026-11-23 이 생성기 한 번에 27개 · 약 6.5 GB). docker가 실패하면 그 까닭으로 멈춘다(없는 컨테이너는 rm -f가 0으로 끝난다)."""
     state = folder / '.lab_connection.json'
     if state.is_file():
         name = json.loads(state.read_text(encoding='utf-8'))['container']
-        subprocess.run(['docker', 'rm', '-f', name], capture_output=True)
+        done = subprocess.run(['docker', 'rm', '-f', '-v', name], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        if done.returncode:
+            raise RuntimeError(f'{name}: 랩 DB를 지우지 못했다 — {done.stderr.strip()}')
         return name
 
 

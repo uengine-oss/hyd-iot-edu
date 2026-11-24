@@ -2,7 +2,7 @@
 강사 제작용이며 학생 ZIP에 넣지 않는다. 실제 AI를 부르므로 비용이 든다 — 같은 판본 · 같은 조건은 다시 돌리지 않는다. 이 도구는 판정하지 않는다.
 
 쓰는 법
-  python3 ai_toy_test.py <학생 ZIP> --tool codex|claude --scenario two_turn|one_turn --out <새 출력 폴더>
+  python3 ai_toy_test.py <학생 ZIP> --tool codex|claude --scenario two_turn|one_turn --out 작업/<날짜>_<제목>/<새 시험 이름>
           [--env-file <.env 꼴 파일>] [--lab-env <.env 꼴 파일>] [--codex-bin <경로>] [--claude-bin <경로>] [--timeout 초] [--dry-run]
           [--codex-model gpt-6-luna --codex-reasoning medium]  # 새 턴·재개에 모두 명시하고 실제 머리와 대조한다
   python3 ai_toy_test.py --extract <turnN.log|turnN.jsonl> --tool codex|claude     # AI 없이 원본 기록에서 행동 · 답 · 토큰만 뽑는다
@@ -24,16 +24,16 @@
   claude = 더 센 AI. Claude Code + Sonnet. env -i처럼 PATH · 새 HOME · 프록시 · 인증서 변수 · ANTHROPIC_BASE_URL만 넘긴다.
 
 알아낸 함정(코드에 반영)
-  - 학생 AI는 실습 폴더 위 폴더의 AGENTS.md · CLAUDE.md(이 저장소의 제작 규칙)도 읽는다. 그래서 실습 폴더는 저장소 밖에 만들고,
-    위 폴더에 그 파일이나 .git이 있으면 멈춘다. --out을 저장소의 `작업/검사/` 아래로 주면 기록은 거기 두고
-    실습 폴더 · 도구 홈은 ~/.hyd-toy-test/<출력 폴더 이름>/에 만든다.
+  - 학생 AI는 실습 폴더 위 폴더의 AGENTS.md · CLAUDE.md(이 저장소의 제작 규칙)도 읽는다. 그래서 기록(--out)은 작업 폴더 안에 두고,
+    실습 폴더 · 도구 홈은 저장소 밖 그 작업의 연습 폴더 <PRACTICE>/<작업 폴더 이름>/<--out 이름>/에 만든다(자리는 동기화.py의
+    PRACTICE · task_of 한 곳 — CLAUDE.md 1절, 작업을 닫는 `정리 --실행`이 함께 지운다). 위 폴더에 그 파일이나 .git이 있으면 멈춘다.
   - Codex는 CODEX_HOME이 /tmp 아래면 apply_patch 도우미를 못 만든다 — CODEX_HOME은 /tmp 밖에 둔다.
   - Codex 2턴은 `codex exec --skip-git-repo-check resume --last …`(옵션이 resume 앞)이어야 하고, resume은 sandbox가 read-only로
     돌아가므로 -c sandbox_mode="workspace-write"를 준다. Windows에서는 설정에 `[windows] sandbox = "unelevated"`가 없으면
     read-only로 떠 명령이 `CreateProcess … Rejected`로 막힌다(2026-11-05 실전 02-5 시험 무효 두 번).
   - Claude는 새 HOME에서 돌려 이 PC의 사용자 설정 · 기억을 읽지 않게 하고, 2턴은 --continue로 잇는다.
 
-출력 폴더
+출력 폴더(--out, 실습 폴더는 위 함정대로 연습 폴더에)
   기록.md                  메타(ZIP 판본 · 해시 · 도구 · 모델) + 턴마다 요청 · 행동 · 답 · 이 턴에서 바뀐 파일 · 토큰, 전체에서 바뀐 파일
   turnN.log | turnN.jsonl  도구의 원본 기록(키는 가림), claude는 turnN.err도
   before.sha256 · afterN.sha256   실습 폴더의 파일별 SHA-256
@@ -48,13 +48,14 @@ import re
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import zipfile
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-CHECK_DIR = ROOT/'작업'/'검사'
-SPARE = Path.home()/'.hyd-toy-test'
+sys.path.append(str(ROOT/'workspace'))
+import 동기화 as SYNC   # 연습 폴더 자리 PRACTICE와 자리 검사 task_of의 정본(CLAUDE.md 1절)
 
 SCENARIOS = {'two_turn': ['START.md대로 다 해 줘', '권장안대로 다 해 줘'],   # 코딩랩.md 「검사하고 리허설한다」
              'one_turn': ['묻지 말고 그냥 다 만들어 줘']}
@@ -268,22 +269,19 @@ def change_lines(diff):
 # ───────────── 자리 · 설정 ─────────────
 
 def places(out, tool):
-    """(실습 폴더, 도구 홈). 저장소 안 출력이면 실습 폴더를 밖(~/.hyd-toy-test)에, Codex 홈은 /tmp 밖에 둔다."""
-    spare = SPARE/out.name
-    lab_root = spare if within(out, ROOT) else out
-    home_root = lab_root
-    if tool == 'codex' and any(within(home_root, t) for t in temp_roots()):
-        home_root = spare
-    for root in {lab_root, home_root} - {out}:
-        if root.exists():
-            raise SystemExit(f'{root}가 이미 있습니다 — 새 출력 폴더 이름을 주세요.')
-        if tool == 'codex' and root == home_root and any(within(root, t) for t in temp_roots()):
-            raise SystemExit(f'{root}: CODEX_HOME을 /tmp 밖에 둘 자리가 없습니다(HOME이 /tmp 아래).')
-    for parent in [lab_root, *lab_root.parents]:
+    """(실습 폴더, 도구 홈) = 기록(out)이 든 작업의 연습 폴더 PRACTICE/<작업 폴더 이름>/<out 이름>/ 아래의 lab · <도구>_home(저장소 밖)."""
+    if not within(out, ROOT):
+        raise SystemExit(f'{out}: --out(기록)은 저장소의 작업 폴더 안(작업/<날짜>_<제목>/<새 시험 이름>)에 줍니다 — 실습 폴더는 도구가 그 작업의 연습 폴더에 만듭니다.')
+    root = SYNC.PRACTICE/SYNC.task_of(out).name/out.name
+    if root.exists():
+        raise SystemExit(f'{root}가 이미 있습니다 — 새 출력 폴더 이름을 주세요.')
+    if tool == 'codex' and any(within(root, t) for t in temp_roots()):
+        raise SystemExit(f'{root}: CODEX_HOME을 /tmp 밖에 둘 자리가 없습니다(연습 폴더 자리가 /tmp 아래).')
+    for parent in [root, *root.parents]:
         found = [name for name in RULE_FILES if (parent/name).exists()]
         if found:
             raise SystemExit(f'{parent}에 {found}가 있어 학생 AI가 함께 읽습니다 — 실습 폴더를 다른 곳에 두세요.')
-    return lab_root/'lab', home_root/f'{tool}_home'
+    return root/'lab', root/f'{tool}_home'
 
 
 def relay_settings(env_file):
@@ -405,7 +403,7 @@ def main():
     ap.add_argument('zip', nargs='?', type=Path, help='학생 ZIP')
     ap.add_argument('--tool', choices=['codex', 'claude'], required=True)
     ap.add_argument('--scenario', choices=sorted(SCENARIOS))
-    ap.add_argument('--out', type=Path, help='새 출력 폴더(저장소 밖, 또는 저장소의 작업/검사/ 아래)')
+    ap.add_argument('--out', type=Path, help='새 출력(기록) 폴더 — 저장소의 작업 폴더 안(작업/<날짜>_<제목>/<새 시험 이름>)')
     ap.add_argument('--env-file', type=Path, help='LLM_API_KEY · OPENAI_BASE_URL을 읽을 .env 꼴 파일(codex만)')
     ap.add_argument('--lab-env', type=Path, help='LLM_API_KEY 줄이 든 .env 꼴 파일 — 실습 폴더의 .env.example을 .env로 복사해 학생처럼 키만 채운다(모델을 부르는 랩의 키 있는 시험)')
     ap.add_argument('--codex-home', type=Path, help='학생 계정으로 로그인해 둔 CODEX_HOME(auth.json · config.toml이 있는 폴더). 주면 강의 중계 설정을 쓰지 않고 그 계정 · 모델로 돈다(codex만)')
@@ -426,8 +424,6 @@ def main():
     if not (a.zip and a.scenario and a.out):
         ap.error('학생 ZIP, --scenario, --out이 필요합니다(--extract가 아닐 때)')
     zip_path, out = a.zip.resolve(), a.out.resolve()
-    if within(out, ROOT) and not within(out, CHECK_DIR):
-        raise SystemExit(f'{out}: 출력은 저장소 밖이나 git에 오르지 않는 {CHECK_DIR} 아래에 둡니다.')
     if out.exists() and any(out.iterdir()):
         raise SystemExit(f'{out}: 비어 있지 않습니다 — 새 폴더를 주세요.')
     lab, home = places(out, a.tool)

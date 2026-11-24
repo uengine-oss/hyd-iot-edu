@@ -101,12 +101,12 @@ def replay(key, work, keep_db=False, snaps=None):
     src = (BD.GLABS if graph else BD.LABS)[key]
     folder = copy_lab(src, work/src.name)
     steps = steps_of(key)
-    out = []
-    if graph:
-        run(folder, 'lab_db.py', '--no-open', check=True)
-    else:
-        seed_extract(folder)
+    out, done = [], False
     try:
+        if graph:   # 정리 범위 안에서 켠다 — lab_db.py는 컨테이너를 만든 뒤 시작을 기다리다 실패할 수 있다(2026-11-24 바쁜 Docker에서 90초 넘김)
+            run(folder, 'lab_db.py', '--no-open', check=True)
+        else:
+            seed_extract(folder)
         for i, s in enumerate(steps, 1):
             apply(folder, s.get('answer'))
             if not graph and s.get('answer') and '결과/prompt.md' in s['answer'].get('apply', {}):
@@ -116,17 +116,22 @@ def replay(key, work, keep_db=False, snaps=None):
             if snaps is not None:
                 snaps.append(json.loads((folder/'결과/.보기_이전.json').read_text(encoding='utf-8')))
             out.append((i, s['name'], st.get(i, '(줄 없음)'), r.stdout if st.get(i) not in ('채움', '볼 것 없음', '결과 보기') else ''))
+        done = True
     finally:
-        if graph and not keep_db:
+        if graph and not (keep_db and done):   # 실패하면 keep_db여도 지운다 — 부른 쪽은 폴더를 받지 못해 지울 수 없다
             drop_db(folder)
     return out, folder
 
 
 def drop_db(folder):
+    """이 폴더의 랩 DB 컨테이너를 익명 볼륨(neo4j 이미지의 /data · /logs)째 지운다. -v가 없으면 볼륨만 남는다(2026-11-23 27개 · 약 6.5 GB).
+    docker가 실패하면 그 까닭으로 멈춘다(없는 컨테이너는 rm -f가 0으로 끝난다)."""
     state = folder/'랩_연결.json'
     if state.is_file():
         name = json.loads(state.read_text(encoding='utf-8'))['container']
-        subprocess.run(['docker', 'rm', '-f', name], capture_output=True)
+        done = subprocess.run(['docker', 'rm', '-f', '-v', name], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        if done.returncode:
+            raise RuntimeError(f'{name}: 랩 DB를 지우지 못했다 — {done.stderr.strip()}')
 
 
 def main(argv=None):

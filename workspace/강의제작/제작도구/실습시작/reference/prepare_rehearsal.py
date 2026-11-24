@@ -1,10 +1,12 @@
 """언제: 코딩 랩 학생 경로 리허설(코딩랩.md 길 7) 폴더를 준비할 때 — ZIP을 새 폴더에 풀고, 랩 옆 가이드를 「토글 뺀 본문」과 「단계별 정답 토글」로 나눠 둔다.
 쓰는 법: python prepare_rehearsal.py <리허설 폴더(없어야 함)> <학생 ZIP> [<학생 ZIP> …]   — 가이드는 각 ZIP 옆 <랩>_guide.html
+리허설 폴더는 저장소 밖 그 작업의 연습 폴더 아래 <PRACTICE>/<작업 폴더 이름>/<새 이름>이다(동기화.py의 PRACTICE · task_of — CLAUDE.md 1절,
+작업을 닫는 `정리 --실행`이 그 폴더와 랩 DB를 함께 지운다).
 학생 역은 가이드_본문.txt만 읽고, 막힌 단계에서만 정답_토글/NN.txt를 연다(원본 HTML은 토글이 함께 읽혀 리허설이 무효가 된다).
 """
 import hashlib, html, re, shutil, sys
 from pathlib import Path
-from ai_toy_test import RULE_FILES, unpack
+from ai_toy_test import RULE_FILES, SYNC, unpack
 
 
 def text_of(fragment):
@@ -63,6 +65,9 @@ def main():
     if len(sys.argv) < 3:
         raise SystemExit('prepare_rehearsal.py <새 리허설 폴더> <학생 ZIP> [<학생 ZIP> …]')
     root = Path(sys.argv[1]).resolve()
+    if not root.is_relative_to(SYNC.PRACTICE.resolve()):
+        raise SystemExit(f'{root}: 리허설 폴더는 연습 폴더 자리 {SYNC.PRACTICE.as_posix()}/<작업 폴더 이름>/<새 이름>에 만든다(CLAUDE.md 1절)')
+    SYNC.task_of(root)
     check_root(root)
     if root.exists():
         raise SystemExit(f'{root}가 이미 있다 — 새 이름을 준다')

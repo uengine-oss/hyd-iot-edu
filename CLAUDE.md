@@ -21,7 +21,7 @@
 | `workspace/개발/` | 시스템 개발용 문서, 테스트, 생성기, 확인 도구. 목록은 `workspace/README.md`의 「폴더」 표에 있다 | workspace |
 | `workspace/동기화.py` · `secret_scan.py` · `requirements-dev.txt` | 두 브랜치 동기화와 작업 폴더 시작 · 정리(`동기화.py`), 키 검사(`secret_scan.py`), 개발 의존성(`requirements-dev.txt`) | workspace |
 | `.claude/` · `CLAUDE.md` · `AGENTS.md` | Claude와 Codex가 저장소 루트에서 읽는 규칙, 스킬, 훅 | workspace |
-| `작업/<YYYY-MM-DD>_<제목>/` | 이 PC에서 진행 중인 작업 하나의 폴더(`스펙.md`, `기록.md`, 원본, 임시 출력). 클라우드의 작업 폴더는 7절이 정한다. 녹화 원본은 `작업/촬영/<도구>/`에, 공개하면 안 되는 개인 자료는 `작업/_로컬/`에, 훅 상태는 `작업/_훅/`에 둔다. `작업/` 아래에는 날짜 폴더와 `촬영/` · `_로컬/` · `_훅/` 밖의 폴더를 두지 않는다. 저장소 밖에 사본 clone이나 결과 폴더를 만들지 않는다. 예외는 학생 AI가 저장소 규칙 파일을 읽지 않게 하는 학생 경로 시험 폴더 `D:/HYD-Practice` · `~/.hyd-toy-test`와, 클라우드에서 main을 꺼내는 `../main` worktree와 설정 스크립트의 `/tmp/hydws`(7절)다 | 어디에도 올리지 않는다 |
+| `작업/<YYYY-MM-DD>_<제목>/` | 이 PC에서 진행 중인 작업 하나의 폴더(`스펙.md`, `기록.md`, 원본, 임시 출력). 클라우드의 작업 폴더는 7절이 정한다. 녹화 원본은 `작업/촬영/<도구>/`에, 공개하면 안 되는 개인 자료는 `작업/_로컬/`에, 훅 상태는 `작업/_훅/`에 둔다. `작업/` 아래에는 날짜 폴더와 `촬영/` · `_로컬/` · `_훅/` 밖의 폴더를 두지 않는다. 저장소 밖에 사본 clone이나 결과 폴더를 만들지 않는다. 예외는 클라우드에서 main을 꺼내는 `../main` worktree와 설정 스크립트의 `/tmp/hydws`(7절), 그리고 학생 AI가 저장소 규칙 파일을 읽지 않게 저장소 밖에 두는 연습 폴더 자리(이 PC는 `D:/HYD-Practice`, 그 밖은 `~/HYD-Practice` — 값은 `workspace/동기화.py`의 `PRACTICE` 한 곳)다. 리허설, 장난감 시험, 받기 시험, 검토처럼 작업 하나가 만드는 연습 폴더는 그 자리의 `<작업 폴더 이름>/` 아래에 두고, `동기화.py 정리 --실행`이 작업 폴더를 지울 때 그 폴더와 그 안의 랩 DB 컨테이너를 익명 볼륨째 함께 지운다. 그 자리 바로 아래에는 그 밖에 오래 두는 Codex 로그인 폴더(이름이 `_`로 시작한다, 쓰는 값은 코딩랩 길 6)와 웹 VS Code 촬영 폴더(`촬영/vscode/촬영도구/segs/lab-common.mjs`의 LABS 표가 정하고, 표를 새 ZIP으로 고치는 작업자가 옛 폴더를 지운다)만 둔다 | 어디에도 올리지 않는다 |
 | `.env` · `.venv314/` | 이 PC 전용 | 어디에도 올리지 않는다 |
 
 ## 2. 브랜치와 동기화
@@ -54,7 +54,7 @@
 - AI 워커(`agent-worker`)와 에이전트용 MCP(enterprise-mcp · -maint · -purchase · dmn-mcp)는 기본 서비스다. 선택 프로필은 `monitor`와 `tools`뿐이다. 시스템 안의 모든 AI는 강의 중계 LiteLLM(GCP Cloud Run)으로 간다. 이 중계는 키마다 비용 한도를 두고 가장 싼 모델을 쓰며, 첫 요청은 콜드스타트로 느리다(의도한 동작이다). 워커 CLI는 키를 받지 않고 process의 로컬 중계 관문(`procsvc/course_model.py`)을 거친다. 이 관문은 작업에 묶인 토큰과 PC당 호출 상한을 쓰고, 장부는 `procsvc/course_ledger.py`다. process는 `.env`의 `LLM_API_KEY`와 compose의 `LLM_RELAY_URL`로 중계를 부른다. 학생의 바이브 코딩은 학생 각자의 Codex 계정으로 하므로 시스템과 별개다.
 - 키가 없으면 AI 자리는 강사 녹화를 재생한다. 시작.bat이 `LLM_API_KEY`가 있는지에 따라 `AI_MODE`(live 또는 replay)를 적는다. 동작과 녹화 방법은 `workspace/개발/문서/재생모드.md`에 있다.
 - Supabase 로컬은 시작 스크립트가 `npx -y supabase@2.119.0 start`로 켠다(PostgreSQL 15). 이 PC의 project_id와 포트는 git 밖의 `it/supabase/.env`와 `.hyd-runtime/`에 있다(업무 DB 포트는 64322). `config.toml`은 커밋된 값 그대로 둔다. `supabase stop --no-backup`은 볼륨을 지운다.
-- 컨테이너, Supabase, 워커는 스스로 켜고 끈다. 시험 잔재(임시 DB, 시험 인스턴스)는 스스로 정리하고 꺼졌는지 확인한다. 프로젝트 데이터 볼륨, 원자료, 강사 손질본의 삭제와 결제는 먼저 묻는다.
+- 컨테이너, Supabase, 워커는 스스로 켜고 끈다. 시험 잔재(임시 DB, 시험 인스턴스, 손으로 띄운 컨테이너)는 스스로 정리하고 꺼졌는지 확인한다. 컨테이너는 `docker rm -f -v`나 `docker run --rm`으로 지워 이미지가 만든 익명 볼륨까지 없앤다(2026-11-23 `-v` 없이 지운 랩 DB의 볼륨 27개, 약 6.5 GB가 남았다). 프로젝트 데이터 볼륨, 원자료, 강사 손질본의 삭제와 결제는 먼저 묻는다.
 
 ## 5. 내용 규칙
 

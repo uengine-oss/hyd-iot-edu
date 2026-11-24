@@ -3,7 +3,7 @@
 제작용이며 학생 ZIP에 넣지 않는다. 수업 API 호출로 기록하지 않는다. 실제 계정 호출의
 원문·응답·모델·추론·토큰을 보관하고, 그 응답 바이트를 학생 실행 진입점의 --paste에 넘긴다.
 인증 내용과 .env를 열지 않는다. 랩에 .env가 있으면 이 경로는 사용하지 않는다.
-python account_chat.py <랩 폴더> <요청 해시> --out <새 시험 기록 루트>
+python account_chat.py <랩 폴더> <요청 해시> --out 작업/<날짜>_<제목>/<새 시험 기록 루트>
     --codex-home <코딩랩.md 길 6의 학생 역 CODEX_HOME> --codex-bin <절대 경로>
     --model gpt-6-luna --reasoning medium --max-calls 24 --timeout 180
 """
@@ -18,7 +18,12 @@ import subprocess
 import sys
 import time
 
-from ai_toy_test import ROOT, SPARE, RULE_FILES
+from ai_toy_test import ROOT, RULE_FILES, SYNC
+
+
+def isolated_dir(out):
+    """모델에 요청 글만 보내는 빈 폴더 — 시험 기록(out)이 든 작업의 연습 폴더 아래(저장소 밖, CLAUDE.md 1절)."""
+    return SYNC.PRACTICE / SYNC.task_of(out).name / ('account-chat-' + hashlib.sha256(str(out).encode()).hexdigest()[:12])
 
 
 def json_events(raw):
@@ -86,7 +91,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('lab', type=Path)
     ap.add_argument('digest')
-    ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--out', type=Path, required=True, help='새 시험 기록 루트 — 저장소의 작업 폴더 안')
     ap.add_argument('--codex-home', type=Path, required=True)
     ap.add_argument('--codex-bin', required=True)
     ap.add_argument('--model', required=True)
@@ -117,7 +122,7 @@ def main():
     if run.exists() or used >= a.max_calls:
         ap.error('이미 시도한 요청이거나 시험 호출 상한에 닿았습니다. 기록을 확인합니다')
     # 모델에는 요청 글만 전달한다. 학생의 코드·참조·가이드가 없는 빈 폴더에서 실행한다.
-    isolated = SPARE / ('account-chat-' + hashlib.sha256(str(out).encode()).hexdigest()[:12])
+    isolated = isolated_dir(out)
     for parent in [isolated, *isolated.parents]:
         if any((parent / name).exists() for name in RULE_FILES):
             ap.error('계정 채팅 폴더의 상위에 규칙이나 저장소가 있습니다')

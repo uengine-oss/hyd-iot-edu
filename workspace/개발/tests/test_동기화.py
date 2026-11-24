@@ -308,7 +308,7 @@ def test_원격이_고치고_지우고_더한_파일을_따라간다(origin, tmp
     assert git(b, 'rev-parse', 'workspace') == remote_tip(b, 'workspace')
 
 
-def test_이_PC에서_고친_파일과_겹치면_아무것도_쓰지_않고_멈춘다(origin, tmp_path):
+def test_이_PC와_원격이_같은_줄을_고쳤으면_아무것도_쓰지_않고_멈추고_안내대로_원격_판을_두면_받아진다(origin, tmp_path):
     remote, a = origin
     b = second_pc(tmp_path, remote)
     before = git(b, 'rev-parse', 'workspace')
@@ -320,9 +320,28 @@ def test_이_PC에서_고친_파일과_겹치면_아무것도_쓰지_않고_멈�
     assert out.returncode == 1 and 'workspace/doc.txt' in out.stderr
     assert (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'B가 고침\n' and not (b / 'workspace' / 'new.txt').exists()
     assert git(b, 'rev-parse', 'workspace') == before
-    assert f'git show {before[:8]}:' in out.stderr                     # 안내대로 로컬 끝 판으로 되돌리면 받아진다
-    (b / 'workspace' / 'doc.txt').write_bytes(subprocess.run(['git', 'show', f'{before}:workspace/doc.txt'], cwd=b, capture_output=True, check=True).stdout)
-    assert sync(b, 'pull').returncode == 0 and (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'A가 고침\n'
+    assert 'git show origin/workspace:<경로>' in out.stderr            # 안내: 이 PC 판을 옆에 두고 그 파일을 원격 판으로 바꾼 뒤 다시 받는다
+    (b / 'workspace' / 'doc.txt').write_bytes(subprocess.run(['git', 'show', 'origin/workspace:workspace/doc.txt'], cwd=b, capture_output=True, check=True).stdout)
+    assert sync(b, 'pull').returncode == 0
+    assert ((b / 'workspace' / 'doc.txt').read_text(encoding='utf-8'), (b / 'workspace' / 'new.txt').read_text(encoding='utf-8')) == ('A가 고침\n', '새 파일\n')
+    assert git(b, 'rev-parse', 'workspace') == remote_tip(b, 'workspace')
+
+
+def test_이_PC와_원격이_한_파일의_다른_줄을_고쳤으면_세_판으로_합치고_이_PC의_고침은_미커밋으로_남는다(origin, tmp_path):
+    remote, a = origin
+    (a / 'workspace' / 'rules.md').write_text('첫 줄\n둘째 줄\n셋째 줄\n', encoding='utf-8')
+    assert sync(a, 'commit', '세 줄 문서').returncode == 0 and sync(a, 'push').returncode == 0
+    b = second_pc(tmp_path, remote)
+    (b / 'workspace' / 'rules.md').write_text('첫 줄 B가 고침\n둘째 줄\n셋째 줄\n', encoding='utf-8')
+    (a / 'workspace' / 'rules.md').write_text('첫 줄\n둘째 줄 A가 고침\n셋째 줄\n', encoding='utf-8')   # 바로 이웃한 줄 — git merge-file은 충돌로 본다
+    assert sync(a, 'commit', 'A 고침').returncode == 0 and sync(a, 'push').returncode == 0
+    out = sync(b, 'pull')
+    assert out.returncode == 0, out.stderr
+    assert 'workspace/rules.md' in out.stdout
+    assert (b / 'workspace' / 'rules.md').read_text(encoding='utf-8') == '첫 줄 B가 고침\n둘째 줄 A가 고침\n셋째 줄\n'
+    assert git(b, 'rev-parse', 'workspace') == remote_tip(b, 'workspace')
+    assert sync(b, 'commit', 'B 고침').returncode == 0 and sync(b, 'push').returncode == 0      # 남은 B의 고침이 다음 커밋으로 올라간다
+    assert git(b, 'show', 'origin/workspace:workspace/rules.md') == '첫 줄 B가 고침\n둘째 줄 A가 고침\n셋째 줄'
 
 
 def test_원격이_안_바꾼_파일은_이_PC에서_고치는_중이어도_그대로_두고_원격_변경을_받는다(origin, tmp_path):
@@ -388,13 +407,84 @@ def test_이_PC에서_지운_파일은_되살리지_않는다(origin, tmp_path):
     assert not (b / 'workspace' / 'note.txt').exists() and (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'A가 고침\n'
 
 
-def test_올리지_않은_로컬_커밋이_있으면_원격_판으로_떼어_내지_않고_멈춘다(origin, tmp_path):
+def test_올리지_않은_로컬_커밋이_있으면_로컬_끝을_원격으로_옮기고_그_커밋의_파일은_디스크에_남겨_다음_커밋에_올린다(origin, tmp_path):
     remote, a = origin
     b = second_pc(tmp_path, remote)
     (b / 'workspace' / 'b.txt').write_text('B의 일\n', encoding='utf-8')
     assert sync(b, 'commit', 'B 커밋(올리지 않음)').returncode == 0
-    mine = git(b, 'rev-parse', 'workspace')
     (a / 'workspace' / 'doc.txt').write_text('A가 고침\n', encoding='utf-8')
     assert sync(a, 'commit', 'A 고침').returncode == 0 and sync(a, 'push').returncode == 0
     out = sync(b, 'pull')
-    assert out.returncode == 1 and '갈라졌다' in out.stderr and git(b, 'rev-parse', 'workspace') == mine
+    assert out.returncode == 0, out.stderr
+    assert 'B 커밋(올리지 않음)' in out.stdout and 'workspace/b.txt' in out.stdout      # 브랜치에서 빠진 커밋과 그 파일을 알린다
+    assert ((b / 'workspace' / 'b.txt').read_text(encoding='utf-8'), (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8')) == ('B의 일\n', 'A가 고침\n')
+    assert git(b, 'rev-parse', 'workspace') == remote_tip(b, 'workspace')
+    assert sync(b, 'commit', 'B 커밋 다시').returncode == 0 and sync(b, 'push').returncode == 0
+    assert (git(b, 'show', 'origin/workspace:workspace/b.txt'), git(b, 'show', 'origin/workspace:workspace/doc.txt')) == ('B의 일', 'A가 고침')
+
+
+# ---------------------------------------------------------------- 정리(작업 폴더 · 연습 폴더 · 랩 DB)
+LAB_IMAGE = 'neo4j:5.26-community'     # 랩 DB 이미지(실습시작/lab_db.py) — /data · /logs 를 VOLUME 으로 두어 컨테이너마다 익명 볼륨 둘이 생긴다
+
+
+def _tool():
+    """연습 폴더 자리(PRACTICE)는 도구 한 곳이 갖는다 — 시험도 그 값을 읽는다(이 PC D:/HYD-Practice)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('sync_tool', ROOT / 'workspace' / '동기화.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def docker(*args, check=True):
+    return subprocess.run(['docker', *args], capture_output=True, text=True, encoding='utf-8', errors='replace', check=check).stdout.strip()
+
+
+def lab_box(token):
+    """랩 DB처럼(이름 hyd-student-<id>, 라벨 hyd.practice.id=<id>) 만들기만 한 컨테이너(켜지 않음 — 익명 볼륨은 만들 때 생긴다) → 그 익명 볼륨들."""
+    docker('create', '--name', f'hyd-student-{token}', '--label', f'hyd.practice.id={token}', LAB_IMAGE)
+    return docker('inspect', '--format', '{{range .Mounts}}{{.Name}} {{end}}', f'hyd-student-{token}').split()
+
+
+def task_dir(repo, name, state):
+    t = repo / '작업' / name
+    t.mkdir(parents=True)
+    (t / '스펙.md').write_text(f'# 시험\n\n- 시작: 2026-01-01 · 상태: {state}\n', encoding='utf-8')
+    return t
+
+
+def test_정리는_끝난_작업의_연습_폴더와_그_랩_DB를_볼륨째_지우고_다른_작업_것과_가리키는_것은_남긴다(origin):
+    _, a = origin
+    practice, uid = _tool().PRACTICE, os.urandom(4).hex()
+    done, keep, bare, pointed, stray = (f'2026-01-01_정리시험{k}-{uid}' for k in ('끝', '진행', '연습없음', '가리킴', '주인없음'))
+    made = [practice / n for n in (done, keep, pointed, stray)]
+    tokens = [f'{uid}a{i}' for i in range(3)]
+    try:
+        for n, state in ((done, '끝'), (keep, '진행'), (bare, '끝'), (pointed, '끝')):
+            task_dir(a, n, state)
+        for folder, token, state_file in zip(made[:3], tokens, ('.lab_connection.json', '랩_연결.json', '.lab_connection.json')):
+            (folder / 'lab').mkdir(parents=True)
+            (folder / 'lab' / state_file).write_text(f'{{"id": "{token}", "container": "hyd-student-{token}"}}', encoding='utf-8')
+        made[3].mkdir(parents=True)
+        volumes = [lab_box(t) for t in tokens]
+        assert all(len(v) == 2 for v in volumes)
+        (a / 'workspace' / 'note.txt').write_text(f'근거: D:/HYD-Practice/{pointed}/lab\n', encoding='utf-8')   # 밖의 문서가 그 연습 폴더를 가리킨다
+
+        out = sync(a, '정리', '--실행')
+        assert out.returncode == 0, out.stderr
+        assert not (a / '작업' / done).exists() and not made[0].exists()
+        assert docker('ps', '-a', '-q', '--filter', f'name=^hyd-student-{tokens[0]}$') == ''
+        assert docker('volume', 'ls', '-q', *(x for v in volumes[0] for x in ('--filter', f'name={v}'))) == ''   # -v: 익명 볼륨도 지웠다
+        assert f'지움 {done} · 연습 폴더 {made[0].as_posix()} · 랩 DB 컨테이너 1개(익명 볼륨째): hyd-student-{tokens[0]}' in out.stdout
+        assert f'지움 {bare} · 연습 폴더 없음' in out.stdout and not (a / '작업' / bare).exists()
+        assert (a / '작업' / keep).is_dir() and made[1].is_dir() and (a / '작업' / pointed).is_dir() and made[2].is_dir()
+        assert f'못 지움 {pointed}' in out.stdout and 'workspace/note.txt' in out.stdout
+        for token, vols in zip(tokens[1:], volumes[1:]):                 # 다른 작업 · 가리키는 작업의 랩 DB와 볼륨은 그대로
+            assert docker('ps', '-a', '-q', '--filter', f'name=^hyd-student-{token}$') != ''
+            assert sorted(docker('volume', 'ls', '-q', *(x for v in vols for x in ('--filter', f'name={v}'))).split()) == sorted(vols)
+        assert made[3].is_dir() and stray in out.stdout                   # 작업 폴더가 없는 연습 폴더는 알리기만 한다
+    finally:
+        for token in tokens:
+            docker('rm', '-f', '-v', f'hyd-student-{token}', check=False)
+        for folder in made:
+            shutil.rmtree(folder, ignore_errors=True)

@@ -68,7 +68,7 @@ with tempfile.TemporaryDirectory(prefix='hyd-account-trial-') as td:
             return subprocess.CompletedProcess(cmd,0,b'pasted',b'')
         args=['account_chat.py',str(lab),'abcdef012345','--out',str(out),'--codex-home',str(home),
               '--codex-bin','codex.exe','--model','gpt-6-luna','--reasoning','medium','--max-calls','1']
-        with patch.object(sys,'argv',args), patch.object(m,'SPARE',base/'isolated'), \
+        with patch.object(sys,'argv',args), patch.object(m,'isolated_dir',lambda out: base/'isolated'), \
              patch.object(m.shutil,'which',return_value='codex.exe'), patch.object(m.subprocess,'run',side_effect=fake_run), \
              contextlib.redirect_stdout(io.StringIO()):
             try: m.main()
