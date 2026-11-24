@@ -6,7 +6,7 @@
  "srt": "작업/촬영/notion/Notion_학습노트_v12d/자막.srt",
  "srt_sha256": "9d347cd56cdcd5d42a4f4d481d00ce53dd91b88dd0e1b36bde57bd617f8af348",
  "duration_seconds": 2528.809,
- "script": "작업/2026-11-12_실습영상-화면대조/01-02/새대본.md 「2. 새 대본 전문」(28단계)",
+ "script": "workspace/강의제작/제작도구/촬영/notion/촬영도구/새대본_v12.md 「2. 새 대본 전문」(28단계)",
  "photo_rule": "photos[].cue · at · offset_ms가 뽑을 순간이다. at은 verification.json cue_timeline의 speech_start · speech_end · commit · action_end와, 다음 큐의 speech 시작(next_start) 가운데 하나다. 프레임은 작업 폴더의 뽑기.py가 이 규칙으로 뽑는다. targets는 뽑은 프레임을 보고 채운 네모 하나(지금 누를 곳 또는 볼 곳)이고, kind는 그 사진이 조작하는 순간(조작)인지, 조작한 뒤의 화면(결과)인지, 볼 곳만 짚는 화면(볼 곳)인지다.",
  "sections": [
   {

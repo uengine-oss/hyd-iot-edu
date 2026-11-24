@@ -1,5 +1,5 @@
 """v12 녹화 큐 만들기: 새 대본 「2. 새 대본 전문」을 ▸(조작 자리)와 ‖(쉬는 자리)에서 잘라 source-cues-v12.json을 쓴다.
-사용: PYTHONUTF8=1 python build_cues_v12.py [새대본.md]   (기본값은 아래 SCRIPT)
+사용: PYTHONUTF8=1 python build_cues_v12.py [새대본_v12.md]   (기본값은 아래 SCRIPT)
 
 - 큐 id는 「s<단계 2자리>-<그 단계 안 차례 2자리>」(예 s05-03)다. 대본 글을 고쳐도 ▸ · ‖의 차례가 같으면 id가 같다.
 - ▸로 끝난 큐는 그 끝에서 할 조작 이름(op)을 OPS에서 차례대로 받는다. 단계마다 대본의 ▸ 수와 OPS의 조작 수가 다르면
@@ -13,7 +13,7 @@ import json, re, sys
 from pathlib import Path
 from common import HERE
 
-SCRIPT = HERE.parents[5] / '작업' / '2026-11-12_실습영상-화면대조' / '01-02' / '새대본.md'
+SCRIPT = HERE / '새대본_v12.md'
 OUT = HERE / 'source-cues-v12.json'
 PAUSE = {'시작': 0, '잇기': 600, '큐': 1300, '결과': 2000, '단계': 2300}  # 영상 V-14 2회차 값(ms)
 QUESTION_EXTRA = 300  # 앞 큐가 묻는 말이면 그 뒤 쉼에 더한다
