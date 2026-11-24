@@ -50,7 +50,7 @@ SYLLABUS_SHEETS = {"통합": "통합반 온라인", "실전": "실전반 온라�
 SAMPLES = ROOT / "it/portal/www/samples"
 AXES = ("① 지원", "② 끝까지 안전", "③ 키 없는 PC", "④ 여러 번 · 순서")
 # 선택 도구(Redpanda console · Prometheus)는 기본 구성에 없어 주소 확인이 실패하는 것이 정상이다. 무시할 요청은 이 PC의 바깥 포트로 고른다
-OPTIONAL_PORTS = (8085, 9090, 9644)
+OPTIONAL_PORTS = (8085, 9090)
 # 결함 시뮬레이션이 주입하는 외란 → 온톨로지 외란 변수(ot/plant-sim/plantsim/plant.py:15 FAULT_KINDS 주석 — 「주입한 것」이 정답의 출처)
 FAULT_DISTURBANCE = {"cooler_degradation": "sv:fouling", "pump_leakage": "sv:leak", "fan_vibration": "sv:bearing-wear"}
 NUMERALS = {"하나": 1, "둘": 2, "셋": 3, "넷": 4, "다섯": 5, "여섯": 6, "일곱": 7, "여덟": 8, "아홉": 9, "열": 10}
@@ -361,12 +361,9 @@ class Round:
         hp = lambda port: p.get(port, port)                              # noqa: E731
         self.page, self.out, self.syllabus = page, out, syllabus
         self.portal = f"http://127.0.0.1:{hp(8088)}"
-        self.process = f"http://127.0.0.1:{hp(8080)}"
-        self.plant = f"http://127.0.0.1:{hp(8000)}"
-        self.detector = f"http://127.0.0.1:{hp(8092)}"
-        self.agent = f"http://127.0.0.1:{hp(8091)}"
-        self.enterprise = f"http://127.0.0.1:{hp(8095)}"
-        self.worker = f"http://127.0.0.1:{hp(8097)}"
+        # 서비스 API 는 포털의 같은 출처 길로 부른다 — 서비스 포트는 PC 에 열지 않는다(compose.yaml 머리말)
+        self.process, self.plant, self.detector, self.agent, self.enterprise, self.worker = (
+            f"{self.portal}/svc/{s}" for s in ("process", "plant-sim", "detector", "agent", "enterprise-sim", "agent-worker"))
         self.inbucket = f"http://127.0.0.1:{hp(54324)}"
         self.ignored = tuple(f":{hp(x)}" for x in OPTIONAL_PORTS) + ("favicon.ico",)
         self.verdicts: list[Verdict] = []

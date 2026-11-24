@@ -20,10 +20,9 @@ if (Test-Path $key) { Remove-Item -LiteralPath $key -Force }
 $after = @(Get-CimInstance Win32_Process)
 $remaining = @($after | Where-Object { $_.Name -match '^python(w)?\.exe$' -and $_.CommandLine -like '*worker.main*' })
 $remainingTree = @($after | Where-Object { $targetIds.Contains([int]$_.ProcessId) } | ForEach-Object { $_.ProcessId })
-# 워커 상태 포트(시작이 정한 이 PC의 8097 바깥 포트 — .hyd-runtime/ports.json)를 파이썬이 아직 쥐고 있지 않은지. 컨테이너 워커의 포트는 Docker 가 쥐므로 세지 않는다.
+# 워커 상태 포트(run_worker_host.sh 의 HEALTH_PORT — 기본 8097, 바꿨으면 같은 값을 환경 값 HEALTH_PORT 로)를 파이썬이 아직 쥐고 있지 않은지.
 $healthPort = 8097
-$portsFile = Join-Path $root '.hyd-runtime\ports.json'
-if (Test-Path $portsFile) { $healthPort = [int]((Get-Content -Raw -Encoding UTF8 $portsFile | ConvertFrom-Json).'8097') }
+if ($env:HEALTH_PORT) { $healthPort = [int]$env:HEALTH_PORT }
 $pythons = @($after | Where-Object { $_.Name -match '^python(w)?\.exe$' } | ForEach-Object { [int]$_.ProcessId })
 $listening = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -eq $healthPort -and $pythons -contains [int]$_.OwningProcess } |
     ForEach-Object { [pscustomobject]@{port=$_.LocalPort; pid=$_.OwningProcess} })

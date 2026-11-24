@@ -10,5 +10,6 @@ PY="${PYTHON:-}"
 if [ -z "$PY" ]; then for c in .venv314/Scripts/python.exe .venv/bin/python; do [ -x "$c" ] && { PY="$c"; break; }; done; fi
 [ -n "$PY" ] || { echo "ai_replay_list.sh: .venv314 · .venv 파이썬이 없습니다(PYTHON=... 으로 지정)" >&2; exit 1; }
 [ -f .hyd-runtime/ports.json ] || { echo "ai_replay_list.sh: .hyd-runtime/ports.json 이 없습니다 — 시작.bat 으로 스택을 먼저 켜세요(자리 목록은 process 에서 읽는다)" >&2; exit 1; }
-export PROCESS_URL="${PROCESS_URL:-http://127.0.0.1:$("$PY" -c 'import json; print(json.load(open(".hyd-runtime/ports.json"))["8080"])')}"
+# process 는 PC 에 포트를 열지 않는다 — 포털의 같은 출처 길로 부른다(scripts/prepare_ports.service_url)
+export PROCESS_URL="${PROCESS_URL:-http://127.0.0.1:$("$PY" -c 'import json; print(json.load(open(".hyd-runtime/ports.json"))["8088"])')/svc/process}"
 exec "$PY" -m worker.ai_replay "${@:-it/agent-worker/replay}"

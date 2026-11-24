@@ -38,8 +38,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "scripts"))
-from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
-API = os.environ.get("PROCESS_URL") or f"http://127.0.0.1:{saved_port(ROOT, 8080)}"
+from prepare_ports import service_url  # noqa: E402 — 포털의 같은 출처 길(서비스 포트는 PC 에 열지 않는다)
+API = os.environ.get("PROCESS_URL") or service_url(ROOT, "process")
 OUT: Path = Path()            # --out 으로 정한다(main)
 DOCS = {"HM-8": "HM-8_cooler-fan-manual.md", "PM-02": "PM-02_powerpack-pm-checklist.md", "PR-07": "PR-07_spare-parts-standard.md"}
 LINK_FIELDS = ("failureMode", "relation", "kind", "approver", "actions", "addresses", "affects", "scope", "executable", "parts", "supplier_policy", "maintenance_policy", "purchase_comparison_policy")

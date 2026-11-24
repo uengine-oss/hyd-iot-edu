@@ -399,15 +399,16 @@ def test_쿨러_경보를_학생이_배포한_자기_흐름이_맡으면_결함�
 @pytest.mark.parametrize('patterns, rows, asked, said', [
     ([{'code': 'COOLER_DEGRADATION', 'judgeable': True, 'reason': None}],
      [_route('COOLER_DEGRADATION', 'my_cooling', '우리 공장 냉각 대응', '내가 배포한 흐름', False)],
-     ['/api/ontology/patterns', '/api/flows/deployments'], '쿨러 경보를 여는 흐름이 지금 내가 배포한 흐름 「우리 공장 냉각 대응」입니다'),
+     ['/svc/agent/api/ontology/patterns', '/svc/process/api/flows/deployments'], '쿨러 경보를 여는 흐름이 지금 내가 배포한 흐름 「우리 공장 냉각 대응」입니다'),
     ([{'code': 'COOLER_DEGRADATION', 'judgeable': False, 'reason': "'쿨러 성능 저하'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 …"}],
      [_route('COOLER_DEGRADATION', 'c3_cooling', '냉각 긴급 대응', '기본 제공 흐름', True)],
-     ['/api/ontology/patterns'], "'쿨러 성능 저하'의 원인 지식이 아직 없습니다"),
+     ['/svc/agent/api/ontology/patterns'], "'쿨러 성능 저하'의 원인 지식이 아직 없습니다"),
 ], ids=['경로표가 학생 흐름', '원인 지식이 없음'])
 def test_점검_한_바퀴는_경로표나_원인_지식이_막으면_설비와_처리_건을_건드리지_않는다(tmp_path, patterns, rows, asked, said):
     """막히면 설비 초기화 · 결함 주입 · 정리를 하나도 하지 않고 그 한 줄만 남긴다(학생 처리 건 · 설비를 바꾸지 않는다). 처리 엔진 · 에이전트 ·
-    설비 · 감지기는 바깥이라 그 API 의 실제 모양으로 답하는 실제 HTTP 서버 하나가 맡고, 받은 요청을 모두 남긴다. 그 서버의 포트를 이 PC 의
-    포트 표(.hyd-runtime/ports.json)와 AI 모드(.env)에 적은 저장소 자리에서 점검이 그대로 돈다."""
+    설비 · 감지기는 바깥이라 그 API 의 실제 모양으로 답하는 실제 HTTP 서버 하나가 포털 자리에서 맡고(점검은 서비스를 포털의 같은 출처 길
+    /svc/<서비스>/ 로 부른다 — 서비스 포트는 PC 에 열지 않는다), 받은 요청을 모두 남긴다. 그 서버의 포트를 이 PC 의 포트 표(.hyd-runtime/ports.json
+    의 포털 8088 자리)와 AI 모드(.env)에 적은 저장소 자리에서 점검이 그대로 돈다."""
     import http.server
     import json as _json
     import threading
@@ -416,7 +417,7 @@ def test_점검_한_바퀴는_경로표나_원인_지식이_막으면_설비와_
     class Handler(http.server.BaseHTTPRequestHandler):
         def _answer(self):
             seen.append((self.command, self.path))
-            data = {'/api/ontology/patterns': patterns, '/api/flows/deployments': {'routes': rows, 'flows': []}}.get(self.path, {})
+            data = {'/svc/agent/api/ontology/patterns': patterns, '/svc/process/api/flows/deployments': {'routes': rows, 'flows': []}}.get(self.path, {})
             body = _json.dumps(data, ensure_ascii=False).encode()
             self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(body)
         do_GET = do_POST = _answer
@@ -427,7 +428,7 @@ def test_점검_한_바퀴는_경로표나_원인_지식이_막으면_설비와_
     threading.Thread(target=server.serve_forever, daemon=True).start()
     port = server.server_address[1]
     (tmp_path / '.hyd-runtime').mkdir()
-    (tmp_path / '.hyd-runtime' / 'ports.json').write_text(_json.dumps({str(p): port for p in (8080, 8000, 8092, 8091)}), encoding='utf-8')
+    (tmp_path / '.hyd-runtime' / 'ports.json').write_text(_json.dumps({'8088': port}), encoding='utf-8')
     (tmp_path / '.env').write_text('AI_MODE=replay\n', encoding='utf-8')
     results = []
     try:
@@ -590,6 +591,53 @@ def test_다른_까닭의_승인_거절은_그_문장으로_멈추고_다시_고
 def test_포털은_화면과_포털을_거쳐_process에_닿는_길을_둘_다_본다(portal, screen, process, problem):
     root, answers = portal
     answers.update({'/': screen, '/svc/process/healthz': process})
-    found = cs.portal_problems(root)
+    found = cs.portal_problems(root, 0, inside=lambda: pytest.fail('응답은 왔다 — 컨테이너 안을 두드릴 까닭이 없다'))
     assert (found == []) if problem is None else (len(found) == 1 and problem.strip() in found[0])
+
+
+def test_막_다시_만든_포털이_잠깐_답하지_않다가_답하면_통과다(portal):
+    root, answers = portal
+    answers.update({'/': 502, '/svc/process/healthz': 502})
+    waited = []
+    def sleep(seconds):                                  # 두드리는 사이 포털이 뜬다
+        waited.append(seconds)
+        answers.update({'/': 200, '/svc/process/healthz': 200})
+    assert cs.portal_problems(root, 30, sleep=sleep) == [] and waited == [3]
+
+
+@pytest.fixture
+def cut_port(tmp_path):
+    """연결을 받자마자 끊는 실제 포트 — 2026-11-25 학생 PC 의 5/8단계 꼴(컨테이너는 모두 정상인데 PC 쪽 포털 주소가 「Remote end closed connection
+    without response」). 시작이 남긴 포트 표가 그 포트를 가리킨다."""
+    import json as _json
+    import socket
+    import threading
+    server = socket.socket()
+    server.bind(('127.0.0.1', 0)); server.listen()
+    stop = threading.Event()
+    def serve():
+        server.settimeout(0.2)
+        while not stop.is_set():
+            try:
+                conn, _ = server.accept()
+            except OSError:
+                continue
+            conn.close()
+    threading.Thread(target=serve, daemon=True).start()
+    (tmp_path / '.hyd-runtime').mkdir()
+    (tmp_path / '.hyd-runtime' / 'ports.json').write_text(_json.dumps({'8088': server.getsockname()[1]}), encoding='utf-8')
+    yield tmp_path, server.getsockname()[1]
+    stop.set(); server.close()
+
+
+@pytest.mark.parametrize('inside, others, said, not_said', [
+    (True, [], ['포트 {port}번으로 들어가는 연결만 끊깁니다', 'Docker Desktop 을 다시 켠 뒤'], ['logs portal']),
+    (True, ['someapp.exe(PID 42)'], ['다른 프로그램이 듣고 있습니다: someapp.exe(PID 42)'], ['Docker Desktop 을 다시 켠 뒤']),
+    (False, [], ['컨테이너 안에서도 답하지 않습니다', 'docker compose logs portal'], ['Docker Desktop']),
+], ids=['안은_됨_PC쪽만_끊김', '그_포트를_다른_프로그램이_들음', '안에서도_안_됨'])
+def test_PC에서_포털_연결이_끊기면_컨테이너_안을_두드려_어디_탓인지_가르고_할_일을_말한다(cut_port, inside, others, said, not_said):
+    root, port_no = cut_port
+    found = cs.portal_problems(root, 0, inside=lambda: inside, listeners=lambda p: others if p == port_no else pytest.fail(p))
+    assert len(found) == 3 and all('응답하지 않음' in f for f in found[:2]), found
+    assert all(w.format(port=port_no) in found[2] for w in said) and not any(w in found[2] for w in not_said), found[2]
 

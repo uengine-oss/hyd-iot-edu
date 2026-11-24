@@ -22,23 +22,34 @@ if [ -z "$PY" ]; then for c in .venv314/Scripts/python.exe .venv/bin/python; do 
 [ -n "$PY" ] || die "no .venv314 or .venv python (set PYTHON=...)"
 [ -f .hyd-runtime/ports.json ] || die ".hyd-runtime/ports.json 이 없습니다 — 먼저 시작.bat(scripts/start_all.sh)으로 스택을 켜세요"
 [ -z "$(docker compose ps -q --status running agent-worker 2>/dev/null)" ] || die "컨테이너 AI 워커가 켜져 있습니다(워커는 하나만). docker compose stop agent-worker 뒤 다시 실행하세요"
-# 이 PC의 호스트 포트(시작 스크립트가 옮긴 포트 포함): 컨테이너 포트 → 호스트 포트
+# 업무 DB(Supabase — compose 밖) 포트: 시작 스크립트가 정한 표(.hyd-runtime/ports.json)
 port() { "$PY" -c 'import json,sys; print(json.load(open(".hyd-runtime/ports.json"))[sys.argv[1]])' "$1"; }
+# 스택 서비스의 이 PC 쪽 포트: 서비스 포트는 기본으로 PC 에 열지 않는다(compose.yaml 머리). 이 워커를 쓸 때만 RUNBOOK §5 「개발용 호스트 워커」의
+# compose.override.yaml 로 열고, 연 포트는 Docker 에게 묻는다(docker compose port) — 열지 않았으면 여기서 멈춘다.
+published() {
+  local out; out="$(docker compose port "$1" "$2" 2>/dev/null || true)"
+  [[ "$out" =~ :([1-9][0-9]*)$ ]] || die "$1 의 $2 포트가 이 PC 에 열려 있지 않습니다 — RUNBOOK §5 「개발용 호스트 워커」대로 compose.override.yaml 에 적고 docker compose up -d 뒤 다시 실행하세요"
+  printf '%s' "${BASH_REMATCH[1]}"
+}
+PROCESS_PORT=$(published process 8080); NEO4J_PORT=$(published neo4j 7687)
+MCP_PORT=$(published enterprise-mcp 8199); DMN_PORT=$(published dmn-mcp 8198)
+MAINT_PORT=$(published enterprise-mcp-maint 8196); PURCHASE_PORT=$(published enterprise-mcp-purchase 8195)
 KEY=.hyd-runtime/worker-runtime.key
 trap 'rm -f "$KEY" "$KEY.tmp"' EXIT
 docker compose exec -T process sh -c 'cat "$HYD_WORKER_RUNTIME_KEY_FILE"' > "$KEY.tmp" || die "process 컨테이너에서 워커 인증 파일을 읽지 못했습니다(스택이 켜져 있는지 확인)"
 chmod 600 "$KEY.tmp" && mv "$KEY.tmp" "$KEY"
-export PROCESS_URL="http://127.0.0.1:$(port 8080)"
+export PROCESS_URL="http://127.0.0.1:$PROCESS_PORT"
 export HYD_WORKER_RUNTIME_KEY_FILE="$HERE/$KEY"
 export SUPABASE_DSN="${SUPABASE_DSN:-postgresql://postgres:postgres@127.0.0.1:$(port 54322)/postgres}"
 # 처리 건의 도구 서버 주소는 컨테이너 이름이다 — 이 워커가 닿는 호스트 포트로 바꾼다. host.docker.internal 은 학생이 이 PC에서 띄운 서버.
-export MCP_HOST_REWRITE="${MCP_HOST_REWRITE:-neo4j:7687=127.0.0.1:$(port 7687),enterprise-mcp:8199=127.0.0.1:$(port 8199),dmn-mcp:8198=127.0.0.1:$(port 8198),enterprise-mcp-maint:8196=127.0.0.1:$(port 8196),enterprise-mcp-purchase:8195=127.0.0.1:$(port 8195),host.docker.internal=127.0.0.1}"
+export MCP_HOST_REWRITE="${MCP_HOST_REWRITE:-neo4j:7687=127.0.0.1:$NEO4J_PORT,enterprise-mcp:8199=127.0.0.1:$MCP_PORT,dmn-mcp:8198=127.0.0.1:$DMN_PORT,enterprise-mcp-maint:8196=127.0.0.1:$MAINT_PORT,enterprise-mcp-purchase:8195=127.0.0.1:$PURCHASE_PORT,host.docker.internal=127.0.0.1}"
 # 작업 공간은 이 PC 전용 자리(.hyd-runtime/ — git 밖, 작업 폴더 규칙 밖에 쌓이지 않게)
 export CLIAGENTS_WORKSPACE_ROOT="${CLIAGENTS_WORKSPACE_ROOT:-$HERE/.hyd-runtime/worker-workspace}"
 export SCHEMA_PROMPT="${SCHEMA_PROMPT:-$HERE/it/neo4j/v2/schema_prompt.md}"
 export AI_REPLAY_DIR="${AI_REPLAY_DIR:-$HERE/it/agent-worker/replay}"
 export CONSUMER_ID="${CONSUMER_ID:-agent-worker:host}"
 export AI_MODE="${AI_MODE:-live}"
-export HEALTH_PORT="${HEALTH_PORT:-$(port 8097)}"
+# 이 워커의 상태 포트(이 PC) — 컨테이너 워커는 8097 을 PC 에 열지 않아 겹치지 않는다
+export HEALTH_PORT="${HEALTH_PORT:-8097}"
 # exec 하지 않는다 — 워커가 끝나면(Ctrl+C · stop_worker_host.ps1) 위 trap 이 인증 파일 사본을 지운다
 "$PY" -m worker.main

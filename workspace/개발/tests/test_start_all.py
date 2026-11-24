@@ -33,15 +33,23 @@ case "$*" in
   network\ inspect\ *) exit 0;;
   inspect\ -f*NetworkSettings.Networks*) printf '{"hyd-business-db-%s": {}}\n' "$(sed -n 's/^HYD_SUPABASE_PROJECT=//p' .env)";;      # 업무 DB · 메일함은 이미 그 망에 붙어 있다
   volume\ ls*neo4j-data*) echo hyd-fake_neo4j-data;;
+  volume\ inspect\ -f*) echo 2026-11-24T16:20:08Z;;                                   # 업무 DB 데이터 볼륨을 만든 시각
+  inspect\ -f*State.Running*) printf 'true\n%s\n' "${FAKE_INBUCKET_RUNNING:-true}";;    # 업무 DB · 메일함 컨테이너가 켜져 있는가
+  # 업무 DB 에 묻기(psql) — FAKE_DB: ok(시드까지) · half(처음 준비 도중 끊김 — 표도 없다) · empty(표만 있고 시드 없음) · data(회사 없이 기록만)
+  exec\ supabase_db_*to_regclass*) if [ "${FAKE_DB:-ok}" = half ]; then echo 'f|f'; else echo 't|t'; fi;;
+  exec\ supabase_db_*"where id = 'hyd'"*) if [ "${FAKE_DB:-ok}" = ok ]; then echo 1; else echo 0; fi;;
+  exec\ supabase_db_*"from public.tenants"*) if [ "${FAKE_DB:-ok}" = ok ]; then echo 1; else echo 0; fi;;
+  exec\ supabase_db_*"from public.users"*) case "${FAKE_DB:-ok}" in ok) echo 18;; data) echo 3;; *) echo 0;; esac;;
   "compose --profile * stop") exit 0;;
   compose\ ps*|ps*|volume\ ls*) ;;
   *) echo "docker 대역이 모르는 명령: $*" >&2; exit 97;;
 esac
 '''
 NPX = r'''#!/bin/bash
+[ -z "${FAKE_CALLS:-}" ] || printf '%s\n' "$*" >> "$FAKE_CALLS"          # 부른 차례를 남긴다(시험이 읽는다)
 case "$*" in
   *" start") printf '%s\n' "${FAKE_SUPA_OUTPUT:-}" >&2; exit "${FAKE_SUPA_EXIT:-0}";;
-  *" stop"|*" migration up --local") exit 0;;
+  *" stop"|*" stop --no-backup"|*" migration up --local") exit 0;;
   *) echo "npx 대역이 모르는 명령: $*" >&2; exit 97;;
 esac
 '''
@@ -124,6 +132,31 @@ def test_지식_지도_내용_검사가_실패하면_검사가_짚은_줄과_까
     assert 'Neo4j Browser' in said and '다시 만든 뒤' in said                            # 까닭과 첫째 길(지운 것을 다시 만든다)
     assert "docker volume rm hyd-fake_neo4j-data" in said                               # 둘째 길: 이 PC 의 실제 볼륨 이름으로
     assert '다시 넣어야 합니다' in said                                                   # 그 길이 지우는 것(직접 적재한 지식)을 말한다
+
+
+@pytest.mark.parametrize('db, inbucket, said, calls', [
+    ('half', 'false', '처음 준비(구조 · 기본 데이터)를 마치지 못한 채', ['start', 'stop --no-backup', 'start', 'migration up --local']),
+    ('empty', 'true', '처음 준비(구조 · 기본 데이터)를 마치지 못한 채', ['start', 'stop --no-backup', 'start', 'migration up --local']),
+    ('ok', 'false', '업무 DB 를 다시 켭니다(쌓인 데이터는 그대로)', ['start', 'stop', 'start', 'migration up --local']),
+    ('ok', 'true', None, ['start', 'migration up --local']),
+], ids=['처음_준비_도중_끊긴_DB', '끊긴_뒤_끄고_켠_DB', '메일함_꺼짐', '정상'])
+def test_업무_DB를_켠_뒤_처음_준비가_끊긴_DB는_비우고_다시_준비하고_빠진_컨테이너는_다시_켠다(pc, tmp_path, db, inbucket, said, calls):
+    """2026-11-25 실측(학생 PC 「Supabase 가 남아서 안 된다」): 처음 시작이 업무 DB 준비 도중 끊기면 CLI 는 다음 시작에서 「이미 켜짐」으로 보고
+    빠진 메일함 · 시드를 채우지 않아, 다시 눌러도 끄고 켜도 process 가 「tenant hyd 없음」으로 죽었다. 시작은 그 DB 를 알아보고 비운 뒤 처음부터
+    준비하고(정상 첫 시작과 같은 CLI 길), 시드가 있는데 메일함만 없거나 꺼졌으면 데이터를 둔 채 업무 DB 를 다시 켠다. 4단계는 일부러 멈춘다(이
+    시험은 3단계를 잰다 — 그 뒤 단계가 이 PC 의 진짜 포털을 부르지 않게)."""
+    log = tmp_path / 'npx.log'
+    code, text = pc('start_all.sh', db=db, inbucket_running=inbucket, calls=log, up_exit=1, up_output='3단계 뒤에서 멈춤')
+    assert [line.split(' ', 2)[2] for line in log.read_text(encoding='utf-8').splitlines()] == calls, text
+    assert (said in text) if said else ('처음 준비' not in text and '다시 켭니다' not in text), text
+    assert '4/8' in text and '시스템을 켜지 못했습니다' in stopped(text)          # 3단계를 지나갔다
+
+
+def test_업무_DB에_회사_없이_기록이_있으면_지우지_않고_까닭을_말하며_멈춘다(pc, tmp_path):
+    log = tmp_path / 'npx.log'
+    code, text = pc('start_all.sh', db='data', calls=log)
+    assert code == 1 and '업무 DB 의 상태를 확인하지 못했습니다' in stopped(text) and 'public.users 3줄' in text and '지우지 않고 멈춥니다' in text
+    assert [line.split(' ', 2)[2] for line in log.read_text(encoding='utf-8').splitlines()] == ['start'] and '4/8' not in text
 
 
 @pytest.mark.parametrize('known, note', [(False, True), (True, False)], ids=['이름 기록 없음', '이름 기록 있음'])

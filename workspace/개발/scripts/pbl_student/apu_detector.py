@@ -1,6 +1,6 @@
 """학생 시스템의 이상 감지 프로그램 — 공기 공급 장치(APU) 실측을 시계에 맞춰 흘리며 공기 누설 의심을 감지하고 포털에 경보를 보낸다.
 
-    py apu_detector.py --db apu.sqlite3 --portal http://127.0.0.1:8080 --asset APU-01 --start "2020-07-15 13:00:00" --speed 60 \
+    py apu_detector.py --db apu.sqlite3 --portal http://127.0.0.1:8088/svc/process --asset APU-01 --start "2020-07-15 13:00:00" --speed 60 \
                        --clock clock.json [--until "2020-07-16 02:00:00"] [--dry-run]
 
 표준 라이브러리만 쓴다(학생 PC 규칙). 데이터는 build_db.py 가 만든 SQLite(출처 MetroPT-3, UCI 791, CC BY 4.0).
@@ -143,7 +143,7 @@ def run(a) -> None:
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument('--db', required=True)
-    p.add_argument('--portal', required=True, help='포털의 처리 엔진 주소(예: http://127.0.0.1:8080 또는 http://127.0.0.1:8088/svc/process)')
+    p.add_argument('--portal', required=True, help='포털을 거친 처리 엔진 주소(예: http://127.0.0.1:8088/svc/process — 서비스 포트는 PC 에 열지 않는다)')
     p.add_argument('--asset', required=True)
     p.add_argument('--start', required=True, help='흘리기 시작할 데이터 시각 YYYY-MM-DD HH:MM:SS')
     p.add_argument('--speed', type=float, required=True, help='데이터 시간이 벽시계보다 몇 배 빨리 가는가')

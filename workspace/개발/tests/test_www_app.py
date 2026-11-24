@@ -60,6 +60,8 @@ class World:
         if not path.startswith('/svc/'):
             return route.fulfill(status=200, body='') if ':' in req.url.split('://', 1)[1].split('/')[0] and not req.url.startswith(self.base) else route.continue_()
         service = path.split('/')[2]
+        if path == '/svc/redpanda/v1/status/ready':                    # 포털이 넘기는 이벤트 저장(Redpanda)의 준비 상태(it/portal/nginx.conf)
+            return send({'status': 'booting'} if service in self.down else {'status': 'ready'}, 503 if service in self.down else 200)
         if path.endswith('/healthz'):
             if service in self.down:
                 return send({'detail': 'down'}, 503)
@@ -243,6 +245,22 @@ def test_여는_화면이_없는_브로커_둘과_브리지의_상태는_거기_
     reach({'ot-broker': 'ok', 'ot-bridge': 'ok', 'dmz-broker': 'ok'})
     w.broker = {'plant-sim'}                                                              # 둘 다 DMZ 브로커에 붙지 못했다 → DMZ 브로커는 응답 없음, 브리지는 볼 자리가 없어 모른다
     reach({'ot-broker': 'ok', 'ot-bridge': 'wait', 'dmz-broker': 'down'})
+
+
+def test_이벤트_저장의_상태는_포털이_넘기는_준비_상태_한_주소로_읽는다(world):
+    """이벤트 저장(Redpanda)의 관리 포트(9644)는 이 PC 에 열지 않는다(compose.yaml 머리 — 열면 다른 망의 컨테이너도 닿는다). 포털이 그 준비 상태
+    한 주소(/svc/redpanda/v1/status/ready)만 넘기고 화면은 그 응답 코드로 읽는다 — 준비가 아니면(503 · 꺼져서 502) 응답 없음이다. 거기 붙는 우리
+    서비스의 /healthz kafka 는 처음 붙은 뒤로 Redpanda 가 죽어도 true 로 남아(2026-11-25 독립 검토) 쓰지 않는다."""
+    w, page = world, world.page
+    page.goto(w.base + '/index.html#/home')
+    reach = lambda want: page.wait_for_function("want => document.querySelector(\"#stack .sys-nd[data-key='Redpanda']\").dataset.st === want", arg=want, timeout=15000)
+    reach('ok')
+    assert not [u for u in w.asked if ':9644' in u], w.asked                                # 열지 않은 관리 포트를 부르지 않는다
+    w.down.add('redpanda')
+    reach('down')
+    assert 'Redpanda' in page.inner_text('#sysSum')
+    w.down.discard('redpanda')
+    reach('ok')
 
 
 def test_감지기가_감지에서_뺀_이상_패턴은_서비스_점이_초록인_채로_묻히지_않는다(world):

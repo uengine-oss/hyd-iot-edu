@@ -639,11 +639,13 @@ class ComposeContainer:
     주 포트는 127.0.0.1 의 PORTS[서비스](없는 서비스면 기존 컨테이너의 포트 또는 빈 포트), extra_ports 도 같다 — `box.ports[컨테이너 포트]`가
     이 PC 포트. 이름 붙은 볼륨은 붙이지 않는다(새 컨테이너 = 처음 켠 PC). 내용 지문(라벨)이 같으면 다시 쓰고(reused=True), 다르면 지우고 새로."""
 
-    def __init__(self, service, container_port=None, *, env=None, memory=None, extra_mounts=(), extra_ports=(), name=None, hosts=(), networked=False):
+    def __init__(self, service, container_port=None, *, env=None, memory=None, extra_mounts=(), extra_ports=(), name=None, hosts=(), networked=False,
+                 alias=True):
         """name: 이 자리의 기본 이름 대신 쓸 이름(그 이름의 포트는 PORTS 가 아니라 그 컨테이너의 것 · 빈 포트).
         hosts: 컨테이너 안에서 127.0.0.1 로 풀 이름(compose 망에서 서비스 이름이 자기 자신을 가리키는 자리 — 예: redpanda).
         networked: compose 가 그 서비스에 준 망(networks)마다 이 자리의 같은 이름 망(site_network)에 서비스 이름으로 붙인다 — 서로를 이름으로
-        찾고, 같은 망에 없는 컨테이너에는 닿지 못한다(compose 와 같은 망 구조). container_port 가 None 이면 이 PC 에 여는 포트가 없다.
+        찾고, 같은 망에 없는 컨테이너에는 닿지 못한다(compose 와 같은 망 구조). alias=False 면 망에는 붙되 서비스 이름을 달지 않는다(같은 서비스의
+        복사본 — 이 자리의 서비스들이 그 이름으로 찾는 것은 원래 컨테이너다). container_port 가 None 이면 이 PC 에 여는 포트가 없다.
         compose 명령의 `${HYD_PORT_<n>:-…}`(그 서비스가 호스트에 여는 포트)는 이 컨테이너가 이 PC 에 연 포트로 바꾼다."""
         import hashlib
         try:
@@ -665,11 +667,16 @@ class ComposeContainer:
             m = re.fullmatch(r'(?:[\d.]+:)?\$\{(\w+):-\d+\}:(\d+)', str(line))
             if m and int(m[2]) in self.ports:
                 host_ports[m[1]] = self.ports[int(m[2])]
+        # compose 가 호스트에 열지 않는 포트도 명령이 `${HYD_PORT_<컨테이너 포트>:-…}` 로 바깥 주소를 알리면(redpanda 의 external 주소 — 학생 PC 는
+        # 열지 않고 이 자리의 시험만 PC 에서 붙는다) 이 컨테이너가 이 PC 에 연 포트로 바꾼다
+        for inside, outside in self.ports.items():
+            if inside is not None:
+                host_ports.setdefault(f'HYD_PORT_{inside}', outside)
         content = ['--memory', memory or spec['mem_limit'], *(a for h in hosts for a in ('--add-host', f'{h}:127.0.0.1'))]
         if spec.get('user'):
             content += ['--user', str(spec['user'])]
         if self.networks:
-            content += ['--network', self.networks[0], '--network-alias', service]
+            content += ['--network', self.networks[0], *(('--network-alias', service) if alias else ())]
         for volume in list(spec.get('volumes') or []) + list(extra_mounts):
             source, target, *mode = volume.split(':')
             if source.startswith('./'):
@@ -695,7 +702,7 @@ class ComposeContainer:
         _docker('run', '-d', '--name', self.name, '--label', f'{CONTAINER_LABEL}={service}', '--label', f'{CONTAINER_SPEC}={fingerprint}',
                 '--label', '='.join(site), *ports, *content, timeout=600)      # 여러 묶음이 함께 돌면 docker run 이 5분을 넘었다(실측)
         for net in self.networks[1:]:
-            _docker('network', 'connect', '--alias', service, net, self.name)
+            _docker('network', 'connect', *(('--alias', service) if alias else ()), net, self.name)
 
     def logs(self):
         return _docker('logs', '--tail', '40', self.name, check=False).strip()[-2500:]
@@ -1017,11 +1024,11 @@ class PlantMqtt:
     """이 테스트 자리의 MQTT 셋(compose 서비스 그대로 — 같은 이미지 · 설정 파일 · 망, 셋 다 mosquitto): 공장 브로커 ot-broker(ot-net), DMZ 브로커
     dmz-broker(ot-dmz-net), 그 둘에 스스로 접속하는 공장 쪽 브리지 ot-bridge(두 망). 망은 compose 의 networks 대로 이 자리에 만든다(site_network) —
     그래서 「경계 망에서 공장 브로커에 닿는가」를 실제 연결로 잴 수 있다(test_zones). 두 브로커의 입구는 이 PC 의 시험 · 서비스가 붙는 자리라
-    이 PC 포트로도 연다(compose 는 공장 브로커의 바깥 입구 둘만 호스트에 연다). plant = 공장 브로커 안쪽 입구, dmz = DMZ 브로커(이 PC 주소, 포트)."""
-    PLANT_PORTS = (1884, 8083)                         # 공장 브로커의 바깥 입구 · 웹소켓(계정 student — test_ot_broker)
+    이 PC 포트로도 연다(compose 는 브로커의 어떤 입구도 호스트에 열지 않는다 — 그래서 이 자리의 두 브로커는 compose 보다 많은 입구를 PC 에 연다.
+    compose 와 똑같이 연 꼴은 test_zones 가 따로 띄워 잰다). plant = 공장 브로커 안쪽 입구, dmz = DMZ 브로커 안쪽 입구(이 PC 주소, 포트)."""
 
     def __init__(self):
-        self.plant_box = ComposeContainer('ot-broker', 1883, extra_ports=self.PLANT_PORTS, networked=True)
+        self.plant_box = ComposeContainer('ot-broker', 1883, networked=True)
         self.dmz_box = ComposeContainer('dmz-broker', 1883, networked=True)
         self.bridge_box = ComposeContainer('ot-bridge', networked=True)
         self.plant, self.dmz = ('127.0.0.1', self.plant_box.port), ('127.0.0.1', self.dmz_box.port)
@@ -2033,7 +2040,10 @@ class EngineWorld:
         return self.rt.repo.list_workitems(proc_inst_id=pid, limit=None)
 
     def row(self, pid, activity, status=None):
-        rows = [w for w in self.rows(pid) if w['activity_id'] == activity and (status is None or w['status'] == status)]
+        """그 단계의 마지막 행 — 엔진의 정본 순서(engine.workitem_order: 세대 → 시작 시각)로 고른다. DB 목록 순서(시작 시각만)로 고르면 [다시 수행]이
+        대체한 옛 세대 행과 새 행의 시작 시각이 같을 때 옛 행을 집었다(2026-11-25 회귀에서 test_instances 의 승인 뒤 쓰기 멈춤 시험이 CANCELLED 옛 행을 읽음)."""
+        from procsvc import engine
+        rows = sorted((w for w in self.rows(pid) if w['activity_id'] == activity and (status is None or w['status'] == status)), key=engine.workitem_order)
         assert rows, f'{pid} 에 {activity}({status or "아무 상태"}) 행이 없다: {[(w["activity_id"], w["status"]) for w in self.rows(pid)]}'
         return rows[-1]
 

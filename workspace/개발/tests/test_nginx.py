@@ -55,7 +55,7 @@ def portal():
     net, made = tag, []
     _docker('network', 'create', net)
     try:
-        for alias, port in (('process', 8080), ('plant-sim', 8000)):
+        for alias, port in (('process', 8080), ('plant-sim', 8000), ('redpanda', 9644)):
             made.append(_docker('run', '-d', '--rm', '--network', net, '--network-alias', alias, STUB_IMAGE, 'python', '-c', STUB, str(port)))
         port = _free_port()
         www, conf = ROOT / 'it' / 'portal' / 'www', ROOT / 'it' / 'portal' / 'nginx.conf'
@@ -100,6 +100,16 @@ def _get(url, data=None, method=None):
 def test_svc_앞머리를_떼고_그_서비스에_받은_글자_그대로_넘긴다(portal, path, upstream_path):
     status, _, body = _get(portal + path)
     assert status == 200 and json.loads(body)['path'] == upstream_path
+
+
+def test_이벤트_저장은_준비_상태_한_주소만_읽기로_넘기고_다른_관리_API는_넘기지_않는다(portal):
+    """Redpanda 관리 API(9644)는 PC 에 열지 않는다 — 시스템 구성 화면이 읽는 준비 상태 한 주소만 포털이 넘긴다. 설정 · 토픽을 바꾸는 관리 API 와
+    쓰기 방식은 넘기지 않는다."""
+    status, _, body = _get(portal + '/svc/redpanda/v1/status/ready')
+    assert status == 200 and json.loads(body) == dict(json.loads(body), path='/v1/status/ready', method='GET')
+    status, _, body = _get(portal + '/svc/redpanda/v1/brokers')
+    assert status == 404 and '포털에 없는 서비스 길입니다 (redpanda)' in json.loads(body)['detail']
+    assert _get(portal + '/svc/redpanda/v1/status/ready', data=b'{}', method='POST')[0] == 403
 
 
 @pytest.mark.parametrize('path, status, says', [

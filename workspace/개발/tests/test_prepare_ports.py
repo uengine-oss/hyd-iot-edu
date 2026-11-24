@@ -169,6 +169,15 @@ def test_처음_시작은_기본_이름과_기본_포트를_쓴다(tmp_path):
     assert env['COMPOSE_PROJECT_NAME'] == 'hyd-iot-edu' and env['HYD_PORT_8088'] == '8088' and env['HYD_PORTS'] == ''
 
 
+def test_포트_표에는_PC에_실제로_여는_포트만_든다(tmp_path):
+    """compose 가 PC 에 여는 포트(127.0.0.1 묶음)만 고르고 옮긴다 — 바깥 주소를 알리기만 하는 자리(redpanda 의 external 알림 19092, PC 에 열지
+    않는다)를 고르면 쓰지 않는 포트의 겹침을 재고 「옮김」을 학생에게 알렸다(2026-11-25 독립 검토)."""
+    root = make_checkout(tmp_path / 'hyd')
+    run(root)
+    assert set(ports(root)) - {d for d, _ in pp.DB_FIELDS.values()} == {1881, 3000, 7474, 7687, 8085, 8088, 9090}
+    assert 'HYD_PORT_19092' not in hyd_env.read(root / '.env')
+
+
 @pytest.mark.parametrize('state', ['running', 'stopped', 'containers_removed'])
 def test_두_번째_시작은_같은_이름_같은_포트에_파일도_그대로다(tmp_path, state):
     root = make_checkout(tmp_path / 'hyd')
@@ -520,12 +529,50 @@ def test_지울_볼륨을_컨테이너가_붙들고_있으면_그_이름과_확�
 
 
 # ---------------------------------------------------------------- 업무 DB 망(시작 3단계 db-net)
+BOXES = {'supabase_db_x': True, 'supabase_inbucket_x': True}
+
+
+@pytest.mark.parametrize('tables, seeded, running, want', [
+    ({'public.tenants': 1, 'public.users': 18}, True, BOXES, 'ok'),
+    ({'public.tenants': 1, 'public.users': 18}, True, dict(BOXES, supabase_inbucket_x=False), 'restart'),       # 메일함이 없거나 꺼짐 — 데이터는 둔다
+    ({'public.tenants': None, 'public.users': None}, False, dict(BOXES, supabase_inbucket_x=False), 'reinit'),  # 처음 준비 도중 끊김: 구조도 없다
+    ({'public.tenants': 0, 'public.users': 0}, False, BOXES, 'reinit'),                                         # 그 뒤 끄고 켬: 구조만 있고 시드가 없다
+], ids=['정상', '메일함_빠짐', '처음_준비_도중_끊김', '끊긴_뒤_백업에서_켬'])
+def test_업무_DB를_켠_뒤_빠진_컨테이너와_처음_준비가_끊긴_DB를_가른다(tables, seeded, running, want):
+    """CLI 는 업무 DB 컨테이너가 켜져 있으면 빠진 컨테이너 · 시드를 채우지 않아, 처음 시작이 도중에 끊긴 PC 는 몇 번을 다시 눌러도(끄고 켜도) process 가
+    「tenant hyd 없음」으로 켜지지 못했다(2026-11-25 실측)."""
+    assert pp.db_state(tables, seeded, running) == want
+
+
+def test_시드의_회사가_없는데_기록이_있으면_지우지_않고_멈춘다():
+    with pytest.raises(pp.PrepareError, match=r'public.users 3줄.*지우지 않고 멈춥니다'):
+        pp.db_state({'public.tenants': 0, 'public.users': 3}, False, BOXES)
+
+
+DB_MADE = '2026-11-24T16:20:08Z'             # docker volume inspect 의 CreatedAt 꼴(UTC, 초까지)
+
+
+def box(service, *net_ids, created='2026-11-24T16:22:05.123456789Z'):      # docker inspect 의 Created 꼴(UTC, 나노초까지)
+    return {'Config': {'Labels': {'com.docker.compose.service': service}}, 'Created': created,
+            'NetworkSettings': {'Networks': {f'net{i}': {'NetworkID': n} for i, n in enumerate(net_ids)}}}
+
+
 def test_업무_DB_망의_지금_판에_붙지_않은_서비스_컨테이너만_다시_만든다():
     """끄기 · Docker 정리로 망이 지워졌다 다시 만들어지면 멈춰 둔 컨테이너는 옛 망을 기억해 「network … not found」로 켜지지 못했다(2026-11-24 실측) —
     그 망을 쓰는 서비스 가운데 지금 판에 붙지 않은 것만 고른다(다른 망만 쓰는 서비스는 고르지 않는다)."""
-    def box(service, *net_ids):
-        return {'Config': {'Labels': {'com.docker.compose.service': service}},
-                'NetworkSettings': {'Networks': {f'net{i}': {'NetworkID': n} for i, n in enumerate(net_ids)}}}
     containers = [box('process', 'now', 'it'), box('agent', 'gone', 'it'), box('enterprise-sim'), box('neo4j', 'it')]
-    assert pp.stale_services(containers, 'now', {'process', 'agent', 'enterprise-sim'}) == ['agent', 'enterprise-sim']
-    assert pp.stale_services(containers, 'now', set()) == []
+    assert pp.stale_services(containers, 'now', {'process', 'agent', 'enterprise-sim'}, DB_MADE) == ['agent', 'enterprise-sim']
+    assert pp.stale_services(containers, 'now', set(), DB_MADE) == []
+
+
+def test_업무_DB가_새로_만들어지기_전에_만든_서비스_컨테이너는_다시_만든다():
+    """업무 DB 를 비우고 새로 만들면(데이터 볼륨을 지움) 켜져 있던 process 는 켜질 때 옛 DB 에 넣은 기준 흐름 배포를 새 DB 에 다시 넣지 않아, 시작 6단계가
+    「배포된 운영 판본이 없습니다: anomaly_response」로 몇 번을 다시 눌러도 멈췄다(2026-11-25 실측) — 지금 업무 DB 의 데이터 볼륨보다 먼저 만든 컨테이너는
+    망에 붙어 있어도 고른다. 같은 초 · 뒤에 만든 것은 고르지 않는다(첫 시작은 3단계가 DB 를 만든 뒤 4단계가 서비스를 만든다)."""
+    users = {'process', 'agent', 'enterprise-sim'}
+    containers = [box('process', 'now', created='2026-11-24T16:13:12.663800825Z'),          # 옛 DB 를 보고 켜졌다
+                  box('agent', 'now', created='2026-11-24T16:20:08.999999999Z'),            # 같은 초
+                  box('enterprise-sim', 'now'),                                              # 새 DB 뒤
+                  box('neo4j', 'it', created='2026-11-24T16:00:00Z')]                        # 업무 DB 를 쓰지 않는다
+    assert pp.stale_services(containers, 'now', users, DB_MADE) == ['process']
+    assert pp.stale_services(containers, 'now', users, '2026-11-25T01:20:08+09:00') == ['process']      # 리눅스 데몬의 지역 시각 꼴(같은 순간)

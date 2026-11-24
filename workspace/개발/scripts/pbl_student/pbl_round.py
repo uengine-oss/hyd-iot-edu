@@ -60,7 +60,7 @@ from hydcommon.words import particle  # noqa: E402
 
 PY = sys.executable
 ENV = dict(os.environ, PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
-PROCESS, WORKER = (f'{cs.H}:{cs.port(ROOT, p)}' for p in (8080, 8097))
+PROCESS, WORKER = (cs.service(ROOT, s) for s in ('process', 'agent-worker'))
 FMT = det.FMT
 ASSET, FLOW_ID = 'APU-01', 'apu_air_leak'
 REQ = json.loads(REQUESTS.read_text(encoding='utf-8'))
