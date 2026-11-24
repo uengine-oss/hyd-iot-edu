@@ -83,7 +83,7 @@
         const result=UI.toolResult(ev);
         Object.assign(r, { t1: ev.timestamp, output: d.output, status:result.status, badge:result.badge, ioEvent:ev, full: d.full_output || null });
       } else if (ev.event_type === 'task_working' && d.type === 'text' && d.content) {
-        rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content)), data:d });
+        rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.saidText(d.content), data:d });
       } else if (ev.event_type === 'task_working' && d.type === 'skill_used') {
         // TOOL_START audit: a read request, not proof of successful reading/use.
         rows.push({ key: 'k:' + ev.id, kind: 'skill', t0: ev.timestamp, job: ev.job_id, data: d });
@@ -129,8 +129,10 @@
     const producedBy = wid => Object.entries(sources).filter(([, s]) => s && s.kind === 'workitem' && s.id === wid).map(([k]) => k);
     W().caseNames = caseNames(v, d, ext.agents, ext.people);
     (view.definition?.roles || []).forEach(r => { if (r.endpoint && r.name) W().caseNames[r.endpoint] = r.name; });
-    // 이 처리 건 정의가 붙인 칸 이름 — 화면 사전(plainWords F · UI.terms var.*)에 없는 칸에만 쓰인다(W.fieldName). 정의 설명문이 화면 이름을 덮지 않는다
-    W().caseFields = Object.fromEntries((inst.variables_data || []).filter(r => r.name && r.name !== r.key).map(r => [r.key, r.name]));
+    // 이 처리 건 정의가 붙인 칸 이름 — 실습장 처리 건에서는 화면 사전(plainWords F · UI.terms var.*)에 없는 칸에만, 학생 현장 처리 건(서버 plant_case
+    // false)에서는 사전보다 먼저 쓰인다(W.fieldName · W.unit). 실습장 처리 건에서는 정의 설명문이 화면 이름을 덮지 않는다
+    W().caseFieldsFirst = view.plant_case === false;
+    W().caseFields =Object.fromEntries((inst.variables_data || []).filter(r => r.name && r.name !== r.key).map(r => [r.key, r.name]));
     const forms = [view.definition?.startForm, ...Object.values(view.definition?.forms || {}), ...(view.definition?.activities || []).map(a => a.form)];
     forms.forEach(f => (f?.fields_json || []).forEach(x => { if (x.key && x.text && x.text !== x.key) W().caseFields[x.key] = x.text; }));
     const read = {
@@ -373,7 +375,7 @@
     // 끝맺는 말이 산문이면 그대로, 출력 계약(JSON — SQL · 적재 통계가 든다)이면 산문 칸에 흘리지 않고 원문 접기로(W1-13)
     if (done && done.data && done.data.text) {
       const said = String(done.data.text).trim();
-      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', rawBlock(said), { raw: true }) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
+      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', rawBlock(said), { raw: true }) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.saidText(said).replace(/`/g, ''))}</p>`));
     }
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
     // 한 문장

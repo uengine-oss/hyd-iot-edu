@@ -9,7 +9,7 @@
 (function () {
   const $d = id => document.getElementById(id);
   const base = id => API.process + '/api/process/definitions/' + encodeURIComponent(id);
-  let status = null, compareWith = null, deployedIds = new Set(), rows = [], chosen = '';
+  let status = null, compareWith = null, deployedIds = new Set(), rows = [], chosen = '', routeRows = null;
   const patName = p => UI.patternName(p), nameOf = hydDefinitions.name;   // 패널 일 · 흐름 이름은 definitionRegistry.js 의 한 벌(W3-28)
   const tag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   // 경보 → 흐름 한 줄의 구분: 흐름 목록과 같은 말(기본 제공 / 내가 배포한 흐름)로, 서버가 준 표시로 가른다. 종류 표시라 상태색(초록)을 쓰지 않는다.
@@ -20,6 +20,7 @@
 
   async function loadRoutes() {
     const r = await getJ(API.process + '/api/flows/deployments');
+    routeRows = r.routes;      // 경보 → 여는 흐름(서버가 정한 실제 배정) — 흐름 화면 머리도 이 표로 말한다(flows.js drawHead)
     const marked = r.routes.some(x => routeKind(x));
     const body = r.routes.map(x => `<tr><th scope="row">${esc(patName(x.pattern))}</th><td>${esc(nameOf(x.definition, x.name))}</td><td class="num">${esc(x.version)}</td>${marked ? `<td>${routeKind(x)}</td>` : ''}</tr>`).join('');
     const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(nameOf(f.definition, f.name))}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다.</p>`).join('');
@@ -57,6 +58,7 @@
     if (selected) chosen = selected;
     window.dispatchEvent(new Event('hyd:deployed'));      // 흐름 화면이 목록 · 단계 줄의 배포 여부를 다시 그린다(flows.js)
     await loadRoutes();
+    window.dispatchEvent(new Event('hyd:deployed'));      // 경보 배정 표를 읽은 뒤 — 흐름 머리의 「어느 경보가 이 흐름을 여나」를 그 표로 다시 그린다
     await loadStatus();
   }
   // 고른 흐름의 판본 · 배포 상태. 등록한 판본이 없는 흐름(가져오기만 한 초안)이면 이 절을 숨긴다
@@ -114,7 +116,7 @@
   // refComparable · doneText 는 시험(test_www_definitionDeploy)이, 나머지는 흐름 화면(flows.js)이 부른다.
   // deployed(정의): 그 흐름에 운영 판본이 있는가(마지막으로 읽은 값). rows(): 등록된 정의 판본 목록(마지막으로 읽은 값). status(): 고른 흐름의 판본 · 배포 상태.
   // select(정의): 흐름 화면이 목록에서 고른 흐름 — 그 흐름의 판본 · 배포를 읽어 그린다. reload(정의): 판본 등록 · 되돌리기 뒤 목록을 새로 읽고, 정의를 주면 그 흐름을 고른다
-  window.hydDefinitionDeploy = { refComparable, doneText, deployed: id => deployedIds.has(id), rows: () => rows, status: () => (status && status.id === chosen ? status : null),
+  window.hydDefinitionDeploy = { refComparable, doneText, deployed: id => deployedIds.has(id), rows: () => rows, routes: () => routeRows, status: () => (status && status.id === chosen ? status : null),
     select: id => { chosen = id || ''; return loadStatus().catch(e => message(e.message, true)); }, reload: selected => action(() => loadDefinitions(selected)) };
   const actionName = a => ({ seed: '처음 설치', deploy: '배포', rollback: '되돌리기', reset: '기준으로 되돌리기', withdraw: '경보 경로에서 내림' }[a] || a);
   const diffTag = change => tag(change, { '추가': 'ok', '삭제': 'danger', '변경': 'warn' }[change]);

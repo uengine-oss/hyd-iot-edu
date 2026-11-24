@@ -9,7 +9,7 @@
     "sign": "INFLUENCES · AFFECTS의 sign은 +1(같은 방향) 또는 -1(반대 방향)이다. 관계가 없으면 관계를 만들지 않는다 (0을 쓰지 않는다). 조건부면 sign을 두고 condition에 조건을 적는다.",
     "money": "금액은 만원 단위다.",
     "superLabel": "extends가 있는 클래스의 노드는 부모 레이블도 함께 단다. 예: (:Task:FlowNode).",
-    "minimalSet": "표준의 모든 요소를 담지 않는다. 수업 시나리오(A 냉각 · B 정기 정비 · C 예비품 구매)와 그 실행 기록이 실제로 쓰는 요소만 둔다. workspace/개발/scripts/ontology_v2.py validate가 인스턴스가 쓰지 않는 스키마 요소를 보고한다.",
+    "minimalSet": "표준의 모든 요소를 담지 않는다. 기본 제공 흐름(A 냉각 · B 정기 정비 · C 예비품 구매)과 그 실행 기록이 실제로 쓰는 요소만 둔다. 인스턴스가 쓰지 않는 스키마 요소는 스키마 검사가 보고한다.",
     "threshold": "임계값은 문장이 아니라 관계로 둔다: (규칙 또는 이상 패턴)-[:TESTS {operator, value, unit}]->(입력 데이터). 한 규칙의 TESTS는 모두 AND다 (DMN 결정표의 한 행). OR는 규칙을 두 행으로 나눈다. 사람이 읽는 조건(Rule.when · AnomalyPattern.rule)은 TESTS에서 만든다.",
     "label_ko": "모든 클래스는 label_ko(한글 이름)를 가진다. 표와 그림은 이 이름을 쓴다."
   },
@@ -1672,7 +1672,7 @@
       "label_ko": "판단 사례",
       "layer": "record",
       "standard": "DMN 판단의 실행 인스턴스",
-      "description": "사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 한 교육용 고정이며, 수업 그래프에는 미리 넣은 사례가 없어 선례 몫은 0이다.",
+      "description": "사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 하려는 것이며, 예시 사례를 넣지 않은 그래프에서는 선례 몫이 0이다.",
       "properties": [
         {
           "name": "id",
@@ -1697,7 +1697,7 @@
           "name": "seeded",
           "type": "boolean",
           "required": false,
-          "description": "미리 넣은 예시 사례면 true. 선례 조회(t3_precedents)는 이것만 센다(교육용 고정). 승인으로 투영된 사례(case_projection)에는 없다"
+          "description": "미리 넣은 예시 사례면 true. 선례 조회(t3_precedents)는 이것만 센다(승인할 때마다 순위가 바뀌지 않게). 승인으로 투영된 사례(case_projection)에는 없다"
         },
         {
           "name": "status",

@@ -387,7 +387,7 @@
   function drawCalls(s, r) {
     const list = S.el.querySelector('#mcpCallList');
     if (!list) return;
-    const STATE = { error: ['오류', 'danger'], running: ['진행 중', 'run'] };
+    const STATE = { error: ['오류', 'danger'], running: ['진행 중', 'run'], unfinished: ['끝 기록 없음', 'warning'] };
     list.innerHTML = `<ul class="mcp-calls">${r.calls.map((c, i) => {
       const state = STATE[c.state], open = S.openCall === i;
       return `<li><div class="line" data-kind="${c.state === 'error' ? 'fail' : 'tool'}">${icon('plug')}<span class="line-text"><b>${esc(toolLabel(c.server, c.tool))}</b>${state ? ' ' + tag(state[0], state[1]) : ''}` +

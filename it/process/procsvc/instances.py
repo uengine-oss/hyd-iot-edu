@@ -1800,7 +1800,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self.repo.update_instance(inst)
         self.repo.record_events([{"job_id": "INCIDENT_ENDED_BEFORE_ACTION", "todo_id": adv.reached[0]["id"], "proc_inst_id": inst["proc_inst_id"],
                                   "crew_type": "result", "event_type": "task_working",
-                                  "data": {"name": "조치 전 사건 종료 → 에스컬레이션 검토", "incident_state": inc_state, "cleared": bool(cleared),
+                                  "data": {"name": "조치 전 사건 종료 → 책임자 확인", "incident_state": inc_state, "cleared": bool(cleared),
                                            "cancelled": [w["activity_id"] for w in adv.updated]}}])
         v = engine.variables(inst)
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "INCIDENT_ENDED_BEFORE_ACTION",
@@ -1812,7 +1812,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     # 조치 전에 끝난 사건을 닫는 기술 끝(engine.TECHNICAL_ENDS — 이름은 결과 보고의 outcome).
     BEFORE_ACTION_END_EVENT = engine.BEFORE_ACTION_END_EVENT
     BEFORE_ACTION_OUTCOME = {"RESOLVED_WITHOUT_ACTION": "조치 전 해소", "REJECTED_BY_OPERATOR": "조치 전 반려",
-                             "ESCALATED": "조치 전 에스컬레이션", "CLOSED": "조치 전 종결"}
+                             "ESCALATED": "조치 전 책임자 확인", "CLOSED": "조치 전 종결"}   # 화면 말(UIUX_PLAN — 「에스컬레이션」 대신 「책임자 확인」)
 
     def _end_before_action(self, defn, inst, rows, inc_state, cleared, now):
         """P3 (audit2 2026-10-23): 승인 단계가 있는데 에스컬레이션 단계가 없는 흐름에서 사건이 조치 전에 끝나면(예: 승인 전에 경보 CLEAR →
@@ -2027,6 +2027,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         items = [dict(w, reached_at=engine.reached_at(defn, w, arrivals)) for w in items]
         return {"instance": dict(inst, end_label=self._end_label(inst) if inst.get('end_event') or inst.get('status') == 'CANCELLED' else None),
                 "definition": defn.raw, "workitems": items, "events": events,
+                # 가상 설비(실습장)의 처리 건인가(engine.plant_case 한 곳) — 화면은 실습장 처리 건에만 실습장의 칸 이름 · 단위 사전을 먼저 쓰고,
+                # 학생 현장 처리 건에는 그 흐름이 붙인 칸 이름을 먼저 쓴다(2026-11-25 감사: 학생 흐름의 load(kN)가 「펌프 부하 %」로 보였다)
+                "plant_case": engine.plant_case(inst),
                 # 같은 시각에 끝난 단계(한 전이 사슬)의 앞뒤 — 화면은 (시각, flow_order[단계]) 로 줄을 세운다(W1-01)
                 "flow_order": engine.flow_order(defn),
                 "events_page": {"limit": EVENTS_WINDOW, "has_more": more, "before": events[0]["id"] if more and events else None},

@@ -192,7 +192,7 @@ hyd:Incident a owl:Class ;
   hyd:standard "사건 기록"@ko .
 hyd:DecisionCase a owl:Class ;
   rdfs:label "DecisionCase" ;
-  rdfs:comment "사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 한 교육용 고정이며, 수업 그래프에는 미리 넣은 사례가 없어 선례 몫은 0이다."@ko ;
+  rdfs:comment "사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 하려는 것이며, 예시 사례를 넣지 않은 그래프에서는 선례 몫이 0이다."@ko ;
   hyd:layer "운영 기록"@ko ;
   hyd:standard "DMN 판단의 실행 인스턴스"@ko .
 hyd:IngestionControl a owl:Class ;
@@ -1191,7 +1191,7 @@ hyd:seeded a owl:DatatypeProperty ;
   rdfs:label "seeded" ;
   rdfs:domain hyd:DecisionCase ;
   rdfs:range xsd:boolean ;
-  rdfs:comment "미리 넣은 예시 사례면 true. 선례 조회(t3_precedents)는 이것만 센다(교육용 고정). 승인으로 투영된 사례(case_projection)에는 없다"@ko .
+  rdfs:comment "미리 넣은 예시 사례면 true. 선례 조회(t3_precedents)는 이것만 센다(승인할 때마다 순위가 바뀌지 않게). 승인으로 투영된 사례(case_projection)에는 없다"@ko .
 hyd:sequence a owl:DatatypeProperty ;
   rdfs:label "sequence" ;
   rdfs:domain hyd:IngestionControl ;

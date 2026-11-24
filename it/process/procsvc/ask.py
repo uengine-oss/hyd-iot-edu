@@ -25,6 +25,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from hydcommon.handover_tools import BASE_SERVERS
 from hydcommon.timeutil import parse_iso
 from pydantic import BaseModel
 
@@ -236,12 +237,18 @@ def _envelope(out):
 
 
 def _failed(output, is_error, tool=None) -> str | None:
+    """도구 호출이 실패했는가 — 까닭 문장, 성공이면 None. 실패 표시는 MCP 의 오류 표시(isError) 하나다. 결과 봉투(error 칸 · result 가 'ok' 가
+    아닌 글)로 실패를 알리는 것은 이 시스템의 기준 서버(BASE_SERVERS)의 약속이라 그 서버에만 댄다 — 학생 도구 서버의 결과 안 error 칸(설비 오류
+    코드 「E-104」) · result 칸(검사 「NG」)은 조회한 데이터다. 전에는 모든 서버에 대어 학생 도구의 맞는 조회를 「조회 실패」로 세고, 성공한 조회가
+    없다며 답을 숨겼다(2026-11-25 감사)."""
     if is_error:
         return '도구가 오류를 돌려줬습니다'
     env = _envelope(output)
     if isinstance(env, dict):
         if env.get('isError') is True or env.get('is_error') is True:
             return '도구가 오류를 돌려줬습니다'
+        if short_tool(str(tool or '')).split('/')[0] not in BASE_SERVERS:
+            return None
         if env.get('error'):
             return f"도구 오류: {str(env['error'])[:200]}"
         # mcp-neo4j-cypher returns JSON rows as TextContent, which the CLI
@@ -580,7 +587,9 @@ def _view(rt, proc_inst_id, now=None) -> dict:
     user = next(iter(rt.repo.list_users([performer], rt.tenant_id)), None) if performer else None
     calls = tool_calls(events, rt.repo.get_event_payload)
     out = {'id': inst['proc_inst_id'], 'question': values.get('question'), 'asked_by': values.get('asked_by'),
-           'agent': {'id': performer, 'name': (user or {}).get('username') or performer},
+           # 지운 에이전트는 이름 자리에 id 를 넣지 않는다 — 「agent:u-5b16bf3f」가 이름처럼 보였다(2026-11-25 화면 탐사). 이름이 없다는 사실을 싣는다
+           'agent': {'id': performer, 'name': (user or {}).get('username') or ('지운 에이전트' if performer else 'AI 에이전트'),
+                     **({'removed': True} if performer and not user else {})},
            'started': inst.get('start_date'), 'ended': inst.get('end_date'), 'state': state, 'message': message,
            'workitem': (wi or {}).get('id'), 'tool_calls': [{k:v for k,v in c.items() if not k.startswith('_')} for c in calls],
            'counts': {'calls': len(calls), 'data': sum(1 for c in calls if c['data']), 'ok': sum(1 for c in calls if c['data'] and c['ok']),

@@ -91,7 +91,7 @@
   <!-- ───────── 지식 지도 ───────── -->
   <section class="view" id="view-ontology" data-kit>
     <!-- 큰 캔버스(Cytoscape — enterprise.js). 오른쪽 판(340px)은 항목이나 묶음을 골랐을 때만 열린다(.kg[data-side]). 찾기 · 이상 패턴 경로 · 확대 도구 · 묶음 켜고 끄기는 캔버스 안에 있다(디자인기준 6-3). 모양은 knowledge.css -->
-    <div data-page-head="ontology" data-sub="AI가 판단할 때 읽는 지식 그래프입니다. 항목을 누르면 이어진 것이 보입니다." data-head-more="reload:ontoReload"><select class="select" id="ontoAsset" aria-label="설비"></select><select class="select" id="ontoNs" aria-label="지식 묶음" hidden><option value="">기본 지식</option></select></div>
+    <div data-page-head="ontology" data-sub="AI가 판단할 때 읽는 지식 그래프입니다. 고른 설비와, 어느 설비에도 딸리지 않은 지식(문서로 넣은 것 포함)이 함께 보이고 사건은 고른 설비의 것만 보입니다. 항목을 누르면 이어진 것이 보입니다." data-head-more="reload:ontoReload"><select class="select" id="ontoAsset" aria-label="설비"></select><select class="select" id="ontoNs" aria-label="지식 묶음" hidden><option value="">기본 지식</option></select></div>
     <p class="muted" data-tone="danger" id="ontoNote" role="alert" hidden></p>
     <div class="kg">
       <div class="canvas kg-canvas">

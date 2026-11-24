@@ -59,7 +59,7 @@
     const filenameCounts = new Map();
     docs.forEach(u => filenameCounts.set(u.filename, (filenameCounts.get(u.filename) || 0) + 1));
     docs.forEach(u => {
-      const disambiguation = filenameCounts.get(u.filename) > 1 ? ` · ${u.t ? UI.dateTime(u.t) : '등록 시각 미상'}${u.by ? ' · ' + u.by : ''}` : '';
+      const disambiguation = filenameCounts.get(u.filename) > 1 ? ` · ${u.t ? UI.dateTime(u.t) : '등록 시각 미상'}${u.by ? ' · ' + window.hydWords.who(u.by) : ''}` : '';
       select.add(new Option(`${u.filename || '파일 이름 없는 문서'}${disambiguation} · 문서 개정`, u.document_id));
     });
     if (selected && !docs.has(selected)) {
@@ -444,7 +444,7 @@
       const u = H.uploads.find(x => x.batch === s.arg);
       if (!u) { closeSheet(); return; }
       d.setAttribute('aria-label', u.filename);
-      d.innerHTML = sheetShell(u.filename, `${docFacts(u)} · ${UI.dateTime(u.t)}${u.by ? ' · ' + u.by : ''}`, `<div data-golden="${esc(u.batch)}">${goldenSection(u.batch)}</div>`);
+      d.innerHTML = sheetShell(u.filename, `${docFacts(u)} · ${UI.dateTime(u.t)}${u.by ? ' · ' + window.hydWords.who(u.by) : ''}`, `<div data-golden="${esc(u.batch)}">${goldenSection(u.batch)}</div>`);
       wireGolden(d); hydCourseAccess.apply(d);
       fetchGolden(u.batch).then(() => renderGolden(u.batch));
       return;
@@ -453,7 +453,7 @@
       d.setAttribute('aria-label', UI.t('kn.history'));
       const version = u => u.status === 'ROLLED_BACK' ? UI.t('kn.rolledBack') : u.current ? UI.t('kn.current') : UI.t('kn.previous');
       d.innerHTML = sheetShell(UI.t('kn.history'), '되돌리기는 최신 판본부터 진행합니다. 보관한 원문은 지우지 않습니다.', table('<th>문서</th><th>넣은 내용</th><th>담당자</th><th>등록 시각</th><th>판본</th><th></th>',
-        H.uploads.map(u => `<tr><td><a href="${originalUrl(u.source_id)}" title="보관한 원본 내려받기">${esc(u.filename)}</a></td><td>${esc(docFacts(u))}</td><td>${esc(u.by)}${u.review_scope === 'automatic' ? ' <span class="muted">(한 번에 적재 — 자동 검증만)</span>' : ''}</td><td>${esc(UI.dateTime(u.t))}</td><td>${esc(version(u))}</td>` +
+        H.uploads.map(u => `<tr><td><a href="${originalUrl(u.source_id)}" title="보관한 원본 내려받기">${esc(u.filename)}</a></td><td>${esc(docFacts(u))}</td><td>${esc(u.by ? window.hydWords.who(u.by) : '')}${u.review_scope === 'automatic' ? ' <span class="muted">(한 번에 적재 — 자동 검증만)</span>' : ''}</td><td>${esc(UI.dateTime(u.t))}</td><td>${esc(version(u))}</td>` +
           `<td class="doc-acts">${u.current && u.status === 'ACTIVE' ? `<button type="button" class="btn" data-variant="destructive" data-size="sm" data-manual-undo="${esc(u.batch)}">${esc(UI.t('kn.undo'))}</button>` : ''}</td></tr>`).join('')));
       return;
     }

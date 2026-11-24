@@ -67,7 +67,7 @@ def recent_tool_events(repo, limit: int = SCAN_LIMIT) -> list[dict]:
     """최근 도구 이벤트(새것 먼저) + 그 단계 이름 · 처리 건 이름 — 한 번의 SQL."""
     with repo._conn() as c:
         rows = c.execute("""select e.id, e.todo_id, e.proc_inst_id, e.event_type::text as event_type, e.data, e.timestamp,
-                                   t.activity_id, t.activity_name, i.proc_inst_name
+                                   t.activity_id, t.activity_name, t.status::text as step_status, i.proc_inst_name
                               from events e
                               left join todolist t on t.id::text = e.todo_id
                               left join bpm_proc_inst i on i.proc_inst_id = e.proc_inst_id
@@ -96,22 +96,27 @@ def calls(rows: list[dict], *, server: str | None = None, tool: str | None = Non
             g = groups[key] = {"server": srv, "tool": name, "raw_tool": data.get("tool"), "proc_inst_id": e.get("proc_inst_id"),
                                "instance_name": e.get("proc_inst_name"), "todo_id": e.get("todo_id"), "activity_id": e.get("activity_id"),
                                "task_name": e.get("activity_name"), "started_at": None, "finished_at": None, "input": None, "output": None,
-                               "is_error": None}
+                               "is_error": None, "step_status": e.get("step_status")}
             order.append(key)
         if e.get("event_type") == "tool_usage_started":
             g["started_at"], g["input"] = e.get("timestamp"), data.get("input")
         else:
             g["finished_at"], g["output"], g["is_error"] = e.get("timestamp"), data.get("output"), bool(data.get("is_error"))
+    from .ask import _failed        # 도구 호출의 실패 판정은 한 곳(질문하기의 근거 판정과 같다 — 기준 서버의 결과 봉투 · MCP isError)
     out = []
     for key in order[:limit]:
         g = groups[key]
         at = g["started_at"] or g["finished_at"]
+        if g["finished_at"]:
+            state = "error" if g["is_error"] or _failed(g["output"], False, g["raw_tool"]) else "done"
+        else:   # 끝 기록이 없다 — 그 단계가 아직 돌면 진행 중, 이미 끝났으면(끊김 · 취소) 「끝 기록 없음」(영영 진행 중으로 남지 않게)
+            state = "running" if g["step_status"] in (None, "TODO", "IN_PROGRESS", "SUBMITTED", "PENDING") else "unfinished"
         out.append({
             "server": g["server"], "tool": g["tool"], "raw_tool": g["raw_tool"],
             "proc_inst_id": g["proc_inst_id"], "instance_name": g["instance_name"], "todo_id": g["todo_id"],
             "activity_id": g["activity_id"], "task_name": g["task_name"],
             "at": _iso(at),
-            "state": "error" if g["is_error"] else ("done" if g["finished_at"] else "running"),
+            "state": state,
             "duration_ms": _ms(g["started_at"], g["finished_at"]) if g["started_at"] and g["finished_at"] else None,
             "input_summary": brief(_masked(g["input"]), SUMMARY_CHARS), "output_summary": brief(_masked(g["output"]), SUMMARY_CHARS),
             "input": brief(_masked(g["input"]), DETAIL_CHARS), "output": brief(_masked(g["output"]), DETAIL_CHARS),

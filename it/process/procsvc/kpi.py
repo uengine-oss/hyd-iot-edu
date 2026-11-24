@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
+from hydcommon.timeutil import korea_text
+
 PERIODS = {'1h': ('최근 1시간', 1), '24h': ('최근 24시간', 24), '7d': ('최근 7일', 168), '30d': ('최근 30일', 720),
            'all': ('전체 기록', None)}
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
@@ -247,7 +249,7 @@ def calc_safety_margin(f: Fetch, w: Window, ctx: dict) -> Calc:
         return Calc(None, rows=rows, status='no_data', reason=f"기간 안 {lim['name']} 센서의 1분 기록이 없습니다")
     per = {r['asset']: round(float(lim['limit']) - float(r['peak']), 2) for r in rows_ if r['peak'] is not None}
     events = [{'asset': r['asset'], 'at': _utc(r['at']), 'end': _utc(r['at']) + timedelta(minutes=1), 'alert_id': None, 'weight': float(r['peak']),
-               'label': f"{r['asset']} 최고 {lim['tag']} {float(r['peak']):.1f} {lim['unit'] or ''} ({_utc(r['at']):%m-%d %H:%M})"}
+               'label': f"{r['asset']} 최고 {lim['tag']} {float(r['peak']):.1f} {lim['unit'] or ''} ({korea_text(r['at'])})"}
               for r in rows_ if r['peak'] is not None]
     if not per:
         return Calc(None, rows=rows, status='no_data', reason=f"기간 안 {lim['name']} 최고값이 모두 비어 있습니다")

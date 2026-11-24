@@ -370,13 +370,26 @@ def _words(name: str) -> list[str]:
     return [w for w in re.split(r"[^A-Za-z0-9]+", snake.lower()) if w]
 
 
+#: 읽기 동사 — 도구 이름이 이것으로 시작하면 뒤 낱말은 「무엇을 읽나」다(get_run_status · read_stop_history · list_command_log). 전에는 뒤 낱말
+#: (run · stop · command)을 쓰기로 읽어 서버가 읽기 전용으로 표시한 공장 조회 도구를 막았다(2026-11-25 감사)
+_READ_VERBS = ("get", "read", "list", "search", "find", "fetch", "query", "describe", "show", "view", "lookup", "count")
+
+
+def _write_word(name: str) -> str | None:
+    """이름이 쓰기 · 실행을 뜻하는 낱말 — 읽기 동사로 시작하는 이름은 없음(None)."""
+    words = _words(name)
+    if words and words[0] in _READ_VERBS:
+        return None
+    return next((w for w in words if w in _WRITE_WORDS), None)
+
+
 def read_only_verdict(tool: dict) -> tuple[bool, str | None]:
     """(시험 호출 허용?, 거부 사유). 서버의 readOnlyHint=true 와 '쓰기가 아닌 이름'이 둘 다 맞아야 허용한다.
     거부 사유는 도구 연결 화면에 그대로 보이는 학생 문장이다 — 표시 이름(readOnlyHint · destructiveHint)은 쓰지 않는다(한바퀴3). 예외는 표시가
     없는 도구 하나: 고칠 사람(서버를 쓰는 학생 · 강사)이 서버 코드에 적을 표시 이름 그대로가 할 일이라 이름을 둔다."""
     name = str(tool.get("name") or "")
     notes = tool.get("annotations") or {}
-    hit = next((w for w in _words(name) if w in _WRITE_WORDS), None)
+    hit = _write_word(name)
     if notes.get("destructiveHint") is True and notes.get("readOnlyHint") is not True:
         return False, "서버가 이 도구를 되돌릴 수 없는 쓰기 도구로 표시했습니다 — 포털에서는 읽기 전용 도구만 써 볼 수 있습니다"
     if notes.get("readOnlyHint") is False:
@@ -397,7 +410,7 @@ def confirmable(tool: dict) -> bool:
     notes = tool.get("annotations") or {}
     if notes.get("readOnlyHint") is True or notes.get("readOnlyHint") is False or notes.get("destructiveHint") is True:
         return False
-    return not any(w in _WRITE_WORDS for w in _words(str(tool.get("name") or "")))
+    return _write_word(str(tool.get("name") or "")) is None
 
 
 # ---------------------------------------------------------------- 도구 결과 정리

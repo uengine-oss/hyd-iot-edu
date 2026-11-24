@@ -231,7 +231,7 @@ const UI = {
   // 서버가 준 글(흐름 정의의 역할 설명 · 에이전트의 역할 · 목표)에 남은 「PLC 명령 발행」 · 「작업지시」도 정본 말(UIUX_PLAN 4절 — 설비에 명령 · 정비 요청)로 — 화면마다 따로 바꾸지 않는다.
   // 「타이머」는 여기서 바꾸지 않는다: 「경계 타이머」처럼 그대로 쓰는 말이 있어 문장을 가리지 않고 바꾸면 틀린 말이 된다(에이전트 화면의 역할 설명에서만 agents.js 가 바꾼다)
   // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 진행 상황 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
-  words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
+  words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인').replace(/에스컬레이션 검토/g, '책임자 확인').replace(/에스컬레이션/g, '책임자 확인')
     .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/PLC 명령\s*발행(\s*\(Incident 경로\))?/g, '설비에 명령').replace(/(정비\s*)?작업지시/g, '정비 요청').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
@@ -295,6 +295,14 @@ const UI = {
   clean(text) {
     if (text == null) return '';
     return this.words(this.mask(text));
+  },
+  // AI 에이전트 · 도구가 낸 글(질문하기의 답 · 처리 건의 「AI 에이전트가 남긴 말」 · 실시간 기록): 비밀값 · 경로만 가리고, 아는 id 는 이름으로,
+  // 표에 있는 경보 패턴 코드는 이름으로 읽는다. 낱말은 바꾸지 않고(words 의 「작업지시 → 정비 요청」 등은 이 시스템이 낸 글에만 — 학생 MES 의
+  // 「작업지시」를 「정비 요청」으로 바꿔 뜻이 달라졌다, 2026-11-25 감사), 이름 사전에 없는 id 도 자리표시 글로 가리지 않고 그대로 둔다
+  saidText(text) {
+    if (text == null) return '';
+    const W = window.hydWords;
+    return this.mask(text).replace(this.ID_RE, m => (W && W.knownName(m)) || m).replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code);
   },
   // 원문 칸(물은 원문 · 받은 원문)용: 이 PC 경로 · 모델 이름만 가리고 글은 그대로 — 코드 값을 이름으로 바꾸지 않는다(words 는 설명 문장용).
   // 한바퀴3: 「물은 원문」의 "pattern": "COOLER_DEGRADATION" 이 "쿨러 성능 저하"로 바뀌어 원문이 실제 호출과 달랐다

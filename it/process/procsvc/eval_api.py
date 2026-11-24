@@ -74,8 +74,8 @@ def http_decide(agent_url: str, timeout: float = 60.0):
             return je.normalize_decision(_post(agent_url + '/api/agent/decide', {'asset': item['asset'], 'pattern': item['pattern'], 'facts': item.get('facts') or {}}, timeout))
         except urllib.error.HTTPError as e:
             reason = getattr(e, 'reason_text', '')
-            if e.code in (404, 409):
-                return je.withheld(f'판단 보류 ({e.code}): {reason}')
+            if e.code in (404, 409):      # 화면에 보이는 문장 — HTTP 응답 코드는 싣지 않는다(학생이 읽을 말이 아니다, 2026-11-25 화면 탐사)
+                return je.withheld(f'판단 보류: {reason}' if e.code == 409 else f'판단 후보 없음: {reason}')
             if e.code == 503:
                 raise ConnectionError(f'에이전트가 판단할 수 없는 상태입니다: {reason}') from e
             return je.withheld(f'에이전트 오류 ({e.code}): {reason}', status='ERROR')

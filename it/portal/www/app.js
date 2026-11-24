@@ -252,7 +252,7 @@ function renderStack() {
     ['sim', [Lp('process'), [SYS.band.it[0] - 6, at.process.y], [SYS.band.it[0] - 6, SIM], [at['plant-sim'].x, SIM], Bp('plant-sim')], '결함 주입 · 현장 패널 · 정비 수행 — 가상 설비에 직접, 브로커와 명령 관문을 거치지 않음', [SYS.band.it[0] - 18, SIM + 22], 'end'],
   ];
   const COLOR = { data: 'var(--cv-blue)', cmd: 'var(--cv-amber)', ai: 'var(--cv-violet)', plain: 'var(--cv-edge)', sim: 'var(--cv-red)' };
-  const netsOf = zone => NETS.filter(n => n.zone === zone).map(n => n.id).join(' · ');
+  const netsOf = zone => NETS.filter(n => n.zone === zone).map(n => n.name).join(' · ');      // 화면에는 망 이름(영문 id 는 정보 카드의 말풍선)
   const node = c => {
     const [title, icon] = SYS.node[c.key], { x, y, w } = at[c.key], x0 = x - w / 2, y0n = y - NH / 2;
     return `<a class="sys-nd comp" data-key="${esc(c.key)}" data-zone="${esc(c.zone)}" data-st="${sysStatus(c)}"${SYS.ai.includes(c.key) ? ' data-ai' : ''} ${c.url ? `href="${esc(c.url)}" target="_blank" rel="noopener"` : 'tabindex="0"'} aria-label="${esc(title)} (${esc(c.key)}) — ${esc(c.layer)}">
@@ -307,7 +307,7 @@ function sysShow(key) {
   // 아무것도 고르지 않았을 때: 쓰는 법 한 줄(명령 길 밖의 조작은 그림의 빨간 길과 그림 아래 목록이 말한다)
   if (!c) { info.innerHTML = `<p class="sys-hint">${UI.icon('info')}부품에 올리면 하는 일과 상태가 보이고, 누르면 그 도구가 새 탭으로 열립니다. 점선 상자는 꺼 두어도 되는 선택 도구입니다.</p>`; return; }
   const [title, icon] = SYS.node[c.key], st = sysStatus(c);
-  const nets = c.nets.map(id => `<span title="${esc((NETS.find(n => n.id === id) || {}).what || '')}">${esc(id)}</span>`).join(', ');
+  const nets = c.nets.map(id => { const n = NETS.find(x => x.id === id) || {}; return `<span title="${esc(id + (n.what ? ' — ' + n.what : ''))}">${esc(n.name || id)}</span>`; }).join(', ');
   info.innerHTML = `<h3>${UI.icon(icon)}${esc(title)} <code class="mono">${esc(c.key)}</code><small>${c.product ? `${esc(c.product)} · ` : ''}Layer ${LAYERS.length - c.row} · ${esc(c.zone.toUpperCase())}</small></h3>` +
     `<span class="state"><i class="dot"${st === 'ok' ? ' data-tone="ok"' : st === 'down' ? ' data-tone="danger"' : ''}></i>${esc(sysNote || sysStatusText(c))}</span>` +
     (c.url ? `<a class="btn-cv open" href="${esc(c.url)}" target="_blank" rel="noopener" data-sys-open="${esc(c.key)}">열기${UI.icon('external-link')}</a>` : '') +      // 여는 화면이 없는 부품은 [열기]를 두지 않는다
@@ -353,7 +353,8 @@ async function openOptional(c) {
   sysNote = '켜져 있는지 확인 중'; sysShow(c.key);
   const up = await reachable(c.entryHealth || c.health || c.url);
   if (c.optional && c.health) healthState[c.health] = up ? 'up' : 'off';
-  sysNote = up ? '' : c.optional ? '꺼져 있음 — 켜면 열립니다' : '여는 화면이 꺼져 있음 — 켜면 열립니다';
+  // 선택 도구는 기본으로 꺼져 있다(compose profiles) — 「켜면 열립니다」만으로는 학생이 켜는 길을 찾았다(2026-11-25 화면 탐사). 수업에 쓰지 않는 도구라는 것을 말한다
+  sysNote = up ? '' : c.optional ? '선택 도구라 기본으로 꺼져 있습니다 — 켜 두었을 때만 열립니다' : '이 부품은 돌고 있고, 내용을 보는 화면(선택 도구)은 기본으로 꺼져 있습니다 — 켜 두었을 때만 열립니다';
   paintHealth(); sysShow(c.key);
   if (up) window.open(c.url, '_blank', 'noopener');
 }

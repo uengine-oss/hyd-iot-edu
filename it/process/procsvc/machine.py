@@ -16,7 +16,7 @@ import itertools
 import secrets
 import threading
 
-from hydcommon.timeutil import now_iso, plus_seconds, to_iso
+from hydcommon.timeutil import korea_text, now_iso, plus_seconds, to_iso
 from . import definition as d
 
 _cmd_seq = itertools.count(1)
@@ -373,7 +373,7 @@ def outside_words(change: dict) -> str:
     """바깥 변화 기록 → 사유 문장에 싣는 말(가상 설비의 what · 누가 · 언제)."""
     what = str(change.get("what") or change.get("kind") or "기록 없음")
     who = f" · {change['by']}" if change.get("by") else ""
-    return f"{what}{who}" + (f" · {change['at']}" if change.get("at") else "")
+    return f"{what}{who}" + (f" · {korea_text(change['at'])}" if change.get("at") else "")      # 화면과 같은 한국 시각(기계용 ISO 를 문장에 싣지 않는다)
 
 
 @_transition
@@ -561,8 +561,13 @@ def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bo
         return True
     if level == 'fail':
         inc.reason = d.RESULT_REPORT       # P1-31: 사유 칸을 비워 두지 않는다 — 문장은 결과 보고 틀이다(escalation_cause 는 None)
-    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level})
-    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED', f"결과 보고: {summary}"[:300])
+    # 정상 보고로 닫는데 원천 경보가 아직 해제되지 않았으면 그 사실을 기록과 이력에 싣는다 — 결과 보고는 흐름이 정한 판정이라 따르되, 경보가 켜진 채
+    # 「정상 종결」만 보이면 학생은 명령을 보내면 고쳐진다고 믿는다(2026-11-25 감사 — 학생 현장 흐름: 승인 → 도구 호출 → 결과 보고)
+    still = level == 'ok' and not inc.cleared
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED',
+           {'resultReport': summary, 'level': level, **({'alertStillActive': True} if still else {})})
+    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED',
+        f"결과 보고: {summary}"[:300] + (' — 원천 경보는 아직 해제되지 않았습니다' if still else ''))
     return True
 
 

@@ -143,11 +143,12 @@
 </svg>`;
   }
 
-  // 지식 수: 처음 한 번 읽고, 실패하면 사유를 두고 30초 뒤 다시 읽는다(시작 직후 Neo4j 가 늦게 떠도 새로 고침 없이 채워진다)
+  // 지식 수: 홈이 보일 때마다 읽고(매뉴얼을 넣거나 비운 뒤 돌아오면 그 수 — 전에는 처음 한 번만 읽어 낡은 수가 남았다, 2026-11-25 감사), 실패하면
+  // 사유를 두고 30초 뒤 다시 읽는다(시작 직후 Neo4j 가 늦게 떠도 새로 고침 없이 채워진다). 세는 범위는 지식 지도에서 HYD-01 을 고른 것과 같다
   let graphCount = null, graphError = '';
   async function loadCounts() {
     try { const g = await getJ(API.agent + '/api/ontology/graph?asset=HYD-01'); graphCount = { n: g.nodes.length, e: g.edges.length }; graphError = ''; }
-    catch (e) { graphCount = null; graphError = e.message; setTimeout(() => loadCounts().then(renderLive), 30000); }
+    catch (e) { graphCount = null; graphError = e.message; if (!loadCounts.retry) loadCounts.retry = setTimeout(() => { loadCounts.retry = null; loadCounts().then(renderLive); }, 30000); }
   }
 
   function renderLive() {
@@ -169,7 +170,7 @@
        「진행 중」 · 「처리 완료」 · 「내가 할 일」의 수는 카드를 누르면 가는 처리 건 화면의 그 묶음 수와 같다 — 같은 목록을 같은 함수(ui.js hydCases.groups)로 센다 */
     const c = state.cases, caseCard = (value, unit, note) => state.caseError ? failed(state.caseError, '처리 건 목록을 읽지 못했습니다.') : { value: c ? value(c) : '–', unit: c ? unit : '', note };
     const cards = [
-      { label: '1  지식 넣기', tab: 'knowledge', ...(graphCount ? { value: n(graphCount.n), unit: '개 지식 항목', note: `연결 ${n(graphCount.e)}개. 매뉴얼을 올리면 AI가 판단에 쓰는 지식이 늘어납니다.` }
+      { label: '1  지식 넣기', tab: 'knowledge', ...(graphCount ? { value: n(graphCount.n), unit: '개 지식 항목', note: `HYD-01의 지식 지도 기준 · 연결 ${n(graphCount.e)}개. 매뉴얼을 올리면 AI가 판단에 쓰는 지식이 늘어납니다.` }
         : graphError ? failed(graphError, '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.') : { value: '–', note: UI.t('loading') }) },
       { label: '2  고장 내기', tab: 'scenario', ...(alarms == null ? failed(state.plantError || '', `${UI.t('main.noConn')} — ${UI.t('plant.noConnSub')}`)
         : { value: String(alarms), unit: '기 유온 주의', tone: alarms ? 'warn' : '', note: '설비에 결함을 넣으면 경보가 나고 처리 건이 열립니다.' }) },
@@ -197,7 +198,7 @@
     });
     fitNodes(); document.fonts.ready.then(fitNodes);
     // 다른 화면 주소로 들어왔으면 홈이 가려진 채라 글자 폭을 잴 수 없다 — 홈이 보일 때 다시 맞춘다
-    window.hydTabs.onShow(name => { if (name === 'main') { fitNodes(); refreshSlow(); } });      // 홈으로 돌아오면 처리 건 수를 곧바로 다시 읽는다(다른 화면에 있는 동안에는 읽지 않는다)
+    window.hydTabs.onShow(name => { if (name === 'main') { fitNodes(); refreshSlow(); loadCounts().then(renderLive); } });      // 홈으로 돌아오면 처리 건 수를 곧바로 다시 읽는다(다른 화면에 있는 동안에는 읽지 않는다)
     document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({ preventScroll: true }); });
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);

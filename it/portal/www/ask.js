@@ -9,8 +9,8 @@
 (function () {
   const LIVE = new Set(['waiting', 'running', 'submitted', 'correcting', 'asking']);
   const STATE = { waiting: ['대기 중', ''], running: ['조회 중', 'run'], submitted: ['정리 중', 'run'], correcting: ['답 형식 확인 중', 'warn'],
-    asking: ['사람에게 질문', 'warn'], done: ['답변 완료', 'ok'], failed: ['실패', 'danger'], closed: ['종료', ''], broken: ['오류', 'danger'] };
-  const A = { el: null, status: null, statusErr: '', agents: [], agent: '', wanted: '', wantedMiss: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '',
+    asking: ['사람에게 질문', 'warn'], done: ['답변 완료', 'ok'], failed: ['실패', 'danger'], closed: ['사람이 닫음', ''], broken: ['오류', 'danger'] };
+  const A = { el: null, status: null, statusErr: '', agents: [], agent: '', wanted: '', wantedMiss: '', draft: '', sending: false, err: '', cur: null, history: null, timer: null, histErr: '',
     work: null, workHost: null, workFor: null, processOpen: false, evidenceOpen: false, retryNote: '', retryId: null };
   const api = path => API.process + '/api/ask' + path;
   const uuid = () => UI.uuid();   // 비보안 문맥(IP 주소로 연 포털)에서도 같은 공용 생성기
@@ -101,7 +101,7 @@
     catch (e) { A.err = '지우지 못했습니다: ' + e.message; }
     await loadHistory();
     // 서버는 처리 건이 끝난 질문만 지운다. 화면에는 「실패」인데 처리 건이 아직 끝나지 않은 질문은 남는다 — 지워진 것처럼 보이지 않게 그 사실을 말한다
-    const left = A.history.filter(h => !LIVE.has(h.state)).length;
+    const left = (A.history || []).filter(h => !LIVE.has(h.state)).length;
     A.keptNote = left ? `질문 ${left}건은 지워지지 않았습니다. 처리 건이 아직 끝나지 않은 질문입니다 — 그 질문을 열어 [처리 건에서 보기]로 확인하세요.` : '';
     render();
   }
@@ -140,14 +140,14 @@
       const check = c => c ? `<p class="muted">${esc(c.note)}${c.missing?.length ? `: ${esc(c.missing.join(', '))}` : ''}</p>` : '';
       const ev = (r.evidence || []).map(x => `<li>${icon(x.verified ? 'circle-check' : 'triangle-alert')}<div><p><b>${esc(UI.toolName(x.tool))}</b> — ${x.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음'}</p>
           ${x.result != null ? `<p class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</p>` : ''}
-          ${check(x.result_check)}${UI.raw(UI.clean(x.query), { title: '쿼리', lang: /\bMATCH\b/i.test(x.query || '') ? 'cypher' : /\bSELECT\b/i.test(x.query || '') ? 'sql' : '' })}${x.actual_result ? UI.raw(x.actual_result, { title: '실제 조회 결과' }) : '<p class="muted">실제 조회 결과 원문이 남아 있지 않습니다.</p>'}</div></li>`).join('');
-      return `<div class="prose ask-answer" data-md="${esc(UI.clean(r.answer))}"></div>${check(r.answer_check)}`
+          ${check(x.result_check)}${UI.raw(UI.mask(typeof x.query === 'string' ? x.query : JSON.stringify(x.query, null, 2)), { title: '쿼리', lang: /\bMATCH\b/i.test(x.query || '') ? 'cypher' : /\bSELECT\b/i.test(x.query || '') ? 'sql' : '' })}${x.actual_result ? UI.raw(x.actual_result, { title: '실제 조회 결과' }) : '<p class="muted">실제 조회 결과 원문이 남아 있지 않습니다.</p>'}</div></li>`).join('');
+      return `<div class="prose ask-answer" data-md="${esc(UI.saidText(r.answer))}"></div>${check(r.answer_check)}`
         + `<details class="fold ask-evidence" ${A.evidenceOpen ? 'open' : ''}><summary>근거<span class="muted">실행 기록과 맞은 근거 ${esc(r.verified)}건 · 성공한 조회 ${esc(r.queried)}건</span></summary><div class="fold-body">`
-        + (ev ? `<ul class="evid ask-evid">${ev}</ul>` : '<p class="muted">근거로 적은 쿼리가 없습니다.</p>') + (r.note ? `<p class="muted">고른 근거: ${esc(UI.clean(r.note))}</p>` : '') + '</div></details>';
+        + (ev ? `<ul class="evid ask-evid">${ev}</ul>` : '<p class="muted">근거로 적은 쿼리가 없습니다.</p>') + (r.note ? `<p class="muted">고른 근거: ${esc(UI.saidText(r.note))}</p>` : '') + '</div></details>';
     }
-    return alertBox('triangle-alert', '답할 수 없음', esc(UI.clean(r.reason || '이유가 기록되지 않았습니다')) +
+    return alertBox('triangle-alert', '답할 수 없음', esc(UI.saidText(r.reason || '이유가 기록되지 않았습니다')) +
       `<p class="muted">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p>`)
-      + (r.claimed ? UI.fold('에이전트가 낸 답<span class="muted">근거 확인 안 됨</span>', `<div class="prose" data-md="${esc(UI.clean(r.claimed))}"></div>`) : '');
+      + (r.claimed ? UI.fold('에이전트가 낸 답<span class="muted">근거 확인 안 됨</span>', `<div class="prose" data-md="${esc(UI.saidText(r.claimed))}"></div>`) : '');
   }
   // 에이전트가 하는 일의 실시간 상자(hydLive.agentWork) — 질문마다 하나. 도는 동안은 답 자리에 그대로 보이고, 끝나면 「처리 과정」 접기 안으로 들어간다
   function workOf(v) {
@@ -160,7 +160,8 @@
     }
     const live = LIVE.has(v.state), [label] = STATE[v.state] || [v.state], who = v.agent ? v.agent.name : 'AI 에이전트';
     A.work.set({ items: [{ id: v.workitem, instance: v.id, state: live ? 'run' : v.state === 'done' ? 'done' : 'fail' }], running: live, since: v.started,
-      headline: live ? `${who}${window.hydWords.josa(who, '이/가')} 일하는 중 — ${label}` : `${who}의 처리 과정`, note: '' });
+      headline: live ? `${who}${window.hydWords.josa(who, '이/가')} 일하는 중 — ${label}` : `${who}의 처리 과정 — ${label}`, note: '',
+      tone: v.state === 'done' ? 'ok' : ['failed', 'broken'].includes(v.state) ? 'danger' : 'neutral' });
     return A.workHost;
   }
   /* 지금 하는 일 한 줄(디자인기준 7절 ① — 본: lite 입력창 위의 알약): 답을 쓰는 동안 입력창 위에 「단계 — 부르는 도구 · 걸린 시간」이 흐른다.
@@ -217,6 +218,7 @@
   }
   function historyHtml() {
     if (A.histErr) return `<div class="pane-list-note">${UI.errorBlock('지난 질문을 읽지 못했습니다', A.histErr, { retry: true })}</div>`;
+    if (A.history == null) return `<div class="pane-list-note"><p class="muted">${esc(UI.t('loading'))}</p></div>`;      // 읽기 전에는 「없음」이라 하지 않는다
     if (!A.history.length) return `<div class="pane-list-note">${UI.empty('아직 지난 질문이 없습니다', '질문을 보내면 여기에 쌓이고, 누르면 그 답을 다시 봅니다.')}</div>`;
     const kind = h => h.verdict === 'answered' ? tag('답함', 'ok') : h.verdict === 'unanswerable' ? tag('답할 수 없음', 'warn') : tag((STATE[h.state] || [h.state])[0], (STATE[h.state] || [0, ''])[1]);
     return A.history.map(h => `<button type="button" class="row" data-ask-open="${esc(h.id)}"${A.cur && A.cur.id === h.id ? ' aria-current="true"' : ''}><span class="row-ic">${icon('message-square')}</span><span class="row-title">${esc(h.question)}</span>${kind(h)}
@@ -302,8 +304,8 @@
     const hist = q('[data-ask-history]');
     const hSig = JSON.stringify([A.history, A.histErr, A.cur && A.cur.id]);
     if (hist._sig !== hSig) { hist._sig = hSig; hist.innerHTML = historyHtml(); }
-    q('#askReset').hidden = !A.history.length;
-    q('[data-ask-kept]').innerHTML = A.keptNote && A.history.length ? alertBox('info', '지워지지 않은 질문이 있습니다', esc(A.keptNote)) : '';
+    q('#askReset').hidden = !(A.history || []).length;
+    q('[data-ask-kept]').innerHTML = A.keptNote && (A.history || []).length ? alertBox('info', '지워지지 않은 질문이 있습니다', esc(A.keptNote)) : '';
   }
 
   // 셸이 처음 열 때 mount, 다시 열 때 show. prefer(에이전트 id): 다른 화면(에이전트의 「질문하기에서 시험 →」)이 이 화면을 그 에이전트를 고른 채 열 때 부른다

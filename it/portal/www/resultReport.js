@@ -45,7 +45,8 @@
     if (read?.state === 'loading') return '사건 상태를 읽는 중입니다';
     if (read?.state === 'error') return '사건 상태를 읽지 못했습니다';
     const now = incident?.state ? (UI.status ? UI.status(incident.state) : incident.state) : null;
-    if (report?.incident_closed === true) return '이 보고가 사건을 닫았습니다' + (now ? ` (지금 사건: ${now})` : '');
+    // 정상 보고로 닫았어도 원천 경보가 아직 해제되지 않았으면 그 사실을 함께 말한다(machine.on_result_report — 「종결」만 보이면 고쳐졌다고 믿는다)
+    if (report?.incident_closed === true) return '이 보고가 사건을 닫았습니다' + (now ? ` (지금 사건: ${now})` : '') + (incident?.cleared === false ? ' — 원천 경보는 아직 해제되지 않았습니다' : '');
     if (report?.incident_closed === false) return now ? `사건은 이 보고가 닫지 않았습니다 — 지금 사건: ${now}${incident.state === 'CLOSED' ? '(앞 단계에서 이미 닫힘)' : ''}` : '사건은 이 보고가 닫지 않았습니다';
     return '이 보고에는 사건을 닫았는지 기록이 없습니다' + (now ? ` (지금 사건: ${now})` : '');
   }

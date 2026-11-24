@@ -252,7 +252,16 @@
     const state = stateTag(item);
     const version = item.deployed ? `운영 판본 ${item.deployed}` : item.versions.length ? `판본 ${item.versions[item.versions.length - 1]}` : '등록한 판본 없음';
     const by = usedBy(item);
-    const start = by ? by.sub : S.viewError ? '' : st ? (st.alert_entry ? `경보(${(st.alert_patterns || []).map(x => UI.patternName(x)).join(' · ') || '시작 조건의 경보'})가 나면 처리 건이 열립니다` : '사람이 직접 시작합니다')
+    // 경보로 시작하는 흐름: 시작 조건에 적은 경보 가운데 지금 이 흐름이 실제로 여는 것(경보별 운영 흐름 표 — 서버의 실제 배정)만 「처리 건이 열립니다」로
+    // 말하고, 다른 흐름이 가져간 경보는 그렇다고 밝힌다(2026-11-25 화면 탐사: 「설비 이상 조치」 머리가 냉각 긴급 대응이 여는 쿨러 성능 저하까지 말했다)
+    const routes = window.hydDefinitionDeploy.routes && window.hydDefinitionDeploy.routes();
+    const declared = st ? st.alert_patterns || [] : [];
+    const opens = routes ? declared.filter(p => routes.some(x => x.pattern === p && x.definition === item.id)) : declared;
+    const elsewhere = routes ? declared.filter(p => !opens.includes(p)) : [];
+    const names = ps => ps.map(x => UI.patternName(x)).join(' · ');
+    const alertStart = () => (opens.length ? `경보(${names(opens)})가 나면 처리 건이 열립니다` : declared.length ? '시작 조건의 경보를 지금은 다른 흐름이 엽니다' : '시작 조건의 경보가 나면 처리 건이 열립니다')
+      + (opens.length && elsewhere.length ? ` · ${names(elsewhere)}는 다른 흐름이 엽니다` : '');
+    const start = by ? by.sub : S.viewError ? '' : st ? (st.alert_entry ? alertStart() : '사람이 직접 시작합니다')
       : item.draft && !S.view ? '단계 설정을 읽는 중입니다' : '';
     const sub = [item.mine ? '내가 가져온 것' : '기본 제공', version, item.mine && S.view && S.view.file_name ? S.view.file_name : '', start].filter(Boolean).join(' · ');
     const main = primaryOf(item), last = item.files[item.files.length - 1];

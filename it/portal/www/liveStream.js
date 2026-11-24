@@ -34,7 +34,7 @@
   const fmtMs = ms => window.hydTrace ? hydTrace.fmtMs(ms) : `${Math.round(ms)} ms`;
   function brief(v, n = 120) {
     if (v == null) return '';
-    if (typeof v === 'string') return UI.clean(v.replace(/\s+/g, ' ')).slice(0, n);
+    if (typeof v === 'string') return UI.saidText(v.replace(/\s+/g, ' ')).slice(0, n);       // AI · 도구 원문 — 낱말을 바꾸지 않는다(UI.saidText)
     if (Array.isArray(v)) return `${v.length}건`;
     if (typeof v === 'object') {
       for (const k of ['query', 'sql', 'command', 'description', 'file_path', 'path']) if (typeof v[k] === 'string') return brief(v[k], n);
@@ -376,7 +376,7 @@
   const tabNow = () => (typeof state === 'object' && state ? state.tab : '');
   function agentWork(host, o = {}) {
     const pollMs = o.pollMs || 5000;
-    const W = { host, items: [], running: false, since: null, headline: '', note: '', segs: new Map(), awake: false, poll: 0, changeTimer: 0, stopped: false };
+    const W = { host, items: [], running: false, since: null, headline: '', note: '', tone: 'ok', segs: new Map(), awake: false, poll: 0, changeTimer: 0, stopped: false };
     host.classList.add('lv-work', 'stream');
     host.innerHTML = `<div class="stream-head lv-work-head"><span class="lv-now" data-lv-now></span><span class="lv-work-tools"><span class="live-conn" data-live-conn></span>` +
       `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-lv-refresh>${UI.icon('refresh-cw')}지금 확인</button></span></div><p class="lv-work-note" data-lv-note hidden></p><p class="stream-lost" data-lv-conn role="status" hidden></p><div class="lv-work-body" data-lv-body></div>`;
@@ -387,7 +387,8 @@
     function drawHead() {
       const c = hydStream.conn();
       q('[data-live-conn]').textContent = c.text; q('[data-live-conn]').className = 'live-conn ' + (c.ok ? 'on' : c.state);
-      const now = `<i class="dot"${W.running ? ' data-tone="run" data-live' : ' data-tone="ok"'}></i><b>${esc(W.headline)}</b>` + (W.since && W.running ? timeHtml(W.since) : '');
+      // 끝난 뒤의 점 색은 부른 쪽이 준 결과(tone — ok · danger · neutral)로 — 사람이 닫거나 실패한 일에 늘 초록 점이 붙었다(2026-11-25 화면 탐사)
+      const now = `<i class="dot"${W.running ? ' data-tone="run" data-live' : ` data-tone="${esc(W.tone || 'ok')}"`}></i><b>${esc(W.headline)}</b>` + (W.since && W.running ? timeHtml(W.since) : '');
       const nowBox = q('[data-lv-now]'); if (nowBox._html !== now) { nowBox.innerHTML = now; nowBox._html = now; }
       const note = q('[data-lv-note]'); note.hidden = !W.note; note.textContent = W.note || '';
       const lost = W.running && W.awake && (c.state === 'retry' || c.state === 'off');
@@ -475,7 +476,7 @@
     q('[data-lv-refresh]').addEventListener('click', () => { loadAll(); changed(); });
     W.set = next => {
       const before = W.items.map(it => it.id).join('|');
-      Object.assign(W, { items: next.items || [], running: !!next.running, since: next.since || W.since, headline: next.headline || '', note: next.note || '' });
+      Object.assign(W, { items: next.items || [], running: !!next.running, since: next.since || W.since, headline: next.headline || '', note: next.note || '', tone: next.tone || 'ok' });
       W.awake = awakeNow();
       drawSegs(); drawHead(); setPoll();
       if (W.items.map(it => it.id).join('|') !== before) loadAll(); else W.items.forEach(feed);

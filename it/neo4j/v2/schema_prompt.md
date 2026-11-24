@@ -9,7 +9,7 @@
 - INFLUENCES · AFFECTS의 sign은 +1(같은 방향) 또는 -1(반대 방향)이다. 관계가 없으면 관계를 만들지 않는다 (0을 쓰지 않는다). 조건부면 sign을 두고 condition에 조건을 적는다.
 - 금액은 만원 단위다.
 - extends가 있는 클래스의 노드는 부모 레이블도 함께 단다. 예: (:Task:FlowNode).
-- 표준의 모든 요소를 담지 않는다. 수업 시나리오(A 냉각 · B 정기 정비 · C 예비품 구매)와 그 실행 기록이 실제로 쓰는 요소만 둔다. workspace/개발/scripts/ontology_v2.py validate가 인스턴스가 쓰지 않는 스키마 요소를 보고한다.
+- 표준의 모든 요소를 담지 않는다. 기본 제공 흐름(A 냉각 · B 정기 정비 · C 예비품 구매)과 그 실행 기록이 실제로 쓰는 요소만 둔다. 인스턴스가 쓰지 않는 스키마 요소는 스키마 검사가 보고한다.
 - 임계값은 문장이 아니라 관계로 둔다: (규칙 또는 이상 패턴)-[:TESTS {operator, value, unit}]->(입력 데이터). 한 규칙의 TESTS는 모두 AND다 (DMN 결정표의 한 행). OR는 규칙을 두 행으로 나눈다. 사람이 읽는 조건(Rule.when · AnomalyPattern.rule)은 TESTS에서 만든다.
 - 모든 클래스는 label_ko(한글 이름)를 가진다. 표와 그림은 이 이름을 쓴다.
 - 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.
@@ -92,7 +92,7 @@
 실행 중에 쌓이는 기록: 사건과 사람의 판단 사례(업무 기록), 처리 건 · 작업 · 배포 판본의 투영(실행 기록), 적재 · 투영 · 편집의 영수증(내부 기록 — 지식 지도에는 보이지 않는다).
 
 - `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|APPROVED_EXECUTING|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, diagnosedCause, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
-- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|CLOSED_UNAPPROVED|EXECUTED|PARTIAL], source_incident_id, chosenSkill, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 한 교육용 고정이며, 수업 그래프에는 미리 넣은 사례가 없어 선례 몫은 0이다.
+- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|CLOSED_UNAPPROVED|EXECUTED|PARTIAL], source_incident_id, chosenSkill, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 하려는 것이며, 예시 사례를 넣지 않은 그래프에서는 선례 몫이 0이다.
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.
 - `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED|CANCELLED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings, rework_generation, projection_revision})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.

@@ -56,7 +56,10 @@
     changeover_h: ['전환 시간', '시간'], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', '시간'], penalty_per_h: ['지연 보상', '만원/시간'], failure_cost: ['고장 비용', '만원'],
     claim_cost: ['클레임 비용', '만원'], customer_tier: ['고객 등급', ''], order_id: ['생산 주문', ''], sales_order: ['판매 계약', ''],
   };
-  W.fieldName = (key, context) => { const k = String(key || ''); if(k==='package' && context?.package_semantics==='base_interval_configuration') return '등록된 기본 정비 내용'; const f = F[k] || F[k.toLowerCase()]; return f ? f[0] : UI.terms['var.' + k] || W.caseFields?.[k] || k.replace(/_/g, ' '); };   // 화면 사전이 이긴다 — 처리 건 정의의 칸 설명(caseFields)은 사전에 없는 칸(학생 흐름의 칸)에만
+  // 학생 현장 처리 건(가상 설비가 아닌 설비 — 서버 plant_case 가 false)에서는 그 흐름이 붙인 칸 이름(caseFields)이 실습장 사전을 이긴다 — 학생 흐름의
+  // load(kN)가 「펌프 부하 %」로, cycle 이 「정비 회차」로 보였다(2026-11-25 감사). 그 칸에는 실습장 단위도 붙이지 않는다(W.unit)
+  const own = k => (W.caseFieldsFirst && W.caseFields && W.caseFields[k]) || null;
+  W.fieldName = (key, context) => { const k = String(key || ''); if (own(k)) return own(k); if(k==='package' && context?.package_semantics==='base_interval_configuration') return '등록된 기본 정비 내용'; const f = F[k] || F[k.toLowerCase()]; return f ? f[0] : UI.terms['var.' + k] || W.caseFields?.[k] || k.replace(/_/g, ' '); };   // 실습장 처리 건은 화면 사전이 이긴다 — 처리 건 정의의 칸 설명(caseFields)은 사전에 없는 칸에만
   W.setpointsText = data => {
     const s = data?.setpoints;
     if (!s) return '';
@@ -200,7 +203,7 @@
       }).join('')+'</ul></div>' : '<p>설비별 정비 요청 기록 없음</p>')+
       UI.raw(receipt, { title: '정비 요청 등록 기록 원문' });
   };
-  W.unit = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return f ? f[1] : ''; };
+  W.unit = key => { const k = String(key || ''); if (own(k)) return ''; const f = F[k] || F[k.toLowerCase()]; return f ? f[1] : ''; };
   W.known = key => !!(F[key] || F[String(key || '').toLowerCase()]);
   const STATES = UI.states;   // 상태 이름은 ui.js 표 하나(UIUX_PLAN §5) — 여기 사본을 두지 않는다(W2-03: STOP 「정지」/「계획 정지」가 갈렸다)
   W.num = v => {
@@ -544,6 +547,8 @@
     assets: '설비', pm_status: '정기 정비 상태', maintenance_history: '정비 이력', part_quotes: '부품 견적', stock_movements: '재고 이동' };
   W.tableWords = t => String(t ?? '').replace(/\bent\.([a-z_]+)\b/g, (m, name) => TABLES[name] ? `${TABLES[name]} 표 ${m}` : m);
   W.text = t => UI.words(String(t ?? '').replace(UI.ID_RE, m => W.idName(m)));
+  // 이름이 있는 id 만 이름으로(없으면 null) — AI · 도구 원문(UI.saidText)은 사전에 없는 id 를 자리표시 글로 바꾸지 않는다
+  W.knownName = id => { const k = String(id ?? ''); return W.caseNames[k] || (UI.names && UI.names[k]) || (UI.performers && UI.performers[k]) || null; };
 
   /* ---------------------------------------------------------------- 조사: 앞말 끝소리로 고른다 ("발주를" · "씰 마모를" · "WO-1009-E85A를" · "김운전이")
      pair = '을/를' · '이/가' · '은/는' · '과/와' · '으로/로'. 끝 글자가 한글 · 숫자 · 영문이 아니면 "을(를)" 처럼 둘 다 쓴다 */
