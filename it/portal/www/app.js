@@ -21,9 +21,11 @@ async function requestJ(url, options = {}) {
     catch (_) { throw new Error(`서버 응답을 읽을 수 없습니다 (${r.status}). 다시 조회하세요.`); }
     if (!r.ok) {
       // 서버 프레임워크 기본 문구(영문)는 한국어 + 상태 번호로. 404 "Not Found" 는 그 주소가 없는 것 — 실행 중인 서비스가 이 화면보다 이전 판일 때 흔하다
-      // 알려진 영문 거절 사유(T_approve is DONE 등)는 한국어 한 줄로(UI.serverText) — 원문은 error.detail 에 남긴다
-      const detail = HTTP_DEFAULT_DETAIL[j.detail] ? `${HTTP_DEFAULT_DETAIL[j.detail]} (요청 실패 ${r.status})` : typeof j.detail === 'string' && typeof UI !== 'undefined' && UI.serverText ? UI.serverText(j.detail) : j.detail;
-      const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => typeof UI !== 'undefined' && UI.validationText ? UI.validationText(x) : x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? detail.reason : `요청 실패 (${r.status})`);
+      // 서버가 준 까닭은 글 한 줄이든(detail) 까닭 칸이 있는 묶음이든(detail.reason — 판단 보류 409 등) 같은 한 곳(UI.serverText)을 거쳐 화면 말이 된다
+      // (알려진 영문 거절 사유는 한국어로, 경보 패턴 코드는 이름으로) — 원문은 error.detail 에 남긴다
+      const said = text => typeof UI !== 'undefined' && UI.serverText ? UI.serverText(text) : text;
+      const detail = HTTP_DEFAULT_DETAIL[j.detail] ? `${HTTP_DEFAULT_DETAIL[j.detail]} (요청 실패 ${r.status})` : typeof j.detail === 'string' ? said(j.detail) : j.detail;
+      const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => typeof UI !== 'undefined' && UI.validationText ? UI.validationText(x) : x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? said(detail.reason) : `요청 실패 (${r.status})`);
       error.status = r.status; error.detail = j.detail; error.body = j;      // body: 서버가 까닭과 함께 실은 칸(409 의 instance · started_at 등)
       throw error;
     }

@@ -293,7 +293,9 @@ WITH DISTINCT p, r
 UNWIND r[9] AS kid MATCH (k:KnowledgeSource {id: kid}) MERGE (p)-[:DERIVED_FROM]->(k);
 
 // ============================================================== 5. 조치 · 규칙 계층 (DMN)
-// 원자 조치: [id, name, code, kind, param, min, max, target]. code는 cmd-gateway 허용 목록, param은 action.cmd의 값 키다.
+// 원자 조치: [id, name, code, kind, param, min, max, target]. command 의 code는 cmd-gateway 허용 목록(hydcommon.schemas ACTION_TO_WRITES)과,
+// param은 action.cmd의 값 키와 같다. 예외: PRESSURE_SET(압력 설정 상향)은 이 PLC에 압력 설정점이 없어 허용 목록에 없고 cmd-gateway가 거절한다 —
+// 지금 이 원자 조치를 쓰는 조치 방법 · 규칙은 없다.
 UNWIND [['action:set-fan','팬 속도 설정','FAN_SET','command','fan_pct',0,100,'actr:fan-drive'],
         ['action:set-load','펌프 부하 설정','LOAD_SET','command','load_pct',60,100,'actr:pump-drive'],
         ['action:select-pump','운전 펌프 전환','PUMP_SELECT','command','pump',null,null,'actr:pump-selector'],

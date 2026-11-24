@@ -62,3 +62,35 @@ def connect(*, asynchronous=False, **opts):
     from neo4j import AsyncGraphDatabase, GraphDatabase
     factory = AsyncGraphDatabase if asynchronous else GraphDatabase
     return factory.driver(uri, auth=auth, **{**DEFAULTS, **opts})
+
+
+def unreachable_reason(exc):
+    """지식 그래프에 닿지 못해 난 오류면 사람이 읽는 까닭 한 줄, 아니면 None. 닿지 못함 = 연결이 없거나 끊김(ServiceUnavailable ·
+    SessionExpired), 서버가 다시 해 보라는 일시 오류(TransientError), 부른 쪽이 준 질의 시간 한도를 넘김(…TransactionTimedOut…).
+    질의 문법 · 제약 · 인증 · 설정 오류는 코드나 설정의 결함이라 None — 「잠시 뒤 다시」로 가리지 않는다."""
+    from neo4j.exceptions import ClientError, ServiceUnavailable, SessionExpired, TransientError
+    detail = f'{type(exc).__name__}: {str(exc)[:200]}'
+    if isinstance(exc, (ServiceUnavailable, SessionExpired)):
+        return f'지식 그래프(Neo4j)에 연결하지 못해 이 요청을 처리하지 못했습니다 — 잠시 뒤 다시 시도하세요 ({detail})'
+    if isinstance(exc, TransientError) or (isinstance(exc, ClientError) and 'TransactionTimedOut' in (exc.code or '')):
+        return f'지식 그래프(Neo4j)가 제때 답하지 않아 이 요청을 처리하지 못했습니다 — 잠시 뒤 다시 시도하세요 ({detail})'
+    return None
+
+
+def answer_unreachable(app) -> None:
+    """FastAPI 앱이 지식 그래프에 닿지 못한 오류(unreachable_reason)를 raw 500 대신 503 + {"detail": 까닭} 으로 답하게 한다 — 경로마다가
+    아니라 앱 한 곳(업무 DB 의 hydcommon.pg.answer_unreachable 과 같은 꼴). 경로가 스스로 잡아 다룬 오류는 여기로 오지 않는다.
+    그 밖의 Neo4j 오류는 다시 던져 500 과 그 기록으로 남긴다."""
+    import logging
+    from fastapi.responses import JSONResponse
+    from neo4j.exceptions import Neo4jError, DriverError
+    log = logging.getLogger(__name__)
+
+    async def unreachable(request, exc):
+        reason = unreachable_reason(exc)
+        if reason is None:
+            raise exc
+        log.warning('%s %s: knowledge graph unreachable — answering 503: %s', request.method, request.url.path, reason)
+        return JSONResponse(status_code=503, content={'detail': reason})
+    app.add_exception_handler(Neo4jError, unreachable)
+    app.add_exception_handler(DriverError, unreachable)

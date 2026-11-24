@@ -873,25 +873,28 @@ async function loadDecisionView() {
   if (!box.innerHTML) box.innerHTML = decEmpty();
   // 설비 목록은 서버가 준다(plant /api/state 의 units — 유압 설비 화면이 읽는 그 응답). 화면에 설비 이름을 적어 두지 않는다
   const assetSel = $('#decAsset');
+  // 들어올 때 이미 둘 다 채워져 있었으면 읽을 것이 없다 — 단추만 다시 정한다. 설비 목록을 [다시 시도]로 이번에 채웠으면 아래로 가서 앞의 오류 판을
+  // 거두고 단추를 정한다(전에는 채운 직후 빠져나가 「설비 목록을 읽지 못했습니다」 판이 남고 [모의 판단]이 꺼진 채였다 — 2026-11-24 적대 검토)
+  if (sel.options.length && assetSel.options.length) { decRunState(); return; }
   if (!assetSel.options.length) {
     try { const units = (state.plant && state.plant.units) || (await getJ(API.plant + '/api/state')).units || {}; Object.keys(units).forEach(a => assetSel.append(new Option(a, a))); ent.assetsError = Object.keys(units).length ? '' : '설비 상태 응답에 설비가 없습니다'; }
     catch (e) { ent.assetsError = e.message; }
   }
-  if (sel.options.length && assetSel.options.length) return;
   const pats = sel.options.length ? [...sel.options] : await loadPatterns();
-  if (!sel.options.length) { sel.innerHTML = UI.patternOptions(pats); sel.onchange = decPatternWhy; }
-  $('#decRun').disabled = !pats.length || !assetSel.options.length;
-  decPatternWhy();
+  if (!sel.options.length) { sel.innerHTML = UI.patternOptions(pats); sel.onchange = decRunState; }
+  decRunState();
   if (!pats.length) box.innerHTML = UI.errorBlock(UI.t('dec.noPatterns'), ent.patternsError || '지식 그래프에 이상 패턴이 없습니다', { retry: true });
   else if (!assetSel.options.length) box.innerHTML = UI.errorBlock('설비 목록을 읽지 못했습니다', ent.assetsError, { retry: true });
   else if (box.querySelector('.alert')) box.innerHTML = decEmpty();      // 다시 읽어 됐으면 앞의 오류 판을 거둔다
   box.querySelector('[data-retry]')?.addEventListener('click', () => loadDecisionView());
 }
-// 고른 이상 패턴이 원인 진단 대상이 아니면(서버 judgeable=false) 누르기 전에 그 까닭(서버 reason)을 칸 아래에 보이고 [모의 판단]을 끈다
-function decPatternWhy() {
+// [모의 판단]을 누를 수 있는지는 이 한 곳이 정한다(단추는 index.html 에서 꺼진 채 시작한다): 설비와 이상 패턴이 서버 목록으로 채워져 골라져 있고,
+// 고른 이상 패턴이 원인 진단 대상일 때만 켠다. 진단 대상이 아니면(서버 judgeable=false) 누르기 전에 그 까닭(서버 reason)을 칸 아래에 보인다.
+// 2026-11-24 3회차 실습 04: 화면을 열자마자 누르면 이상 패턴 칸이 채워지기 전이라 빈 패턴으로 판단을 청했고, 「''의 원인 지식이 아직 없습니다」가 떴다
+function decRunState() {
   const why = UI.patternWhy(ent.patterns, $('#decPattern').value), line = $('#decWhy');
   line.hidden = !why; line.textContent = why;
-  if ($('#decPattern').options.length && $('#decAsset').options.length) $('#decRun').disabled = !!why;
+  $('#decRun').disabled = ent.busy || !$('#decAsset').value || !$('#decPattern').value || !!why;
 }
 async function runDecision() {
   if (ent.busy) return; ent.busy = true;
@@ -915,7 +918,7 @@ async function runDecision() {
       : UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true });
     if (held || e.status === 404) decRemember({ ...asked, html: box.innerHTML, says: held ? '판단 보류' : '판단할 수 없음' });      // 보류 · 판단할 수 없음도 결과다(연결 · 서버 오류는 남기지 않는다)
   }
-  finally { ent.busy = false; end(false); }
+  finally { ent.busy = false; end(); decRunState(); }
   box.querySelector('[data-retry]')?.addEventListener('click', runDecision);
 }
 // 원인 한 줄과 그 증거 줄(충족 여부는 상태 뱃지와 글로) — 판단 결과의 「근거」와 판단 보류 판이 함께 쓴다

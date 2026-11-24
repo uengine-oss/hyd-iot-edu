@@ -1301,7 +1301,7 @@ async def _admit_alert(alert: dict) -> dict:
     return dict(handled.get('result') or {}, duplicate=duplicate)
 
 
-# C3 B · C 단순화: 포털 '결함 실험'의 버튼 (scenario_buttons.py). [정기 점검] · [재고 보충]은 업무 감시와 같은 계약의 경보를 만들어 같은
+# C3 B · C 단순화: 포털 '결함 실험'의 버튼 (scenario_buttons.py). [정기 정비 시작] · [예비품 구매 시작]은 업무 감시와 같은 계약의 경보를 만들어 같은
 # 원천 접수 경로로 보낸다 — 배포된 B · C 흐름이 처리 건을 연다. [쿨러 열화 주입] · [쿨러 복구]는 plant-sim 에 누름 id 를 실어 보내고, 그 주입이
 # 일으킨 경보로 열린 처리 건에 같은 id 로 연결한다(case_started). 누름은 모두 감사 기록 SCENARIO_BUTTON(누가 · 언제 · 무엇)에 남는다.
 from . import business_monitor, scenario_buttons
@@ -1385,7 +1385,7 @@ def jsonable_time(value):
 
 @app.post("/api/scenario/{key}/start")
 async def scenario_start(key: str, body: dict | None = None):
-    """[정기 점검](B) · [재고 보충](C): (설비 처리 건이 진행 중이 아니면) 시나리오 시각 기준점을 지금으로 맞추고, 지금 업무 값으로 경보를 만들어
+    """[정기 정비 시작](B) · [예비품 구매 시작](C): (설비 처리 건이 진행 중이 아니면) 시나리오 시각 기준점을 지금으로 맞추고, 지금 업무 값으로 경보를 만들어
     배포된 흐름의 처리 건을 연다. 기준점은 업무 값을 읽기 전에 옮긴다 — 경보 근거의 예정된 정비 시간이 새 기준점의 것이어야 한다.
     시나리오마다 한 번에 하나(_scenario_lock) — 겹친 두 번째 요청은 첫 처리 건을 보고 '이미 진행 중'(409)으로 거절된다."""
     rt = _scenario_rt()
@@ -1442,7 +1442,7 @@ async def scenario_reset(key: str, body: dict | None = None):
         raise HTTPException(404, f"모르는 시나리오 {key}")
     spec = scenario_buttons.SCENARIOS[key]
     person = scenario_buttons.who(body)
-    async with _scenario_lock(key):          # [정기 점검] · [재고 보충]의 검사~접수 도중에 업무 값을 바꾸지 않게
+    async with _scenario_lock(key):          # [정기 정비 시작] · [예비품 구매 시작]의 검사~접수 도중에 업무 값을 바꾸지 않게
         try:
             await asyncio.to_thread(scenario_buttons.reset_refusal, rt, key)
         except scenario_buttons.Refused as e:

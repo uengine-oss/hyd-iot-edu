@@ -16,7 +16,7 @@ from typing import Annotated
 
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_headers
-from pydantic import Field
+from pydantic import Field, StringConstraints
 
 from hydcommon import graphdb, neo4j_mcp
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS
@@ -54,8 +54,10 @@ tools = DmnTools()
 READ = {"readOnlyHint": True, "destructiveHint": False}       # MCP ToolAnnotations — 포털 도구 써 보기는 readOnlyHint=true 만 부른다 (procsvc/mcp_check.py)
 WRITE = {"readOnlyHint": False, "destructiveHint": False}     # submit_decision · submit_purchase: process 에 판단 카드를 쓴다(설비 명령 아님)
 
-Asset = Annotated[str, Field(description="설비 코드 (HYD-01 | HYD-02 | HYD-03)")]
-Pattern = Annotated[str, Field(description="이상 패턴 코드 (예: COOLER_DEGRADATION, PUMP_LEAKAGE, FAN_VIBRATION)")]
+# 설비 · 이상 패턴은 빈 글을 받지 않는다(그 칸 이름이 든 입력 오류) — 빈 패턴이 진단까지 가서 「원인 지식이 지식 지도에 없어 …매뉴얼을 적재」로
+# 엉뚱한 까닭을 냈다(agent 의 규칙 판단 요청과 같은 규칙, 2026-11-24)
+Asset = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1), Field(description="설비 코드 (HYD-01 | HYD-02 | HYD-03)")]
+Pattern = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1), Field(description="이상 패턴 코드 (예: COOLER_DEGRADATION, PUMP_LEAKAGE, FAN_VIBRATION)")]
 Cause = Annotated[str, Field(description="원인 노드 id (cause:… 꼴 — diagnose 가 준 causeId 를 그대로)")]
 FailureMode = Annotated[str, Field(description="고장 유형 노드 id (fm:… 꼴 — diagnose 가 준 failureModeId 를 그대로)")]
 Overrides = Annotated[dict | None, Field(description="가정 실험용 사실 덮어쓰기 (예: {\"plc_mode\": \"REMOTE_MANUAL\"}). 보통 비움")]

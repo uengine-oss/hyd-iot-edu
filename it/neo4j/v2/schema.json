@@ -1436,7 +1436,9 @@
         },
         {
           "name": "annotation",
-          "type": "string"
+          "type": "string",
+          "required": true,
+          "description": "사람이 읽는 규칙 설명. 규칙에는 이름이 없어 화면의 「적용한 규칙」 표와 판단 기록이 이 글로 규칙을 부른다 — 문서 적재는 이 칸이 비면 그 규칙을 거절한다"
         },
         {
           "name": "rankingPolicy",
@@ -1647,6 +1649,11 @@
           "description": "사건을 연 원천 경보 원문(JSON 문자열)"
         },
         {
+          "name": "diagnosedCause",
+          "type": "string",
+          "description": "진단된 원인의 id — DIAGNOSED_AS 관계와 같은 대상. 지식을 되돌려 원인 노드가 없을 때도 사건 기록이 그 대상을 부른다(procsvc.case_projection · manual_graph.detach_history · reattach_history)"
+        },
+        {
           "name": "projection_revision",
           "type": "integer",
           "required": false,
@@ -1711,6 +1718,11 @@
           "type": "string",
           "required": false,
           "description": "이 판단이 속한 사건 id"
+        },
+        {
+          "name": "chosenSkill",
+          "type": "string",
+          "description": "사람이 고른 조치 방법의 id — CHOSE 관계와 같은 대상. 지식을 되돌려 조치 방법 노드가 없을 때도 판단 기록이 그 대상을 부른다(procsvc.case_projection · manual_graph.detach_history · reattach_history)"
         },
         {
           "name": "projection_revision",

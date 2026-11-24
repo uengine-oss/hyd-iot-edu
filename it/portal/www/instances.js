@@ -414,6 +414,7 @@
     미리: ['고른 안을 미리 계산하는 중', '고른 안과 넣은 값으로 실행할 내용과 범위를 서버가 다시 계산합니다. 아직 아무것도 실행하지 않습니다.'],
     단계: ['결과를 내는 중', '서버가 낸 값을 검사하고 다음 단계로 넘깁니다.'],
     질문: ['답을 보내는 중', '답을 기록하면 AI 에이전트가 그 답을 받아 이어서 일합니다.'],
+    닫기: ['답하지 않고 닫는 중', '서버가 닫은 사람과 사유를 기록하고 이 단계를 취소로 끝냅니다. AI 에이전트에게는 답이 가지 않습니다.'],
   };
   const busyNow = say => ({ text: BUSY_SAY[say][0], hint: BUSY_SAY[say][1], since: new Date().toISOString() });
   function renderTodoPanel() {
@@ -529,12 +530,32 @@
     const d = open.data || {};
     const options = Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [];
     const byMe = window.hydInbox?.byField('td', I.form);
+    // 답하지 않고 닫기(사유 한 줄): 되물음은 답하기 말고는 끝낼 길이 없었다 — 같은 [단계 닫기](POST /close, 서버 close_agent_task)로 닫는다.
+    // 닫으면 에이전트에게 답이 가지 않고 그 단계는 취소로 끝난다(AI 를 다시 부르지 않음). 누가 · 왜 닫았는지는 처리 기록에 남는다
+    const closing = I.askClose && I.askClose.id === task.id;
     box.innerHTML = todoCard({ label: `내가 할 일 · ${UI.t('inst.askTitle')}`, icon: 'message-circle-question', title: humanQuestionText(d),
       desc: `<p>AI 에이전트가 「${esc(stepName)}」 단계에서 묻습니다. 답하면 그 단계가 이어집니다.</p>`,
-      more: `${options.length ? `<div class="chips">${options.map((o, i) => `<button class="btn" data-variant="outline" data-size="sm" type="button" data-human-option="${i}">${esc(o)}</button>`).join('')}</div>` : ''}
+      more: closing
+        ? `<p class="muted">${esc(UI.t('inst.askCloseNote'))}</p>${UI.field({ label: UI.t('inst.askCloseReason'), required: true, cls: 'turn-reason', input: `<input id="tdAskCloseReason" value="${esc(I.askClose.reason || '')}">` })}${byMe || pickMe()}`
+        : `${options.length ? `<div class="chips">${options.map((o, i) => `<button class="btn" data-variant="outline" data-size="sm" type="button" data-human-option="${i}">${esc(o)}</button>`).join('')}</div>` : ''}
         ${UI.field({ label: UI.t('form.answer'), required: true, cls: 'turn-reason', hint: UI.t('form.hint.answer'), input: `<textarea id="tdAnswer" rows="2">${esc(I.form.reason)}</textarea>` })}${byMe || pickMe()}`,
-      acts: `<button type="button" class="btn" id="tdAnswerGo" ${byMe && !I.busy ? '' : 'disabled'}>${UI.icon('send')}${esc(UI.t('btn.answer'))}</button>`,
+      acts: closing
+        ? `<button type="button" class="btn" data-variant="ghost" id="tdAskCloseAbort">${esc(UI.t('btn.cancel'))}</button><button type="button" class="btn" data-variant="destructive" id="tdAskCloseGo" ${byMe && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.askClose'))}</button>`
+        : `<button type="button" class="btn" data-variant="outline" id="tdAskClose" ${byMe && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.askClose'))}</button><button type="button" class="btn" id="tdAnswerGo" ${byMe && !I.busy ? '' : 'disabled'}>${UI.icon('send')}${esc(UI.t('btn.answer'))}</button>`,
       msg: I.msg });
+    if (closing) {
+      $('#tdAskCloseReason').addEventListener('input', e => { I.askClose.reason = e.target.value; });
+      $('#tdAskCloseAbort').addEventListener('click', () => { I.askClose = null; I.msg = ''; renderTodoPanel(); });
+      $('#tdAskCloseGo').addEventListener('click', () => {
+        const reason = (I.askClose.reason || '').trim();
+        if (!reason) { I.msg = UI.t('form.err.reason'); renderTodoPanel(); return; }
+        // 끝난 뒤 알림은 일어난 일 그대로(기본 「다음 단계로 넘어갑니다」가 아니다 — 단계는 취소로 끝난다), 거절되면 「이미 처리된 질문입니다」
+        I.doneText = '답하지 않고 닫았습니다. 이 단계는 취소로 끝났고 AI 에이전트에게 답은 가지 않았습니다.';
+        act(task, '질문', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/close`, { by: actor(), reason }), () => { I.askClose = null; }, '닫기');
+      });
+      return;
+    }
+    $('#tdAskClose').addEventListener('click', () => { I.askClose = { id: task.id, reason: '' }; I.msg = ''; renderTodoPanel(); });
     box.querySelectorAll('[data-human-option]').forEach(button => button.addEventListener('click', () => {
       I.form.reason = options[Number(button.dataset.humanOption)]; $('#tdAnswer').value = I.form.reason;
     }));

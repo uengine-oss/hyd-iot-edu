@@ -7,7 +7,8 @@ HYD 에는 로그인이 없다. 이 PC 를 쓰는 사람은 늘 담당자(user:m
              engine.new_workitem) — 화면과 기록이 「어느 역할의 일인가」를 보여야 하므로 구성원이 한 명이어도 사람 id 로 바꿔 적지 않는다
              (resolve). 정의가 사람(user:*)을 직접 가리키면 그 사람이다. 역할에 구성원이 없으면 누구의 작업함에도 뜨지 않고, 작업함 응답의
              unassigned_roles 가 그 역할과 열린 일의 수를 알린다(조용한 성공 금지).
-    내 작업함 inbox_view 는 user_id 가 나인 단계, 내가 구성원인 역할의 단계, 내 역할 · 참여 처리 건에 온 에이전트 질문을 모은다.
+    내 작업함 inbox_view 는 user_id 가 나인 단계, 내가 구성원인 역할의 단계, 에이전트의 되물음(답할 사람 · 닫을 사람은 question_people 한 곳 —
+             그 처리 건의 역할 · 참여자 · 질문한 사람, 사람이 하나도 묶이지 않은 처리 건이면 등록된 사람 누구나)을 모은다.
     사람 확인 사람이 한 일(승인 · 거절 · 제출 · 닫기 · 다시 전달 · 폐기 · 다시 수행 · 오일 분석 입력)은 등록된 사람 사용자(user:*)만 한다 —
              require_person 이 사람인지, check_actor 가 그 사람이 내세운 역할의 구성원인지 본다(아니면 PermissionError → 403). 요청에
              「누가」가 비어 있으면 actor_or_400 이 400(NOT_A_PERSON)으로 거절한다. 조치 카드의 역할 등급 검사(Skill -APPROVED_BY-> Role,
@@ -193,13 +194,26 @@ def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str:
     return by
 
 
+def question_people(inst) -> set[str] | None:
+    """에이전트가 사람에게 되물은 질문을 보고(내 작업함의 asked) 답하거나(human_response) 답하지 않고 닫을(close_agent_task) 사람 — 이 한 곳이
+    정한다: 그 처리 건의 역할 담당 · 참여자, 그리고 질문하기로 그 처리 건을 연 사람(처리 건 값 asked_by — 사람 id 일 때). 질문하기 처리 건의
+    담당 · 참여자는 답변 에이전트뿐이라, 전에는 에이전트가 되물으면 질문한 사람조차 답하면 「배정된 담당자만」으로 거절됐다(2026-11-24).
+    사람(user:*)이나 역할(role:*)이 하나도 묶이지 않은 처리 건(에이전트만 있는 흐름 — 직접 시작 · 경보 시작은 시작한 사람을 남기지 않는다)은
+    None: 이 PC 에 등록된 사람 누구나다. 워커가 그런 흐름의 되물음에 「사람 단계가 없어 알림을 보내지 않았습니다 — 처리 건 화면에서
+    답하세요」라고 적는데(agent-worker runner._askers_of 가 빈 목록), 서버가 그 답을 403 으로 막아 질문이 영영 남았다(2026-11-24 적대 검토)."""
+    from . import engine
+    asker = engine.variables(inst).get('asked_by')
+    people = ({b.get('endpoint') for b in inst.get('role_bindings') or []} | set(inst.get('participants') or [])
+              | ({asker} if isinstance(asker, str) and asker.startswith(PERSON) else set()))
+    return people if any(str(p).startswith((PERSON, ROLE)) for p in people) else None
+
+
 def require_task_actor(repo, tenant_id, inst, wi, by, *, question=False):
     """Use the same assignment rules for submission as for the person's inbox."""
     require_person(repo, tenant_id, by)
     mine = set(roles_of(repo, tenant_id, by)) | {by}
-    allowed = ({b.get('endpoint') for b in inst.get('role_bindings') or []}
-               | set(inst.get('participants') or [])) if question else {wi.get('user_id')}
-    if not mine & allowed:
+    allowed = question_people(inst) if question else {wi.get('user_id')}
+    if allowed is not None and not mine & allowed:
         raise PermissionError('이 작업 또는 질문에 배정된 담당자만 제출할 수 있습니다')
 
 
@@ -233,8 +247,8 @@ def inbox_view(rt, user_id: str, now=None) -> dict:
         if inst is None:
             continue
         if w.get("draft_status") == "HUMAN_ASKED":
-            bound = {b.get("endpoint") for b in inst.get("role_bindings") or []} | set(inst.get("participants") or [])
-            if bound & mine:
+            people = question_people(inst)
+            if people is None or people & mine:
                 asked.append(_item(rt, inst, w, timers, "question", "role", now))
             continue
         if not is_human_row(w):

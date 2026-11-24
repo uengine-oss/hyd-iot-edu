@@ -72,7 +72,7 @@ const UI = {
     'workOrder': '정비 요청', 'command': '설비에 명령', 'control': '설비 제어', 'ack': '설비 응답',
     'alert': '설비 경보', 'closed': '종결', 'done': '완료', 'knowledge': '지식', 'kpi': '성과 지표',
     // 버튼
-    'btn.approve': '승인', 'btn.reject': '반려', 'btn.submit': '제출', 'btn.answer': '답변', 'btn.rework': '다시 수행', 'btn.confirm': '확인',
+    'btn.approve': '승인', 'btn.reject': '반려', 'btn.submit': '제출', 'btn.answer': '답변', 'btn.askClose': '답하지 않고 닫기', 'btn.rework': '다시 수행', 'btn.confirm': '확인',
     'btn.preview': '예측 다시 보기', 'btn.effects': '영향 보기', 'btn.reassess': '다시 평가', 'btn.reload': '다시 읽기', 'btn.save': '저장', 'btn.cancel': '취소',
     'btn.run': '모의 판단', 'btn.running': '판단 중…', 'btn.fit': '전체 흐름 보기', 'btn.more': '더 보기',
     'btn.retry': '같은 내용 다시 전달', 'btn.closeTask': '단계 닫기', 'btn.cancelTask': '실행 취소',
@@ -109,7 +109,7 @@ const UI = {
     'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동',
     'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
     'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.stepFailed': '전달 실패',
-    'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
+    'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askCloseNote': '답하지 않고 이 단계를 닫습니다. 에이전트에게 답이 가지 않고, 이 단계는 취소로 끝납니다(AI를 다시 부르지 않습니다). 닫은 사람과 사유는 처리 기록에 남습니다.', 'inst.askCloseReason': '답하지 않고 닫는 사유', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보', 'var.incident':'사건', 'var._deferral':'보류 평가 기록',
     // 처리 건 변수의 화면 이름(정의 설명문에는 규칙 id · 클래스 이름이 섞여 화면 이름으로 쓰지 않는다)
@@ -438,16 +438,19 @@ const UI = {
     [/^Field required$/, '필수 항목을 입력하세요.'],
     [/^Input should be a valid (integer|number)/, '숫자를 입력하세요.'],
   ],
-  // 422 detail 배열의 한 줄: 칸 이름(아는 것만 한국어) + 번역한 문구
+  // 422 detail 배열의 한 줄: 칸 이름(아는 것만 한국어 — 처리 건 변수의 화면 이름 var.* 와 같은 이름) + 번역한 문구
   validationText(x) {
-    const field = ({ reason: '사유', by: '담당자', note: '메모', name: '이름' })[(x && x.loc || []).slice(-1)[0]];
+    const key = (x && x.loc || []).slice(-1)[0];
+    const field = ({ reason: '사유', by: '담당자', note: '메모', name: '이름' })[key] || this.terms['var.' + key];
     const text = this.serverText(x && x.msg || JSON.stringify(x));
     return field ? `${field}: ${text}` : text;
   },
+  // 서버가 준 까닭 한 줄 → 화면 말: 알려진 영문 문구는 한국어로, 그 밖의 글은 경보 패턴 코드 · 정본 말을 화면 이름으로(words — 규칙 판단의 보류 글과
+  // 조건별 손익의 같은 글이 같은 이름으로 보이게, 2026-11-24). 원문 id(rule:… 등)는 그대로 둔다 — 화면마다 그 id 를 「이름」으로 감싸 보인다
   serverText(message) {
     const text = String(message ?? '');
     for (const [re, out] of this.serverTexts) { const m = re.exec(text.trim()); if (m) return typeof out === 'function' ? out(m) : out; }
-    return text;
+    return this.words(text);
   },
 
   dateTime(value) {

@@ -353,7 +353,11 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
             if problem:
                 raise ValueError(f"{r['rule']}: {problem}")
         fired, unknown = rule_fires(r, base_facts)
-        trace.append({"decision": "dec:action-candidates", "rule": r["rule"], "when": r.get("when"), "fired": fired, "unknown": unknown})
+        # 판단 기록의 규칙 줄은 그 규칙의 설명(지식의 Rule.annotation — 규칙에는 이름이 없다)을 싣는다. 화면 「적용한 규칙」 표 · 처리 건이 이 글로
+        # 규칙을 부른다 — 전에는 id 만 실어 화면이 고정 이름 사전(names.json — 수업 문서의 규칙만 있다)에서 찾았고, 학생이 올린 문서의 규칙은
+        # 「규칙 표시 이름 미등록」이었다(2026-11-24 3회차 실습 04)
+        trace.append({"decision": "dec:action-candidates", "rule": r["rule"], "annotation": r.get("annotation"), "when": r.get("when"),
+                      "fired": fired, "unknown": unknown})
         if fired and r["effect"] == "SELECT":
             for sid in r.get("outputs") or []:
                 if sid not in cand_ids:
@@ -398,7 +402,8 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
             if not compliance_applies(r, k):
                 continue
             fired, unknown = rule_fires(r, cf)
-            trace.append({"decision": "dec:compliance", "rule": r["rule"], "skill": sid, "when": r.get("when"), "fired": fired, "unknown": unknown})
+            trace.append({"decision": "dec:compliance", "rule": r["rule"], "annotation": r.get("annotation"), "skill": sid, "when": r.get("when"),
+                          "fired": fired, "unknown": unknown})
             if not fired:
                 # Missing evidence is not a satisfied rule. WARN remains advisory,
                 # but the human must see its uncertainty before choosing a card.

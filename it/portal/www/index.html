@@ -154,7 +154,8 @@
             <div role="group" class="field"><label for="decStandby">예비 펌프</label><select class="select" id="decStandby"><option value="">지금 값 그대로</option><option value="true">쓸 수 있음</option><option value="false">정비 중</option></select></div>
             <div role="group" class="field"><label for="decFan">팬 100 % 연속 운전 (시간)</label><input class="input" id="decFan" type="number" min="0" step="1" placeholder="지금 값 그대로"></div>
           </div></details>
-          <footer class="form-foot"><button type="submit" class="btn" id="decRun"><span data-icon="play"></span>모의 판단</button></footer>
+          <!-- 설비 · 이상 패턴 칸이 서버 목록으로 채워지기 전에는 누를 수 없다(enterprise.js decRunState 가 켠다) -->
+          <footer class="form-foot"><button type="submit" class="btn" id="decRun" disabled><span data-icon="play"></span>모의 판단</button></footer>
         </div>
       </form>
         <aside class="io-past" id="decPast" aria-label="지난 판단" hidden></aside></div>

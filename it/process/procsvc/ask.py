@@ -531,7 +531,11 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     # 상태만 보고 '답이 나왔습니다'로 읽으면 답 없는 질문에 서버 판정까지 붙었다. 닫힘을 먼저 본다.
     if (wi['status'] == 'CANCELLED' or inst.get('status') in ('CANCELLED', 'TERMINATED')
             or inst.get('end_event') == InstanceRuntime.HUMAN_CLOSE_END_EVENT):
-        return 'closed', '사람이 닫은 질문입니다' + (f" — {wi.get('log')}" if wi.get('log') else '')
+        # 까닭은 닫을 때 남긴 처리 기록(TASK_CLOSED 의 사유)에서 — 작업 행의 내부 기록(log 「[Closed by user:…] …; 」)을 그대로 붙이면 영문 꼬리표와
+        # 사람 id 가 학생 화면에 보였다(2026-11-24 적대 검토)
+        closed = next((e for e in reversed(events or []) if e.get('job_id') == 'TASK_CLOSED' and e.get('todo_id') == wi['id']), None)
+        reason = str(((closed or {}).get('data') or {}).get('reason') or '').strip()
+        return 'closed', '사람이 닫은 질문입니다' + (f' — 사유: {reason}' if reason else '')
     if wi['status'] == 'DONE' or inst.get('status') == 'COMPLETED':
         return 'done', '답이 나왔습니다'
     if wi['status'] == 'PENDING':
@@ -541,7 +545,7 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     if ds == 'FAILED':
         return 'failed', _error_reason(events) or '에이전트 실행이 실패했습니다(사유 기록 없음). 처리 과정을 시스템 관리자에게 보여 주세요.'
     if ds == 'HUMAN_ASKED':
-        return 'asking', '에이전트가 사람에게 묻고 기다립니다 (처리 과정 보기에서 답할 수 있습니다)'
+        return 'asking', '에이전트가 사람에게 묻고 기다립니다 — 「처리 건에서 보기」에서 답하거나, 답하지 않으려면 사유를 적고 닫을 수 있습니다'
     if ds == 'FB_REQUESTED' and fb.get('kind') == 'validation':
         return 'correcting', '에이전트의 답이 정해진 답 형식과 달라 다시 고쳐 쓰라고 돌려보냈습니다: ' + str((fb.get('history') or [''])[-1])[:300]
     if wi['status'] == 'SUBMITTED':

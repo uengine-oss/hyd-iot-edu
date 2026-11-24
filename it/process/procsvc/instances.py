@@ -1334,10 +1334,18 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             return 'cancelled'
         return None
 
+    @staticmethod
+    def asking(wi: dict) -> bool:
+        """AI 단계가 사람에게 되묻고 답을 기다리는가(워커가 점유를 놓고 기다린다 — runner._pause). 멈춘 단계(stuck)가 아니다 — 사람이 답하면
+        이어진다(human_response). 다만 답하지 않으려는 사람은 사유와 함께 닫을 수 있다(close_agent_task)."""
+        return wi.get('status') == 'IN_PROGRESS' and wi.get('draft_status') == 'HUMAN_ASKED'
+
     @workitem_transition
     def close_agent_task(self, workitem_id: str, by: str, reason: str, now: datetime | None = None) -> dict:
-        """A082 · H-10: 멈춘 에이전트 · 시스템 단계(stuck — 실행 실패 · 실행 취소 · 보류 · 한도 넘은 재시도)를 사람이 사유와 함께 닫는다(제품의
-        task cancel). 사람 단계와 살아 있는 단계는 닫지 않는다. 다른 열린 일이 없으면 처리 건은 기술 끝 'closed-by-human'(사람이 닫음)으로
+        """A082 · H-10: 멈춘 에이전트 · 시스템 단계(stuck — 실행 실패 · 실행 취소 · 보류 · 한도 넘은 재시도)와, 사람에게 되묻고 답을 기다리는 AI
+        단계(asking)를 사람이 사유와 함께 닫는다(제품의 task cancel). 되물음은 답하기(→ 워커가 이어서 AI 를 부름) 말고는 끝낼 길이 없어, 답하지
+        않으려는 사람이 그 질문 · 처리 건을 영영 닫지 못했고 그 에이전트를 지우면 열린 되물음이 기본 담당에게 넘어가 남았다(2026-11-24). 닫은
+        단계는 취소(CANCELLED)라 워커가 집지 않고 답 넣기도 받지 않는다. 사람 단계와 살아 있는 단계(실행 중 · 처리 대기)는 닫지 않는다. 다른 열린 일이 없으면 처리 건은 기술 끝 'closed-by-human'(사람이 닫음)으로
         끝난다 — 업무 끝 이벤트를 지어내지 않는다. 사건이 열려 있어도 닫을 수 있다: 처리 건이 끝나면 사건도 책임자 확인으로 닫힌다
         (_settle_incident — 전에는 사건이 진행 중이면 거절해, 수업 밖 AI 단계처럼 다시 해도 같은 결과인 실패가 영영 남았다)."""
         wi = self.repo.get_workitem(workitem_id)
@@ -1350,13 +1358,16 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         service = (defn.activities.get(wi['activity_id']) or {}).get('type') == 'serviceTask'
         if not service and (not wi.get('agent_mode') or not wi.get('agent_orch')):
             raise PermissionError('멈춘 에이전트 · 시스템 단계만 닫을 수 있습니다. 사람 단계는 제출로 끝내세요')
-        kind = self.stuck(wi)
+        kind = self.stuck(wi) or ('asking' if not service and self.asking(wi) else None)
         if kind is None or (service and kind != 'pending'):
-            raise ValueError('멈춘 단계만 닫을 수 있습니다 — 이 단계는 아직 진행 중이거나 기다리는 중입니다'
+            raise ValueError('멈춘 단계나 사람의 답을 기다리는 단계만 닫을 수 있습니다 — 이 단계는 아직 진행 중이거나 처리를 기다리는 중입니다'
                              + ('(시스템 단계는 재시도 한도를 넘어 멈춘 때만)' if service else ''))
         inst = self.repo.get_instance(wi['proc_inst_id'])
         if not inst or inst.get('status') != 'RUNNING':
             raise ValueError('처리 건이 이미 끝나 닫을 단계가 없습니다')
+        if kind == 'asking':
+            # 되물음은 답할 수 있는 사람이 닫는다 — 답하기(human_response)와 같은 한 곳(inbox.question_people)
+            inbox.require_task_actor(self.repo, self.tenant_id, inst, wi, person, question=True)
         now = self._now(now)
         previous = dict(status=wi['status'], draft_status=wi.get('draft_status'), retry=wi.get('retry'), kind=kind)
         wi.update(status='CANCELLED', draft_status='CANCELLED', consumer=None, end_date=engine.now_iso(now),
@@ -1365,7 +1376,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         # event_type is the product's enum (no 'task_closed'); the person's close is a task_cancelled with job_id TASK_CLOSED
         self.repo.record_events([{'job_id': 'TASK_CLOSED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
                                   'event_type': 'task_cancelled',
-                                  'data': {'name': '시스템 단계 닫음' if service else 'AI 단계 닫음', 'by': person, 'reason': reason.strip()[:1000],
+                                  'data': {'name': '시스템 단계 닫음' if service else '답하지 않고 닫음' if kind == 'asking' else 'AI 단계 닫음',
+                                           'by': person, 'reason': reason.strip()[:1000],
                                            'previous': previous}}])
         rows = self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'], limit=None)
         # 엔진과 같은 기준(engine._advance 의 live): 닿은 단계만 열린 일이다. 엔진은 단계마다 TODO 행을 미리 만들어 두므로(아직 닿지 않은

@@ -11,11 +11,13 @@ import asyncio
 import logging
 import os
 import re
+from typing import Annotated
 from urllib.parse import quote
 
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, StringConstraints
 
+from hydcommon import graphdb
 from hydcommon.metrics import Registry
 from hydcommon.pg import answer_unreachable
 from hydcommon.service import make_app
@@ -120,6 +122,11 @@ def health() -> dict:
 
 app = make_app("agent (L8: ontology-grounded guide cards, read-only tools)", reg, health)
 answer_unreachable(app)      # 시계열 DB · 업무 DB 연결을 다시 맺어 봐도 닿지 않은 요청은 raw 500 이 아니라 503 과 읽을 문장
+graphdb.answer_unreachable(app)   # 지식 그래프가 끊겼거나 질의 시간 한도를 넘긴 요청도 raw 500 이 아니라 503 과 읽을 문장
+
+
+# 설비 · 이상 패턴 칸: 앞뒤 공백을 떼고 빈 글이면 그 칸 이름이 든 422 — 공백 한 칸(" ")도 빈 칸이다(2026-11-24 적대 검토)
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 class EvaluationReq(BaseModel):
@@ -164,9 +171,11 @@ async def _startup():
 
 # ---------------------------------------------------------------- L7/L8 endpoints for the portal
 class DecideReq(BaseModel):
-    """Manual run of the action-card decision (portal '조치 판단 규칙' view). facts: what-if values a person sets."""
-    asset: str                          # 설비 · 경보 패턴은 부르는 쪽이 정한다 — 빠지면 수업 사례(HYD-01 쿨러 열화)로 대신 돌지 않고 422
-    pattern: str
+    """Manual run of the action-card decision (portal '조치 판단 규칙' view). facts: what-if values a person sets.
+    설비 · 경보 패턴은 부르는 쪽이 정한다 — 빠지거나 빈 글이면 그 칸 이름(loc)을 단 422 다. 빠지면 수업 사례(HYD-01 쿨러 열화)로 대신 돌던 것,
+    빈 패턴이 원인 지식 조회까지 가서 「''의 원인 지식이 아직 없습니다 — 매뉴얼을 적재」로 엉뚱한 까닭을 말하던 것(2026-11-24 3회차 실습 04)을 막는다."""
+    asset: NonBlank
+    pattern: NonBlank
     facts: dict | None = None
 
 
@@ -266,8 +275,8 @@ async def decide(req: DecideReq):
 
 # ---------------------------------------------------------------- A7 손익 · What-if · 규칙 바꿔 보기 (시험 실행만)
 class WhatifStartReq(BaseModel):
-    asset: str                          # 기본값 없음 — DecideReq 와 같다
-    pattern: str
+    asset: NonBlank    # 기본값 없음 · 빈 글 거절 — DecideReq 와 같다
+    pattern: NonBlank
 
 
 class WhatifTryReq(BaseModel):

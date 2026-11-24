@@ -77,7 +77,7 @@
 - `(:Decision {id!, name!, question!})` 판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.
 - `(:InputData {id!, name!, typeRef!, variable!, source_id, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, derive[hours_from_now], sourceState[OK|MISSING|TYPE_CHANGED|COMMENT_CHANGED], sourceLiveType, sourceLiveComment, sourceBaseComment, sourceCheckedAt, ingested_at})` 판단(Decision)과 이상 패턴이 검사하는 데이터 항목 (DMN InputData). 값은 실행 중에 출처(시스템 · 센서)에서 온다. REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
 - `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT|UNIQUE]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
-- `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
+- `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation!, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
   - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1) 제외 조건 {'effect': ['RANK']}
 - `(:KnowledgeSource {id!, name!, kind![manual|regulation|policy|strategy], ref, _manual_document, document_id, extractor, sha256, source_id})` 판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.
 
@@ -91,8 +91,8 @@
 
 실행 중에 쌓이는 기록: 사건과 사람의 판단 사례(업무 기록), 처리 건 · 작업 · 배포 판본의 투영(실행 기록), 적재 · 투영 · 편집의 영수증(내부 기록 — 지식 지도에는 보이지 않는다).
 
-- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|APPROVED_EXECUTING|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
-- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|CLOSED_UNAPPROVED|EXECUTED|PARTIAL], source_incident_id, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 한 교육용 고정이며, 수업 그래프에는 미리 넣은 사례가 없어 선례 몫은 0이다.
+- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|APPROVED_EXECUTING|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, diagnosedCause, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
+- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|CLOSED_UNAPPROVED|EXECUTED|PARTIAL], source_incident_id, chosenSkill, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 한 교육용 고정이며, 수업 그래프에는 미리 넣은 사례가 없어 선례 몫은 0이다.
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.
 - `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED|CANCELLED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings, rework_generation, projection_revision})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.

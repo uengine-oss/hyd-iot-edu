@@ -715,7 +715,8 @@ hyd:aliases a owl:DatatypeProperty ;
 hyd:annotation a owl:DatatypeProperty ;
   rdfs:label "annotation" ;
   rdfs:domain hyd:Rule ;
-  rdfs:range xsd:string .
+  rdfs:range xsd:string ;
+  rdfs:comment "사람이 읽는 규칙 설명. 규칙에는 이름이 없어 화면의 「적용한 규칙」 표와 판단 기록이 이 글로 규칙을 부른다 — 문서 적재는 이 칸이 비면 그 규칙을 거절한다"@ko .
 hyd:assetColumn a owl:DatatypeProperty ;
   rdfs:label "assetColumn" ;
   rdfs:domain hyd:InputData ;
@@ -735,6 +736,11 @@ hyd:catalog a owl:DatatypeProperty ;
   rdfs:domain hyd:InputData ;
   rdfs:range xsd:string ;
   rdfs:comment "원천 데이터베이스"@ko .
+hyd:chosenSkill a owl:DatatypeProperty ;
+  rdfs:label "chosenSkill" ;
+  rdfs:domain hyd:DecisionCase ;
+  rdfs:range xsd:string ;
+  rdfs:comment "사람이 고른 조치 방법의 id — CHOSE 관계와 같은 대상. 지식을 되돌려 조치 방법 노드가 없을 때도 판단 기록이 그 대상을 부른다(procsvc.case_projection · manual_graph.detach_history · reattach_history)"@ko .
 hyd:citation a owl:DatatypeProperty ;
   rdfs:label "citation" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Step hyd:ManualSection hyd:Skill ) ] ;
@@ -823,6 +829,11 @@ hyd:detectionMode a owl:DatatypeProperty ;
   rdfs:domain hyd:AnomalyPattern ;
   rdfs:range xsd:string ;
   rdfs:comment "held = 감지기가 TESTS 지속 조건으로 직접 감지(해제 조건 · 시간 계약 필수), plc-trip = PLC가 보호 정지를 내고 감지기는 PLC 사유를 이 패턴 코드로 전한다. 없으면 업무 시스템 감시 · 사람 입력 경보 허용값: held, plc-trip"@ko .
+hyd:diagnosedCause a owl:DatatypeProperty ;
+  rdfs:label "diagnosedCause" ;
+  rdfs:domain hyd:Incident ;
+  rdfs:range xsd:string ;
+  rdfs:comment "진단된 원인의 id — DIAGNOSED_AS 관계와 같은 대상. 지식을 되돌려 원인 노드가 없을 때도 사건 기록이 그 대상을 부른다(procsvc.case_projection · manual_graph.detach_history · reattach_history)"@ko .
 hyd:direction a owl:DatatypeProperty ;
   rdfs:label "direction" ;
   rdfs:domain hyd:Measure ;

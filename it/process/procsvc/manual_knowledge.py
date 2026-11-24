@@ -421,8 +421,11 @@ def _rule(item, base, sops):
     order = item.get('order')
     if order is not None and (type(order) is not int or not 1 <= order <= 9999):
         raise ValueError(f'{nid}: order는 1~9999 정수')
+    # 규칙에는 이름이 없다 — 설명(annotation)이 규칙의 하나뿐인 사람 말이고, 판단 기록 · 규칙 판단의 「적용한 규칙」 표 · 검토 화면이 이 글로 규칙을
+    # 부른다. 전에는 비워도 받아, 다른 설비 문서를 실제 AI 로 추출한 적재(2026-11-23)의 후보 규칙 여덟이 화면에 「규칙 표시 이름 미등록」으로 보였다
     return dict(base, table=table, effect=effect, tests=checked, outputs=outputs, applies_to=applies, penalty=penalty,
-                penalizes=penalizes, order=order, annotation=_text(item.get('annotation'), f'{nid} 설명', 500, required=False))
+                penalizes=penalizes, order=order,
+                annotation=_text(item.get('annotation'), f'{nid} 설명(annotation — 규칙에는 이름이 없어 화면과 판단 기록이 이 글로 규칙을 부릅니다)', 500))
 
 
 _ITEM = {'failure_modes': _fm, 'causes': _cause, 'evidence': _evidence, 'rules': _rule,
@@ -886,9 +889,7 @@ def desired(plan, node, edge, sections, skill_id):
     for i, r in enumerate(k.get('rules') or [], 1):
         if any('variable' not in t for t in r['tests']):
             raise ValueError(f"{r['id']}: 검사 입력의 변수 이름이 확인되지 않았습니다(check_graph를 먼저 거쳐야 합니다)")
-        props = dict(order=r['order'] or 100 + i, when=when_text(r['tests']), effect=r['effect'])
-        if r['annotation']:
-            props['annotation'] = r['annotation']
+        props = dict(order=r['order'] or 100 + i, when=when_text(r['tests']), effect=r['effect'], annotation=r['annotation'])
         if r['penalty'] is not None:
             props['penalty'] = r['penalty']
         n = node('Rule', r['id'], **props)

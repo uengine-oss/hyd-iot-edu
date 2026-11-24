@@ -2,7 +2,7 @@
   * SPARE_BELOW_MIN (시나리오 C, ERP): 예비품 가용 재고(현재고 − 정비 예약 + 입고 예정) < 재주문점
   * PM_DUE          (시나리오 B, CMMS): 마지막 정기 정비 뒤 운전시간 ≥ 주기 − 사전 알림(2,000 − 50 h)
 
-수업은 포털 [정기 점검] · [재고 보충] 버튼(scenario_buttons)이 지금 업무 행 하나를 읽어 이 계약의 경보를 만든다(센서 경보 · 사람 입력 경보(B7)와
+수업은 포털 [정기 정비 시작] · [예비품 구매 시작] 버튼(scenario_buttons)이 지금 업무 행 하나를 읽어 이 계약의 경보를 만든다(센서 경보 · 사람 입력 경보(B7)와
 같은 모양 `alertId · asset · pattern · severity · state=RAISE · t · evidence`, 출처 `source: "erp" | "cmms"`). 같은 원천 접수 경로
 (main._admit_alert → source_inbox → 경보 정책 → start_definition → Incident)로 가고, 어느 흐름이 여는지는 경보 정책(flow_deploy.route_definition)이
 정한다 — 이 패턴을 받는 배포 흐름이 없으면 기준 흐름의 unsupported → 사람 검토(alert_triage).

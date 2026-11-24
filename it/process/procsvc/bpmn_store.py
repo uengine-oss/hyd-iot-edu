@@ -266,7 +266,7 @@ class FlowStore:
         """학생이 가져온 정의 · 판본 · 초안만 지운다. 그 판본으로 끝난 처리 건은 목록에서 숨긴다(is_deleted — 정의가 없어지므로).
         진행 중(NEW · RUNNING) 처리 건이 있으면 아무것도 지우지 않고 FlowBusy.
         keep: 지우지 않을 정의 id — 경보 경로에 배포된 흐름(2026-10-23 점검: 수업 흐름 c3_* 도 origin=user 라, 학생이 [기준으로 되돌리기]를
-        누르면 강사가 배포한 수업 흐름까지 지워져 [정기 점검] · [재고 보충]이 「배포되어 있지 않습니다」로 멈췄다)."""
+        누르면 강사가 배포한 수업 흐름까지 지워져 [정기 정비 시작] · [예비품 구매 시작]이 「배포되어 있지 않습니다」로 멈췄다)."""
         keep = sorted(set(keep))
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow-reset:{self.tenant_id}",))

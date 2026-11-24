@@ -51,8 +51,9 @@ def approval_ledger_record(cmd: dict, key: str | None = None) -> dict:
 
 
 # Ontology v2 atomic commands (Action.code) the PLC supports: fan / load setpoints, interlock reset, standby pump
-# selection (actr:pump-selector) and a planned stop. PRESSURE_SET exists in the ontology only as the forbidden old
-# procedure (rule:no-pressure-raise), this PLC has no pressure setpoint, so the gateway rejects it (WHITELIST).
+# selection (actr:pump-selector) and a planned stop. The seed also has Action action:raise-pressure (code PRESSURE_SET,
+# it/neo4j/v2/instances.cypher section 5), but no skill or rule in the system knowledge uses it and this PLC has no
+# pressure setpoint resource (ot/plant-sim/plantsim/plc.py WRITE_RANGES), so the gateway rejects that code (WHITELIST).
 # action code -> (PLC resource, parameter key in action.cmd or None)
 ACTION_TO_WRITES = {
     "FAN_SET": ("FanSpeedSP", "fan_pct"),
