@@ -663,7 +663,8 @@ function renderNodePanel() {
         if (c && typeof c === 'object' && c.quote) return `${c.page != null ? esc(c.page) + '쪽 · ' : ''}${esc(UI.quoteText(c.quote).slice(0, 160))}`;
       }
       if (PROP_EXPR.includes(k)) return `<span class="mono">${esc(text)}</span>`;
-      if (k === 'tag') { const name = window.hydWords.fieldName(text.toLowerCase()); return name && name !== text.toLowerCase() ? `${esc(name)} <span class="mono muted">${esc(text)}</span>` : `<span class="mono">${esc(text)}</span>`; }
+      // 태그: 화면 사전이 아는 설비 값이면 그 이름을 앞에 둔다. 모르는 태그(문서가 넣은 다른 설비 센서의 태그)는 밑줄을 띄어 쓴 글을 이름처럼 붙이지 않고 태그만 보인다
+      if (k === 'tag') { const name = window.hydWords.fieldName(text.toLowerCase()); return name && name !== text.toLowerCase() && name !== text.toLowerCase().replace(/_/g, ' ') ? `${esc(name)} <span class="mono muted">${esc(text)}</span>` : `<span class="mono">${esc(text)}</span>`; }
       return text.length > 160 ? `<details class="kv-more"><summary>${esc(text.slice(0, 60))}…</summary><div>${esc(text)}</div></details>` : esc(text); };
     // 이어진 것을 관계 이름별로 묶는다. 관계 이름표(RELATION_KO)는 나가는 쪽에서 본 말이라(증상 → 고장 「나타내는 고장」) 들어오는 쪽에 그대로 붙이면 거꾸로 읽힌다 —
     // 나가는 관계는 관계 이름으로, 들어오는 관계는 상대의 종류(증상 · 원인 …)로 묶고 관계 이름은 작게 곁들인다
@@ -908,7 +909,8 @@ async function runDecision() {
     // 판단 엔진의 답은 세 갈래다. 보류(409 — 지금 관측 값으로 뒷받침되는 원인이 없어 판단하지 않음)는 정상 결과라 실패로 그리지 않는다.
     // 판단할 수 없는 이상 패턴(404 — 원인 지식이 없거나 고장 진단 대상이 아님)은 다시 눌러도 같으므로 [다시 시도]를 붙이지 않는다. 그 밖(연결 · 서버 오류)만 「판단 실패」다
     const held = e.status === 409 && e.detail && typeof e.detail === 'object';
-    box.innerHTML = held ? decWithheld(e.detail, facts)
+    if (held && state.biz === undefined) await refreshBiz();      // 결함을 일으킬 수 있는 범위(서버의 fault — decWithheld 의 안내)를 아직 읽지 않았으면 읽는다
+    box.innerHTML = held ? decWithheld(e.detail, facts, asked)
       : e.status === 404 ? UI.errorBlock('이 설비와 이상 패턴으로는 판단할 수 없습니다', e.message)
       : UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true });
     if (held || e.status === 404) decRemember({ ...asked, html: box.innerHTML, says: held ? '판단 보류' : '판단할 수 없음' });      // 보류 · 판단할 수 없음도 결과다(연결 · 서버 오류는 남기지 않는다)
@@ -924,14 +926,22 @@ const decEvidenceLines = c => (c.evidence || []).map(e => { const unknown = e.st
 const decCauseLine = c => `<li>${UI.icon('search')}<span><b>${esc(UI.idText(c.name))}</b>${c.failureMode ? ' · 고장 유형 ' + esc(UI.idText(c.failureMode)) : ''} · ${esc(UI.t('card.score'))} <span class="num">${esc(c.score)}</span></span></li>`;
 const decAssumed = facts => Object.entries(facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${k === 'standby_ready' ? (v ? '쓸 수 있음' : '정비 중') : factValue(k, v)}`);      // 예비 펌프는 고르기 칸의 말 그대로
 // 판단 보류: 실패가 아니라 「판단하지 않음」이다. 무엇을 확인했고 왜 원인으로 삼지 않았는지(원인 후보와 관측 값)를 보인다
-function decWithheld(detail, facts) {
+function decWithheld(detail, facts, asked) {
   const causes = detail.causes || [], assumed = decAssumed(facts);
+  // 보류의 까닭은 서버가 말한 것(어느 문서 진단 규칙이 지금 값에 맞지 않았는지 · 원인 지식이 없음 · 근거를 다 읽지 못함)을 그대로 보인다 — compare.js whyNot 과 같다.
+  // 서버 글이 없을 때만 화면의 안내를 쓴다. 「이상을 일으킨 뒤 다시」는 원인 후보가 있고 그 증거를 모두 읽었는데도 보류했고, 그 설비 · 경보가 「유압 설비」 화면의
+  // 결함 단추로 일으킬 수 있는 것(서버의 fault — scenario_buttons.fault_scope)일 때만 맞는 말이다. 다른 설비 · 다른 경보(학생 현장 포함)에는 붙이지 않는다(2026-11-24 검토)
+  const why = UI.idText(String(detail.reason || (detail.evidence_status || {}).reason || '')).trim();
+  const observed = causes.length > 0 && causes.every(c => (c.evidence || []).every(e => e.status !== 'UNKNOWN'));
+  const fault = faultUnit(), injectable = !!fault && !!asked && fault.asset === asked.asset && fault.pattern === asked.code;
+  const retry = observed && injectable ? ' 「유압 설비」 화면에서 이 이상을 일으킨 뒤 다시 판단하면 원인과 조치 순위가 나옵니다.' : '';
   return `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론 ${UI.chipText('판단 보류', 'warning')}</div>` +
-    `<h2>판단을 보류했습니다 — 지금 관측 값으로 뒷받침되는 원인이 없습니다.</h2>` +
-    `<p>실패가 아닙니다. 이 설비의 지금 값에서 이 이상 패턴의 증거가 확인되지 않아 판단 서비스가 원인을 가리지 않았고, 조치 후보도 견주지 않았습니다. 「유압 설비」 화면에서 이 이상을 일으킨 뒤 다시 판단하면 원인과 조치 순위가 나옵니다.</p></div></div>` +
+    (why ? `<h2>판단을 보류했습니다.</h2><p data-dec-why>${esc(why)}</p><p>실패가 아닙니다. 판단 서비스가 원인을 가리지 않았고, 조치 후보도 견주지 않았습니다.${retry}</p></div></div>`
+      : `<h2>판단을 보류했습니다 — 지금 관측 값으로 뒷받침되는 원인이 없습니다.</h2>` +
+    `<p>실패가 아닙니다. 이 설비의 지금 값에서 이 이상 패턴의 증거가 확인되지 않아 판단 서비스가 원인을 가리지 않았고, 조치 후보도 견주지 않았습니다.${retry}</p></div></div>`) +
     `<div class="panel-sec"><p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p></div>` +
     `<div class="panel-sec"><h3>확인한 증거<span class="muted">원인 후보 ${causes.length}개</span></h3>` +
-      (causes.length ? causes.map(c => `<ul class="evid">${decCauseLine(c)}${decEvidenceLines(c)}</ul>`).join('<br>') : `<p class="muted">${esc(UI.idText(detail.reason || ''))}</p>`) + `</div></section>`;
+      (causes.length ? causes.map(c => `<ul class="evid">${decCauseLine(c)}${decEvidenceLines(c)}</ul>`).join('<br>') : `<p class="muted">견줄 원인 후보가 없습니다.</p>`) + `</div></section>`;
 }
 // 서버 설명문에서 글자까지 같은 문장 · 구절이 되풀이되면 처음 것만 남긴다(같은 제외 사유가 후보마다 달려 한 문단에 세 번 나온다)
 // 「'A' — 사유; 'B' — 사유; 'C' — 사유.」를 「'A', 'B', 'C' — 사유.」로 묶는다. 내용은 빼지 않는다

@@ -157,6 +157,10 @@ class DecisionDelivery:
         payload['current_check'] = self.ctx.check_approval(*args)
 
     def deliver(self, row):
+        """커밋된 승인을 판단 장부에 남긴다(승인 원문 그대로 · 이 승인의 주인). 효과는 내지 않는다 — 정비 요청 · 발주 같은 업무 거래와 설비 명령은
+        모두 흐름의 단계가 낸다(흐름에 그 동작을 내는 단계가 없으면 그 동작은 나가지 않고, 승인 화면과 결과 보고가 그 사실을 말한다 —
+        instances.skipped_actions). 전에는 흐름에 발주 단계가 없으면 여기서 발주를 냈다(새7) — 흐름이 「실행하지 않음」으로 보고하는 동안
+        발주는 이미 나가 있었다. 돌려줌 = 낸 거래(늘 빈 목록)."""
         payload = row['payload']
         self.validate(payload)
         snapshot = deepcopy(payload['plan']['_snapshot'])
@@ -170,16 +174,4 @@ class DecisionDelivery:
             d.clear()
             d.update(snapshot, process_approval_id=row['todo_id'], executions=executions)
             self.ctx.persist()
-        results = []
-        # C2: 흐름의 시스템 task 가 실행하는 거래(작업지시, 흐름에 발주 task 가 있으면 발주)는 여기서 실행하지 않는다
-        deferred = set(payload.get('deferred') or ['WO_CREATE'])
-        for item in payload['plan'].get('enterprise', []):
-            if item.get('code') in deferred:
-                continue
-            result = self.ctx.exec_skill(d, deepcopy(item))
-            if result.get('ok') is not True:
-                raise RuntimeError(result.get('error') or str(result))
-            record_execution(d, result)
-            self.ctx.persist()
-            results.append(result)
-        return results
+        return []

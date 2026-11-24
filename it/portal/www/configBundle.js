@@ -33,7 +33,7 @@
   const bundleCounts = bundle => { const s = bundle.summary || {}; return counts(s) + (s.provided_flows ? ` · 함께 담긴 기본 제공 흐름 ${s.provided_flows}개(지금 배포된 판본)` : ''); };
   // [기준으로 되돌리기]가 지우는 것과 남기는 것 — 확인 창이 이 한 곳을 쓴다. 서버 config_bundle.py 가 하는 일 그대로다: 단계는 RESET_STEPS(지식 → 배포 → 흐름 →
   // 에이전트 → 도구 서버 → 질문 · 채점 · 시험 기록), 남기는 것은 RESET_KEPT. 서버가 범위를 바꾸면 여기만 고친다. 실제로 지운 것 · 남긴 것은 응답(removed · kept · base_missing)을 그대로 보인다
-  const RESET_REMOVES = '내가 적재한 문서의 지식(기본 제공 판본으로 돌아갑니다) · 업무 DB 표 정의 · 화면에서 만든 조치 방법, 내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
+  const RESET_REMOVES = '내가 적재한 문서의 지식(기본 제공 문서는 기본 제공 판본으로 돌아가고, 내가 올린 문서는 지식에서 빠집니다) · 업무 DB 표 정의 · 화면에서 만든 조치 방법, 내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
   const RESET_KEEPS = [
     ['기본 제공 에이전트 · 스킬 · 역할 · 도구 서버 · 흐름과 기본 제공 문서의 지식', '그대로 둡니다'],
     ['처리 건과 처리 건 기록', '그대로 둡니다. 지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다'],
@@ -166,7 +166,7 @@
       const removed = r.removed || [], kept = r.kept || [], missing = r.base_missing || [], steps = r.steps || [];
       return block('지운 것', removed.length ? lines('check', removed.map(x => [x, ''])) : '<p class="muted">지울 것이 없었습니다. 기록(끝난 질문 · 판단 채점 · 시험 비교)만 비웠습니다.</p>')
         + block('남긴 것', lines('circle-dashed', kept.map(x => [x, ''])))
-        + (missing.length ? `<div class="alert" data-reset-missing>${UI.icon('triangle-alert')}<h2>기본 제공 문서 ${missing.length}개의 지식이 지금 없습니다</h2><section>${H(missing.join(', '))} — 시작 파일을 다시 실행하면 다시 적재됩니다.</section></div>` : '')
+        + (missing.length ? `<div class="alert" data-reset-missing>${UI.icon('triangle-alert')}<h2>기본 제공 문서 ${missing.length}개의 지식이 지금 없습니다</h2><section>${H(missing.join(', '))} — 문서 등록 이력에서 비운 채입니다. 「지식 › 문서 등록」의 제공 문서에서 골라 다시 넣으세요.</section></div>` : '')
         + (steps.length ? UI.fold(`단계별 결과<span class="muted num">${steps.length}</span>`, lines('check', steps.map(s => [s.label, s.text]))) : '');
     }
     let importing = false;                                // 불러오기 · 건너뛰고 불러오기는 한 번에 하나(두 번 누름)

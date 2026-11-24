@@ -25,16 +25,39 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN
+from hydcommon.topics import ASSETS
+
 from . import progress as progress_log
 from .agents_store import agent_settings, csv_list, run_servers
 
-SCENARIOS = [
-    {"key": "cooler", "asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "label": "쿨러 성능 저하 · HYD-01"},
-    {"key": "pump", "asset": "HYD-02", "pattern": "PUMP_LEAKAGE", "label": "펌프 내부 누설 · HYD-02"},
-    {"key": "fan", "asset": "HYD-03", "pattern": "FAN_VIBRATION", "label": "팬 진동 상승 · HYD-03"},
-]
-BY_KEY = {s["key"]: s for s in SCENARIOS}
+#: 업무 표 감시가 내는 경보 — 센서 원인 진단 대상이 아니라 시험 시나리오가 아니다(판단 서비스 card.BUSINESS_PATTERNS 와 같은 두 경보)
+BUSINESS_PATTERNS = (PM_PATTERN, PURCHASE_PATTERN)
 AGENT_TIMEOUT_S = float(os.getenv("AGENT_TRIAL_TIMEOUT_S", "120"))
+
+
+def agent_url() -> str:
+    return os.getenv("AGENT_URL", "http://agent:8091")
+
+
+def call_patterns() -> list[dict]:
+    """지식 지도의 이상 패턴 목록(판단 서비스 /api/ontology/patterns — 패턴마다 이름 · 원인 진단을 할 수 있는가 · 못 하면 그 까닭)."""
+    try:
+        with urllib.request.urlopen(agent_url() + "/api/ontology/patterns", timeout=15) as r:
+            rows = json.loads(r.read())
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        raise RuntimeError(f"판단 서비스(agent)에서 이상 패턴 목록을 읽지 못해 시험 시나리오를 정하지 못했습니다: {e}") from e
+    if not isinstance(rows, list) or not all(isinstance(r, dict) and isinstance(r.get("code"), str) for r in rows):
+        raise RuntimeError("판단 서비스의 이상 패턴 목록 응답 형식이 올바르지 않습니다")
+    return rows
+
+
+def scenarios(patterns: list[dict]) -> list[dict]:
+    """시험 시나리오 = 지식 지도의 설비 이상 패턴(업무 경보 제외) × 설비 3기. 전에는 쿨러 · 펌프 · 팬 셋을 설비 하나씩 고정해, 같은 경보를 다른
+    설비(예: 냉각이 정상인 설비)에서 시험할 수 없었다(전수검사 02-3). 원인 지식이 아직 없는 패턴도 싣는다 — 시험이 그 까닭으로 보류한다."""
+    return [{"key": f"{p['code']}@{asset}", "asset": asset, "pattern": p["code"], "label": f"{p.get('name') or p['code']} · {asset}"}
+            for p in patterns if p["code"] not in BUSINESS_PATTERNS for asset in ASSETS]
 
 
 def _now() -> str:
@@ -50,7 +73,7 @@ def canonical(value) -> str:
 
 
 # ---------------------------------------------------------------- agent settings (read-only, the same rows the agent screen writes)
-def agent_profiles(rt) -> dict:
+def agent_profiles(rt, scenario_list: list[dict]) -> dict:
     """AI agents of the tenant (users.is_agent and agent_type 'agent' — systems like sys:scada are not agents) with their MCP
     servers and attached skills. A skill attached but absent from the store is kept with the reason, never dropped.
     tools = the servers a real run of that agent uses (agent_settings → run_servers: no declaration = every tenant server).
@@ -65,7 +88,8 @@ def agent_profiles(rt) -> dict:
     names = sorted({n for u in agents for n in assigned.get(u["id"], [])})
     store = {r["skill_name"]: r for r in repo.list_skills(tenant, names)} if names else {}
     servers = sorted(mcp_registry.store_for(repo).servers(tenant))
-    scenario_flows = {flow_deploy.route_definition(rt, s["pattern"]).id for s in SCENARIOS}
+    scenario_flows = {flow_deploy.route_definition(rt, p).id for p in dict.fromkeys(s["pattern"] for s in scenario_list)}
+    kinds = " · ".join(dict.fromkeys(s["label"].rsplit(" · ", 1)[0] for s in scenario_list)) or "없음"
     steps: dict[str, list[dict]] = {}
     for s in agents_api.step_runs(rt):
         steps.setdefault(s["agent_id"], []).append(s)
@@ -80,7 +104,7 @@ def agent_profiles(rt) -> dict:
         note = None
         if mine and not any(s["definition_id"] in scenario_flows for s in mine):
             flows = " · ".join(dict.fromkeys(s["definition_name"] or s["definition_id"] for s in mine))
-            note = (f"이 에이전트가 맡는 흐름({flows})은 시험 시나리오(쿨러 · 펌프 · 팬 설비 이상)가 여는 흐름이 아니라 그 일을 여기서 재지 못합니다 "
+            note = (f"이 에이전트가 맡는 흐름({flows})은 시험 시나리오(설비 이상 — {kinds})가 여는 흐름이 아니라 그 일을 여기서 재지 못합니다 "
                     "— 시험하면 같은 설정으로 설비 이상 판단만 합니다")
         out.append({"id": u["id"], "name": u.get("username") or u["id"], "goal": u.get("goal"), "model": u.get("model"),
                     "tools": list(run_servers(agent_settings(repo, tenant, u).tools, servers)), "skills": skills, "trial_note": note})
@@ -268,7 +292,7 @@ def compare(ta: dict, tb: dict) -> dict:
 
 # ---------------------------------------------------------------- the agent service call
 def call_agent(scenario: dict, agent: dict, entries: dict, tenant_servers: list[str]) -> dict:
-    url = os.getenv("AGENT_URL", "http://agent:8091") + "/api/agent/trial"
+    url = agent_url() + "/api/agent/trial"
     body = json.dumps({"scenario": {"asset": scenario["asset"], "pattern": scenario["pattern"]}, "agent": agent,
                        "entries": entries, "tenant_servers": tenant_servers}, ensure_ascii=False, default=str).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
@@ -283,18 +307,19 @@ def call_agent(scenario: dict, agent: dict, entries: dict, tenant_servers: list[
 
 
 class TrialService:
-    def __init__(self, rt, evaluate=call_agent):
-        self.rt, self.repo, self.tenant, self.evaluate = rt, rt.repo, rt.tenant_id, evaluate
+    def __init__(self, rt, evaluate=call_agent, patterns=call_patterns):
+        self.rt, self.repo, self.tenant, self.evaluate, self.patterns = rt, rt.repo, rt.tenant_id, evaluate, patterns
         self.store = store_for(rt.repo)
 
     def options(self) -> dict:
-        p = agent_profiles(self.rt)
-        return {"scenarios": SCENARIOS, **p}
+        listed = scenarios(self.patterns())
+        return {"scenarios": listed, **agent_profiles(self.rt, listed)}
 
-    def _scenario(self, key) -> dict:
-        s = BY_KEY.get(key)
+    @staticmethod
+    def _scenario(key, listed: list[dict]) -> dict:
+        s = next((x for x in listed if x["key"] == key), None)
         if s is None:
-            raise ValueError(f"고정 시나리오가 아닙니다: {key} (쿨러 · 펌프 · 팬 중에서 고릅니다)")
+            raise ValueError(f"지식 지도의 설비 이상 경보와 설비로 만든 시나리오가 아닙니다: {key} — 시나리오 목록에서 고르세요")
         return s
 
     def _snapshot(self, scenario: dict, snapshot_id: str | None, reuse_latest: bool) -> tuple[dict, bool]:
@@ -330,14 +355,15 @@ class TrialService:
     def run(self, body: dict, progress=progress_log.SILENT) -> dict:
         """progress: 진행 기록 — 입력 스냅숏 준비 → 에이전트 A 시험 → (B 시험 → 두 결과 비교)를 그 일이 시작 · 끝날 때 적는다.
         새 스냅숏은 비어 있고, 입력 값은 시험이 원천을 처음 읽을 때 스냅숏에 고정된다(_run_one 의 added) — 그래서 고정한 값의 수는 시험 단계에 적는다."""
-        scenario = self._scenario(body.get("scenario"))
+        listed = scenarios(self.patterns())
+        scenario = self._scenario(body.get("scenario"), listed)
         sides = [s for s in (body.get("a"), body.get("b")) if s]
         if not sides:
             raise ValueError("시험할 에이전트를 하나 이상 고르세요")
         progress.plan([("input", "입력 스냅숏 준비")] + [(f"side:{i}", f"에이전트 {'AB'[i]} 시험") for i in range(len(sides))]
                       + ([("compare", "두 결과 비교")] if len(sides) > 1 else []))
         progress.start("input")
-        p = agent_profiles(self.rt)
+        p = agent_profiles(self.rt, listed)
         snap, reused = self._snapshot(scenario, body.get("snapshot"), bool(body.get("reuse_latest")))
         progress.done("input", f"지난 시험의 입력을 다시 씀 · 고정된 값 {len(snap['entries'])}개" if reused
                       else "새 입력 스냅숏을 만듦 — 시험이 원천에서 처음 읽는 값이 여기에 고정됩니다")

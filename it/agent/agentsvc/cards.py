@@ -71,8 +71,9 @@ def rule_fires(rule: dict, facts: dict) -> tuple[bool, list[str]]:
 
 # A115 (r14 A11, DMN hit policy): how this code evaluates each table it executes. The graph declares the policy on the
 # DecisionTable (instances.cypher); a declaration that differs from the evaluation is refused instead of silently ignored.
-# dt:diagnose-cause is not evaluated here: the cause ranking is prior x evidence weight (card.rank_causes).
-EXECUTED_HIT_POLICIES = {"dec:action-candidates": "COLLECT", "dec:compliance": "COLLECT", "dec:rank-actions": "UNIQUE"}
+# dec:diagnose-cause (the document's diagnosis rules) is evaluated by card.rank_causes: a fired rule puts its cause first (PRIORITY).
+EXECUTED_HIT_POLICIES = {"dec:diagnose-cause": "PRIORITY", "dec:action-candidates": "COLLECT", "dec:compliance": "COLLECT",
+                         "dec:rank-actions": "UNIQUE"}
 
 
 def check_hit_policy(rows: list[dict]) -> None:
@@ -246,6 +247,21 @@ def policy_digest(dmn, skill):
         or (r['decision'] == 'dec:compliance' and compliance_applies(r,skill))]
     return hashlib.sha256(json.dumps({'skill':skill, 'rules':applicable},
         ensure_ascii=False,sort_keys=True,separators=(',', ':')).encode()).hexdigest()
+
+
+def with_relation(skills: dict[str, dict], failure_mode: str | None) -> dict[str, dict]:
+    """조치 방법마다 이 판단의 고장 유형에 대한 관계(완화 MITIGATED_BY · 근본 조치 REMEDIED_BY · 예방 PREVENTED_BY)를 relation 에 둔다.
+    지식 질의(t3_skills)는 (고장 유형, 관계) 짝을 모두 낸다 — 짝 하나를 임의로 골라 내던 때는 고장 유형 둘에 이어진 조치 방법의 관계가 다른 고장
+    유형의 것이 될 수 있었다(정기 정비 후보 거름 · 손익의 근본 조치 판정이 그 값을 쓴다, 탐사 N13). 이 고장 유형에 이어지지 않았으면 None."""
+    out = {}
+    for sid, skill in skills.items():
+        pairs = [x for x in skill.get('relations') or [] if x.get('failureModeId') == failure_mode] if failure_mode else []
+        kinds = sorted({x['relation'] for x in pairs})
+        out[sid] = dict(skill, relation=kinds[0] if len(kinds) == 1 else None, failureModeId=failure_mode if pairs else None)
+        if len(kinds) > 1:
+            raise ValueError(f"조치 방법 {skill.get('sopId') or sid}이 고장 유형 {failure_mode}에 관계 {', '.join(kinds)}로 함께 이어져 있습니다 — "
+                             "한 고장 유형에 한 관계만 둘 수 있습니다(지식 › 조치 방법에서 하나를 지우세요)")
+    return out
 
 
 def scoped_skills(pattern: str, skills: dict[str, dict], purchase_part: str | None = None) -> dict[str, dict]:

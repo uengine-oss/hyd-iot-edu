@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
  && npm install -g @anthropic-ai/claude-code@2.1.310 \
  && apt-get purge -y --auto-remove && rm -rf /var/lib/apt/lists/*
 WORKDIR /srv
-# CLI 격리(worker/cli_sandbox.py)는 커널이 거는 Landlock 파일 규칙이 있어야 한다 — 없으면 이미지를 만들지 않는다(격리 없이 도는 폴백 없음).
+# CLI 격리(worker/cli_sandbox.py)는 커널이 거는 Landlock 파일 규칙으로 한다. 여기서는 이미지의 setpriv 가 그 옵션을 아는지만 본다(모르면 이미지를 만들지
+# 않는다 — 격리 없이 도는 폴백 없음). 이 PC 의 커널이 그 규칙을 실제로 거는지는 워커가 켜질 때 본다(cli_sandbox.verify).
 RUN /usr/bin/setpriv --help | grep -q -- '--landlock-access'
 COPY it/agent-worker/requirements.txt /srv/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt

@@ -24,6 +24,7 @@ from hydcommon.words import particle
 import hashlib
 import json
 import logging
+import shutil
 import time
 import uuid
 from dataclasses import asdict, replace
@@ -50,7 +51,9 @@ _PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
 NO_WORK_RULES_NOTICE = ("이 에이전트에는 업무 규칙이 붙어 있지 않아 공통 규칙만 넣었습니다 — 작업 폴더 밖 금지 · 도구로 확인 · "
                         "지어내지 않기 · 승인 전 쓰기 금지 · 근거 인용. 업무 고유 규칙은 에이전트 목표 · 스킬에 적으세요.")
 GENERIC_FAILURE = "에이전트 실행이 실패했습니다. 처리 과정의 원문을 시스템 관리자에게 보여 주면 원인을 확인할 수 있습니다."
-REQUEST_FORMAT = 1          # 같은 요청 판정 재료의 판(바꾸면 앞선 저장을 다시 쓰지 않는다)
+#: 같은 요청 판정 재료의 판(바꾸면 앞선 저장을 다시 쓰지 않는다). 2: 같은 요청 저장은 수업 AI 자리에서만 쓴다(ai_replay Claim) — 1의 저장에는
+#: 수업 자리 밖(학생 흐름 · PBL 단계)의 실행이 남아 있다
+REQUEST_FORMAT = 2
 
 
 def _first(config: dict, keys) -> str | None:
@@ -77,6 +80,11 @@ class LeaseLost(Cancelled):
 class RelayStopped(Stop):
     """로컬 중계 관문 · 강의 중계가 모델 호출을 거절했다 — 문장은 관문 사유 표(course_ledger.REASONS)."""
     title = "AI 중계 멈춤"
+
+
+class ToolServerDown(Stop):
+    """이 단계에 붙인 도구 서버에 닿지 못했다 — AI 단계를 시작하지 않는다(그 도구 없이 답을 지어내지 않게)."""
+    title = "도구 서버에 닿지 못함"
 
 
 class Runner:
@@ -236,7 +244,12 @@ class Runner:
         fixed_reads = {server: tools for server, tools in plan.items() if tools is not None and server in ((tenant_mcp or {}).get("mcpServers") or {})}
         if questions_live:
             from . import question_tools
-            tenant_mcp, gate.read_tools = question_tools.attach(fixed_reads, ws.path, self.s.process_url)
+            # 기본 제공 서버의 정해진 조회 도구는 질문 창구로, 학생이 등록한 서버(검사 도장의 읽기 도구 — run_servers 의 None)는 흐름 단계처럼
+            # 그 서버에 바로 붙인다(탐사 S — 학생 에이전트의 질문이 학생 서버를 못 썼다)
+            stamped = {n: spec for n, spec in ((tenant_mcp or {}).get("mcpServers") or {}).items() if plan.get(n, ()) is None}
+            windows, names = question_tools.attach(fixed_reads, ws.path, self.s.process_url)
+            tenant_mcp = dict(tenant_mcp or {}, mcpServers={**stamped, **windows["mcpServers"]})
+            gate.read_tools = {**{n: gate.read_tools.get(n, []) for n in stamped}, **names}
         if gate.dropped:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
             self._event(row, job_id, "task_working", {"type": "notice", "kind": "tools_gated", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
@@ -256,6 +269,12 @@ class Runner:
                                  run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
         self._secrets.extend(bridged.redaction_values)
         servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
+        down = _unreachable(ws.path)
+        if down:
+            raise ToolServerDown(f"이 단계에 붙인 도구 서버 {', '.join(f'「{n}」' for n in down)}에 닿지 못해 AI 단계를 시작하지 않았습니다 — 그 도구 없이 "
+                                 "실행하면 AI가 읽지 못한 자료로 답을 지어낼 수 있습니다. 그 서버가 켜져 있는지 확인하고(AI 에이전트 › 도구 연결 화면의 "
+                                 "연결 검사) 이 단계 아래의 「다시 수행」으로 이 단계를 다시 실행해 주세요.",
+                                 raw="; ".join(f"{n}: {why}" for n, why in down.items()))
         allowed = allowed_for_run(self.s.allowed_tools, servers, fixed_reads if (question_task or handover_task) else None, gate.read_tools)
         # B-03: 업무 규칙은 시스템 프롬프트로 — 설정 출처를 끈 CLI 는 작업 폴더의 규칙 파일을 읽지 않는다
         extra_args = [*bridged.extra_args, "--append-system-prompt", constitution, "--allowedTools", ",".join(allowed),
@@ -269,7 +288,14 @@ class Runner:
             step=str(row.get("activity_name") or ""), provider=PROVIDER,
             source={"todo_id": str(row["id"]), "generation": int(row.get("generation") or 0)}, accepted=self._accepted,
             reclaimed=int(row.get("claim_count") or 1) > 1, skills=[e["name"] for e in provided],
-            skills_changed=_skills_changed(agent))
+            skills_changed=_skills_changed(agent), phase=(ctx.course or {}).get('phase') or 'course')
+        # AI에게 보일 지시: 입력의 긴 글 값은 작업 폴더의 파일로(prompt.input_files — 한 줄 JSON 은 읽기 도구가 읽지 못한다). 앞 실행의 파일은 지운다
+        shown_query, input_texts = prompt.input_files(row.get("query") or "")
+        shutil.rmtree(ws.path / prompt.INPUT_DIR, ignore_errors=True)
+        for rel, value in input_texts.items():
+            (ws.path / rel).parent.mkdir(parents=True, exist_ok=True)
+            (ws.path / rel).write_text(value, encoding="utf-8")
+        shown = dict(row, query=shown_query)
         if ctx.human_answer:
             plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=workspace_existed)
             hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate
@@ -277,10 +303,10 @@ class Runner:
                                        process_scope=context.process_scope(row))
             resume_session = plan.session_id or None
             if plan.restarted:
-                text = prompt.build(row, extras, workdir=str(ws.path)) + "\n\n" + text
+                text = prompt.build(shown, extras, workdir=str(ws.path)) + "\n\n" + text
                 self._event(row, job_id, "task_working", {"type": "notice", "kind": "session_restarted", "content": f"이전 실행을 이어갈 수 없어 새로 시작합니다. ({plan.reason})"}, crew_type="agent")
         else:
-            text = prompt.build(row, extras, workdir=str(ws.path))
+            text = prompt.build(shown, extras, workdir=str(ws.path))
             # #10: 임대 만료 뒤 재점유(워커 재시작 · 끊김)는 끝나지 않은 실행을 이어 받는다 — 다시 낸 응답이면 그 실행을 처음부터 다시 낸다
             resume_session = claim.resumable(ai_replay.resume_after(_session_of(row), reclaimed=int(row.get("claim_count") or 1) > 1))
         if result_check_task:
@@ -668,6 +694,31 @@ class Runner:
     def _event(self, row: dict, job_id: str, event_type: str, data: dict, *, crew_type: str) -> None:
         self.repo.record_events([{"job_id": job_id, "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": crew_type,
                                   "event_type": event_type, "data": data}])
+
+
+def _unreachable(workdir) -> dict[str, str]:
+    """이 실행의 작업 폴더 도구 설정(.mcp.json — CLI 가 읽을 그 파일, 비밀 값이 채워진 것) 가운데 바깥 서버(HTTP)마다 도구 목록을 한 번 받아 본다
+    (연결 검사 · 재생의 쓰기 도구 다시 부르기와 같은 함수 procsvc.mcp_check.check). 닿지 않는 서버 → 까닭(원문 칸에만). 워커 자신의 명령형 창구
+    (질문 · 결과 검사 — 질문 창구는 붙일 때 process 에서 도구 목록을 이미 받았다)는 보지 않는다. CLI 는 도구 서버에 닿지 못해도 그 도구 없이
+    실행을 이어 가, 학생 PC의 서버가 꺼져 있으면 에이전트가 읽지 못한 자료로 안을 낼 수 있었다(2026-11-22 탐사 S)."""
+    from procsvc import mcp_check
+    from .bridge import MCP_CONFIG_FILENAME
+    try:
+        servers = (json.loads((Path(workdir) / MCP_CONFIG_FILENAME).read_text(encoding="utf-8")) or {}).get("mcpServers") or {}
+    except FileNotFoundError:
+        return {}
+    down = {}
+    for name, spec in sorted(servers.items()):
+        if not isinstance(spec, dict) or spec.get("command"):
+            continue
+        try:
+            checked = mcp_check.check(mcp_check.normalize(spec))
+        except ValueError as e:
+            down[name] = f"설정을 읽지 못함: {e}"
+            continue
+        if checked["status"] != "ok":
+            down[name] = f"{checked.get('error')} ({checked.get('error_kind')})"
+    return down
 
 
 def _duration(seconds: float) -> str:

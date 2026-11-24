@@ -28,6 +28,7 @@ from hydcommon.service import make_app
 from hydcommon.timeutil import now, now_iso
 from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, current_approval, engine, reobs_series
 from .store import Store
+from hydcommon.pg import answer_unreachable, connect as pg_connect
 from . import skill_graph
 from .inbox import actor_or_400
 from .knowledge_projection import KnowledgeReconciler
@@ -51,6 +52,15 @@ book: dict[str, dict] = {}          # action-card decisions (L9, ontology v2)
 audit_log: list[dict] = []
 SOURCE_BATCH_MAX = int(os.getenv('SOURCE_BATCH_MAX', '50'))   # A080: deliveries received per DB connection and per offset commit (~6 s at 20x)
 plant_status: dict[str, dict] = {}   # 설비별 최신 상태(plant.status — 판단 · 승인 검사가 읽는다). 고치는 곳은 _keep_status 하나, 받는 반복은 watch_status
+# 설비별 바깥 변화 기록(plant.status 의 outside — 가상 설비 plantsim.plant 머리말: boot · seq · 무엇 · 누가 · 언제 at)들. 다른 기록(boot · seq)만, 바뀐
+# 때(at) 차례로 마지막 OUTSIDE_KEEP 개를 둔다 — 해제처럼 그 일이 난 때가 있는 원천 사건은 그때까지의 기록과 견준다(outside_at_clear). 그 칸을
+# 싣지 않은 상태(명령 응답만 실은 것 · 그 기록이 없는 원천)는 이 기록을 지우지 않는다. 고치는 곳은 _keep_status 하나 — 사건 · 효과 확인 판정이
+# machine.outside_change 로 견준다. 메모리에만 있다: 다시 켜면 업무 DB 의 설비별 최신 상태가 실은 기록 하나씩만 남는다(그 앞의 기록은 모른다)
+plant_outside: dict[str, list[dict]] = {}
+OUTSIDE_KEEP = 32
+# 이번 기동이 설비 상태를 받기 시작한 때(restore_and_build). 관측 시각이 이보다 앞선 최신 상태는 업무 DB 에서 되살린 것이다 — 꺼져 있던 동안의
+# 바깥 변화는 아직 모른다(outside_at_clear 가 다음 상태를 기다린다)
+status_since: datetime | None = None
 producer = None
 consumer_client = None
 loop: asyncio.AbstractEventLoop | None = None
@@ -123,7 +133,7 @@ def latest_tag(asset: str, tag: str) -> float | None:
     """One tag's latest 1 s value (the incident's recovery tag: TS1 · PS1 · VS1) from TimescaleDB. None = no row yet;
     a read failure raises TagReadError with its reason (never the same None)."""
     try:
-        with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
+        with pg_connect(PG_DSN, name='시계열 DB', autocommit=True) as conn, conn.cursor() as cur:
             cur.execute("SELECT value FROM tag_1s WHERE asset=%s AND name=%s ORDER BY time DESC LIMIT 1", (asset, tag))
             row = cur.fetchone()
     except psycopg.Error as e:
@@ -134,7 +144,7 @@ def latest_tag(asset: str, tag: str) -> float | None:
 def tag_series(asset: str, tag: str, since: str, until: str | None = None) -> list[tuple[str, float]]:
     """A161-G3: the 1 s rows of one tag from `since` (ISO) to `until` (default now), oldest first, at most reobs_series.MAX_ROWS
     (the newest ones when the window is longer). A read failure raises — window_series records it as the window's error."""
-    with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
+    with pg_connect(PG_DSN, name='시계열 DB', autocommit=True) as conn, conn.cursor() as cur:
         cur.execute("SELECT time, value FROM tag_1s WHERE asset=%s AND name=%s AND time >= %s::timestamptz"
                     " AND (%s::timestamptz IS NULL OR time <= %s::timestamptz) ORDER BY time DESC LIMIT %s",
                     (asset, tag, since, until, until, reobs_series.MAX_ROWS))
@@ -190,7 +200,7 @@ def _ddl_sync_once():
     import psycopg
     from . import ddl_sync
     from .procdb import SUPABASE_DSN
-    report = ddl_sync.sync(_q, lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+    report = ddl_sync.sync(_q, lambda: pg_connect(SUPABASE_DSN))
     if report.get('changed'):
         _audit("-", "process", "DDL_SOURCE_DRIFT", {"changes": report["changes"][:50]})
     return report
@@ -201,7 +211,7 @@ def _scm_sync_once():
     import psycopg
     from . import scm_sync
     from .procdb import SUPABASE_DSN
-    report = scm_sync.sync(_q, lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+    report = scm_sync.sync(_q, lambda: pg_connect(SUPABASE_DSN))
     if report.get('changed'):
         _audit("-", "process", "SCM_SOURCE_SYNCED", {k: report[k] for k in ("set_suppliers", "set_quotes", "delete_quotes")})
     return report
@@ -294,6 +304,74 @@ def _keep_status(payload) -> None:
     at, held = source_time(payload), source_time(plant_status.get(asset) or {})
     if at is not None and (held is None or at > held):
         plant_status[asset] = payload
+    record = payload.get('outside')
+    if at is not None and isinstance(record, dict):
+        known = plant_outside.setdefault(asset, [])
+        if all((r.get('boot'), r.get('seq')) != (record.get('boot'), record.get('seq')) for r in known):
+            # 바뀐 때는 기록 자신의 at(가상 설비 시계 — 감지기가 해제에 싣는 t 와 같은 시계)이다. 읽을 수 없으면 그 기록을 처음 실은 상태의 관측 시각
+            known.append(dict(record, _at=source_time({'t': record.get('at')}) or at))
+            known.sort(key=lambda r: r['_at'])
+            del known[:-OUTSIDE_KEEP]
+
+
+def _outside_copy(record: dict) -> dict:
+    return {k: v for k, v in record.items() if k != '_at'}
+
+
+def outside_record(asset: str) -> dict | None:
+    """그 설비의 마지막 바깥 변화 기록(plant_outside) 사본. 받은 적이 없으면 None."""
+    held = plant_outside.get(asset) or []
+    return _outside_copy(held[-1]) if held else None
+
+
+def _outside_later(opened: dict, record: dict) -> bool:
+    """record 가 opened(처리 건이 열릴 때의 기록) 뒤에 생긴 바깥 변화인가 — 같은 켜짐(boot)이면 번호(seq)가 더 크고, 다른 켜짐이면 바뀐 때가
+    더 늦다(가상 설비가 다시 켜짐 — 번호는 0부터 다시). 같은 기록 · 그보다 앞선 기록(다시 켠 process 가 업무 DB 에서 되살린 옛 상태의 것)은 아니다."""
+    if record.get('boot') == opened.get('boot'):
+        return record.get('seq', -1) > opened.get('seq', -1)
+    opened_at = source_time({'t': opened.get('at')})
+    return opened_at is None or record['_at'] > opened_at
+
+
+def outside_at_clear(inc: machine.Incident, until: datetime | None) -> tuple[dict | None, str | None]:
+    """승인 전 해제(조치 전 자연 회복인지 가를 때)의 바깥 변화 — 처리 건이 열릴 때의 기록(inc.outside_at_open) 뒤, 해제가 난 때(until — 해제의 t.
+    없으면 지금까지) 전에 설비가 승인한 길 밖에서 바뀌었는가. 돌려줌 (바뀐 기록, 모르는 까닭): 바뀌었으면 (그 기록, None), 모르면 (None, 까닭),
+    바뀌지 않았다는 것을 알면 (None, None). 열 때 기록이 없으면(그 기록을 싣지 않는 원천 · 열 때 설비 상태를 아직 못 받음) machine.outside_change 와
+    같이 견줄 것이 없어 (None, None)이다.
+    받은 기록에 해제 전의 변화가 없을 때 「바뀌지 않았다」는 다음 둘 가운데 하나로만 안다 — 받은 기록이 끊기는 때(다시 켬: 메모리의 기록이 사라지고
+    업무 DB 의 최신 상태 하나만 남는다 · 기록이 OUTSIDE_KEEP 개를 넘음)에는 단정하지 않는다:
+      ① 해제 뒤의 첫 변화가 열 때 기록의 바로 다음 번호다(같은 켜짐, seq + 1) — 그 사이에 다른 변화가 없었다. 아니면 그 사이를 받지 못한 것이고,
+         받지 못한 변화가 해제 전인지 뒤인지 알 길이 없다 → 모름(책임자 확인). 그 기록은 다시 오지 않으므로 기다리지 않는다.
+      ② 해제 뒤의 변화가 없고, 이번 기동 뒤에 받은 최신 상태의 기록이 아직 열 때 기록이다 — 기록은 바뀔 때마다 번호가 오르므로 그 뒤로 바뀐 적이 없다.
+         최신 상태가 다시 켜기 전 것뿐이면(다시 켠 뒤 그 설비의 상태를 아직 받지 못함) 꺼져 있던 동안의 변화를 모른다 — 설비는 1초마다 보고하므로
+         SourcePending 으로 다음 상태를 기다린다(원천 처리기가 5초 뒤 다시 한다).
+    해제가 그 최신 상태보다 뒤에 났을 수는 있다(설비 상태와 경보는 길이 달라 1초 안쪽으로 엇갈린다) — 그 틈의 변화는 그 해제를 일으킨 것이 아니다
+    (감지기는 해제선 아래를 정해 둔 시간 동안 지켜본 뒤에 푼다)."""
+    opened = inc.outside_at_open
+    if not isinstance(opened, dict):
+        return None, None
+    later = [r for r in plant_outside.get(inc.asset) or [] if _outside_later(opened, r)]
+    before = [r for r in later if until is None or r['_at'] <= until]
+    if before:
+        return _outside_copy(before[-1]), None
+    if later:
+        first = later[0]
+        if first.get('boot') == opened.get('boot') and first.get('seq') == opened.get('seq', -1) + 1:
+            return None, None
+        if first.get('boot') != opened.get('boot'):
+            return None, f"해제 뒤에 받은 기록이 다시 켜진 가상 설비의 것({machine.outside_words(first)})이라 그 전의 변화를 받지 못함"
+        return None, (f"해제 뒤에 받은 바깥 변화({machine.outside_words(first)}) 앞의 변화 {first.get('seq', 0) - opened.get('seq', 0) - 1}건을 "
+                      "받지 못해 그것이 해제 전인지 모름")
+    held = plant_status.get(inc.asset) or {}
+    seen = source_time(held)
+    if seen is None or status_since is None or seen < status_since:
+        raise SourcePending('process 가 다시 켜진 뒤 이 설비의 상태를 아직 받지 못해, 해제 전에 설비가 승인한 조치 밖에서 바뀌었는지 모릅니다 — '
+                            '다음 설비 상태를 기다립니다')
+    now_record = held.get('outside')
+    if isinstance(now_record, dict) and machine.outside_change(opened, now_record) is None:
+        return None, None
+    return None, ("지금 받은 설비 상태에 바깥 변화 기록이 없음" if not isinstance(now_record, dict) else
+                  f"지금 받은 설비 상태의 기록({machine.outside_words(now_record)})이 처리 건이 열릴 때의 기록보다 앞선 것이라 견줄 수 없음")
 
 
 async def watch_status():
@@ -412,7 +490,13 @@ def _apply_source_event(receipt):
     # fencing alone cannot prevent a previously running handler from finishing.
     with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
         if receipt['kind']=='CLEAR' and not inc.cleared:
-            machine.on_alert(inc,value,Fx(inc),trip=machine.active_trip(inc.asset,list(incidents.values()),since=inc.created))
+            trip=machine.active_trip(inc.asset,list(incidents.values()),since=inc.created)
+            # 바깥 변화는 「조치 전 자연 회복」인지 가를 때(승인 대기 · 받는 흐름 · 보호 정지 아님 — machine.on_alert)만 본다. 해제가 난 때(해제의
+            # t)까지만 본다 — 해제 처리가 늦게 돌면(접수 처리 대기 · 다시 켬) 그 뒤에 누른 [설비 초기화]가 자연 회복을 「바깥 변화」로 바꿨다. 해제에
+            # 시각이 없으면 지금까지의 바깥 변화를 모두 본다. 그때까지의 기록이 끊겼으면 모른다고 남긴다(outside_at_clear — 다시 켠 뒤 늦게 처리한 해제)
+            judged=inc.state=='AWAITING_APPROVAL' and inc.supported and not trip
+            outside,unknown=outside_at_clear(inc,source_time(value)) if judged else (None,None)
+            machine.on_alert(inc,value,Fx(inc),trip=trip,outside=outside,outside_unknown=unknown)
         elif receipt['kind']=='ACK':
             machine.on_status(inc,value,now(),Fx(inc))
         elif receipt['kind']=='REJECT':      # G3b-9: 명령 관문이 이 명령을 설비로 넘기지 않음 — 30초 응답 없음을 기다리지 않고 그 까닭으로
@@ -467,6 +551,7 @@ def _health_state():
 
 
 app = make_app("process — 처리 건 엔진(원천 접수 · 사람 승인 · 설비 명령 · ACK · 재관측 · 작업지시)", reg, _health_state)
+answer_unreachable(app)      # 업무 DB · 시계열 DB 연결을 다시 맺어 봐도 닿지 않은 요청은 raw 500 이 아니라 503 과 학생이 읽는 문장
 # /api/instances · /api/todolist · … — 경보로 처리 건을 여는 길은 원천 접수 하나(_admit_alert, 아래)
 instance_mode.mount(app, admit_alert=lambda alert: _admit_alert(alert))
 from . import agents_api
@@ -525,7 +610,7 @@ def instance_context() -> instance_mode.ProcessContext:
                                         get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
                                         reviews=_review_service, approval_receipts=_approval_receipts,
                                         exec_compensation=_exec_compensation, latest_tag=latest_tag, tag_read_error=TagReadError,
-                                        window_series=window_series)
+                                        window_series=window_series, plant_outside=outside_record)
 
 
 class ServiceRefused(ValueError):
@@ -652,7 +737,7 @@ async def restore_and_build(ctx: instance_mode.ProcessContext, *, state_path: st
     ctx = instance_context()(테스트는 바깥 자리만 바꾼 사본 — 그래프 질의는 ctx.cypher 하나를 모두가 쓴다), state_path = 사건 저장 파일
     (기본 PROCESS_STATE_PATH), repo · clock = instance_mode.build 에 그대로. 이벤트 루프(main.loop) · Kafka 송신기는 부르는 쪽이 정한다.
     돌려줌 = 처리 엔진 런타임(instance_mode.current() 와 같은 것)."""
-    global store, source_inbox, source_delivery, case_projector, knowledge_reconciler, _stopping
+    global store, source_inbox, source_delivery, case_projector, knowledge_reconciler, _stopping, status_since
     _stopping = False                         # 새 기동은 끄는 중이 아니다(끈 뒤 같은 프로세스에서 다시 켜면 멈춘 반복을 다시 알린다)
     instance_mode.caller_headers()            # 하-04 · 하-05: process 만 아는 실행 호출 값이 없으면 뜨지 않는다(조용히 쓰기 실패로 돌지 않게)
     schemas.fingerprint_key()                 # G3b-30: 승인 장부 지문 키가 없으면 첫 승인에서가 아니라 켜질 때 멈춘다
@@ -668,8 +753,11 @@ async def restore_and_build(ctx: instance_mode.ProcessContext, *, state_path: st
     rt.hooks.case_started = _link_injection     # C3: 수업 버튼의 설비 주입 → 그 주입이 연 처리 건 (누름 id 로 연결)
     source_inbox = PgSourceInbox(rt.repo, rt.tenant_id)
     states = await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state)
+    status_since = now()                      # 되살린 최신 상태(아래)는 이보다 앞선 관측이다 — 그 뒤의 바깥 변화는 다음 상태가 알린다(outside_at_clear)
     plant_status.clear()
-    plant_status.update(states)
+    plant_outside.clear()
+    for held in states.values():
+        _keep_status(held)
     source_delivery = SourceDelivery(source_inbox, rt, _apply_source_event, owner=rt.consumer + '-source')
     case_projector = CaseProjector(store, ctx.cypher, _incident_projected)
     knowledge_reconciler = KnowledgeReconciler(store, ctx.cypher, os.getenv('TENANT_ID', 'hyd'), rt.repo)
@@ -807,9 +895,7 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
 TX_JOBS = {"WO_CREATE": "skill:schedule-maintenance", "PR_CREATE": "skill:procure-part",
            "WO_RESCHEDULE": "skill:reschedule-maintenance",
            # C2 승인 뒤 실행 부품: 입고 확인 · 정비 수행 모사(작업지시 완료)
-           "GR_CONFIRM": "skill:receive-goods", "WO_COMPLETE": "skill:complete-maintenance",
-           # 시운전 통과 뒤 운전시간 계수기 리셋 · 다음 기한 기록 (시나리오 B)
-           "PM_RESET": "skill:pm-reset"}
+           "GR_CONFIRM": "skill:receive-goods", "WO_COMPLETE": "skill:complete-maintenance"}
 
 
 def _window_params(window, opt: dict) -> dict:
@@ -862,7 +948,7 @@ def exec_skill(d: dict, item: dict) -> dict:
         params = {"supplier": item['value'], "part": opt.get("name")}
         if item.get("part_no"):          # C2: 승인 경로가 확정한 부품 · 수량 · 금액 (ERP 가 견적 · AVL · 금액을 다시 확인)
             params.update(part_no=item["part_no"], qty=item["qty"], amount=item["amount"])
-    else:                                # C2: GR_CONFIRM(입고) · WO_COMPLETE(작업지시 완료) · PM_RESET(계수기 리셋) — 대상 기록 번호
+    else:                                # C2: GR_CONFIRM(입고) · WO_COMPLETE(작업지시 완료) — 대상 기록 번호
         params = {"ref": item.get("ref")}
         if item.get("sop"):
             params["sop"] = item["sop"]
@@ -974,8 +1060,9 @@ def _store_decision(payload):
         inc=incidents.get(origin['incident'])
         if not inc or inc.asset!=payload.get('asset') or (origin.get('pattern') is not None and origin['pattern']!=inc.pattern):
             raise HTTPException(409,'결정의 원천 사건/설비/패턴이 일치하지 않습니다')
-        if inc.state!='AWAITING_APPROVAL' or inc.recovery is None:
-            raise HTTPException(409,'이 사건은 조치 후보 접수 대상이 아닙니다. 현장 검토 상태를 확인하세요')
+        if inc.state!='AWAITING_APPROVAL' or not inc.supported:
+            raise HTTPException(409,f'이 사건은 조치 후보 접수 대상이 아닙니다(지금 사건: {definition.state_label(inc.state)}) — 조치 후보는 승인 대기 중인 '
+                                    '사건에만 냅니다')
     d = declib.new(payload)
     book[d["id"]] = d
     _audit(d.get("asset") or "-", "agent", "DECISION_SUBMITTED",
@@ -996,8 +1083,12 @@ def get_decision(did: str):
     if not d:
         raise HTTPException(404, f"판단 {did}{particle(did, '이')} 없습니다")
     out = copy.deepcopy(d)              # 응답 사본에만 싣는다 — 장부 원본은 바꾸지 않는다
+    rt = instance_mode.current()
+    skips = rt.card_skips(d) if rt is not None else None    # 그 판단을 낸 처리 건의 흐름이 승인 뒤 내지 않는 카드의 동작(instances.skipped_actions)
     for opt in out.get("options") or []:
         opt["approvable_roles"] = declib.approver_roles(d, opt)   # 그 안을 승인할 수 있는 역할(판정 정본 decisions.holds_approver_role — 화면 사본 없이 단추를 켜고 끔)
+        if skips and opt.get("id") in skips:
+            opt["flow_skips"], opt["flow_skip_text"] = skips[opt["id"]]["skipped"], skips[opt["id"]]["text"]
     return out
 
 
@@ -1142,7 +1233,7 @@ legacy_meaning_api.register(app, driver_factory=_kg, tenant=os.getenv("TENANT_ID
 
 # A4 (U6): AI 판단 채점 — 화면에서 적은 정답표 대비 점수 · 반복 흔들림 · 지식 고치기 전·후 비교 (procsvc/eval_api.py · judgment_eval.py)
 from . import eval_api, judgment_eval, procdb as _procdb
-eval_api.register(app, driver_factory=_kg, book=book, incidents=incidents, runtime_factory=instance_mode.current, audit=_audit,
+eval_api.register(app, driver_factory=_kg, book=book, runtime_factory=instance_mode.current, audit=_audit,
     agent_url=os.getenv('AGENT_URL', 'http://agent:8091'),
     store_factory=lambda: judgment_eval.PgEvalStore(_procdb.SUPABASE_DSN, os.getenv("TENANT_ID", "hyd")))
 # U3 (A2 MCP): 도구 지도 · 읽기 전용 도구 써 보기 · 호출 기록 — tenants.mcp 와 events 를 읽기만 한다 (procsvc/mcp_api.py)
@@ -1186,14 +1277,23 @@ progress.register(app)
 # 경보로 처리 건을 여는 길은 원천 접수 하나다(B-10): Kafka 경보 · 사람 입력 경보(B7, human_alert.py) · 업무 감시 · 수업 버튼 ·
 # 강의 도우미(/api/instances/start alert) 모두 같은 접수 → 같은 처리기(rt.receive_alert)로 간다. 같은 경보는 같은 처리 건이다.
 async def _admit_alert(alert: dict) -> dict:
-    """경보 하나를 원천 접수하고 처리될 때까지 기다린다. 돌려줌 = 접수 결과 {instance, incident, definition, duplicate}."""
+    """경보 하나(발생 RAISE · 해제 CLEAR)를 원천 접수하고 처리될 때까지 기다린다 — 감지기 경보(Kafka)와 같은 접수 · 같은 처리기다.
+    돌려줌 = 접수 결과(발생: {instance, incident, definition, duplicate}, 해제: {incident, state, cleared, …, duplicate}).
+    해제는 같은 alertId 의 발생을 받은 사건에 붙는다 — 그 사건이 없으면(발생을 보낸 적 없음 · 다른 alertId) 기다리지 않고 그 까닭으로 거절한다
+    (Kafka 는 차례가 섞여 해제가 먼저 올 수 있어 기다리지만, HTTP 는 보낸 쪽이 차례를 안다)."""
     rt = _runtime_or_503()
     if source_delivery is None or source_inbox is None:
         raise TimeoutError('원천 접수가 아직 준비되지 않았습니다 — 잠시 뒤 다시 시도하세요')
     record = source_record(topics.K_ALERTS, None, None, alert, source='http')
-    if record['kind'] != 'RAISE':
-        raise ValueError(record.get('error') or '경보는 asset · alertId · state RAISE 를 가진 원천 형식이어야 합니다')
-    policy = await asyncio.to_thread(rt.alert_policy, record['payload'].get('pattern'))
+    if record['kind'] not in ('RAISE', 'CLEAR'):
+        raise ValueError(record.get('error') or '경보는 asset · alertId · state(RAISE 발생 · CLEAR 해제)를 가진 원천 형식이어야 합니다')
+    policy = None
+    if record['kind'] == 'CLEAR':
+        aid = record['payload']['alertId']
+        if not any(i.alert_id == aid for i in list(incidents.values())):
+            raise LookupError(f"경보 {aid}의 발생(RAISE)을 받은 적이 없어 해제를 붙일 사건이 없습니다 — 해제는 같은 alertId 의 발생을 보낸 뒤에 보냅니다")
+    else:
+        policy = await asyncio.to_thread(rt.alert_policy, record['payload'].get('pattern'))
     receipt = await asyncio.to_thread(source_inbox.receive, record, policy)
     # 새 접수는 PENDING 으로 생긴다. 같은 배달이면 처음 접수 행이(처리됨 등), 같은 경보의 다른 배달이면 DUPLICATE 행이 돌아온다
     duplicate = receipt['status'] != 'PENDING'
@@ -1389,6 +1489,59 @@ async def scenario_a_button(act: str, body: dict | None = None):
             "plant": res, "reanchored": reanchor["moved"], "reanchor": reanchor}
 
 
+@app.post("/api/scenario/plant-reset")
+async def scenario_plant_reset(body: dict | None = None):
+    """[설비 초기화]: 가상 설비 3기를 정상 운전점으로(plant-sim /api/reset — 결함 · 보호 정지 · 팬 · 부하 지령). 설비는 이것을 바깥 변화로 싣는다
+    (plant.status outside) — 진행 중인 처리 건의 자연 회복 · 효과 확인 판정은 그 뒤의 값을 조치의 효과로 치지 않는다(machine.outside_change).
+    진행 중인 그 설비들의 처리 건마다 누름을, 감사 기록에 누름을 남긴다. 거절하지 않는다 — 막힌 설비를 되돌리는 마지막 길이다: 처리 엔진이 아직
+    준비되지 않았거나 업무 DB · 사건 저장소에 쓰지 못해도 설비는 먼저 되돌린다(판정은 누름 기록이 아니라 설비가 싣는 바깥 변화 기록으로 한다).
+    응답은 일어난 일을 따로 말한다: 설비를 되돌리지 못했으면 가상 설비의 까닭으로 실패하고, 되돌렸으면 200 — instances = 누름을 기록한 처리 건,
+    record_error = 누름을 처리 건 · 감사 기록에 남기지 못한 까닭(남겼으면 None — 화면이 「되돌렸지만 기록하지 못함」을 그 까닭으로 말한다)."""
+    person = scenario_buttons.who(body)
+    button = scenario_buttons.PLANT_RESET_BUTTON
+    at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    await asyncio.to_thread(_plant_post, "/api/reset", {"button": button, "by": person["by"]})
+    recorded, errors = [], []
+    try:
+        recorded = await asyncio.to_thread(_record_plant_reset, person, button, at)
+    except _NotRecorded as e:
+        errors.append(str(e))
+    try:
+        for asset in topics.ASSETS:
+            _press_audit(asset, person, button, "plant", at, instances=recorded, **({"error": errors[0]} if errors else {}))
+    except Exception as e:  # noqa: BLE001 — 설비는 이미 되돌렸다: 감사 기록을 못 남긴 것을 실패로 숨기지 않고 응답과 로그로 말한다
+        log.exception("plant reset press not audited")
+        errors.append(f"감사 기록에 이 누름을 남기지 못했습니다 — 까닭: {type(e).__name__}: {str(e)[:200]}")
+    return {"ok": True, "button": button, "at": at, "instances": recorded, "record_error": " · ".join(errors) or None}
+
+
+class _NotRecorded(RuntimeError):
+    """[설비 초기화]의 누름을 진행 중인 처리 건 기록에 남기지 못했다 — 메시지 = 무엇을 못 했는지와 까닭(학생이 읽는 문장)."""
+
+
+def _record_plant_reset(person: dict, button: str, at: str) -> list[str]:
+    """[설비 초기화]의 누름을 진행 중인 그 설비들의 처리 건 기록에 한 번에 남긴다(record_events — 한 트랜잭션: 모두 남거나 하나도 남지 않는다).
+    돌려줌 = 누름을 남긴 처리 건. 처리 엔진이 준비되지 않았거나 처리 건을 읽거나 쓰지 못하면 _NotRecorded(그 까닭)."""
+    rt = instance_mode.current()
+    if rt is None:
+        raise _NotRecorded("처리 엔진이 아직 켜지는 중이라 진행 중인 처리 건에 이 누름을 기록하지 못했습니다")
+    try:
+        running = [(asset, inst["proc_inst_id"]) for asset in topics.ASSETS
+                   for inst in rt.repo.list_instances("RUNNING", None, rt.tenant_id, None, asset)]
+    except Exception as e:  # noqa: BLE001 — 업무 DB 를 읽지 못함: 까닭을 그대로 말한다
+        log.exception("plant reset: running cases not read")
+        raise _NotRecorded(f"진행 중인 처리 건을 읽지 못해 이 누름을 처리 건에 기록하지 못했습니다 — 까닭: {type(e).__name__}: {str(e)[:200]}") from e
+    try:
+        rt.repo.record_events([scenario_buttons.press_event(
+            pid, button, asset, person, at,
+            {"effect": "가상 설비 3기를 정상 운전점으로 되돌림 — 이 처리 건의 효과 확인은 그 뒤의 값을 조치의 효과로 치지 않습니다"})
+            for asset, pid in running])
+    except Exception as e:  # noqa: BLE001 — 업무 DB 에 쓰지 못함: 까닭을 그대로 말한다
+        log.exception("plant reset: press not recorded on %d running cases", len(running))
+        raise _NotRecorded(f"진행 중인 처리 건 {len(running)}건에 이 누름을 기록하지 못했습니다 — 까닭: {type(e).__name__}: {str(e)[:200]}") from e
+    return [pid for _, pid in running]
+
+
 @app.post("/api/scenario/{key}/delay")
 async def scenario_delay(key: str, body: dict | None = None):
     """[공급사 납기 지연](C): 바깥 사건 — 진행 중인 예비품 구매 처리 건이 낸 열린 발주의 납기를 공급사가 늦춘다(업무 거래 skill:delay-delivery).
@@ -1474,7 +1627,7 @@ def _ddl_preview(body: dict) -> dict:
         from . import ddl_sync
         from .procdb import SUPABASE_DSN
         tables, datasource, where = ddl_sync.place(text, body.get("datasource"),
-                                                   lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+                                                   lambda: pg_connect(SUPABASE_DSN))
         legacy = legacy_meaning.summary(tables, text)          # A9: columns without a meaning and the dump's sample rows
         review = _legacy.review_for(body.get("meaning_review"), text)
         refl = legacy_meaning.apply_comments(tables, review["review"]) if review else None

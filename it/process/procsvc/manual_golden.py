@@ -87,6 +87,9 @@ def batch_knowledge(session, tenant, batch):
 
 
 def request(record, questions, by):
+    # 누가 = 문서 적재 · 되돌리기와 같은 담당자 이름(빈 값이면 감사 기록이 「-」로 남았다 — 전수 대조 03-17)
+    if not isinstance(by, str) or not by.strip():
+        raise ValueError('질문을 확인하는 담당자가 필요합니다')
     return dict(batch=record['batch'], document=record['document'], source_id=record['source_id'], filename=record['filename'],
                 questions=validate_questions(questions), knowledge=record['knowledge'], by=str(by or '').strip()[:120])
 

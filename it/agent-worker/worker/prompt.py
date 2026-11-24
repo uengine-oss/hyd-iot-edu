@@ -8,7 +8,10 @@ reports.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
+
+from procsvc.engine import CONDITION_MARK, INPUT_MARK, query_parts
 
 def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     """The prompt for one work item: 업무 · 지시사항(입력 [InputData] 포함) · 참여자 · 앞서 낸 결과 · 피드백 · 작업 공간 · 결과 제출 형식."""
@@ -27,7 +30,11 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     if participants:
         sections.append(f"## 참여자\n{participants}")
     previous = _previous(row)
-    if previous:
+    if previous and rejected(row):
+        sections.append("## 이 작업이 앞서 낸 결과(결과 검사가 돌려보냄)\n"
+                        f"전체는 {PREVIOUS_RESULT_FILE} 에 있습니다. 그 파일을 결과 파일 자리로 옮긴 뒤 아래 피드백이 짚은 곳만 고치세요 — "
+                        f"처음부터 다시 쓰면 고친 곳이 아닌 곳에 새 오류가 생깁니다.\n{previous}")
+    elif previous:
         sections.append(f"## 이 작업이 앞서 낸 결과\n{previous}")
     feedback = (extras.get("summarized_feedback") or "").strip()
     if feedback:
@@ -49,7 +56,8 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
                         + json.dumps(extras.get('process_scope') or {}, ensure_ascii=False))
     sections.append("## 담당자에게 업무 정보 질문\n"
                     "필수 업무 정보가 없고 연결된 조회 도구로도 확인할 수 없으면 값을 지어내지 마세요. "
-                    "작업을 완료하는 대신 마지막 메시지에 다음 JSON 객체 하나만 내고 기다리세요: "
+                    + HUMAN_QUESTION_SCOPE +
+                    " 물을 때는 작업을 완료하는 대신 마지막 메시지에 다음 JSON 객체 하나만 내고 기다리세요: "
                     '{"__human_input__":{"question":"담당자가 답할 구체적인 질문","options":[]}}. '
                     "options에는 필요할 때 선택지 문자열을 넣습니다. 이 응답은 완료 결과가 아닙니다. "
                     "도구 접근 거절이나 설비 조치 승인 우회에는 쓰지 마세요. 답변은 실행 권한을 바꾸지 않습니다.")
@@ -63,6 +71,15 @@ LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이�
                  "\"Next I'll …\", \"Let me …\" 같은 영어 문장을 쓰지 마세요. 코드 · 식별자 · SQL · 원문 인용만 원문 그대로 둡니다. "
                  "일정의 숫자 시각은 도구가 반환한 날짜·시간대까지 그대로 쓰세요(예: window.starts_at). "
                  "UTC/Z/오프셋을 지우거나 날짜·시간대를 추측하지 마세요. 정확한 시각을 확인하지 못하면 카드의 일정 이름으로 설명하세요.")
+
+#: 「담당자에게 질문」과 「찾지 못했다고 끝내기」를 가르는 기준. 전에는 「필수 업무 정보가 없고 조회 도구로도 확인할 수 없으면 묻고 기다린다」뿐이라,
+#: 지시가 찾으라고 한 사실을 도구에서 찾지 못한 것도 그 조건에 그대로 들어맞았다 — 같은 지시문에서 모델이 어느 날은 「답할 수 없음」으로 끝내고
+#: 어느 날은 질문한 사람에게 「확인되는 자료를 알려 달라」고 되물으며 멈췄다(2026-11-23 수업 한 바퀴, 지식에 없는 것을 물은 질문 — 같은 질문의
+#: 2026-11-01 저장 응답은 답할 수 없음). 담당자에게 묻는 것은 사람이 정하는 업무 입력이고, 작업이 밝혀야 할 사실이 자료에 없는 것은 그 작업의 결과다.
+HUMAN_QUESTION_SCOPE = ("담당자에게 묻는 것은 그 정보가 담당자가 정하거나 알려 줘야 하는 업무 입력(어느 대상인지 · 범위 · 선택 · 기준처럼 이 작업을 "
+                        "어떻게 할지를 정하는 값)일 때뿐입니다. 이 작업이 조회해서 밝혀야 하는 사실 자체(지시사항이 찾거나 답하라고 한 것)를 도구에서 "
+                        "찾지 못했다면 담당자에게 되묻지 마세요 — 그것은 이 작업의 결과입니다. 지시사항과 결과 제출 형식이 정한 길(근거를 얻지 못했을 때 "
+                        "쓰는 허용값, 없으면 보류 객체)로 무엇을 조회했고 왜 없는지를 적어 제출하세요.")
 
 #: 이 작업이 앞서 낸 결과 파일 — runner 가 이 자리에 쓰고 지시문(FILE_READ_RULE · 교정 지시)이 이 이름을 가리킨다(G1-27 — 두 벌이던 경로)
 PREVIOUS_RESULT_FILE = "context/previous-result.json"
@@ -210,16 +227,71 @@ def _participants(extras: dict[str, Any]) -> str:
 INLINE_INPUT_LIMIT = 8000
 
 
-def previous_result(row: dict[str, Any]):
-    """이 작업이 앞서 낸 결과(재작업 · 돌려보낸 뒤 · 사람 답 뒤 — 작업 행 output). 첫 실행이면 None.
-    예전 이름 「입력 데이터」(context/input.json)는 실제 입력이 아니라 이 값(+ 진행 중 초안)이었고 첫 실행마다 null 파일을 읽게 했다(검진
-    G1-27). 실제 입력은 지시(query)의 [InputData] 에 있다. 실행 세션 id(cliagents_session_id)는 결과가 아니라 뺀다."""
-    out = row.get("output")
-    if isinstance(out, str) and out.strip().startswith("{"):
+INPUT_DIR = "context/input"
+#: 지시의 [InputData] 에서 이보다 긴 글 값은 파일로 뺀다 — AI의 읽기 도구(Read)는 한 번에 약 2만 5천 토큰까지, 한 줄은 쪼개 읽지 못하고 2,000자를 넘는
+#: 줄은 잘라 보인다. 처리 엔진은 입력 전체를 한 줄 JSON 으로 붙이므로(engine.reach — 학생 매뉴얼 1만 1천 자 + 지식 목록 = 한 줄 2만 9천 토큰), 그
+#: 줄을 읽지 못한 AI가 같은 줄을 거듭 열다 한 번 실행의 호출 한도를 다 썼다(2026-11-23 실측 — 다른 설비 매뉴얼 추출의 교정 차례, 호출 48번).
+LONG_INPUT_CHARS = 1500
+
+
+def input_files(query: str) -> tuple[str, dict[str, str]]:
+    """AI에게 보일 지시: [InputData] 의 긴 글 값(LONG_INPUT_CHARS 넘음)을 작업 폴더의 파일로 빼고 그 자리에 파일 경로를 적은 지시와
+    {작업 폴더 상대 경로: 그 글}. 나머지 입력은 줄을 나눈 JSON 으로 싣는다. 파일 내용은 그 값 그대로다(원문 인용을 그대로 할 수 있다).
+    [InputData] 가 없으면 그대로. 처리 건의 지시(작업 행 query)와 같은 요청 열쇠는 바꾸지 않는다 — AI에게 보이는 꼴만 바꾼다."""
+    head, data, condition = query_parts(query)   # 처리 엔진이 붙인 꼴 — 못 읽으면 엔진 · 행이 깨진 것이라 그 자리를 대며 실패한다
+    if data is None:
+        return query, {}
+    files: dict[str, str] = {}
+
+    def walk(value, path):
+        if isinstance(value, str) and len(value) > LONG_INPUT_CHARS:
+            joined = '.'.join(path) or 'value'
+            # 흐름 변수 이름은 한글도 된다(bpmn_import 의 isidentifier) — 글자를 지워 이름을 만들면 길이가 같은 한글 이름 둘(「본문」 · 「요약」)이
+            # 같은 파일이 되어 뒤 값이 앞 값을 조용히 덮었다(2026-11-24 검토). 글자는 그대로 두고, 그래도 겹치면 번호를 붙인다
+            stem = re.sub(r'[^\w.-]', '_', joined)
+            rel = f"{INPUT_DIR}/{stem}.txt"
+            n = 2
+            while rel in files:
+                rel, n = f"{INPUT_DIR}/{stem}-{n}.txt", n + 1
+            files[rel] = value
+            return f"[이 값은 파일 {rel} 에 있습니다 — {len(value):,}자, 이 값의 글 그대로(줄바꿈 포함). Read 도구로 나눠 읽으세요]"
+        if isinstance(value, dict):
+            return {k: walk(v, [*path, str(k)]) for k, v in value.items()}
+        if isinstance(value, list):
+            return [walk(v, [*path, str(i)]) for i, v in enumerate(value)]
+        return value
+
+    shown = walk(data, [])
+    text = f"{head}\n\n{INPUT_MARK}\n{json.dumps(shown, ensure_ascii=False, indent=1)}"
+    if condition is not None:      # 재작업 계획의 조건 값(엔진이 붙임)도 그대로 보인다
+        text += f"\n\n{CONDITION_MARK}\n{json.dumps(condition, ensure_ascii=False, indent=1)}"
+    return text, files
+
+
+def _json(value):
+    if isinstance(value, str) and value.strip().startswith("{"):
         try:
-            out = json.loads(out)
+            return json.loads(value)
         except json.JSONDecodeError:
-            pass
+            return value
+    return value
+
+
+def rejected(row: dict[str, Any]) -> bool:
+    """결과 검사가 돌려보낸 뒤의 차례인가 — 처리 엔진이 거부 사유를 피드백(kind validation)으로 남기고 낸 결과를 output 에서 draft 로 옮긴다
+    (instances._return_for_correction)."""
+    feedback = _json(row.get("feedback"))
+    return isinstance(feedback, dict) and feedback.get("kind") == "validation" and not row.get("output") and bool(row.get("draft"))
+
+
+def previous_result(row: dict[str, Any]):
+    """이 작업이 앞서 낸 결과(재작업 · 사람 답 뒤 — 작업 행 output, 결과 검사가 돌려보낸 뒤 — 그 돌려보낸 결과 draft). 첫 실행이면 None.
+    예전 이름 「입력 데이터」(context/input.json)는 실제 입력이 아니라 이 값(+ 진행 중 초안)이었고 첫 실행마다 null 파일을 읽게 했다(검진
+    G1-27). 실제 입력은 지시(query)의 [InputData] 에 있다. 실행 세션 id(cliagents_session_id)는 결과가 아니라 뺀다.
+    돌려보낸 차례: 처리 엔진은 낸 결과를 draft 로 옮기고 output 을 비운다 — 전에는 여기가 output 만 읽어 앞 결과 파일이 없었고, 교정 지시
+    (「이전 proposal 을 고쳐」)를 받은 AI가 고칠 결과 없이 처음부터 다시 썼다(2026-11-23 실측: 다른 설비 매뉴얼 추출이 세 차례 모두 50 KB 를 새로
+    써 인용 하나를 끝내 고치지 못하고 새 오류를 더했다 — 실제 AI 호출 61번)."""
+    out = _json(row.get("draft") if rejected(row) else row.get("output"))
     if isinstance(out, dict):
         out = {k: v for k, v in out.items() if k != "cliagents_session_id"}
     return out or None

@@ -12,11 +12,18 @@
     그 차례의 녹화가 없는 다시 수행(재작업 세대)은 첫 실행을 다시 낸다(Claim._run_for) — 다시 수행은 같은 단계를 같은 입력으로 새로 하는
     것이고(다시 수행의 사유는 AI 입력에 들어가지 않는다 — 새 작업 행), 저장된 응답은 입력이 같으면 같은 답을 내는 것이 본뜻이다. 쓰기 도구는
     이 PC에서 다시 부르므로 등록되는 판단은 지금 값으로 계산된다. 보류 뒤 재평가는 그렇지 않다(조건이 바뀌어 다시 보는 것이라 입력이 다르다).
-  같은 요청 저장(이 PC의 <작업 공간>/.ai-cache): 실행에 영향을 주는 것 전부의 해시(정의 · 단계 · 지시 · 입력 · 피드백 · 폼 · 에이전트 설정 ·
-    업무 규칙 · 스킬 본문 · 도구 서버 · 모델 — runner._request_key). 하나라도 다르면 새로 실행한다. 결과 검사를 통과해 제출한 실행만
-    저장하고, 그 실행의 작업이 지금도 끝남(DONE — 처리 흐름이 결과를 받아들임)일 때만 다시 쓴다. 질문(「에이전트에게 질문」)은 저장하지
-    않는다 — 답은 지금의 지식 그래프 · 업무 DB 를 읽어 만들고 그 상태는 열쇠에 없어서, 적재 · 재고가 바뀐 뒤 같은 질문에 옛 답이 나왔다
-    (검진 G1-09). 작업 행이 없어졌거나 작업 폴더 보존 기간(72 시간) 동안 다시 쓰이지 않은 저장은 작업 폴더 정리(sweep_cache)가 지운다.
+  같은 요청 저장(이 PC의 <작업 공간>/.ai-cache): 수업 녹화와 뿌리가 같은 장치라 쓰는 곳도 같다 — 서버가 준 수업 AI 자리(수업 단계에서만 —
+    PBL 단계와 학생 흐름의 AI 단계는 자리가 없어 늘 실제 AI)의 실행만 저장하고 다시 쓴다(사용자 2026-11-22 「재생모드는 수업한정인거고, 캐시랑
+    재생모드랑 … 뿌리는 같다」). 열쇠는 실행에 영향을 주는 설정 · 입력 전부의 해시(정의 · 단계 · 지시 · 입력 · 피드백 · 폼 · 에이전트 설정 ·
+    업무 규칙 · 스킬 본문 · 도구 서버 · 모델 — runner._request_key)이고 하나라도 다르면 새로 실행한다. 결과 검사를 통과해 제출한 실행만
+    저장하고, 그 실행의 작업이 지금도 끝남(DONE — 처리 흐름이 결과를 받아들임)일 때만 다시 쓴다. 도구가 읽는 지식 · 업무 · 설비 상태는 열쇠에
+    없다 — 그래서 다시 쓸 때도 수업 녹화와 같은 가드를 지난다: 쓰기 도구는 이 PC에서 다시 부르고 읽기 조회는 다시 불러 견준다. 키 있는 PC는 실제
+    AI로 새로 할 수 있으므로, 결과 글이 기댄 것이 앞선 실행 때와 다르면 그 저장을 버리고 멈춘다(다음 실행은 실제 AI): 판단(권장 · 실행할 수 있는
+    카드) · 규정 판정 · 판단을 계산한 지식(판단 기록의 지식 지문 — 같은 규칙의 기준값만 바꿔도 다르다)이 다를 때(check_decision), 그 실행이 읽은
+    지식 지도 조회가 다르거나 다시 조회하지 못했을 때(check_read). 업무 · 설비 상태의 차이(구매 수량 · 비교 총비용, 업무 · 시계열 조회)는 알린다
+    (지식을 고친 뒤 [다시 수행]한 판단이 새로 추론하지 않던 것, 2026-11-22 탐사 N2 · 2026-11-24 검토 가-3 · 감독관 재검토). 질문(「에이전트에게 질문」)은
+    저장하지 않는다 — 답은 지금의 지식 그래프 · 업무 DB 를 읽어 만들고 그것을 가를 쓰기 도구가 없어서, 적재 · 재고가 바뀐 뒤 같은 질문에 옛 답이
+    나왔다(검진 G1-09). 작업 행이 없어졌거나 작업 폴더 보존 기간(72 시간) 동안 다시 쓰이지 않은 저장은 작업 폴더 정리(sweep_cache)가 지운다.
 
 녹화 하나 = 파일 하나(<열쇠>.json.gz). 안에는 실행이 순서대로 있다 — 첫 실행, 같은 세션을 이어 간 실행(사람 답 뒤 · 결과 교정 · 처리 흐름이
 결과를 돌려보낸 뒤). 다시 낼 때 이어 하기는 세션 replay:<열쇠>:<순번>(수업 녹화) · reuse:<열쇠>:<순번>(같은 요청)으로 다음 실행을 고른다.
@@ -29,7 +36,8 @@
 다시 부른 쓰기가 「아직 값을 받지 못함」(도구 봉투의 error_kind UNAVAILABLE)이나 「서버에 닿지 못함」으로 안 됐으면 같은 실행 안에서
 WRITE_RETRY_WAITS_S 간격으로 다시 부른다 — 아무것도 등록되지 않은 것이 분명한 오류만이다. 그래도 안 되면 지어내지 않고 실패로 둔다.
 읽기 도구의 결과는 저장된 것을 그대로 보인다(AI 설명 · 결과 글이 그 결과로 쓰였다). 그 가운데 표(열 이름과 행)를 돌려준 조회는 이 PC의 서버로
-다시 불러 저장된 결과와 견주고(「읽기 조회 견주기」 절 — read_gap), 다르거나 견주지 못했으면 멈추지 않고 처리 과정 한 줄로 알린다(notice).
+다시 불러 저장된 결과와 견주고(「읽기 조회 견주기」 절 — read_gap), 다르거나 견주지 못했으면 멈추지 않고 처리 과정 한 줄로 알린다(notice) —
+같은 요청 저장의 지식 지도 조회만은 버리고 멈춘다(check_read).
 
 없는 녹화는 지어내지 않고 학생이 알아듣는 말로 멈춘다(NotRecorded — 무엇이 없고 무엇을 하면 되는지). 저장 직전 비밀값은 가린다(diagnostics.hide).
 """
@@ -51,6 +59,7 @@ from hydcommon.data_sources import SOURCES as DATA_SOURCES
 from hydcommon.tool_result import UNAVAILABLE
 from hydcommon.words import josa
 from procsvc import mcp_check
+from procsvc.engine import query_parts
 
 from .bridge import MCP_CONFIG_FILENAME
 from .course_access import Stop
@@ -68,7 +77,7 @@ QUESTION_PREFIX = "질문 "
 DEFERRED_MARK = "[DEFERRED]"       # task_deferral.defer 가 작업 log 에 남기는 표시 — 보류 한 번에 하나
 COURSE_KEPT = ("submitted", "asked")            # 수업 녹화로 남기는 끝(사람 질문은 그 뒤 이어지는 실행과 한 녹화)
 CACHE_KEPT = ("submitted",)                     # 같은 요청 저장으로 남기는 끝
-UNCACHED_SLOTS = ("question",)                  # 지금의 지식 · 업무 상태로 답하는 자리 — 같은 요청 저장을 쓰지 않는다(G1-09)
+UNCACHED_SLOTS = ("question",)                  # 지금의 지식 · 업무 상태로 답하고 그것을 가를 쓰기 도구가 없는 자리 — 같은 요청 저장을 쓰지 않는다(G1-09)
 #: 다시 부르는 쓰기 도구(submit_decision · submit_purchase)는 판단 전체를 계산한다 — 원천 읽기 한도(agent mcp_ent 15초) · process 제출
 #: 한도(10초)보다 길게 기다린다. 연결 확인용 기본 10초로는 바쁜 PC에서 정상 판단이 「응답하지 않았습니다」로 멈췄다(2026-10-30 테스트 실측).
 WRITE_CALL_TIMEOUT_S = 60.0
@@ -85,6 +94,12 @@ UNREACHED_KINDS = ("refused", "unreachable", "busy")      # mcp_check 의 연결
 class NotRecorded(Stop):
     """녹화(저장)에 없는 실행 — 문장은 학생이 할 일까지 쓴다(「강사」 · 「녹화」라는 말 없이, 재생 모드가 지원하지 않는 행동으로)."""
     title = "재생 모드에서 지원하지 않는 AI 단계"
+
+
+class ReuseDropped(Stop):
+    """키 있는 PC: 다시 쓰던 같은 요청 저장이 지금과 맞지 않아(판단 · 판단의 지식 · 그 실행이 읽은 지식 지도) 그 저장을 버렸다 — 다음 실행은 실제
+    AI 로 새로 한다(drop_reuse)."""
+    title = "앞선 실행 결과를 다시 쓰지 않음"
 
 
 class WriteFailed(Stop):
@@ -296,15 +311,21 @@ def _read_json(path: Path):
 
 
 def _task_context(workdir) -> dict:
-    """작업 기록(context/task.json)에서 처리 건마다 달라지는 값: 작업 id · 처리 건 id · process_scope · 입력 데이터([InputData])."""
-    task = _read_json(Path(workdir) / TASK_FILE) or {}
-    query = str(task.get("query") or "")
-    inputs = None
-    if "[InputData]" in query:
-        try:
-            inputs = json.JSONDecoder().raw_decode(query.split("[InputData]", 1)[1].lstrip())[0]
-        except ValueError:
-            inputs = None
+    """작업 기록(context/task.json)에서 처리 건마다 달라지는 값: 작업 id · 처리 건 id · process_scope · 입력 데이터([InputData]).
+    작업 기록은 Runner 가 실행 전에 늘 쓰고(workspace.provision) 지시(query 칸)의 꼴은 처리 엔진이 정한다(engine.query_parts). 기록이 없거나
+    깨졌거나 지시를 읽지 못하면 그 자리(파일 · 작업 · 칸)를 대며 실패한다 — 빈 값으로 넘어가면 저장된 실행의 처리 건 id · 입력을 이 처리 건의 값과
+    견주지도 바꿔 끼우지도 않은 채 낸다(전에는 ValueError 를 삼키고 입력 대조를 건너뛰었다 — 감독관 재검토)."""
+    path = Path(workdir) / TASK_FILE
+    try:
+        task = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"작업 기록 {path} 을 읽지 못했습니다({type(exc).__name__}: {exc})") from exc
+    if not isinstance(task, dict):
+        raise RuntimeError(f"작업 기록 {path} 이 작업 하나의 기록(JSON 객체)이 아닙니다({type(task).__name__})")
+    try:
+        inputs = query_parts(str(task.get("query") or ""))[1]
+    except ValueError as exc:
+        raise RuntimeError(f"작업 {task.get('id')} 의 지시(작업 기록 {path} 의 query 칸)를 처리 엔진의 꼴로 읽지 못했습니다: {exc}") from exc
     return {"id": task.get("id"), "proc_inst_id": task.get("proc_inst_id"), "process_scope": task.get("process_scope"), "inputs": inputs}
 
 
@@ -468,20 +489,53 @@ def _created(result) -> dict | None:
 
 
 def _cards(doc: dict) -> dict[str, dict]:
-    """등록된 판단 문서의 카드(submit_decision 은 cards, submit_purchase 는 options) — id 로."""
+    """판단 문서의 카드(판단 도구의 카드 비교 칸 options — 옛 판의 판단 등록은 cards) — id 로."""
     return {c["id"]: c for c in (doc.get("options") or doc.get("cards") or []) if isinstance(c, dict) and isinstance(c.get("id"), str)}
 
 
-def decision_gap(old, new) -> tuple[list[str], list[str]]:
-    """녹화 때 등록된 판단(old)과 이 PC가 방금 다시 계산해 등록한 판단(new)의 차이 → (판단이 달라진 것, 수치만 달라진 것). 녹화의 AI 설명 ·
-    결과 글은 old 를 말하고 승인 카드는 new 다. 판단이 달라졌으면(권장 카드 · 실행할 수 있는 카드) 그 설명은 이 처리 건의 것이 아니다. 수치는
-    업무 값으로 정해지는 구매 수량 · 비교 총비용만 견준다 — 점수 · 예측은 설비 측정값을 따라 실행마다 조금씩 달라 같은 판단에서도 다르다."""
+def evaluation(doc) -> dict | None:
+    """판단 도구가 돌려준 카드 비교 칸(dmn-mcp agent_view — 조치 카드 평가 · 구매 평가 · 판단 등록)이면 그 문서. 카드마다 규정 판정(제외 ·
+    감점 · 경고 규칙)이 함께 있다. 옛 판의 판단 등록 결과(cards — 순위 · 이름뿐)는 아니다."""
+    doc = _created(doc)
+    return doc if isinstance(doc, dict) and "recommended" in doc and isinstance(doc.get("options"), list) else None
+
+
+RULE_KINDS = ("violations", "penalties", "warnings")       # 카드의 규정 판정: 제외 · 감점 · 경고(dmn-mcp agent_view)
+RULE_SHOWN = 60       # 알림에 옮겨 적는 규칙 설명의 길이
+
+
+def _rules(doc: dict) -> dict[str, dict[str, str]]:
+    """카드마다 걸린 규정 판정 → {카드 id: {규칙 id: 규칙 설명}}."""
+    return {i: {r["rule"]: str(r.get("annotation") or r["rule"]) for k in RULE_KINDS for r in c.get(k) or []
+                if isinstance(r, dict) and isinstance(r.get("rule"), str)} for i, c in _cards(doc).items()}
+
+
+def _rule_text(text: str) -> str:
+    return f"「{text if len(text) <= RULE_SHOWN else text[:RULE_SHOWN] + '…'}」"
+
+
+def decision_gap(old, new, seen=None) -> dict:
+    """녹화 때 등록된 판단(old)과 이 PC가 방금 다시 계산해 등록한 판단(new)의 차이. 녹화의 AI 설명 · 결과 글은 old 와, 그 실행이 판단 도구에서
+    읽은 카드 비교(seen — 가정 사실 없이 부른 마지막 평가)를 말하고 승인 카드는 new 다.
+      changed  판단이 달라진 것(권장 카드 · 실행할 수 있는 카드) — 그 설명은 이 처리 건의 것이 아니다
+      numbers  수치만 달라진 것: 업무 값으로 정해지는 구매 수량 · 비교 총비용(점수 · 예측은 설비 측정값을 따라 실행마다 조금씩 달라 견주지 않는다)
+      rules    카드마다 규정 판정(제외 · 감점 · 경고 규칙)이 달라진 것 — AI 설명이 「이 규칙 때문에 졌다」고 쓴 규칙이 지금 판단에 없을 수 있다
+      gone     판단 때 쓰인 조치 후보 · 규칙 가운데 지금 지식에 없는 것(학생이 문서를 바꿔 적재했다는 확실한 근거). new 가 지금 지식의 목록
+               (knowledge — dmn-mcp agent_view)을 싣지 않았으면 None(지식 때문인지 설비 · 업무 상태 때문인지 가를 근거가 없다).
+      judged   두 결과가 모두 판단 문서(권장 조치가 있는 것)라 위의 견주기를 했는가. 아니면(판단이 아닌 쓰기 도구) 나머지 칸은 비어 있다.
+      same_knowledge  두 판단을 계산한 지식의 내용 지문(knowledge.digest — agentsvc.decide.knowledge_of)이 같으면 True, 둘 다 지문을 실었는데
+               다르면 False, 한쪽이라도 싣지 않았거나(옛 판의 저장분) 판단 문서가 아니면 None(견줄 수 없음). 수업 녹화는 같을 때만 설비 · 업무 상태로
+               가르고(changed_because — 다른 PC 의 판단이다), 같은 요청 저장은 True 가 아니면 버린다(check_decision — 같은 PC 의 판단이다)."""
     a, b = _created(old), _created(new)
+    out = {"changed": [], "numbers": [], "rules": [], "gone": None, "judged": False, "same_knowledge": None}
     if not (isinstance(a, dict) and isinstance(b, dict) and "recommended" in a and "recommended" in b):
-        return [], []
+        return out
+    out["judged"] = True
     ca, cb = _cards(a), _cards(b)
-    name = lambda i: f"「{(ca.get(i) or cb.get(i) or {}).get('name') or i}」"   # noqa: E731
-    changed, numbers = [], []
+    view = evaluation(a) or evaluation(seen)            # 녹화가 읽은 규정 판정(옛 판의 판단 등록 결과에는 없다 — 그 실행의 평가에서)
+    cs = _cards(view) if view else {}
+    name = lambda i: f"「{(ca.get(i) or cs.get(i) or cb.get(i) or {}).get('name') or i}」"   # noqa: E731
+    changed, numbers = out["changed"], out["numbers"]
     if a["recommended"] != b["recommended"]:
         changed.append(f"권장 조치가 준비된 판단은 {name(a['recommended'])}인데 지금 계산은 {name(b['recommended'])}입니다")
     ok_a, ok_b = {i for i, c in ca.items() if c.get("feasible")}, {i for i, c in cb.items() if c.get("feasible")}
@@ -494,18 +548,115 @@ def decision_gap(old, new) -> tuple[list[str], list[str]]:
                  if isinstance(ea.get(k), (int, float)) and isinstance(eb.get(k), (int, float)) and ea[k] != eb[k]]
         if parts:
             numbers.append(f"{name(i)} " + " · ".join(parts))
-    return changed, numbers
+    was = _rules(view) if view else {}
+    if view and evaluation(b):
+        now = _rules(b)
+        for i in sorted(was.keys() & now.keys(), key=lambda i: cs[i].get("rank") or 0):
+            lost = [_rule_text(was[i][r]) for r in sorted(set(was[i]) - set(now[i]))]
+            more = [_rule_text(now[i][r]) for r in sorted(set(now[i]) - set(was[i]))]
+            if lost or more:
+                out["rules"].append(f"{name(i)} — " + " · ".join(([f"판단 때 걸린 {josa(', '.join(lost), '이')} 지금 계산에는 없음"] if lost else [])
+                                                                 + ([f"지금 계산에는 {josa(', '.join(more), '이')} 걸림"] if more else [])))
+    known = b.get("knowledge") if isinstance(b.get("knowledge"), dict) else None
+    before = a.get("knowledge") if isinstance(a.get("knowledge"), dict) else {}
+    digests = [d.get("digest") for d in (before, known or {})]
+    if all(isinstance(d, str) and d for d in digests):
+        out["same_knowledge"] = digests[0] == digests[1]
+    if known is not None and isinstance(known.get("candidates"), list) and isinstance(known.get("rules"), list):
+        out["gone"] = ([f"조치 후보 {name(i)}" for i in sorted((ca.keys() | cs.keys()) - set(known["candidates"]))]
+                       + [f"규칙 {_rule_text(text)}" for rid, text in sorted({r: t for c in was.values() for r, t in c.items()}.items())
+                          if rid.startswith("rule:") and rid not in known["rules"]])
+    return out
+
+
+def check_decision(library: "Library", key: str, step: str, gap: dict, made: str | None) -> None:
+    """다시 부른 판단(gap — decision_gap)으로 저장된 실행의 설명을 이 처리 건에 써도 되는가 — 안 되면 decision_changed 로 멈춘다.
+    판단이 달라졌으면(권장 · 실행할 수 있는 카드) 둘 다 멈춘다. 같은 요청 저장(키 있는 PC)은 판단이 같아도 그 판단의 근거가 앞선 판단 때와 같다고
+    확인되지 않으면 버린다: 규정 판정이 달라짐, 판단 때 쓰인 지식이 지금 없음, 판단을 계산한 지식의 지문이 같지 않음(다르거나 앞선 판단이 지문을
+    싣지 않아 견줄 수 없음). 저장된 AI 설명이 든 규칙 · 기준값이 낡았을 수 있고, 실제 AI 로 새로 판단할 수 있는 PC 다 — 2026-11-24 검토 가-3(규칙을 뺀
+    문서를 다시 적재하고 다시 수행해도 옛 설명이 「같은 입력이라 같다」로 나갔다)과 감독관 재검토(규칙의 기준값만 70 → 65 °C 로 바꿔 다시 적재하면
+    그 규칙이 여전히 걸려 규정 판정 · 권장이 같아, 옛 기준값을 말하는 설명이 「같은 설정 · 같은 입력이라 같습니다」로 나갔다). 수업 녹화(키 없는 PC)는
+    새로 판단할 길이 없어 판단이 같으면 차이를 알리며 쓴다(notice_parts)."""
+    stale = gap["rules"] or gap["gone"] or (gap["judged"] and gap["same_knowledge"] is not True)
+    if gap["changed"] or (library.prefix == REUSE and stale):
+        decision_changed(library, key, step, gap, made)
+
+
+def made_tail(made: str | None) -> str:
+    """멈추는 문장의 끝: 이 PC가 지금 계산으로 등록한 판단(들)이 있으면 그것이 승인 단계로 넘어가지 않는다는 것."""
+    return f"(지금 계산으로 등록된 판단 {made}은 승인 단계로 넘어가지 않습니다)." if made else "."
+
+
+def drop_reuse(library: "Library", key: str, said: str, made: str | None, redo: str) -> None:
+    """같은 요청 저장(키 있는 PC)을 지우고 멈춘다 — 다음 실행(「다시 수행」)은 저장이 없어 실제 AI 로 새로 한다. said: 버린 까닭(마침표로 끝나는
+    문장), redo: 다시 실행하면 새로 하는 일(「판단」 · 「실행」)."""
+    library.delete(key)
+    raise ReuseDropped(f"{said} 앞선 실행 결과는 버렸습니다 — 이 단계 아래의 「다시 수행」으로 다시 실행하면 실제 AI로 새로 {redo}합니다"
+                       + made_tail(made))
+
+
+def decision_changed(library: "Library", key: str, step: str, gap: dict, made: str | None) -> None:
+    """다시 부른 판단이 저장된 판단과 맞지 않는다(gap — decision_gap, check_decision 이 가른다) → 그 설명을 이 처리 건에 쓰지 않고 멈춘다. 수업 녹화는
+    「AI 키가 없을 때 쓰는 재생 모드에서는 …」으로 까닭과 할 일을, 같은 요청 저장(키 있는 PC)은 무엇이 맞지 않는지와 그 저장을 지웠으니 다음 실행이
+    실제 AI 로 새로 판단한다는 것을 말한다(drop_reuse). made: 이 PC가 지금 계산으로 등록한 판단(승인 단계로 넘어가지 않는다)."""
+    if library.prefix == REUSE:
+        why = gap["changed"] + gap["rules"]
+        if gap["gone"]:          # 지금 지식에 없는 것이 확실하면 그것을(지문이 다르다는 것보다 구체적이다)
+            why.append(f"앞선 판단이 쓴 {josa(', '.join(gap['gone']), '이')} 지금 지식에 없습니다")
+        elif gap["judged"] and gap["same_knowledge"] is False:
+            why.append("판단에 쓰는 지식(규칙 · 조치 방법 · 성과 지표 경로)이 앞선 판단 때와 다릅니다")
+        elif gap["judged"] and gap["same_knowledge"] is None:
+            why.append("앞선 판단에는 그 판단을 계산한 지식의 기록이 없어 지금 지식과 같은지 견줄 수 없습니다")
+        drop_reuse(library, key, f"「{step}」의 같은 설정 · 같은 입력으로 앞서 실행한 판단이 지금과 맞지 않습니다 — " + " · ".join(why) + ".",
+                   made, "판단")
+    raise NotRecorded(f"{REPLAY} 「{step}」의 준비된 AI 판단을 이 처리 건에 쓸 수 없습니다. " + " · ".join(gap["changed"]) + ". "
+                      + changed_because(gap["gone"], gap["same_knowledge"]) + made_tail(made))
+
+
+def check_read(library: "Library", key: str, step: str, subject: str, gap, graph: bool, made: str | None) -> None:
+    """다시 부른 읽기 조회(gap — read_gap: None 같음 · (저장된 행 수, 지금 행 수) 다름 · False 다시 조회하지 못함)로 저장된 실행을 이 처리 건에 써도
+    되는가. 같은 요청 저장(키 있는 PC)은 그 조회가 지식 지도 조회(graph — 지식 그래프 조회 도구의 레코드 목록, _records)이고 앞선 실행 때와 다르거나
+    견주지 못했으면 버린다 — 판단 기록의 지식 지문과 같은 원칙이다(check_decision): 결과 글(교대 인계안처럼 판단 도구를 부르지 않는 단계는 조회 결과가
+    곧 근거다)이 기댄 지식이 지금과 같다고 확인되지 않았는데 「같은 설정 · 같은 입력이라 같습니다」로 내지 않고, 실제 AI 로 새로 할 수 있는 PC 다.
+    업무 · 설비 상태 조회의 차이는 알린다(notice_parts — 설비 측정값은 다시 부르면 늘 달라, 그것으로 버리면 같은 요청 저장이 늘 버려진다). 수업
+    녹화(키 없는 PC)는 새로 할 길이 없어 지식 지도 조회의 차이도 알리며 쓴다."""
+    if library.prefix != REUSE or not graph or gap is None:
+        return
+    if gap is False:
+        said = f"을 이 PC에서 다시 조회하지 못해 지금 지식과 같은지 견주지 못했습니다: {subject}."
+    else:
+        said = f"이 지금과 다릅니다: {read_change(subject, gap, '앞선 실행 때')}."
+    drop_reuse(library, key, f"{josa(f'「{step}」', '을')} 같은 설정 · 같은 입력으로 앞서 실행할 때 읽은 지식{said}", made, "실행")
+
+
+def changed_because(gone: list[str] | None, same_knowledge: bool | None = None) -> str:
+    """판단이 달라진 까닭과 할 일(재생을 멈추는 문장의 뒤 절). 지금 지식에 없는 것이 확실하면 지식을, 두 판단의 지식이 같으면(same_knowledge —
+    decision_gap) 설비 · 업무 상태를, 가를 근거가 없으면 둘 다 말한다."""
+    if same_knowledge and not gone:
+        return ("판단에 쓰는 지식(규칙 · 조치 방법 · 성과 지표 경로)은 준비된 판단 때와 같고, 설비 · 업무 상태가 그때와 달라 AI 설명과 승인 카드가 서로 "
+                "다른 조치를 말하게 됩니다. 설비 · 업무 상태를 시작 상태로 되돌린 뒤 다시 시작하거나, AI 키를 넣어 실제 AI로 실행해 주세요")
+    if gone:
+        return (f"준비된 판단이 쓴 {josa(', '.join(gone), '이')} 지금 지식에 없습니다 — 「지식 › 문서 등록」에서 문서를 바꿔 적재해 판단이 "
+                "달라졌고, AI 설명과 승인 카드가 서로 다른 조치를 말하게 됩니다. 그 문서를 검토 화면의 제안 그대로 다시 적재한 뒤 다시 시작하거나, "
+                "AI 키를 넣어 실제 AI로 실행해 주세요")
+    return ("지금 지식(「지식 › 문서 등록」에서 적재한 문서)이나 설비 · 업무 상태가 준비된 판단 때와 달라 AI 설명과 승인 카드가 서로 다른 조치를 "
+            "말하게 됩니다. 문서를 바꿔 적재했으면 그 문서를 검토 화면의 제안 그대로 다시 적재하고, 설비 · 업무 상태를 바꿨으면 시작 상태로 "
+            "되돌린 뒤 다시 시작하거나, AI 키를 넣어 실제 AI로 실행해 주세요")
 
 
 # ---------------------------------------------------------------- 읽기 조회 견주기
 #: 저장된 실행이 한 조회의 결과는 그 실행을 뜬 PC의 그때 값이다. AI 설명 · 결과 글은 그 값을 사실로 적으므로(교대 인계안의 「작업지시 두 건
 #: 배정됨」), 이 PC의 지금 값이 다르면 글이 이 PC에 없는 것을 말한다. 그래서 같은 조회를 이 PC에서 다시 불러 견준다. 정한 것:
-#:   무엇을  HTTP 도구 서버의 읽기 도구 호출 가운데 저장된 결과가 표(열 이름 columns + 행 rows — HYD 도구 봉투의 document 또는 맨 위)인 것.
-#:          구조 설명(스키마 · 목록)은 사실을 적는 값이 아니라 견주지 않는다. 지식 그래프 조회처럼 결과가 표 꼴이 아닌 조회와, 워커 자신의
-#:          조회 창구(명령형 — 실행 밖에서 다시 부르는 길이 없다)도 견주지 않는다(한계 — 재생모드.md 3절 4번).
-#:   같다    열 이름이 같고, 행의 순서를 무시하고, 시각 칸을 뺀 나머지 값이 모두 같다. 순서는 시각으로 정렬한 조회에서 PC마다 다르고, 시각
-#:          (만든 때 · 고친 때 · 측정한 때)은 같은 일을 한 PC끼리도 늘 다르다 — 그것으로 「다름」을 내면 늘 뜨는 거짓 알림이 된다. 번호(정비
-#:          요청 번호 등)는 뺄 수 없다: 글이 그 번호를 적고, 이 PC에는 그 번호가 없다.
+#:   무엇을  HTTP 도구 서버의 읽기 도구 호출 가운데 저장된 결과가 표인 것: 열 이름 columns + 행 rows(HYD 도구 봉투의 document 또는 맨 위)와
+#:          지식 그래프 조회의 레코드 목록(_records — 레코드의 열쇠가 열 이름). 구조 설명(스키마 · 목록)은 사실을 적는 값이 아니라 견주지 않는다.
+#:          표 꼴이 아닌 결과(판단 도구의 진단처럼 사실 묶음)와 워커 자신의 조회 창구(명령형 — 실행 밖에서 다시 부르는 길이 없다)도 견주지 않는다
+#:          (한계 — 재생모드.md 3절 4번).
+#:   같다    열 이름이 같고, 행의 순서를 무시하고, 시각 칸 · PC마다 새로 생기는 식별자 · 전문 검색의 관련도 점수를 뺀 나머지 값이 모두 같다.
+#:          순서는 시각으로 정렬한 조회에서 PC마다 다르고, 시각(만든 때 · 고친 때 · 측정한 때)과 그런 식별자는 같은 일을 한 PC끼리도 늘 다르다.
+#:          관련도 점수(db.index.fulltext.query… 가 내는 score)도 찾은 항목이 같아도 그 그래프에 든 것 전체(그 PC의 사건 기록 · 지운 노드의
+#:          흔적)를 따라 PC마다 다르다(2026-11-23 실측: 질문 「고객센터 전화번호」의 검색 두 개가 같은 28건 · 같은 이름인데 점수만 달라 늘 알림이
+#:          떴다) — 그것들로 「다름」을 내면 늘 뜨는 거짓 알림이 된다. 번호(정비 요청 번호 등)는 뺄 수 없다: 글이 그 번호를 적고, 이 PC에는 그
+#:          번호가 없다.
 #:   설비 측정값처럼 늘 달라지는 조회는 따로 가르지 않는다 — 다시 부르면 값이 다르고, 「글 속의 측정값은 판단 때 값」이라는 알림이 그대로 참이다.
 _MOMENT = re.compile(r"\A\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?\Z")
 _SQL_SOURCE = re.compile(r"\b(from|join)\s+([A-Za-z_][\w.]*)(\s*\()?", re.I)
@@ -515,8 +666,22 @@ _SQL_FROM_INSIDE = ("extract", "substring", "trim", "overlay")     # 이 함수�
 MOMENT = "(시각)"
 
 
+def _records(body) -> tuple[list, list] | None:
+    """지식 그래프 조회 도구(neo4j 조회 — {"result": "<레코드 목록 JSON>"})의 결과 → (열 이름, 행). 레코드 목록이 아니면 None."""
+    records = body.get("result") if isinstance(body, dict) and set(body) == {"result"} else None
+    if isinstance(records, str):
+        try:
+            records = json.loads(records)
+        except ValueError:
+            return None
+    if not isinstance(records, list) or not all(isinstance(r, dict) for r in records):
+        return None
+    columns = sorted({k for r in records for k in r})
+    return columns, [[r.get(c) for c in columns] for r in records]
+
+
 def _table(content) -> tuple[list, list] | None:
-    """도구 결과가 표이면 (열 이름, 행). 표가 아니거나 오류 봉투면 None."""
+    """도구 결과가 표이면 (열 이름, 행): 업무 · 시계열 조회의 표(columns · rows)와 지식 그래프 조회의 레코드 목록. 표가 아니거나 오류 봉투면 None."""
     body = _as_json(content)
     doc = body.get("document") if isinstance(body, dict) and isinstance(body.get("document"), dict) else body
     if not isinstance(doc, dict) or (isinstance(body, dict) and body.get("result") == "error"):
@@ -524,17 +689,87 @@ def _table(content) -> tuple[list, list] | None:
     columns, rows = doc.get("columns"), doc.get("rows")
     if isinstance(columns, list) and isinstance(rows, list) and all(isinstance(r, list) for r in rows):
         return columns, rows
-    return None
+    return _records(body)
+
+
+#: PC마다 새로 생기는 식별자 — 문서 판본 id(uuid) · 테넌트 해시(sha256 16진)는 같은 지식을 가진 PC끼리도 늘 다르다(시각과 같은 까닭으로 견주지 않는다)
+_GENERATED = re.compile(r"[0-9a-f]{64}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+GENERATED = "(식별자)"
+
+
+def _cell(c):
+    """견줄 칸 값. 글은 시각 · PC 마다 다른 식별자를 한 표시로 바꾸고, 칸 안의 묶음(조회문의 collect — 객체 · 목록)도 그 안쪽까지 같은 규칙으로 바꾼다.
+    목록은 차례를 무시한다(collect 가 모은 차례는 조회마다 다를 수 있다 — 행의 순서를 무시하는 것과 같은 까닭). 전에는 맨 바깥 글만 바꿔, 단계를
+    collect 로 모은 조회는 그 안의 문서 판본 id 와 모은 차례 때문에 지식이 같아도 「값이 다름」이었다(2026-11-23 다시 받은 질문 답)."""
+    if isinstance(c, str):
+        return MOMENT if _MOMENT.match(c) else _GENERATED.sub(GENERATED, c)
+    if isinstance(c, dict):
+        return {k: _cell(v) for k, v in c.items()}
+    if isinstance(c, list):
+        return sorted((_cell(v) for v in c), key=lambda v: json.dumps(v, ensure_ascii=False, sort_keys=True, default=str))
+    return c
+
+
+def pair_generated(old: tuple[list, list], new: tuple[list, list], known: dict[str, str]) -> None:
+    """같다고 본 두 조회 결과(저장된 것 old · 이 PC 의 것 new)에서 PC 마다 다른 식별자를 짝짓는다 → known[저장된 식별자] = 이 PC 의 식별자.
+    저장된 실행의 AI 는 앞 조회가 돌려준 식별자(문서 판본 id 등)를 뒤 조회의 조건에 그대로 적는다 — 그 조회문을 이 PC 에서 글자 그대로 다시 부르면 그
+    식별자가 이 PC 에 없어 0건이 되고, 지식이 같은데도 「판단 때 8건 · 지금 0건」이라는 거짓 알림이 붙었다(2026-11-23 — 다시 받은 질문 답).
+    식별자를 빼면 같은 행이 표에 하나뿐일 때만 짝짓는다(같아 보이는 행이 둘이면 어느 것이 어느 것인지 알 수 없다)."""
+    def by_key(rows):
+        found: dict[str, list] = {}
+        for row in rows:
+            found.setdefault(_row_keys([row])[0], []).append(row)
+        return {key: hit[0] for key, hit in found.items() if len(hit) == 1}
+    was, now = by_key(old[1]), by_key(new[1])
+    for key in was.keys() & now.keys():
+        for a, b in zip(was[key], now[key]):
+            if isinstance(a, str) and isinstance(b, str):
+                olds, news = _GENERATED.findall(a), _GENERATED.findall(b)
+                if len(olds) == len(news):
+                    for x, y in zip(olds, news):
+                        if x != y:
+                            known.setdefault(x, y)
+
+
+def with_generated(value, known: dict[str, str]):
+    """조회 입력 안의 저장된 식별자를 이 PC 의 식별자로(pair_generated 가 짝지은 것만 — 모르는 식별자는 그대로 둔다)."""
+    if not known:
+        return value
+    if isinstance(value, dict):
+        return {k: with_generated(v, known) for k, v in value.items()}
+    if isinstance(value, list):
+        return [with_generated(v, known) for v in value]
+    if isinstance(value, str):
+        return _GENERATED.sub(lambda m: known.get(m.group(0), m.group(0)), value)
+    return value
 
 
 def _row_keys(rows: list) -> list[str]:
-    """행마다 견줄 글 — 시각 칸은 한 표시로 바꾸고, 순서를 무시하게 정렬한다."""
-    return sorted(json.dumps([MOMENT if isinstance(c, str) and _MOMENT.match(c) else c for c in row], ensure_ascii=False, sort_keys=True, default=str)
-                  for row in rows)
+    """행마다 견줄 글 — 시각 칸과 PC마다 새로 생기는 식별자는 한 표시로 바꾸고, 순서를 무시하게 정렬한다."""
+    return sorted(json.dumps([_cell(c) for c in row], ensure_ascii=False, sort_keys=True, default=str) for row in rows)
 
 
-def read_gap(old: tuple[list, list], new: tuple[list, list]) -> tuple[int, int] | None:
-    """저장된 조회 결과(old)와 이 PC에서 방금 다시 조회한 결과(new)가 다르면 (저장된 행 수, 지금 행 수). 같으면(머리의 「같다」) None."""
+_FULLTEXT = re.compile(r"\bdb\.index\.fulltext\.query\w*", re.I)
+_SCORE_AS = re.compile(r"\bscore\s+AS\s+`?([A-Za-z_]\w*)", re.I)
+
+
+def ranked_columns(arguments) -> set[str]:
+    """조회문이 전문 검색이면 그 관련도 점수가 든 열 이름(score 와 그것을 바꿔 부른 이름) — 머리의 「같다」가 견주지 않는 칸."""
+    texts = [v for v in arguments.values() if isinstance(v, str)] if isinstance(arguments, dict) else []
+    return {name for text in texts if _FULLTEXT.search(text) for name in ("score", *_SCORE_AS.findall(text))}
+
+
+def _without(table: tuple[list, list], drop: set[str]) -> tuple[list, list]:
+    columns, rows = table
+    keep = [i for i, c in enumerate(columns) if c not in drop]
+    return [columns[i] for i in keep], [[row[i] if i < len(row) else None for i in keep] for row in rows]
+
+
+def read_gap(old: tuple[list, list], new: tuple[list, list], ranked: set[str] = frozenset()) -> tuple[int, int] | None:
+    """저장된 조회 결과(old)와 이 PC에서 방금 다시 조회한 결과(new)가 다르면 (저장된 행 수, 지금 행 수). 같으면(머리의 「같다」) None.
+    ranked = 견주지 않는 관련도 점수 열(ranked_columns)."""
+    if ranked:
+        old, new = _without(old, ranked), _without(new, ranked)
     (old_columns, old_rows), (new_columns, new_rows) = old, new
     if len(old_rows) != len(new_rows) or old_columns != new_columns or _row_keys(old_rows) != _row_keys(new_rows):
         return len(old_rows), len(new_rows)
@@ -579,11 +814,19 @@ def source_label(name: str) -> str | None:
     return None
 
 
+_CYPHER = re.compile(r"\bMATCH\b", re.I)
+_CYPHER_LABEL = re.compile(r"\(\s*\w*\s*:\s*([A-Za-z_]\w*)")
+
+
 def read_subject(server: str, arguments) -> str:
     """알림에서 그 조회를 가리키는 말. 조회문이 입력에 있으면 그 조회가 읽은 자료: 기본 제공 데이터 원천의 표는 원천 이름을 앞에 두고 표 이름을
-    괄호에(「업무 DB 조회(ent.work_orders)」 — 처리 과정의 그 조회에 같은 표 이름이 보인다), 그 밖의 표는 표 이름만. 조회문이 없거나 읽은
-    자료를 찾지 못하면 도구 서버 이름. 도구의 내부 이름은 쓰지 않는다."""
+    괄호에(「업무 DB 조회(ent.work_orders)」 — 처리 과정의 그 조회에 같은 표 이름이 보인다), 그 밖의 표는 표 이름만. 지식 그래프 조회문(MATCH)은
+    「지식 지도 조회(읽은 노드 종류)」. 조회문이 없거나 읽은 자료를 찾지 못하면 도구 서버 이름. 도구의 내부 이름은 쓰지 않는다."""
     texts = [v for v in arguments.values() if isinstance(v, str)] if isinstance(arguments, dict) else []
+    cypher = [t for t in texts if _CYPHER.search(t)]
+    if cypher:
+        labels = list(dict.fromkeys(label for text in cypher for label in _CYPHER_LABEL.findall(text)))
+        return "지식 지도 조회" + (f"({' · '.join(labels)})" if labels else "")
     names = list(dict.fromkeys(name for text in texts for name in sql_sources(text)))
     if not names:
         return f"「{server}」 조회"
@@ -666,7 +909,8 @@ class _Tools:
 
     def read(self, server: str, tool: str, arguments: dict) -> tuple[list, list] | None:
         """읽기 도구 하나를 이 PC의 서버로 다시 부른다(써 보기와 같은 함수 — 그 자리에서 읽기 전용 판정을 다시 한다) → 표, 못 받았으면 None.
-        견주려는 것일 뿐이라 다시 시도하지 않고 멈추지도 않는다. 닿지 못한 서버는 그 실행에서 다시 부르지 않는다."""
+        다시 시도하지 않는다 — 못 받은 조회를 알릴지 그 저장을 버릴지는 부르는 쪽(play · check_read)이 정한다. 닿지 못한 서버는 그 실행에서 다시
+        부르지 않는다."""
         if server in self.unreached:
             return None
         out = mcp_check.call(mcp_check.normalize(self.servers[server]), tool, arguments, max_chars=1_000_000)
@@ -735,13 +979,16 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     swaps.pair_case(saved.get("context") or {}, _task_context(request.workdir), step)
     tools = _Tools(request.workdir, step, check_stop)
     session = library.session(key, i)
-    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], reads=[], typed=swaps.typed, attempt=_attempt_label(_attempt(saved)),
+    seen = None                              # 그 실행이 읽은 마지막 카드 비교(decision_gap)
+    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], rules=[], gone=[], reads=[], typed=swaps.typed,
+                attempt=_attempt_label(_attempt(saved)),
                 library=library.prefix, skills=sorted({name for d in saved["events"] if d["kind"] == ExecEventKind.TOOL_START.value
                                                        for name, _ in skill_files(d.get("tool"), d.get("tool_input"))}))
     events = [d for d in saved["events"] if not partial_chunk(d)]
     if not any(d["kind"] == ExecEventKind.RUN_START.value for d in events):    # 녹화에 실행 시작 줄이 있으면 그것 하나만(G1-08)
         yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
     live: dict[str, dict] = {}
+    generated: dict[str, str] = {}           # 저장된 식별자 → 이 PC 의 식별자(같다고 본 조회 결과에서 짝지은 것 — pair_generated)
     skill_reads = {d.get("tool_use_id"): (d.get("tool"), d.get("tool_input")) for d in events
                    if d["kind"] == ExecEventKind.TOOL_START.value and d.get("tool") == "Read"}
     for n, d in enumerate(events):
@@ -771,14 +1018,11 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 raise NotRecorded(f"「{step}」의 준비된 결과를 읽을 수 없어 이 처리 건의 값으로 바꾸지 못했습니다. README 「새 판 받기」대로 새 판을 받으세요"
                                   + (f"(이 PC에 등록된 판단 {made}은 승인 단계로 넘어가지 않습니다)." if made else "."))
             swaps.pair_created(old, new)
-            changed, numbers = decision_gap(old, new)
-            if changed and library.prefix == COURSE:
-                made = (_created(new) or {}).get("id")
-                raise NotRecorded(f"{REPLAY} 「{step}」의 준비된 AI 판단을 이 처리 건에 쓸 수 없습니다. " + " · ".join(changed) + ". "
-                                  "설비 · 업무 상태가 준비된 판단 때와 달라 AI 설명과 승인 카드가 서로 다른 조치를 말하게 됩니다. "
-                                  "설비 · 업무 상태를 시작 상태로 되돌린 뒤 다시 시작하거나, AI 키를 넣어 실제 AI로 실행해 주세요"
-                                  + (f"(지금 계산으로 등록된 판단 {made}은 승인 단계로 넘어가지 않습니다)." if made else "."))
-            last["differs"] += numbers
+            gap = decision_gap(old, new, seen)
+            check_decision(library, key, step, gap, (_created(new) or {}).get("id"))
+            last["differs"] += gap["numbers"]
+            last["rules"] += gap["rules"]
+            last["gone"] += gap["gone"] or []
             done[d["tool_use_id"]] = result["text"]
             # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있고, 워커가 그 사이 죽을 수도 있다
             carried.parent.mkdir(parents=True, exist_ok=True)
@@ -788,11 +1032,23 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
             recorded = next((e for e in events[n + 1:] if e["kind"] == ExecEventKind.TOOL_END.value
                              and e.get("tool_use_id") == d.get("tool_use_id")), None)
             old = (saved.get("tool_outputs_full") or {}).get(d.get("tool_use_id")) or (recorded.get("tool_output") if recorded else None)
-            was = None if recorded is None or _failed(old, recorded.get("is_error")) else _table(swaps.apply(old))
+            failed = recorded is None or _failed(old, recorded.get("is_error"))
+            if not failed and not (isinstance(d["tool_input"], dict) and d["tool_input"].get("overrides")) and evaluation(_as_json(old)):
+                seen = _as_json(old)        # 그 실행이 가정 사실 없이 읽은 마지막 카드 비교 — AI 설명이 든 규정 판정(decision_gap)
+            shown = None if failed else swaps.apply(old)
+            was = None if failed else _table(shown)
             if was is not None:
-                arguments = d["tool_input"] if isinstance(d["tool_input"], dict) else {}
+                # 앞 조회가 돌려준 PC 마다 다른 식별자를 조건에 적은 조회는 이 PC 의 그 식별자로 부른다(pair_generated)
+                arguments = with_generated(d["tool_input"] if isinstance(d["tool_input"], dict) else {}, generated)
                 now = tools.read(*target, arguments)
-                last["reads"].append((read_subject(target[0], arguments), read_gap(was, now) if now is not None else False))
+                ranked = ranked_columns(arguments)
+                gap = read_gap(was, now, ranked) if now is not None else False
+                if gap is None:
+                    pair_generated(_without(was, ranked), _without(now, ranked), generated)
+                subject = read_subject(target[0], arguments)
+                last["reads"].append((subject, gap))
+                made = ", ".join(i for r in live.values() if (i := (_created(_as_json(r["text"])) or {}).get("id"))) or None
+                check_read(library, key, step, subject, gap, _records(_as_json(shown)) is not None, made)
         if d["kind"] == ExecEventKind.TOOL_END.value and d.get("tool_use_id") in live:
             d.update(text=live[d["tool_use_id"]]["text"], tool_output=live[d["tool_use_id"]]["text"], is_error=False)
         elif (d["kind"] == ExecEventKind.TOOL_END.value and d.get("tool_use_id") in skill_reads and not d.get("is_error")
@@ -823,11 +1079,15 @@ def _counted(lines: list[str]) -> list[str]:
     return [line + (f"({lines.count(line)}번)" if lines.count(line) > 1 else "") for line in dict.fromkeys(lines)]
 
 
+def read_change(subject: str, gap: tuple[int, int], when: str) -> str:
+    """다른 조회 하나의 말(gap — read_gap 의 (저장된 행 수, 지금 행 수), when: 「판단 때」 · 「앞선 실행 때」)."""
+    return f"{subject} — " + (f"{when} {gap[0]}건 · 지금 {gap[1]}건" if gap[0] != gap[1] else f"{gap[0]}건으로 같고 값이 다름")
+
+
 def reads_said(last: dict, when: str) -> str:
     """다시 부른 읽기 조회가 저장된 결과와 다르거나 견주지 못했을 때의 말(when: 「판단 때」 · 「앞선 실행 때」). 모두 같으면 빈 글."""
     reads = last.get("reads") or []      # (가리키는 말, 차이): 차이 = None 같음 · False 견주지 못함 · (저장된 행 수, 지금 행 수) 다름
-    gaps = _counted([f"{subject} — " + (f"{when} {gap[0]}건 · 지금 {gap[1]}건" if gap[0] != gap[1] else f"{gap[0]}건으로 같고 값이 다름")
-                     for subject, gap in reads if gap])
+    gaps = _counted([read_change(subject, gap, when) for subject, gap in reads if gap])
     unseen = sum(1 for _, gap in reads if gap is False)
     if not gaps and not unseen:
         return ""
@@ -882,15 +1142,24 @@ def notice_parts(last: dict | None, skills: list[str] | None = None) -> list[tup
     if last.get("library") == REUSE:
         rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
         kept = (f" 앞선 실행에서 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
+        said = [("reused", f"같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.{rerun}{kept}")]
+        # 판단 · 규정 판정 · 판단을 계산한 지식(지문) · 읽은 지식 지도가 앞선 실행 때와 같다고 확인되지 않은 저장은 버리고 멈추므로(check_decision ·
+        # check_read) 여기까지 오는 차이는 업무 · 설비 상태에서 온 것(업무 값으로 정해지는 수치, 업무 · 시계열 조회)뿐이다 — 숨기지 않는다
+        if last.get("differs"):
+            said.append(("values_differ", f"AI 설명 속 값 일부는 앞선 실행 때 값입니다 — 그때 → 지금 값: {'; '.join(last['differs'])}."))
         reads = reads_said(last, "앞선 실행 때")
-        return ([("reused", f"같은 설정 · 같은 입력이라 앞선 실행 결과와 같습니다.{rerun}{kept}")]
-                + ([(_reads_kind(last), reads)] if reads else [])
+        return (said + ([(_reads_kind(last), reads)] if reads else [])
                 + [("reused", "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")])
     said, reads, typed = [], reads_said(last, "판단 때"), typed_said(last)
     if typed:
         said.append(("typed_differs", typed))
     if last.get("differs"):      # differs 의 한 줄 = 「조치 이름」 수량 3 → 5개(decision_gap — 왼쪽이 글 속 값, 오른쪽이 이 PC가 지금 계산한 값)
         said.append(("values_differ", f"AI 설명 속 값 일부는 판단 때 값입니다 — 판단 때 → 지금 값: {'; '.join(last['differs'])}."))
+    if last.get("rules"):        # rules 의 한 줄 = 「조치 이름」 — 판단 때 걸린 「규칙 설명」이 지금 계산에는 없음(decision_gap)
+        gone = last.get("gone") or []
+        said.append(("values_differ", "AI 설명이 든 규정 판정(제외 · 감점 · 경고)은 판단 때 것이고 승인 카드의 규정 판정이 지금 계산입니다 — "
+                     + "; ".join(last["rules"]) + "."
+                     + (f" 판단 때 쓰인 {josa(', '.join(gone), '이')} 지금 지식에 없습니다(「지식 › 문서 등록」에서 문서를 바꿔 적재함)." if gone else "")))
     if reads:
         said.append((_reads_kind(last), reads))
     if skills is not None and set(skills) != set(last.get("skills") or ()):
@@ -916,19 +1185,22 @@ class Responses:
 
     def claim(self, *, cli, slot: str | None, case: str, attempt: tuple[int, int], request_key: str | None, step: str,
               provider: str, source: dict, accepted: Callable[[dict], bool], reclaimed: bool = False,
-              skills: list[str] | None = None, skills_changed: bool = False) -> Claim:
-        """skills: 이 실행에 붙인 스킬 이름. skills_changed: 학생이 그 구성을 바꿀 수 있었던 실행인가(Runner._skills_changed) — 그때만 스킬 안내를 낸다."""
+              skills: list[str] | None = None, skills_changed: bool = False, phase: str = "course") -> Claim:
+        """skills: 이 실행에 붙인 스킬 이름. skills_changed: 학생이 그 구성을 바꿀 수 있었던 실행인가(Runner._skills_changed) — 그때만 스킬 안내를 낸다.
+        phase: 서버가 판정한 단계(course · pbl — 키 없는 PC가 PBL 단계의 AI 단계에서 멈출 때 그 까닭을 말한다)."""
         return Claim(self, cli=cli, slot=slot, case=case, attempt=attempt, request_key=request_key, step=step,
-                     provider=provider, source=source, accepted=accepted, reclaimed=reclaimed, skills=skills, skills_changed=skills_changed)
+                     provider=provider, source=source, accepted=accepted, reclaimed=reclaimed, skills=skills, skills_changed=skills_changed,
+                     phase=phase)
 
 
 class Claim:
     def __init__(self, responses: Responses, *, cli, slot, case, attempt, request_key, step, provider, source, accepted,
-                 reclaimed=False, skills=None, skills_changed=False):
-        self.r, self.cli = responses, cli
+                 reclaimed=False, skills=None, skills_changed=False, phase="course"):
+        self.r, self.cli, self.phase = responses, cli, phase
         self.reclaimed, self.skills, self.skills_changed = reclaimed, list(skills or []), bool(skills_changed)
-        if slot in UNCACHED_SLOTS:
-            request_key = None              # 지금 상태로 답하는 자리 — 같은 요청 저장을 읽지도 쓰지도 않는다(G1-09)
+        if not slot or slot in UNCACHED_SLOTS:
+            # 같은 요청 저장은 수업 녹화와 같은 곳에서만 — 수업 AI 자리가 아니면(PBL 단계 · 학생 흐름) 늘 실제 AI 로, 질문 자리는 G1-09
+            request_key = None
         self.slot, self.case, self.attempt, self.request_key = slot, case, tuple(attempt), request_key
         self.step, self.provider, self.source, self.accepted = step, provider, source, accepted
         self.captured: list[tuple[str | None, dict]] = []      # (그 스트림의 resume_session, 실행)
@@ -1029,6 +1301,9 @@ class Claim:
                     "이 처리 건은 닫고 새로 시작해 주세요.")
         # 재생 모드가 답하는 AI 단계의 이름(저장된 응답의 업무 이름 — 질문 자리는 따로 말한다). 손으로 적은 흐름 목록을 두지 않는다
         steps = " · ".join(f"「{name}」" for name in dict.fromkeys(str(d.get("step") or "") for _, d in library.docs() if d.get("slot") != "question") if name)
+        if not self.slot and self.phase == "pbl":
+            # 서버는 PBL 단계의 AI 단계에 저장된 응답의 자리를 주지 않는다(course_policy.ai_slot) — PBL 은 실제 AI 로만 돈다
+            return f"{REPLAY} PBL 기간의 AI 단계를 진행하지 않습니다 — {josa(f'「{step}」', '을')} 실행하려면 AI 키를 넣고 실제 AI로 실행해 주세요."
         if not self.slot:
             return (f"{REPLAY} {josa(f'「{step}」', '을')} 지원하지 않습니다. 재생 모드에서 진행되는 AI 단계는 기본 제공 흐름과 교대 인수인계의 "
                     f"{steps or '(없음)'}, 그리고 질문하기의 준비된 질문입니다.")

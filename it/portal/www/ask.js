@@ -126,10 +126,11 @@
   function agentTip() {
     const a = A.agents.find(x => x.id === A.agent);
     if (!a) return '';
-    // 질문에 실제로 연결하는 도구 서버(서버 계산 a.servers — 질문용 조회 도구가 있는 서버만, AI 에이전트 실행 서비스와 같은 규칙)와 질문에는 쓰지 않는 서버(a.left_out)
+    // 질문에 실제로 연결하는 도구 서버(서버 계산 a.servers — 질문하기에 정해 둔 조회 도구가 있는 기본 제공 서버와, 연결 검사에서 읽기 도구를 확인한
+    // 내가 등록한 서버. AI 에이전트 실행 서비스와 같은 규칙)와 질문에는 쓰지 않는 서버(a.left_out — 그 둘 어디에도 들지 않는 서버)
     const names = list => list.map(t => hydWords.serverName(t)).join(', ');
     return [a.goal || a.role ? `하는 일: ${a.goal || a.role}` : '', a.servers.length ? `질문에 쓰는 도구 서버: ${names(a.servers)}` : '', a.skills.length ? `스킬: ${a.skills.join(', ')}` : '',
-      a.left_out.length ? `질문에는 쓰지 않는 도구 서버: ${names(a.left_out)} (질문용 조회 도구가 없습니다)` : ''].filter(Boolean).join('\n');
+      a.left_out.length ? `질문에는 쓰지 않는 도구 서버: ${names(a.left_out)} (질문에 쓸 조회 도구가 정해지지 않았거나, 내가 등록한 서버면 연결 검사에서 읽기로 확인한 도구가 없습니다)` : ''].filter(Boolean).join('\n');
   }
   // 답(결론) → 근거(접기). 답할 수 없으면 그 이유가 답 자리에 온다
   function resultHtml(v) {
@@ -176,9 +177,15 @@
     if (!v || !LIVE.has(v.state)) return '';
     return `<i class="dot" data-tone="run" data-live></i><span data-ask-now-text>${esc(nowText(v))}</span>${hydLive.timeHtml(v.started)}`;
   }
-  // 빈 대화의 질문 예(알약 둘): AI 키 없이 도는 재생 모드에서는 저장된 답이 있는 질문, 아니면 도구로 조회해 답할 수 있는 질문의 본보기
-  const EXAMPLES = ['완제품 재고가 가장 적은 설비와 그 수량은?', 'HYD-01 팬 진동 최근 최대값은?'];
-  const examples = () => (replay() ? recorded() : EXAMPLES).slice(0, 2);
+  // 빈 대화의 질문 예(알약 둘): AI 키 없이 도는 재생 모드에서는 저장된 답이 있는 질문, 아니면 도구로 조회해 답할 수 있는 질문의 본보기.
+  // 본보기는 기본 제공 현장(업무 시스템 · 가상 설비)을 묻는 질문이라, 그것을 읽는 기본 제공 도구 서버를 질문에 쓰는 에이전트에게만 보인다 —
+  // 내 도구 서버만 붙인 에이전트에게 답할 수 없는 질문을 권하지 않는다
+  const EXAMPLES = [['완제품 재고가 가장 적은 설비와 그 수량은?', 'enterprise'], ['HYD-01 팬 진동 최근 최대값은?', 'hyd-dmn']];
+  const examples = () => {
+    if (replay()) return recorded().slice(0, 2);
+    const servers = (A.agents.find(x => x.id === A.agent) || {}).servers || [];
+    return EXAMPLES.filter(([, server]) => servers.includes(server)).map(([text]) => text);
+  };
   function picksHtml() {
     if (A.cur) return '';
     const list = examples();

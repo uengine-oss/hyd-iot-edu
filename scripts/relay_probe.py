@@ -22,17 +22,13 @@ import urllib.request
 import httpx
 
 from procsvc.course_ledger import REASONS, Denied
-from procsvc.course_model import relay_client, relay_url, transport_refusal
+from procsvc.course_model import classify_relay, relay_client, relay_url, transport_refusal
 
 PROCESS = 'http://127.0.0.1:8080'
 OFFLINE = '그동안 포털의 AI 단계(판단 · 제안, 에이전트에게 질문)만 막히고 나머지 실습은 그대로 할 수 있습니다.'
 KEY_LINE = '.env 의 LLM_API_KEY= 뒤에 수업에서 받은 키를 앞뒤 공백 · 따옴표 없이 넣었는지 확인하고 시작 파일을 다시 실행하세요.'
-REFUSED = {
-    401: '강의 중계가 이 키를 받지 않습니다. ' + KEY_LINE,
-    403: '이 키가 막혔거나 수업 모델을 쓸 수 없습니다. 강사에게 알려 주세요. ' + OFFLINE,
-    404: '강의 중계 주소가 맞지 않습니다. 강사에게 알려 주세요. ' + OFFLINE,
-    429: '강의 중계가 잠시 바쁘거나 이 키의 사용 한도에 닿았습니다. 1분 뒤 다시 해 보고, 계속되면 강사에게 알려 주세요. ' + OFFLINE,
-}
+#: 응답 번호가 5xx 여도 다시 묻지 않는 거절(다시 물어도 같다) — 종류는 관문의 classify_relay 가 응답 글로 가른다
+SETTLED = ('relay_budget', 'relay_model', 'relay_auth')
 
 
 def result(ok: bool, code: str, message: str) -> dict:
@@ -50,8 +46,9 @@ def url_problem(url: str) -> str | None:
 
 def ask(base: str, key: str, model: str, *, call: bool = False, attempts: int = 3, timeout: float = 30,
         wait: float = 5, sleep=time.sleep) -> dict:
-    """주소 검사를 통과한 base 로 관문의 클라이언트(relay_client)로 묻는다. 네트워크 · 5xx 는 세 번까지, 401 · 403 · 404 · 429 와
-    인증서 확인 실패(관문의 transport_refusal 이 relay_untrusted 로 가르는 것 — 관문과 같은 코드 · 같은 문장)는 바로 판정."""
+    """주소 검사를 통과한 base 로 관문의 클라이언트(relay_client)로 묻는다. 네트워크 · 5xx 는 세 번까지 다시 묻고, 4xx 와 인증서 확인
+    실패는 바로 판정한다. 거절의 종류와 문장은 관문과 같은 곳에서 온다 — 종류는 course_model.classify_relay(응답 번호가 아니라 글로 가른다:
+    새 강의 중계는 키 한도를 다 쓰면 422 로 답한다) · transport_refusal, 문장은 course_ledger.REASONS. 그 뒤에 응답 번호와 OFFLINE 만 붙인다."""
     headers = {'x-api-key': key, 'Authorization': f'Bearer {key}', 'anthropic-version': '2023-06-01',
                'Content-Type': 'application/json'}
     if call:
@@ -72,8 +69,9 @@ def ask(base: str, key: str, model: str, *, call: bool = False, attempts: int = 
             if status == 200:
                 data = json.loads(raw or b'{}')
                 break
-            if status in REFUSED:
-                return result(False, str(status), REFUSED[status])
+            code = classify_relay(status, raw)
+            if status < 500 or code in SETTLED:
+                return result(False, code, f'{REASONS[code].text} (응답 {status}) {OFFLINE}')
             last = f'응답 {status}'
         except httpx.RequestError as exc:         # 연결 · 시간 초과 · 깨진 응답(관문이 relay_failed 로 거절하는 것들)
             if transport_refusal(exc) == 'relay_untrusted':

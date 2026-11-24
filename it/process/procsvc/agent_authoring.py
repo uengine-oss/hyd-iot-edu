@@ -351,14 +351,9 @@ def detach_skill(repo, tenant_id: str, agent_id: str, skill_name: str) -> dict:
 
 
 # ---------------------------------------------------------------- 단계 → 에이전트
-def version_key(version) -> tuple:
-    """판본 정렬 열쇠 — 숫자 마디로 견준다('10' > '9', '1.10' > '1.9'). 저장소의 version 은 글자라
-    글자 순으로 고르면 10판부터 9판을 최신으로 본다(P3-13)."""
-    return tuple(int(n) for n in re.findall(r"\d+", str(version or ""))) or (0,)
-
-
 def latest_definitions(rt) -> list[dict]:
     """등록된 흐름마다 가장 새 판본(숫자 순) 하나, 등록된 것이 없으면 실행 중인 기준 정의. 배정 · 에이전트 단계 · 도구 지도 · 출발본이 같이 쓴다."""
+    from .procdb import version_key      # 판본 순서는 그 함수 하나가 정한다(전에는 이 모듈에 규칙이 다른 사본이 있었다 — 전수검사 12-11)
     latest: dict[str, dict] = {}
     for r in rt.repo.list_definitions(rt.tenant_id):
         cur = latest.get(r["id"])

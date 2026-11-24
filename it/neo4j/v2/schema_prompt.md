@@ -45,7 +45,7 @@
 - `(:Symptom {id!, name!, aliases, note})` 계측값의 이상 양상.
 - `(:FailureMode {id!, name!})` 구성 요소 단위의 고장 유형. 조치 방법(스킬)은 고장 유형에 매칭된다.
 - `(:Cause {id!, name!, aliases, prior!})` 고장의 근본 원인. prior는 사전 확률이다.
-- `(:Evidence {id!, name!, rule!, sql!, expect![lt|gt|gte], threshold!, weight!, tag, windowSeconds})` 원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다.
+- `(:Evidence {id!, name!, rule!, sql, note, expect![lt|gt|gte], threshold!, weight!, tag, windowSeconds})` 원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다. 이 시스템이 수집하지 않는 값(문서가 넣은 다른 설비의 센서 태그)을 읽는 증거는 sql 없이 note에 판단 엔진이 평가하지 않는다는 사실을 적는다 — 그 값은 그 설비를 맡은 에이전트가 그 설비 시스템의 도구 서버로 읽는다.
 - `(:Step {id!, order!, text!, _manual_document, citation, source_id})` 조치 방법(스킬 = SOP)의 한 단계. 근거 매뉴얼 절을 가리킨다.
 - `(:ManualSection {id!, ref!, title!, excerpt, _manual_document, citation, source_id})` 기술 매뉴얼의 절. 조치 카드의 출처로 인용된다.
 
@@ -91,7 +91,7 @@
 
 실행 중에 쌓이는 기록: 사건과 사람의 판단 사례(업무 기록), 처리 건 · 작업 · 배포 판본의 투영(실행 기록), 적재 · 투영 · 편집의 영수증(내부 기록 — 지식 지도에는 보이지 않는다).
 
-- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
+- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|APPROVED_EXECUTING|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
 - `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|CLOSED_UNAPPROVED|EXECUTED|PARTIAL], source_incident_id, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 한 교육용 고정이며, 수업 그래프에는 미리 넣은 사례가 없어 선례 몫은 0이다.
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.

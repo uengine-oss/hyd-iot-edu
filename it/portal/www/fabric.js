@@ -5,11 +5,12 @@
    API: process /api/fabric/* (procsvc/fabric_api.py) — 에이전트의 MCP 도구 hyd-dmn fabric_query 와 같은 함수다. 쓰기 버튼 없음. */
 (function () {
   const S = { el: null, tab: 'sources', sources: null, links: null, queries: [], errors: {}, result: null, resultError: '', busy: false,
-              picked: null, sample: {}, asset: 'HYD-01', query: 'asset' };
+              picked: null, sample: {}, asset: '', query: 'asset' };      // 설비는 서버가 준 목록의 첫 설비로 고른다(joinTab) — 화면에 설비 코드를 적어 두지 않는다
   const KLASS = { Asset: '설비', Sensor: '센서', Actuator: '구동기 설정값', InputData: '판단 입력', Part: '부품', Supplier: '공급사' };      // 지식 지도의 항목 종류 이름
   const STATE = { OK: ['연결됨', 'success'], MISSING: ['원천에 없음', 'danger'], SOURCE_DOWN: ['원천 연결 실패', 'danger'],
     UNBOUND: ['표 · 열 미연결', 'warning'], DERIVED: ['계산으로 정하는 값', 'neutral'], OUTSIDE: ['DB에 없는 값(입력 · 계산)', 'neutral'], UNREGISTERED: ['등록 안 된 원천', 'danger'],
-    NOT_ONE_ROW: ['설비마다 한 행이 아님', 'warning'], NO_DATA: ['기록 없음', 'warning'], TYPE_CHANGED: ['형식 바뀜', 'danger'], COMMENT_CHANGED: ['뜻 바뀜', 'warning'] };
+    NOT_ONE_ROW: ['설비마다 한 행이 아님', 'warning'], NO_DATA: ['기록 없음', 'warning'], TYPE_CHANGED: ['형식 바뀜', 'danger'], COMMENT_CHANGED: ['뜻 바뀜', 'warning'],
+    NO_ASSET_KEY: ['설비 식별 열 없음', 'warning'], NOT_IN_VIEW: ['묶어 보기 밖의 원천', 'neutral'] };
   // 상태: 연결됨은 글로, 문제가 있는 상태만 칩으로(한 화면에 색 있는 칩이 줄줄이 서지 않게)
   const chip = (state) => { const [l, t] = STATE[state] || [state || '–', 'neutral']; return state === 'OK' ? esc(l) : UI.chipText(l, t); };
   const srcName = (id, label) => esc(label || id);
@@ -54,7 +55,9 @@
     const opts = [['asset', '설비 하나로 두 원천 값 합치기'], ...S.queries.map(q => [q.id, q.title])];
     const q = S.queries.find(x => x.id === S.query);
     // 설비는 고르기 칸이다(지식 지도에 이어진 업무 DB 의 설비 코드). 목록을 못 읽었으면 적는 칸으로 둔다
-    const codes = assetCodes(), assetInput = codes.length ? `<select id="fabAsset">${[...new Set([S.asset, ...codes])].map(c => `<option${c === S.asset ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`
+    const codes = assetCodes();
+    if (codes.length && !codes.includes(S.asset)) S.asset = codes[0];
+    const assetInput = codes.length ? `<select id="fabAsset">${codes.map(c => `<option${c === S.asset ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`
       : `<input id="fabAsset" value="${esc(S.asset)}">`;
     const form = `<form class="panel io-in" aria-label="조건" onsubmit="return false"><div class="panel-head"><div><h2>조건</h2></div></div><div class="panel-sec"><div class="io-fields">` +
       UI.field({ label: '설비', input: assetInput }) +
@@ -95,7 +98,7 @@
   }
   // 설비 하나 묶어 보기: 원천마다 지식 지도의 항목에 이어진 값이 먼저(판단 입력으로 쓰이는 것이 맨 위), 지식 지도에 없는 태그는 접어 둔다(판단에 쓰이지 않는 값이 위를 덮지 않게)
   function assetAnswer(r) {
-    const groups = [['hyd-enterprise', '업무 DB'], ['hyd-timeseries', '시계열 DB']];
+    const groups = [['hyd-enterprise', '업무 DB'], ['hyd-legacy', '옛 설비 DB'], ['hyd-timeseries', '시계열 DB']];
     const row = v => `<tr><td>${esc(KLASS[v.klass] || '없음')}</td><td>${v.klass ? esc(v.label) : ''}${v.klass !== 'InputData' ? ` ${code(v.field)}` : ''}` +
       `${v.inputs && v.inputs.length ? `<small>판단 입력: ${esc(v.inputs.join(', '))}</small>` : ''}</td>` +
       `<td>${v.value == null ? chip(v.state) + `<small>${esc(v.reason || '')}</small>` : val(v.value, v.unit)}${v.anchor ? `<small>저장값 ${when(v.anchor)}</small>` : ''}</td>` +
@@ -103,7 +106,8 @@
     const head = '<th>지식 지도의 항목</th><th>이름</th><th>값</th><th>위치</th>';
     return groups.map(([id, label]) => {
       const rows = r.answer.filter(v => v.source === id);
-      if (!rows.length) return group(label, `<p class="muted">${esc(r.sources[id] && !r.sources[id].ok ? r.sources[id].reason : '연결된 값이 없습니다.')}</p>`);
+      if (!rows.length && !r.sources[id]) return '';      // 이 설비 묶어 보기가 읽지 않는 원천(옛 설비 DB): 이어진 판단 입력이 있을 때만 그 까닭과 함께 보인다
+      if (!rows.length) return group(label, `<p class="muted">${esc(!r.sources[id].ok ? r.sources[id].reason : '연결된 값이 없습니다.')}</p>`);
       const linked = rows.filter(v => v.klass).sort((a, b) => ((b.inputs || []).length ? 1 : 0) - ((a.inputs || []).length ? 1 : 0)), loose = rows.filter(v => !v.klass);
       return group(`${label} · 지식 지도에 이어진 값 ${linked.length}개`, (linked.length ? table(head, linked.map(row).join('')) : '<p class="muted">지식 지도에 이어진 값이 없습니다.</p>') +
         (loose.length ? UI.fold(`지식 지도에 없는 태그<span class="muted num">${loose.length}개</span>`, table(head, loose.map(row).join(''))) : ''));
@@ -144,10 +148,13 @@
   function linksTab() {
     const L = S.links;
     if (!L) return S.errors.links ? UI.errorBlock('연결을 읽지 못했습니다', S.errors.links, { retry: true }) : UI.loading('');
+    // 원천에 없음: 원천에서 찾았는데 없는 것, 그 아래에 원천에서 찾지 않는 다른 설비의 센서와 그 까닭(서버 fabric.OTHER_EQUIPMENT 한 곳) — 둘을 한 목록에 섞으면
+    // 다른 설비의 센서가 이 시스템 원천의 빠진 값처럼 읽혔다
+    const keys = list => (list || []).map(m => `${m.key}${m.name ? ` (${m.name})` : ''}`).join(', ');
     const classes = table('<th>항목 종류 (식별 키)</th><th>원천 위치</th><th>상태</th><th>원천에 있음</th><th>원천에 없음</th>',
       L.classes.map(c => `<tr><td>${esc(c.label)}<small>${esc(c.key_label || c.key)}</small></td><td>${code(c.table + '.' + c.column)}<small>${srcName(c.source, c.source_label)}${c.window ? ' · ' + esc(c.window) : ''}</small></td>` +
         `<td>${chip(c.state)}${c.reason ? `<small>${esc(c.reason)}</small>` : ''}</td><td>${esc((c.matched || []).map(m => m.key).join(', '))}</td>` +
-        `<td>${esc((c.unmatched || []).map(m => `${m.key}${m.name ? ` (${m.name})` : ''}`).join(', '))}</td></tr>`).join(''));
+        `<td>${esc(keys(c.unmatched))}${(c.other || []).length ? `<small data-fab-other>${esc(`${c.other_reason} — ${c.other.length}개: ${keys(c.other)}`)}</small>` : ''}</td></tr>`).join(''));
     const order = ['MISSING', 'SOURCE_DOWN', 'UNREGISTERED', 'TYPE_CHANGED', 'COMMENT_CHANGED', 'UNBOUND', 'OK', 'DERIVED', 'OUTSIDE'];
     const byState = order.map(st => [st, L.inputs.filter(i => i.state === st)]).filter(([, l]) => l.length);
     const inputTable = (st, list) => {

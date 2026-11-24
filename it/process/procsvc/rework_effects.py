@@ -63,7 +63,7 @@ def unissued_commands(defn, inst, work, approvals, evidence):
         return set()
     return {w['id'] for w in work
             if w['status'] == 'PENDING' and not w.get('consumer') and not w.get('output')
-            and 'action.cmd ' not in (w.get('log') or '') and 'waiting ACK' not in (w.get('log') or '')
+            and not effects_mod.commanded(w.get('log'))
             and w.get('tenant_id') == inst.get('tenant_id') and w.get('proc_inst_id') == inst['proc_inst_id']
             and w.get('version') == inst['proc_def_version'] and int(w.get('generation') or 0) == generation
             and defn.activities.get(w['activity_id'], {}).get('type') in engine.SERVICE_TYPES
@@ -90,7 +90,8 @@ def collect(ctx, inst):
         ledgers[decision['id']] = deepcopy(receipts)
     # Full snapshots include commands, acknowledgements, recovery, guide and
     # source identity. Do not reduce absence of effects to cmdId alone.
-    return {'incident': dict(deepcopy(inc.to_dict()), recovery=deepcopy(inc.recovery)), 'decisions': decisions, 'enterprise_receipts': ledgers,
+    return {'incident': dict(deepcopy(inc.to_dict()), recovery=deepcopy(inc.recovery), supported=inc.supported), 'decisions': decisions,
+            'enterprise_receipts': ledgers,
             'scope': 'owning Incident and all its decision ledgers; no external effect reversed'}
 
 
@@ -111,7 +112,9 @@ def admit(proposal, defn, inst, work, approvals, evidence, receipts=()):
     effects = effects_mod.inventory(evidence)
     outcome = effects_mod.resolution(effects, list(receipts))
     settled = not outcome['pending']
-    if not incident.get('recovery') or incident.get('cleared'):
+    # 다시 판단할 것이 없는 사건 = 이 흐름이 받지 않는 경보의 사건(현장 검토)이거나 이미 해제된 사건. 시계열 회복 기준이 없는 경보(업무 경보 · 사람 입력 ·
+    # 내 시스템 경보 — 회복은 원천의 해제)는 살아 있는 사건이다: 전에는 기준이 없다는 것만으로 「이미 해제됐거나 끝났다」고 막았다
+    if not incident.get('supported') or incident.get('cleared'):
         block('incident_not_active_for_rework')          # a cleared alert ends its own path; nothing to re-decide
     elif incident.get('state') == 'AWAITING_ACK':
         block('incident_command_in_flight')

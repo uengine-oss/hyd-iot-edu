@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 
 WORD_GAP = 40          # characters allowed between consecutive words of a quote in the loose pass (memento _WORD_GAP)
+CONTEXT = 30           # characters of the text before each place an ambiguous quote matches, shown in the refusal
 MIN_LOOSE_WORDS = 3
 
 
@@ -123,8 +124,11 @@ def locate(pages: dict[int, str], anchor: dict, within=None) -> dict:
 
     def settle(hits, how):
         if len(hits) > 1:
-            where = ', '.join(f'페이지 {p} {s}~{e}' for p, s, e in hits[:5])
-            raise Ambiguous(f'원문 인용이 {len(hits)}곳에 있어 한 곳을 정할 수 없습니다 ({where}). 앞뒤를 더 붙인 긴 인용으로 한 곳을 특정하세요: {quote[:60]!r}')
+            # 자리마다 바로 앞 글을 함께 — 「더 긴 인용」을 어디로 늘려야 하는지 AI가 알 수 있게(2026-11-23 실측: 자리 좌표만 받은 AI가 교정 세 번
+            # 모두 같은 인용을 냈다)
+            where = ', '.join(f"페이지 {p} {s}~{e}(앞 글 「{pages[p][max(0, s - CONTEXT):s].strip()[-CONTEXT:]}」)" for p, s, e in hits[:5])
+            raise Ambiguous(f'원문 인용이 {len(hits)}곳에 있어 한 곳을 정할 수 없습니다 ({where}). 그 항목의 자리 앞 글까지 붙인 긴 인용으로 한 곳을 '
+                            f'특정하세요: {quote[:60]!r}')
         p, s, e = hits[0]
         return {'page': p, 'start': s, 'end': e, 'quote': pages[p][s:e], 'located': how}
 

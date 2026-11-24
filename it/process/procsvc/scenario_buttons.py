@@ -54,6 +54,8 @@ SCENARIOS: dict[str, dict] = {
 
 #: 업무 사건 카드의 되돌리기 단추 이름 — 화면 단추 · 감사 기록 · 거절 문장이 이 이름 하나를 쓴다
 RESET_BUTTON = "업무 데이터 초기화"
+#: 가상 설비 3기를 정상 운전점으로 되돌리는 단추([설비 초기화], main.scenario_plant_reset) — 처리 건 기록 · 감사 기록 · 설비의 바깥 변화 기록이 이 이름을 쓴다
+PLANT_RESET_BUTTON = "설비 초기화"
 
 #: 업무 사건 카드의 바깥 사건 단추(시나리오 → 동작 → 설정). 설비 결함 주입과 같은 성격이다 — 실습에서는 누군가 바깥세상의 일을 일으켜야 한다.
 #:   C delay: 공급사가 열린 발주의 납기를 days 일 늦춘다고 알린다(업무 거래 skill:delay-delivery — SCM). 처리 엔진의 입고 단계는 입고 예정 때
@@ -62,6 +64,8 @@ RESET_BUTTON = "업무 데이터 초기화"
 EVENTS: dict[str, dict] = {"C": {"delay": {"button": "공급사 납기 지연", "days": 5, "skill": "skill:delay-delivery"}}}
 
 A_ASSET = "HYD-01"
+#: 이 결함이 일으키는 경보(감지기 이상 패턴 — 시드 pattern:cooler-degradation) — 화면이 결함 카드의 이름 · 감지기 단계를 이 값으로 읽는다
+A_PATTERN = "COOLER_DEGRADATION"
 #: A 의 쿨러 열화 세기. 시나리오 A 는 "경보가 났고 보호 정지(65 ℃) 전에 식힌다"이다 — moderate(쿨러 0.55)는 평형 62.5 ℃로 경보만 내고,
 #: high(0.43)는 평형 70 ℃로 주입 뒤 시뮬레이션 약 30분(20배속 실제 90초)에 보호 정지한다(A146 열모델). 20배속은 설비 물리만 빠르게 하고
 #: 에이전트 판단(실측 46~79초)은 빠르게 하지 못하므로 high 는 실제 시간으로 약 25분의 판단 지연과 같다 — 보호 정지 장면을 보일 때만 쓴다.
@@ -77,7 +81,7 @@ A_BUTTONS: dict[str, dict] = {
 def fault_scope() -> dict:
     """설비 결함 주입이 지원하는 범위 — 화면이 설비 · 결함 · 단추를 손으로 적지 않고 이 값으로 그리고, 지원 범위를 그대로 말한다
     (가상 설비 한 대의 결함 한 종류다. 다른 설비 · 다른 결함은 이 단추로 일으킬 수 없다)."""
-    return {"asset": A_ASSET, "fault": A_BUTTONS["degrade"]["fault"]["type"], "severity": A_SEVERITY,
+    return {"asset": A_ASSET, "fault": A_BUTTONS["degrade"]["fault"]["type"], "severity": A_SEVERITY, "pattern": A_PATTERN,
             "buttons": {act: spec["button"] for act, spec in A_BUTTONS.items()}}
 
 

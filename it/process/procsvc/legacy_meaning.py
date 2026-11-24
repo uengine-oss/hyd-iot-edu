@@ -518,6 +518,9 @@ def apply_links(plan, refl, review_id):
         if touched:
             item['meaningReview'] = review_id
             applied.append(key)
+    from .ingest import display_identifier, no_asset_key
+    gone = {no_asset_key(f'{display_identifier(schema)}.{display_identifier(table)}') for schema, table in asset_cols}      # 설비 식별 열을 정한 표의 「설비 식별 열 없음」 경고는 이제 사실이 아니다
+    plan['warnings'] = [w for w in plan.get('warnings') or [] if w not in gone]
     return applied
 
 

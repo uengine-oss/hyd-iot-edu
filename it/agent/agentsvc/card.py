@@ -1,10 +1,17 @@
-"""Guide-card assembly (L8, pure logic): rank causes by prior × evidence, then list the failure mode's SOP skills with citations.
+"""Guide-card assembly (L8, pure logic): rank causes by prior × evidence and the document's diagnosis rules, then list the failure
+mode's SOP skills with citations.
 
 가이드 카드는 원인 · 근거와 그 고장 유형의 조치 방법(SOP 스킬) 목록까지다. 무엇을 할지(조치 카드 한 장 = SOP 하나)는 판단 카드(cards.evaluate)가
 고르고 순위를 매긴다 — 가이드 카드가 SOP 들의 조치를 한 목록으로 섞어 「권장 조치」라 부르면 어느 절차에도 없는 조합이 되고 판단 카드와 갈린다(검진 G1-04).
 """
 from typing import Any
 import math
+
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN
+from hydcommon.words import josa
+
+from . import cards as cardslib
 
 NO_EVIDENCE_DISCOUNT = 0.3   # a cause with no evidence rule at all keeps only 30 % of its prior
 
@@ -55,9 +62,28 @@ def with_human_evidence(t1_rows: list[dict], alert: dict | None) -> tuple[list[d
     return rows, {ev["id"]: {"value": 1.0, "passed": True, "status": "PASS", "source": HUMAN_SOURCE}}
 
 
-def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
+#: 문서의 진단 규칙이 사는 판단(결정표 dt:diagnose-cause, 적중 정책 PRIORITY — instances.cypher). 「경보 X에서 값이 …이면 원인 Y를 1순위로 둔다」
+DIAGNOSIS = "dec:diagnose-cause"
+
+
+def _rule_status(rule: dict, facts: dict) -> tuple[str, list[str]]:
+    """진단 규칙 한 행 → (FIRED · NOT_FIRED · UNKNOWN, 값을 모르는 입력의 이름). 검사는 모두 AND 다 — 하나라도 거짓이면 값을 모르는 검사가 있어도
+    발화하지 않는다(cards.test_ok 와 같은 비교)."""
+    tests = rule.get("tests") or []
+    got = [cardslib.test_ok(t, facts) for t in tests]
+    if not tests or any(r is False for r in got):
+        return "NOT_FIRED", []
+    unknown = [str(t.get("name") or t.get("variable")) for t, r in zip(tests, got) if r is None]
+    return ("UNKNOWN", unknown) if unknown else ("FIRED", [])
+
+
+def rank_causes(t1_rows: list[dict], results: dict[str, dict], rules: list[dict] = (), facts: dict | None = None) -> list[dict]:
     """t1_rows: T1 template rows. results: evidence id -> {"value", "passed"}.
-    score = prior × (Σ weight of passed evidence / Σ weight)."""
+    score = prior × (Σ weight of passed evidence / Σ weight).
+    rules · facts: 문서의 진단 규칙 가운데 이 원인 후보를 고르는 것과 그 규칙이 시험하는 사실(decide.diagnosis_rules). 발화한 규칙이 고른
+    원인을 맨 앞에 둔다(문서의 「…이면 Y를 1순위 원인으로 둔다」). 규칙마다 판정을 그 원인의 rules 에 남기고, 규칙이 있는데 하나도 발화하지
+    않았거나 규칙이 보는 값을 모르면 evidence_status 가 보류한다 — 전에는 이 규칙을 평가하지 않아, 학생이 문서에서 진단 규칙을 빼도 판단이
+    같았고 냉각 효율이 정상인 설비도 사전 확률로 핀 오염이 골라졌다(2026-11-22 탐사 C1)."""
     out = []
     for row in t1_rows:
         evs = []
@@ -82,10 +108,47 @@ def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
         out.append({"id": row["causeId"], "name": row.get("cause"),
                     "failureModeId": row.get("failureModeId"), "failureMode": row.get("failureMode"),
                     "component": row.get("component"), "symptoms": row.get("symptoms") or [],
-                    "prior": prior, "score": None if any(e['status'] == 'UNKNOWN' for e in evs) else round(score, 4), "evidence": evs})
-    # evidence-backed causes always rank above causes that have no confirmed evidence
-    out.sort(key=lambda c: (c['score'] is not None, any(e["passed"] is True for e in c["evidence"]), c["score"] or 0), reverse=True)
+                    "prior": prior, "score": None if any(e['status'] == 'UNKNOWN' for e in evs) else round(score, 4), "evidence": evs,
+                    "rules": []})
+    by_id = {c["id"]: c for c in out}
+    for rule in rules:
+        status, unknown = _rule_status(rule, facts or {})
+        for cid in rule.get("outputs") or []:
+            if cid in by_id:
+                by_id[cid]["rules"].append({"id": rule.get("rule"), "annotation": rule.get("annotation"), "status": status, "unknown": unknown})
+    # the document's fired diagnosis rule puts its cause first; then evidence-backed causes rank above causes that have no confirmed evidence
+    out.sort(key=lambda c: (any(r["status"] == "FIRED" for r in c["rules"]), c['score'] is not None,
+                            any(e["passed"] is True for e in c["evidence"]), c["score"] or 0), reverse=True)
     return out
+
+
+#: 설비 센서가 아니라 업무 표 감시가 내는 경보(it/neo4j/v2/scenario_structure.cypher — detectionMode · Symptom 없음). 원인 진단 대상이 아니다
+BUSINESS_PATTERNS = frozenset({PM_PATTERN, PURCHASE_PATTERN})
+
+
+def no_cause_message(k, pattern: str) -> str:
+    """원인 후보가 없을 때 학생이 읽는 문장 — 지식 지도의 패턴 목록(agent /api/ontology/patterns) · 수동 판단 · 판단 등록 도구(dmn-mcp)가 이 한 곳을 쓴다(2026-10-25 수업 한 바퀴: 「no cause candidates for pattern …」가 판단 규칙 · 손익 화면에 그대로 보였다).
+    고장 유형이 없는 패턴(정기 정비 도래 · 재고 기준 이탈)은 원인 진단 대상이 아니라 업무 흐름의 에이전트가 판단한다."""
+    meta = next((p for p in k.patterns() if p.get("code") == pattern), {})
+    name = meta.get("name") or pattern
+    if pattern in BUSINESS_PATTERNS:
+        quoted = f"'{name}'"
+        return f"{josa(quoted, '은')} 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름(정기 정비 · 예비품 구매)의 에이전트가 판단합니다. 설비 센서 값으로 감지하는 이상 패턴을 고르세요"
+    return f"'{name}'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 실행하세요"
+
+
+#: 업무 경보가 판단에 쓰는 지식(조치 방법 · 후보 규칙)이 무엇이고 어떤 문서가 그것을 넣는가 — business_knowledge_missing 의 낱말
+BUSINESS_KNOWLEDGE = {PM_PATTERN: ("예방 정비 지식(예방 조치 방법과 그 후보 규칙, 그것이 막는 고장의 원인)", "예방 정비 절차"),
+                      PURCHASE_PATTERN: ("구매 지식(구매 요청 조치 방법과 그 후보 규칙)", "예비품 구매 절차")}
+
+
+def business_knowledge_missing(k, pattern: str) -> str:
+    """업무 경보(정기 정비 도래 · 재고 기준 이탈)의 판단 지식이 지식 지도에 없을 때 학생이 읽는 문장 — 판단 엔진(decide)과 판단 등록 도구
+    (dmn-mcp)가 이 한 곳을 쓴다. 문서를 넣기 전이나 비운 뒤에 이 경보가 나면, 고칠 것은 도구 인자가 아니라 지식이다."""
+    name = next((p.get("name") for p in k.patterns() if p.get("code") == pattern), None) or pattern
+    what, procedure = BUSINESS_KNOWLEDGE[pattern]
+    return (f"'{name}' 경보를 판단할 {what}이 지식 지도에 없어 판단하지 않았습니다 — 「지식 › 문서 등록」에서 {procedure}가 담긴 매뉴얼을 "
+            "적재한 뒤 이 단계를 다시 수행하세요")
 
 
 def evidence_status(causes: list[dict]) -> dict:
@@ -94,10 +157,26 @@ def evidence_status(causes: list[dict]) -> dict:
     the reason says so and when to reassess, so the person does not read a just-started stack as a sensor fault."""
     rows = {e['id']: e for c in causes for e in c.get('evidence', []) if e.get('passed') is None or e.get('status') == 'UNKNOWN'}
     unknown = sorted(rows)
-    supported = any(e.get('passed') is True for c in causes for e in c.get('evidence', []))
-    status = 'UNKNOWN' if unknown else 'SUPPORTED' if supported else 'UNSUPPORTED'
+    # 문서의 진단 규칙(rank_causes 의 rules): 있으면 원인은 그 규칙이 고른다 — 하나도 발화하지 않았으면 원인을 정하지 않고, 값을 모르면 근거 미확인이다
+    rules = {r['id']: r for c in causes for r in c.get('rules') or []}
+    fired = any(r['status'] == 'FIRED' for r in rules.values())
+    rule_unknown = list(dict.fromkeys(n for r in rules.values() if r['status'] == 'UNKNOWN' for n in r['unknown']))
+    supported = fired or any(e.get('passed') is True for c in causes for e in c.get('evidence', []))
+    status = ('UNKNOWN' if unknown or rule_unknown else 'UNSUPPORTED' if rules and not fired
+              else 'SUPPORTED' if supported else 'UNSUPPORTED')
+    # 보류의 까닭은 무엇이 없었는지를 말한다: 원인 지식이 아예 없을 때(문서를 넣기 전 · 비운 뒤)와 원인은 있는데 확인할 근거 규칙이 없을 때를
+    # 「관측 근거로 뒷받침되는 원인이 없다」(센서를 봤더니 아니었다)로 말하면 학생은 설비가 정상이라고 읽는다
+    said = ', '.join(f"「{r.get('annotation') or r['id']}」" for r in rules.values())
     reason = ('근거 조회가 불완전하여 원인 순위와 조치를 보류합니다.' if unknown else
-              '현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.' if not supported else None)
+              f"문서의 진단 규칙이 보는 값({', '.join(rule_unknown)})을 지금 읽지 못해 원인 순위와 조치를 보류합니다." if rule_unknown else
+              f"문서의 진단 규칙 {josa(said, '이')} 지금 설비 값에 맞지 않아 원인을 정하지 않고 조치를 보류합니다." if rules and not fired else
+              None if supported else
+              '이 경보의 원인 지식이 지식 지도에 없어 조치를 보류합니다 — 「지식 › 문서 등록」에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 평가하세요.'
+              if not causes else
+              f'원인 후보 {len(causes)}개에 설비 값으로 확인할 근거가 지식에 없어 조치를 보류합니다 — 어떤 센서 값이 어떠면 그 원인인지가 적힌 '
+              '매뉴얼을 「지식 › 문서 등록」에서 적재한 뒤 다시 평가하세요.'
+              if not any(c.get('evidence') for c in causes) else
+              '현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.')
     filling = [e['coverage'] for e in rows.values() if e.get('reason') == 'OBSERVATION_GAP' and isinstance(e.get('coverage'), dict)
                and all(isinstance(e['coverage'].get(k), (int, float)) for k in ('ready_in_s', 'window_s'))]
     if unknown and len(filling) == len(rows):
@@ -142,15 +221,16 @@ def _action_text(a: dict) -> str:
 
 
 def template_summary(alert: dict, causes: list[dict], skills: list[dict]) -> str:
+    # 잰 값은 원인마다의 근거(evidence — 이름 · 값 · 기준)가 싣는다. 전에는 경보 근거에서 수업 설비의 여섯 태그(TS1 · CE · PS1 · FS1 · VS1 · LoadSP)를
+    # 골라 이 문장에 붙이는 구절이 있었는데, 진단하는 곳(판단 서비스 · 읽기 평가 · 판단 실험) 어디도 경보 근거를 넘기지 않아 쓰이지 않았다(전수검사 02-8)
     top = causes[0] if causes else None
-    ev = alert.get("evidence") or {}
-    shown = {"ts1": ("TS1", "℃"), "ce": ("CE", "%"), "ps1": ("PS1", "bar"), "fs1": ("FS1", "l/min"), "vs1": ("VS1", "mm/s"), "load": ("LoadSP", "%")}
-    reading = ", ".join(f"{tag} {ev[k]} {unit}" for k, (tag, unit) in shown.items() if ev.get(k) is not None)
     what = f"「{top['failureMode']}」 경보" if top and top.get("failureMode") else "경보"
-    parts = [f"{alert.get('asset')}에서 {what}가 발생했습니다" + (f" ({reading})." if reading else ".")]
+    parts = [f"{alert.get('asset')}에서 {what}가 발생했습니다."]
     if top:
         passed = [e["name"] for e in top["evidence"] if e["passed"]]
-        parts.append(f"가장 유력한 원인은 '{top['name']}'(점수 {top['score']:.2f})이며 근거는 {', '.join(passed) if passed else '없음'}입니다.")
+        fired = [r.get("annotation") or r["id"] for r in top.get("rules") or [] if r["status"] == "FIRED"]
+        parts.append(f"가장 유력한 원인은 '{top['name']}'(점수 {top['score']:.2f})이며 근거는 {', '.join(passed) if passed else '없음'}입니다."
+                     + (f" 문서의 진단 규칙 「{'」 · 「'.join(fired)}」에 맞아 1순위로 둡니다." if fired else ""))
     if skills:
         listed = "; ".join(f"{k.get('sopId')} {k.get('name')}(" + (", ".join(_action_text(a) for a in k.get('actions') or []) or "조치 없음") + ")"
                            for k in skills)

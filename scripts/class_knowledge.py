@@ -14,6 +14,8 @@
 
 이미 적재된 문서: 지금 판의 판 표시(provided_revision — 이 스크립트만 싣는다)가 지금 묶음 판이면 그대로 둔다. 옛 묶음 판 · 지운 시작
 사본(옛 it/neo4j/class-knowledge)이 넣은 판이면 개정으로 지금 묶음을 넣는다. 학생이 다시 넣은 판(다른 담당)은 그대로 둔다.
+넣는 것은 이 PC에서 그 문서가 한 번도 적재된 적이 없을 때뿐이다. 적재 기록은 있는데 지금 판이 없으면(학생이 문서 등록 이력에서 되돌려 비웠다)
+그대로 비워 둔다 — 시작이 다시 채우면 학생이 비운 뒤 포털에서 다시 넣는 길을 가리고, PBL에서 수업 문서를 뺀 그래프를 쓸 수 없다.
 """
 from __future__ import annotations
 
@@ -30,7 +32,7 @@ import prepare_ports   # 같은 scripts 폴더(시작 파일이 이 폴더의 �
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE = ROOT / "it" / "process" / "procsvc" / "course_extractions.json"
 ORIGINALS = ROOT / "it" / "portal" / "www" / "samples"   # 포털이 학생에게 내주는 수업 문서와 같은 파일
-ORDER = ("HM-8", "PM-02", "PR-07")                   # 적재 순서: 쿨러 → 정기 정비 → 구매(뒤 문서가 앞 문서의 고장 유형 · 부품을 쓴다)
+ORDER = ("HM-8", "PM-02", "PR-07")                   # 적재 순서: 쿨러 → 정기 정비 → 구매. 세 문서는 서로의 id 를 가리키지 않는다(제 것이거나 기본 제공 지식 것 — 2026-11-22에 셈) — 어떤 차례로 넣어도 적재된다
 #: 문서 등록 이력의 담당자 칸에 보이는 글 — 사람 이름이 아니라 「시작할 때 들어 있는 판」이라는 대상을 말한다. 어느 판인지는 이 글이 아니라
 #: 적재 기록의 판 표시(provided_revision = 서명 묶음의 revision)가 가린다.
 PROVIDED_BY = "기본 제공"
@@ -86,18 +88,34 @@ def commit_body(item: dict, preview: dict) -> dict:
             **({"provided_revision": item["revision"]} if item.get("review_method") else {}), "reviewed": True}
 
 
-def decide(item: dict, current: dict | None) -> str:
-    """'load'(처음) · 'revise'(옛 기본 제공 판 → 지금 묶음) · 'keep'(지금 묶음 판) · 'student'(학생이 다시 넣은 판 — 건드리지 않음).
+def decide(item: dict, current: dict | None, *, loaded_before: bool) -> str:
+    """'load'(처음) · 'revise'(옛 기본 제공 판 → 지금 묶음) · 'keep'(지금 묶음 판) · 'student'(학생이 다시 넣은 판 — 건드리지 않음) ·
+    'emptied'(지금 판은 없는데 이 PC에 적재 기록이 있음 — 학생이 되돌려 비운 문서라 건드리지 않음). loaded_before = 이 문서의 적재 기록이 있는가.
     기본 제공 판인가는 적재 기록의 칸으로 가린다: 판 표시(provided_revision)가 지금 묶음 판이면 keep, 판 표시가 다르거나 없는데 검토 방식
     (review_method — 포털의 검토 화면은 보내지 않는다)이 실려 있으면 앞 판의 기본 제공 판이라 revise. 담당자 칸의 글로 가르지 않는다 —
     학생이 담당자 칸에 같은 글을 적으면 기본 제공 판으로 읽혔다. 예외 하나: 지운 시작 사본(2026-10-25 판)은 칸 없이 담당 글만 남겼다."""
     if current is None:
-        return "load"
+        return "emptied" if loaded_before else "load"
     if current.get("provided_revision") == item["revision"]:
         return "keep"
     if current.get("provided_revision") or current.get("review_method") or str(current.get("by") or "") == OLD_SEED_BY:
         return "revise"
     return "student"
+
+
+def lineage(rows: list[dict], item: dict) -> list[dict]:
+    """등록 이력(GET /api/kg/manuals) 가운데 이 기본 제공 문서의 적재 기록. 파일 이름으로 찾지 않는다 — 보관소 계약은 「파일 이름이 문서를 정하지
+    않는다」(manual_sources)이고, 학생이 같은 이름으로 올린 다른 문서를 이 문서의 판으로 읽었다(그 문서를 「학생이 다시 넣은 판」으로 보고, 묶음 판이
+    바뀌어도 기본 제공 판을 개정하지 않았다 — 2026-11-13 전수검사 03-25).
+    이 문서 = 기본 제공 판을 담았던 문서(document_id): 그 원문(sha256 — 원문 판본 id 의 끝)으로 만든 판이 있거나, 같은 이름의 기본 제공 판(판 표시 ·
+    검토 방식 · 지운 시작 사본의 담당 글 — 묶음 판이 바뀌어 원문이 달라진 앞 판)이 있는 문서. 그 문서의 모든 판(학생이 그 문서를 개정한 판 포함)을
+    등록 이력의 차례(최신부터) 그대로 돌려준다."""
+    def provided(row: dict) -> bool:
+        return row.get("filename") == item["filename"] and bool(
+            row.get("provided_revision") or row.get("review_method") or str(row.get("by") or "") == OLD_SEED_BY)
+    documents = {row.get("document_id") for row in rows
+                 if str(row.get("source_id") or "").endswith(":" + item["sha256"]) or provided(row)}
+    return [row for row in rows if row.get("document_id") in documents]
 
 
 def ensure(call) -> list[str]:
@@ -110,9 +128,12 @@ def ensure(call) -> list[str]:
                    ") — 시작 파일을 다시 실행해 기본 지식(kg-seed)을 넣은 뒤 이어 갑니다")
     lines = []
     for item in reviewed():
-        current = next((row for row in call("GET", "/api/kg/manuals", None) or []
-                        if row.get("current") and row.get("filename") == item["filename"]), None)
-        what = decide(item, current)
+        rows = lineage(call("GET", "/api/kg/manuals", None) or [], item)
+        current = next((row for row in rows if row.get("current")), None)
+        what = decide(item, current, loaded_before=bool(rows))
+        if what == "emptied":
+            lines.append(f"{item['doc']}: 이 PC에서 비운 문서라 그대로 둠 — 포털의 지식 › 문서 등록에서 제공 문서를 골라 다시 넣을 수 있음")
+            continue
         if what == "keep":
             lines.append(f"{item['doc']}: 지금 기본 제공 판이 적재돼 있음 — 그대로 둠 (배치 {current.get('batch')})")
             continue

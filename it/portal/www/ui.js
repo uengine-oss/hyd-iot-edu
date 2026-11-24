@@ -108,12 +108,12 @@ const UI = {
     'inst.started': '시작', 'inst.ended': '종료',
     'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동',
     'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
-    'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.woFailed': '정비 요청 전달 실패',
+    'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.stepFailed': '전달 실패',
     'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보', 'var.incident':'사건', 'var._deferral':'보류 평가 기록',
     // 처리 건 변수의 화면 이름(정의 설명문에는 규칙 id · 클래스 이름이 섞여 화면 이름으로 쓰지 않는다)
-    'var.alert': '경보 메시지', 'var.guide_card': '원인 진단 결과', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '추천안(판단 기록)', 'var.decision_id': '판단 기록 번호', 'var.commands': '설비 명령', 'var.chosen_option': '고른 안', 'var.incident_outcome': '사건 결과', 'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '지식 목록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
+    'var.alert': '경보 메시지', 'var.guide_card': '원인 진단 결과', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '추천안(판단 기록)', 'var.decision_id': '판단 기록 번호', 'var.commands': '설비 명령', 'var.chosen_option': '고른 안', 'var.incident_outcome': '사건 결과', 'var.manual_source': '원문 문서', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '지식 목록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
     'var.package_semantics':'정비 내용의 기록 의미','var.configured_base_package':'등록된 기본 정비 내용','val.base_interval_configuration':'등록된 기본 정비 설정 · 이번 차례 패키지 선택 아님',
     'inst.output': '출력', 'inst.due': '기한', 'inst.prevTask': '이전 단계',
     'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '쿼리 보기',
@@ -326,7 +326,7 @@ const UI = {
 
   /* ---------- 상태 이름 (UIUX_PLAN §5 + 사건 상태) ---------- */
   states: {
-    PENDING_APPROVAL: "승인 대기", AWAITING_APPROVAL: "조치 선택 대기", GUIDE_RECEIVED: "분석 완료", CMD_ISSUED: "명령 전송", AWAITING_ACK: "설비 응답 대기",
+    PENDING_APPROVAL: "승인 대기", AWAITING_APPROVAL: "조치 선택 대기", APPROVED_EXECUTING: "승인 — 실행 중", GUIDE_RECEIVED: "분석 완료", CMD_ISSUED: "명령 전송", AWAITING_ACK: "설비 응답 대기",
     ACKED: "설비 응답", RE_OBSERVING: "효과 확인 중", RESOLVED: "이상 완화", WORK_ORDER_CREATED: "정비 요청 완료", CLOSED: "종결",
     ESCALATED: "책임자 확인", REJECTED_BY_OPERATOR: "반려", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
     PARTIAL: "일부 실행", REJECTED: "반려", CLOSED_UNAPPROVED: "승인 전 종료", FAILED: "실패", SUBMITTED: "제출됨", DONE: "완료", RUNNING: "진행 중",
@@ -335,14 +335,14 @@ const UI = {
     WITHHELD: "데이터 부족", REJECTED_BY_GUARDRAIL: "안전 규칙으로 중단", NO_FEASIBLE_OPTION: "가능한 조치 없음", NOT_APPLICABLE: "해당 없음", EVALUATED: "판단 완료",
     NEW: "생성", TODO: "예정", IN_PROGRESS: "진행 중", PENDING: "보류", HUMAN_ASKED: '답변 기다림', FB_REQUESTED: '반영 중', STARTED: '진행 중', CANCELLED: "취소",
     COMPLETED: "완료", SKIPPED: "건너뜀", DELIVERED: "전달 완료", DISCARDED: "폐기", OK: "완료",
-    UNSUPPORTED_ALERT_PATTERN: "정의에 없는 경보 패턴", SELECT_TIMEOUT: "선택 시간 초과", NOT_RECOVERED: "미회복",
+    UNSUPPORTED_ALERT_PATTERN: "받는 흐름이 없는 경보", SELECT_TIMEOUT: "선택 시간 초과", NOT_RECOVERED: "미회복",
     RECORDED: "기록됨", HANDLED: "처리 완료", QUEUED: "대기열", CLAIMED: "처리 중", WAITING: "대기", SUPERSEDED: "대체됨", ACTIVE: "현재 판본", ROLLED_BACK: "되돌림",   // A6
     UNKNOWN: "판정 불가", UNSUPPORTED: "지원하지 않음", READY: "준비됨", OCR_REQUIRED: "글자 인식 필요", AWAITING_AGENT: "에이전트 대기", BLOCKED_FOR_REVIEW: "사람 확인 필요", CORRECTED: "교정됨",
     PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "안전 연동",
   },
   tones: {
     neutral: ['EVALUATED', 'TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED', 'CANCELLED'],
-    accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
+    accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'APPROVED_EXECUTING', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
     success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'CLEAR', 'OK'],      // 초록은 정상 · 끝남 · 연결됨에만 — 계산이 끝났다는 것(EVALUATED)은 상태색을 쓰지 않는다
     warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE', 'ESCALATED'],
     danger: ['FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],

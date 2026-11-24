@@ -9,6 +9,7 @@ import math
 from datetime import timedelta
 
 import psycopg
+from hydcommon.pg import connect
 from hydcommon.daq_contract import OBSERVATION_GRACE_S, profile_from_env, reporting_interval
 from hydcommon.sql_read import guard, TIMESERIES_FUNCTIONS
 from hydcommon.tool_result import checked
@@ -59,8 +60,8 @@ class TimeSeriesDB:
         self.dsn = TSDB_READ_DSN
 
     def _conn(self):
-        return psycopg.connect(self.dsn, autocommit=True, connect_timeout=5,
-                               options='-c default_transaction_read_only=on -c statement_timeout=5000 -c search_path=pg_catalog,public')
+        return connect(self.dsn, name='시계열 DB', autocommit=True,
+                       options='-c default_transaction_read_only=on -c statement_timeout=5000 -c search_path=pg_catalog,public')
 
     def describe_schema(self):
         """Actual columns plus observed tag identities; never invent sensor metrics."""

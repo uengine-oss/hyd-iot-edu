@@ -30,14 +30,14 @@ const DMZ_HEALTH = [SVC('connect-ingest') + '/healthz', API.gateway + '/healthz'
 
 const LAYERS = [
   { name: '프로세스 · 승인 · 앱', role: '추천안을 승인하고 조치를 실행', zone: 'it', focus: true, comps: [
-    { name: 'process', nets: ['it-net', 'sim-net'], role: '승인 → 명령 전송 → 결과 확인 → 종결', real: '업무 프로세스 엔진(BPM)', zone: 'it', url: P(8080) + '/docs', health: API.process + '/healthz' },
+    { name: 'process', nets: ['it-net', 'sim-net', 'business-db'], role: '승인 → 명령 전송 → 결과 확인 → 종결', real: '업무 프로세스 엔진(BPM)', zone: 'it', url: P(8080) + '/docs', health: API.process + '/healthz' },
     { name: 'portal', nets: ['it-net', 'dmz-it-net', 'sim-net'], role: '설비 관찰 · 판단 확인 · 승인을 하는 화면', real: '운영 포털 · 업무 화면', zone: 'it', url: P(8088), health: null },
-    { name: 'enterprise-sim', nets: ['it-net'], role: '생산 관리 · 정비 관리 · 구매 · 재고 시스템을 모의 실행', real: 'ERP · 정비(CMMS) · 구매 시스템', zone: 'it', url: P(8095) + '/docs', health: API.ent + '/healthz' },
+    { name: 'enterprise-sim', nets: ['it-net', 'business-db'], role: '생산 관리 · 정비 관리 · 구매 · 재고 시스템을 모의 실행', real: 'ERP · 정비(CMMS) · 구매 시스템', zone: 'it', url: P(8095) + '/docs', health: API.ent + '/healthz' },
   ]},
   { name: 'AI 에이전트', role: '근거를 조회하고 조치를 추천', zone: 'it', focus: true, comps: [
-    { name: 'agent', nets: ['it-net', 'dmz-it-net'], role: '지식 그래프를 읽어 원인 · 조치 후보 · 부서별 영향을 계산 · 설비를 직접 제어할 권한 없음', real: '의사결정 지원 서비스', zone: 'it', url: P(8091) + '/docs', health: API.agent + '/healthz' },
+    { name: 'agent', nets: ['it-net', 'dmz-it-net', 'business-db'], role: '지식 그래프를 읽어 원인 · 조치 후보 · 부서별 영향을 계산 · 설비를 직접 제어할 권한 없음', real: '의사결정 지원 서비스', zone: 'it', url: P(8091) + '/docs', health: API.agent + '/healthz' },
     // 2026-10-25: 포털의 AI 단계(판단 · 제안, 질문, 매뉴얼 추출)를 하는 AI 에이전트. 꺼지면 그 단계만 멈추므로 상태 점에 보인다
-    { name: 'agent-worker', nets: ['it-net'], role: 'AI 에이전트 실행 서비스 — 판단 · 제안, 질문 응답, 매뉴얼 추출을 수행', real: 'AI 에이전트 실행 환경', zone: 'it', url: P(8097) + '/healthz', health: SVC('agent-worker') + '/healthz' },
+    { name: 'agent-worker', nets: ['it-net', 'business-db'], role: 'AI 에이전트 실행 서비스 — 판단 · 제안, 질문 응답, 매뉴얼 추출을 수행', real: 'AI 에이전트 실행 환경', zone: 'it', url: P(8097) + '/healthz', health: SVC('agent-worker') + '/healthz' },
   ]},
   { name: '온톨로지 · 원인분석', role: '서로 다른 분야의 지식을 연결', zone: 'it', focus: true, comps: [
     { name: 'Neo4j', nets: ['it-net'], role: '설비 · 고장 · 매뉴얼 · 조치 방법 · 조직의 관계를 저장', real: '그래프 DB(지식 그래프 저장소)', zone: 'it', url: P(7474) + '/browser/', health: P(7474) },
@@ -77,19 +77,20 @@ const LAYERS = [
   ]},
 ];
 
-// 망 다섯(compose.yaml networks 의 이름과 차례). zone = 구조 그림에서 그 망이 놓이는 영역, what = 그 망에 붙는 것.
+// 망 여섯(compose.yaml networks 의 이름과 차례). zone = 구조 그림에서 그 망이 놓이는 영역, what = 그 망에 붙는 것.
 const NETS = [
   { id: 'ot-net', zone: 'ot', name: 'OT 망', what: '설비 · MQTT 브로커 · 관제 화면 · 공장 쪽 브리지' },
   { id: 'ot-dmz-net', zone: 'dmz', name: '경계 망 1', what: '공장 쪽 브리지 → DMZ 브로커 ← 수집 중계 · 명령 관문. 공장 쪽에서는 브리지만 이 망에 나와 있고, 연결은 브리지가 엽니다' },
   { id: 'dmz-it-net', zone: 'dmz', name: '경계 망 2', what: '수집 중계 · 명령 관문 ↔ 이벤트 저장. 포털 · 판단 서비스는 이 망으로 두 부품의 상태만 읽습니다' },
   { id: 'it-net', zone: 'it', name: 'IT 망', what: '업무 · 분석 · 지식 · AI' },
   { id: 'sim-net', zone: 'side', name: '가상 설비 API 망', what: '흐름 엔진 · 포털 ↔ 가상 설비. 결함 주입 · 현장 패널 조작 · 정비 수행이 이 길로 가고 브로커와 명령 관문을 거치지 않습니다' },
+  { id: 'business-db', zone: 'it', name: '업무 DB 망', what: '업무 DB(Supabase) · 메일함 ↔ 그것을 읽고 쓰는 IT 서비스(흐름 엔진 · 업무 시스템 · 판단 서비스 · AI 에이전트 실행 · 도구 서버). PC 의 바깥 포트를 돌지 않고 이 망 안의 이름으로 부릅니다' },
 ];
 // 이 구성이 현업 공장과 다른 곳 — 시스템 구성 화면이 그림 아래에 그대로 보인다(대상을 말하는 문장, 근거는 현업 구조 대조).
 const SYS_DIFFS = [
   { icon: 'route', name: '명령 길 밖의 조작', text: '결함 주입 · 현장 패널 조작 · 정비 수행은 가상 설비 API 망으로 설비에 직접 적용됩니다. 바깥에서 생긴 고장과 사람이 현장에서 하는 일을 대신하는 길이라 승인과 명령 관문을 거치지 않습니다.' },
-  { icon: 'shield-alert', name: '영역 경계', text: '영역은 망 다섯으로 나뉘고 DMZ의 부품은 경계 망에만 붙습니다. 공장과 DMZ 사이의 연결은 공장 쪽 브리지가 먼저 열고, DMZ · IT의 부품에서 공장 브로커로는 닿는 길이 없습니다. 이 PC의 프로그램은 공장 브로커를 구독만 하는 입구(1883 · 8083)로 값을 직접 볼 수 있습니다. 현업은 그런 입구를 두지 않고, 영역 사이에 방화벽과 단방향 전송 장치를 둡니다.' },
-  { icon: 'lock', name: '인증 · 암호화', text: 'MQTT 브로커 · 관제 화면 · 추이 화면은 암호화(TLS)와 사용자 인증 없이 이 PC 안에서만 열립니다. 브로커에 붙는 서비스는 비밀번호 없이 이름만 대고, 브로커는 그 이름으로 토픽 규칙을 적용합니다. 현업은 암호화와 인증(인증서 · 비밀번호)을 켭니다.' },
+  { icon: 'shield-alert', name: '영역 경계', text: '영역은 망 여섯으로 나뉘고 DMZ의 부품은 경계 망에만 붙습니다. 공장과 DMZ 사이의 연결은 공장 쪽 브리지가 먼저 열고, DMZ · IT의 부품에서 공장 브로커로는 닿는 길이 없습니다. 이 PC의 프로그램은 공장 브로커를 구독만 하는 입구(1883 · 8083)로 값을 직접 볼 수 있습니다. 현업은 그런 입구를 두지 않고, 영역 사이에 방화벽과 단방향 전송 장치를 둡니다.' },
+  { icon: 'lock', name: '인증 · 암호화', text: 'MQTT 브로커 · 관제 화면 · 추이 화면은 암호화(TLS)와 사용자 인증 없이 이 PC 안에서만 열립니다. 브로커에 붙는 서비스는 비밀번호 없이 이름만 대고, 브로커는 그 이름으로 토픽 규칙을 적용합니다. 이벤트 저장(Redpanda)도 인증 없이 이 PC 안에서 열려 있어, 이 PC의 프로그램은 명령 관문의 기록과 같은 꼴의 기록을 직접 쓸 수 있습니다 — 다만 설비 명령은 승인할 때 남긴 기록과 맞지 않으면 명령 관문이 설비로 넘기지 않습니다. 현업은 암호화와 인증(인증서 · 비밀번호)을 켭니다.' },
   { icon: 'cpu', name: '설비 · PLC · 엣지', text: '가상 설비 3기와 PLC, 값을 내보내는 엣지가 한 프로그램에서 돕니다. 현업은 따로 있는 장치이고 안전계장(SIS)을 제어와 따로 둡니다.' },
   { icon: 'activity', name: '이상 탐지', text: '탐지는 IT의 이상 탐지 한 곳에서 합니다. 현업은 현장(엣지) 쪽에서도 탐지합니다.' },
   { icon: 'plug', name: '공장 쪽 브리지', text: '공장 쪽 브리지는 끊긴 동안의 값을 쌓아 두지 않습니다. 다시 이어지면 그때부터의 값이 올라갑니다. 현업의 엣지 게이트웨이는 끊긴 동안의 값을 모아 두었다가 이어지면 보냅니다(store and forward).' },

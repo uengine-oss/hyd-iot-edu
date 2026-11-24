@@ -18,15 +18,15 @@
   * 검사 기록(mcp_server_checks, migration 20261008000042)에 설정 해시(fingerprint)와 도구 판정을 남긴다.
   * 에이전트에 붙일 수 있음(selectable — 이 한 함수가 도구 지도 · 에이전트 폼 · 저장 검사의 판정이다): 기준 서버는 늘 붙일 수 있고(워커가
     기본 허용 목록으로 실행), 학생 서버는 마지막 검사가 ok 이고 그 해시가 지금 설정과 같으며 읽기 도구(readOnlyHint=true · 쓰기 이름 아님,
-    또는 강사 확인)가 하나 이상일 때.
+    또는 사람 확인)가 하나 이상일 때.
   * 워커: 기준이 아닌 서버는 hyd.gate 의 해시가 지금 설정과 같을 때만 연결하고, read_tools 만 허용 · blocked_tools 는 막는다
     (it/agent-worker/worker/bridge.py gate_servers). 해시 계산은 bridge.config_fingerprint 와 같아야 한다.
 
 G2(토큰이 필요한 서버):
   * 비밀 자리표시자: 접속 헤더 값에 ${SECRET:KEY} 를 쓰면 검사 직전에 mcp_secrets 표로 채운다.
     해시는 자리표시자가 든 설정으로 계산하므로 토큰을 갈아 끼워도 도장은 그대로다. 값이 없으면 검사가 사유(error_kind=secret)와 함께 실패.
-  * 강사 확인 읽기 목록(hyd.read_confirmed): readOnlyHint 표시가 없을 뿐 이름 · 표시가 쓰기가 아닌 도구(mcp_check.confirmable)를
-    강사가 "읽기"로 확인하면 도장의 read_tools 에 넣는다(확인자 · 이유 · 시각 기록). 쓰기로 표시했거나 이름이 쓰기인 도구는 확인할 수 없다.
+  * 사람 확인 읽기 목록(hyd.read_confirmed): readOnlyHint 표시가 없을 뿐 이름 · 표시가 쓰기가 아닌 도구(mcp_check.confirmable)를
+    서버를 등록한 사람이 "읽기"로 확인하면 도장의 read_tools 에 넣는다(확인자 · 이유 · 시각 기록). 쓰기로 표시했거나 이름이 쓰기인 도구는 확인할 수 없다.
 """
 from __future__ import annotations
 
@@ -34,11 +34,13 @@ import hashlib
 import json
 import re
 
+from hydcommon import handover_tools
+
 from . import mcp_check, mcp_secrets, progress as progress_log
 
 #: seed.sql 의 tenants.mcp 다섯 서버 — 워커 기본 허용 목록(settings.DEFAULT_ALLOWED_TOOLS)이 적는 서버와 같다.
 #: C2: 업무 MCP 를 보전용(enterprise-maint) · 구매용(enterprise-purchase)으로 나눈 두 서버도 기준이다(같은 읽기 전용 코드).
-BASE_SERVERS = ("neo4j", "enterprise", "hyd-dmn", "enterprise-maint", "enterprise-purchase")
+BASE_SERVERS = handover_tools.BASE_SERVERS
 META_KEY = "hyd"
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")      # 도구 이름 mcp__<서버>__<도구> 가 갈라지지 않게 '_' 없음
 CHECK_TIMEOUT = (0.5, 20.0, 8.0)                                      # (최소, 최대, 기본) 초 — 포털 POST 30초 제한 안
@@ -164,19 +166,19 @@ def run_check(entry: dict, timeout: float, secrets: dict | None = None, *, stude
 
 
 def confirmed_of(entry) -> dict:
-    """G2 ②: 강사가 읽기로 확인한 도구 {도구: {by, reason, at}} (hyd.read_confirmed)."""
+    """G2 ②: 사람이 읽기로 확인한 도구 {도구: {by, reason, at}} (hyd.read_confirmed)."""
     meta = entry.get(META_KEY) if isinstance(entry, dict) and isinstance(entry.get(META_KEY), dict) else {}
     found = meta.get("read_confirmed")
     return dict(found) if isinstance(found, dict) else {}
 
 
 def counts_as_read(tool: dict, confirmed) -> bool:
-    """서버가 읽기로 표시한 도구, 또는 강사가 확인한 도구(표시만 없고 이름 · 표시가 쓰기가 아닌 것)."""
+    """서버가 읽기로 표시한 도구, 또는 사람이 확인한 도구(표시만 없고 이름 · 표시가 쓰기가 아닌 것)."""
     return bool(tool.get("read_only")) or (tool.get("name") in (confirmed or {}) and bool(tool.get("confirmable")))
 
 
 def gate_of(check: dict, confirmed: dict | None = None) -> dict:
-    """워커가 읽는 승인 도장: 검사한 설정 해시 + 읽기 전용 도구(+ 강사 확인) / 막을 도구."""
+    """워커가 읽는 승인 도장: 검사한 설정 해시 + 읽기 전용 도구(+ 사람 확인) / 막을 도구."""
     out = {"fingerprint": check["fingerprint"], "checked_at": check["checked_at"],
            "read_tools": [t["name"] for t in check["tools"] if counts_as_read(t, confirmed)],
            "blocked_tools": [t["name"] for t in check["tools"] if not counts_as_read(t, confirmed)]}
@@ -331,7 +333,7 @@ def selectable(store, tenant_id: str) -> dict:
         out.append({"name": name, "origin": origin, "origin_text": ORIGIN_WORDS[origin], "mine": origin != "seed", "editable": origin != "seed",
                     "transport": spec.get("transport"), "check": state, "selectable": reason is None, "reason": reason, "agent_value": name,
                     "description": entry.get("description") if isinstance(entry, dict) else None,
-                    "read_confirmed": sorted(confirmed),                       # G2 ②: 강사가 읽기로 확인한 도구(이름만)
+                    "read_confirmed": sorted(confirmed),                       # G2 ②: 사람이 읽기로 확인한 도구(이름만)
                     "secrets": mcp_secrets.references(entry), "tools": tools})  # G2 ①: 이 서버가 쓰는 비밀 이름(값 아님)
     return {"tenant": tenant_id, "servers": out, "selectable_tools": picks,
             "rule": "연결 검사를 통과했고 그 뒤 설정이 바뀌지 않은 서버의, 서버가 읽기 전용(readOnlyHint=true)으로 표시한 도구(또는 표시가 없어 "
@@ -440,7 +442,7 @@ def update(store, tenant_id: str, name: str, body: dict, by: str, *, progress=pr
     record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry), progress=progress, then=(SAVE_STEP,))
     _require_pass(record, "고치지")
     old_meta = old.get(META_KEY) if isinstance(old, dict) and isinstance(old.get(META_KEY), dict) else {}
-    confirmed = confirmed_of(old)                                      # 강사 확인은 도구 이름에 붙는다 — 고쳐도 남고, 도장은 새 검사로 다시 계산
+    confirmed = confirmed_of(old)                                      # 사람 확인은 도구 이름에 붙는다 — 고쳐도 남고, 도장은 새 검사로 다시 계산
     now = _now()
     entry[META_KEY] = {"origin": old_meta.get("origin") or "external", "created_at": old_meta.get("created_at") or now, "updated_at": now,
                        "by": by, "gate": gate_of(record, confirmed)}
@@ -511,7 +513,7 @@ def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str, prog
 
 
 def confirm_read(store, tenant_id: str, name: str, tool: str, *, on: bool = True, by: str = "", reason: str = "") -> dict:
-    """G2 ②: 강사가 readOnlyHint 표시가 없는 도구를 "읽기"로 확인(on) · 확인 취소(off). 확인자 · 이유가 있어야 하고,
+    """G2 ②: 서버를 등록한 사람이 readOnlyHint 표시가 없는 도구를 "읽기"로 확인(on) · 확인 취소(off). 확인자 · 이유가 있어야 하고,
     마지막 검사가 지금 설정에 대해 통과했어야 하며, 그 검사에서 confirmable(표시 없음뿐 · 이름이 쓰기 아님)이었던 도구만 된다.
     확인하면 워커 도장(hyd.gate)을 다시 계산한다 — 그 도구가 read_tools 로 옮겨 간다.
     취소(off)는 믿음을 거두는 쪽이라 검사가 낡았어도 받는다: 지금 설정으로 통과한 검사가 없으면 도장을 내려(워커가 이 서버를
@@ -690,17 +692,19 @@ def mount(app, *, runtime_factory, audit):
 
     @app.post("/api/mcp/servers/{name}/read-confirm")
     async def read_confirm_route(name: str, body: dict | None = None):
-        """G2 ②: {tool, on(기본 true), by, reason} — 강사가 표시 없는 도구를 읽기로 확인 · 취소."""
+        """G2 ②: {tool, on(기본 true), by, reason} — 서버를 등록한 사람이 표시 없는 도구를 읽기로 확인 · 취소.
+        누가 했는지(by)는 바꾸기 전에 확인한다 — 전에는 본문의 글을 그대로 확인 기록에 적었고, 비어 있으면 취소를 저장한 뒤에야 400 이 났다(전수검사 02-14)."""
         rt = runtime()
         body = body or {}
         on = body.get("on", True)
         if not isinstance(on, bool):                          # "false" 같은 글자를 확인(on)으로 읽지 않는다
             raise HTTPException(422, "on: true(확인) 또는 false(취소)여야 합니다")
+        by = by_of(body)
 
         def work():
             out = confirm_read(store_for(rt.repo), rt.tenant_id, name, str(body.get("tool") or ""), on=on,
-                               by=body.get("by") or "", reason=body.get("reason") or "")
-            note("MCP_READ_CONFIRMED" if out["confirmed"] else "MCP_READ_UNCONFIRMED", name, by_of(body),
+                               by=by, reason=body.get("reason") or "")
+            note("MCP_READ_CONFIRMED" if out["confirmed"] else "MCP_READ_UNCONFIRMED", name, by,
                  {"tool": out["tool"], "reason": str(body.get("reason") or "")[:300]})
             return out
         return await run(work)

@@ -23,20 +23,21 @@ ERP_SOURCE = "erp"
 CMMS_SOURCE = "cmms"
 SOURCES = (ERP_SOURCE, CMMS_SOURCE)
 
-# 업무 경보 패턴 계약. policy = 흐름 정의 alertPolicy.patterns 의 회복 기준(alert_policy.validate 계약). 업무 경보에는 센서 재관측이 없다 —
-# 태그는 이탈 표시(1 = 이탈)이고, 처리 건은 효과 확인(입고)으로 닫힌다. 명령 · 재관측을 넣은 흐름이면 해제 없음 → 상급자 확인.
+# 업무 경보 패턴 계약. policy = 흐름 정의 alertPolicy.patterns 의 회복 계약(alert_policy 머리말). 업무 경보에는 시계열 회복 기준이 없다(전에는 계약을
+# 채우려고 시계열에 없는 이탈 표시 태그를 넣었다) — 처리 건은 업무 효과(입고 확인 · 정비 요청 등록)로 닫힌다. 이 경보로 여는 흐름에 효과 확인(재관측)을
+# 두면 흐름 가져오기 사전 검사가 막는다(bpmn_import.unobservable_patterns).
 PATTERNS: dict[str, dict] = {
     PURCHASE_PATTERN: {
         "name": "예비품 재고 기준 이탈 (ERP 재고 감시)",
         "severity": "warning",
         "read": "spare_stock", "source": ERP_SOURCE,
-        "policy": {"tag": "ERP_SPARE_BELOW_MIN", "op": "<", "limit": 1.0, "requireClear": True},
+        "policy": {"requireClear": True},
     },
     PM_PATTERN: {
         "name": "정기 정비 도래 (CMMS 운전시간 계수기)",
         "severity": "info",
         "read": "pm_status", "source": CMMS_SOURCE,
-        "policy": {"tag": "CMMS_PM_DUE", "op": "<", "limit": 1.0, "requireClear": True},
+        "policy": {"requireClear": True},
     },
 }
 

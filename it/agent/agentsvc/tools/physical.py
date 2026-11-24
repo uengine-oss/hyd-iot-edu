@@ -1,6 +1,7 @@
 """Read an explicit physical InputData binding; no name-based semantic inference.
 
-One registered datasource, one ent relation, one asset column, exactly one row.
+One registered datasource (the business DB or the legacy plant DB — both read through ENTERPRISE_READ_DSN), one relation of its
+schema, one asset column, exactly one row.
 Joins, aggregates and LLM-generated SQL remain the separate enterprise MCP path.
 """
 from datetime import date, datetime, time
@@ -11,12 +12,17 @@ from uuid import UUID
 
 from psycopg import sql
 
+from hydcommon.data_sources import SOURCES
 from hydcommon.enterprise import reader_connection
 
 BINDING_FIELDS = ('id', 'name', 'typeRef', 'source', 'represents', 'representsName',
                   'datasource', 'catalog', 'schema', 'table', 'column', 'assetColumn', 'sqlType', 'derive')
 DERIVE_HOURS = 'hours_from_now'
 PHYSICAL_FIELDS = ('datasource', 'catalog', 'schema', 'table', 'column', 'assetColumn', 'sqlType')
+#: 이 읽기 연결(ENTERPRISE_READ_DSN)로 읽는 데이터 원천 → 그 스키마. 정본은 데이터 원천 표(hydcommon.data_sources) — 업무 DB 와 옛 설비 DB 가
+#: 같은 읽기 계정 · 같은 연결이다. 데이터 원천 화면이 「연결됨」으로 보이고 표 정의(DDL)를 적재할 수 있는 원천과 같은 묶음이다(전에는 업무 DB 하나만
+#: 받아, 옛 설비 DB 표에 이은 판단 입력이 「등록된 출처가 아닙니다」로 멈췄다 — 2026-11-22 탐사 N4).
+READ_SCHEMAS = {sid: s['schema'] for sid, s in SOURCES.items() if s.get('env') == ('ENTERPRISE_READ_DSN',)}
 
 
 def is_physical(item):
@@ -61,8 +67,9 @@ def read_physical_fact(item, asset):
     derive = item.get('derive')
     if derive not in (None, DERIVE_HOURS):
         raise ValueError(f'지식에 선언한 값 변환({derive})을 엔진이 지원하지 않습니다')
-    if item.get('datasource') != 'hyd-enterprise' or item.get('schema') != 'ent':
-        raise ValueError('지식에 선언한 업무 DB 출처(데이터 원본 · 스키마)가 등록된 것(hyd-enterprise · ent)이 아닙니다')
+    if item.get('datasource') not in READ_SCHEMAS or item.get('schema') != READ_SCHEMAS[item['datasource']]:
+        known = ', '.join(f"{SOURCES[sid]['label']}({sid} · {schema})" for sid, schema in READ_SCHEMAS.items())
+        raise ValueError(f'지식에 선언한 업무 DB 출처(데이터 원본 · 스키마)가 등록된 원천({known})이 아닙니다')
     for key in ('catalog', 'table', 'column', 'assetColumn'):
         if not isinstance(item.get(key), str) or not item[key] or '\x00' in item[key]:
             raise ValueError(f'지식의 업무 DB 출처에 {key} 칸이 없습니다')

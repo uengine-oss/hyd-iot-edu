@@ -10,7 +10,7 @@
   const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 에이전트)' };
   const CHECK = { cause: '원인 적중', top: '1순위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
   const EXPECT = { excluded: '제외돼야 함', not_recommended: '1순위면 안 됨' };
-  // 설비 목록 · 가정 사실(이름 · 선택지)은 서버가 준다(GET /api/eval/golden 의 assets · facts — judgment_eval.FACT_CHOICES)
+  // 설비 목록 · 가정 사실(이름 · 선택지 · 숫자 · 글 칸)은 서버가 준다(GET /api/eval/golden 의 assets · facts — judgment_eval.fact_choices: 기본 제공 현장의 넷 + 지식의 표 · 열에 이은 판단 입력)
   const factLabel = k => (E.facts[k] || {}).label || k;
   const q = (sel) => E.el.querySelector(sel);
   // 표의 이름: 화면 사전 → 지금 지식 그래프의 이름(학생이 적재한 항목) → 종류. 원래 id 는 올리면 보인다
@@ -147,7 +147,8 @@
         UI.field({ label: '설비', required: true, input: sel('asset', E.assets.map(a => [a, a]), it.asset || '', '설비 선택') }) +
         UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? `<select data-f="pattern"><option value="">이상 패턴 선택</option>${UI.patternOptions(E.patterns, it.pattern || '')}</select>` : '<select data-f="pattern" disabled><option value="">목록을 읽지 못함</option></select>' })) +
       UI.section('가정 사실(비우면 지금 값을 씁니다)', Object.entries(E.facts).map(([k, spec]) => UI.field({ label: spec.label,
-        input: spec.number ? `<input data-f="${esc(k)}" data-fact="number" type="number" min="0" step="1" value="${esc(f[k] ?? '')}" placeholder="지금 값">`
+        input: spec.number ? `<input data-f="${esc(k)}" data-fact="number" type="number" ${spec.min == null ? '' : `min="${esc(spec.min)}" `}step="any" value="${esc(f[k] ?? '')}" placeholder="지금 값">`
+          : spec.text ? `<input data-f="${esc(k)}" data-fact="text" value="${esc(f[k] ?? '')}" placeholder="지금 값">`      // 값의 영역이 지식에 없는 글 형식 입력(표 · 열에 이은 판단 입력)
           : sel(k, [['', '지금 값'], ...spec.choices.map(([v, l]) => [JSON.stringify(v), l])], f[k] == null ? '' : JSON.stringify(f[k])) })).join('')) +
       UI.section('기대하는 판단',
         UI.field({ label: '기대 원인', required: true, input: `<input data-f="cause" list="evalDl-cause" value="${esc(labelOf('cause', d.cause) || '')}" placeholder="원인 이름으로 찾기" autocomplete="off">`, hint: '지식의 원인 이름 가운데 고릅니다.' }) +
@@ -169,7 +170,7 @@
     const v = (k) => { const n = q(`[data-f="${k}"]`); return n ? n.value.trim() : ''; };
     const facts = {};
     Object.entries(E.facts).forEach(([k, spec]) => { const raw = v(k);           // 선택지 값은 JSON 글로 담아 종류(글 · 참/거짓)를 그대로 되살린다
-      if (raw !== '') facts[k] = spec.number ? Number(raw) : JSON.parse(raw); });
+      if (raw !== '') facts[k] = spec.number ? Number(raw) : spec.text ? raw : JSON.parse(raw); });
     const d = E.editing.draft;
     // 이름 칸에 적힌 글 → id. 목록에 없는 글이면 보내지 않고 말한다(빈 정답이나 엉뚱한 id 로 저장되지 않게)
     const pick = (kind, text, what) => { if (!text) throw new Error(`${what} 칸이 비어 있습니다`); const id = nameMap(kind).get(text); if (!id) throw new Error(`${what} 「${text}」: 목록에 있는 이름을 고르세요`); return id; };
@@ -209,10 +210,10 @@
   // 서버 문장 속의 처리 건 안쪽 번호와 경보 코드는 화면 말로 바꾼다(「처리 건 c3_cooling.6655…(HYD-01 · COOLER_DEGRADATION)에 …」 → 「이 처리 건(HYD-01 · 쿨러 성능 저하)에 …」)
   const matchNote = text => String(text || '맞는 항목 없음').replace(/처리 건 \S+?\(([^)]*)\)/, (m, inner) => `이 처리 건(${inner.split(' · ').map(x => patternName(x)).join(' · ')})`);
   function renderCands() {
-    const panel = body => `<section class="panel"><div class="panel-head"><div><h2>채점할 지난 처리 건</h2><p>원인 진단과 조치 후보 단계까지 끝난 처리 건입니다. 정답표에 맞는 항목이 있는 건만 고를 수 있습니다.</p></div></div><div class="panel-sec">${body}</div></section>`;
+    const panel = body => `<section class="panel"><div class="panel-head"><div><h2>채점할 지난 처리 건</h2><p>AI 에이전트가 판단 서비스에 원인을 정한 조치 판단을 등록한 처리 건입니다. 판단 서비스를 쓰지 않는 흐름의 처리 건과 부품으로 정한 구매 판단은 여기에 나오지 않습니다. 정답표에 맞는 항목이 있는 건만 고를 수 있습니다.</p></div></div><div class="panel-sec">${body}</div></section>`;
     if (E.cands == null) return panel(UI.loading());
     if (E.cands.error) return UI.errorBlock('지난 처리 건을 읽지 못했습니다', E.cands.error, { retry: true });
-    if (!E.cands.length) return panel(UI.emptyGo('채점할 지난 처리 건이 없습니다', '원인 진단과 조치 후보 단계까지 끝난 처리 건이 여기에 나타납니다.', 'scenario', '결함 시뮬레이션에서 사건 만들기', 'compact'));
+    if (!E.cands.length) return panel(UI.emptyGo('채점할 지난 처리 건이 없습니다', 'AI 에이전트가 판단 서비스에 원인을 정한 조치 판단을 등록한 처리 건이 여기에 나타납니다.', 'scenario', '결함 시뮬레이션에서 사건 만들기', 'compact'));
     return panel(table('<th>채점</th><th>처리 건</th><th>AI 에이전트의 판단</th><th>맞는 정답표 항목</th>', E.cands.map(c => {
       const item = E.golden.find(it => it.id === c.item);
       return `<tr><td><input type="checkbox" class="input" data-cand="${esc(c.instance)}" ${item ? '' : 'disabled'} aria-label="${esc(c.name || '처리 건')} 채점에 포함"></td>

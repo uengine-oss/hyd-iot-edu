@@ -19,7 +19,15 @@ HANDOVER_INSTRUCTIONS = (
 )
 
 
+CANDIDATES_INSTRUCTIONS = (
+    'candidates 에는 판단 엔진의 조치 후보 결정표가 낸 조치 방법(스킬) id 만 한 번씩 적습니다. 결정표가 이 고장 유형 · 조건에 맞는 조치 방법을 '
+    '하나도 내지 않았으면 빈 목록을 내지 말고 보류 객체로 제출하고, reason 에 어떤 고장 유형에 쓸 조치 방법(정비 절차) 지식이 없는지와 담당자가 '
+    '할 일(그 고장의 정비 절차가 든 매뉴얼을 지식에 적재한 뒤 다시 평가)을 적으세요 — 빈 목록은 다음 단계(규정 검토)가 검토할 것이 없습니다.'
+)
+
+
 def instructions(contract):
+    if contract == 'action-candidates-v1':return CANDIDATES_INSTRUCTIONS
     if contract == 'ask-answer-v1':return ASK_INSTRUCTIONS
     if contract == 'shift-handover-draft-v1':return HANDOVER_INSTRUCTIONS
     return ''
@@ -29,8 +37,10 @@ def guidance(form):
     contract = (form or {}).get('contract')
     if contract == 'manual-source-proposal-v1':
         return ('추출 제안', '원문 검증',
-                '입력 데이터의 이전 proposal을 고쳐 같은 형식으로 다시 제출하세요. 인용(anchor)은 page.text의 '
+                '이 작업이 앞서 낸 결과(돌려보낸 proposal)를 고쳐 같은 형식으로 다시 제출하세요. 인용(anchor)은 page.text의 '
                 '정확한 부분 문자열과 좌표여야 하며, 모든 페이지에 page_reviews가 있어야 합니다. 원문에 없는 절차를 추가하지 마세요.')
+    if contract == 'action-candidates-v1':
+        return '조치 후보', '후보 계약 검사', '이 작업이 앞서 낸 결과를 고쳐 다시 제출하세요. ' + CANDIDATES_INSTRUCTIONS
     if contract == 'ask-answer-v1':
         return '질문 답변', '답변 계약 검사', ASK_INSTRUCTIONS
     if contract == 'shift-handover-draft-v1':

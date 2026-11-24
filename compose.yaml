@@ -10,6 +10,9 @@ x-class:                                 # 수업 구성 값 — 여러 서비�
   time-scale: &time-scale "20"           # 배속: 벽시계 1초 = 설비 20초(plant-sim · detector · process — agent · dmn-mcp 는 process 에서 읽는다)
   daq-profile: &daq-profile lite         # 수집: lite = 예외 보고(데드밴드 · 하트비트), full = 전 태그 1 Hz + 100 Hz 파형. 감지기와 근거 조회가 같은 계약을 쓴다
   tsdb-read-dsn: &tsdb-read-dsn postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd   # 시계열 DB 읽기 전용 계정
+  # 업무 DB(Supabase): 망 business-db 안의 이름 — 모든 PC 에서 같다(이 PC 의 바깥 포트와 상관없음). 쓰기 계정과 두 전용 읽기 계정 가운데 업무 읽기
+  business-db-dsn: &business-db-dsn postgresql://postgres:postgres@db.supabase.internal:5432/postgres
+  business-read-dsn: &business-read-dsn postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@db.supabase.internal:5432/postgres
 
 x-logging: &log                          # 컨테이너 로그가 디스크(WSL vhdx)를 키우지 않게 순환
   driver: json-file
@@ -36,6 +39,14 @@ networks:
   dmz-it-net: {}                           # 경계 망 2(DMZ ↔ IT): connect-ingest · cmd-gateway · redpanda 와, DMZ 서비스의 상태를 읽는 IT 서비스(portal · agent · dmn-mcp · prometheus)
   it-net: {}                               # IT
   sim-net: {}                              # 가상 설비 API(:8000) 전용: process(결함 주입 · 정비 수행 모사) · portal(같은 출처 /svc/plant-sim/) ↔ plant-sim 만. 이 망은 실습 조작(결함 주입 · 초기화 · 현장 패널 흉내 · 정비 수행 모사)의 길이고 승인된 원격 명령의 길이 아니다 — 브로커(ot-broker)는 이 망에 없다
+  business-db:                             # IT 의 업무 DB(Supabase)와 그것을 읽고 쓰는 IT 서비스의 망. 서비스는 db.supabase.internal:5432 · 메일함 inbucket:1025 로 곧장 부른다.
+    # 호스트에 연 포트(host.docker.internal:54322)로 돌아 부르면 Docker Desktop 의 호스트 중계를 지나는데, 그 길이 PC 전체에서 몇 초씩 멎어 승인이 503 으로 끝났다(2026-11-24 실측 — 두 스택이 같은 시각에 멎음 · 이 망으로 곧장은 가운데값 5 ms).
+    # 이 망은 시작 3단계(scripts/start_all.sh)가 만들고 업무 DB · 메일함 컨테이너를 위 이름으로 붙인다. Supabase 가 만드는 자기 망에 붙으면 끄기(supabase stop)가 그 망을 지워,
+    # 멈춰 둔 서비스가 지워진 망을 찾다 다음 시작에서 켜지지 못했다(2026-11-24 실측 「network … not found」)
+    external: true
+    # 이름은 이 폴더의 업무 DB 프로젝트 이름 — 시작 2단계(scripts/prepare_ports.py)가 .env 에 적는다. 기본값을 두지 않는다: 그 줄이 없는 .env 로 compose 를
+    # 직접 부르면 같은 기본 이름을 쓰는 다른 폴더의 업무 DB 에 말없이 붙는다
+    name: hyd-business-db-${HYD_SUPABASE_PROJECT:?시작 파일이 정합니다}
 
 volumes:
   tsdb-data: {}
@@ -367,7 +378,7 @@ services:
     logging: *log
     mem_limit: 192m
     build: { context: ., dockerfile: it/agent/Dockerfile }
-    networks: [it-net, dmz-it-net]        # dmz-it-net: 설비 값이 지금 것인지 볼 때 수집기(connect-ingest) 상태를 읽는다(tools/mcp_prom.py)
+    networks: [it-net, dmz-it-net, business-db]   # dmz-it-net: 설비 값이 지금 것인지 볼 때 수집기(connect-ingest) 상태를 읽는다(tools/mcp_prom.py)
     ports: ["127.0.0.1:${HYD_PORT_8091:-8091}:8091"]
     environment:
       TSDB_READ_DSN: *tsdb-read-dsn
@@ -377,8 +388,7 @@ services:
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
       INGEST_URL: http://connect-ingest:8093/healthz
-      ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-    extra_hosts: ["host.docker.internal:host-gateway"]   # 업무 DB(호스트의 Supabase) 이름 — Docker Desktop 은 스스로 풀고, Linux 엔진은 이 줄이 있어야 푼다
+      ENTERPRISE_READ_DSN: *business-read-dsn
     depends_on:
       kg-seed: { condition: service_completed_successfully }
       connect-sink: { condition: service_healthy }
@@ -393,7 +403,7 @@ services:
     logging: *log
     mem_limit: 768m                       # PG 원천 · 승인 · 투영 큐와 사건 스냅숏을 함께 든다(512m 에서 509 MiB 실측)
     build: { context: ., dockerfile: it/process/Dockerfile }
-    networks: [it-net, sim-net]           # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
+    networks: [it-net, sim-net, business-db]   # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
                                           # ot-net · 경계 망에는 붙이지 않는다 — IT 서비스가 브로커(ot-broker)에 직접 닿으면 DMZ(cmd-gateway)가 유일한 하향 통로가 아니게 된다
     ports: ["127.0.0.1:${HYD_PORT_8080:-8080}:8080"]
     volumes: ["process-data:/data", "worker-runtime:/run/hyd-credentials"]
@@ -409,9 +419,9 @@ services:
       PROCESS_WAIT_COMPRESSION: "360"
       ENTERPRISE_URL: http://enterprise-sim:8095
       # 경보가 프로세스 인스턴스(처리 건)를 열고 에이전트 · 사람은 그 안의 작업 — 업무 DB(Supabase)가 원천이다.
-      SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
+      SUPABASE_DSN: *business-db-dsn
       # 데이터 패브릭(/api/fabric/*): 쓰기 연결이 아니라 두 전용 읽기 계정만 쓴다
-      ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_READ_DSN: *business-read-dsn
       TSDB_READ_DSN: *tsdb-read-dsn
       HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
       # 강의 중계(LiteLLM, Anthropic 방식 주소 — 끝에 /v1 없음). 키는 process 만 받고 워커 CLI 에는 작업에 묶인 토큰만 간다(course_model.py)
@@ -420,7 +430,7 @@ services:
       # 업무 시스템 쓰기 · 승인 뒤 메일 도구를 process 만 부르게 하는 값(enterprise-sim · effects-mcp 와 같은 값), 승인 장부 지문 키(cmd-gateway 와 같은 값)
       PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}
       CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:?시작 파일이 정합니다}
-    extra_hosts: ["host.docker.internal:host-gateway"]
+    extra_hosts: ["host.docker.internal:host-gateway"]   # 학생이 이 PC 에서 띄운 도구 서버(http://host.docker.internal:<포트> — procsvc/mcp_check.py)
     depends_on:
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
@@ -433,13 +443,12 @@ services:
     logging: *log
     mem_limit: 96m
     build: { context: ., dockerfile: it/enterprise-sim/Dockerfile }
-    networks: [it-net]
+    networks: [it-net, business-db]
     ports: ["127.0.0.1:${HYD_PORT_8095:-8095}:8095"]
     environment:
       # 업무 DB(Supabase ent 스키마)가 원천이다
-      SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
+      SUPABASE_DSN: *business-db-dsn
       PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}   # 쓰기 · 초기화 끝점은 process 만(머리글 X-HYD-Process-Caller)
-    extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
       <<: *py-health
@@ -449,13 +458,14 @@ services:
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: it/effects-mcp/Dockerfile }
-    networks: [it-net]
+    networks: [it-net, business-db]
     ports: ["127.0.0.1:${HYD_PORT_8197:-8197}:8197"]
     environment:
-      SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}   # 메일은 이 PC의 업무 DB 메일함(Supabase Inbucket, config.toml [inbucket] smtp_port)으로만 — 주소는 host.docker.internal(코드 기본값)
+      # 메일은 이 PC의 업무 DB 메일함(Supabase Inbucket)으로만 — 망 business-db 안의 이름 · 받는 포트(바깥 포트와 상관없음)
+      SMTP_HOST: inbucket
+      SMTP_PORT: "1025"
       EFFECTS_STATE_PATH: /data/effects.sqlite3
       PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}   # 쓰기 도구는 process 만
-    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: ["effects-data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8197/healthz')"]
@@ -488,11 +498,10 @@ services:
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
-    networks: [it-net]
+    networks: [it-net, business-db]
     ports: ["127.0.0.1:${HYD_PORT_8199:-8199}:8199"]
     environment:
-      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-    extra_hosts: ["host.docker.internal:host-gateway"]
+      ENTERPRISE_DSN: *business-read-dsn
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8199/healthz')"]
       <<: *py-health
@@ -502,13 +511,12 @@ services:
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
-    networks: [it-net]
+    networks: [it-net, business-db]
     ports: ["127.0.0.1:${HYD_PORT_8196:-8196}:8196"]
     environment:
-      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_DSN: *business-read-dsn
       ENTERPRISE_MCP_TOOLSET: maintenance
       MCP_PORT: "8196"
-    extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8196/healthz')"]
       <<: *py-health
@@ -518,13 +526,12 @@ services:
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
-    networks: [it-net]
+    networks: [it-net, business-db]
     ports: ["127.0.0.1:${HYD_PORT_8195:-8195}:8195"]
     environment:
-      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_DSN: *business-read-dsn
       ENTERPRISE_MCP_TOOLSET: purchasing
       MCP_PORT: "8195"
-    extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8195/healthz')"]
       <<: *py-health
@@ -534,7 +541,7 @@ services:
     logging: *log
     mem_limit: 192m
     build: { context: ., dockerfile: it/dmn-mcp/Dockerfile }
-    networks: [it-net, dmz-it-net]        # dmz-it-net: agent 와 같은 까닭(INGEST_URL)
+    networks: [it-net, dmz-it-net, business-db]   # dmz-it-net: agent 와 같은 까닭(INGEST_URL)
     ports: ["127.0.0.1:${HYD_PORT_8198:-8198}:8198"]
     environment:
       TSDB_READ_DSN: *tsdb-read-dsn
@@ -544,8 +551,7 @@ services:
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
       INGEST_URL: http://connect-ingest:8093/healthz
-      ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-    extra_hosts: ["host.docker.internal:host-gateway"]   # agent 와 같은 까닭: 입력 데이터 원천 읽기가 호스트의 업무 DB 로 간다
+      ENTERPRISE_READ_DSN: *business-read-dsn
     depends_on:
       kg-seed: { condition: service_completed_successfully }
       process: { condition: service_healthy }
@@ -558,7 +564,7 @@ services:
     logging: *log
     mem_limit: 768m
     build: { context: ., dockerfile: it/agent-worker/Dockerfile }
-    networks: [it-net]
+    networks: [it-net, business-db]
     ports: ["127.0.0.1:${HYD_PORT_8097:-8097}:8097"]
     # 저장된 AI 응답(재생모드.md): 강사 저장(AI_MODE=record)은 저장소 폴더에 쓰고, 키 없는 PC 재생은 git pull 로 받은 그 폴더를 읽는다
     volumes: ["worker-data:/workspace", "worker-runtime:/run/hyd-credentials:ro", "./it/agent-worker/replay:/srv/replay"]
@@ -568,7 +574,7 @@ services:
       AI_REPLAY_DIR: /srv/replay
       # 워커는 ProcessGPT 에이전트 종류 `cliagents`(process-gpt-cli-agent): todolist 를 fetch_pending_task 로 집고,
       # 테넌트의 도구 서버를 tenants.mcp(seed.sql)에서 읽고, 결과를 save_task_result 로 남긴다.
-      SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
+      SUPABASE_DSN: *business-db-dsn
       TENANT_ID: hyd
       CONSUMER_ID: agent-worker:docker
       # 원본 중계 키는 process만 읽는다. 수업 판정 · 모델 관문 · 실행 토큰은 모두 process 한 주소(worker/course_access.py),
@@ -578,7 +584,7 @@ services:
       DISABLE_TELEMETRY: "1"
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
       CLIAGENTS_WORKSPACE_ROOT: /workspace   # 권한 · 실행 시한 · 허용 도구 목록은 worker/settings.py 한 곳
-    extra_hosts: ["host.docker.internal:host-gateway"]
+    extra_hosts: ["host.docker.internal:host-gateway"]   # 학생이 이 PC 에서 띄운 도구 서버(process 와 같은 까닭)
     depends_on:
       process: { condition: service_healthy }
       enterprise-mcp: { condition: service_healthy }

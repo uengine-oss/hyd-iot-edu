@@ -41,7 +41,7 @@ function requireList(value, label) {
 }
 const postJ = (url, body, method = 'POST', options = {}) => requestJ(url, { ...options, method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
 
-const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], log: [], showAll: false, incShown: 20 };
+const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], log: [], gw: null, showAll: false, incShown: 20 };
 
 /* ---------------- 메뉴 · 화면 전환 ---------------- */
 // 화면에 들어올 때 할 일: 화면 모듈은 selectTab 을 감싸지 않고 이 표에 적는다(실린 차례대로 불린다 — 셸이 맨 마지막). fn(name)
@@ -526,7 +526,9 @@ document.addEventListener('click', e => {
    HYD-01 은 설비 결함(쿨러 열화 — 유온이 올라 감지기가 경보를 낸다), 나머지는 업무 사건(서버의 GET /api/scenario/status 가 말하는 설비 · 이름 · 단추 — 정기 점검 도래 · 재고 보충 필요).
    업무 사건은 설비까지 가지 않고 단추가 처리 건을 바로 연다(POST /api/scenario/{key}/start). 되돌리기는 그 사건이 바꾼 것을 처음 값으로 돌린다(쿨러 성능 · 업무 데이터).
    주입 뒤 경보 · 처리 건까지의 과정은 hydLive.follow 로 한 줄씩 보인다(실제 사건이 올 때만 넘어간다). */
-const FAULT_UNIT = { asset: 'HYD-01', pattern: 'COOLER_DEGRADATION', fault: 'cooler_degradation' };      // 설비 결함 주입은 쿨러 열화 하나다(서버 POST /api/scenario/A/degrade · restore)
+// 설비 결함 주입의 범위(설비 · 결함 · 그 결함이 일으키는 경보 · 단추 이름)는 서버가 말한다(GET /api/scenario/status 의 fault — scenario_buttons.fault_scope).
+// 화면이 손으로 적지 않는다. 상태를 읽기 전 · 못 읽었으면 null
+const faultUnit = () => (state.biz && state.biz.fault) || null;
 function bizOf(asset) {
   const all = state.biz && state.biz.scenarios ? Object.values(state.biz.scenarios) : [];
   return all.find(b => b.asset === asset) || null;
@@ -537,7 +539,7 @@ function bizOf(asset) {
 // 표시가 꺼졌고 진행 중인 건도 없으면 알약이 없다(값 한 줄이 「보충할 수량 없음」처럼 그 사실을 말한다). 그 처리 건으로 가는 길은 카드 아래 고정 줄 「처리 건에서 보기」 하나다(알약을 링크로 쓰지 않는다)
 function bizAlertHtml(asset) {
   const pill = (label, tone, why = '') => why ? `<span title="${esc(why)}">${UI.chipText(label, tone)}</span>` : UI.chipText(label, tone);
-  if (asset === FAULT_UNIT.asset) return '';
+  if (asset === faultUnit()?.asset) return '';
   if (state.biz === undefined) return pill('확인 중');
   if (state.biz && state.biz.failed) return pill('표시를 읽지 못함', 'danger', state.biz.failed);
   const b = bizOf(asset); if (!b) return '';
@@ -586,10 +588,11 @@ const eventBtn = ev => labBtn('biz-event', ev.button, { icon: 'clock', off: !ev.
 }
 function expHtml(asset) {
   const what = (text, pill = false) => `<p class="lab-what"><span>${esc(text)}</span>${pill ? '<span class="biz-alert"></span>' : ''}</p>`;
-  if (asset === FAULT_UNIT.asset) return what(`설비 결함 · ${UI.patternName(FAULT_UNIT.pattern)}`) + `<p class="lab-fact" data-f="fact"></p>
-    <div class="lab-buttons">${labBtn('degrade', '쿨러 열화 주입', { primary: true, icon: 'zap', tip: '쿨러 성능을 서서히 떨어뜨립니다. 유온이 오르면 경보가 납니다' })}${LAB_SLOT}${labBtn('restore', '쿨러 복구', { icon: UI.acts.repair[1], tip: '쿨러 성능을 처음 값으로 되돌립니다', cls: 'lab-undo' })}</div>`;
-  if (state.biz === undefined) return what('업무 사건') + '<div class="skeleton" style="height:96px"></div>';
-  if (state.biz && state.biz.failed) return what('업무 사건', true) + `<p class="lab-fact" data-tone="danger">업무 사건의 상태를 읽지 못했습니다: ${esc(state.biz.failed)} — 잠시 뒤 다시 읽습니다.</p>`;
+  const f = faultUnit();
+  if (f && asset === f.asset) return what(`설비 결함 · ${UI.patternName(f.pattern)}`) + `<p class="lab-fact" data-f="fact"></p>
+    <div class="lab-buttons">${labBtn('degrade', f.buttons.degrade, { primary: true, icon: 'zap', tip: '쿨러 성능을 서서히 떨어뜨립니다. 유온이 오르면 경보가 납니다' })}${LAB_SLOT}${labBtn('restore', f.buttons.restore, { icon: UI.acts.repair[1], tip: '쿨러 성능을 처음 값으로 되돌립니다', cls: 'lab-undo' })}</div>`;
+  if (state.biz === undefined) return what('사건') + '<div class="skeleton" style="height:96px"></div>';
+  if (state.biz && state.biz.failed) return what('사건', true) + `<p class="lab-fact" data-tone="danger">결함 시뮬레이션의 사건 상태를 읽지 못했습니다: ${esc(state.biz.failed)} — 잠시 뒤 다시 읽습니다.</p>`;
   const b = bizOf(asset);
   if (!b) return what('업무 사건') + '<p class="lab-fact">이 설비에 걸린 업무 사건이 없습니다.</p>';
   const events = b.events || [];
@@ -621,14 +624,14 @@ function renderUnits() {
       card.querySelector('[data-mode-pick]').addEventListener('change', e => unitAction(asset, 'mode', e.target.value, null));
       card.addEventListener('click', e => { const b = e.target.closest('button[data-act]'); if (b) unitAction(asset, b.dataset.act, b.dataset.mode, b); });
     }
-    const s = u.status, d = detOf(asset), own = asset === FAULT_UNIT.asset, b = bizOf(asset);
+    const s = u.status, d = detOf(asset), f = faultUnit(), own = !!f && asset === f.asset, b = bizOf(asset);
     paintState(card, unitState(s, d));
     const mode = card.querySelector('[data-f="mode"]'), modeText = UI.status(s.mode);
     if (mode.textContent !== modeText) mode.textContent = modeText;
     mode.title = s.mode === 'REMOTE_AUTO' ? '원격 자동 — 승인된 원격 명령을 설비가 받는 운전 모드입니다. 저절로 조치하지 않으며, 명령은 사람이 승인한 뒤에만 나갑니다.' : '';
     // 사건 절(이름 · 값 한 줄 · 단추)은 내용이 바뀔 때만 다시 그린다(누르는 동안 단추가 바뀌지 않게). 알약 · 값 · 안내 줄은 그 아래에서 따로 맞춘다
     const exp = card.querySelector('.lab-exp');
-    const expSig = own ? UI.patternName(FAULT_UNIT.pattern) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), bizStartOff(b), (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
+    const expSig = own ? JSON.stringify([f.pattern, f.buttons]) : JSON.stringify([state.biz === undefined, state.biz && state.biz.failed, b && [b.title, b.button, bizFactLine(b), bizStartOff(b), (b.events || []).map(ev => [ev.act, ev.button, ev.enabled, ev.why])]]);
     if (exp._sig !== expSig) {
       exp._sig = expSig;
       exp.innerHTML = expHtml(asset) + '<p class="lab-note fault"></p><p class="lab-note repeat-guide" role="status"></p>';
@@ -638,7 +641,7 @@ function renderUnits() {
     const dz = u.disturbances || {};
     // 지금 걸려 있는 그 밖의 결함 한 줄(없으면 줄도 없다). 쿨러 성능은 결함 설비 카드의 값 한 줄이 이미 말하므로 거기서는 되풀이하지 않는다
     const active = [!own && dz.cooler_health != null && dz.cooler_health < 0.999 ? `쿨러 성능 ${fmt(dz.cooler_health * 100, 0)} %` : '', dz.leak > 0 ? `펌프 A 누설 ${fmt(dz.leak * 100, 0)} %` : '', dz.bearing_wear > 0 ? `팬 베어링 마모 ${fmt(dz.bearing_wear * 100, 0)} %` : ''].filter(Boolean);
-    const ramps = (u.faults || []).filter(k => !(own && k === FAULT_UNIT.fault)).map(k => FAULT_LABEL[k] || k);
+    const ramps = (u.faults || []).filter(k => !(own && k === f.fault)).map(k => FAULT_LABEL[k] || k);
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${active.join(' · ')}` : '');
     // 아래 고정 줄: 그 설비에 진행 중인 처리 건이 있을 때만 나타난다(경과 · 승인 · 결과는 처리 건에서 — 이 카드는 끝난 건의 결과를 따로 보이지 않는다).
     // 설비 결함 카드는 열린 사건의 처리 건으로, 업무 사건 카드는 진행 중인 처리 건으로
@@ -648,7 +651,7 @@ function renderUnits() {
     if (own && openInc) go.dataset.openIncident = openInc.id; else delete go.dataset.openIncident;
     if (bizCase) go.dataset.openInst = bizCase.instance; else delete go.dataset.openInst;
     if (own) {
-      const pat = d.patterns?.[FAULT_UNIT.pattern], phase = pat?.phase, ramping = (u.faults || []).includes(FAULT_UNIT.fault);
+      const pat = d.patterns?.[f.pattern], phase = pat?.phase, ramping = (u.faults || []).includes(f.fault);
       // 값 한 줄: 이 결함이 바꾸는 값(쿨러 성능)과 그 값이 올리는 유온의 지금 값 — 업무 사건 카드의 근거 한 줄과 같은 자리. 감지기의 단계는 머리 줄의 상태 알약이 말한다
       const fact = card.querySelector('[data-f="fact"]'), text = `유온 ${fmt(u.tags.TS1, 1)} ℃ · 쿨러 성능 ${fmt(s.cooler_health * 100, 0)} %${ramping ? ' · 떨어지는 중' : ''}`;
       if (fact.textContent !== text) fact.textContent = text;
@@ -656,7 +659,7 @@ function renderUnits() {
       const handled = !!pat?.alert_id && state.incidents.some(i => i.alertId === pat.alert_id);      // 이 경보의 사건이 이미 있으면(끝난 것 포함) 이어 보일 과정이 없다
       // 안내는 그 상황일 때만 한 줄: 감지기를 못 읽었을 때, 그리고 결함이 걸린 채 새 경보가 나지 않는 때(경보의 처리 건이 이미 끝났거나, 결함은 남았는데 감지기가 조용할 때)
       const stuck = s.cooler_health < 0.999 && !openInc && state.incidentsRead && (phase === 'IDLE' || (phase === 'RAISED' && handled)) && !ramping;
-      card.querySelector('.repeat-guide').textContent = !phase ? '감지기 상태를 읽지 못했습니다.' : stuck ? '다시 하려면 [쿨러 복구]를 누르고, 위 상태가 「운전 중」으로 돌아온 뒤 주입하세요.' : '';
+      card.querySelector('.repeat-guide').textContent = !phase ? '감지기 상태를 읽지 못했습니다.' : stuck ? `다시 하려면 [${f.buttons.restore}]를 누르고, 위 상태가 「운전 중」으로 돌아온 뒤 주입하세요.` : '';
       // 화면을 다시 열었는데 결함이 진행 중이면 그 과정을 이어서 보인다(한 번만 — 닫았으면 다시 열지 않는다)
       if (!labFollow && !renderUnits.resumed && state.incidentsRead && !handled && (ramping || ['CANDIDATE', 'RAISED'].includes(phase))) { renderUnits.resumed = true; followFault(true); }
     }
@@ -686,7 +689,9 @@ function showFollow(title, stages, resumed = false) {
 $('#gwLog').closest('details').addEventListener('toggle', () => refreshFast());      // 조작 기록을 펴면 명령 관문의 기록을 곧바로 읽어 그린다
 $('#labFollowClose').addEventListener('click', () => { if (labFollow) labFollow.stop(); $('#labFollowPanel').hidden = true; });
 function followFault(resumed = false) {
-  const { asset, pattern, fault } = FAULT_UNIT;
+  const scope = faultUnit();
+  if (!scope) return;                     // 결함 범위를 아직 못 읽었다 — 따라갈 결함을 모른다(카드도 그 단추를 그리지 않는다)
+  const { asset, pattern, fault } = scope;
   const unit = () => state.plant && state.plant.units[asset], pat = () => detOf(asset).patterns?.[pattern];
   showFollow(`${asset} ${UI.patternName(pattern)} — 주입에서 처리 건까지`, [
     { key: 'inject', label: '결함을 넣는 중', hint: '설비 시뮬레이터가 결함을 받았는지 확인합니다.',
@@ -707,7 +712,7 @@ function followFault(resumed = false) {
     { key: 'case', label: '처리 건이 열리기를 기다리는 중', hint: '경보가 흐름 엔진에 닿으면 처리 건이 열립니다.',
       check: f => { const inc = incidentsFor(asset).find(i => f && f.alert ? i.alertId === f.alert : i.pattern === pattern && !i.terminal); return inc ? { inc: inc.id, ended: inc.terminal } : null; },      // 이 경보로 열린 사건(이미 끝난 것이면 그렇다고 말한다). 경보 번호를 모르면 이 경보 종류(사건의 pattern)의 열린 사건 — 같은 설비의 다른 경보(정기 정비 · 재고) 사건을 잡지 않는다
       done: f => f.ended ? '이 경보로 열린 처리 건은 이미 끝났습니다' : '처리 건이 열렸습니다',
-      note: f => f.ended ? '경보가 아직 꺼지지 않아 새 처리 건이 열리지 않습니다. 새로 해 보려면 [쿨러 복구]를 누르고, 이 설비의 상태가 「운전 중」으로 돌아온 뒤 다시 주입하세요.' : 'AI 에이전트가 원인과 조치 후보를 판단합니다',
+      note: f => f.ended ? `경보가 아직 꺼지지 않아 새 처리 건이 열리지 않습니다. 새로 해 보려면 [${scope.buttons.restore}]를 누르고, 이 설비의 상태가 「운전 중」으로 돌아온 뒤 다시 주입하세요.` : 'AI 에이전트가 원인과 조치 후보를 판단합니다',
       link: f => ({ text: '처리 건에서 보기', go: () => openIncidentCase(f.inc) }) },
   ], resumed);
 }
@@ -735,8 +740,8 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 요청을 보내는 중`);
   try {
-    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 주입 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`, false, null, !!anchorNote(r)); followFault(); await refreshBiz(); }
-    else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록했습니다' : ' · 이어진 처리 건이 없어 감사 기록에만 남겼습니다'}`); await refreshBiz(); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} ${r.button} · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`, false, null, !!anchorNote(r)); followFault(); await refreshBiz(); }
+    else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} ${r.button}${r.instance ? ' · 열화로 열린 처리 건에 기록했습니다' : ' · 이어진 처리 건이 없어 감사 기록에만 남겼습니다'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const off = bizStartOff(b);
       if (off) { logLine(`[${b.button}]을 지금 누를 수 없습니다 — ${off}`, true); return; }
@@ -773,29 +778,36 @@ async function unitAction(asset, act, mode, button) {
 }
 // 이 화면에서 누른 단추의 결과: 카드 아래 한 줄(#scenarioMsg)과 「조작 기록」 접기에 남는다
 // show=false: 그 결과를 다른 칸이 이미 보이는 조작(쿨러 열화 주입 — 바로 아래 「주입에서 처리 건까지」 과정 칸이 첫 줄 「결함이 들어갔습니다」부터 말한다)은 한 줄을 비우고 조작 기록에만 남긴다
-function logLine(s, failed = false, go = null, show = true) { state.log.unshift({ t: new Date(), text: s, failed }); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(show ? s : '', failed, go); }
+// 누른 결과는 곧바로 조작 기록에도 그린다 — 1초마다 도는 읽기(refreshFast)를 기다리지 않는다(그 읽기가 도는 중이면 누른 뒤의 읽기는 건너뛰어 한 박자 늦게 보였다)
+function logLine(s, failed = false, go = null, show = true) { state.log.unshift({ t: new Date(), text: s, failed }); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') { scenarioMessage(show ? s : '', failed, go); renderGwLog(); } }
 function scenarioMessage(text, failed = false, go = null) {
   const box = $('#scenarioMsg'); box.textContent = text; if (failed) box.dataset.tone = 'danger'; else delete box.dataset.tone;
   if (go) box.insertAdjacentHTML('beforeend', ` <a class="go" href="${esc(go.href)}">${esc(go.label)}</a>`);
 }
-// [설비 초기화]는 화면 머리의 더 보기(「…」) 안에 있다(index.html data-head-more — 이름과 아이콘은 동작 사전의 것)
+// [설비 초기화]는 화면 머리의 더 보기(「…」) 안에 있다(index.html data-head-more — 이름과 아이콘은 동작 사전의 것).
+// 처리 엔진을 거친다(POST /api/scenario/plant-reset): 누름이 진행 중인 처리 건 기록에 남고, 가상 설비는 이것을 바깥 변화로 실어 그 처리 건은 뒤의 값을 조치의 효과로 치지 않는다.
+// 서버는 설비를 먼저 되돌린다 — 요청이 실패하면 되돌리지 못한 것이고, 되돌린 뒤 누름을 기록하지 못했으면 그 까닭(record_error)을 「되돌렸다」와 따로 말한다
 $('#btnReset').addEventListener('click', async () => {
-  if (!await UI.confirm({ title: '설비 3기를 정상 운전점으로 되돌릴까요?', body: '진행 중인 결함과 보호 정지가 모두 풀립니다. 열린 처리 건은 그대로 남고, 그 처리 건의 효과 확인 결과가 달라질 수 있습니다.', ok: UI.acts.plantReset[0], danger: true })) return;
+  if (!await UI.confirm({ title: '설비 3기를 정상 운전점으로 되돌릴까요?', body: '진행 중인 결함과 보호 정지가 모두 풀립니다. 진행 중인 처리 건은 그대로 남고, 되돌린 뒤의 설비 값은 그 처리 건 조치의 효과로 치지 않습니다.', ok: UI.acts.plantReset[0], danger: true })) return;
   scenarioMessage('설비를 되돌리는 중');
-  try { await postJ(API.plant + '/api/reset'); logLine('설비 3기를 정상 운전점으로 되돌렸습니다'); }
-  catch (err) { logLine('설비 초기화 실패: ' + err.message, true); }
+  try {
+    const r = await postJ(API.process + '/api/scenario/plant-reset', pressedBy());
+    if (r.record_error) logLine(`설비 3기를 정상 운전점으로 되돌렸습니다. 다만 ${r.record_error}`, true);
+    else logLine('설비 3기를 정상 운전점으로 되돌렸습니다' + (r.instances.length ? ` · 진행 중인 처리 건 ${r.instances.length}건에 기록했습니다` : ''));
+  }
+  catch (err) { logLine('설비를 되돌리지 못했습니다: ' + err.message, true); }
   finally { await refreshFast(); }
 });
-// 조작 기록: 출처가 다른 두 기록을 이름을 붙여 나눠 보인다 — 이 화면에서 누른 것과 명령 관문이 검증한 것. failed 는 명령 관문 기록을 못 읽은 사유(「기록 없음」으로 보이지 않는다)
-function renderGwLog(entries, failed = '') {
-  const box = $('#gwLog');
+// 조작 기록: 출처가 다른 두 기록을 이름을 붙여 나눠 보인다 — 이 화면에서 누른 것과 명령 관문이 검증한 것(state.gw — 마지막으로 읽은 명령 관문 기록, failed 는 못 읽은 사유: 「기록 없음」으로 보이지 않는다. 아직 못 읽었으면 null)
+function renderGwLog() {
+  const box = $('#gwLog'), { entries, failed } = state.gw || { entries: [], failed: '' };
   const mine = state.log.map(l => `<div class="line" data-kind="${l.failed ? 'fail' : 'ok'}">${UI.icon(l.failed ? 'circle-x' : 'check')}<span class="line-text">${esc(l.text)}</span><time class="line-time num">${esc(UI.time(l.t))}</time></div>`).join('');
   // 명령 관문의 기록(줄마다 원문 접기가 딸린다)은 접기를 펴 둔 동안에만 그린다 — 접힌 채 1초마다 다시 그리지 않는다
   const open = box.closest('details').open;
   const gw = open ? (entries || []).slice(0, 12).map(e => UI.eventRecord({ time: e.t, name: e.ok ? '명령 검증 통과' : '명령 거절', actor: e.asset, detail: e.reason || '', raw: e })).join('') : '';
   const last = pressLines();
   const html = (mine ? `<h4>이 화면에서 누른 단추의 결과</h4>${mine}` : '') + (last ? `<h4>설비마다 마지막으로 누른 단추</h4>${last}` : '') + (!open ? '' : failed ? UI.errorBlock('명령 관문의 기록을 읽지 못했습니다', failed) : gw ? `<h4>명령 관문이 검증한 명령</h4>${gw}` : '') ||
-    (open ? `<p class="muted">${esc(UI.t('plant.noCmd'))}</p>` : '');
+    (open && state.gw ? `<p class="muted">${esc(UI.t('plant.noCmd'))}</p>` : '');
   if (box._html !== html) { box.innerHTML = html; box._html = html; }      // 1초마다 불리지만 같으면 다시 그리지 않는다(펴 둔 원문 접기가 닫히지 않게)
 }
 
@@ -1034,7 +1046,11 @@ async function refreshFast() {
       const html = off ? `<div class="alert" role="alert">${UI.icon('triangle-alert')}<h2>설비와 감지기의 시간 배율이 다릅니다 (설비 ${esc(String(state.plant.time_scale))}배 · 감지기 ${esc(String(det))}배)</h2><section>경보가 나는 때와 처리 시간이 어긋납니다. compose.yaml 의 TIME_SCALE 값이 서비스마다 같은지 확인한 뒤 스택을 다시 시작하세요.</section></div>` : '';
       if (why._html !== html) { why.innerHTML = html; why._html = html; why.hidden = !off; }
     } else { $('#scale').textContent = '–'; $('#railScale').hidden = true; }      // 배속을 모르면 그 조각을 그리지 않는다
-    if (state.tab === 'scenario') { renderUnits(); try { renderGwLog(await getJ(API.gateway + '/api/gateway/log')); } catch (e) { renderGwLog([], e.message); } }
+    if (state.tab === 'scenario') {
+      renderUnits();
+      try { state.gw = { entries: await getJ(API.gateway + '/api/gateway/log'), failed: '' }; } catch (e) { state.gw = { entries: [], failed: e.message }; }
+      renderGwLog();
+    }
     if (state.tab === 'incidents') renderScada();
     if (state.tab === 'trends') renderTrends();
   } finally { refreshFast.busy = false; }

@@ -153,7 +153,9 @@ SQL_PURCHASES = """SELECT r.id, r.part, r.part_no, r.qty, r.unit_price, r.amount
 SQL_INVENTORY = "SELECT asset, fg_item, fg_stock FROM ent.fg_inventory ORDER BY asset"
 SQL_INSTANCES = """SELECT proc_inst_id, proc_def_id, status::text AS status, start_date, end_date, end_event, variables_data
  FROM public.bpm_proc_inst WHERE tenant_id = %(tenant)s AND NOT is_deleted
-   AND start_date >= %(t0)s AND start_date < %(t1)s ORDER BY start_date DESC LIMIT 2000"""
+   AND start_date >= %(t0)s AND start_date < %(t1)s ORDER BY start_date DESC LIMIT %(limit)s"""
+#: 한 번에 읽는 처리 건 수의 한도. 넘으면 잘라 세지 않는다 — 전에는 2,000건에서 조용히 잘라 지표 값이 실제보다 작게 나왔다(전수검사 12-13)
+INSTANCE_LIMIT = 2000
 
 Q_MEASURES = """MATCH (m:Measure)
 OPTIONAL MATCH (m)-[:MEASURES]->(o:Objective)
@@ -368,7 +370,11 @@ def calc_inventory(f: Fetch, w: Window, ctx: dict) -> Calc:
 
 def instances(f: Fetch, w: Window, tenant: str) -> list[dict]:
     out = []
-    for r in f('biz', 'instances', SQL_INSTANCES, {**w.naive, 'tenant': tenant}):
+    rows = f('biz', 'instances', SQL_INSTANCES, {**w.naive, 'tenant': tenant, 'limit': INSTANCE_LIMIT + 1})      # 하나 더 읽어 넘었는지 안다
+    if len(rows) > INSTANCE_LIMIT:
+        raise SourceError(f'이 기간의 처리 건이 {INSTANCE_LIMIT:,}건을 넘어 모두 읽지 못했습니다 — 일부만 세면 값이 실제보다 작아져 계산하지 않습니다. '
+                          '기간을 줄여 다시 보세요')
+    for r in rows:
         v = {x.get('key'): x.get('value') for x in (r.get('variables_data') or []) if isinstance(x, dict)}
         alert = v.get('alert') if isinstance(v.get('alert'), dict) else {}
         out.append({'id': r['proc_inst_id'], 'definition': r['proc_def_id'], 'status': r['status'],
@@ -812,14 +818,15 @@ class PgSources:
         self.conns: dict = {}
 
     def _conn(self, kind):
-        import psycopg
         from psycopg.rows import dict_row
+        from . import procdb
         if kind not in self.conns:
             try:
-                c = psycopg.connect(self.dsn[kind], connect_timeout=5, row_factory=dict_row, autocommit=False)
+                c = procdb.connect(self.dsn[kind], name=SYSTEM[kind], row_factory=dict_row, autocommit=False)
                 c.read_only = True
             except Exception as exc:  # noqa: BLE001 — 연결 실패도 기억해 같은 요청의 다음 질의가 다시 기다리지 않게 한다
-                c = SourceError(f'{SYSTEM[kind]}에 연결하지 못했습니다: {str(exc).splitlines()[0][:160]}')
+                reason = exc.__cause__ if isinstance(exc, procdb.DbUnreachable) else exc      # 다시 맺어 봐도 안 된 것 — 까닭은 마지막 연결 오류
+                c = SourceError(f'{SYSTEM[kind]}에 연결하지 못했습니다: {str(reason).splitlines()[0][:160]}')
             self.conns[kind] = c
         if isinstance(self.conns[kind], SourceError):
             raise self.conns[kind]

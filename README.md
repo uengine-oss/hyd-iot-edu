@@ -31,11 +31,13 @@ Windows에서는 Git Bash와 Docker Desktop의 WSL 2 기반 Linux 컨테이너�
 | 프로그램 | 프로젝트 준비 기준 | 공식 다운로드·문서 | 설치 확인 |
 |---|---|---|---|
 | Python | 3.13 이상(없으면 3.14.7 설치) | [Windows x64 EXE](https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe) · [macOS Universal2 PKG](https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg) · [릴리스 정보](https://www.python.org/downloads/release/python-3147/) | `python --version` / macOS `python3 --version` |
-| Node.js | 24.22.1 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.22.1/node-v24.22.1-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.22.1/node-v24.22.1.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
+| Node.js | 24.22.1 이상(자동 설치 파일은 그때의 LTS 최신판을 설치한다) | [Windows x64 MSI](https://nodejs.org/dist/v24.22.1/node-v24.22.1-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.22.1/node-v24.22.1.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
 | Git | 2.54.0 이상 | [Windows](https://git-scm.com/install/windows) · [macOS](https://git-scm.com/install/mac) | `git --version` |
 | VS Code | 1.132.0(2026년 8월 판) 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
 | WSL | 2.7.12.0 이상, WSL 2 실행 환경(Windows) | [설치](https://learn.microsoft.com/ko-kr/windows/wsl/install) · [명령](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands) | `wsl --version`, `wsl --status` |
 | Docker Desktop | 4.87.0 이상 | [Windows](https://docs.docker.com/desktop/setup/install/windows-install/) · [macOS](https://docs.docker.com/desktop/setup/install/mac-install/) | 앱 About, `docker info`, `docker compose version` |
+
+메모리: 시스템 전체가 켜진 채 Docker가 쓰는 메모리는 약 3.4 GB다(2026-11-23 이 저장소의 서비스와 업무 DB를 모두 켜고 잰 값). Docker Desktop에 4 GB 이상이 잡혀 있어야 하고, Windows의 WSL 2는 기본으로 PC 메모리의 절반까지 쓰므로 PC 메모리는 8 GB 이상이 필요하다. Docker에 잡힌 메모리는 `docker info`의 `Total Memory`로 본다.
 
 여섯 프로그램 모두 기준 이상이면 그대로 쓰고, 없거나 낮으면 설치·업데이트 후 재확인한다. 표시한 버전은 프로젝트 준비 기준이며 제품 자체의 최소 시스템 요구 사항과는 다르다. 기준 이상 모든 판의 호환성을 보장하는 목록은 아니다. 설치 파일(`설치.bat` · `설치.command`)과 시작 파일이 쓰는 기준 판은 `scripts/versions.txt` 한 곳에 있다.
 
@@ -86,9 +88,9 @@ wsl --update --web-download
 
 실습 폴더는 **Git으로 한 번 받고, 새 판도 같은 폴더에서 받는다.** 실습 기록(처리 건 · 적재한 지식 · 업무 데이터)은 폴더 하나에 묶여 있어서, 새 판을 다른 폴더에 받으면 빈 시스템이 하나 더 생긴다(시작 파일이 「다른 폴더의 시스템이 있습니다」라고 알려 준다).
 
-- **처음 받기**: 위 「실행 환경」의 Git을 설치한 뒤, 터미널에서 실습 폴더를 둘 곳(공용 PC는 `C:\`, 개인 PC는 문서 폴더 등)으로 이동해 `git clone --depth 1 https://github.com/uengine-oss/hyd-iot-edu.git` 을 실행한다(`--depth 1`은 지난 기록 없이 수업에 쓰는 지금 판만 받는 옵션이다. 강사용 영상 자료까지 받지 않아 몇 초면 끝난다). 만들어진 `hyd-iot-edu` 폴더(공용 PC면 `C:\hyd-iot-edu` — `README.md`, `compose.yaml`, `scripts`, `setup`이 함께 있는 폴더)가 프로젝트 루트다.
-- **새 판 받기**: 시작 파일이나 점검 파일이 「새 판을 받으세요」라고 하면, 수업 시스템을 끈 뒤(`끄기.bat` · Mac `끄기.command`) 프로젝트 루트에서 `git pull` 을 실행하고 시작 파일을 다시 실행한다. `git pull`이 `it/supabase/config.toml` 때문에 멈추면(2026년 10월 20~29일 판 시작이 그 파일에 이 PC 값을 써 넣었다) `git checkout -- it/supabase/config.toml` 뒤 다시 `git pull` 한다 — 그 파일의 이 PC 값은 시작 파일이 `.hyd-runtime`의 기록에서 다시 만든다.
-- **clone · pull이 `schannel: server closed abruptly`로 끊길 때**: 학교망 보안 장비가 Windows 기본 암호화 연결을 끊는 경우다. `git config --global http.sslBackend openssl` 을 한 번 실행한 뒤 다시 받는다. 그래도 안 되면 휴대폰 핫스팟에서 받는다.
+- **처음 받기**: 위 「실행 환경」의 Git을 설치한 뒤, 터미널에서 실습 폴더를 둘 곳(공용 PC · 개인 PC 모두 `C:\`처럼 OneDrive가 동기화하지 않는 곳 — 「문서」 · 「바탕 화면」은 OneDrive 백업 대상인 PC가 많아, 키가 든 `.env`가 클라우드로 올라가고 Docker가 읽는 파일이 자리표시 파일로 바뀔 수 있다)으로 이동해 `git clone --depth 1 https://github.com/uengine-oss/hyd-iot-edu.git` 을 실행한다(`--depth 1`은 지난 기록 없이 수업에 쓰는 지금 판만 받는 옵션이다. 강사용 영상 자료까지 받지 않아 몇 초면 끝난다). 만들어진 `hyd-iot-edu` 폴더(공용 PC면 `C:\hyd-iot-edu` — `README.md`, `compose.yaml`, `scripts`, `setup`이 함께 있는 폴더)가 프로젝트 루트다.
+- **새 판 받기**: 강사가 새 판이 나왔다고 알리거나 점검 파일이 「새 판을 받으세요」라고 하면(시작 파일과 점검 파일은 이 PC의 판이 최신인지는 재지 않는다), 수업 시스템을 끈 뒤(`끄기.bat` · Mac `끄기.command`) 프로젝트 루트에서 `git pull` 을 실행하고 시작 파일을 다시 실행한다. `git pull`이 `it/supabase/config.toml` 때문에 멈추면(2026년 10월 20~29일 판 시작이 그 파일에 이 PC 값을 써 넣었다) `git checkout -- it/supabase/config.toml` 뒤 다시 `git pull` 한다 — 그 파일의 이 PC 값은 시작 파일이 `.hyd-runtime`의 기록에서 다시 만든다.
+- **clone · pull이 `schannel: server closed abruptly`로 끊길 때**: 학교망 보안 장비가 Windows 기본 암호화 연결을 끊는 경우다. `git config --global http.sslBackend openssl` 을 한 번 실행한 뒤 다시 받는다. 그래도 안 되면 휴대폰 핫스팟에서 받는다. 같은 망에서는 시작 파일의 받기 단계(업무 DB 준비 · 이미지 받기와 빌드)도 인증서 · SSL 오류로 멈출 수 있다 — 시작 창이 그 오류를 보이면 핫스팟으로 바꿔 시작 파일을 다시 실행한다.
 - Git이 아직 없어 자동 설치 파일로 프로그램부터 준비하려면, [ZIP 다운로드](https://github.com/uengine-oss/hyd-iot-edu/archive/refs/heads/main.zip)로 받은 폴더에서 아래 「자동 설치 파일」만 실행하고, 설치가 끝나면 위처럼 `git clone`으로 실습 폴더를 받는다(ZIP 폴더는 설치용이라 지워도 된다).
 
 VS Code의 **File → Open Folder**에서 이 프로젝트 폴더를 연다. 한국어 표시가 필요하면 [Microsoft 한국어 언어 팩](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ko)을 설치하고 [표시 언어](https://code.visualstudio.com/docs/configure/locales)를 변경할 수 있다. 실습의 AI 코딩 도구는 [OpenAI Codex 확장](https://learn.chatgpt.com/docs/codex/ide) 하나다 — VS Code에 설치하고 본인 ChatGPT 계정을 연결한다(구글 계정으로 무료 가입해도 된다). 사용 가능한 모델·사용량은 계정에 따라 다르다. 이 AI 코딩 도구는 실습 시스템의 강의 중계 키와 별개다.
@@ -142,11 +144,11 @@ Docker Desktop에서 **Engine running**을 확인하고 `setup` 폴더의 **Wind
 |---|---|
 | 1. Docker 확인 | 엔진 응답과 Compose 확인(꺼져 있으면 켜고 기다린다) |
 | 2. `.env` · 이 PC 값 준비 | 키가 있으면 AI 단계를 실제 AI, 없으면 강사가 저장한 응답 재생으로 정하고, 이 폴더의 프로젝트 이름 · 포트를 정한다(다른 프로그램과 겹치면 옮긴다). 이 PC 값은 git이 추적하지 않는 파일(`.env` · `.hyd-runtime/` · `it/supabase/.env`)에만 쓴다 |
-| 3. 업무 DB | `it/supabase`에서 Supabase 켜기 + 새 판의 업무 DB 구조 적용 |
+| 3. 업무 DB | `it/supabase`에서 Supabase 켜기 + 새 판의 업무 DB 구조 적용. 그다음 시스템 서비스가 업무 DB · 메일함을 부르는 Docker 망(`hyd-business-db-<업무 DB 이름>`)이 없으면 만들고 업무 DB · 메일함 컨테이너를 붙인다. 그 망에 붙어 있지 않은 이 폴더의 서비스 컨테이너(앞 판이 만든 것, 또는 망이 지워졌다 다시 만들어진 경우 — 업무 DB를 쓰는 서비스 9개까지)는 지우고 4단계에서 다시 만든다. 창에 「업무 DB 의 망이 바뀌어 이 서비스는 다시 만듭니다: <서비스 이름>」으로 알리고, 실습 기록(이름 붙은 볼륨)은 그대로 남는다 |
 | 4. 시스템 기동 | `docker compose up -d --build --remove-orphans`(AI 워커 · 에이전트용 도구 서버 포함. 새 판에 없는 서비스의 옛 컨테이너는 지운다) 뒤 MQTT 브로커 셋을 다시 켜 지금 판의 설정을 읽게 한다 |
 | 5. 서비스 확인 | 모든 서비스가 떴는지(멈춘 것 · 계속 다시 시작하는 것은 실패), 포털 응답 |
 | 6. 수업 흐름 | 업무 흐름 A(냉각) · B(정기 정비) · C(예비품 구매) 배포(있으면 건너뜀) |
-| 7. 기본 지식 | 수업 문서 셋(HM-8 · PM-02 · PR-07)의 검토한 지식 넣기(있으면 건너뜀, AI 없음) |
+| 7. 기본 지식 | 수업 문서 셋(HM-8 · PM-02 · PR-07)의 검토한 지식 넣기(있거나 포털에서 비운 문서는 건너뜀, AI 없음) |
 | 8. AI 단계 확인 | 키 없음: 저장된 응답이 있는지 · 키 있음: 강의 중계에 닿고 수업 모델을 쓸 수 있는지 |
 
 초기 실행에는 이미지 다운로드와 빌드 시간이 필요하다. `Pulling`·`Downloading`은 다운로드, `Extracting`은 압축 해제, `CACHED`는 이전 빌드 결과 재사용을 뜻한다. 이미 준비된 이미지가 있으면 다음 실행은 빨라질 수 있다. 오류로 중단된 단계는 정상 대기로 간주하지 않는다.

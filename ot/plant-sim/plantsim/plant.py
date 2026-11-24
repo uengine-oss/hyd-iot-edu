@@ -2,9 +2,15 @@
 
 Wall-clock 1 s == TIME_SCALE simulated seconds (sub-stepped 1 s at a time so the
 thermal model stays stable).
+
+바깥 변화 기록(plant.status 의 outside): 승인한 길(명령 관문을 지난 HITL 명령 · 처리 엔진이 승인 뒤 내는 정비 복구) 밖에서 설비가 바뀔 때마다
+설비별 번호(seq)가 하나 오르고 마지막 변화(무엇 · 누가 · 언제)가 남는다 — 결함 주입 · 결함 되돌림 · 설비 초기화 · 현장 패널 · 운전 화면의 수동
+쓰기 · 운전 모드 변경. 가상 설비가 다시 켜지면 boot 가 바뀐다. 처리 엔진은 처리 건이 열린 뒤 이 기록이 바뀌었으면 그 뒤의 회복을 승인한 조치의
+효과로도 자연 회복으로도 치지 않는다(procsvc machine.outside_change).
 """
 from dataclasses import dataclass, field
 import math
+import secrets
 import threading
 
 from hydcommon.topics import ASSETS
@@ -39,6 +45,9 @@ SEVERITY = {"cooler_degradation": {"high": thermal.DEGRADED_HEALTH, "moderate": 
 # TIME_SCALE 20 (one sample = 20 sim-s) the raise then hung on sample phase and noise (A160: live miss after 151 s).
 # 900 s gives ~169 s of rise above the line (> hold + three samples). The detection rule (pattern:fan-vibration) is unchanged.
 DEFAULT_RAMP_S = {"cooler_degradation": 300.0, "pump_leakage": 300.0, "fan_vibration": 900.0, "restore": 300.0}
+# 바깥 변화 기록의 사람 말(plant.status outside.what — 처리 건의 사유 문장이 그대로 싣는다)
+FAULT_WORDS = {"cooler_degradation": "쿨러 열화", "pump_leakage": "펌프 누설", "fan_vibration": "팬 베어링 마모"}
+SOURCE_WORDS = {"LOCAL": "현장 패널", "FUXA": "운전 화면(FUXA)"}
 
 
 @dataclass
@@ -58,11 +67,18 @@ class Unit:
     # C3: who asked for the last fault injection/restore on this unit ({id, kind, by, user_id, roles, at}) — published in
     # plant.status so the process links the case this injection causes to the button press by id (no time-window guess)
     injection: dict | None = None
+    # 마지막 바깥 변화(이 모듈 머리말) {seq, kind, what, by, at} — kind: boot · fault · restore · reset · manual · mode
+    outside: dict = field(default_factory=dict)
 
     @property
     def fault(self) -> Fault | None:
         """The fault being injected right now (the first ramp still running), kept for the status/snapshot contract."""
         return next(iter(self.faults.values()), None)
+
+
+def _outside(u: Unit, kind: str, what: str, by: str | None = None) -> None:
+    """승인한 길 밖의 변화 하나를 그 설비의 바깥 변화 기록에 남긴다(번호 + 1)."""
+    u.outside = {"seq": int(u.outside.get("seq", -1)) + 1, "kind": kind, "what": what, "by": by, "at": now_iso()}
 
 
 class Plant:
@@ -71,6 +87,8 @@ class Plant:
         self.units: dict[str, Unit] = {a: Unit(asset=a) for a in assets}
         for i, u in enumerate(self.units.values()):
             u.state.rng.seed(i + 1)
+            _outside(u, "boot", "가상 설비가 켜짐 — 결함 · 지령이 처음 값")
+        self.boot = secrets.token_hex(4)          # 켜질 때마다 바뀐다 — 다시 켜진 설비의 번호(seq)는 0부터라 이것과 함께 견준다
         self.lock = threading.RLock()
         self.sim_t = 0.0
 
@@ -98,7 +116,7 @@ class Plant:
     # ---- fault injection API ----
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
                severity: str | None = None, component: str | None = None, origin: dict | None = None,
-               operating_point: bool = False, targets: list[str] | None = None) -> dict:
+               operating_point: bool = False, targets: list[str] | None = None, approved: dict | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
         strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S.
@@ -111,7 +129,11 @@ class Plant:
 
         `targets` (restore only) names what an approved maintenance action deals with, as knowledge-graph ids (COMPONENTS:
         comp:* · sv:*). Only those disturbances are restored: an empty list restores nothing, and ids this plant does not
-        model come back in `not_modeled` (not an error — the knowledge may know causes the simulator has no variable for)."""
+        model come back in `not_modeled` (not an error — the knowledge may know causes the simulator has no variable for).
+
+        `approved` (restore only) names the approved process step behind this restore {instance, step, approved_by} — the
+        process's simulated field maintenance after a person's approval. It is the approved path, so it does not count as an
+        outside change; every other injection or restore does (module docstring)."""
         if ramp_sim_s is None:
             if kind not in DEFAULT_RAMP_S:
                 raise ValueError(f"unknown fault kind {kind}")
@@ -124,6 +146,9 @@ class Plant:
             raise ValueError("targets goes with restore only, and not together with component")
         if targets is not None and (not isinstance(targets, list) or any(not isinstance(t, str) or not t for t in targets)):
             raise ValueError("targets must be a list of knowledge-graph ids (comp:* · sv:*)")
+        if approved is not None and (kind != "restore" or not isinstance(approved, dict)
+                                     or not all(str(approved.get(k) or "").strip() for k in ("instance", "step", "approved_by"))):
+            raise ValueError("approved goes with restore only and names the approved process step {instance, step, approved_by}")
         with self.lock:
             u = self.units[asset]
             if kind == "restore":
@@ -153,6 +178,14 @@ class Plant:
             # script) clears the previous press, so a later alert is never linked to a press that no longer describes the unit
             u.injection = dict(origin, kind=kind, at=now_iso()) if origin is not None else None
             setpoints = self._to_operating_point(u) if operating_point else None
+            if approved is None:
+                button = (origin or {}).get("button")
+                head = f"[{button}] — " if button else ""
+                if kind == "restore":
+                    what = head + "결함을 정상으로 되돌림" + (" · 팬 · 부하 지령을 평소 운전점으로" if operating_point else "")
+                else:
+                    what = head + f"{FAULT_WORDS[kind]} 주입"
+                _outside(u, "restore" if kind == "restore" else "fault", what, (origin or {}).get("by"))
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
                     "injection": u.injection,
                     "setpoints": setpoints,
@@ -165,8 +198,10 @@ class Plant:
         u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
         return {"before": before, "after": {"FanSpeedSP": u.state.fan_pct, "LoadSP": u.state.load_pct}}
 
-    def reset(self) -> None:
-        """Every unit back to the healthy operating point: no faults, REMOTE_AUTO, RUN, fan 60, load 90, pump A, TS1 48."""
+    def reset(self, button: str | None = None, by: str | None = None) -> None:
+        """Every unit back to the healthy operating point: no faults, REMOTE_AUTO, RUN, fan 60, load 90, pump A, TS1 48.
+        An outside change on every unit (button · by = the press behind it, when the caller names one)."""
+        what = (f"[{button}] — " if button else "") + "설비 3기를 정상 운전점으로 되돌림(결함 · 보호 정지 · 팬 · 부하 지령)"
         with self.lock:
             for u in self.units.values():
                 u.faults.clear()
@@ -175,17 +210,29 @@ class Plant:
                 u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
                 u.state.ts1 = thermal.NORMAL_TS1
                 u.ctrl = plc.PlcState()
+                _outside(u, "reset", what, by)
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
+        """A PLC write. HITL (the approved command the gateway passed) is the approved path; a manual write (LOCAL panel · FUXA)
+        that the PLC executed is an outside change."""
         with self.lock:
             u = self.units[asset]
-            return plc.apply_command(u.ctrl, u.state, cmd, source=source, now=now())
+            r = plc.apply_command(u.ctrl, u.state, cmd, source=source, now=now())
+            if r.result == "DONE" and source != "HITL":
+                writes = " · ".join(f"{res} {v:g}" for res, v in r.writes_applied.items())
+                _outside(u, "manual", f"{SOURCE_WORDS.get(source, source)} 수동 조작 — {writes}", source)
+            return r
 
     def set_mode(self, asset: str, mode: str, requester: str) -> bool:
         with self.lock:
             u = self.units[asset]
-            return plc.set_mode(u.ctrl, mode, requester)
+            before = u.ctrl.mode
+            ok = plc.set_mode(u.ctrl, mode, requester)
+            if ok and mode != before:
+                _outside(u, "mode", f"{SOURCE_WORDS.get(requester, requester)}에서 운전 모드 변경 — {plc.TEXT[before]} → {plc.TEXT[mode]}",
+                         requester)
+            return ok
 
     # ---- snapshots ----
     def tags(self, asset: str) -> dict[str, float]:
@@ -207,6 +254,7 @@ class Plant:
         st["time_scale"] = self.time_scale
         st['disturbance_ramps'] = sorted(u.faults)
         st['injection'] = u.injection
+        st['outside'] = dict(u.outside, boot=self.boot)
         return st
 
     def snapshot(self) -> dict:

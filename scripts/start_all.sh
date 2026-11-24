@@ -40,12 +40,12 @@ if [ "$(uname -s)" = Darwin ] && ! docker info >/dev/null 2>&1; then
   for i in $(seq 1 36); do docker info >/dev/null 2>&1 && break; sleep 5; done
 fi
 if ! docker info >/dev/null 2>&1 && [ -n "${DD_EXE:-}" ] && [ -f "$DD_EXE" ]; then   # Windows(Git Bash): 꺼져 있으면 켜고 엔진이 뜰 때까지 기다린다
-  echo "Docker Desktop을 켭니다. 엔진이 준비될 때까지 최대 3분 기다립니다."
+  echo "Docker Desktop을 켭니다. 엔진이 준비될 때까지 최대 3분 기다립니다. 처음 켜는 PC는 Docker Desktop 창에 약관 동의가 뜹니다 — 작업 표시줄의 Docker 아이콘을 눌러 창을 열고 동의해야 엔진이 켜집니다."
   HYD_DOCKER_DESKTOP_EXE="$(cygpath -w "$DD_EXE")" powershell.exe -NoProfile -Command 'Start-Process -WindowStyle Hidden -FilePath $env:HYD_DOCKER_DESKTOP_EXE' >/dev/null 2>&1
   for i in $(seq 1 36); do docker info >/dev/null 2>&1 && break; sleep 5; done
 fi
 command -v docker >/dev/null 2>&1 || die "docker 명령이 없습니다. $INSTALL_ENTRY 으로 Docker Desktop 설치를 확인하세요."
-docker info >/dev/null 2>&1 || die "Docker가 응답하지 않습니다. Docker Desktop을 열어 약관 동의 창이 있으면 동의하고, 'Engine running'이 된 뒤 다시 실행하세요."
+docker info >/dev/null 2>&1 || die "Docker가 응답하지 않습니다. Docker Desktop을 열어 약관 동의 창이 있으면 동의하고, 'Engine running'이 된 뒤 다시 실행하세요. Windows에서 Docker Desktop이 켜지지 않으면 $INSTALL_ENTRY 을 다시 실행해 결과 표의 WSL · 가상화(BIOS) 줄을 확인하고, 설치 뒤 PC를 다시 켜지 않았다면 다시 켭니다."
 docker compose version >/dev/null 2>&1 || die "docker compose가 없습니다. Docker Desktop을 최신으로 설치하세요."
 # 이 시스템의 이미지는 모두 Linux 컨테이너다. Windows 컨테이너 모드에서는 이미지 받기가 뜻 모를 오류(no matching manifest)로 멈춘다
 [ "$(docker info --format '{{.OSType}}' 2>/dev/null)" = linux ] || die "Docker Desktop이 Windows 컨테이너 모드입니다. 작업 표시줄의 Docker 아이콘을 오른쪽 클릭해 'Switch to Linux containers...'를 누르고, 바뀐 뒤 다시 실행하세요."
@@ -66,6 +66,8 @@ esac
 "${PYTHON[@]}" scripts/prepare_ports.py || die "이 PC의 프로젝트 이름 · 포트를 준비하지 못했습니다. 바로 위의 까닭대로 고친 뒤 다시 실행하세요."
 # 기본 포트 → 이 PC의 바깥 포트(.hyd-runtime/ports.json — 방금 정한 표. 6 · 7 · 8단계 스크립트도 이 표에서 process 주소를 찾는다)
 PORTAL="http://127.0.0.1:$("${PYTHON[@]}" scripts/prepare_ports.py port 8088)"
+# 이 뒤의 compose 는 .env 의 AI_MODE · 포트 · 업무 DB 이름을 쓴다. 이 창에 다른 값(빈 값 포함)이 남아 있으면 그것이 이기므로 비운다
+unset COMPOSE_PROFILES AI_MODE HYD_SUPABASE_PROJECT
 
 say "3/8 업무 DB(Supabase) 켜기 · 업데이트"
 command -v npx >/dev/null 2>&1 || die "npx(Node.js)가 없습니다. $INSTALL_ENTRY 을 실행하세요."
@@ -73,22 +75,28 @@ SUPA=(npx -y "supabase@$SUPABASE_CLI")   # it/supabase/.env(2단계가 씀)의 �
 ( cd it/supabase && "${SUPA[@]}" start >/dev/null ) || die "업무 DB(Supabase)가 켜지지 않았습니다. 위 오류에 포트가 겹친다는 내용(port is already allocated)이 있으면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 이미지를 받다가 멈췄으면(timeout · connection · TLS) 인터넷 연결을 확인하고 다시 실행하세요 — 받은 데까지는 이어서 받습니다. 그래도 같으면 위 오류를 강사에게 알려 주세요."
 # supabase start는 이미 만든 DB에 새 판의 마이그레이션을 적용하지 않는다. 새 판의 업무 시스템이 그 표를 기다리다 멈추지 않게 여기서 적용한다
 ( cd it/supabase && "${SUPA[@]}" migration up --local ) || die "업무 DB 업데이트(마이그레이션)가 실패했습니다. 도움을 요청할 때 위 오류의 파일 이름을 그대로 전해 주세요."
+# 업무 DB 를 부르는 서비스는 이 시스템의 망(compose.yaml business-db)에서 업무 DB · 메일함을 db.supabase.internal · inbucket 으로 부른다. 그 망을 만들고
+# 업무 DB 가 켤 때마다 새로 만드는 두 컨테이너를 붙이며, 지워진 옛 망을 기억해 켜지지 못할 서비스 컨테이너는 다시 만들게 지운다(이름 붙은 볼륨 — 실습 기록 —
+# 은 그대로. 까닭은 compose.yaml 의 business-db 머리말)
+stale=$("${PYTHON[@]}" scripts/prepare_ports.py db-net) || die "업무 DB 의 망을 준비하지 못했습니다. 바로 위의 까닭대로 고친 뒤 다시 실행하세요."
+if [ -n "$stale" ]; then
+  echo "업무 DB 의 망이 바뀌어 이 서비스는 다시 만듭니다: $stale"
+  docker compose rm -f -s -v $stale >/dev/null || die "다시 만들 서비스($stale)를 지우지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요."
+fi
 
 say "4/8 시스템 · AI 워커 빌드 · 기동 (처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있습니다)"
-# .env 의 AI_MODE · 포트를 쓴다. 이 창에 다른 값이 남아 있으면 그것이 이기므로 비운다
-unset COMPOSE_PROFILES AI_MODE
 # --remove-orphans: 새 판이 compose 에서 뺀 서비스의 옛 컨테이너(예: 2026-11-17 에 mosquitto ot-broker 로 바꾼 emqx)를 지운다. 남겨 두면 그 컨테이너가
 # 계속 돌며 메모리와 바깥 포트를 쥐어, 같은 포트를 여는 새 서비스가 「port is already allocated」로 뜨지 못한다(끄기도 compose 에 없는 그 컨테이너를
 # 멈추지 않는다). 지우는 것은 이 폴더 프로젝트의 compose 가 만든 컨테이너뿐이다 — 선택 도구(프로필) 서비스 · 이름 붙은 볼륨(실습 기록)은 그대로다
 if ! docker compose up -d --build --remove-orphans; then
   # 지식 지도 준비(kg-seed)가 내용 검사에서 멈췄으면 그 까닭과 되돌리는 길을 말한다 — AI 판단 서비스(agent · dmn-mcp)는 이 준비가 끝나야 켜진다.
-  # 검사는 기본 제공 지식과 적재한 문서 지식이 서로 이어져 있는지를 본다: 지식 지도를 Neo4j Browser 등으로 직접 고치면(관계 · 항목 지우기) 걸린다
+  # 검사는 기본 제공 지식(시드)과 판단 결정표 규칙의 꼴만 본다(it/neo4j/v2/seed_checks.cypher 머리말) — 포털로 넣은 문서 · 표 정의 · 조치 방법은 걸리지 않고, 지식 지도를 Neo4j Browser 등으로 직접 고치면 걸린다
   seed_log=$(docker compose logs --no-log-prefix --tail 60 kg-seed 2>/dev/null || true)
   if printf '%s\n' "$seed_log" | grep -q 'kg-seed FAILED read-back'; then
     printf '\n지식 지도 내용 검사가 짚은 곳:\n' >&2
     printf '%s\n' "$seed_log" | grep -E '^CHECK (FAILED|ERROR)' | sed 's/^/  /' >&2 || true
     kg_volume=$(docker volume ls -q --filter label=com.docker.compose.volume=neo4j-data --filter "label=com.docker.compose.project=$(docker compose config --format json 2>/dev/null | "${PYTHON[@]}" -c 'import json,sys; print(json.load(sys.stdin)["name"])' 2>/dev/null)" | head -1 || true)
-    die "지식 지도의 내용 검사가 실패해 AI 판단 서비스(agent · dmn-mcp)를 켜지 않았습니다. 위 줄이 짚은 항목은 서로 이어져 있어야 하는 지식(고장 유형 · 원인 · 조치 방법 등)인데 이어진 선이나 항목이 빠져 있습니다 — 지식 지도를 Neo4j Browser 등에서 직접 고쳤다면 그 변경이 까닭입니다. 되돌리는 길 (1) 지운 것을 Neo4j Browser에서 다시 만든 뒤 $START_ENTRY 을 다시 실행합니다. (2) 다시 만들 수 없으면 지식 지도를 비우고 처음부터 채웁니다: $STOP_ENTRY 실행 → 터미널에서 'docker compose down' 과 'docker volume rm ${kg_volume:-<프로젝트 이름>_neo4j-data}' → $START_ENTRY 실행. 기본 제공 지식은 다시 들어가고, 직접 적재한 문서 · 표 정의 · 화면에서 만든 조치 방법은 다시 넣어야 합니다(업무 DB의 처리 건 기록은 그대로입니다)."
+    die "지식 지도의 내용 검사가 실패해 AI 판단 서비스(agent · dmn-mcp)를 켜지 않았습니다. 위 줄이 짚은 것은 기본 제공 지식(설비 · 경보 패턴 · 지표 · 판단 결정표)이나 판단 규칙의 꼴인데, 그 항목이나 이어진 선이 빠졌거나 바뀌었습니다 — 포털에서 넣은 문서 · 표 정의 · 조치 방법으로는 생기지 않으므로, 지식 지도를 Neo4j Browser 등에서 직접 고친 것이 까닭입니다. 되돌리는 길 (1) 지우거나 고친 것을 Neo4j Browser에서 다시 만든 뒤 $START_ENTRY 을 다시 실행합니다. (2) 다시 만들 수 없으면 지식 지도를 비우고 처음부터 채웁니다: $STOP_ENTRY 실행 → 터미널에서 'docker compose down' 과 'docker volume rm ${kg_volume:-<프로젝트 이름>_neo4j-data}' → $START_ENTRY 실행. 기본 제공 지식은 다시 들어가고, 직접 적재한 문서 · 표 정의 · 화면에서 만든 조치 방법은 다시 넣어야 합니다(업무 DB의 처리 건 기록은 그대로입니다)."
   fi
   die "시스템을 켜지 못했습니다. 위 오류가 무엇인지에 따라: 이미지 받기 · 빌드 중 네트워크 오류(pull · pip · timeout · TLS)면 인터넷 연결을 확인하고 다시 실행하세요(받은 데까지는 이어집니다). 'port is already allocated'면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 어떤 서비스가 unhealthy · exited 로 나오면 'docker compose logs <그 서비스 이름>'의 마지막 줄이 까닭입니다."
 fi
@@ -107,7 +115,7 @@ say "6/8 기본 제공 흐름(A 냉각 · B 정기 정비 · C 예비품 구매)
 "${PYTHON[@]}" scripts/c3_flows.py ensure || die "기본 제공 흐름을 배포하지 못했습니다. 도움을 요청할 때 위 메시지를 그대로 전해 주세요."
 
 say "7/8 기본 지식(쿨러 · 정기 정비 · 구매 매뉴얼) 넣기"
-# 검토를 마친 HM-8 · PM-02 · PR-07 지식을 처음 한 번 넣는다(AI를 부르지 않음, 이미 있으면 건너뜀). 4회차 인제스천은 같은 문서를 다시 올리는 과정 실습이다
+# 검토를 마친 HM-8 · PM-02 · PR-07 지식을 처음 한 번 넣는다(AI를 부르지 않음, 이미 있거나 포털에서 비운 문서는 건너뜀). 4회차 인제스천은 같은 문서를 다시 올리는 과정 실습이다
 "${PYTHON[@]}" scripts/class_knowledge.py ensure || die "기본 지식을 넣지 못했습니다. 도움을 요청할 때 위 메시지를 그대로 전해 주세요."
 
 say "8/8 AI 단계 확인"

@@ -1,4 +1,10 @@
-"""Per-source validity. Time is wall/event seconds, not accelerated process time."""
+"""Per-source validity. Time is wall/event seconds, not accelerated process time.
+
+Evaluation reads each input as of the evaluation time (`at_time`): the last sample, or — when that one is later than the
+evaluation time — the valid sample it replaced. Tags and PLC status arrive on two topics with no order between them, so a
+detector that fell a second behind can process the status of tick t+1 before the TS1 of tick t; that newer status is not a
+"future" value to refuse, the state at t is simply the one before it (전수검사 06-4: every such tick interrupted the hold).
+"""
 import math
 
 from hydcommon.daq_contract import reporting_interval
@@ -11,6 +17,7 @@ class Observations:
             raise ValueError('Observation grace must be finite and nonnegative')
         self.profile, self.grace_s = profile, grace_s
         self.samples = {}
+        self.replaced = {}      # name -> the valid sample that samples[name] replaced (one step back, for at_time)
 
     def limit(self, name):
         return reporting_interval(name, self.profile) + self.grace_s
@@ -18,6 +25,7 @@ class Observations:
     def invalidate(self, name, reason):
         old = self.samples.get(name, {'time': None, 'value': None})
         self.samples[name] = dict(old, valid=False, reason=reason)
+        self.replaced.pop(name, None)
 
     def record(self, name, at, value, quality='good'):
         old = self.samples.get(name)
@@ -32,14 +40,28 @@ class Observations:
         valid = (quality == 'good' and (value in ('RUN', 'STOP', 'TRIP') if name == 'PLC_STATE'
                  else type(value) in (float, int) and math.isfinite(value)))
         gap = bool(old and old['time'] is not None and at - old['time'] > self.limit(name))
+        if valid and old and old.get('valid') and not gap:
+            self.replaced[name] = old
+        else:
+            self.replaced.pop(name, None)
         self.samples[name] = dict(time=at, value=value if valid else None, valid=valid, quality=str(quality),
                                   reason=None if valid else 'INVALID_VALUE_OR_QUALITY')
         return 'valid' if valid else 'invalid', gap
 
+    def at_time(self, name, at):
+        """The sample that was current at event time `at` (module docstring): the last one, or the valid one it replaced when
+        the last one is later than `at`. None when the tag was never seen."""
+        sample = self.samples.get(name)
+        if sample and sample['time'] is not None and at < sample['time']:
+            before = self.replaced.get(name)
+            if before and before['time'] <= at:
+                return before
+        return sample
+
     def problems(self, names, at, now):
         out = {}
         for name in names:
-            sample = self.samples.get(name)
+            sample = self.at_time(name, at)
             if not sample or sample['time'] is None:
                 out[name] = 'MISSING'
             elif not sample['valid']:

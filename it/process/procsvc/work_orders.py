@@ -59,7 +59,7 @@ def prepare(ctx, decision, item):
             if inc.work_order_request != request:
                 raise ValueError('다시 보내는 정비 요청이 처음 저장한 요청과 다릅니다 — 같은 요청만 다시 보냅니다')
         else:
-            if inc.state != 'RESOLVED' and not (not commands and inc.state == 'AWAITING_APPROVAL'):
+            if inc.state != 'RESOLVED' and not (not commands and inc.state == 'APPROVED_EXECUTING'):
                 raise ValueError(f'정비 요청은 설비 회복이 확인됐거나 정비 요청만 고른 승인 뒤에 냅니다 — 지금 사건: {_state_name(inc.state)}')
             inc.work_order_request = request
             try:
@@ -68,9 +68,9 @@ def prepare(ctx, decision, item):
                 inc.work_order_request = None
                 raise
     # Closed is an idempotent response replay; escalation requires human review.
-    if inc.state not in ('RESOLVED', 'AWAITING_APPROVAL', 'CLOSED'):
+    if inc.state not in ('RESOLVED', 'APPROVED_EXECUTING', 'CLOSED'):
         raise ValueError(f'사건이 {_state_name(inc.state)} 상태로 바뀌어 정비 요청을 내지 않았습니다 — 처리 건 화면에서 사건 상태를 확인하세요')
-    if commands and inc.state == 'AWAITING_APPROVAL':
+    if commands and inc.state == 'APPROVED_EXECUTING':
         raise ValueError('설비 명령 뒤 회복이 확인되기 전에는 정비 요청을 내지 않습니다 — 효과 확인이 끝난 뒤 다시 하세요')
     return inc
 

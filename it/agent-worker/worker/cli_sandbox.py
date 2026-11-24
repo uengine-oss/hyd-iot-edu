@@ -14,6 +14,8 @@ import tempfile
 import shutil
 
 
+#: 승인 스킬을 주는 세션 플러그인의 이름. CLI 는 그 스킬을 `<이 이름>:<스킬>`로 부를 수 있다(events.skill_files 가 이 머리를 뗀다).
+SKILL_PLUGIN = 'hyd-course-skills'
 UID = 65534
 READ = 'read-file,read-dir,execute'
 WRITE = READ + ',write-file,remove-dir,remove-file,make-dir,make-reg,make-sock,make-fifo,truncate'
@@ -66,7 +68,7 @@ def cli_args(workdir, skills):
         plugin = Path(tempfile.mkdtemp(prefix='.approved-skills-', dir=root))
         manifest = plugin / '.claude-plugin'
         manifest.mkdir()
-        (manifest / 'plugin.json').write_text(json.dumps({'name':'hyd-course-skills','version':'1.0.0'}), encoding='utf8')
+        (manifest / 'plugin.json').write_text(json.dumps({'name': SKILL_PLUGIN, 'version': '1.0.0'}), encoding='utf8')
         for skill in skills:
             target = plugin / 'skills' / skill['skill_name']
             target.mkdir(parents=True)
@@ -103,7 +105,7 @@ def verify():
     if done.returncode != 0:
         detail = (done.stderr or done.stdout).decode('utf-8', 'replace').strip()[:300]
         raise RuntimeError('이 PC 의 커널이 AI 실행 격리(Landlock 파일 규칙)를 걸지 못해 AI 워커를 켜지 않습니다 — Docker Desktop 을 '
-                           f'최신으로 올리거나 WSL2 커널을 확인하세요(setpriv 종료 {done.returncode}: {detail})')
+                           f'최신으로 올리고, Windows 는 PowerShell 에서 wsl --update 로 WSL 2 커널을 올린 뒤 시작 파일을 다시 실행하세요(setpriv 종료 {done.returncode}: {detail})')
     # 규칙이 실제로 무는지: /usr 만 허락하고 /etc 의 보통 파일을 읽으면 거절돼야 한다(/etc/os-release 는 /usr 로 가는 링크라 쓰지 않는다)
     if under_rule('/usr/bin/cat', '/etc/passwd').returncode == 0:
         raise RuntimeError('AI 실행 격리(Landlock)를 걸었는데 허락하지 않은 파일이 읽혔습니다 — 이 커널에서는 격리가 실제로 걸리지 않아 '

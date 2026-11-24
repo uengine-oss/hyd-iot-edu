@@ -9,7 +9,6 @@ SKILL_NAMES = {
     "skill:schedule-maintenance-scoped": "정비 묶음 · 설비 범위별 정비 요청 등록",
     "skill:reschedule-maintenance": "기존 정비 요청 일정 변경",
     "skill:complete-maintenance": "정비 완료 · 부품 소모",
-    "skill:pm-reset": "운전시간 계수기 리셋 · 다음 기한 기록",
     "skill:procure-part": "부품 구매요청",
     "skill:receive-goods": "입고 · 검수",
     "skill:delay-delivery": "공급사 납기 지연 통보",

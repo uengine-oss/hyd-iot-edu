@@ -1,4 +1,8 @@
-"""Project only durably saved case sources; no command or approval replay."""
+"""Project only durably saved case sources; no command or approval replay.
+
+An Incident keeps the cause it was diagnosed as (diagnosedCause) and a DecisionCase the skill a person chose (chosenSkill) as
+their own properties as well as edges: knowledge can be rolled back and loaded again (manual_graph.detach_history ·
+reattach_history), and the record has to name its target while the node is absent."""
 import json
 import logging
 from dataclasses import asdict
@@ -18,7 +22,7 @@ MERGE (i:Incident {id:$id})
 SET i.alertId=$alert, i.openedAt=datetime($created), i.sourcePattern=$pattern,
     i.sourceTrip=$trip, i.sourceAlert=$source_alert, i.status=$status, i.reason=$reason,
     i.closedAt=CASE WHEN $closed IS NULL THEN null ELSE datetime($closed) END,
-    i.cleared=$cleared, i.command_id=$command, i.work_order_ref=$work_order,
+    i.cleared=$cleared, i.command_id=$command, i.work_order_ref=$work_order, i.diagnosedCause=$cause,
     i.projection_revision=$revision, i.projection_warnings=[]
 WITH i
 CALL (i) { OPTIONAL MATCH (i)-[old:ON_ASSET|RAISED_BY|DIAGNOSED_AS]->() DELETE old RETURN count(*) AS removed }
@@ -37,12 +41,12 @@ RETURN i.id AS id, i.projection_warnings AS warnings,$key AS projection_key,$rev
 DECISION_CASE_Q=FENCE+'''
 MERGE (x:DecisionCase {id:$id})
 SET x.decidedAt=datetime($at),x.reason=$reason,x.followedRecommendation=$followed,
-    x.status=$status,x.source_incident_id=$incident,x.projection_revision=$revision,x.projection_warnings=[]
+    x.status=$status,x.source_incident_id=$incident,x.chosenSkill=$skill,x.projection_revision=$revision,x.projection_warnings=[]
 WITH x
 CALL (x) { OPTIONAL MATCH (x)-[old:INSTANCE_OF|CHOSE|DECIDED_BY|FOR_INCIDENT]->() DELETE old RETURN count(*) AS removed }
-OPTIONAL MATCH (d:Decision {id:'dec:rank-actions'})
+OPTIONAL MATCH (d:Decision {id:$model})
 FOREACH (_ IN CASE WHEN d IS NULL THEN [] ELSE [1] END | MERGE (x)-[:INSTANCE_OF]->(d))
-FOREACH (_ IN CASE WHEN d IS NULL THEN [1] ELSE [] END | SET x.projection_warnings=x.projection_warnings+['decision model missing: dec:rank-actions'])
+FOREACH (_ IN CASE WHEN d IS NULL THEN [1] ELSE [] END | SET x.projection_warnings=x.projection_warnings+['decision model missing: '+coalesce($model,'null')])
 WITH x OPTIONAL MATCH (s:Skill {id:$skill})
 FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END | MERGE (x)-[:CHOSE]->(s))
 FOREACH (_ IN CASE WHEN s IS NULL THEN [1] ELSE [] END | SET x.projection_warnings=x.projection_warnings+['skill missing: '+coalesce($skill,'null')])
@@ -88,6 +92,9 @@ class CaseProjector:
                 at=next((h['t'] for h in reversed(body.get('history') or []) if h.get('state')=='APPROVED'),body['created'])
                 rows=self.query(DECISION_CASE_Q,**common,id='case:'+sid,at=at,reason=body.get('reason') or '',
                     followed=not body.get('override'),skill=body['chosen'],role=body.get('approvedRole'),
+                    # 판단 사례는 그 판단 원문이 적은 판단 모델(scenario.id — 판단 엔진 decide 가 적는다)에 잇는다. 전에는 여기에 판단 모델 id 를
+                    # 따로 박아 두었다(전수검사 12-10 — 같은 사실의 사본). 원문에 모델이 없으면 잇지 않고 projection_warnings 에 남는다
+                    model=(body.get('scenario') or {}).get('id'),
                     incident=(body.get('origin') or {}).get('incident'),status=body['state'])
                 if any(r.get('dependency_pending') for r in rows):
                     raise RuntimeError('incident source not projected; graph relationship repair pending')

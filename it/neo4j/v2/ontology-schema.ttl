@@ -9,7 +9,7 @@
 
 <https://uengine-oss.github.io/hyd-iot-edu/ontology> a owl:Ontology ;
   rdfs:label "hyd-iot-edu ontology"@ko ;
-  owl:versionInfo "2.7.0" ;
+  owl:versionInfo "2.8.0" ;
   rdfs:comment "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다."@ko .
 
 hyd:layer a owl:AnnotationProperty ; rdfs:label "계층"@ko .
@@ -132,7 +132,7 @@ hyd:Cause a owl:Class ;
   hyd:standard "ISO 14224 Failure cause"@ko .
 hyd:Evidence a owl:Class ;
   rdfs:label "Evidence" ;
-  rdfs:comment "원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다."@ko ;
+  rdfs:comment "원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다. 이 시스템이 수집하지 않는 값(문서가 넣은 다른 설비의 센서 태그)을 읽는 증거는 sql 없이 note에 판단 엔진이 평가하지 않는다는 사실을 적는다 — 그 값은 그 설비를 맡은 에이전트가 그 설비 시스템의 도구 서버로 읽는다."@ko ;
   hyd:layer "설비 진단 지식 (리소스 계층의 설비 코어)"@ko ;
   hyd:standard "MIMOSA 확증 규칙"@ko .
 hyd:Step a owl:Class ;
@@ -1025,9 +1025,9 @@ hyd:normal a owl:DatatypeProperty ;
   rdfs:comment "정상 운전점"@ko .
 hyd:note a owl:DatatypeProperty ;
   rdfs:label "note" ;
-  rdfs:domain hyd:Symptom ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Symptom hyd:Evidence ) ] ;
   rdfs:range xsd:string ;
-  rdfs:comment "관측 방법 설명(실시간 센서가 없을 때 사람 입력 등)"@ko .
+  rdfs:comment "Symptom: 관측 방법 설명(실시간 센서가 없을 때 사람 입력 등) / Evidence: sql이 없는 증거(수집하지 않는 값을 읽는다)를 판단 엔진이 평가하지 않는다는 문장"@ko .
 hyd:oem a owl:DatatypeProperty ;
   rdfs:label "oem" ;
   rdfs:domain hyd:Supplier ;
@@ -1276,7 +1276,7 @@ hyd:sql a owl:DatatypeProperty ;
   rdfs:label "sql" ;
   rdfs:domain hyd:Evidence ;
   rdfs:range xsd:string ;
-  rdfs:comment "시계열 DB 검증 질의. %(asset)s 매개변수 하나, 숫자 열 하나(value)를 돌려준다"@ko .
+  rdfs:comment "시계열 DB 검증 질의. %(asset)s 매개변수 하나, 숫자 열 하나(value)를 돌려준다. tag가 수집 계약(hydcommon.daq_contract)의 태그일 때만 있다"@ko .
 hyd:sqlType a owl:DatatypeProperty ;
   rdfs:label "sqlType" ;
   rdfs:domain hyd:InputData ;
@@ -1290,7 +1290,7 @@ hyd:status a owl:DatatypeProperty ;
   rdfs:label "status" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Incident hyd:DecisionCase hyd:IngestionBatch hyd:ProcessInstance hyd:WorkItem hyd:ManualIngestionBatch ) ] ;
   rdfs:range rdfs:Literal ;
-  rdfs:comment "Incident: 사건 상태기계의 현재 상태 (procsvc/machine.py) 허용값: AWAITING_APPROVAL, CMD_ISSUED, AWAITING_ACK, ACKED, RE_OBSERVING, RESOLVED, WORK_ORDER_CREATED, CLOSED, ESCALATED, REJECTED_BY_OPERATOR, RESOLVED_WITHOUT_ACTION / DecisionCase: 판단의 상태 (procsvc/decisions.py) 허용값: PENDING_APPROVAL, APPROVED, REJECTED, CLOSED_UNAPPROVED, EXECUTED, PARTIAL / IngestionBatch: 허용값: ACTIVE, CLEARED / ProcessInstance: 허용값: NEW, RUNNING, COMPLETED, CANCELLED / WorkItem: 허용값: NEW, TODO, IN_PROGRESS, SUBMITTED, PENDING, DONE, CANCELLED"@ko .
+  rdfs:comment "Incident: 사건 상태기계의 현재 상태 (procsvc/machine.py) 허용값: AWAITING_APPROVAL, APPROVED_EXECUTING, CMD_ISSUED, AWAITING_ACK, ACKED, RE_OBSERVING, RESOLVED, WORK_ORDER_CREATED, CLOSED, ESCALATED, REJECTED_BY_OPERATOR, RESOLVED_WITHOUT_ACTION / DecisionCase: 판단의 상태 (procsvc/decisions.py) 허용값: PENDING_APPROVAL, APPROVED, REJECTED, CLOSED_UNAPPROVED, EXECUTED, PARTIAL / IngestionBatch: 허용값: ACTIVE, CLEARED / ProcessInstance: 허용값: NEW, RUNNING, COMPLETED, CANCELLED / WorkItem: 허용값: NEW, TODO, IN_PROGRESS, SUBMITTED, PENDING, DONE, CANCELLED"@ko .
 hyd:supersedes_id a owl:DatatypeProperty ;
   rdfs:label "supersedes_id" ;
   rdfs:domain hyd:WorkItem ;

@@ -7,7 +7,8 @@
 판정 대상은 손으로 적은 목록이 아니라 compose 가 아는 서비스 전부다(`docker compose config --services`). 계속 도는 서비스는
 running + healthy(건강 확인이 없는 선택 도구는 running), 한 번 도는 준비 작업(재시작 정책 no)은 종료 코드 0 이어야 하고, 확인하는 동안
 다시 시작한 서비스가 있으면 「재시작 반복」으로 실패다.
-쿨러 사건 한 바퀴는 포털 버튼이 부르는 것과 같은 API 로: 설비 초기화 → (키 있는 PC: AI가 판단에 쓰는 기간만큼 설비 기록이 쌓이기를 기다림)
+쿨러 사건 한 바퀴는 쿨러 경보의 원인 지식이 있고 그 경보를 기본 제공 흐름이 맡을 때만 돈다(학생이 비운 지식 · 학생이 배포한 자기 흐름이면
+해당 없음 — cooler_knowledge · cooler_route). 포털 버튼이 부르는 것과 같은 API 로: 설비 초기화 → (키 있는 PC: AI가 판단에 쓰는 기간만큼 설비 기록이 쌓이기를 기다림)
 → 쿨러 열화 → 경보 → 처리 건(수업 흐름 c3_cooling) → AI 판단 · 제안 → 추천 카드를 그 승인 역할의 사람으로 승인 → 냉각 명령 → 재관측 →
 작업지시 → 결과 보고(정상). AI 판단 단계가 멈추면(보류 · 실패) 서버가 판정한 멈춤과 그 까닭(포털 처리 건 맨 위 알림과 같은 것)을 그대로
 말한다. 끝에 쿨러를 되돌리고, 점검이 연 처리 건이 열린 채 남으면 거절 · 닫기로 정리한다(데이터는 지우지 않는다).
@@ -66,8 +67,16 @@ def http(method: str, url: str, body=None, timeout: float = 15):
         raise ApiError(exc.code, str(text)[:300], reason_code, body) from None
 
 
+def docker_exe() -> str:
+    """docker 명령의 경로 — 셸과 같은 PATH 차례(prepare_ports.docker_exe)."""
+    try:
+        return prepare_ports.docker_exe()
+    except prepare_ports.PrepareError as exc:
+        raise CheckError(str(exc)) from None
+
+
 def docker(*args, stdin: bytes | None = None) -> str:
-    out = subprocess.run(['docker', *args], input=stdin, capture_output=True, cwd=ROOT)
+    out = subprocess.run([docker_exe(), *args], input=stdin, capture_output=True, cwd=ROOT)
     if out.returncode != 0:
         raise CheckError(f'docker {" ".join(args[:3])} 실패: {out.stderr.decode("utf-8", "replace").strip()[:300]}')
     return out.stdout.decode('utf-8', 'replace')
@@ -172,7 +181,7 @@ def check_services(root: Path, wait: float, **kw) -> tuple[str, str]:
 # ---------------------------------------------------------------- AI 단계
 def relay(call: bool = False) -> dict:
     """process 컨테이너 안에서 scripts/relay_probe.py 를 돌린다 — process 가 받은 중계 주소 · 키 그대로."""
-    command = ['docker', 'compose', 'exec', '-T', 'process', 'python', '-', *(['--call'] if call else [])]
+    command = [docker_exe(), 'compose', 'exec', '-T', 'process', 'python', '-', *(['--call'] if call else [])]
     out = subprocess.run(command, input=(ROOT / 'scripts' / 'relay_probe.py').read_bytes(), capture_output=True, cwd=ROOT)
     lines = out.stdout.decode('utf-8', 'replace').strip().splitlines()
     try:
@@ -238,7 +247,10 @@ def agent_outcome(view: dict, ai_mode: str):
     said = f'「{reason[:300]}{"…" if len(reason) > 300 else ""}」' if reason else '없음(AI가 까닭을 남기지 않았습니다)'
     if step.get('kind') == 'deferred':
         raise CheckError(f'AI가 판단을 보류했습니다. AI가 남긴 까닭: {said} — 까닭에 적힌 것을 확인하거나 고친 뒤 다시 점검하세요.')
-    hint = ('README 「새 판 받기」대로 준비된 AI 응답이 든 새 판을 받았는지 확인하세요' if ai_mode == 'replay'
+    # 까닭이 기록돼 있으면 그 까닭이 할 일을 말한다(지식 없음 · 값 못 받음 · 준비된 판단과 지금 계산이 다름 …) — 점검이 짐작한 안내를 덧붙이지
+    # 않는다(2026-11-22: 지식을 비운 PC에서 「새 판을 받았는지 확인하라」가 붙었다). 실행 방식의 길은 까닭이 기록되지 않았을 때만 준다
+    hint = ('까닭에 적힌 대로 고친 뒤 다시 점검하세요' if reason
+            else 'README 「새 판 받기」대로 준비된 AI 응답이 든 새 판을 받았는지 확인하세요' if ai_mode == 'replay'
             else '.env 의 LLM_API_KEY 와 인터넷 연결을 확인하세요(점검 끝의 「강의 중계」 줄에 까닭이 나옵니다)')
     raise CheckError(f'AI 판단 단계가 멈췄습니다({step.get("label") or step.get("kind")}). 기록된 까닭: {said} — {hint}.')
 
@@ -356,6 +368,48 @@ def cooler_phase(state: dict) -> str:
     return state['patterns'][PATTERN]['phase']
 
 
+def cooler_knowledge(agent: str) -> tuple[str, str] | None:
+    """한 바퀴는 쿨러 경보의 원인 지식(문서에서 적재한 지식)이 있어야 AI 판단까지 간다. 결함을 넣어 처리 건을 열기 전에 서버의 판정(판단이 쓰는
+    것과 같은 질의 — agent /api/ontology/patterns 의 judgeable · reason)을 읽는다 → 돌릴 수 있으면 None, 아니면 (결과, 까닭).
+    학생이 쿨러 문서를 비웠으면 시스템 결함이 아니라 지금 지식의 상태라 「해당 없음」이고, 바탕 지식(kg-seed)의 감시 패턴이 없으면 실패다."""
+    try:
+        meta = next((p for p in http('GET', f'{agent}/api/ontology/patterns') if p.get('code') == PATTERN), None)
+    except (CheckError, urllib.error.URLError, OSError) as exc:
+        return FAIL, f'AI 판단 서비스에서 이상 패턴 목록을 읽지 못했습니다 — {exc}'
+    if meta is None:
+        return FAIL, f'지식 지도에 이상 패턴 {PATTERN}이 없습니다 — 시작 파일을 다시 실행해 바탕 지식을 넣으세요'
+    if not meta.get('judgeable'):
+        return NA, f"한 바퀴를 돌리지 않았습니다 — {meta.get('reason')}"
+    return None
+
+
+COURSE_FLOW = 'c3_cooling'                          # 점검 한 바퀴가 아는 흐름: 기본 제공 흐름 「냉각 긴급 대응」(단계 이름 T_approve · T_cmd … — flow_result)
+
+
+def cooler_route(process: str) -> tuple[str, str] | None:
+    """쿨러 경보를 지금 어느 흐름이 여는가(경보 경로표 — process GET /api/flows/deployments, 포털 「흐름 배포」 표와 같은 것)를 결함을 넣기 전에
+    읽는다 → 기본 제공 흐름이면 None(돌린다), 아니면 (결과, 까닭). 학생이 배포한 자기 흐름이 쿨러 경보를 맡았으면 그 흐름의 단계 · 승인은 학생의
+    것이라 점검이 대신 승인하지 않는다 — 시스템 결함이 아니라 「해당 없음」이다(전에는 처리 건을 연 뒤 「시작 파일을 다시 실행하면 수업 흐름을
+    배포합니다」로 실패했는데, 시작은 같은 내용의 기본 제공 흐름을 다시 배포하지 않아 점검이 계속 실패했다). 기준 흐름이 맡았으면 기본 제공 흐름이
+    배포되지 않은 것이라 시작 6단계가 다시 배포한다."""
+    try:
+        table = http('GET', f'{process}/api/flows/deployments')
+    except (CheckError, urllib.error.URLError, OSError) as exc:
+        return FAIL, f'처리 엔진에서 경보 경로표를 읽지 못했습니다 — {exc}'
+    row = next((r for r in table.get('routes') or [] if r.get('pattern') == PATTERN), None)
+    if row is None:
+        return FAIL, f'경보 경로표에 쿨러 경보({PATTERN})를 여는 흐름이 없습니다 — 시작 파일을 다시 실행하세요'
+    name = f"{row.get('source')} 「{row.get('name') or row.get('definition')}」"
+    if row.get('definition') == COURSE_FLOW and row.get('class_flow'):
+        return None
+    if not row.get('class_flow') and row.get('source') == '내가 배포한 흐름':
+        return NA, (f'한 바퀴를 돌리지 않았습니다 — 쿨러 경보를 여는 흐름이 지금 {name}입니다. 그 흐름의 단계와 승인은 점검이 대신하지 않습니다 — '
+                    '포털 「처리 건」에서 그 흐름으로 직접 돌려 확인하세요')
+    if not row.get('class_flow'):                     # 기준 흐름 — 기본 제공 흐름이 배포되어 있지 않다(시작 6단계가 다시 배포한다)
+        return FAIL, f'쿨러 경보를 여는 흐름이 기본 제공 흐름이 아니라 {name}입니다 — 시작 파일을 다시 실행하면 기본 제공 흐름을 배포합니다'
+    return FAIL, f'쿨러 경보를 여는 흐름이 {name}입니다 — 점검 한 바퀴는 기본 제공 흐름 「냉각 긴급 대응」의 단계로만 돕니다'
+
+
 def cooler_round(root: Path, record) -> None:
     process, plant, detector, agent = (f'{H}:{port(root, p)}' for p in (8080, 8000, 8092, 8091))
     ai_mode = hyd_env.read(root / '.env').get('AI_MODE', '')
@@ -363,6 +417,10 @@ def cooler_round(root: Path, record) -> None:
     view = lambda pid: http('GET', f'{process}/api/instances/{pid}')
     pid = None
     approval = None
+    blocked = cooler_knowledge(agent) or cooler_route(process)
+    if blocked:
+        record('쿨러 사건', *blocked)
+        return
     try:
         http('POST', f'{plant}/api/reset', {})
         wait_for(120, lambda: (lambda s: s if cooler_phase(s) != 'RAISED' else None)(hyd01()),
@@ -377,8 +435,9 @@ def cooler_round(root: Path, record) -> None:
         found = wait_for(60, lambda: next((i for i in http('GET', f'{process}/api/instances?limit=20') if i['proc_inst_id'] not in before), None),
                          '경보가 났지만 1분 안에 처리 건이 열리지 않았습니다(처리 엔진 확인).')
         pid = found['proc_inst_id']
-        if found.get('proc_def_id') != 'c3_cooling':
-            raise CheckError(f'처리 건이 수업 흐름이 아닌 {found.get("proc_def_id")} 로 열렸습니다 — 시작 파일을 다시 실행하면 수업 흐름을 배포합니다.')
+        if found.get('proc_def_id') != COURSE_FLOW:            # 경로표는 기본 제공 흐름이라고 했는데 다른 흐름으로 열렸다 — 처리 엔진이 표와 다르게 고른 것
+            raise CheckError(f'경보 경로표는 쿨러 경보를 기본 제공 흐름이 맡는다고 하는데 처리 건이 {found.get("proc_def_id")} 로 열렸습니다 — '
+                             '포털 「흐름 배포」 표와 「처리 건」을 확인하세요.')
         record('처리 건 열림', PASS, f'{pid} (기본 제공 흐름 냉각 긴급 대응)')
         outcome = wait_for(420, lambda: agent_outcome(view(pid), ai_mode),
                            '처리 건이 7분 안에 AI 판단 결과(승인 대기)에 닿지 않았습니다 — 포털 「처리 건」에서 판단 · 제안 단계를 확인하세요.', every=5)

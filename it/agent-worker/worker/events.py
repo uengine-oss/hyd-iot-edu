@@ -16,6 +16,8 @@ from typing import Any, Callable
 from cliagents import ExecEvent, ExecEventKind
 from procsvc.agents_store import skill_title
 
+from .cli_sandbox import SKILL_PLUGIN
+
 PREVIEW_MAX = 4_000
 CONSOLE_MAX = 120
 NOTE_MAX = 1_500           #: U1: one assistant note (the agent's own words between tool calls) is stored up to this many characters
@@ -166,8 +168,11 @@ NOTE_BOUNDARY = frozenset({ExecEventKind.TOOL_START, ExecEventKind.TOOL_END, Exe
 # ---------------------------------------------------------------- A161-G1: which skills the run had, and which it read
 #: a skill file named anywhere in a tool's input: Claude Code `Read .claude/skills/<name>/SKILL.md`, Codex `cat .agents/skills/…`
 SKILL_PATH = re.compile(r"(?:\.claude|\.agents)[/\\]+skills[/\\]+(?P<name>[a-z0-9][a-z0-9-]{0,63})[/\\]+(?P<file>[^\s\"'`,;|&<>]+)")
-#: Claude Code's Skill tool (the CLI loads the skill itself; the input names it)
+#: Claude Code's Skill tool (the CLI loads the skill itself; the input names it). The CLI also accepts the skill under the session
+#: plugin's name (`hyd-course-skills:<skill>` — 2026-11-23 녹화 일곱 모두 이 꼴): without dropping that head the name never matched the
+#: skills the run was given, so a live run showed 「준 적 없는 스킬」 and the replay notice said the student's skills differed.
 SKILL_TOOLS = frozenset({"Skill"})
+SKILL_PLUGIN_HEAD = SKILL_PLUGIN + ":"
 
 
 def skill_files(tool: str | None, tool_input) -> list[tuple[str, str]]:
@@ -175,7 +180,7 @@ def skill_files(tool: str | None, tool_input) -> list[tuple[str, str]]:
     found: list[tuple[str, str]] = []
     if (tool or "") in SKILL_TOOLS:
         data = tool_input if isinstance(tool_input, dict) else {}
-        name = str(data.get("skill") or data.get("command") or data.get("name") or "").strip().lstrip("/")
+        name = str(data.get("skill") or data.get("command") or data.get("name") or "").strip().lstrip("/").removeprefix(SKILL_PLUGIN_HEAD)
         if name:
             found.append((name, "SKILL.md"))
     text = tool_input if isinstance(tool_input, str) else json.dumps(tool_input, ensure_ascii=False, default=str)

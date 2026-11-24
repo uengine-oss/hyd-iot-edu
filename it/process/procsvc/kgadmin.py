@@ -12,6 +12,9 @@ SOP_ID_RE = re.compile(r"^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 
 
 AFFECTS_MAX = 12
+NOTE_MAX = 300             # 영향 메모 한 건
+DESCRIPTION_MAX = 500      # 조치 방법 설명
+STEPS_MAX = 30             # 「지식 › 조치 방법」 화면에서 손으로 적는 절차의 단계 수(원문 문서의 절차는 문서 검토 manual_review 가 제 한도로 받는다)
 AFFECTS_TARGET = re.compile(r"^(sv|msr):[a-z0-9]+(?:-[a-z0-9]+)*$")
 AFFECTS_LABELS = {"sv": "StateVariable", "msr": "Measure"}
 SIGNS = {"+": 1, "-": -1, 1: 1, -1: -1, "1": 1, "-1": -1}
@@ -39,8 +42,10 @@ def validate_affects(value, owner: str = "") -> list:
         if sign is None:
             raise ValueError(f"{where}영향 방향은 + 또는 - 입니다")
         seen.add(target)
-        out.append({"target": target, "label": AFFECTS_LABELS[target.split(":")[0]], "sign": sign,
-                    "note": str(item.get("note") or "").strip()[:300]})
+        note = str(item.get("note") or "").strip()
+        if len(note) > NOTE_MAX:      # 자르지 않는다 — 잘린 글이 검토한 글인 것처럼 지식에 남았다
+            raise ValueError(f"{where}영향 메모는 {NOTE_MAX}자 이내로 적습니다(지금 {len(note)}자): {target}")
+        out.append({"target": target, "label": AFFECTS_LABELS[target.split(":")[0]], "sign": sign, "note": note})
     return out
 
 
@@ -65,7 +70,10 @@ def validate_skill(body: dict, create: bool = False, *, source_backed: bool = Fa
         raise ValueError("조치 방법 이름이 비어 있습니다")
     if len(name) > 80:
         raise ValueError("조치 방법 이름은 80자 이내로 적습니다")
-    out = {"name": name, "description": str(body.get("description") or "").strip()[:500]}
+    description = str(body.get("description") or "").strip()
+    if len(description) > DESCRIPTION_MAX:      # 길이를 넘는 글 · 단계는 자르지 않고 거절한다 — 전에는 말없이 잘려, 적은 것과 다른 내용이 저장됐다
+        raise ValueError(f"조치 방법 설명은 {DESCRIPTION_MAX}자 이내로 적습니다(지금 {len(description)}자)")
+    out = {"name": name, "description": description}
     if body.get('purchase_comparison_policy') is not None:
         if not source_backed or not create or body.get('scope') != 'purchase' or body.get('executable') is not True:
             raise ValueError('구매 비용 정책은 원문 검토의 실행 구매 생성 경로에서만 연결합니다')
@@ -85,11 +93,15 @@ def validate_skill(body: dict, create: bool = False, *, source_backed: bool = Fa
             raise ValueError('원문 구매 SOP는 매뉴얼 개정·검토 경로에서 변경하세요')
         # A075: a reviewer may (re)link an existing skill to a failure mode; the candidate rules of that failure mode then
         # offer the skill (meeting L253~302: ingested knowledge must reach the runtime judgment).
+        # 관계는 사람이 고른다 — 비면 「근본 조치」로 채우지 않는다(만드는 길 · 문서 검토와 같은 규칙, C15). 채우면 경보 대응 후보 규칙에 저절로 합류했다
         if body.get("failureMode"):
-            relation = body.get("relation") or "REMEDIED_BY"
+            fm = str(body["failureMode"]).strip()
+            relation = body.get("relation")
+            if not relation:
+                raise ValueError(f"고장 유형 {fm}에 이을 관계 칸이 비었습니다 — 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 가운데 이 조치 방법이 하는 일을 고르세요")
             if relation not in FAILURE_RELATIONS:
                 raise ValueError(FAILURE_RELATION_HELP)
-            out.update(failureMode=str(body["failureMode"]).strip(), relation=relation)
+            out.update(failureMode=fm, relation=relation)
         return out
     sop = str(body.get("sopId") or "").strip().upper()
     if not SOP_ID_RE.match(sop):
@@ -100,18 +112,24 @@ def validate_skill(body: dict, create: bool = False, *, source_backed: bool = Fa
     steps = [str(s).strip() for s in steps if str(s).strip()]
     if not steps:
         raise ValueError("절차 단계가 하나 이상 있어야 합니다(한 줄에 한 단계)")
+    if not source_backed and len(steps) > STEPS_MAX:
+        raise ValueError(f"절차 단계는 {STEPS_MAX}개까지 적습니다(지금 {len(steps)}개) — 더 긴 절차는 원문 문서를 「지식 › 문서 등록」으로 넣으세요")
     if body.get('scope') == 'purchase':
-        out.update(sopId=sop, steps=steps[:30], **scope_fields)
+        out.update(sopId=sop, steps=steps, **scope_fields)
         return out
     if not str(body.get("failureMode") or "").strip():
         raise ValueError("조치 방법을 고장 유형에 연결하세요 — 검토 화면의 고장 유형 칸에서 고릅니다(구매 · 참고 절차는 업무 범위를 바꿉니다)")
     kind = body.get("kind") or "work_order"
     if kind not in ("control", "work_order"):
         raise ValueError("조치 방법 종류는 설비 명령(control) 또는 정비 요청(work_order)입니다")
-    relation = body.get("relation") or "REMEDIED_BY"
+    # 관계는 사람이(또는 원문을 읽은 추출이) 정한다 — 비면 「근본 조치」로 채우지 않는다. 채우면 경보 대응 후보 규칙에 저절로 합류하고(CORRECTIVE_RELATIONS)
+    # 그 고장 유형의 모든 원인에 대한 절차 목록에 올랐다(C15)
+    relation = body.get("relation")
+    if not relation:
+        raise ValueError("고장 유형과의 관계를 고르세요 — 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 가운데 원문 절차가 하는 일입니다")
     if relation not in FAILURE_RELATIONS:
         raise ValueError(FAILURE_RELATION_HELP)
-    out.update(sopId=sop, steps=steps[:30], failureMode=str(body["failureMode"]).strip(), kind=kind, relation=relation)
+    out.update(sopId=sop, steps=steps, failureMode=str(body["failureMode"]).strip(), kind=kind, relation=relation)
     return out
 
 

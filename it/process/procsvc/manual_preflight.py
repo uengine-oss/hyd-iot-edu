@@ -11,17 +11,25 @@ from . import kgadmin, manual_knowledge, manual_references
 FIELD_LABELS = {'link.failureMode': '고장 유형', 'link.approver': '승인 역할', 'link.parts': '구매 부품', 'link.addresses': '대상 원인',
                 'link.affects': '영향 대상', 'component': '구성 요소', 'symptoms': '증상', 'leads_to': '이어지는 고장 유형',
                 'failure_mode': '고장 유형', 'parts': '부품', 'disturbs': '흔드는 상태 변수', 'cause': '원인', 'outputs': '규칙 결과',
-                'applies_to': '규칙 적용 대상', 'penalizes': '감점 지표'}
+                'applies_to': '규칙 적용 대상', 'penalizes': '감점 지표', 'sensors': '관측 센서', 'tag': '태그'}
 
-#: 없는 것을 가리켰을 때 할 일 — 문서가 새로 만들 수 있는 것(고장 유형 · 원인 · 절차)과 지금 지식에 있는 것에서만 고를 수 있는 것(설비의 구성 요소 ·
-#: 증상 · 경보 패턴 · 부품 · 공급사 · 상태 변수 · 성과 지표 — 문서 적재는 이것들을 새로 만들지 않는다), 포털에서 만들 수 있는 것(승인 역할)을 갈라 말한다. 다른 분야의 문서가 여기서
-#: 막히면 「지금 지식에 없습니다」만으로는 문서를 고칠지 지식을 고칠지 알 수 없다(전수검사 10-G7).
-_PICK = '문서 적재는 {what_을} 새로 만들지 않습니다. 지금 지식에 있는 {what} 가운데 이 문서의 내용에 맞는 것을 고르세요(맞는 것이 없으면 이 항목은 적재할 수 없습니다)'
+#: 없는 것을 가리켰을 때 할 일 — 문서가 새로 만들 수 있는 것(고장 유형 · 원인 · 절차), 문서가 새 항목으로 제안하고 사람이 넣기를 고르는 것(그 설비의
+#: 구성 요소 · 증상 · 센서 — manual_knowledge.NEW_KINDS), 지금 지식에 있는 것에서만 고를 수 있는 것(경보 패턴 · 부품 · 공급사 · 상태 변수 · 성과 지표 —
+#: 문서 적재는 이것들을 새로 만들지 않는다), 포털에서 만들 수 있는 것(승인 역할)을 갈라 말한다. 다른 분야의 문서가 여기서 막히면 「지금 지식에 없습니다」만으로는
+#: 문서를 고칠지 지식을 고칠지 알 수 없다(전수검사 10-G7).
+#: 검토 화면에서 고칠 수 있는 칸은 절차의 영향 · 구매 부품 · 승인 역할뿐이고, 지식 후보(고장 유형 · 원인 · 증거 · 규칙)는 [적재에서 제외]만 할 수 있다 — 「고르세요」라고 하면
+#: 고를 칸이 없는 학생이 길을 잃는다(C13). 그래서 고칠 칸이 있는 곳과 없는 곳의 길을 함께 말한다.
+_PICK = ('문서 적재는 {what_을} 새로 만들지 않아, 지금 지식에 없는 {what_을} 가리킨 이 항목은 이대로 적재할 수 없습니다 — 절차의 영향 · 구매 부품 칸이면 '
+         '지금 지식에 있는 {what_으로} 고치고, 지식 후보(고장 유형 · 원인 · 증거 · 규칙)면 그 항목을 적재에서 제외하세요')
+_pick = lambda what: _PICK.format(what=what, what_을=josa(what, '을'), what_으로=josa(what, '으로'))
+#: 새 항목으로 제안할 수 있는 것인데 제안되지 않은 것 — 검토 화면은 새 항목을 만들지 않으므로(넣기 · 제외만 고른다) AI 추출이 제안해야 한다
+_PROPOSE = '이 문서의 새 항목 제안에도 없습니다 — 새 {what}{p} AI 추출이 원문 인용과 함께 제안한 것만 넣을 수 있으니, 이 항목을 적재에서 제외하세요'
+_propose = lambda what: _PROPOSE.format(what=what, p=particle(what, '은'))
 ROLE_HELP = '역할 목록에 있는 승인 역할을 고르세요. 맞는 역할이 없으면 「AI 에이전트」 화면의 담당 배정에서 [역할 만들기]로 먼저 만든 뒤 다시 검사하세요'
 REFERENCE_HELP = {
-    'components': _PICK.format(what='구성 요소', what_을=josa('구성 요소', '을')), 'symptoms': _PICK.format(what='증상', what_을=josa('증상', '을')), 'patterns': _PICK.format(what='경보 패턴', what_을=josa('경보 패턴', '을')),
-    'parts': _PICK.format(what='부품', what_을=josa('부품', '을')), 'suppliers': _PICK.format(what='공급사', what_을=josa('공급사', '을')), 'state_variables': _PICK.format(what='상태 변수', what_을=josa('상태 변수', '을')),
-    'measures': _PICK.format(what='성과 지표', what_을=josa('성과 지표', '을')),
+    'components': _propose('구성 요소'), 'symptoms': _propose('증상'), 'sensors': _propose('센서'),
+    'patterns': _pick('경보 패턴'), 'parts': _pick('부품'), 'suppliers': _pick('공급사'),
+    'state_variables': _pick('상태 변수'), 'measures': _pick('성과 지표'),
     # 승인 역할만은 포털에서 만들 수 있다(역할의 정본은 업무 DB — agent_authoring.project_roles 가 지식 그래프로 옮긴다)
     'roles': ROLE_HELP,
     'failure_modes': '이 문서의 고장 유형 목록에 넣거나 지금 지식에 있는 고장 유형을 고르세요',
@@ -101,8 +109,10 @@ def validate(proposal, catalog):
     available = {key: {r['id'] for r in catalog[key]} for key in (
         'components', 'symptoms', 'patterns', 'parts', 'suppliers', 'state_variables',
         'measures', 'roles', 'failure_modes', 'causes', 'skills')}
+    # 센서 목록이 없는 옛 카탈로그(그 칸이 생기기 전에 추출 작업에 고정한 것)는 아래 설비 구조 판정이 CATALOG_OUTDATED 로 말한다 — 그때의 제안은 센서를 가리킬 수 없었다
+    available['sensors'] = {r['id'] for r in catalog['sensors']} if 'sensors' in catalog else set()
     k = plan.get('knowledge') or {}
-    for key in ('failure_modes', 'causes'):
+    for key in ('failure_modes', 'causes', *manual_knowledge.NEW_KINDS):      # 이 문서가 만드는 지식 · 새 항목 제안(넣기를 고르면 적재된다)
         available[key].update(r['id'] for r in k.get(key) or [])
     available['skills'].update(kgadmin.skill_id(sop) for sop in sops)
     existing_sops = {r.get('sopId') for r in catalog['skills']} | sops
@@ -138,6 +148,15 @@ def validate(proposal, catalog):
             ref(c['id'], 'disturbs', d['target'], 'state_variables')
     for e in k.get('evidence') or []:
         ref(e['id'], 'cause', e['cause'], 'causes')
+    for s in k.get('sensors') or []:
+        ref(s['id'], 'component', s['component'], 'components')
+    for s in k.get('symptoms') or []:
+        for v in s['sensors']:
+            ref(s['id'], 'sensors', v, 'sensors')
+    if 'failure_modes' in k:      # 지식의 꼴 검사를 지났을 때만(지나지 못했으면 KNOWLEDGE_INVALID 가 이미 있다)
+        structure, structure_notices = manual_knowledge.new_item_issues(k, catalog, plan['procedures'])
+        issues.extend(structure)
+        notices.extend(structure_notices)
     for r in k.get('rules') or []:
         for field in ('outputs', 'applies_to'):
             for v in r[field]:
@@ -168,8 +187,15 @@ def validate(proposal, catalog):
             defined_ids = {item['id'] for items in k.values() for item in items}
             if conflict.get('id') not in defined_ids:
                 continue
+        # 무엇이 이미 있고 누가 가졌는지, 그래서 무엇을 하면 되는지를 말한다(전에는 「기존 지식의 소유권 충돌입니다. 원문과 기존 지식을 대조하세요」뿐이었다).
+        # 적재가 같은 것을 거절하는 문장(manual_graph._validate_targets)과 같은 길이다: 이 항목을 빼면 남은 항목은 이미 있는 그 항목을 가리킨다
+        from .manual_graph import LABEL_KO
+        kind = LABEL_KO.get(conflict.get('label'), '항목')
+        holder = (f"다른 문서 「{conflict['owner_name']}」가 넣은 것" if conflict.get('owner_name') else
+                  '다른 문서가 넣은 것' if conflict.get('kind') == 'other_document' else '기본 제공 지식이나 「지식 › 조치 방법」 화면에서 만든 것')
         issue('KNOWLEDGE_OWNERSHIP_CONFLICT', conflict.get('id'), 'knowledge_conflicts',
-              f"{conflict.get('id')}: 기존 지식의 소유권 충돌입니다. 원문과 기존 지식을 대조하세요")
+              f"{conflict.get('id')}: 같은 {kind}{particle(kind, '이')} 이미 지식에 있습니다({holder}) — 이 문서로 덮어쓰지 않으니 이 항목을 적재에서 제외하세요. "
+              "이 문서의 다른 항목은 이미 있는 그 항목을 가리킵니다")
     # 2026-10-23 수업 조건 리허설: 구조판에는 후보 규칙이 없고 중계 모델 추출이 세 문서 모두 후보 규칙을 내지 않아, 적재는 됐는데
     # A · B · C 판단이 「후보 지식이 없습니다」로 보류됐다. 판단이 이 절차를 후보로 낼 길(이 문서의 후보 규칙 출력, 또는 고장 조치가
     # 자동 합류할 그 고장 유형의 후보 규칙)이 없으면 검토자에게 알린다. 적재를 막지는 않는다(적재는 사람 검토 뒤 별도 검사).
@@ -188,14 +214,23 @@ def validate(proposal, catalog):
         if is_candidate(q):
             for cause in q.get('addresses') or []:
                 covering.setdefault(cause, []).append(q['id'])
+    # 설비에 딸리지 않은 구성 요소(이 문서 · 다른 문서가 넣은 다른 설비)의 고장 유형을 고치는 절차는 판단 엔진의 조치 후보 규칙이 닿지 않는다 — 판단 엔진은 설비의
+    # 경보에서 그 설비의 증상 · 고장 유형으로 간다. 「조치 후보 규칙을 더하세요」는 거기서 할 수 없는 일이라 검토 필요가 아니라 참고로 그 사실을 말한다
+    fresh = 'sensors' in catalog and all('assets' in c for c in catalog['components'])      # 옛 카탈로그는 설비 구조 판정이 CATALOG_OUTDATED 로 말했다
+    outside = manual_knowledge.outside_plant(k, catalog) if fresh and 'failure_modes' in k else set()
     for p in plan['procedures']:
         if p.get('kind') == 'reference' or p.get('executable') is False:
             continue
         if p['id'] in packaged:
             continue
+        if p.get('failureMode') in outside:
+            notices.append(dict(code='CANDIDATE_OUTSIDE_PLANT', sop=p['id'], field='knowledge.rules',
+                                message=f"{p['id']}: 이 절차가 고치는 고장은 판단 엔진이 다루는 설비({' · '.join(sorted(a['code'] for a in catalog['assets'] if a.get('code')))})의 구성 요소가 아닌 곳에서 생겨, 판단 엔진의 "
+                                        "조치 후보 규칙이 이 절차에 닿지 않습니다 — 그 설비를 맡은 에이전트가 지식 지도에서 이 절차를 읽어 씁니다"))
+            continue
         siblings = sorted({s for cause in p.get('addresses') or [] for s in covering.get(cause, []) if s != p['id']})
         if not is_candidate(p) and siblings and all(cause in covering for cause in p['addresses']):
-            relation = p.get('relation') or ('REMEDIED_BY' if p.get('failureMode') else None)
+            relation = p.get('relation')
             if not (relation in kgadmin.CORRECTIVE_RELATIONS and p.get('failureMode') in joinable):
                 notices.append(dict(code='CANDIDATE_NOT_DIRECT', sop=p['id'], field='knowledge.rules', siblings=siblings,
                                     message=f"{p['id']}: 판단의 조치 후보에 직접 나오지 않는 절차입니다. 같은 원인의 {' · '.join(siblings)}{particle(' · '.join(siblings), '이')} 후보로 나옵니다. "
@@ -203,7 +238,7 @@ def validate(proposal, catalog):
             continue
         if p['id'] in own_outputs or kgadmin.skill_id(p['id']) in own_outputs:
             continue
-        relation = p.get('relation') or ('REMEDIED_BY' if p.get('failureMode') else None)    # 적재와 같은 기본(kgadmin.validate_skill)
+        relation = p.get('relation')      # 적재와 같다 — 비면 기본값을 두지 않는다(kgadmin.validate_skill)
         if relation in kgadmin.CORRECTIVE_RELATIONS and p.get('failureMode') in joinable:
             continue
         issue('CANDIDATE_RULE_MISSING', p['id'], 'knowledge.rules',

@@ -1,6 +1,6 @@
 """Dedicated reader connections — the business reader (MCP · current-source verification) and the time-series reader
 (data fabric) are checked the same way: the connection must be that unprivileged role, or it is refused."""
-import psycopg
+from .pg import connect
 
 
 class ReaderRoleRefused(RuntimeError):
@@ -13,7 +13,7 @@ class ReaderRoleRefused(RuntimeError):
 
 def reader_connection(dsn, role='hyd_enterprise_reader'):
     """A read connection that is exactly `role` without superuser · createrole · createdb · bypassrls; anything else raises."""
-    conn = psycopg.connect(dsn, autocommit=False, connect_timeout=5)
+    conn = connect(dsn, autocommit=False)
     try:
         row = conn.execute('select current_user, rolsuper, rolcreaterole, rolcreatedb, rolbypassrls '
                            'from pg_roles where rolname=current_user').fetchone()

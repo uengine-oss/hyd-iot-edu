@@ -2,9 +2,9 @@
 approval_hooks.record_execution 이 같은 판단에 적는다(판단 상태 표의 나머지 반쪽 — 이 파일은 승인 · 거절까지).
 
 An option is one SOP skill (조치 방법 = Skill = SOP) with its atomic actions. Who may approve comes from the ontology:
-Skill -APPROVED_BY-> Role, Role.level — the same role or a higher level may approve. System transactions (CMMS work
-order, ERP purchase request) are executed by the process service; PLC commands are never sent from here — they go
-through the HITL incident and the command gateway.
+Skill -APPROVED_BY-> Role, Role.level — the same role or a higher level may approve. Approving sends nothing: system
+transactions (CMMS work order, ERP purchase request) and PLC commands are issued by the steps of the process flow
+(정비 요청 등록 · 발주 등록 · 설비에 명령 — the command through the HITL incident and the command gateway).
 """
 from __future__ import annotations
 
@@ -88,11 +88,8 @@ def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> di
         raise PermissionError(f"승인 권한 없음: '{opt['name']}'{particle(opt['name'], '은')} {(opt.get('approver') or {}).get('name', need)} 이상이 승인해야 한다")
     d.update(state="APPROVED", chosen=option_id, approvedBy=by, approvedRole=role, override=option_id != d.get("recommended"), reason=reason)
     d["history"].append({"state": "APPROVED", "t": _now(), "by": by, "role": role, "option": option_id, "reason": reason})
-    item = lambda a: {"skill": opt["id"], "sop": opt.get("sopId"), "code": a.get("code"), "name": a.get("name"),
-                      "system": a.get("target"), "value": a.get("value"), "param": a.get("param")}
-    acts = opt.get("actions") or []
-    return {"option": opt, "enterprise": [item(a) for a in acts if a.get("kind") != "command"],
-            "ot": [item(a) for a in acts if a.get("kind") == "command"]}
+    # 승인은 고른 안을 정할 뿐 효과를 내지 않는다 — 그 안의 설비 명령 · 업무 거래는 흐름의 단계가 낸다(instances.skipped_actions)
+    return {"option": opt}
 
 
 @_transition

@@ -1,8 +1,8 @@
 {
   "processDefinitionId": "anomaly_response",
   "processDefinitionName": "설비 이상 조치",
-  "version": "2.6",
-  "description": "경보가 처리 건을 열고, AI 에이전트가 네 단계(원인 진단 · 조치 후보 조회 · 규정 검토 · 조치 후보 정리)로 조치 후보를 올리면, 담당자가 후보 하나를 승인하거나 반려한다(폼 select_card 제출). 승인하면 고른 후보의 조치 종류대로 설비에 명령 · 효과 확인 · 정비 요청 등록을 실행해 처리 완료로 끝내고, 설비 명령도 정비 요청도 없는 후보(발주만 · 실행할 조치 없음)는 설비에 아무것도 하지 않은 사실을 결과 보고로 남기고 끝낸다. 효과 확인에서 회복되지 않았거나 담당자가 제때 고르지 않으면 책임자 확인으로 넘긴다. 반려하면 설비 · 업무에 아무것도 하지 않고 결과 보고(반려)로 끝낸다. AI 에이전트 단계는 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 가 이 흐름의 객체(역할 · 시스템 · 판단)를 갖고, 단계 순서의 정본은 이 정의다.",
+  "version": "2.9",
+  "description": "경보가 처리 건을 열고, AI 에이전트가 네 단계(원인 진단 · 조치 후보 조회 · 규정 검토 · 조치 후보 정리)로 조치 후보를 올리면, 담당자가 후보 하나를 승인하거나 반려한다(폼 select_card 제출). 승인하면 고른 후보의 조치 종류대로 실행한다: 설비 명령이 있으면 설비에 명령 → 효과 확인 → 회복하면 정비 요청 등록으로 처리 완료, 정비 요청만 있으면 정비 요청 등록 → 정비 수행 → 정비 뒤 효과 확인 → 회복하면 처리 완료 · 회복하지 않으면 미달 결과 보고 뒤 책임자 확인, 발주만 있으면 발주 등록 뒤 설비에 한 일이 없다는 결과 보고로 끝낸다. 설비 명령도 정비 요청도 발주도 없는 후보는 실행한 것이 없다는 결과 보고로 끝낸다. 승인을 전달하는 것만으로는 업무 거래 · 설비 명령을 내지 않는다 — 모두 이 흐름의 단계가 낸다. 효과 확인에서 회복되지 않았거나 담당자가 제때 고르지 않으면 책임자 확인으로 넘긴다. 반려하면 설비 · 업무에 아무것도 하지 않고 결과 보고(반려)로 끝낸다. AI 에이전트 단계는 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 가 이 흐름의 객체(역할 · 시스템 · 판단)를 갖고, 단계 순서의 정본은 이 정의다.",
   "ontologyRef": "proc:anomaly-response",
   "megaProcessId": "설비 운영",
   "majorProcessId": "설비 이상 대응",
@@ -101,6 +101,16 @@
       "name": "result_report",
       "type": "Object",
       "description": "결과 보고 (outcome · title · summary · facts · refs) — 반려 · 실행하지 않음으로 끝난 처리 건이 남긴다"
+    },
+    {
+      "name": "maintenance",
+      "type": "Object",
+      "description": "정비 수행 결과 (승인한 조치 방법이 가상 설비에서 고친 대상 · 정비 완료 공지)"
+    },
+    {
+      "name": "purchase_order",
+      "type": "Object",
+      "description": "발주 등록 결과 (구매 · 재고 관리의 발주 번호 · 입고 예정)"
     }
   ],
   "roles": [
@@ -133,6 +143,11 @@
       "name": "CMMS",
       "endpoint": "sys:cmms",
       "resolutionRule": "enterprise 시스템 (정비 요청)"
+    },
+    {
+      "name": "ERP",
+      "endpoint": "sys:erp",
+      "resolutionRule": "enterprise 시스템 (구매 · 재고 관리 — 승인 경로가 확정한 공급사 · 수량 · 금액의 발주)"
     }
   ],
   "events": [
@@ -310,7 +325,7 @@
       "role": "생산관리자",
       "tool": "formHandler:escalate",
       "agent": null,
-      "instruction": "선택 시간 초과 또는 미회복. 생산관리자가 상황을 확인하고 후속 조치를 결정한다.",
+      "instruction": "선택 시간 초과, 설비 명령 뒤 효과 확인 미회복, 또는 정비 뒤 효과 확인 미달. 생산관리자가 상황을 확인하고 후속 조치를 결정한다.",
       "inputData": [
         "decision",
         "incident",
@@ -377,6 +392,90 @@
       "description": "정비 요청 등록"
     },
     {
+      "id": "task:work-order-only",
+      "name": "정비 요청 등록",
+      "type": "serviceTask",
+      "role": "CMMS",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "enterprise:WO_CREATE",
+      "instruction": "정비 요청만 있는 조치 후보의 WO_CREATE 트랜잭션을 CMMS 에 발행한다 (업무 DB work_orders 행). 발행은 정비 완료가 아니다 — 뒤의 정비 수행 · 정비 뒤 효과 확인이 결과를 정한다.",
+      "inputData": [
+        "chosen_skill",
+        "asset"
+      ],
+      "outputData": [
+        "work_order"
+      ],
+      "duration": 1,
+      "description": "정비 요청 등록 (정비 요청만)"
+    },
+    {
+      "id": "task:fix",
+      "name": "정비 수행",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "plant:restore",
+      "service": {
+        "until": "work_order.after.window_starts_at"
+      },
+      "instruction": "승인한 카드의 예정된 정비 시간까지 기다린 뒤(즉시 시행 카드는 바로) CMMS 에서 정비 요청을 완료 처리하고, 가상 설비에서 승인한 조치 방법이 지식 지도에서 바꾼다고 한 결함 상태만 정상으로 되돌린 뒤 완료 공지를 남긴다. 승인한 조치가 설비의 실제 결함을 다루지 않으면 결함은 그대로 남는다.",
+      "inputData": [
+        "asset",
+        "work_order",
+        "chosen_skill"
+      ],
+      "outputData": [
+        "maintenance"
+      ],
+      "checkpoints": [
+        "사람 승인 뒤 process 가 실행한다"
+      ],
+      "duration": 1,
+      "description": "정비 수행"
+    },
+    {
+      "id": "task:reobserve-wo",
+      "name": "정비 뒤 효과 확인 (15분)",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "incident:reobserve",
+      "instruction": "정비 수행 뒤 15분(시간 배율 적용) 효과를 확인한다. 경보 CLEAR와 사건에 고정된 정의의 패턴별 회복 기준을 함께 확인한다. 기준이 없으면 회복으로 판정하지 않는다.",
+      "inputData": [
+        "incident"
+      ],
+      "outputData": [
+        "recovered"
+      ],
+      "duration": 1,
+      "description": "정비 뒤 효과 확인 (15분)"
+    },
+    {
+      "id": "task:report-wo-failed",
+      "name": "결과 보고: 정비 뒤 미달",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "process:report",
+      "service": {
+        "outcome": "미달",
+        "title": "{asset} 설비 이상 조치 결과",
+        "summary": "정비 요청 {work_order.ref}의 정비 뒤 효과 확인(15분) 기준 미달 — 승인한 조치가 설비 이상을 고치지 못해 책임자가 다음 조치를 정합니다 — 승인자 {approved_by_name}"
+      },
+      "inputData": [],
+      "outputData": [
+        "result_report"
+      ],
+      "checkpoints": [],
+      "duration": 1,
+      "description": "결과 보고: 정비 뒤 미달"
+    },
+    {
       "id": "task:report-rejected",
       "name": "결과 보고: 반려",
       "type": "serviceTask",
@@ -398,6 +497,28 @@
       "description": "결과 보고: 반려"
     },
     {
+      "id": "task:purchase-order",
+      "name": "발주 등록",
+      "type": "serviceTask",
+      "role": "ERP",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "enterprise:PR_CREATE",
+      "service": {},
+      "instruction": "승인 경로가 확정한 공급사 · 부품 · 수량 · 금액(approved_supplier · approved_part_no · approved_qty · approved_amount)으로 ERP 에 발주를 낸다. 처리 건에 발주할 부품 · 수량이 없으면 승인이 금액을 정하지 못해 승인을 받지 않는다.",
+      "inputData": [
+        "approved_amount"
+      ],
+      "outputData": [
+        "purchase_order"
+      ],
+      "checkpoints": [
+        "사람 승인 뒤 process 가 실행한다"
+      ],
+      "duration": 1,
+      "description": "발주 등록"
+    },
+    {
       "id": "task:report-purchase-only",
       "name": "결과 보고: 발주만 등록",
       "type": "serviceTask",
@@ -408,7 +529,7 @@
       "service": {
         "outcome": "실행하지 않음",
         "title": "{asset} 설비 이상 조치 결과",
-        "summary": "승인한 카드는 발주만 있는 카드입니다. 구매요청은 승인을 전달할 때 구매 · 재고 관리에 등록했고(승인 기록의 전달 결과), 설비에는 명령도 정비 요청도 내지 않았습니다. 설비 이상은 그대로이므로 책임자가 설비 조치를 따로 정해야 합니다 — 승인자 {approved_by_name}"
+        "summary": "승인한 카드는 발주만 있는 카드입니다. 발주 {purchase_order.ref}를 구매 · 재고 관리에 등록했고, 설비에는 명령도 정비 요청도 내지 않았습니다. 설비 이상은 그대로이므로 책임자가 설비 조치를 따로 정해야 합니다 — 승인자 {approved_by_name}"
       },
       "inputData": [],
       "outputData": [
@@ -429,7 +550,7 @@
       "service": {
         "outcome": "실행하지 않음",
         "title": "{asset} 설비 이상 조치 결과",
-        "summary": "승인한 조치 후보에는 설비 명령도 정비 요청도 발주도 없어 이 흐름이 실행한 것이 없습니다. 설비 이상은 그대로이므로 조치 방법의 조치 구성을 확인하고 다시 판단해 다른 카드를 고르세요 — 승인자 {approved_by_name}"
+        "summary": "승인한 조치 후보에는 설비 명령도 정비 요청도 발주도 없어 이 흐름이 실행한 것이 없습니다. 이 처리 건은 여기서 끝나고, 설비 이상은 그대로라 사건은 책임자 확인으로 넘어갑니다 — 승인자 {approved_by_name}"
       },
       "inputData": [],
       "outputData": [
@@ -460,6 +581,14 @@
     {
       "id": "gw:recovered",
       "name": "회복?",
+      "type": "exclusiveGateway",
+      "conditionData": [
+        "recovered"
+      ]
+    },
+    {
+      "id": "gw:wo-recovered",
+      "name": "정비 뒤 회복?",
       "type": "exclusiveGateway",
       "conditionData": [
         "recovered"
@@ -523,14 +652,14 @@
     {
       "id": "seq:gw-workorder",
       "source": "gw:control",
-      "target": "task:work-order",
+      "target": "task:work-order-only",
       "name": "정비 요청만",
       "condition": "chosen_skill_kind == 'work_order'"
     },
     {
       "id": "seq:gw-purchase",
       "source": "gw:control",
-      "target": "task:report-purchase-only",
+      "target": "task:purchase-order",
       "name": "발주만",
       "condition": "chosen_skill_kind == 'purchase'"
     },
@@ -542,6 +671,11 @@
       "properties": {
         "default": true
       }
+    },
+    {
+      "id": "seq:purchase-report",
+      "source": "task:purchase-order",
+      "target": "task:report-purchase-only"
     },
     {
       "id": "seq:command-reobserve",
@@ -573,6 +707,40 @@
       "target": "ev:closed"
     },
     {
+      "id": "seq:workorder-only-fix",
+      "source": "task:work-order-only",
+      "target": "task:fix"
+    },
+    {
+      "id": "seq:fix-reobserve",
+      "source": "task:fix",
+      "target": "task:reobserve-wo"
+    },
+    {
+      "id": "seq:reobserve-wo-gw",
+      "source": "task:reobserve-wo",
+      "target": "gw:wo-recovered"
+    },
+    {
+      "id": "seq:wo-recovered-closed",
+      "source": "gw:wo-recovered",
+      "target": "ev:closed",
+      "name": "회복",
+      "condition": "recovered == True"
+    },
+    {
+      "id": "seq:wo-recovered-failed",
+      "source": "gw:wo-recovered",
+      "target": "task:report-wo-failed",
+      "name": "미회복",
+      "condition": "recovered != True"
+    },
+    {
+      "id": "seq:wo-failed-escalate",
+      "source": "task:report-wo-failed",
+      "target": "task:escalate"
+    },
+    {
       "id": "seq:timeout-escalate",
       "source": "ev:select-timeout",
       "target": "task:escalate"
@@ -600,6 +768,7 @@
   ],
   "forms": {
     "candidates": {
+      "contract": "action-candidates-v1",
       "fields_json": [
         {
           "key": "candidates",
@@ -621,17 +790,17 @@
       "fields_json": [
         {
           "key": "cause",
-          "text": "판정한 원인 노드 id (cause:… 꼴 — hyd-dmn diagnose 가 돌려준 top_cause 그대로)",
+          "text": "판정한 원인 노드 id (cause:… 꼴 — hyd-dmn diagnose 가 돌려준 top_cause 그대로. 판단을 등록할 때 쓴 원인과 다르면 결과를 받지 않는다)",
           "type": "text"
         },
         {
           "key": "failure_mode",
-          "text": "고장 유형 노드 id (fm:… 꼴 — hyd-dmn diagnose 가 돌려준 failure_mode 그대로)",
+          "text": "고장 유형 노드 id (fm:… 꼴 — hyd-dmn diagnose 가 돌려준 failure_mode 그대로. 판단을 등록할 때 쓴 고장 유형과 다르면 결과를 받지 않는다)",
           "type": "text"
         },
         {
           "key": "guide_card",
-          "text": "hyd-dmn diagnose 도구가 돌려준 가이드 카드 객체 그대로 (alert · causes · recommended · skills · citations · summary)",
+          "text": "hyd-dmn diagnose 도구가 돌려준 card 객체 그대로 — 기록으로만 남는다. 처리 건의 원인 진단은 판단을 등록할 때(submit_decision) 판단 엔진이 다시 한 진단이다",
           "type": "object"
         }
       ]

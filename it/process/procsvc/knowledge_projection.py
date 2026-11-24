@@ -26,9 +26,10 @@ def digest(rows):
 
 
 class KnowledgeReconciler:
-    def __init__(self,store,query,tenant,repo,interval=15):
-        # repo = 처리 건 저장소(PgRepo — 실행 그래프 반영 대기열). key 는 SQLite 검사점 이름이라 저장된 값과 같게 둔다
-        self.store,self.query,self.tenant,self.repo=store,query,tenant,repo
+    def __init__(self,store,query,tenant,repo,interval=15,monotonic=time.monotonic):
+        # repo = 처리 건 저장소(PgRepo — 실행 그래프 반영 대기열). key 는 SQLite 검사점 이름이라 저장된 값과 같게 둔다.
+        # monotonic = 검사 주기를 재는 시계(부르는 쪽이 넣는다 — 시험은 벽시계를 기다리지 않고 옮긴다)
+        self.store,self.query,self.tenant,self.repo,self.monotonic=store,query,tenant,repo,monotonic
         self.key=tenant+':instance'
         self.interval=interval;self.next_check=0;self.last_checked=None;self.last_error=None;self.observed=None
 
@@ -59,7 +60,7 @@ class KnowledgeReconciler:
             return False
 
     def poll(self):
-        now=time.monotonic()
+        now=self.monotonic()
         if now<self.next_check:return False
         self.next_check=now+self.interval
         return self.scan()

@@ -28,12 +28,14 @@ from urllib.parse import urlsplit
 from fastapi import HTTPException
 
 from . import worker_credentials
-from .course_ledger import POLICY, REASONS, CourseLedger, Denied, coded
+from .course_ledger import CALL_INPUT_BYTES, POLICY, REASONS, CourseLedger, Denied, coded
 from .course_policy import AccessDenied, judged_claim, require_worker
 
 PREFIX = 'HydModel '
 TOKEN_SECONDS = 1800
-INPUT_MAX = 2_000_000
+#: 실행 토큰 묶음의 칸 — issue 가 이 칸을 쓰고 verify_token 이 이 칸 그대로만 받는다
+TOKEN_FIELDS = ('tenant_id', 'todo_id', 'consumer', 'run_id', 'model', 'phase', 'expires')
+INPUT_MAX = CALL_INPUT_BYTES          # 호출 하나의 상한 — 한도의 정본은 장부(course_ledger)
 STREAM_MAX = 32_000_000
 LOCAL_HOSTS = ('127.0.0.1', 'localhost', '::1')
 log = logging.getLogger('procsvc.course_model')
@@ -92,13 +94,16 @@ def classify_relay(status: int, body: bytes) -> str:
     # 키 예산(LiteLLM budget_exceeded)과 중계 뒤쪽 모델 계정의 잔액 소진(OpenAI insufficient_quota — 429 라 혼잡으로 읽혔다)
     if 'budget' in text or 'insufficient_quota' in text or 'credit_balance' in text:
         return 'relay_budget'
-    # LiteLLM 은 키에 허용되지 않은 모델을 403 「key not allowed to access model」로 거절한다 — 인증보다 먼저 본다
-    if 'model' in text and any(w in text for w in ('not allowed', 'invalid model', 'not found', 'does not exist', 'no access')):
+    # LiteLLM 은 키에 허용되지 않은 모델을 403 「key not allowed to access model」(v1.106.6 은 「… is not available for this API key,
+    # or the model name is invalid」)로 거절한다 — 인증보다 먼저 본다
+    if 'model' in text and any(w in text for w in ('not allowed', 'not available', 'invalid model', 'not found', 'does not exist', 'no access')):
         return 'relay_model'
     if status in (401, 403) or 'authentication' in text or 'invalid api key' in text or 'invalid_api_key' in text:
         return 'relay_auth'
     if status in (429, 503, 529) or 'rate limit' in text or 'overloaded' in text:
         return 'relay_busy'
+    if status == 404:        # 모델 거절(위)이 아닌 404 — 그 주소에 부르는 길이 없다(LLM_RELAY_URL 이 중계가 아닌 곳을 가리킨다)
+        return 'relay_address'
     if 400 <= status < 500:
         return 'relay_rejected'
     return 'relay_failed'
@@ -131,19 +136,23 @@ def issue(runtime, ledger, policy, body, authorization) -> dict:
     관문이 잰다(INPUT_MAX · 실행당 입력 상한) — 작업 변수 크기를 따로 막지 않는다(문서 넣기 구간 크기와 갈리던 두 번째 한도)."""
     try:
         row, _, _ = judged_claim(policy, runtime, body, authorization)
-        run = ledger.open_run(runtime.tenant_id, row)
+        phase = policy.phase.name
+        run = ledger.open_run(runtime.tenant_id, row, phase=phase)
     except AccessDenied as exc:
         raise HTTPException(403, str(exc)) from None
     except Denied as exc:
         raise HTTPException(403, coded(exc.code)) from None
     binding = dict(tenant_id=runtime.tenant_id, todo_id=str(row['id']), consumer=row['consumer'], run_id=run['run_id'],
-                   model=run['model'], expires=min(time.time() + TOKEN_SECONDS, run['deadline']))
+                   model=run['model'], phase=phase, expires=min(time.time() + TOKEN_SECONDS, run['deadline']))
     raw = base64.urlsafe_b64encode(json.dumps(binding, separators=(',', ':')).encode()).decode()
     return dict(tenant_id=runtime.tenant_id, todo_id=str(row['id']), consumer=row['consumer'], model=run['model'],
                 token=PREFIX + raw + '.' + _sign(raw), expires=binding['expires'])
 
 
 def verify_token(token) -> dict:
+    """실행 토큰 → 그 점유의 묶음(issue 가 쓴 칸 TOKEN_FIELDS 한 벌). 서명이 맞아도 칸이 다르면 받지 않는다 — 서명 키는 다시 켜도 그대로인
+    파일이라, 칸이 바뀌기 전 판이 낸 토큰(최대 TOKEN_SECONDS)이 그 뒤에도 서명을 통과한다. 전에는 단계(phase)가 없는 옛 토큰이 장부에 적는
+    자리에서 KeyError 로 500 이 됐다 — 지금은 「token」 거절(다시 보내도 소용없음)이라 워커가 그 단계를 다시 실행하면 새 토큰을 받는다."""
     try:
         if not isinstance(token, str) or not token.startswith(PREFIX) or len(token) > 4096:
             raise ValueError()
@@ -151,6 +160,8 @@ def verify_token(token) -> dict:
         if not hmac.compare_digest(signature, _sign(raw)):
             raise ValueError()
         binding = json.loads(base64.urlsafe_b64decode(raw))
+        if not isinstance(binding, dict) or set(binding) != set(TOKEN_FIELDS):
+            raise ValueError()
         if not time.time() < binding['expires'] <= time.time() + TOKEN_SECONDS + 1:
             raise ValueError()
     except (ValueError, KeyError, TypeError):
@@ -182,7 +193,7 @@ def prepare(runtime, ledger, settings, token, raw: bytes, *, count_only=False):
         if not key:
             raise Denied('relay_config')
         ledger.charge(binding['run_id'], todo_id=binding['todo_id'], consumer=binding['consumer'],
-                      input_bytes=len(raw), output_tokens=maximum)
+                      input_bytes=len(raw), output_tokens=maximum, phase=binding['phase'])
     except Denied as exc:
         raise Refusal(exc.code) from None
     return dict(url=url, key=key), binding
@@ -237,13 +248,13 @@ def mount(app, *, policy, runtime_factory, settings):
     from fastapi.responses import StreamingResponse
 
     def connect():
-        import psycopg
         from psycopg.rows import dict_row
+        from . import procdb
         runtime = runtime_factory()
         dsn = getattr(getattr(runtime, 'repo', None), 'dsn', None)
         if not dsn:
             raise HTTPException(503, 'AI 사용 장부가 준비되지 않았습니다')
-        return psycopg.connect(dsn, row_factory=dict_row, connect_timeout=5)
+        return procdb.connect(dsn, row_factory=dict_row)
 
     ledger = CourseLedger(connect, POLICY)
 

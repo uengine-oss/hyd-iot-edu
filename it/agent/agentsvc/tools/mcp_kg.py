@@ -95,6 +95,11 @@ class KnowledgeGraph:
     def patterns(self) -> list[dict]:
         return self._run("t0_patterns")
 
+    def codes(self) -> dict[str, list[str]]:
+        """지식 지도가 아는 설비 코드와 부품 번호 {assets, parts} — 판단 실험이 스킬 본문이 가리키는 설비 · 부품을 읽을 때(이름 꼴로 짐작하지 않는다)."""
+        rows = self._run("t0_codes")
+        return {key: sorted(r["code"] for r in rows if r["kind"] == kind) for key, kind in (("assets", "asset"), ("parts", "part"))}
+
     def graph(self, asset: str, ns: str = "") -> dict:
         """ns (G4): 학생 이름 공간 — 비면 수업 기준(ns 없는 노드)만, 학생 ID 면 그 학생 노드와 바로 닿는 기준 노드."""
         return {"nodes": self._run("t0_graph_nodes", asset=asset, ns=ns or ""), "edges": self._run("t0_graph_edges", asset=asset, ns=ns or "")}

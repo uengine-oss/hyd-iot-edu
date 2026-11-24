@@ -7,6 +7,7 @@ proposal, and a person still reviews it before graph commit.
 from copy import deepcopy
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -19,6 +20,11 @@ DOMAIN = b'hyd-approved-extractions-v1\x00'
 BUNDLE = rules.HERE / 'course_extractions.json'
 
 
+def _version(value):
+    """'2.18' → (2, 18). 꼴이 다르면 None."""
+    return tuple(map(int, value.split('.'))) if isinstance(value, str) and re.fullmatch(r'\d+\.\d+', value) else None
+
+
 class ApprovedExtractions:
     def __init__(self, path=BUNDLE, *, public_key=rules.PUBLIC_KEY):
         envelope = json.loads(Path(path).read_text(encoding='utf8'))
@@ -28,8 +34,14 @@ class ApprovedExtractions:
                 rules.decode64(envelope['signature']), DOMAIN + rules.canonical(payload))
         except Exception:
             raise ValueError('제공 문서 추출 묶음의 서명을 확인할 수 없습니다') from None
-        if payload.get('contract') != 'hyd-approved-extractions-v1' or payload.get('extraction_version') != extraction.VERSION:
-            raise ValueError('제공 문서 추출 묶음의 계약·판본이 다릅니다')
+        # 묶음은 사람이 검토를 마친 고정 결과라, 맞춰야 할 것은 그 결과를 만든 지시문의 판이 아니라 결과의 꼴(제안 계약 extraction.CONTRACT)이다 — 지시문은 판을
+        # 올려도(새 항목 제안 등) 제안의 꼴은 판과 무관한 같은 계약이고(validate_proposal), 묶음의 제안은 쓸 때마다 지금 계약 · 지금 카탈로그로 다시 검사된다:
+        # 포털의 제공 문서 추출은 start → extraction.start(validate_proposal · content_issues), 시작의 적재(scripts/class_knowledge)는 /commit →
+        # manual_review.validate · manual_knowledge.check_graph. 그래서 여기서는 그 판이 지금 지시문의 판보다 새 판이 아닌지만 본다(앞으로 나올 계약의 묶음은 읽지 못한다).
+        made = _version(payload.get('extraction_version'))
+        if payload.get('contract') != 'hyd-approved-extractions-v1' or made is None or made > _version(extraction.VERSION):
+            raise ValueError(f"제공 문서 추출 묶음의 계약·판본이 다릅니다 — 묶음 {payload.get('contract')!r} · 추출 판 {payload.get('extraction_version')!r}, "
+                             f"이 판이 읽는 것: hyd-approved-extractions-v1 · 추출 판 {extraction.VERSION} 이하")
         self.payload = payload
         self.digest = hashlib.sha256(rules.canonical(payload)).hexdigest()
 
@@ -47,23 +59,27 @@ class ApprovedExtractions:
 
     def context(self, source):
         self.authorize(source)
-        return dict(scope='provided-manuals/' + self.digest,
+        # 범위 끝의 notes-in-origin: 제안에서 작업 메모를 걷어 낸 판(start). 걷기 전에 이 PC에 만들어진 캐시 처리 건(메모가 제안에 남은 것)을 다시 쓰지 않게 열쇠를 가른다
+        return dict(scope='provided-manuals/' + self.digest + '/notes-in-origin',
                     profile=dict(model='reviewed-source-cache', revision=self.payload['revision']))
 
-    def start(self, rt, source, request_id, catalog, feedback=None):
+    def start(self, rt, source, request_id, catalog):
         entry = self.authorize(source)
-        feedback = extraction.validate_review_feedback(feedback)
-        if feedback and feedback['items']:
-            raise ValueError('제공 문서는 검토를 마친 추출본을 그대로 씁니다(다시 추출하지 않습니다) — 고칠 곳은 이 검토 화면에서 직접 고친 뒤 적재하세요')
         def rebind(value):
             if isinstance(value, dict):
                 return {k: source['source_id'] if k == 'source_id' else rebind(v) for k, v in value.items()}
             if isinstance(value, list):return [rebind(v) for v in value]
             return deepcopy(value)
         proposal = rebind(entry['proposal'])
+        # 묶음 제안의 warnings 는 그 추출본을 검토한 사람이 남긴 작업 메모다(「이 리허설 추출에는 …」 · 「AI가 고장 유형 연결을 비움」 — 이미 고친 것을 적은 글).
+        # 학생이 받는 추출 결과에는 싣지 않는다 — 처리 건 화면이 제안의 경고로 보여 「AI가 연결을 비웠다」를 사실로 믿게 했다(C9). 메모는 출처 기록(origin)에만 남긴다
+        notes = list(entry['origin'].get('review_notes') or []) + list(proposal.get('warnings') or [])
+        proposal['warnings'] = []
         context = self.context(source)
         key = manual_cache.identity(rt.tenant_id, source, catalog, **context)
-        origin = dict(bundle=self.digest, revision=self.payload['revision'], **entry['origin'])
+        # extraction_version: 이 검토본을 만든 추출 지시문의 판(이 처리 건의 정의 판과 다를 수 있다 — 위 __init__)
+        origin = dict(bundle=self.digest, revision=self.payload['revision'], extraction_version=self.payload['extraction_version'],
+                      **dict(entry['origin'], review_notes=notes))
         inst = extraction.start(rt, source, request_id, catalog=catalog, cache_identity=key,
                                 _approved_proposal=proposal, _cache_origin=origin)
         _, state = extraction._task_state(rt, inst)

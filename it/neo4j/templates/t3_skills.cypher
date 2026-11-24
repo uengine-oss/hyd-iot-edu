@@ -1,8 +1,9 @@
 // T3-a — 스킬 상세 (parameter: $ids). t2_skills와 같은 모양. 후보 선택 규칙이 고른 스킬의 카드 내용을 채운다.
 MATCH (k:Skill) WHERE k.id IN $ids AND k.kind <> 'reference' AND coalesce(k.executable,true) = true
 OPTIONAL MATCH (k)-[:APPROVED_BY]->(r:Role)
+// 조치 방법 하나가 고장 유형 여럿에 이어질 수 있다 — (고장 유형, 관계) 짝을 모두 내고, 판단이 자기 고장 유형의 짝을 고른다(cards.with_relation)
 OPTIONAL MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k)
-WITH k, r, head(collect(type(m))) AS relation, head(collect(fm.id)) AS fmId
+WITH k, r, [x IN collect({failureModeId: fm.id, relation: type(m)}) WHERE x.failureModeId IS NOT NULL] AS relations
 RETURN k.id AS skillId, k.sopId AS sopId, k.name AS name, k.kind AS kind, k.description AS description,
        k.scope AS scope, k.executable AS executable,k.supplier_policy AS supplier_policy,k.maintenance_policy AS maintenance_policy,k.purchase_comparison_policy AS purchase_comparison_policy,k.source_id AS source_id,k.citation AS citation,
        COLLECT { MATCH (k)-[:INVOLVES_PART]->(p:Part) RETURN p.id } AS parts,
@@ -10,7 +11,7 @@ RETURN k.id AS skillId, k.sopId AS sopId, k.name AS name, k.kind AS kind, k.desc
                  WHERE s.id=co.value RETURN DISTINCT p.id } AS supplierParts,
        COLLECT { MATCH (k)-[:INVOLVES_PART]->(p:Part)-[:SUPPLIED_BY]->(s:Supplier) RETURN {part:p.id,supplier:s.id,name:s.name,oem:s.oem} } AS partSuppliers,
        COLLECT { MATCH (sys:System)-[:HAS_SKILL]->(k) RETURN sys.id ORDER BY sys.id } AS performers,
-       relation, fmId AS failureModeId,
+       relations,
        CASE WHEN r IS NULL THEN null ELSE {id: r.id, name: r.name, level: r.level} END AS approver,
        COLLECT { MATCH (k)-[co:CONSISTS_OF]->(a:Action) OPTIONAL MATCH (a)-[:TARGETS]->(t)
                  RETURN {id: a.id, code: a.code, name: a.name, kind: a.kind, param: a.param, min: a.min, max: a.max,

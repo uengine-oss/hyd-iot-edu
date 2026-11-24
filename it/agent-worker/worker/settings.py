@@ -42,12 +42,14 @@ def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[s
 def allowed_for_run(allowed: list[str], servers: list[str], fixed: dict[str, list[str]] | None,
                     read_tools: dict[str, list[str]] | None) -> list[str]:
     """이 실행의 미리 허용 목록(Claude Code --allowedTools). fixed: 수업이 조회 도구를 정한 단계(질문 · 교대 초안 — procsvc/agents_store.run_servers
-    의 정해진 목록)면 {서버: 도구}, 아니면 None. 정해진 단계는 내장 도구(Read · Write · Edit · Skill) + 그 조회 도구만 — 일반 허용
-    (mcp__hyd-dmn__* 는 판단 제출까지)을 가져오지 않는다. 목록 밖 도구는 머리 없는 실행에서 승인 요청이 되어 실행되지 않는다."""
+    의 정해진 목록)면 {서버: 도구}, 아니면 None. 정해진 단계는 내장 도구(Read · Write · Edit · Skill) + 기본 제공 서버의 그 조회 도구 + 정해진
+    목록이 없는 서버(학생이 등록한 서버 — PBL)의 검사 도장 읽기 도구(read_tools)만 — 일반 허용(mcp__hyd-dmn__* 는 판단 제출까지)을 가져오지
+    않는다. 목록 밖 도구는 머리 없는 실행에서 승인 요청이 되어 실행되지 않는다."""
     if fixed is None:
         return run_allowed_tools(allowed, servers, read_tools)
     native = run_allowed_tools([t for t in allowed if not t.startswith('mcp__')], [], {})
-    return native + [f'mcp__{server}__{tool}' for server in servers for tool in fixed.get(server, ())]
+    return native + [f'mcp__{server}__{tool}' for server in servers
+                     for tool in (fixed[server] if server in fixed else (read_tools or {}).get(server, ()))]
 
 
 def run_disallowed_tools(blocked_tools: dict[str, list[str]] | None) -> list[str]:

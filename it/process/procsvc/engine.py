@@ -24,6 +24,9 @@ deliberately not supported here — decisions stay deterministic).
   사람 단계 · 에이전트 단계 · IT 시스템 단계(명령 ACK · 작업지시 · 발주 · 메일 · 결과 보고) — 벽시계(사람이 읽고 고르는 시간, AI · 업무 시스템이
   실제로 걸리는 시간). 재관측 · 시운전 — 배속(TIME_SCALE, 가상 설비 시간). 기다리는 부품(시간 대기 · 입고 확인 · 정비 수행) — 배속 × 수업
   압축(PROCESS_WAIT_COMPRESSION, configure_wait_compression).
+  배속과 압축은 가상 설비 · 모의 업무 시스템을 다루는 처리 건에만 건다(plant_case — 처리 건의 설비가 가상 설비 셋 중 하나). 그 밖의 설비 ·
+  시스템(학생 현장 — 실설비 · 학생 시스템, 설비 없는 처리 건)을 다루는 처리 건은 모든 대기 · 타이머가 벽시계다: 그 현장의 「30분 뒤 다시
+  읽기」는 실제 30분 뒤다(압축하면 0.25초 뒤에 읽어 조치 효과가 아직 없는 값으로 판정했다).
   값은 compose.yaml 한 곳: 배속 20 × 압축 360 = 7200배 — 업무 시간 하루가 벽시계 12초다(납기 5일 = 1분, 납기 초과 타이머 6일 = 72초,
   예정된 정비 시간까지 9시간 = 4.5초). 학생이 「발주 중」을 보고 바깥 사건([공급사 납기 지연])을 넣어 볼 만큼만 기다리게 한 값이다.
 """
@@ -93,11 +96,50 @@ def wait_tools() -> tuple[str, ...]:
     return (effect_parts.WAIT_TOOL, effect_parts.GR_TOOL, effect_parts.RESTORE_TOOL)
 
 
-def timer_scale(activity: dict | None, time_scale: float) -> float:
+def plant_case(inst: dict) -> bool:
+    """이 처리 건이 가상 설비 · 모의 업무 시스템을 다루는가 — 처리 건의 설비(asset 값)가 가상 설비 셋(hydcommon.topics.ASSETS) 중 하나.
+    배속 · 수업 압축을 거는지 가르는 한 곳이다(머리말 「시간 규칙」). 가상 설비 전용 단계(PLANT_ONLY_TOOLS)를 할 수 있는지도 이것으로 가른다."""
+    from hydcommon.topics import ASSETS
+    return variables(inst).get("asset") in ASSETS
+
+
+#: 가상 설비 전용 시스템 단계(tool → 단계 이름, 하는 일). 정비 수행은 설비 시뮬레이터의 결함 상태를 되돌리고, 시운전 확인 · 효과 확인은 가상 설비
+#: 시계열의 값을 읽는다 — 설비가 가상 설비가 아닌 처리 건(학생 현장)에서는 할 일이 없어, 전에는 엉뚱한 까닭으로 실패하거나(정비 수행 → 설비
+#: 시뮬레이터에 없는 설비 → 「설비 시뮬레이터에 정비 복구를 요청하지 못했습니다 — 시작.bat …」) 값 없음을 「미달」로 판정했다(시운전 확인).
+#: 흐름 가져오기(bpmn_import.plant_only_problems)와 실행(instances._run_service)이 이 표 하나로 막는다. tool 이름의 주인은 effect_parts ·
+#: 기준 정의 부품이다(VIRTUAL_TIME_TOOLS 와 같이 이름만 적는다).
+PLANT_ONLY_TOOLS = {"plant:restore": ("정비 수행", "가상 설비의 결함 상태를 되돌리는"),
+                    "plant:test-run": ("시운전 확인", "가상 설비 시계열의 태그 값을 읽어 판정하는"),
+                    "incident:reobserve": ("효과 확인", "가상 설비 시계열의 회복 기준 값으로 회복을 재는")}
+#: 학생 현장에서 같은 일을 하는 길 — 가져오기 · 실행의 거절 문장이 같은 말로 끝난다
+PLANT_ONLY_INSTEAD = ("내 설비 · 시스템의 정비와 확인은 그 시스템을 부르는 「승인 뒤 MCP 호출」 단계로 그리세요"
+                      "(값을 읽어 확인하는 단계는 읽기 확인)")
+
+
+def plant_only_words(tool: str) -> str:
+    """가상 설비 전용 단계 하나의 머리 문장 — 「정비 수행은 가상 설비의 결함 상태를 되돌리는 단계라 가상 설비(HYD-01 · …)의 처리 건에서만 합니다」."""
+    from hydcommon.topics import ASSETS
+    name, does = PLANT_ONLY_TOOLS[tool]
+    return f"{name}{particle(name, '은')} {does} 단계라 가상 설비({' · '.join(ASSETS)})의 처리 건에서만 합니다"
+
+
+def plant_only_refusal(tool: str | None, inst: dict) -> str | None:
+    """이 처리 건에서 그 시스템 단계를 할 수 없는 까닭(가상 설비 전용 단계인데 처리 건의 설비가 가상 설비가 아니다) — 할 수 있으면 None."""
+    if tool not in PLANT_ONLY_TOOLS or plant_case(inst):
+        return None
+    asset = variables(inst).get("asset")
+    where = (f"이 처리 건의 설비 {asset}{particle(str(asset), '은')} 가상 설비가 아닙니다" if asset not in (None, "")
+             else "이 처리 건에는 설비 값(asset)이 없습니다")
+    return f"{plant_only_words(tool)} — {where}"
+
+
+def timer_scale(activity: dict | None, time_scale: float, *, plant: bool) -> float:
     """경계 타이머의 배율 = 그 타이머가 감싼 일의 시계(머리말 「시간 규칙」): 기다리는 부품은 배속 × 수업 압축, 재관측 · 시운전은 배속,
     그 밖(사람 · 에이전트 · IT 시스템 단계)은 1(벽시계). 전에는 에이전트 · 시스템 단계 타이머에 배속을 곱해 PT10M 이 벽시계 30초가 됐다
-    — 벽시계로 일하는 AI · ACK 30초 명령 단계가 일을 끝내기 전에 끊겼다(P1-12)."""
+    — 벽시계로 일하는 AI · ACK 30초 명령 단계가 일을 끝내기 전에 끊겼다(P1-12). plant = plant_case(그 처리 건) — 아니면 모두 1(벽시계)."""
     tool = (activity or {}).get("tool")
+    if not plant:
+        return 1.0
     if tool in wait_tools():
         return max(1.0, time_scale) * wait_compression()
     if tool in VIRTUAL_TIME_TOOLS:
@@ -370,6 +412,36 @@ def instance_binding(defn: Definition, inst: dict | None, role_name: str | None)
     return defn.role_binding(role_name)
 
 
+#: 작업 행 지시(query)의 꼴: 지시 글 → 「\n\n[InputData]\n」 + 입력 JSON 한 줄(입력이 있을 때) → 「\n\n[ConditionData]\n」 + 조건 값 JSON 한 줄
+#: (재작업 계획의 조건이 있을 때 — dependency_schedule). 붙이는 곳은 reach 한 곳, 읽는 곳은 query_parts 한 곳이다.
+INPUT_MARK, CONDITION_MARK = '[InputData]', '[ConditionData]'
+
+
+def query_parts(query: str) -> tuple[str, dict | None, dict | None]:
+    """작업 행 지시의 세 부분 → (지시 글, [InputData] 값, [ConditionData] 값 — 없는 부분은 None). 워커의 지시(worker/prompt.input_files)와
+    재생의 작업 기록(worker/ai_replay._task_context)이 이것만 쓴다 — 전에는 워커가 [InputData] 뒤를 통째로 JSON 하나로 읽어, 조건 값이 붙은
+    단계(다시 수행의 재작업 계획)는 「Extra data」로 늘 실패했다(2026-11-24 검토). 꼴에 맞지 않으면 그 자리를 대며 ValueError."""
+    decoder = json.JSONDecoder()
+    head, mark, rest = query.partition(INPUT_MARK)
+    inputs = None
+    if mark:
+        rest = rest.lstrip()
+        inputs, end = decoder.raw_decode(rest)
+        rest = rest[end:].strip()
+    else:
+        head, mark, rest = query.partition(CONDITION_MARK)
+        rest = (CONDITION_MARK + rest).strip() if mark else ''
+    condition = None
+    if rest:
+        if not rest.startswith(CONDITION_MARK):
+            raise ValueError(f'작업 지시의 {INPUT_MARK} 값 뒤에 모르는 글이 있습니다: {rest[:80]!r}')
+        rest = rest[len(CONDITION_MARK):].lstrip()
+        condition, end = decoder.raw_decode(rest)
+        if rest[end:].strip():
+            raise ValueError(f'작업 지시의 {CONDITION_MARK} 값 뒤에 모르는 글이 있습니다: {rest[end:].strip()[:80]!r}')
+    return head.rstrip(), inputs, condition
+
+
 def _query_text(activity: dict) -> str:
     """The product's query column: [Description] + [Instruction] (the agent's brief); [InputData] is appended when reached."""
     parts = []
@@ -486,8 +558,8 @@ def reach(defn: Definition, inst: dict, row: dict, workitems: list[dict], now: d
     if binding and not row.get("user_id"):
         row["user_id"], row["assignees"] = binding.get("endpoint"), [binding]
     inputs = {k: v for k, v in variables(inst).items() if k in (activity.get("inputData") or [])}
-    base = (row.get("query") or _query_text(activity)).split("[InputData]")[0].split('[ConditionData]')[0].rstrip()
-    row["query"] = f"{base}\n\n[InputData]\n{json.dumps(inputs, ensure_ascii=False)}" if inputs else base
+    base = (row.get("query") or _query_text(activity)).split(INPUT_MARK)[0].split(CONDITION_MARK)[0].rstrip()
+    row["query"] = f"{base}\n\n{INPUT_MARK}\n{json.dumps(inputs, ensure_ascii=False)}" if inputs else base
     prev = [w["id"] for w in _by_activity(workitems).values() if w["activity_id"] in _immediate_prev(defn, activity["id"]) and w["status"] == "DONE"]
     row["reference_ids"] = prev
     from . import dependency_schedule
@@ -495,13 +567,14 @@ def reach(defn: Definition, inst: dict, row: dict, workitems: list[dict], now: d
     condition_names=(dependency_schedule.entry(inst,row) or {}).get('condition_names',[])
     if condition_names:
         condition_data={key:variables(inst)[key] for key in condition_names if key in variables(inst)}
-        row['query']+='\n\n[ConditionData]\n'+json.dumps(condition_data,ensure_ascii=False)
+        row['query']+=f'\n\n{CONDITION_MARK}\n'+json.dumps(condition_data,ensure_ascii=False)
         inst['flow_state'].setdefault('condition_snapshots',{})[row['id']]={
             'inputs':deepcopy(condition_data),
             'sources':{key:deepcopy((inst.get('variable_sources') or {}).get(key)) for key in condition_data}}
     if row.get("user_id") and row["user_id"] not in inst.setdefault("participants", []):
         inst["participants"].append(row["user_id"])
-    events = [new_event_workitem(defn, inst, ev, now, timer_scale(activity, time_scale)) for ev in defn.attached_events(activity["id"])]
+    events = [new_event_workitem(defn, inst, ev, now, timer_scale(activity, time_scale, plant=plant_case(inst)))
+              for ev in defn.attached_events(activity["id"])]
     for event in events:
         prior = _by_activity(workitems).get(event['activity_id'])
         if prior and event['generation'] > int(prior.get('generation') or 0):
@@ -566,7 +639,7 @@ def process_submitted(defn: Definition, inst: dict, workitem: dict, workitems: l
     if missing:
         decisions, ok, reasons = {}, False, [f"분기를 판정할 새 값({', '.join(missing)})이 아직 없습니다"]
     else:
-        decisions, ok, reasons = _judge(defn, node_id, variables(inst))
+        decisions, ok, reasons = _judge(defn, node_id, variables(inst), workitems)
     if decisions:
         workitem["gateway_decisions"] = decisions
     if not ok:
@@ -840,41 +913,110 @@ def _state(seq: dict, values: dict) -> bool | None:
         raise ConditionTypeError(f"흐름 선 {seq.get('id') or '(id 없음)'}: {e} — 앞 단계가 낸 값의 자료형을 분기 조건에 맞추세요") from None
 
 
-def _judge(defn: Definition, node_id: str, values: dict) -> tuple[dict, bool, list[dict]]:
-    """run_completed_determination: can the flow leave this node? Returns (gateway_decisions, ok, cannotProceedErrors)."""
+def condition_names(expr: str) -> list[str]:
+    """분기 조건이 읽는 처리 건 값 이름(나온 차례, 겹침 없이)."""
+    return list(dict.fromkeys(n.id for n in ast.walk(compile_condition(expr)) if isinstance(n, ast.Name)))
+
+
+def reachable_activities(defn: Definition, from_node: str, known: dict) -> list[str]:
+    """from_node 가 끝난 뒤 처리 건이 닿을 수 있는 단계(차례대로). 분기 조건이 읽는 값을 known 이 모두 가지면 엔진과 같은 판정(_allowed_targets 의
+    규칙: 배타 분기는 참인 선, 없으면 기본 선)으로 길을 고르고, 하나라도 모르면(효과 확인의 회복처럼 아직 나오지 않은 값) 그 선도 갈 수 있는 길로
+    본다. 지나는 단계에 붙은 경계 타이머 뒤의 길도 닿을 수 있는 길이다 — from_node 자신의 타이머는 그 단계가 끝나면 취소되므로 빼다."""
+    def state(seq):
+        cond = seq.get("condition")
+        if not cond:
+            return True
+        return eval_condition(cond, known) if all(n in known for n in condition_names(cond)) else None
+
+    out, seen, queue = [], set(), [s["target"] for s in defn.outgoing(from_node)]
+    while queue:
+        n = queue.pop(0)
+        if n in seen:
+            continue
+        seen.add(n)
+        outs = defn.outgoing(n)
+        if n in defn.gateways and defn.gateways[n].get("type", "exclusiveGateway") == "exclusiveGateway":
+            conditioned = [s for s in outs if s.get("condition") and not sequence_properties(s).get("default")]
+            states = [(s, state(s)) for s in conditioned]
+            default = next((s for s in outs if sequence_properties(s).get("default") is True), None) or next((s for s in outs if not s.get("condition")), None)
+            nxt = [s for s, st in states if st is not False] + ([default] if default and not any(st is True for _, st in states) else [])
+        else:
+            nxt = [s for s in outs if state(s) is not False]
+        if n in defn.activities:
+            out.append(n)
+            queue += [e["id"] for e in defn.attached_events(n)]
+        if n in defn.events and defn.events[n].get("type") == "endEvent":
+            continue
+        queue += [s["target"] for s in nxt]
+    return out
+
+
+def _judge(defn: Definition, node_id: str, values: dict, workitems: list[dict] | None = None) -> tuple[dict, bool, list[dict]]:
+    """run_completed_determination: can the flow leave this node? Returns (gateway_decisions, ok, cannotProceedErrors).
+    판정은 흐름이 실제로 갈 길을 따라 이어진 분기마다 한다 — 길을 고르는 규칙은 _next_nodes 와 같다(_allowed_targets: 참인 선, 없으면 기본 선 ·
+    아직 열리지 않는 병렬 합류에서 그 길은 기다림). 지나는 분기의 조건이 읽는 값이 처리 건에 없으면(앞 단계가 그 값을 내지 않았다 — 선택 칸을
+    비운 에이전트 결과 등) 판정하지 않고 멈춘다. 없는 값을 「아님」으로 쳐 「그 밖의 경우」 선으로 보내면, 값이 빠진 것이 흐름의 정상 결과로
+    남는다. 나갈 선이 없는 분기에서도 멈춘다. 전에는 바로 이어진 분기만 보아, 그 뒤 분기(승인? → 위험?)는 없는 값을 「아님」으로 쳐 기본 선으로
+    갔고, 나갈 선이 없는 뒤 분기는 아무 단계에도 닿지 않은 채 단계를 끝냈다(열린 일 없이 진행 중인 처리 건). workitems = 이 처리 건의 행 —
+    병렬 합류가 열리는지를 이 단계가 끝난 뒤의 행으로 본다(_advance 가 같은 판정을 한다)."""
     decisions: dict = {}
-    outs = defn.outgoing(node_id)
-    if not outs:
+    if not defn.outgoing(node_id):
         return decisions, True, []
-    ok = False
-    for s in outs:
-        tgt = s["target"]
-        if _state(s, values) is False:
+    after = [dict(w, status="DONE") if w.get("activity_id") == node_id else w for w in workitems or []]
+    absent: dict[str, list[str]] = {}
+    stuck: list[str] = []
+    leaves = False
+    queue, seen = [node_id], set()
+    while queue:
+        cur = queue.pop(0)
+        if cur in seen:
             continue
-        if tgt not in defn.gateways:
-            ok = True
+        seen.add(cur)
+        if cur != node_id and is_parallel_join(defn, cur) and not _join_ready(defn, cur, after):
+            leaves = True                   # 이 길은 합류에서 기다린다 — 합류 뒤 분기는 마지막으로 닿는 길이 판정한다
             continue
-        gw_type = defn.gateways[tgt].get("type", "exclusiveGateway")
-        states = {}
-        decisions.setdefault(tgt, {"selected": [], "sequences": {}})
-        for gs in defn.outgoing(tgt):
-            is_default = sequence_properties(gs).get("default") is True or not gs.get("condition")
-            if is_default:
-                decisions[tgt]["default"] = gs["id"]              # a default flow is not judged (the product records conditionEval only)
-                continue
-            st = _state(gs, values)
-            states[gs["id"]] = st
-            decisions[tgt]["sequences"][gs["id"]] = {"target": gs["target"], "condition": gs.get("condition") or gs.get("name"), "eval": bool(st)}
-            if st:
-                decisions[tgt]["selected"].append(gs["id"])
-        has_default = "default" in decisions[tgt]
-        # 병렬 분기는 모든 가지를 연다(등록 검사가 병렬 선의 조건을 금지 — A-11: 조건 판정 갈래를 지움)
-        gw_ok = gw_type == "parallelGateway" or any(states.values()) or has_default
-        ok = ok or gw_ok
-    names = ", ".join((defn.gateways.get(g) or {}).get("name") or g for g in decisions) or node_id
-    reasons = [] if ok else [f"나가는 흐름의 조건이 모두 맞지 않아 다음 단계로 가지 못했습니다(분기: {names}) — 흐름에 「그 밖의 경우」 선을 두거나 "
-                             "앞 단계 값을 고친 뒤 다시 수행하세요"]
-    return decisions, ok, reasons
+        judged = [s for s in defn.outgoing(cur)
+                  if s.get("condition") and (cur == node_id or sequence_properties(s).get("default") is not True)]
+        missing = [n for s in judged for n in condition_names(s["condition"]) if values.get(n) is None]
+        if missing:
+            absent[cur] = missing           # 어느 길로 갈지 모른다 — 이 분기 뒤는 보지 않는다
+            continue
+        if cur in defn.gateways:
+            decisions[cur] = _gateway_decision(defn, cur, values)
+        targets = _allowed_targets(defn, cur, values)
+        if cur in defn.gateways and not targets:
+            stuck.append(cur)
+        for tgt in targets:
+            if tgt in defn.gateways:
+                queue.append(tgt)
+            else:
+                leaves = True
+
+    def names(nodes) -> str:
+        return ", ".join((defn.gateways.get(n) or {}).get("name") or n for n in nodes)
+    if absent:
+        missing = list(dict.fromkeys(n for ns in absent.values() for n in ns))
+        return decisions, False, [f"분기({names(absent)})를 판정할 값이 처리 건에 없어 판정하지 않았습니다(없는 값: {', '.join(missing)}) — 그 값을 내는 "
+                                  "앞 단계가 값을 냈는지 확인하고(선택 칸을 비웠으면 채우도록 지시를 고친 뒤) 그 단계를 다시 수행하세요"]
+    if stuck or not leaves:
+        return decisions, False, [f"나가는 흐름의 조건이 모두 맞지 않아 다음 단계로 가지 못했습니다(분기: {names(stuck or list(decisions) or [node_id])}) — "
+                                  "흐름에 「그 밖의 경우」 선을 두거나 앞 단계 값을 고친 뒤 다시 수행하세요"]
+    return decisions, True, []
+
+
+def _gateway_decision(defn: Definition, gateway_id: str, values: dict) -> dict:
+    """분기 하나의 판정 기록 {selected, sequences, default} — 단계 행의 gateway_decisions 에 남는다. 기본 선은 판정하지 않는다(the product records
+    conditionEval only). 병렬 분기는 모든 가지를 연다(등록 검사가 병렬 선의 조건을 금지 — A-11)."""
+    out: dict = {"selected": [], "sequences": {}}
+    for gs in defn.outgoing(gateway_id):
+        if sequence_properties(gs).get("default") is True or not gs.get("condition"):
+            out["default"] = gs["id"]
+            continue
+        st = _state(gs, values)
+        out["sequences"][gs["id"]] = {"target": gs["target"], "condition": gs.get("condition") or gs.get("name"), "eval": bool(st)}
+        if st:
+            out["selected"].append(gs["id"])
+    return out
 
 
 def fire_event(defn: Definition, inst: dict, event_row: dict, workitems: list[dict], now: datetime | None = None,

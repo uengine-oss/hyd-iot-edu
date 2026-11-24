@@ -1,10 +1,15 @@
 """Source-declared PM applicability and cadence, separate from alert generations.
 
-Generic over PM documents: a policy is the base interval and tolerance, the same-model assets and one or more packages whose
+What a PM document may vary (policy()): the base interval and tolerance, the same-model assets and one or more packages whose
 intervals are whole multiples of the base interval (the smallest one is the base interval) and whose parts include every
 smaller package's parts — the cumulative structure service() relies on when it picks the largest package due. No part
 name, package count or interval ratio of one document is required (a PBL document with other parts or packages loads too).
 The bundle staffing requirement is the source's compliance rule (crew_required), not a constant here.
+
+What it does not vary — the plant side (CLAUDE.md 4절: 현장 쪽은 넓히지 않는다): the execution scope (scope()) is one unit or a
+bundle of exactly two units, and it reads this plant's CMMS rows (ent.pm_status — pm_since_h · pm_total_h · service_position ·
+night_window_* · following_window_* · hours_at_next_window · hours_at_following_window · existing_pm_order) and ERP stock rows.
+A document whose policy needs a three-unit bundle or other window kinds is refused by policy() / scope() with the reason.
 """
 from copy import deepcopy
 import json

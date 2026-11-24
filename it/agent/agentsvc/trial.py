@@ -3,9 +3,12 @@
     원인 진단(hyd-dmn diagnose) → [스킬 절차가 부르는 보조 도구] → 사실 수집(hyd-dmn gather_facts) → 후보 · 규정 · 순위(hyd-dmn
     evaluate_cards와 같은 cards.evaluate). submit_decision · /api/incidents · 설비 명령은 이 모듈 어디에도 없다.
 
-같은 입력 보장 — 입력 스냅숏(record/replay): 세계를 읽는 호출(진단 · 사실 · 판단 엔진 입력 · 보조 도구)은 처음 한 번만 실제 원천에서 읽고
-그 결과를 스냅숏 항목으로 남긴다. 같은 스냅숏으로 다시 돌리면(에이전트 B, 같은 에이전트 재실행) 원천을 다시 읽지 않고 같은 값을 쓴다.
-따라서 같은 스냅숏 + 같은 설정이면 결과(fingerprint)가 같고, 결과 차이는 에이전트 설정 차이에서만 나온다. 읽기 실패도 스냅숏에 남긴다.
+같은 입력 보장 — 입력 스냅숏(record/replay): 설비 · 업무에서 읽는 값(신선도 · 근거 조회의 관측값 · 진단 규칙이 보는 값 · 판단 사실 · 조치 예측 ·
+보조 업무 · 시계열 조회)은 처음 한 번만 실제 원천에서 읽고 그 결과를 스냅숏 항목으로 남긴다. 같은 스냅숏으로 다시 돌리면(에이전트 B, 같은 에이전트
+재실행) 원천을 다시 읽지 않고 같은 값을 쓴다. 지식(원인 후보 · 근거 규칙의 기준 · 진단 · 판단 규칙 · 조치 방법 · 성과 지표 경로 · 선례 · 공급사)은
+스냅숏에 넣지 않고 늘 지금 그래프에서 읽는다 — 그래서 같은 스냅숏으로 지식을 바꾸기 전 · 후를 시험하면 같은 설비 값에서 지식의 효과만 보인다(전에는
+지식까지 고정해 바꾼 뒤에도 늘 같다고 나왔다 — 2026-11-22 탐사 N3). 같은 스냅숏 + 같은 설정 + 같은 지식이면 결과(fingerprint)가 같다. 읽기 실패도
+스냅숏에 남긴다.
 
 에이전트 설정이 결과를 바꾸는 곳(코드에 정답 없음 — 설정이 닿는 원천과 절차만 바뀐다):
   · 도구(MCP 서버) 구성: hyd-dmn 이 없으면 진단·판단을 못 한다(사유와 함께 멈춤). 업무 도구 서버 계열(enterprise · C2 로 나눈 보전용
@@ -23,6 +26,7 @@ import json
 import re
 from datetime import datetime, timezone
 
+from hydcommon.handover_tools import BUSINESS_SERVERS
 from hydcommon.words import josa
 from . import card as cardlib, cards, guardrail
 
@@ -30,13 +34,19 @@ ENGINE = "hyd-dmn"
 ENTERPRISE = "enterprise"
 GRAPH = "neo4j"
 ENTERPRISE_SOURCES = frozenset({"sys:mes", "sys:erp", "sys:qms", "sys:cmms"})
-ASSET_RE = re.compile(r"\bHYD-0\d\b")
-PART_RE = re.compile(r"\bP-[A-Z0-9]+(?:-[A-Z0-9]+)*\b")      # 스킬 본문에 적힌 부품 번호(공급사 조회 인자)
+
+
+def mentioned(codes, text: str) -> list[str]:
+    """글이 가리키는 코드(설비 코드 · 부품 번호) — 지식 지도가 아는 코드 가운데 글에 낱말로 적힌 것. 코드의 이름 꼴(「HYD-0n」 · 「P-…」)로 짐작하지
+    않는다: 전에는 수업 설비 · 부품 이름 꼴의 정규식이라, 다른 이름의 설비만 가리키는 스킬이 모든 시나리오에 적용됐다(전수검사 02-10). 더 긴 코드의
+    일부(HYD-01 ↔ HYD-010)는 치지 않는다."""
+    return sorted(c for c in set(codes) if c and re.search(rf"(?<![A-Za-z0-9-]){re.escape(c)}(?![A-Za-z0-9-])", text))
 
 
 def enterprise_family(server: str) -> bool:
-    """업무 도구 서버 계열인가 — enterprise 와 C2 로 나눈 enterprise-maint · enterprise-purchase(검진 P3-14)."""
-    return server == ENTERPRISE or server.startswith(ENTERPRISE + "-")
+    """기본 제공 업무 도구 서버인가 — enterprise 와 C2 로 나눈 enterprise-maint · enterprise-purchase(검진 P3-14). 이름표는 hydcommon 한 곳이고
+    이름 꼴로 가리지 않는다: 학생이 「enterprise-」로 시작하게 지은 자기 서버는 그 서버다(검진 N12 — 전에는 기본 제공 업무 시스템을 대신 읽었다)."""
+    return server in BUSINESS_SERVERS
 MAX_ROWS = 50
 
 # 스킬 본문에서 부를 수 있는 읽기 도구: 이름 → (서버, 인자 종류). 인자 종류: none · asset · part · failure_mode · skill_ids · sql · cypher
@@ -122,14 +132,26 @@ class LiveWorld:
             raise RuntimeError("지식 그래프에 아직 연결되지 않았습니다")
         return self._kg
 
-    def diagnose(self, asset: str, pattern: str) -> dict:
+    def diagnose(self, asset: str, pattern: str, observe) -> dict:
+        """원인 진단 — dmn-mcp diagnose 와 같은 조각. 지식(원인 후보 T1 · 근거 규칙의 기준 · 문서의 진단 규칙)은 지금 그래프에서, 설비에서 읽는 값
+        (신선도 · 근거 조회의 관측값 · 진단 규칙이 보는 값)은 observe(열쇠, 읽기)로 — 입력 묶음이 있으면 그 값이다."""
         from .tools import mcp_prom
-        fresh = mcp_prom.freshness(self.tsdb, asset)
+        from . import decide as decidelib
+        fresh = observe(key_of("freshness", asset), lambda: mcp_prom.freshness(self.tsdb, asset))
         if not fresh["ok"]:
             return {"withheld": True, "freshness": fresh, "causes": [], "reason": f"데이터 신뢰 불가: {fresh['reason']}"}
         t1 = self.kg.t1_causes(pattern)
-        results = self.tsdb.evaluate([e for r in t1 for e in (r.get("evidence") or [])], asset)
-        causes = cardlib.rank_causes(t1, results)
+        results = {}
+        for e in (e for r in t1 for e in (r.get("evidence") or [])):
+            # 관측은 근거 조회(SQL · 태그 · 창)의 값이고, 기준(비교 · 기준값)은 지식이라 지금 것으로 다시 판정한다
+            seen = observe(key_of("evidence", asset, e.get("sql"), e.get("tag"), e.get("windowSeconds")),
+                           lambda e=e: self.tsdb.evaluate([dict(e, id="observed")], asset)["observed"])
+            results[e["id"]] = judged_evidence(seen, e)
+        rules = decidelib.diagnosis_table(self.kg, t1)
+        # 캐시 열쇠의 변수 목록 — 조건에 변수가 없는 규칙(None)이 섞여도 글자로 정렬한다(2026-11-24 검토: None 과 글자를 견주다 TypeError)
+        facts = observe(key_of("diagnosis_facts", asset, pattern, sorted({t.get("variable") for r in rules for t in r.get("tests") or []}, key=str)),
+                        lambda: decidelib.diagnosis_facts(self.kg, self.tsdb, asset, pattern, rules)) if rules else {}
+        causes = cardlib.rank_causes(t1, results, rules, facts)
         assessment = cardlib.evidence_status(causes)
         if assessment["withheld"] or not causes:
             return {"withheld": True, "freshness": fresh, "causes": causes, "evidence_status": assessment,
@@ -143,22 +165,32 @@ class LiveWorld:
         """지식 그래프의 이상 패턴 코드 전부 — 스킬 본문이 어느 패턴만 가리키는지 읽을 때(코드에 패턴 목록 사본을 두지 않는다)."""
         return sorted(p["code"] for p in self.kg.patterns() if p.get("code"))
 
-    def gather_facts(self, asset: str, pattern: str, cause: dict) -> dict:
+    def codes(self) -> dict[str, list[str]]:
+        """지식 그래프가 아는 설비 코드(assets)와 부품 번호(parts) — 스킬 본문이 어느 설비 · 부품을 가리키는지 읽을 때."""
+        return self.kg.codes()
+
+    def gather_facts(self, asset: str, pattern: str, cause: dict, observe) -> dict:
+        """판단 사실 — 어느 변수를 읽을지는 지금 지식(규칙 · 정책)이 정하고, 그 값은 observe 로(변수 묶음이 다르면 새로 읽는다)."""
         from . import decide as decidelib
         known = {"pattern": pattern, "cause": cause["id"], "failure_mode": cause.get("failureModeId"),
                  "failure_mode_name": cause.get("failureMode")}
-        facts, prov = decidelib.facts_for(self.kg, self.tsdb, asset, known)      # 판단과 같은 변수 · 같은 원천
+        ctx = decidelib.judgment_context(self.kg, known)      # 판단과 같은 변수 · 같은 원천
+        facts, prov = observe(key_of("facts", asset, known, sorted(ctx["variables"])),
+                              lambda: decidelib.gather_facts(ctx["inputs"], asset, known, self.tsdb, variables=ctx["variables"]))
         return {"facts": facts, "provenance": prov}
 
-    def engine_inputs(self, asset: str, failure_mode: str, facts: dict) -> dict:
+    def engine_inputs(self, asset: str, failure_mode: str, facts: dict, observe) -> dict:
+        """판단 엔진의 입력 — 규칙 · 조치 방법 · 성과 지표 경로 · 선례 · 공급사는 지금 지식, 조치 예측(지금 설비 상태로 돌린 모델)만 observe 로."""
         from . import forecasting
         dmn = self.kg.dmn()
         cand_ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
-        skills = {r["skillId"]: r for r in self.kg.skills(cand_ids)}
+        skills = cards.with_relation({r["skillId"]: r for r in self.kg.skills(cand_ids)}, failure_mode)
         compliance = [r for r in dmn if r["decision"] == "dec:compliance"]
         stopping = {sid for sid, k in skills.items()
                     if cards.stops_now(cards.option_window(compliance, sid, k, facts.get("windows_by_variable")))}
-        forecasts, contexts = forecasting.candidates(self.kg, asset, skills, stopping)
+        actions = {sid: [[a.get("code"), a.get("value")] for a in k.get("actions") or []] for sid, k in sorted(skills.items())}
+        forecasts, contexts = observe(key_of("forecast", asset, actions, sorted(stopping)),
+                                      lambda: list(forecasting.candidates(self.kg, asset, skills, stopping)))
         return {"dmn": dmn, "skills": skills, "forecasts": forecasts, "forecast_contexts": contexts,
                 "tradeoffs": self.kg.tradeoffs(cand_ids), "precedents": self.kg.precedents(failure_mode or ""),
                 "suppliers": self.kg.suppliers()}
@@ -187,6 +219,24 @@ class LiveWorld:
         raise ValueError(f"시험 실행이 부를 수 없는 도구입니다: {server}/{tool}")
 
 
+def judged_evidence(seen: dict, e: dict) -> dict:
+    """입력 묶음의 근거 관측(값 · 덮음 · 오류)을 지금 지식의 비교 · 기준값으로 판정한다 — 관측값을 모르면(자료 없음 · 기록 빈틈 · 조회 오류) 그대로
+    판정하지 않은 것이다(mcp_tsdb.evaluate 와 같은 규칙)."""
+    out = dict(seen)
+    if seen.get("status") in ("PASS", "FAIL") and isinstance(seen.get("value"), (int, float)):
+        try:
+            passed = cardlib.passes(e.get("expect"), seen["value"], float(e["threshold"]))
+        except (TypeError, ValueError, KeyError):
+            return dict(out, value=seen["value"], passed=None, status="UNKNOWN", reason="QUERY_ERROR", error_kind="INVALID",
+                        error="근거 규칙의 기준값이 숫자가 아닙니다")
+        out.update(passed=passed, status="PASS" if passed else "FAIL")
+    return out
+
+
+#: 보조 도구 가운데 설비 · 업무에서 값을 읽는 것(입력 묶음에 고정) — 나머지(규칙 · 입력 정의 · 선례 · 성과 지표 경로 · 시계열 구조 · 그래프 조회)는 지식이라 늘 지금 것
+OBSERVED_TOOLS = frozenset({"timeseries_query"})
+
+
 def read_cypher(driver, query: str) -> list[dict]:
     """A skill's own Cypher, read transaction only, refused up front when it writes."""
     if CYPHER_WRITE.search(query or ""):
@@ -201,11 +251,11 @@ def read_cypher(driver, query: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------- skills → procedure
-def skill_scope(skill: dict, scenario: dict, pattern_codes) -> tuple[bool, str | None]:
+def skill_scope(skill: dict, scenario: dict, pattern_codes, asset_codes) -> tuple[bool, str | None]:
     """A skill applies everywhere unless its text names assets/patterns — then only there. Never a hidden answer list.
-    pattern_codes: the graph's AnomalyPattern codes (LiveWorld.pattern_codes)."""
+    pattern_codes · asset_codes: the graph's AnomalyPattern codes and Asset codes (LiveWorld.pattern_codes · codes) — 문서가 넣은 다른 설비도 든다."""
     text = " ".join(str(skill.get(k) or "") for k in ("name", "description", "content"))
-    assets = sorted(set(ASSET_RE.findall(text)))
+    assets = mentioned(asset_codes, text)
     patterns = sorted({p for p in pattern_codes if p in text})
     if assets and scenario["asset"] not in assets:
         return False, f"스킬 본문이 다른 설비({', '.join(assets)})만 가리킵니다"
@@ -302,19 +352,34 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
             if r and not any(c["ref"] == r for c in citations):
                 citations.append({"ref": r, "by": by})
 
-    def call(phase, server, tool, args, key, kind, fetch, by="engine"):
+    class Unread(Exception):
+        """입력 묶음의 관측 읽기가 실패로 남았다(그 실패도 묶음에 남아 B 도 같은 실패를 본다)."""
+
+    def call(phase, server, tool, args, run, by="engine"):
+        """run(observe): 지식은 지금 그래프에서 읽고, 설비 · 업무 값은 observe(열쇠, 읽기)로 입력 묶음에서(없으면 지금 읽어 남긴다)."""
         entry = {"seq": len(calls) + 1, "phase": phase, "server": server, "tool": tool, "args": args, "by": by}
         calls.append(entry)
         if server not in tools:
             # 어느 서버인지는 이 줄의 server 칸에 있다 — 문장에 서버 id 를 되풀이하지 않는다(화면이 그 칸을 이름으로 보인다)
             entry.update(status="BLOCKED", reason="이 에이전트의 도구 서버 구성에 이 도구의 서버가 없어 부르지 못했습니다")
             return None
-        ok, value, source = snapshot.read(key, kind, fetch)
-        entry["source"] = source
-        if not ok:
-            entry.update(status="FAILED", reason=value)
+        reads = []
+
+        def observe(key, fetch):
+            ok, value, source = snapshot.read(key, "observation", fetch)
+            reads.append(source)
+            if not ok:
+                raise Unread(value)
+            return value
+        try:
+            value = run(observe)
+        except Unread as e:
+            entry.update(status="FAILED", reason=str(e), source=reads[-1])
             return None
-        entry.update(status="DONE")
+        except Exception as e:  # noqa: BLE001 — 지식 읽기 실패(그래프에 닿지 못함 등)는 입력 묶음이 아니라 지금의 까닭이다
+            entry.update(status="FAILED", reason=reason_of(e), source="live")
+            return None
+        entry.update(status="DONE", source="snapshot" if reads and all(r == "snapshot" for r in reads) else "live")
         return value
 
     out = {"scenario": {"asset": asset, "pattern": pattern},
@@ -329,8 +394,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
         return out
 
     # 1. 원인 진단
-    dx = call("원인 진단", ENGINE, "diagnose", {"asset": asset, "pattern": pattern}, key_of("diagnose", asset, pattern),
-              "observation", lambda: world.diagnose(asset, pattern))
+    dx = call("원인 진단", ENGINE, "diagnose", {"asset": asset, "pattern": pattern}, lambda observe: _plain(world.diagnose(asset, pattern, observe)))
     if dx is None:
         last = calls[-1]
         return finish("NO_ENGINE_TOOL" if last["status"] == "BLOCKED" else "FAILED",
@@ -353,13 +417,14 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     cite(dx.get("citations") or calls[-1]["citations"], "원인 진단")
 
     # 2. 스킬 절차 (본문의 도구 언급 순서)
+    known = world.codes() if profile.get("skills") else {"assets": [], "parts": []}      # 스킬이 가리키는 설비 · 부품은 지식 지도의 코드로 알아본다
     for skill in sorted(profile.get("skills") or [], key=lambda s: str(s.get("name") or "")):
         info = {"name": skill.get("name"), "applied": False, "reason": None, "steps": 0}
         out["agent"]["skills"].append(info)
         if not str(skill.get("content") or "").strip():
             info["reason"] = skill.get("missing") or "스킬 본문이 비어 있어 따를 절차가 없습니다"
             continue
-        applies, why = skill_scope(skill, scenario, world.pattern_codes())
+        applies, why = skill_scope(skill, scenario, world.pattern_codes(), known["assets"])
         if not applies:
             info["reason"] = why
             continue
@@ -383,11 +448,11 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
                               "status": "FAILED", "reason": f"{josa(name, '은')} {server} 서버의 도구입니다(스킬 문서에는 {step['server']} 서버로 적혀 있습니다)"})
                 info["steps"] += 1
                 continue
-            parts = sorted(set(PART_RE.findall(str(skill.get("content") or ""))))
+            parts = mentioned(known["parts"], str(skill.get("content") or ""))
             if kind == "part" and len(parts) != 1:
                 calls.append({"seq": len(calls) + 1, "phase": "스킬 절차", "server": server, "tool": name, "args": {}, "by": by,
                               "status": "FAILED", "reason": "공급사 조회할 부품 번호를 스킬 본문에서 하나로 정할 수 없습니다"
-                              + (f"({', '.join(parts)})" if parts else "(본문에 P-로 시작하는 부품 번호가 없음)")})
+                              + (f"({', '.join(parts)})" if parts else "(본문에 지식 지도의 부품 번호가 없음)")})
                 info["steps"] += 1
                 continue
             args = {"none": {}, "asset": {"asset": asset}, "part": {"part": parts[0] if parts else None},
@@ -406,8 +471,9 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
                 continue
             seen.add(sig)
             info["steps"] += 1
-            value = call("스킬 절차", server, name, args, key_of("tool", server, name, args), "tool",
-                         lambda s=server, n=name, a=args: _clip(world.tool(s, n, a)), by=by)
+            value = call("스킬 절차", server, name, args,
+                         lambda observe, s=server, n=name, a=args: observe(key_of("tool", s, n, a), lambda: _clip(world.tool(s, n, a)))
+                         if n in OBSERVED_TOOLS or enterprise_family(s) else _plain(_clip(world.tool(s, n, a))), by=by)
             if value is not None:
                 calls[-1]["summary"] = _summary(name, value)
                 refs = _skill_citations(name, value)
@@ -417,8 +483,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     # 3. 사실 수집 (도구 구성이 닿는 원천만)
     gathered = call("사실 수집", ENGINE, "gather_facts",
                     {"asset": asset, "pattern": pattern, "cause": top["id"], "failure_mode": top.get("failureModeId")},
-                    key_of("gather_facts", asset, pattern, top["id"], top.get("failureModeId")), "observation",
-                    lambda: world.gather_facts(asset, pattern, top))
+                    lambda observe: world.gather_facts(asset, pattern, top, observe))
     if gathered is None:
         return finish("FAILED", calls[-1].get("reason"))
     facts = dict(gathered.get("facts") or {})
@@ -441,8 +506,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     # 4. 후보 → 규정 → 순위 (evaluate_cards 와 같은 순수 엔진)
     ctx = call("판단", ENGINE, "evaluate_cards",
                {"asset": asset, "pattern": pattern, "cause": top["id"], "failure_mode": top.get("failureModeId")},
-               key_of("engine", asset, top.get("failureModeId")), "knowledge",
-               lambda: world.engine_inputs(asset, top.get("failureModeId"), facts))
+               lambda observe: _plain(world.engine_inputs(asset, top.get("failureModeId"), facts, observe)))
     if ctx is None:
         return finish("FAILED", calls[-1].get("reason"))
     out["rules"] = sorted({r["rule"] for r in ctx.get("dmn") or []})

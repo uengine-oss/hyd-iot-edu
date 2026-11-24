@@ -29,10 +29,11 @@ WRITE_RANGES = {"FanSpeedSP": (0.0, 100.0), "LoadSP": (LOAD_MIN_PCT, 100.0), "Re
 PUMP_OF = {0: "A", 1: "B"}
 WRITERS = {"REMOTE_AUTO": {"HITL", "FUXA", "LOCAL"}, "REMOTE_MANUAL": {"FUXA", "LOCAL"}, "LOCAL": {"LOCAL"}}
 SOURCES = {"HITL", "FUXA", "LOCAL"}
+# 리셋 문턱(RESET_TOO_HOT 문장의 온도)은 설비 모형 한 곳(plant_model.RESET_TS1)에서 읽는다 — 글자로 베끼지 않는다(전수검사 06-13)
 TEXT = {"REMOTE_AUTO": "원격 자동", "REMOTE_MANUAL": "원격 수동", "LOCAL": "현장 제어",
         "RUN": "운전 중", "TRIP": "보호 정지", "STOP": "계획 정지", "DONE": "완료", "REJECTED": "거절",
         "OUT_OF_RANGE": "허용 범위 초과", "MODE_MISMATCH": "운전 모드 확인 필요", "INTERLOCK_TRIP": "보호 정지 중 (리셋만 가능)",
-        "RESET_TOO_HOT": "유온이 55 ℃ 아래로 내려간 뒤 리셋", "EXPIRED": "명령 시한 지남", "DUPLICATE": "이미 실행한 명령",
+        "RESET_TOO_HOT": f"유온이 {RESET_TS1:g} ℃ 아래로 내려간 뒤 리셋", "EXPIRED": "명령 시한 지남", "DUPLICATE": "이미 실행한 명령",
         "BAD_EXPIRY": "명령 시한을 읽을 수 없음", "BAD_FORMAT": "명령 형식이 맞지 않음", "NO_WRITES": "바꿀 값이 없음",
         "UNKNOWN_RESOURCE": "없는 설정 항목", "UNKNOWN_SOURCE": "허용되지 않은 명령 출처",
         "OVERTEMP": "유온 높음", "LOW_PRESSURE": "토출 압력 낮음", "HIGH_VIBRATION": "팬 진동 높음"}

@@ -42,10 +42,10 @@
     output: ['결과를 담을 값 이름', 'text'], extract: ['결과에서 꺼낼 값', 'object'], effect: ['호출 목적', 'boolean'],
     duration: ['기다릴 시간', 'text'], until: ['기다릴 시각이 담긴 값', 'text'], label: ['대기 중 표시할 이름', 'text'],
     outcome: ['처리 결과', 'outcome'], title: ['보고 제목', 'text'], summary: ['보고 내용', 'textarea'], notify: ['추가 보고 대상', 'array'],
-    mail: ['공지 메일', 'object'], component: ['정비할 부품', 'component'], sop: ['조치 방법', 'text'],
+    mail: ['공지 메일', 'object'],
     work_order_var: ['정비 요청이 담긴 값', 'text'], purchase_order_var: ['발주가 담긴 값', 'text'],
     criteria: ['확인 기준', 'object'], settle: ['안정될 때까지 기다릴 시간', 'text'],
-    reset_counter: ['통과하면 운전시간 초기화', 'boolean'], window_var: ['정비 예정 시간이 담긴 값', 'text']
+    window_var: ['정비 예정 시간이 담긴 값', 'text']
   };
   function configValue(key, raw) {
     if (raw.trim() === '') return undefined;
@@ -384,7 +384,7 @@
     let xml = '';
     try {
       xml = await file.text();
-      const view = await call('POST', '/api/flows/import', { xml, file_name: file.name, start_patterns: [], definition_id: S.el.querySelector('#flowId').value.trim() || null });
+      const view = await call('POST', '/api/flows/import', { xml, file_name: file.name, definition_id: S.el.querySelector('#flowId').value.trim() || null });
       const r = view.reimport || {};
       S.xml[view.definition_id] = xml;
       S.importing = false;
@@ -440,7 +440,7 @@
         return `<tr data-row="${h(f.id)}" data-var="${h(c.default ? '' : c.var || '')}"${c.default ? ' data-default' : ''}>${i ? '' : `<td rowspan="${outs.length}"><b>${h(UI.flowName(g.name || '(이름 없는 갈림)'))}</b></td>`}<td>${h(branchWords(c) || UI.flowSeq(f.name) || f.name || '조건 없음')}</td><td>${h(UI.flowName(nodeName(f.target)))}</td></tr>`; }); }).join('');
     const name = m.name || p.process.name || '';
     const kv = [['흐름 이름', open && open.flow_name ? `<input class="input" id="flowName" value="${h(name)}" aria-label="흐름 이름">` : h(name)],
-      ['시작', start.kind === 'alert' ? `경보로 시작 — ${(start.patterns || []).map(x => h(UI.patternName(x))).join(' · ') || '경보 종류 없음'}` : start.kind === 'human' ? `사람 입력으로 시작${(start.fields || []).length ? ` — ${start.fields.map(f => h(f.text || f.key)).join(' · ')}` : ''}` : '–'],
+      ['시작', start.kind === 'alert' ? `경보로 시작 — ${[...(start.patterns || []).map(x => UI.patternName(x)), ...(start.declared || []).map(d => d.name || d.pattern)].map(h).join(' · ') || '경보 종류 없음'}` : start.kind === 'human' ? `사람 입력으로 시작${(start.fields || []).length ? ` — ${start.fields.map(f => h(f.text || f.key)).join(' · ')}` : ''}` : '–'],
       ...p.lanes.filter(l => m.lanes[l.id]).map(l => [`칸 「${h(l.name || '이름 없음')}」`, h(m.lanes[l.id])])];
     const note = open ? `지금은 흐름 이름과 AI 에이전트 ${agentOk.size}곳만 바꿉니다. 나머지는 제공한 그대로 읽기만 합니다.`
       : '기본 제공 흐름은 읽기만 합니다. 고쳐 쓰려면 그림을 받아 bpmn.io에서 고친 뒤 다른 흐름 구분 이름으로 가져옵니다.';
@@ -463,7 +463,9 @@
         ${UI.section('흐름', UI.field({ label: '흐름 이름', input: `<input id="flowName" value="${h(m.name || p.process.name || '')}">` }))}
         ${UI.section('시작 조건', `
           <div class="flow-start"><label class="pane-opt"><input type="radio" class="input" name="flowStart" value="alert" ${start.kind === 'alert' ? 'checked' : ''}>경보로 시작</label>
-            <div class="flow-opts">${patterns}</div><p class="muted">회복 기준은 기준 흐름의 것을 그대로 씁니다.</p></div>
+            <div class="flow-opts">${patterns}</div><p class="muted">위 경보는 이 포털이 아는 경보이고 회복 기준도 이미 정해져 있습니다.</p>
+            ${UI.field({ label: '내 경보 종류', input: `<textarea id="flowDeclared" rows="2" spellcheck="false" placeholder="APU_AIR_LEAK = 공기 누설 의심">${h((start.declared || []).map(d => `${d.pattern} = ${d.name}`).join('\n'))}</textarea>`,
+              hint: '내 시스템이 보내는 경보를 한 줄에 「코드 = 이름」으로 적습니다. 코드는 경보의 pattern 칸 값과 같아야 하고, 회복은 내 시스템이 보내는 해제(CLEAR)입니다.' })}</div>
           <div class="flow-start"><label class="pane-opt"><input type="radio" class="input" name="flowStart" value="human" ${start.kind === 'human' ? 'checked' : ''}>사람 입력 · 직접 시작</label>
             <div id="flowStartFields" data-rows-of="start"></div>
             <p class="muted">칸마다 값 이름(영문) · 화면 이름 · 종류를 고릅니다. 고르기 칸의 고를 값은 쉼표로 나눕니다.</p></div>`, 'flow-one')}
@@ -568,9 +570,8 @@
       if (key === 'mail' && !config.mail?.arguments && !config.mail?.server && !config.mail?.tool) return `<fieldset class="fieldset flow-mail"><legend>공지 메일</legend><div role="group">${[['to','받는 사람'],['cc','참조'],['subject','메일 제목'],['body','메일 내용']].map(([k,label]) => UI.field({label,input: k === 'body' ? `<textarea data-mail="${h(task.id)}" data-mail-key="${k}" rows="3">${h(config.mail?.[k] ?? '')}</textarea>` : `<input data-mail="${h(task.id)}" data-mail-key="${k}" value="${h(config.mail?.[k] ?? '')}">`})).join('')}</div></fieldset>`;
       const attrs = `data-service="${h(task.id)}" data-cfg="${h(key)}" aria-label="${h(label)}"`;
       let input;
-      if (['boolean', 'outcome', 'component'].includes(type)) {
+      if (['boolean', 'outcome'].includes(type)) {
         const choices = type === 'boolean' ? (key === 'effect' ? [['true', '변경 실행'], ['false', '조회만']] : [['true', '예'], ['false', '아니요']])
-          : type === 'component' ? [['cooler', '쿨러'], ['pump', '펌프'], ['fan', '팬']]
           : S.cat.report_outcomes.map(x => [x, x]);                       // 서버가 준 목록(effect_parts.REPORT_OUTCOMES 한 곳)
         input = `<select ${attrs}><option value="">기본값 사용</option>${choices.map(([v, name]) => `<option value="${h(v)}" ${String(value) === v ? 'selected' : ''}>${h(name)}</option>`).join('')}</select>`;
       } else if (['object', 'array', 'textarea'].includes(type)) input = `<textarea ${attrs} rows="3" spellcheck="false">${h(value === undefined ? '' : type !== 'textarea' ? JSON.stringify(value, null, 2) : value)}</textarea>`;
@@ -671,7 +672,10 @@
     const switched = new Set();
     m.name = box.querySelector('#flowName').value.trim();
     const kind = (box.querySelector('input[name=flowStart]:checked') || {}).value;
-    m.start = kind === 'alert' ? { kind, patterns: [...box.querySelectorAll('[data-pattern]')].filter(c => c.checked).map(c => c.dataset.pattern) }
+    // 내 경보 종류: 한 줄에 「코드 = 이름」. 꼴 검사는 서버의 사전 검사가 칸 좌표와 함께 한다(여기서는 줄을 나누기만)
+    const declared = ((box.querySelector('#flowDeclared') || {}).value || '').split('\n').map(x => x.trim()).filter(Boolean)
+      .map(line => { const at = line.indexOf('='); return at < 0 ? { pattern: line, name: '' } : { pattern: line.slice(0, at).trim(), name: line.slice(at + 1).trim() }; });
+    m.start = kind === 'alert' ? { kind, patterns: [...box.querySelectorAll('[data-pattern]')].filter(c => c.checked).map(c => c.dataset.pattern), ...(declared.length ? { declared } : {}) }
       : kind === 'human' ? { kind, fields: checkFields(box.querySelector('#flowStartFields')._rows) } : {};
     box.querySelectorAll('[data-lane]').forEach(s => { if (s.value) m.lanes[s.dataset.lane] = s.value; else delete m.lanes[s.dataset.lane]; });
     box.querySelectorAll('[data-part]').forEach(s => {

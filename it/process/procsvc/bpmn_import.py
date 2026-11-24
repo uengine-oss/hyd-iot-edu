@@ -304,6 +304,10 @@ def catalog(base: dict, users: list[dict] | None = None, *, include_handover=Tru
         tool = a.get("tool") or ""
         if tool in effect_parts.BY_TOOL:        # 기준 흐름이 쓰는 승인 뒤 실행 부품(결과 보고 등)은 아래 일반 부품 목록이 설정과 함께 싣는다
             continue
+        if any(p["tool"] == tool for p in parts):
+            # 같은 부품을 두 갈래에 둔 기준 흐름(설비 명령 뒤 · 정비 요청만의 정비 요청 등록과 효과 확인)은 부품 하나다 — 단계는 tool 로 판정한다
+            # (instances.CONTROL_TOOLS). 첫 단계의 계약을 부품으로 싣는다
+            continue
         form_id = tool.split(":", 1)[1] if tool.startswith("formHandler:") else None
         contract = {k: deepcopy(v) for k, v in a.items() if k not in ("id", "name", "attachedEvents")}
         timers = [e.get("timer") for e in events if e.get("type") == "boundaryEvent" and e.get("attachedTo") == a["id"]
@@ -334,8 +338,10 @@ def catalog(base: dict, users: list[dict] | None = None, *, include_handover=Tru
     rank = next((p for p in parts if p["key"] == "task:rank" and p["kind"] == "agent"), None)
     diag = next((p for p in parts if p["key"] == "task:diagnose" and p["kind"] == "agent"), None)
     if rank is not None and diag is not None and rank.get("form") and diag.get("form"):
-        # 결과 = 진단(cause · failure_mode · guide_card — 설비 명령 승인은 가이드 카드에 있는 조치만 받는다) + 카드(decision · decision_id)
-        # 진단 칸은 선택(업무 경보 — 재고 · 운전시간 — 에는 센서 진단이 없을 수 있다). 명령 카드는 가이드 카드가 없으면 사건이 승인을 거절한다
+        # 결과 = 진단(cause · failure_mode · guide_card) + 카드(decision · decision_id). 진단 칸은 선택(업무 경보 — 재고 · 운전시간 — 에는 센서
+        # 진단이 없을 수 있다). 처리 건의 원인 진단 · 사건 카드는 AI 가 옮겨 적은 guide_card 가 아니라 등록한 판단 기록의 서버 진단이고
+        # (instances.incident_card), cause · failure_mode 는 그 판단의 원인과 같아야 한다(instances.decision_cause_gaps). 승인하는 명령의
+        # 기준은 판단 카드다(machine — 가이드 카드는 명령을 싣지 않는다)
         fields = [dict(f, required=False) for f in deepcopy(diag["form"].get("fields_json") or [])] + deepcopy(rank["form"].get("fields_json") or [])
         outs = [f["key"] for f in fields]
         contract = deepcopy(rank["contract"])
@@ -433,10 +439,10 @@ def merge_mapping(parsed: dict, old: dict | None, cat: dict) -> tuple[dict, dict
     if start.get("kind") in ("alert", "human"):
         m["start"] = deepcopy(start)
     else:
+        # 메시지 시작은 경보 시작이되, 어느 경보로 시작할지는 사람이 고른다(비워 두면 사전 검사가 「경보 패턴을 하나 이상 고르세요」) — 전에는 감지기
+        # 경보 전부를 미리 채워, 고르지 않은 흐름이 배포되면 모든 센서 경보의 경로를 가져갔다
         message = any(s.get("definition") == "message" for s in parsed["starts"])
-        sensor = [p for p in cat["patterns"] if p not in (cat.get("human_patterns") or []) + (cat.get("business_patterns") or [])]   # 메시지 시작의 기본값은 감지기 경보(사람 입력 · 업무 감시는 사람이 고름)
-        m["start"] = ({"kind": "alert", "patterns": sensor} if message and sensor
-                      else {"kind": "human", "fields": []})
+        m["start"] = {"kind": "alert", "patterns": []} if message else {"kind": "human", "fields": []}
     role_names = {r["name"] for r in cat["roles"]}
     for lane in parsed["lanes"]:
         if lane["id"] not in m["lanes"] and lane["name"] in role_names:
@@ -611,8 +617,93 @@ class _Graph:
         return {n: anc[of[n]] for n in self.nodes}
 
 
+def _pattern_names() -> dict:
+    from . import human_alert, business_monitor
+    return {**{k: v["name"] for k, v in human_alert.PATTERNS.items()}, **{k: v["name"] for k, v in business_monitor.PATTERNS.items()}}
+
+
+def unobservable_patterns(alert_policy: dict | None, cat: dict) -> list[str]:
+    """흐름을 여는 경보 가운데 시계열 회복 기준이 없는 것의 이름(alert_policy 머리말 — 회복은 원천의 해제뿐): 사람 입력 경보 · 업무 경보 · 내 시스템이
+    보내는 경보(start.declared). 효과 확인(재관측)은 그 기준의 시계열 값으로 회복을 재므로, 그런 흐름에 두면 맞는 조치를 골라도 늘 미달로 끝난다."""
+    names = _pattern_names()
+    return [c.get("name") or names.get(p) or p for p, c in ((alert_policy or {}).get("patterns") or {}).items() if not c.get("tag")]
+
+
+def offsite_patterns(alert_policy: dict | None, cat: dict) -> list[str]:
+    """흐름을 여는 경보 가운데 가상 설비 밖(내 시스템)에서 오는 것의 이름 — 이 포털이 아는 경보(기준 흐름 · 사람 입력 · 업무 경보)가 아닌 선언한
+    경보. 그 설비의 값은 가상 설비 시계열(tag_1s)에 없어, 시계열을 읽는 시운전 확인으로 잴 수 없다."""
+    return [c.get("name") or p for p, c in ((alert_policy or {}).get("patterns") or {}).items() if p not in cat["patterns"]]
+
+
+def plant_only_problems(activities: list[dict], nodes: dict, alert_policy: dict | None, cat: dict, kind: str | None,
+                        start_form: dict | None) -> list[dict]:
+    """가상 설비 전용 단계(engine.PLANT_ONLY_TOOLS — 정비 수행 · 시운전 확인 · 효과 확인)를 처리 건의 설비가 가상 설비가 아닐 수 있는 흐름에 두면
+    그 칸에서 막는다. 실행(instances._run_service)도 같은 표로 막는다 — 여기는 등록하기 전에 말하는 자리다.
+      * 가상 설비 밖(내 시스템)의 경보로 여는 흐름(start.declared): 그 경보의 설비는 가상 설비에 없다.
+      * 사람 입력으로 시작하는 흐름: 설비는 시작할 때 사람이 적는다 — 시작 칸 asset 이 가상 설비 셋 중에서 고르는 칸이 아니면 내 설비로도 시작된다.
+    효과 확인은 시계열 회복 기준이 없는 경보(사람 입력 · 업무 경보 — 설비는 가상 설비)로 여는 흐름에서도 막는다: 그 기준이 없어 늘 미달이다.
+    전에는 내 시스템 경보 흐름의 효과 확인 · 시운전만 막아, 그 흐름의 정비 수행과 사람 입력 흐름의 세 단계는 등록 · 배포된 뒤 실행 때 엉뚱한
+    까닭으로 실패하거나(설비 시뮬레이터에 없는 설비 → 「시작.bat 으로 시스템을 다시 켠 뒤」) 값 없음을 미달로 판정했다(시운전 확인)."""
+    from hydcommon.topics import ASSETS
+    out = []
+    blind, offsite = unobservable_patterns(alert_policy, cat), offsite_patterns(alert_policy, cat)
+    asset_field = next((f for f in (start_form or {}).get("fields_json") or [] if f.get("key") == "asset"), None)
+    fixed = bool(asset_field) and asset_field.get("type") == "select" and set(asset_field.get("items") or []) <= set(ASSETS)
+    for a in activities:
+        tool = a.get("tool")
+        if tool not in engine.PLANT_ONLY_TOOLS:
+            continue
+        where = nodes[a["id"]]
+        if offsite:
+            out.append(problem(where, "part", f"{engine.plant_only_words(tool)} — 이 흐름을 여는 경보 {' · '.join(offsite)}"
+                                              f"{particle(offsite[-1], '은')} 가상 설비 밖(내 시스템)의 경보라 그 설비가 가상 설비에 없습니다. "
+                                              f"{engine.PLANT_ONLY_INSTEAD}"))
+        elif kind == "human" and start_form is not None and not fixed:
+            out.append(problem(where, "part", f"{engine.plant_only_words(tool)} — 사람 입력으로 시작하는 이 흐름은 시작할 때 적는 설비(asset)가 "
+                                              "가상 설비로 정해져 있지 않아 내 설비로도 시작됩니다. 가상 설비의 흐름이면 시작 칸 asset 을 "
+                                              f"{' · '.join(ASSETS)} 중에서 고르는 칸(select)으로 두세요. {engine.PLANT_ONLY_INSTEAD}"))
+        elif blind and tool == "incident:reobserve":
+            out.append(problem(where, "part", f"효과 확인은 가상 설비 시계열의 회복 기준 값으로 회복을 잽니다 — 이 흐름을 여는 경보 "
+                                              f"{' · '.join(blind)}에는 그 기준이 없어(회복은 원천이 보내는 해제뿐) 효과 확인이 늘 "
+                                              "미달로 끝납니다. 결과는 내 시스템의 값을 읽는 「승인 뒤 MCP 호출」(읽기 확인)이나 사람이 "
+                                              "다시 확인하는 사람 단계, 업무 처리를 확인하는 단계(입고 확인 등)로 확인하세요"))
+    return out
+
+
+def _declared(spec, cat: dict, start_node, problems: list) -> list[dict] | None:
+    """start.declared(내 시스템이 보내는 경보 종류 [{pattern, name}]) 검사. 돌려줌 = 받을 목록(없으면 []), 문제가 있으면 None(문제는 problems 에)."""
+    from .alert_policy import PATTERN_RE
+    if spec in (None, []):
+        return []
+    where = start_node or {"kind": "start", "id": "", "name": ""}
+    if not isinstance(spec, list) or len(spec) > 20:
+        problems.append(problem(where, "start.declared", "내 경보 종류는 20개까지의 목록입니다"))
+        return None
+    out, seen = [], set()
+    for i, d in enumerate(spec, 1):
+        code = d.get("pattern") if isinstance(d, dict) else None
+        name = str(d.get("name") or "").strip() if isinstance(d, dict) else ""
+        if not isinstance(code, str) or not PATTERN_RE.match(code):
+            problems.append(problem(where, "start.declared", f"내 경보 종류 {i}번째의 코드 {code!r}는 쓸 수 없습니다 — 영문 대문자로 시작하고 "
+                                                            "대문자 · 숫자 · 밑줄만(2~64자, 예: APU_AIR_LEAK). 내 시스템이 경보의 pattern 칸에 보내는 값과 같아야 합니다"))
+            return None
+        if code in cat["patterns"]:
+            problems.append(problem(where, "start.declared", f"{code}{particle(code, '은')} 이 포털이 이미 아는 경보입니다 — 위 목록에서 고르세요"))
+            return None
+        if not name or len(name) > 80:
+            problems.append(problem(where, "start.declared", f"내 경보 종류 {code}의 이름을 적으세요(80자 이내, 예: 공기 누설 의심)"))
+            return None
+        if code in seen:
+            problems.append(problem(where, "start.declared", f"내 경보 종류 {code}{particle(code, '이')} 두 번 적혔습니다"))
+            return None
+        seen.add(code)
+        out.append({"pattern": code, "name": name})
+    return out
+
+
 def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
-    """정의 JSON 을 만들고 사전 검사한다. ctx = {catalog, definition_id, version, name, file_name, xml_sha256}.
+    """정의 JSON 을 만들고 사전 검사한다. ctx = {catalog, definition_id, version, name, file_name, xml_sha256, taken_names?}
+    (taken_names = 기본 제공 흐름의 이름 → 그 흐름 id — 다른 흐름은 그 이름을 쓰지 못한다).
     돌려줌: {ok, problems:[{where, field, reason}], definition, available:{node id: [{value, from}]}}."""
     cat = ctx["catalog"]
     mapping = mapping if isinstance(mapping, dict) else {}
@@ -647,21 +738,22 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     if kind == "alert":
         chosen = [p for p in (start_spec.get("patterns") or []) if isinstance(p, str)]
         unknown = [p for p in chosen if p not in cat["patterns"]]
+        declared = _declared(start_spec.get("declared"), cat, start_node, problems)
         if not cat["alert_start"] or not cat["patterns"]:
             problems.append(problem(start_node, "start", "기준 정의에 경보 시작 계약이 없어 경보로 시작할 수 없습니다"))
         elif unknown:
-            # 흐름이 경보로 시작하려면 그 경보가 「풀렸다」를 판정할 회복 기준(태그 · 비교 · 임계값)이 있어야 한다. 그 기준은 기준 흐름의 경보 정책과
-            # 사람 입력 · 업무 경보 정의에만 있다 — 지식에 새로 그린 경보 패턴은 회복 기준이 없어 여기서 고를 수 없다(무엇이 왜 안 되는지와
-            # 그 경보가 실제로 어디로 가는지, 고를 수 있는 것을 말한다)
+            # 고르는 목록(patterns)은 이 포털이 이미 아는 경보다 — 모르는 코드를 조용히 새 경보로 받으면 오타가 아무 경보도 받지 않는 흐름이 된다.
+            # 내 시스템이 보내는 새 경보 종류는 따로 선언한다(start.declared — 코드와 이름)
             problems.append(problem(start_node, "start.patterns",
-                                    f"경보 패턴 {', '.join(unknown)}{particle(', '.join(unknown), '으로')}는 이 흐름을 시작할 수 없습니다 — 흐름 가져오기는 회복 기준(경보가 풀렸다고 "
-                                    f"볼 태그 · 임계치)가 정해진 경보만 받습니다: {', '.join(cat['patterns'])}. 지식 지도에 새로 만든 경보 패턴은 회복 "
-                                    "기준이 없어 감지되면 「미지원 경보 → 현장 검토」 흐름으로 갑니다"))
-        elif not chosen:
-            problems.append(problem(start_node, "start.patterns", "이 흐름을 시작할 경보 패턴을 하나 이상 고르세요"))
-        else:
+                                    f"이 포털이 아는 경보가 아닙니다: {', '.join(unknown)} — 고를 수 있는 경보: "
+                                    f"{', '.join(cat['patterns'])}. 내 시스템이 보내는 새 경보 종류면 「내 경보 종류」에 코드와 이름을 적으세요"
+                                    "(회복은 내 시스템이 보내는 해제입니다)"))
+        elif declared is not None and not chosen and not declared:
+            problems.append(problem(start_node, "start.patterns", "이 흐름을 시작할 경보를 하나 이상 고르거나 내 경보 종류를 적으세요"))
+        elif declared is not None:
             policy = cat["alert_policy"]
-            alert_policy = {"patterns": {p: deepcopy(policy["patterns"][p]) for p in cat["patterns"] if p in chosen},
+            alert_policy = {"patterns": {**{p: deepcopy(policy["patterns"][p]) for p in cat["patterns"] if p in chosen},
+                                         **{d["pattern"]: {"requireClear": True, "name": d["name"]} for d in declared}},
                             "unsupported": deepcopy(policy.get("unsupported"))}
         start_values = list(ALERT_START_VALUES)
     elif kind == "human":
@@ -785,6 +877,17 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         for v in outs:
             produced_by.setdefault(v, []).append(t["id"])
     acts = {a["id"]: a for a in activities}
+    problems.extend(plant_only_problems(activities, g.nodes, alert_policy, cat, kind, start_form))
+    # 정기 정비 도래 경보만 받는 흐름의 정비 수행: 그 경보의 조치 후보는 늘 원문 정비 범위로 부품을 예약하는 정비 요청이고, 업무 시스템은 그 요청의
+    # 완료를 받지 않는다(예약 부품을 출고하는 거래가 없다 — 현장 쪽의 한계, 마이그레이션 080 의 거절). 그리면 승인 뒤에야 정비 수행이 실패한다
+    from . import business_monitor
+    if set((alert_policy or {}).get("patterns") or {}) == {business_monitor.PM_PATTERN}:
+        for a in activities:
+            if a.get("tool") == effect_parts.RESTORE_TOOL:
+                problems.append(problem(g.nodes[a["id"]], "part",
+                                        "정기 정비 도래 경보의 정비 요청은 정비 범위의 부품을 예약해 둔 요청이라, 이 업무 시스템은 그 요청의 정비 완료를 "
+                                        "받지 않습니다(예약한 부품을 출고하는 처리가 없습니다) — 이 흐름의 정비 수행은 승인 뒤 늘 실패합니다. 정기 정비 "
+                                        "흐름은 정비 요청 등록과 결과 보고까지 그리세요"))
     card_steps = [a for a in activities if a.get("tool") == APPROVAL_TOOL]
     if len({_rejects(a) for a in card_steps}) > 1:           # 같은 폼(select_card)을 두 계약이 나눠 쓸 수 없다
         for a in card_steps:
@@ -947,6 +1050,22 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             elif a["id"] in g.reach(g.succ(a["id"]), stop=lambda n: n in approvals):
                 problems.append(problem(t, "part", f"되돌아가는 선이 {effect} 부품을 사람 승인 없이 다시 실행합니다 — "
                                                    f"되돌아가는 선이 '{approval_name}'{particle(approval_name, '을')} 다시 거치게 그리세요"))
+        # 설비 명령보다 먼저 도는 다른 효과 부품: 설비 명령이 든 안을 승인한 사건은 그 명령이 나갈 때까지 승인 대기로 남는다(그 사이 경보가 풀리면
+        # 설비에 명령을 내지 않고 「조치 전 해소」로 닫으려고 — instances._incident_approved). 승인과 설비 명령 사이에 다른 효과 부품이 돌면 그 효과가
+        # 나간 뒤의 해제가 「조치 전」으로 적힌다 — 그런 차례는 받지 않는다(설비 명령 → 다른 효과 차례로 그리면 된다)
+        command_tool, command_name = "incident:command", EFFECT_TOOLS["incident:command"]
+        commands = {a["id"] for a in activities if a.get("tool") == command_tool}
+        if commands:
+            before_command = set().union(*(g.reach(g.succ(ap), stop=lambda n: n in commands or n in approvals) for ap in approvals)) if approvals else set()
+            for a in activities:
+                effect = None if effect_parts.is_read_check(a) else a["_part"].get("effect")
+                if not effect or a["id"] in commands or a["id"] not in before_command:
+                    continue
+                if g.reach(g.succ(a["id"]), stop=lambda n: n in approvals) & commands:
+                    problems.append(problem(g.nodes[a["id"]], "part",
+                                            f"{effect} 부품이 사람 승인과 {command_name} 사이에서 실행됩니다 — 사건은 {command_name}{particle(command_name, '이')} 나갈 때까지 "
+                                            f"승인 대기로 남아, 그 사이 경보가 풀리면 이 단계가 이미 낸 {effect}{particle(effect, '이')} 있는데도 「조치 전 해소」로 끝납니다. "
+                                            f"{command_name} 부품을 사람 승인 바로 뒤에 두고 이 단계는 그 뒤로 옮기세요"))
         # 사람 승인(안 고르기 · 조치 카드)은 반려도 낸다 — 그 뒤 효과 부품까지의 모든 경로가 '승인' 조건 선을 지나야 한다
         effects = {a["id"]: a["_part"]["effect"] for a in activities if a["_part"].get("effect")}
         closes_rejection = {a["id"] for a in activities if a.get("tool") == effect_parts.REPORT_TOOL
@@ -1044,6 +1163,14 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     raw["bpmnImport"] = {"processId": parsed["process"]["id"], "fileName": ctx.get("file_name"),
                          "sha256": ctx.get("xml_sha256"), "base": {"id": cat["base"]["id"], "version": cat["base"]["version"]},
                          "mapping": deepcopy(mapping)}
+    # 처리 건 화면은 흐름 이름으로 어느 흐름이 돌았는지 보인다 — 기본 제공 흐름(수업 흐름 · 기준 흐름)과 같은 이름이면 내 흐름의 배포가 빠져
+    # 기본 제공 흐름이 열려도 내 흐름이 돈 줄 안다(제공 그림을 고쳐 가져오면 그림의 프로세스 이름이 그대로 흐름 이름이 된다)
+    owner = (ctx.get("taken_names") or {}).get(raw["processDefinitionName"])
+    if owner and owner != raw["processDefinitionId"]:
+        name = raw["processDefinitionName"]
+        problems.append(problem({"kind": "process", "id": parsed["process"]["id"], "name": parsed["process"]["name"]}, "name",
+                                f"흐름 이름 「{name}」{particle(name, '은')} 기본 제공 흐름의 이름입니다 — 처리 건 화면에서 어느 흐름이 돌았는지 가를 수 "
+                                f"있게 다른 이름을 적으세요(예: 「내 {name}」)"))
 
     # -- 등록 검사(엔진 계약). 위 검사를 통과했을 때만 — 같은 사유를 두 번 보이지 않게.
     if not problems:

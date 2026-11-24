@@ -8,7 +8,7 @@
   svc:wait                 process:wait              시간 대기 — 기간(ISO) 또는 처리 건 값의 시각까지. 배속 × 수업 압축 배율        아니오
   svc:maintenance          plant:restore             정비 수행 모사 — 작업지시 완료(부품 소모) + 승인한 조치가 다루는 것만 시뮬레이터 복구 + 완료 공지   예
   svc:goods-receipt        enterprise:GR_CONFIRM     입고 확인 — 발주의 입고 예정까지 기다렸다가 입고 · 검수 기록, 전량 합격이면 사건 종결   예
-  svc:test-run             plant:test-run            시운전 확인 — 안정 시간 뒤 압력 · 유량 · 진동을 기준과 비교, 통과면 계수기 리셋   예
+  svc:test-run             plant:test-run            시운전 확인 — 정비 뒤 안정 시간이 지나면 흐름이 적은 기준 태그를 비교해 판정      예(승인 뒤 단계)
   svc:report               process:report            결과 보고 — 결과(정상 · 미달 · 지연 · 알림)를 담당자에게 알리고 사건을 닫는다    아니오
 
 활동(activity) 모양: {"type": "serviceTask", "tool": <tool>, "service": {<부품 설정>}, "inputData": [...], "outputData": [...]}.
@@ -37,11 +37,13 @@ TEST_RUN_TOOL = "plant:test-run"
 REPORT_TOOL = "process:report"
 TOOLS = (MCP_TOOL, PR_TOOL, WAIT_TOOL, RESTORE_TOOL, GR_TOOL, TEST_RUN_TOOL, REPORT_TOOL)
 #: 바깥(업무 시스템 · 메일 · 설비 시뮬레이터)에 효과를 내는 부품 — 앞 경로에 사람 승인이 있어야 등록된다(bpmn_import.check)
+#: 시운전 확인은 승인한 정비의 결과를 재는 단계라 승인 뒤에만 돈다(값을 읽어 판정만 한다). 전에는 통과하면 CMMS 운전시간 계수기를 리셋하는 칸이
+#: 있었다 — 그 거래는 정기 정비 요청을 끝낸 뒤에만 받는데 이 업무 시스템은 정기 정비 요청의 완료를 받지 않아 성공할 길이 없었다(마이그레이션 082 가
+#: 거래째 지웠다)
 EFFECTS = {MCP_TOOL: "MCP 쓰기(메일 등)", PR_TOOL: "ERP 발주", RESTORE_TOOL: "정비 수행 모사", GR_TOOL: "입고 확인",
-           TEST_RUN_TOOL: "시운전 확인 · 계수기 리셋"}
-#: 시운전 기준 기본값(흐름의 시운전 task 설정이 없을 때). 파워팩 정상 운전점 PS1 182 bar · FS1 9.0 l/min · VS1 0.6 mm/s 의 아래 한계 —
-#: 경보 회복 기준(흐름 정의 alertPolicy)과는 다른 계약이다(시운전은 유량도 본다)
-TEST_RUN_CRITERIA = {"PS1": [">=", 165.0], "FS1": [">=", 8.0], "VS1": ["<", 1.2]}
+           TEST_RUN_TOOL: "시운전 확인"}
+#: 시운전 기준에는 기본값이 없다 — 무엇을 재야 고친 것이 드러나는지는 그 흐름이 고치는 결함이 정한다(쿨러 정비 뒤면 유온, 펌프 정비 뒤면 토출 압력 ·
+#: 유량). 전에는 기본값이 유압 운전점(압력 · 유량 · 진동)이라 쿨러 결함을 다루지 않는 조치를 승인해도 시운전이 통과했다.
 TEST_RUN_OPS = (">=", ">", "<=", "<")
 #: 결과 보고의 결과 → 등급(ok 정상 종결 · fail 미달 종결 · rejected 반려 종결 · info 알림만, 사건은 그대로)
 #: 반려(캡스톤 G1 사람 승인의 반려 가지)도 처리 건의 끝이다 — 사건이 있으면 사건 모델의 '운전원 거부'(REJECTED_BY_OPERATOR)로 닫는다
@@ -55,7 +57,6 @@ TOOL_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*$")
 PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\}")
-COMPONENTS = ("cooler", "pump", "fan")                                  # plant-sim 복구 대상(ot/plant-sim FaultReq.component)
 #: 승인 경로(select)가 카드에서 확정해 처리 건 값으로 넣는 발주 값 — ERP 발주 · 공급사 메일 · 결과 보고가 쓴다. 2차 승인은 없다
 #: (확정 2026-10-09: 담당자 승인 1회. 전결 기준 300만 원 초과는 에이전트 요약 · 승인 화면에 표시만 한다 — PR-07 규칙 rule:pur-amount WARN)
 #: approved_supplier_name = 업무 DB 공급사 원장의 이름(견적 읽기가 싣는 ent.suppliers.name) — 화면이 공급사 이름을 사전에 박지 않고 이 값을 쓴다
@@ -84,19 +85,19 @@ PARTS = {
     "svc:wait": {
         "tool": WAIT_TOOL, "name": "시간 대기", "outputs": ["waited"],
         "help": "정해진 업무 시간(예: PT9H)이나 처리 건 값의 시각(예: work_order.window_starts_at)까지 기다립니다. "
-                "배속 × 대기 압축 배율로 줄여 기다립니다(기본 설정에서 업무 시간 하루가 12초). 경계 타이머를 붙이면 같은 배율이 적용됩니다.",
+                "가상 설비 · 모의 업무 시스템을 다루는 처리 건(설비 HYD-01~03)은 배속 × 대기 압축 배율로 줄여 기다리고(기본 설정에서 업무 시간 "
+                "하루가 12초), 그 밖의 설비 · 시스템(내 현장)을 다루는 처리 건은 벽시계 그대로 기다립니다. 경계 타이머를 붙이면 같은 시계가 적용됩니다.",
         "config": {"duration": "기다릴 업무 시간 ISO-8601 (예: PT9H, P5D)", "until": "기다릴 시각이 든 처리 건 값 (예: work_order.window_starts_at)",
                    "label": "화면에 보일 이름 (예: 예정된 정비 시간까지 대기)"},
     },
     "svc:maintenance": {
         "tool": RESTORE_TOOL, "name": "정비 수행 (모사)", "outputs": ["maintenance"], "inputs": ["asset"],
-        "help": "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 정비 요청이 있으면 CMMS 에서 완료 처리(표준 부품 소모), "
-                "가상 설비에서 승인한 조치 방법(SOP)이 지식 지도에서 다루는 원인의 상태만 정상으로 되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. "
-                "승인한 조치가 설비의 실제 결함을 다루지 않으면 결함은 그대로 남습니다 — 뒤에 효과 확인(효과 확인 · 시운전)을 두면 미달로 드러납니다. "
-                "설비 명령 경로(PLC)가 아닌 가상 설비 조작입니다.",
-        "config": {"component": "되돌릴 부품을 흐름이 직접 정할 때만: cooler · pump · fan (비우면 승인한 조치 방법이 지식 지도에서 다루는 것)",
-                   "sop": "정비 요청 완료 때 부품 소모 기준이자 고칠 대상을 찾는 SOP (예: SOP-COOL-14 — 비우면 승인한 카드의 SOP)",
-                   "work_order_var": "정비 요청 영수증 값 이름 (기본 work_order)",
+        "help": f"{engine.plant_only_words(RESTORE_TOOL)} — {engine.PLANT_ONLY_INSTEAD}. "
+                "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 정비 요청이 있으면 CMMS 에서 완료 처리(승인한 조치 방법의 "
+                "표준 부품 소모), 가상 설비에서 승인한 조치 방법(SOP)이 지식 지도에서 줄인다고 한(영향) 결함 상태만 정상으로 되돌리고, 완료 공지를 처리 건 "
+                "참여자에게 남깁니다. 고칠 대상과 조치 방법은 승인한 조치 후보 하나가 정합니다. 승인한 조치가 설비의 실제 결함을 줄이지 않으면(점검 · 측정만 하는 절차 포함) 결함은 "
+                "그대로 남습니다 — 뒤에 효과 확인이나 그 결함을 재는 기준의 시운전을 두면 미달로 드러납니다. 설비 명령 경로(PLC)가 아닌 가상 설비 조작입니다.",
+        "config": {"work_order_var": "정비 요청 영수증 값 이름 (기본 work_order)",
                    "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 대기 압축 적용)"},
     },
     "svc:goods-receipt": {
@@ -109,10 +110,12 @@ PARTS = {
     },
     "svc:test-run": {
         "tool": TEST_RUN_TOOL, "name": "시운전 확인", "outputs": ["test_run", "passed"], "inputs": ["asset"],
-        "help": "정비 뒤 설비를 안정시킨 다음(배속만 적용) 압력 · 유량 · 진동의 최신값을 기준과 비교합니다. 모두 통과하면 CMMS 운전시간 계수기를 "
-                "리셋하고 다음 기한을 기록합니다. 결과 passed 로 정상/미달 분기를 그립니다.",
-        "config": {"criteria": "기준 {태그: [연산, 값]} (기본 PS1 >= 165 · FS1 >= 8 · VS1 < 1.2)", "settle": "안정 시간 ISO-8601 (기본 PT10M, 배속만 적용)",
-                   "reset_counter": "통과하면 계수기 리셋 · 다음 기한 기록 (기본 true)", "work_order_var": "정비 요청 영수증 값 이름 (기본 work_order)"},
+        "help": f"{engine.plant_only_words(TEST_RUN_TOOL)} — {engine.PLANT_ONLY_INSTEAD}. "
+                "정비 뒤 설비를 안정시킨 다음(배속만 적용) 기준에 적은 태그의 최신값을 기준과 비교합니다. 기준은 고친 결함이 드러나는 값으로 "
+                "적습니다(예: 쿨러 정비 뒤 유온 {\"TS1\": [\"<\", 55]}, 펌프 정비 뒤 토출 압력 {\"PS1\": [\">=\", 165]}) — 기본값은 없습니다. 안정 "
+                "시간 동안 설비가 승인한 조치 밖에서 바뀌면(설비 초기화 · 수동 조작 등) 미달입니다. 값을 읽어 판정만 하고 설비 · 업무 시스템은 바꾸지 "
+                "않습니다. 결과 passed 로 정상/미달 분기를 그립니다.",
+        "config": {"criteria": "기준 {태그: [연산, 값]} — 꼭 적습니다 (예: {\"TS1\": [\"<\", 55]})", "settle": "안정 시간 ISO-8601 (기본 PT10M, 배속만 적용)"},
     },
     "svc:report": {
         "tool": REPORT_TOOL, "name": "결과 보고", "outputs": ["result_report"],
@@ -218,13 +221,14 @@ def validate(activity: dict) -> None:
                 raise ValueError(f"활동 {aid}: 대기 기간 '{cfg['duration']}'{particle(cfg['duration'], '을')} 읽을 수 없습니다 (예: PT9H, P5D)")
         elif not isinstance(cfg["until"], str) or not PATH_RE.match(cfg["until"]):
             raise ValueError(f"활동 {aid}: until 은 처리 건 값 이름(점으로 안쪽 칸, 예: work_order.window_starts_at)이어야 합니다")
-    if tool == RESTORE_TOOL and cfg.get("component") not in (None, "", *COMPONENTS):
-        raise ValueError(f"활동 {aid}: 복구 부품은 {', '.join(COMPONENTS)} 중 하나입니다")
     if tool == RESTORE_TOOL and cfg.get("until") not in (None, "") and (not isinstance(cfg["until"], str) or not PATH_RE.match(cfg["until"])):
         raise ValueError(f"활동 {aid}: until 은 처리 건 값 이름(예: work_order.after.window_starts_at)이어야 합니다")
     if tool == TEST_RUN_TOOL:
-        crit = cfg.get("criteria", TEST_RUN_CRITERIA)
-        if not isinstance(crit, dict) or not crit or any(not isinstance(t, str) or not re.match(r"^[A-Za-z][A-Za-z0-9_]{0,31}$", t)
+        crit = cfg.get("criteria")
+        if crit in (None, {}, ""):
+            raise ValueError(f"활동 {aid}: 시운전 기준을 적으세요 — 고친 결함이 드러나는 태그 {{태그: [연산, 값]}} (예: 쿨러 정비 뒤 "
+                             '{"TS1": ["<", 55]}). 기본값은 없습니다')
+        if not isinstance(crit, dict) or any(not isinstance(t, str) or not re.match(r"^[A-Za-z][A-Za-z0-9_]{0,31}$", t)
                                                           or not isinstance(c, (list, tuple)) or len(c) != 2 or c[0] not in TEST_RUN_OPS
                                                           or isinstance(c[1], bool) or not isinstance(c[1], (int, float)) for t, c in crit.items()):
             raise ValueError(f"활동 {aid}: 시운전 기준은 {{태그: [연산(>=, >, <=, <), 값]}} 이어야 합니다")
@@ -235,8 +239,6 @@ def validate(activity: dict) -> None:
                 ok = False
             if not ok:
                 raise ValueError(f"활동 {aid}: 안정 시간 '{cfg['settle']}'{particle(cfg['settle'], '을')} 읽을 수 없습니다 (예: PT10M)")
-        if "reset_counter" in cfg and not isinstance(cfg["reset_counter"], bool):
-            raise ValueError(f"활동 {aid}: reset_counter 는 true/false 입니다")
     if tool == REPORT_TOOL:
         notices = cfg.get("notify", [])
         if not isinstance(notices, list) or len(notices) > 10:
@@ -422,14 +424,16 @@ def placeholders(value) -> list[str]:
 
 def render(value, values: dict):
     """인자 틀 → 실제 인자. 문자열 전체가 {이름} 하나면 그 값을 그대로(숫자 · 객체), 섞여 있으면 글자로 바꿔 넣는다.
-    없는 값은 KeyError — 빈 메일을 보내지 않는다."""
+    없는 값은 KeyError — 빈 메일을 보내지 않는다. 글 안에 넣을 값이 비어 있어도(null) 같다(「발주 {purchase_order.ref}」가 「발주 」가 되지 않게)."""
     if isinstance(value, str):
         whole = PLACEHOLDER.fullmatch(value)
         if whole:
             return deepcopy(lookup(values, whole.group(1)))
         def text(m):
             v = lookup(values, m.group(1))
-            return v if isinstance(v, str) else ("" if v is None else _text(v))
+            if v is None:
+                raise KeyError(m.group(1))
+            return v if isinstance(v, str) else _text(v)
         return PLACEHOLDER.sub(text, value)
     if isinstance(value, dict):
         return {k: render(v, values) for k, v in value.items()}
@@ -488,11 +492,15 @@ def report_values(v: dict) -> list[dict]:
         rows.append(_value_row(ro["tag"], ro.get("value"), ro.get("op"), ro.get("limit"), ro.get("inside")))
         if ro.get("cleared") is not None:
             rows.append({"name": "경보 해제", "value": "예" if ro.get("cleared") else "아니요", "ok": bool(ro.get("cleared"))})
+        if isinstance(ro.get("outside"), dict):
+            rows.append(_outside_row(ro["outside"]))
     tr = v.get("test_run")
     if isinstance(tr, dict):
         for r in tr.get("readings") or []:
             if isinstance(r, dict) and r.get("tag"):
                 rows.append(_value_row(r["tag"], r.get("value"), r.get("op"), r.get("limit"), r.get("ok")))
+        if isinstance(tr.get("outside"), dict):
+            rows.append(_outside_row(tr["outside"]))
     gr = v.get("goods_receipt")
     if isinstance(gr, dict):
         after = gr.get("after") if isinstance(gr.get("after"), dict) else {}
@@ -528,6 +536,11 @@ def report_values(v: dict) -> list[dict]:
     return rows
 
 
+def _outside_row(change: dict) -> dict:
+    """처리 건이 열린 뒤 설비가 승인한 조치 밖에서 바뀐 기록 한 줄 — 위 측정값이 조치의 효과가 아니라는 근거(machine.outside_change)."""
+    return {"name": "승인한 조치 밖의 설비 변화", "value": str(change.get("what") or change.get("kind") or "기록 없음"), "ok": False}
+
+
 def _text(v) -> str:
     if isinstance(v, float) and v.is_integer():
         return str(int(v))
@@ -545,25 +558,26 @@ def parse_time(value) -> datetime:
     return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
 
 
-def wait_plan(virtual_seconds: float, now: datetime, time_scale: float, *, label: str | None = None, source: str | None = None) -> dict:
-    """가상(업무) 시간 → 실제 끝 시각. 음수(이미 지난 시각)는 0."""
+def wait_plan(virtual_seconds: float, now: datetime, time_scale: float, *, plant: bool, label: str | None = None, source: str | None = None) -> dict:
+    """업무 시간 → 실제 끝 시각. 음수(이미 지난 시각)는 0. plant = 가상 설비 · 모의 업무 시스템을 다루는 처리 건(engine.plant_case) — 그때만
+    배속 × 수업 압축으로 줄이고, 그 밖(학생 현장)은 벽시계 그대로다(engine 머리말 「시간 규칙」)."""
     virtual = max(0.0, float(virtual_seconds))
-    factor = max(1.0, float(time_scale)) * engine.wait_compression()
-    real = virtual / factor
+    scale, compression = (max(1.0, float(time_scale)), engine.wait_compression()) if plant else (1.0, 1.0)
+    real = virtual / (scale * compression)
     return {"label": label, "source": source, "virtual_s": round(virtual, 1), "real_s": round(real, 1),
-            "time_scale": max(1.0, float(time_scale)), "compression": engine.wait_compression(),
+            "time_scale": scale, "compression": compression, "clock": "가상 설비 · 모의 업무 시간" if plant else "벽시계",
             "started_at": engine.now_iso(now), "due_at": engine.now_iso(now + timedelta(seconds=real))}
 
 
-def wait_for(cfg: dict, values: dict, now: datetime, time_scale: float) -> dict:
-    """시간 대기 부품의 계획: duration(ISO 업무 기간) 또는 until(처리 건 값의 시각, 지금부터의 업무 시간)."""
+def wait_for(cfg: dict, values: dict, now: datetime, time_scale: float, *, plant: bool) -> dict:
+    """시간 대기 부품의 계획: duration(ISO 업무 기간) 또는 until(처리 건 값의 시각, 지금부터의 업무 시간). plant — wait_plan."""
     if cfg.get("duration"):
-        return wait_plan(engine.iso_duration_seconds(cfg["duration"]), now, time_scale, label=cfg.get("label"), source=cfg["duration"])
+        return wait_plan(engine.iso_duration_seconds(cfg["duration"]), now, time_scale, plant=plant, label=cfg.get("label"), source=cfg["duration"])
     raw = lookup(values, cfg["until"])
     if isinstance(raw, dict):
         raw = raw.get("starts_at") or raw.get("window_starts_at") or raw.get("expected_at")
     target = parse_time(raw)
-    return wait_plan((target - now).total_seconds(), now, time_scale, label=cfg.get("label"), source=f"{cfg['until']} = {engine.now_iso(target)}")
+    return wait_plan((target - now).total_seconds(), now, time_scale, plant=plant, label=cfg.get("label"), source=f"{cfg['until']} = {engine.now_iso(target)}")
 
 
 def due(plan: dict, now: datetime) -> bool:
@@ -600,8 +614,10 @@ def purchase_quote(option: dict, values: dict, quotes: list[dict]) -> dict | Non
     supplier = action.get("value")
     part, qty = purchase_inputs(values)
     if not supplier or not part or qty is None:
-        raise ValueError("발주 후보의 공급사 · 부품 · 수량을 확정할 수 없습니다 — 처리 건에 part_no · need_qty(또는 ERP 재고 경보 근거)가 있어야 "
-                         "금액을 계산하고 금액 기준 승인 분기를 탈 수 있습니다")
+        missing = " · ".join(w for w, v in (("공급사", supplier), ("부품", part), ("수량", qty)) if not v)
+        raise ValueError(f"이 안의 발주는 공급사 · 부품 · 수량이 정해져야 금액을 계산해 승인할 수 있는데, 이 처리 건에는 발주할 {missing}{particle(missing, '이')} "
+                         "없습니다(재고 기준 이탈 경보나 흐름의 시작 입력이 부품과 수량을 싣습니다) — 금액을 모르는 발주는 승인하지 않습니다. 발주가 없는 "
+                         "다른 안을 고르거나 반려하세요")
     if option.get('supplier_policy'):
         evidence = option.get('resolvedSupplier')
         if not isinstance(evidence, dict) or evidence.get('policy') != option['supplier_policy'] or \
@@ -620,6 +636,13 @@ def purchase_quote(option: dict, values: dict, quotes: list[dict]) -> dict | Non
     amount = price * qty
     if not quote.get("name"):
         raise ValueError(f"ERP 견적 {part} · {supplier} 에 공급사 이름이 없어 발주 값을 확정할 수 없습니다(견적 읽기 ent.part_quotes_read 의 name)")
+    # 사람이 승인 화면에서 본 금액 = 판단이 계산해 안에 실은 발주 금액(판단 때의 ERP 필요 수량 × 견적). 발주는 이 처리 건의 수량(경보 근거 · 시작 입력)으로
+    # 나간다 — 경보 뒤 재고가 바뀌어 둘이 다르면 본 금액과 다른 금액이 발주된다. 다르면 승인을 받지 않는다
+    shown = (option.get("facts") or {}).get("po_amount") if isinstance(option.get("facts"), dict) else None
+    if isinstance(shown, (int, float)) and not isinstance(shown, bool) and abs(shown - amount) > 0.01:
+        raise ValueError(f"이 안의 판단은 발주 금액을 {shown:g}만 원으로 계산했는데, 이 처리 건이 발주할 수량 {qty}개 × 단가 {price:g}만 원은 {amount:g}만 원입니다 — "
+                         "이 처리 건이 열린 뒤 재고(필요 수량)가 달라졌습니다. 화면에서 본 금액과 다른 금액을 발주하지 않습니다. 이 처리 건은 반려하고 "
+                         "지금 재고로 새 처리 건을 시작하세요")
     return {"approved_supplier": supplier, "approved_supplier_name": quote["name"], "approved_part_no": part, "approved_qty": qty, "approved_unit_price": price,
             "approved_amount": int(amount) if float(amount).is_integer() else amount,
             "quote": {"supplier": supplier, "name": quote.get("name"), "price": price, "lead_d": quote.get("lead_d"),

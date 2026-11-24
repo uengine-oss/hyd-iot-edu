@@ -31,7 +31,9 @@ MODEL_KEYS = ("agent_model", "agentModel", "model")
 #: users.role holds a category code in the HYD seed, not a sentence; say it in words where it is shown or prompted
 ROLE_WORDS = {"agent": "AI 에이전트", "system": "시스템 수행자", "operator": "운전원", "manager": "관리자"}
 #: class AI steps whose read tools are fixed (form contract of the step → allowed read tools per server, hydcommon.handover_tools):
-#: the shift-handover draft and the question answer. Every other agent step uses the read tools its servers' check stamped.
+#: the shift-handover draft and the question answer — for the built-in servers those lists name (the class recordings use exactly
+#: them). A server a student registered (PBL) has no fixed list: it is used with the read tools its connection check stamped, as in
+#: every other agent step (run_servers).
 HANDOVER_CONTRACT = "shift-handover-draft-v1"
 QUESTION_CONTRACT = "ask-answer-v1"
 FIXED_READS = {HANDOVER_CONTRACT: HANDOVER_READS, QUESTION_CONTRACT: QUESTION_READS}
@@ -106,14 +108,28 @@ def activity_capabilities(definition: dict | None, activity_id: str) -> dict:
 def run_servers(tools: list[str] | None, tenant_servers, contract: str | None = None) -> dict[str, list[str] | None]:
     """The MCP servers one run works with → {server: allowed read tools (fixed list) | None (the read tools its check stamped)}.
     tools: AgentSettings.tools (None = no declaration = every tenant server; [] = no overlap = none). For a class AI step with a
-    fixed read list (FIXED_READS by the step's form contract) only the servers that list names are used, with exactly those tools —
-    a selected server outside it would run with no allowed tool, so it is left out (the worker says so in a notice)."""
+    fixed read list (FIXED_READS by the step's form contract) the built-in servers that list names are used with exactly those
+    tools, and a server whose connection check stamped read tools for its current settings (a student's — PBL) with those (None);
+    any other selected server would run with no allowed tool, so it is left out (the worker says so in a notice). Before, a
+    student agent's question never reached the student's own server (2026-11-22 탐사 S)."""
     names = list(tenant_servers)
     chosen = names if tools is None else [t for t in tools if t in names]
     fixed = FIXED_READS.get(contract or "")
     if fixed is None:
         return {s: None for s in chosen}
-    return {s: list(fixed[s]) for s in chosen if s in fixed}
+    return {s: list(fixed[s]) if s in fixed else None for s in chosen if s in fixed or stamped_reads(tenant_servers, s)}
+
+
+def stamped_reads(tenant_servers, name: str) -> list[str]:
+    """그 서버의 지금 설정에 연결 검사가 찍은 읽기 도구(학생이 등록한 서버의 도장 — mcp_registry.gate_of, 워커의 bridge.gate_servers 와 같은
+    판정). 도장이 없거나 검사한 뒤 설정이 바뀌었으면 빈 목록. tenant_servers 가 서버 이름 목록뿐이면(설정 없음) 판정할 수 없어 빈 목록."""
+    from .mcp_registry import META_KEY, fingerprint
+    spec = tenant_servers.get(name) if isinstance(tenant_servers, dict) else None
+    meta = spec.get(META_KEY) if isinstance(spec, dict) and isinstance(spec.get(META_KEY), dict) else {}
+    gate = meta.get("gate") if isinstance(meta.get("gate"), dict) else {}
+    if not gate.get("read_tools") or gate.get("fingerprint") != fingerprint(spec):
+        return []
+    return [str(t) for t in gate["read_tools"]]
 
 
 def _first(config: dict, keys) -> str | None:

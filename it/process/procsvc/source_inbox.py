@@ -23,6 +23,27 @@ def digest(value):
     return hashlib.sha256(raw.encode('utf-8')).hexdigest()
 
 
+#: 명령 응답(ACK)이 같은 응답인지 가르는 칸 — PLC 가 그 뒤 상태 수신마다 다시 싣는 응답은 센서 값 · 상태 시각만 다르다
+ACK_FIELDS = ('asset', 'cmdId', 'result', 'reason', 'interlock')
+
+
+def semantic_of(kind, stored):
+    """같은 사건인지 견주는 업무 내용 — 접수 행에 남기는 원문(stored)에서 지금 규칙으로 뽑는다. 경보는 보낸 때(t)를 뺀 전부(원천 프로그램이 다시
+    켜지거나 재시도하면 보낸 때만 다르다 — 2026-11-23 학생 대역 실측), 명령 응답은 ACK_FIELDS, 그 밖(관문 거절 · 무효 · 상태)은 원문 그대로다."""
+    if kind in ('RAISE', 'CLEAR'):
+        return {k: v for k, v in stored.items() if k != 't'}
+    if kind == 'ACK':
+        return {k: stored.get(k) for k in ACK_FIELDS}
+    return stored
+
+
+def same_event(first, record) -> bool:
+    """새로 온 원천 사건(record)이 같은 사건 id 로 처음 받은 행(first)과 업무 내용이 같은가 — 처음 행의 원문으로 지금 규칙의 해시를 다시 계산해
+    견준다. 행에 남은 semantic_sha 는 그 행을 받은 때의 규칙이라, 규칙이 바뀌면(경보에서 보낸 때 t 를 뺌) 바꾸기 전에 받은 경보를 다시 보낸 것이
+    「충돌 — 다른 칸: 없음」이 됐다. 원문(payload)은 사건마다 처음 받은 그대로 남으므로 다시 계산하면 규칙이 바뀌어도 같은 답이다."""
+    return digest(semantic_of(first['kind'], first['payload'])) == record['semantic_sha']
+
+
 def source_record(topic, partition, offset, payload, *, source='kafka', wire=_DECODED):
     if topic not in (topics.K_ALERTS, topics.K_STATUS, topics.K_AUDIT):
         raise ValueError('unsupported source topic')
@@ -54,6 +75,9 @@ def source_record(topic, partition, offset, payload, *, source='kafka', wire=_DE
         aid, state = value.get('alertId'), value.get('state')
         if asset and isinstance(aid, str) and aid.strip() and state in ('RAISE', 'CLEAR'):
             kind, identity = state, ['alert', aid, state]
+            # 같은 경보인지는 업무 내용(설비 · 경보 종류 · 이름 · 심각도 · 상태 · 근거)으로 가린다 — 보낸 때(t)는 뺀다(semantic_of). 처음 받은 경보가
+            # 정본으로 남으므로 「언제 났는가」는 처음 것 그대로다
+            semantic = semantic_of(kind, value)
         else:
             kind, error = 'INVALID', 'alert requires asset, alertId and RAISE/CLEAR'
     elif not asset or '_raw' in value:
@@ -62,7 +86,7 @@ def source_record(topic, partition, offset, payload, *, source='kafka', wire=_DE
         kind, identity = 'ACK', ['command-ack', value['cmdId']]
         # The PLC repeats its retained ACK in later heartbeats. Changing sensor
         # values or heartbeat timestamps does not change that command's result.
-        semantic = {k: value.get(k) for k in ('asset', 'cmdId', 'result', 'reason', 'interlock')}
+        semantic = semantic_of(kind, value)
     if wire is _DECODED:
         wire_kind='decoded';wire_bytes=json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
     elif wire is None:
@@ -88,6 +112,15 @@ def kafka_record(record):
     except (UnicodeDecodeError,ValueError):
         value={'_raw':raw.decode('utf-8',errors='replace') if raw is not None else None}
     return source_record(record.topic,record.partition,record.offset,value,wire=raw)
+
+
+def conflict_sentence(first, again, kind) -> str:
+    """같은 사건 id 로 업무 내용이 다른 원천 사건이 왔을 때 원천(바깥 프로그램 · 설비)에게 돌려주는 문장 — 어느 칸이 다른지와 할 일."""
+    first, again = (v if isinstance(v, dict) else {} for v in (first, again))
+    differ = sorted(k for k in set(first) | set(again) if k != 't' and first.get(k) != again.get(k))
+    what = f"경보 {again.get('alertId')}의 {again.get('state')}" if kind in ('RAISE', 'CLEAR') else f'원천 사건({kind})'
+    return (f"{what}를 이미 받았는데 이번에 온 것은 내용이 다릅니다(다른 칸: {', '.join(differ) or '없음'}) — 처음 받은 것을 그대로 둡니다. "
+            '같은 사건을 다시 보낼 때는 같은 내용으로, 새 사건이면 새 경보 id(alertId)로 보내세요')
 
 
 def source_time(payload):
@@ -166,7 +199,7 @@ class does not execute a process, issue a command or declare business completion
             if first and record['kind'] == 'ACK':
                 # PLC 는 마지막 명령 응답을 그 뒤 모든 상태 수신(초마다)에 다시 싣는다 — 같은 응답(같은 명령 · 같은 결과)을 이미 받았으면
                 # 접수 행을 새로 만들지 않고 최신 상태만 고친다(STATUS 와 같은 규칙). 같은 명령의 다른 결과(CONFLICT)는 내용마다 한 번만 남긴다.
-                seen = first if first['semantic_sha'] == record['semantic_sha'] else c.execute(
+                seen = first if same_event(first, record) else c.execute(
                     '''select id from process_source_inbox where tenant_id=%s and event_key=%s and semantic_sha=%s limit 1''',
                     (self.tenant_id, record['event_key'], record['semantic_sha'])).fetchone()
                 if seen:
@@ -179,10 +212,10 @@ class does not execute a process, issue a command or declare business completion
                 status,error='INVALID','status requires an explicit source timestamp with timezone'
             if first:
                 parent = first['id']
-                status = 'DUPLICATE' if first['semantic_sha'] == record['semantic_sha'] else 'CONFLICT'
+                status = 'DUPLICATE' if same_event(first, record) else 'CONFLICT'
                 pinned = first['policy']
                 if status == 'CONFLICT':
-                    error = 'same business event identity contains conflicting source data'
+                    error = conflict_sentence(first['payload'], record['payload'], record['kind'])
             row = c.execute('''insert into process_source_inbox
                 (tenant_id,source,delivery_key,topic,partition_no,offset_no,event_key,asset,kind,payload,payload_sha,
                  semantic_sha,policy,status,parent_id,error,wire_kind,wire_base64,wire_sha)

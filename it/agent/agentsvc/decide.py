@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-from . import cards, guardrail
+from . import card as cardlib, cards, guardrail
 from hydcommon.words import josa, particle
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN
@@ -193,7 +193,7 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, variables
                 scale = stack_time_scale()
                 facts[var] = tsdb.fan100_hours(asset, time_scale=scale)
                 row.update(value=facts[var], time_scale=scale,
-                           how=f"팬 99 % 이상 연속 운전 시간(설비 시간 = 실제 시간 × 배속 {scale:g}, 매뉴얼 HM-8.5 · 8.8 — 관측이 없으면 미확인)")
+                           how=f"팬 99 % 이상 연속 운전 시간(설비 시간 = 실제 시간 × 배속 {scale:g} — 관측이 없으면 미확인)")
             elif src == "sys:mes" and var == "order_due_h":
                 mes = mcp_ent.fetch("/mes/orders?asset={asset}", asset)
                 facts[var] = (mes.get("facts") or {}).get("due_in_h")
@@ -349,17 +349,84 @@ def judgment_variables(dmn, skills, known, pattern, purchase) -> set[str]:
     return need
 
 
+def knowledge_of(dmn, skills, cand_ids, tradeoffs) -> dict:
+    """한 판단을 계산한 지식 {rules: 규칙 id, candidates: 조치 후보 id, digest: 그 내용의 지문}. 지문은 판단을 정하는 내용만 잰다 — 규칙의 조건(변수 ·
+    비교 · 기준값) · 효과 · 감점 · 순위식 · 가리키는 조치, 조치 후보의 종류 · 관계 · 원자 조치와 값 · 승인 역할 · 정책, 성과 지표 경로. 설명 글과 출처
+    (문서 판본 id 는 PC 마다 다르다)는 넣지 않는다. 목록(id)만으로는 같은 규칙의 기준값을 고친 지식을 가리지 못한다 — 두 판단의 지문이 같으면 그 차이는
+    지식이 아니라 설비 · 업무 상태에서 온 것이다. 지문으로 무엇을 하는지는 쓰는 쪽(워커 ai_replay.decision_gap · check_decision)이 정한다."""
+    import hashlib
+
+    def policy(value):
+        # 절차의 정책(JSON 글)에서 원문 인용 자리(anchor · …_anchor — 문서 판본 id 가 들어 PC 마다 다르다)를 뺀 내용
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                return value
+        if isinstance(value, dict):
+            return {k: policy(v) for k, v in value.items() if k != 'anchor' and not k.endswith('_anchor')}
+        return [policy(v) for v in value] if isinstance(value, list) else value
+
+    def rule(r):
+        return {'decision': r.get('decision'), 'hitPolicy': r.get('hitPolicy'), 'effect': r.get('effect'), 'penalty': r.get('penalty'),
+                'rankingPolicy': r.get('rankingPolicy'),
+                'tests': sorted(([t.get('variable'), t.get('operator'), t.get('value'), t.get('unit')] for t in r.get('tests') or []), key=repr),
+                **{k: sorted(r.get(k) or []) for k in ('outputs', 'applies', 'penalizes')}}
+
+    def skill(k):
+        return {'kind': k.get('kind'), 'scope': k.get('scope'), 'executable': k.get('executable'), 'relation': k.get('relation'),
+                'approver': (k.get('approver') or {}).get('id'), 'addresses': sorted(k.get('addresses') or []), 'parts': sorted(k.get('parts') or []),
+                'actions': [[a.get('code'), a.get('kind'), a.get('param'), a.get('value'), a.get('target')] for a in k.get('actions') or []],
+                **{p: policy(k.get(p)) for p in ('supplier_policy', 'maintenance_policy', 'purchase_comparison_policy')}}
+    def tradeoff(t):
+        # 성과 지표 경로의 관계마다 판단을 정하는 칸만 — 관계의 DB 내부 번호(key = elementId, DB · 적재마다 다르다)와 설명 글(note)은 넣지 않는다.
+        # 전에는 그 둘까지 재어 같은 지식이어도 PC · 다시 적재마다 지문이 달라, 「지식은 같다」 판정이 쓰이지 않았다(2026-11-24 검토 나-1)
+        edge = ('type', 'source', 'target', 'sign', 'strength', 'delta', 'unit', 'condition')
+        return {**{k: v for k, v in t.items() if k != 'edges'}, 'edges': [{k: e.get(k) for k in edge} for e in t.get('edges') or []]}
+    content = {'rules': {r['rule']: rule(r) for r in dmn}, 'candidates': {sid: skill(skills[sid]) for sid in cand_ids if sid in skills},
+               'tradeoffs': sorted((json.dumps(tradeoff(t), ensure_ascii=False, sort_keys=True, default=str) for t in tradeoffs or []))}
+    digest = hashlib.sha256(json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(',', ':'), default=str).encode()).hexdigest()
+    return {'rules': sorted({r['rule'] for r in dmn}), 'candidates': list(cand_ids), 'digest': digest}
+
+
 def judgment_context(kg, known: dict) -> dict:
     """한 판단의 지식 묶음(규칙 · 입력 정의 · 후보 스킬 · 성과 지표 경로)과 그 판단이 읽을 변수 — decide · 승인 검사 · 시험 실행 ·
     dmn-mcp 의 판단 사실 도구가 같은 함수로 같은 변수를 같은 원천에서 읽는다."""
     pattern, purchase = known.get('pattern'), known.get('purchase_part')
     dmn, inputs = kg.dmn(), kg.inputs()
     ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
-    skills = cards.scoped_skills(pattern, {r["skillId"]: r for r in kg.skills(ids)}, purchase)
+    skills = cards.scoped_skills(pattern, cards.with_relation({r["skillId"]: r for r in kg.skills(ids)}, known.get('failure_mode')), purchase)
     ids = [sid for sid in ids if sid in skills]
     tradeoffs = kg.tradeoffs(ids)
     return dict(dmn=dmn, inputs=inputs, skills=skills, candidate_ids=ids, tradeoffs=tradeoffs,
                 variables=judgment_variables(dmn, skills, known, pattern, bool(purchase)))
+
+
+def diagnosis_rules(kg, tsdb, asset: str, pattern: str, t1: list[dict]) -> tuple[list[dict], dict]:
+    """문서의 진단 규칙(결정표 dec:diagnose-cause) 가운데 이 경보의 원인 후보를 고르는 것과, 그 규칙이 시험하는 사실(경보 종류 · 설비 값 —
+    판단 입력과 같은 원천에서 같은 함수로). 원인 진단을 하는 곳(dmn-mcp diagnose · 읽기 평가 · 수동 판단 · 판단 실험)이 모두 이 함수로 읽어
+    card.rank_causes 에 넘긴다. 원천에서 값을 읽지 못하면 그 값을 모르는 채로 넘겨, 그 규칙은 판정하지 못한 것(보류)이 된다 — 까닭은 로그에 남는다.
+    판단 실험(trial)은 지식(diagnosis_table)과 설비 값(diagnosis_facts)을 따로 읽는다 — 값만 입력 묶음에 고정한다."""
+    rules = diagnosis_table(kg, t1)
+    return rules, diagnosis_facts(kg, tsdb, asset, pattern, rules)
+
+
+def diagnosis_table(kg, t1: list[dict]) -> list[dict]:
+    """진단 결정표의 규칙 가운데 이 원인 후보(T1)를 고르는 것 — 지식."""
+    ids = {r.get("causeId") for r in t1}
+    return [r for r in kg.dmn() if r.get("decision") == cardlib.DIAGNOSIS and set(r.get("outputs") or []) & ids]
+
+
+def diagnosis_facts(kg, tsdb, asset: str, pattern: str, rules: list[dict]) -> dict:
+    """진단 규칙이 시험하는 사실(경보 종류 · 설비 값) — 관측."""
+    if not rules:
+        return {}
+    variables = {t.get("variable") for r in rules for t in r.get("tests") or []}
+    try:
+        return gather_facts(kg.inputs(), asset, {"pattern": pattern}, tsdb, variables=variables)[0]
+    except FactUnavailable as exc:
+        log.warning("진단 규칙이 보는 값을 읽지 못했습니다(그 규칙은 판정하지 못한 것으로 보류): %s", exc)
+        return {"pattern": pattern}
 
 
 def facts_for(kg, tsdb, asset: str, known: dict, *, strict: bool = False) -> tuple[dict, list[dict]]:
@@ -394,6 +461,8 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
                          purchase_part_name=purchase_part.get('name'))
         ctx = judgment_context(kg, known)
         dmn, inputs, skills, cand_ids, tradeoffs = ctx['dmn'], ctx['inputs'], ctx['skills'], ctx['candidate_ids'], ctx['tradeoffs']
+        # 이 판단을 계산한 지식의 목록(규칙 · 조치 후보)과 그 내용의 지문 — 다른 때 계산한 판단과 견줄 때 차이가 지식 때문인지 가른다(워커 ai_replay.decision_gap)
+        rec['knowledge'] = knowledge_of(dmn, skills, cand_ids, tradeoffs)
         step("ontology", {"decisions": sorted({r["decision"] for r in dmn}), "rules": len(dmn),
                           "candidateRules": [r["rule"] for r in dmn if r["decision"] == "dec:action-candidates"]},
              "mcp-kg T3-b: DMN 판단 → 결정표 → 규칙(임계값 TESTS · OUTPUTS · APPLIES_TO · 근거)")
@@ -404,10 +473,10 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             raise
         if pattern == PM_PATTERN and not skills:
             rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
-            raise ValueError('PM_DUE 예방 정비 후보 지식이 없습니다: PREVENTED_BY 스킬과 후보 규칙을 확인하세요. 고장 대응 카드로 대체하지 않습니다')
+            raise ValueError(cardlib.business_knowledge_missing(kg, pattern))     # 고장 대응 카드로 대체하지 않는다
         if pattern == PURCHASE_PATTERN and not skills:
             rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
-            raise ValueError('SPARE_BELOW_MIN 구매 후보 지식이 없습니다: PR_CREATE만 수행하는 work_order 스킬과 후보 규칙을 확인하세요. 운전·정비 카드로 대체하지 않습니다')
+            raise ValueError(cardlib.business_knowledge_missing(kg, pattern))     # 운전 · 정비 카드로 대체하지 않는다
         variables = ctx['variables'] | set(overrides)
         try:
             facts, prov = gather_facts(inputs, asset, known, tsdb, variables=variables)

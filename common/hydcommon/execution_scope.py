@@ -3,6 +3,13 @@ from .maintenance_policy import PM_PATTERN
 
 
 def require_decision_option(decision, option):
+    """판단 장부의 카드 하나를 승인 · 실행해도 되는가. 판단과 카드 둘 다 판단 엔진이 실행 준비를 검사했다는 표시(evaluation_mode ·
+    execution_checked)를 실어야 한다 — 판단을 등록하는 길은 판단 엔진 하나이고(agentsvc decide → cards.evaluate) 늘 싣는다. 표시가 없는 판단 ·
+    카드는 검사한 적이 없는 것이라 열린 쪽으로 통과시키지 않는다(전에는 표시가 둘 다 없으면 검사 없이 통과했다 — 전수검사 13A-3).
+    흐름의 승인 단계가 고른 안(판단 장부 밖 — 학생 에이전트의 제안)은 require_executable 이 본다."""
+    for what, item in (('판단', decision), ('조치 후보', option)):
+        if 'evaluation_mode' not in item and 'execution_checked' not in item:
+            raise ValueError(f'이 {what}에는 실행 준비를 검사했다는 표시가 없어 승인·실행할 수 없습니다 — 판단 엔진이 등록한 판단만 승인합니다')
     require_executable({key: decision[key] for key in ('evaluation_mode','execution_checked') if key in decision})
     pattern = ((decision.get('origin') or {}).get('pattern') or
                (decision.get('scenario') or {}).get('pattern') or

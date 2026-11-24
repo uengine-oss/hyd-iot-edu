@@ -45,7 +45,10 @@
   // 이 시험이 하는 일의 범위 한 줄(폼 아래). 「AI 모델은 돌리지 않습니다」는 화면 머리가 한 번 말한다
   const WHAT = '스킬 문서는 뜻을 읽지 않습니다. 문서에 적힌 도구 이름만 찾아 적힌 차례대로 부르고, 나머지 절차 글은 계산에 쓰지 않습니다. 처리 건과 설비 명령은 만들지 않습니다.';
   // 이 시험의 범위와, 판단을 보류하는 것이 실패가 아니라는 것 — 시나리오 칸 아래와 보류 결론 아래에 같은 말로 적는다
-  const HOLD = '이 시험은 그 설비의 지금 값으로 계산합니다. 그 설비에 지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다(실패가 아니라 판단하지 않은 것입니다). 「유압 설비」 화면에서 그 이상을 일으킨 뒤 시험하면 판단까지 갑니다.';
+  const HOLD = '이 시험은 그 설비의 지금 값으로 계산합니다. 그 설비에 지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다(실패가 아니라 판단하지 않은 것입니다).';
+  // 「일으킨 뒤 다시」는 그 설비 · 경보가 「유압 설비」 화면의 결함 단추로 일으킬 수 있는 것(서버의 fault — scenario_buttons.fault_scope)일 때만 맞는 말이다(2026-11-24 검토)
+  const HOLD_RETRY = ' 「유압 설비」 화면에서 그 이상을 일으킨 뒤 시험하면 판단까지 갑니다.';
+  const injectable = t => { const f = faultUnit(); return !!f && f.asset === t.asset && f.pattern === t.pattern; };
   const scenarioOf = t => (S.opts?.scenarios || []).find(s => s.asset === t.asset && s.pattern === t.pattern);
   const scenarioLabel = t => scenarioOf(t)?.label || `${UI.name(t.pattern)} · ${t.asset}`;
   const skillShow = name => { for (const a of S.opts?.agents || []) { const k = (a.skills || []).find(x => x.name === name); if (k) return UI.skillLabel(k).label; } return name; };      // 스킬은 등록한 설명으로 부른다(없으면 등록 이름)
@@ -54,10 +57,13 @@
     .replace(/\b(hyd-dmn|enterprise-maint|enterprise-purchase|enterprise|neo4j)(?= 서버)/g, id => serverName(id)).replaceAll('hyd-dmn', serverName('hyd-dmn')));
   // 한쪽이 판단에 이르렀는가: ok = 원인과 1순위 조치까지 / hold = 근거가 없어 판단하지 않음(정상 결과) / none = 판단에 이르지 못함
   const reach = t => t.status === 'EVALUATED' ? 'ok' : t.status === 'WITHHELD' ? 'hold' : 'none';
+  // 보류의 까닭은 서버가 말한 것(원인 지식이 없음 · 데이터 신뢰 불가 · 근거 조회가 덜 됨 · 관측 근거 없음 · 문서의 진단 규칙이 맞지 않음)이다 —
+  // 한 문장으로 고정하면 지식이 비었을 때도 「이상을 일으키라」고 했다(탐사 N8)
   const whyNot = t => t.status === 'NO_ENGINE_TOOL' ? '구성에 판단 서비스 도구 서버가 없어 원인 진단부터 하지 못했습니다'
     : t.status === 'NO_FEASIBLE_OPTION' ? '원인은 가렸지만 규정상 실행할 수 있는 조치가 없습니다'
-    : t.status === 'WITHHELD' ? '지금 관측 값으로 뒷받침되는 원인이 없어 판단을 보류했습니다'
-    : plainReason(t.result?.reason) || (STATUS[t.status] || [t.status])[0];
+    : String(plainReason(t.result?.reason) || (STATUS[t.status] || [t.status])[0]).replace(/[.\s]+$/, '');
+  // 「이상을 일으킨 뒤 시험하라」는 원인 지식이 있고 근거를 모두 읽었는데도 보류했을 때만 맞는 말이다(지식이 비었거나 근거를 다 못 읽었으면 아니다)
+  const observedHold = t => { const causes = t.result?.diagnosis?.causes || []; return causes.length > 0 && causes.every(c => (c.evidence || []).every(e => e.status !== 'UNKNOWN')); };
 
   // 결론: 학생이 알고 싶은 것 — 두 구성이 같은 원인 · 같은 1순위 조치에 이르렀는가, 한쪽만 못 이르렀는가(무엇이 없어서), 둘 다 판단하지 않았는가.
   // 서버의 same_result 는 호출 기록 전체의 지문이라(막힌 호출 한 줄만 달라도 「다름」, 둘 다 보류여도 「같음」) 결론에 쓰지 않는다 — 호출 차이는 그 아래 한 줄이다
@@ -71,7 +77,7 @@
       if (!d.cause.same) return { title: `두 구성이 가린 원인이 다릅니다 — A는 ${UI.name(d.cause.a)}, B는 ${UI.name(d.cause.b)}.`, sub: '' };
       return { title: `원인은 같고 1순위 조치가 다릅니다 — A는 ${UI.name(d.recommended.a)}, B는 ${UI.name(d.recommended.b)}.`, sub: `두 구성 모두 원인은 ${UI.name(d.cause.a)}입니다.` };
     }
-    if (ka === 'hold' && kb === 'hold') return { title: '두 구성 모두 판단을 보류했습니다 — 지금 그 설비의 관측 값으로 뒷받침되는 원인이 없습니다.', sub: HOLD };
+    if (ka === 'hold' && kb === 'hold') return { title: `두 구성 모두 판단을 보류했습니다 — ${whyNot(a) === whyNot(b) ? whyNot(a) : `A: ${whyNot(a)} · B: ${whyNot(b)}`}.`, sub: observedHold(a) && observedHold(b) ? HOLD + (injectable(a) ? HOLD_RETRY : '') : '' };
     if (ka === 'ok' || kb === 'ok') { const [miss, hit, m, h] = ka === 'ok' ? ['B', 'A', b, a] : ['A', 'B', a, b];
       return { title: `${miss}만 판단에 이르지 못했습니다 — ${whyNot(m)}.`, sub: `${hit}는 ${got(h)}에 이르렀습니다.` }; }
     return { title: '두 구성 모두 판단에 이르지 못했습니다.', sub: whyNot(a) === whyNot(b) ? `${whyNot(a)}.` : `A: ${whyNot(a)}. B: ${whyNot(b)}.` };
@@ -98,10 +104,10 @@
     const dropped = S.dropTools.length + S.dropSkills.length;
     return head + `<div class="panel-sec">` +
       UI.section('',
-        UI.field({ label: '시나리오', input: `<select data-f="scenario"><option value="">시나리오 선택</option>${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>`, hint: '가상 설비 3기의 경보 셋 가운데 고릅니다. 그 설비에 지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다.' }).replace('<p class="field-hint">', `<p class="field-hint" title="${esc(HOLD)}">`) +
+        UI.field({ label: '시나리오', input: `<select data-f="scenario"><option value="">시나리오 선택</option>${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>`, hint: '지식 지도의 설비 이상 경보와 설비를 함께 고릅니다. 그 설비에 지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다.' }).replace('<p class="field-hint">', `<p class="field-hint" title="${esc(HOLD)}">`) +
         UI.field({ label: '에이전트 A', input: `<select data-f="a">${opt(o.agents, a => a.id, a => a.name, S.form.a)}</select>`, hint: hint(S.form.a) }) +
         UI.field({ label: '에이전트 B', input: `<select data-f="b">${opt(o.agents, a => a.id, a => a.name, S.form.b)}</select>`, hint: hint(S.form.b) }) +
-        UI.field({ label: '입력', input: `<select data-f="input"><option value="new" ${S.form.input === 'new' ? 'selected' : ''}>지금 값을 새로 읽어 고정</option><option value="latest" ${S.form.input === 'latest' ? 'selected' : ''}>이 시나리오의 직전 입력 다시 쓰기</option></select>`, hint: '두 에이전트는 늘 같은 입력으로 계산합니다.' })) +
+        UI.field({ label: '입력', input: `<select data-f="input"><option value="new" ${S.form.input === 'new' ? 'selected' : ''}>지금 설비 · 업무 값을 새로 읽어 고정</option><option value="latest" ${S.form.input === 'latest' ? 'selected' : ''}>이 시나리오의 직전 설비 · 업무 값 다시 쓰기</option></select>`, hint: '두 에이전트는 늘 같은 설비 · 업무 값으로 계산합니다. 지식(규칙 · 조치 방법)은 시험할 때마다 지금 것을 읽습니다.' })) +
       (S.loadError ? note(`시험 설정을 다시 읽지 못해 앞서 읽은 목록을 보이고 있습니다: ${esc(S.loadError)}`, ' data-tone="danger" role="status"') : '') +
       `<footer class="form-foot"><button type="button" class="btn" data-act="run" ${S.busy ? 'disabled' : ''}>${UI.icon('play')}시험 실행</button></footer>` +
       (S.error ? note(esc(S.error), ' data-tone="danger" role="alert"') : '') + `</div>` +
@@ -123,13 +129,13 @@
   function headlineLines(r) {
     const d = r.diff, a = r.a, b = r.b, lines = [], both = reach(a) === 'ok' && reach(b) === 'ok';
     const one = (id, sop) => id ? `${esc(sop || '')} ${nm(id)}` : '없음';
-    lines.push(['lock', d.same_input ? `같은 입력(${esc(UI.dateTime(r.snapshot?.created_at || a.created_at))}에 고정)으로 계산했습니다. 차이는 구성에서만 나옵니다.`
-      : `두 시험의 입력이 다릅니다 — A는 ${esc(UI.dateTime(a.created_at))}, B는 ${esc(UI.dateTime(b.created_at))}에 읽은 값입니다. 아래 차이에는 그 사이 설비 값과 지식의 변화가 섞여 있습니다.`]);
+    lines.push(['lock', d.same_input ? `같은 설비 · 업무 값(${esc(UI.dateTime(r.snapshot?.created_at || a.created_at))}에 고정)으로 계산했습니다. 지식은 시험마다 그때 것을 읽으므로, 차이는 구성과 두 시험 사이에 바꾼 지식에서 나옵니다.`
+      : `두 시험의 설비 · 업무 값이 다릅니다 — A는 ${esc(UI.dateTime(a.created_at))}, B는 ${esc(UI.dateTime(b.created_at))}에 읽은 값입니다. 아래 차이에는 그 사이 설비 값과 지식의 변화가 섞여 있습니다.`]);
     if (both && !d.cause.same) lines.push(['search', `<b>원인이 다릅니다</b> A ${one(d.cause.a)} · B ${one(d.cause.b)}`]);
     if (both && !d.recommended.same) lines.push(['scale', `<b>1순위가 다릅니다</b> A ${one(d.recommended.a, d.recommended.a_sop)} · B ${one(d.recommended.b, d.recommended.b_sop)}`]);
     if (both && d.citations.only_a.length + d.citations.only_b.length) lines.push(['file-text', `<b>근거 인용</b> A에만 ${d.citations.only_a.length}개 · B에만 ${d.citations.only_b.length}개`]);
-    // 읽은 규칙의 차이는 두 쪽이 모두 판단까지 갔을 때만 뜻이 있다(한쪽이 판단하지 않았으면 그쪽은 규칙을 읽지 않은 것이다). 같은 입력이면 지식이 같으므로 차이가 나지 않는다
-    if (both && !d.same_input && d.rules.only_a.length + d.rules.only_b.length) lines.push(['list-checks', `<b>읽은 판단 규칙이 다릅니다</b> A에만 ${d.rules.only_a.length}개 · B에만 ${d.rules.only_b.length}개 — 두 시험 사이에 지식의 규칙이 바뀌었습니다.`]);
+    // 읽은 규칙의 차이는 두 쪽이 모두 판단까지 갔을 때만 뜻이 있다(한쪽이 판단하지 않았으면 그쪽은 규칙을 읽지 않은 것이다). 지식은 입력 묶음에 고정하지 않으므로 같은 입력이어도 날 수 있다
+    if (both && d.rules.only_a.length + d.rules.only_b.length) lines.push(['list-checks', `<b>읽은 판단 규칙이 다릅니다</b> A에만 ${d.rules.only_a.length}개 · B에만 ${d.rules.only_b.length}개 — 두 시험 사이에 지식의 규칙이 바뀌었습니다.`]);
     return `<ul class="evid">${lines.map(([ic, l]) => `<li>${UI.icon(ic)}<span>${l}</span></li>`).join('')}</ul>`;
   }
 
@@ -277,6 +283,7 @@
       S.result = await postJ(api('/api/agent-trials/run'), { request_id: S.track.id, scenario: S.form.scenario, reuse_latest: S.form.input === 'latest',
         a: { agent: S.form.a }, b: { agent: S.form.b, variant: { without_tools: S.dropTools, without_skills: S.dropSkills } } });
       S.history = null;
+      if (state.biz === undefined) await refreshBiz();      // 결론의 「일으킨 뒤 다시」 안내가 보는 결함 범위(서버의 fault)
     } catch (e) { S.runError = e.message; S.result = null; }
     S.track.stop(); S.track = null;
     S.busy = false; render();
@@ -290,7 +297,8 @@
 
   async function diffStored() {
     S.histBusy = true; S.histSince = new Date().toISOString(); S.histError = null; render();
-    try { const r = await getJ(api(`/api/agent-trials/diff?a=${encodeURIComponent(S.pick.a)}&b=${encodeURIComponent(S.pick.b)}`)); S.result = { ...r, snapshot: null }; }
+    try { const r = await getJ(api(`/api/agent-trials/diff?a=${encodeURIComponent(S.pick.a)}&b=${encodeURIComponent(S.pick.b)}`)); S.result = { ...r, snapshot: null };
+      if (state.biz === undefined) await refreshBiz(); }
     catch (e) { S.histError = e.message; }
     S.histBusy = false; render();
     if (!S.histError) S.el.querySelector('[data-r="result"]')?.scrollIntoView({ block: 'start', behavior: 'smooth' });      // 비교 결과는 위 결과 자리에 열린다

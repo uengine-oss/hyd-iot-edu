@@ -38,8 +38,8 @@ PATH_NOTES = {
               '여러 번 돌리면 지금 설비 값이 바뀔 때 결과가 달라지는지만 봅니다. 정답표의 가정 사실을 그대로 넣습니다.',
     'evaluate': '규칙 읽기 평가 — AI 모델 없이 경보 한 건을 근거 조회 → 원인 → 조치 카드 → 안전 규칙 검사까지 실제로 돌리되 판단을 등록하지는 않습니다. '
                 '사실은 지금 설비 · 업무 DB 값이며, 정답표의 가정과 다르면 항목에 표시합니다.',
-    'worker': '지난 처리 건 — 실제 처리 건에서 AI 에이전트가 낸 원인 · 근거와 등록된 조치 판단을 채점합니다. 같은 항목에 맞는 처리 건 여러 개는 '
-              '반복으로 묶어 결과가 흔들리는지 봅니다.',
+    'worker': '지난 처리 건 — 실제 처리 건에서 AI 에이전트가 등록한 조치 판단과 그 판단 때의 원인 진단 · 근거를 채점합니다. 같은 항목에 맞는 처리 건 '
+              '여러 개는 반복으로 묶어 결과가 흔들리는지 봅니다.',
 }
 #: 지식으로 세지 않는 노드 — 실행 기록(배포 판본 · 처리 건 · 작업 · 실행 담당자)과 내부 기록(투영 잠금 · 편집 영수증 · 적재 이력). 지식 지도가
 #: 그리지 않는 것과 같은 목록이다(it/neo4j/templates/t0_graph_nodes.cypher · t0_graph_edges.cypher 의 hidden — 같은 목록인지는 실제 그래프로
@@ -438,38 +438,78 @@ def compare(a: dict, b: dict) -> dict:
 
 
 # ---------------------------------------------------------------- 실제 워커 경로: 지난 처리 건 고르기
-#: 정답표에 적는 가정 사실 — 판단 규칙 입력 가운데 정답표가 고정할 수 있는 것(화면 이름 · 선택지). 채점 화면은 이 표를 읽어 칸을 그린다.
+#: 정답표에 적는 가정 사실 가운데 기본 제공 현장(가상 설비 · 모의 업무 시스템)의 넷 — 값의 영역(운전 모드 · 설비 상태의 값)이 그 설비의 것이라 선택지를
+#: 여기 둔다. 화면의 칸은 fact_choices 가 이 넷에 지금 지식의 표 · 열에 이은 판단 입력을 더해 정한다.
 FACT_CHOICES = {
     'plc_mode': {'label': '운전 모드', 'choices': [['REMOTE_AUTO', '원격 자동'], ['REMOTE_MANUAL', '원격 수동'], ['LOCAL', '현장 제어']]},
     'plc_state': {'label': '설비 상태', 'choices': [['RUN', '운전 중'], ['TRIP', '보호 정지']]},
     'standby_ready': {'label': '예비 펌프', 'choices': [[True, '쓸 수 있음'], [False, '정비 중']]},
-    'fan100_hours': {'label': '팬 100 % 연속 운전 (시간)', 'number': True},
+    'fan100_hours': {'label': '팬 100 % 연속 운전 (시간)', 'number': True, 'min': 0},
 }
 FACT_KEYS = tuple(FACT_CHOICES)
+#: 업무 DB 의 표 · 열에 이은 판단 입력(지식 › 데이터 원천에서 표 정의를 적재해 만든 것 — 학생이 얹는 판단 입력)
+BOUND_INPUTS_Q = '''
+MATCH (i:InputData) WHERE i.variable IS NOT NULL AND i.table IS NOT NULL AND i.column IS NOT NULL
+RETURN i.variable AS variable, i.name AS name, i.typeRef AS typeRef ORDER BY i.variable
+'''
 
 
-def instance_candidate(inst: dict, decision_lookup) -> dict | None:
-    """처리 건 한 건 → 채점 후보 요약. 에이전트 task 출력(cause · decision_id)이 없으면 None."""
+def fact_choices(bound: list[dict]) -> dict:
+    """정답표의 가정 사실 칸 {변수: {label, choices | number | text}} — 기본 제공 현장의 넷(FACT_CHOICES)에, 지금 지식에서 업무 DB 표 · 열에 이은
+    판단 입력(bound — BOUND_INPUTS_Q 의 행)을 그 형식의 칸으로 더한다. 전에는 화면이 넷만 고르게 해, 학생이 표 정의를 적재해 만든 자기 판단 입력을
+    가정 사실로 적을 길이 화면에 없었다(탐사 N6). 형식은 판단 엔진이 가정 사실로 받는 것과 같다(agentsvc.decide.check_overrides — 숫자 · 참/거짓 · 글).
+    글 형식은 값의 영역이 지식에 없어 선택지 대신 글 칸이다. 그 밖의 형식은 판단 엔진이 받지 않으므로 칸을 내지 않는다."""
+    out = dict(FACT_CHOICES)
+    for row in bound:
+        variable, kind = row.get('variable'), row.get('typeRef')
+        if not variable or variable in out:
+            continue
+        label = row.get('name') or variable
+        if kind == 'number':
+            out[variable] = {'label': label, 'number': True}
+        elif kind == 'boolean':
+            out[variable] = {'label': label, 'choices': [[True, '참'], [False, '거짓']]}
+        elif kind in ('string', 'enum'):
+            out[variable] = {'label': label, 'text': True}
+    return out
+
+
+def instance_candidate(inst: dict, decision_lookup, shown=FACT_KEYS) -> dict | None:
+    """처리 건 한 건 → 채점 후보 요약. 등록된 판단(decision_id)이 없거나 원인으로 정한 판단이 아니면(부품으로 정한 구매 판단) None.
+    원인 · 고장 유형은 등록된 판단의 기록(origin — 판단 등록 도구가 진단 지식으로 확인해 받은 원인)에서 읽는다. 에이전트가 결과에 옮겨 적은
+    원인 · 가이드 카드는 쓰지 않는다 — 서버가 대조하지 않은 글이라, 다르게 적어도 그대로 채점에 쓰였다(2026-11-22 탐사 N1)."""
     vars_ = {v['key']: v.get('value') for v in (inst.get('variables_data') or []) if isinstance(v, dict) and 'key' in v}
     did = vars_.get('decision_id')
-    if not vars_.get('cause') or not did:
+    if not did:
         return None
     d = decision_lookup(did) or {}
+    origin = d.get('origin') or {}
+    if d and not origin.get('cause'):
+        return None
     return {'instance': inst['proc_inst_id'], 'name': inst.get('proc_inst_name'), 'status': inst.get('status'), 'started': inst.get('start_date'),
-            'asset': vars_.get('asset') or d.get('asset'), 'pattern': vars_.get('pattern') or (d.get('origin') or {}).get('pattern') or (d.get('scenario') or {}).get('pattern'),
-            'cause': vars_.get('cause'), 'failure_mode': vars_.get('failure_mode'), 'decision_id': did, 'decision_found': bool(d),
-            'facts': {k: v for k, v in (d.get('facts') or {}).items() if k in FACT_KEYS},
-            'guide_card': vars_.get('guide_card') if isinstance(vars_.get('guide_card'), dict) else None,
+            'asset': vars_.get('asset') or d.get('asset'), 'pattern': vars_.get('pattern') or origin.get('pattern') or (d.get('scenario') or {}).get('pattern'),
+            'cause': origin.get('cause'), 'failure_mode': origin.get('failureMode'), 'decision_id': did, 'decision_found': bool(d),
+            'facts': {k: v for k, v in (d.get('facts') or {}).items() if k in shown},      # shown = 정답표 화면의 가정 사실 칸(fact_choices)
+            # 정답표 항목과 견줄 판단 때 사실 전부(한 값인 것) — 화면에 보이는 facts 는 정답표 화면의 칸에 있는 것뿐이라 그것으로 견주면
+            # 칸 밖의 사실을 적은 항목이 사실값이 다른 처리 건에도 맞았다(탐사 N6). 후보 목록 응답에서는 뺀다(eval_api.candidates)
+            'judged_facts': {k: v for k, v in (d.get('facts') or {}).items() if v is None or isinstance(v, (str, int, float, bool))},
             'chosen_skill': vars_.get('chosen_skill')}
 
 
-def match_item(items: list[dict], candidate: dict) -> dict:
-    """처리 건의 설비 · 패턴 · 판단 당시 사실에 맞는 정답표 항목 하나. 둘 이상이거나 없으면 사유를 붙여 거부한다(항목을 직접 고르게)."""
-    facts = candidate.get('facts') or {}
-    hits = [it for it in items if it['asset'] == candidate.get('asset') and it['pattern'] == candidate.get('pattern')
-            and all(facts.get(k) == v for k, v in (it.get('facts') or {}).items() if k in facts)]
+def match_item(items: list[dict], candidate: dict, choices: dict = FACT_CHOICES) -> dict:
+    """처리 건의 설비 · 패턴 · 판단 당시 사실에 맞는 정답표 항목 하나. 항목의 가정 사실은 하나하나 판단 기록의 사실(judged_facts)과 같아야 하고,
+    판단이 읽지 않은 사실을 적은 항목은 대조할 수 없다(맞는다고 치지 않는다). 둘 이상이거나 없으면 사유를 붙여 거부한다(항목을 직접 고르게)."""
+    facts = candidate.get('judged_facts') or {}
+    same = [it for it in items if it['asset'] == candidate.get('asset') and it['pattern'] == candidate.get('pattern')]
+    hits = [it for it in same if all(k in facts and facts[k] == v for k, v in (it.get('facts') or {}).items())]
     if len(hits) == 1:
         return hits[0]
+    unread = [it for it in same if any(k not in facts for k in it.get('facts') or {})]
+    if not hits and unread:
+        keys = list(dict.fromkeys(k for it in unread for k in it.get('facts') or {} if k not in facts))
+        raise ValueError('정답표 항목 ' + ', '.join(f"「{it.get('title') or it['id']}」" for it in unread) + '의 가정 사실('
+                         + ', '.join((choices.get(k) or {}).get('label') or k for k in keys)
+                         + ')을 이 처리 건의 판단은 읽지 않아 대조할 수 없습니다 — 항목을 직접 고르세요')
     if not hits:
         # 처리 건 번호 · 설비 · 경보는 후보 줄의 칸(instance · name · asset · pattern)에 있다 — 문장에 내부 번호와 경보 코드를 되풀이하지 않는다
         raise ValueError('이 처리 건의 설비 · 경보 · 판단 당시 조건에 맞는 정답표 항목이 없습니다 — 정답표에 먼저 적으세요')
@@ -477,17 +517,25 @@ def match_item(items: list[dict], candidate: dict) -> dict:
                      + ') — 항목을 직접 고르세요')
 
 
-def worker_judgement(candidate: dict, decision: dict | None, guide_card: dict | None = None) -> dict:
-    """처리 건의 에이전트 task 출력(원인 · 가이드 카드) + process 에 제출된 조치 판단 → 채점 입력. 판단 레코드가 없으면 판단 없음으로 본다."""
+#: 판단 기록의 원인 근거 종류(dmn-mcp DIAGNOSIS_ROUTE) — 센서 진단으로 정한 원인이면 판단 기록에 그때의 원인 진단(origin.diagnosis)이 있다
+DIAGNOSIS_ROUTE = 'diagnosis'
+
+
+def worker_judgement(candidate: dict, decision: dict | None) -> dict:
+    """처리 건에 등록된 조치 판단과 그 판단 때의 원인 진단(판단 기록 origin — 판단 등록 도구가 그 자리에서 다시 한 진단의 원인 순위 · 근거 판정 ·
+    인용) → 채점 입력. 판단 레코드가 없으면 판단 없음으로 본다. 센서 진단으로 정한 원인인데 판단 기록에 진단이 없으면(진단을 판단 기록에 싣기
+    전에 등록된 판단) 근거를 채점할 재료가 없다고 말하고 채점하지 않는다 — 에이전트가 옮겨 적은 가이드 카드로 메우지 않는다."""
     if not decision:
         return withheld(f"판단 {candidate.get('decision_id')} 을 process 에서 찾지 못했습니다", status='EMPTY')
-    card = guide_card if isinstance(guide_card, dict) else candidate.get('guide_card')
-    causes = [{'id': candidate.get('cause'), 'failureModeId': candidate.get('failure_mode'), 'evidence': []}]
-    extra = []
-    if isinstance(card, dict):
-        extra += [c for c in card.get('citations') or [] if isinstance(c, str)]
-        for c in card.get('causes') or []:
-            extra += [e['id'] for e in c.get('evidence') or [] if isinstance(e, dict) and e.get('passed') is True and e.get('id')]
+    origin = decision.get('origin') or {}
+    dx = origin.get('diagnosis') if isinstance(origin.get('diagnosis'), dict) else None
+    if origin.get('cause_route') == DIAGNOSIS_ROUTE and dx is None:
+        return withheld('이 판단의 기록에 원인 진단(원인 순위 · 근거 판정)이 없어 근거를 채점하지 못합니다 — 같은 경보로 새 처리 건을 돌린 뒤 '
+                        '그 처리 건을 채점하세요', status='EMPTY')
+    causes = [{'id': origin.get('cause'), 'failureModeId': origin.get('failureMode'), 'evidence': []}]
+    extra = [c for c in (dx or {}).get('citations') or [] if isinstance(c, str)]
+    for c in (dx or {}).get('causes') or []:
+        extra += [e['id'] for e in c.get('evidence') or [] if isinstance(e, dict) and e.get('passed') is True and e.get('id')]
     j = normalize_decision(decision, causes=causes, extra_cited=extra)
     j['status'] = 'EVALUATED' if j['options'] else 'EMPTY'
     return j
@@ -505,14 +553,14 @@ class PgEvalStore:
     kind = 'supabase'
 
     def __init__(self, dsn: str, tenant: str = 'hyd'):
-        import psycopg
         from psycopg.rows import dict_row
         from psycopg.types.json import Jsonb
-        self._psycopg, self._dict_row, self._Jsonb = psycopg, dict_row, Jsonb
+        self._dict_row, self._Jsonb = dict_row, Jsonb
         self.dsn, self.tenant = dsn, tenant
 
     def _conn(self):
-        return self._psycopg.connect(self.dsn, autocommit=True, connect_timeout=5, row_factory=self._dict_row)
+        from . import procdb
+        return procdb.connect(self.dsn, autocommit=True, row_factory=self._dict_row)
 
     @staticmethod
     def _iso(v):

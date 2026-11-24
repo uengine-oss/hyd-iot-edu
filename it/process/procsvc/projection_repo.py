@@ -44,8 +44,7 @@ class PgProjection:
         if getattr(self._local, 'connection', None) is not None:
             raise RuntimeError('projection must run after source commit')
         # Dedicated session-level delivery lock, not a business row lock.
-        with self._psycopg.connect(self.dsn, autocommit=True, connect_timeout=5,
-                                  row_factory=self._dict_row) as c:
+        with self._connect(autocommit=True) as c:
             key = 'execution-projection:' + tenant + ':' + pid
             locked = c.execute('select pg_try_advisory_lock(hashtextextended(%s,0)) as ok', (key,)).fetchone()['ok']
             if not locked:

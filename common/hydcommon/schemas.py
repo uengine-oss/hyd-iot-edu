@@ -15,6 +15,7 @@ import hashlib
 import hmac
 import json
 import math
+import re
 import os
 from datetime import datetime
 from typing import Any
@@ -159,15 +160,29 @@ def _asset(asset) -> str:
     return asset
 
 
+#: 경보의 설비 이름 꼴 — 가상 설비(HYD-01~03)만이 아니라 바깥 원천(학생 시스템 · 실설비)이 보내는 설비 이름도 받는다. 설비 태그 · 파형 · 특징 기록은
+#: 가상 설비 시계열이라 _asset 그대로다
+ALERT_ASSET_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+
+
+def _alert_asset(asset) -> str:
+    if not isinstance(asset, str) or not ALERT_ASSET_RE.match(asset):
+        raise RecordError("asset must be a site asset name (letters, digits, '_', '.', '-', up to 64)")
+    return asset
+
+
 def tag_record(asset: str, name: str, body: Any) -> dict:
-    """plant/{a}/tag/{name} payload {"t","v","q"} -> plant.tag record {"asset","name","t","v","q"}."""
+    """plant/{a}/tag/{name} payload {"t","v","q"} -> plant.tag record {"asset","name","t","v","q"}.
+    q (the value's quality as the edge measured it) is part of the contract: a value without it is refused, not taken as good —
+    the detector evaluates only good values, so an assumed quality would turn an unqualified value into evidence."""
     body = _object(body)
     if name not in TAGS:
         raise RecordError(f"tag {name!r} is not a DAQ tag")
-    q = body.get("q", "good")
+    record = {"asset": _asset(asset), "name": name, "t": _time(body, "t"), "v": _number(body.get("v"), "v")}
+    q = body.get("q")
     if not isinstance(q, str) or not 0 < len(q) <= 32:
-        raise RecordError("q must be quality text")
-    return {"asset": _asset(asset), "name": name, "t": _time(body, "t"), "v": _number(body.get("v"), "v"), "q": q}
+        raise RecordError("q must be quality text (the value's quality is not assumed when missing)")
+    return dict(record, q=q)
 
 
 def wave_record(asset: str, sensor: str, body: Any) -> dict:
@@ -205,9 +220,9 @@ def status_record(asset: str, body: Any) -> dict:
 
 
 def alert_record(body: Any) -> dict:
-    """alerts topic record (detector RAISE / CLEAR)."""
+    """alerts topic record (detector RAISE / CLEAR, and a site's own alerts — the asset may be outside the plant: _alert_asset)."""
     body = _object(body)
-    _asset(body.get("asset"))
+    _alert_asset(body.get("asset"))
     if not isinstance(body.get("alertId"), str) or not body["alertId"]:
         raise RecordError("alertId must be non-empty text")
     if not isinstance(body.get("pattern"), str) or not body["pattern"]:

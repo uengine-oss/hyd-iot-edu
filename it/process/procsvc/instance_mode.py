@@ -98,6 +98,7 @@ class ProcessContext:
     latest_tag: Callable[[str, str], float | None] | None = None   # C2: (asset, tag) → 최신값 (작업지시 뒤 재관측)
     tag_read_error: type[Exception] | None = None    # latest_tag 가 「읽지 못함」으로 올리는 예외(main.TagReadError) — 행 없음은 None
     window_series: Callable | None = None     # A161-G3: (incident, after, since) → 재관측 창의 값 흐름 (reobs_series.build 모양)
+    plant_outside: Callable[[str], dict | None] | None = None   # (asset) → 그 설비의 마지막 바깥 변화 기록(main.outside_record), 받은 적 없으면 None
 
 
 _runtime: instances.InstanceRuntime | None = None
@@ -283,18 +284,24 @@ async def stop_loops() -> None:
 
 
 def _transient_db_errors() -> tuple[type[BaseException], ...]:
-    import psycopg
-    return (psycopg.OperationalError, psycopg.InterfaceError)
+    from hydcommon.pg import TRANSIENT      # 일시 장애의 기준은 그 한 곳
+    return TRANSIENT
+
+
+def _refused_db_error() -> type[BaseException]:
+    from hydcommon.pg import DbRefused      # 서버가 연결을 받지 않음(다시 해도 같다)의 기준도 그 한 곳 — TRANSIENT 의 한 갈래라 먼저 가른다
+    return DbRefused
 
 
 async def retry_startup(step: Callable[[], object], what: str, state: dict, budget_s: float | None = None,
                         first_delay: float = 2.0):
-    """A151 (A148 item 70-A, 2026-10-08): a process restarted while the DB was paused died in startup on the first
-    `psycopg.OperationalError` (procdb.PgRepo._conn, connect_timeout=5, no retry) and only the compose restart policy brought it
-    back (RestartCount 0→1). Startup steps that touch the DB now retry connection errors with a bounded backoff
-    (2, 4, 8, 16 s … — the sleeps add up to at most `budget_s`, default PROCESS_STARTUP_DB_WAIT_S=60). Meanwhile /healthz is
-    not ready (uvicorn serves nothing before startup ends, and state['startup_db_error'] keeps it 503 afterwards until cleared).
-    Anything that is not a connection error, or a DB still down after the budget, is raised as before."""
+    """기동 단계 하나를 DB 일시 장애(hydcommon.pg.TRANSIENT)를 견디며 돌린다. 연결 하나는 hydcommon.pg.connect 한 곳이 맺는다 — 한 번 기다림 3초,
+    다 합쳐 7초 안에 다시 맺어 보고, 그래도 안 되면 DbUnreachable(OperationalError 의 한 갈래)로 실패한다. 이 함수는 그 위에서 기동 단계 전체를
+    2, 4, 8, 16초 … 쉬며 다시 하고, 쉰 시간의 합은 budget_s(기본 PROCESS_STARTUP_DB_WAIT_S = 60초)를 넘지 않는다. 그동안 /healthz 는 준비되지 않음이다
+    (기동이 끝나기 전 uvicorn 은 아무것도 내지 않고, 끝난 뒤에도 state['startup_db_error'] 가 지워질 때까지 503). 연결 오류가 아닌 실패와 예산이 끝나도
+    닿지 않는 DB 는 그대로 올린다. 서버가 답했지만 연결을 받지 않은 것(DbRefused — 틀린 암호 · 없는 계정 · 없는 DB)은 다시 해도 같으므로 쉬며 다시 하지
+    않고 그 참 까닭으로 곧장 올린다(전에는 일시 장애와 같이 60초를 다 쉰 뒤에 실패했다 — pg.connect 가 다시 맺지 않는 것과 같은 기준). A151(2026-10-08): DB 가 멈춘 동안 다시 켠 process 가 첫 연결 실패로 기동 중에 죽고 compose 재시작 정책으로만
+    살아났다(RestartCount 0→1)."""
     budget = STARTUP_DB_WAIT_S if budget_s is None else budget_s
     transient = _transient_db_errors()
     waited, delay, attempt = 0.0, first_delay, 0
@@ -306,6 +313,9 @@ async def retry_startup(step: Callable[[], object], what: str, state: dict, budg
                 out = await out
         except transient as exc:
             state['startup_db_error'] = f"{what}: {type(exc).__name__}: {str(exc)[:200]}"
+            if isinstance(exc, _refused_db_error()):
+                log.error("startup %s: DB refused the connection — not retrying: %s", what, exc.detail)
+                raise
             pause = min(delay, budget - waited)
             if pause <= 0:
                 log.error("startup %s: DB still unreachable after %d attempts / %.0f s of waiting; giving up", what, attempt, waited)
@@ -403,14 +413,17 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             if existing.asset != alert.get('asset') or existing.pattern != alert.get('pattern'):
                 raise ValueError('경보 ID의 원천 설비/패턴이 기존 사건과 다릅니다')
             if existing.state in definition.TERMINAL and existing.reason != 'UNSUPPORTED_ALERT_PATTERN':
-                # 끝난 사건(처리 건 없이 남아 닫힌 사건 — P1-30 정리 포함)의 경보 id 로 새 처리 건을 열지 않는다. 회복 기준 없는 경보의 사건은
-                # 처음부터 끝난 상태(현장 검토)라 그 처리 건을 다시 열 때 같은 사건을 쓴다
+                # 끝난 사건(처리 건 없이 남아 닫힌 사건 — P1-30 정리 포함)의 경보 id 로 새 처리 건을 열지 않는다. 받는 배포 흐름이 없는 경보의
+                # 사건은 처음부터 끝난 상태(현장 검토)라 그 처리 건을 다시 열 때 같은 사건을 쓴다
                 raise ValueError(f'경보 {alert.get("alertId")}의 사건 {existing.id}{particle(existing.id, "은")} 이미 끝났습니다({existing.state}) — 같은 경보로 다시 열지 않습니다')
             return {"id": existing.id}
+        # 현장 검토(triage)로 연 사건: 이 경보 종류를 받는 배포 흐름이 없다(Incident.supported — 경보 발생 응답 _route_reply 와 같은 까닭)
         triage = recovery_policy is not None and recovery_policy.get('route') == 'triage'
         card = {"alert": alert, "causes": [], "citations": [],
-                "summary": "지원하는 회복 기준이 없어 현장 검토가 필요합니다" if triage else "에이전트 판단 대기 (프로세스 인스턴스가 열었다)"}
+                "summary": (f"경보 {alert.get('pattern')}{particle(str(alert.get('pattern')), '을')} 받는 배포 흐름이 없어 현장 검토가 필요합니다"
+                            if triage else "에이전트 판단 대기 (프로세스 인스턴스가 열었다)")}
         inc = machine.Incident.from_card(machine.new_incident_id(), card,recovery_policy=recovery_policy)
+        inc.outside_at_open = ctx.plant_outside(inc.asset) if ctx.plant_outside is not None else None
         machine.on_card(inc)
         ctx.incidents[inc.id] = inc
         ctx.persist()
@@ -418,21 +431,15 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         return {"id": inc.id}
 
     def update_incident_card(inc_id: str, card: dict) -> None:
+        """사건 카드 = 이 처리 건이 등록한 판단의 원인 진단(instances.incident_card — 서버가 만든 카드). 원천 경보는 사건이 연 그대로 둔다."""
         inc = ctx.incidents.get(inc_id)
         if inc is None:
-            raise ValueError('가이드를 저장할 원천 사건이 없습니다')
-        alert = card.get('alert')
-        if alert is not None and not isinstance(alert,dict):
-            raise ValueError('가이드의 원천 경보는 객체여야 합니다')
-        # diagnose(asset, pattern) returns only those source fields. The engine
-        # already owns the full original event; omissions do not replace it.
-        identity={'alertId':inc.alert_id,'asset':inc.asset,'pattern':inc.pattern}
-        if any(k in (alert or {}) and alert[k]!=v for k,v in identity.items()):
-            raise ValueError('가이드가 원천 경보 ID/설비/패턴을 변경할 수 없습니다')
-        if card.get('incident') not in (None,inc.id):
-            raise ValueError('가이드가 원천 사건 ID를 변경할 수 없습니다')
-        if inc.state != 'AWAITING_APPROVAL' or inc.recovery is None:
-            raise ValueError('현재 사건은 가이드 변경을 받을 수 없습니다')
+            raise ValueError(f'판단의 원인 진단을 저장할 사건 {inc_id}{particle(inc_id, "이")} 사건 기록에 없습니다')
+        if not inc.supported:
+            raise ValueError(f'사건 {inc.id}{particle(inc.id, "은")} 이 흐름이 받는 경보의 사건이 아니라(현장 검토로 간 경보) 원인 진단을 저장하지 않습니다')
+        if inc.state != 'AWAITING_APPROVAL':
+            from .definition import state_label
+            raise ValueError(f'사건 {inc.id}{particle(inc.id, "은")} 승인 대기가 아니라(지금 사건: {state_label(inc.state)}) 원인 진단을 바꾸지 않습니다')
         inc.card = dict(card, incident=inc.id, alert=inc.card.get('alert'))
         ctx.persist()
 
@@ -441,6 +448,9 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         if inc is None:
             raise ValueError(f"사건 {inc_id}{particle(inc_id, '이')} 사건 기록에 없습니다")
         return ctx.approve_incident(inc, by, commands, at)
+
+    def flow_approved(inc_id: str, by: str) -> bool:
+        return _incident_change(inc_id, lambda inc, fx: machine.on_flow_approved(inc, by, fx))
 
     def _incident_change(inc_id: str, change) -> bool:
         """사건 전이 하나(machine.on_*) → 저장 · 감사 · 처리 건 갱신. change(inc, fx) 가 False 면 아무것도 하지 않는다."""
@@ -509,14 +519,28 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             work_orders.confirm(ctx, inc, item, result)
         return result
 
+    def outside_after_work_order(inc_id: str, change: dict) -> bool:
+        return _incident_change(inc_id, lambda inc, fx: machine.on_outside_after_work_order(inc, change, fx))
+
+    def plant_outside(asset: str) -> dict | None:
+        return ctx.plant_outside(asset) if ctx.plant_outside is not None else None
+
+    def outside_since(inc_id: str | None, asset: str, window_outside: dict | None) -> dict | None:
+        """사건이 열린 뒤(사건이 없거나 그때 설비 상태를 아직 못 받았으면 window_outside — 그 단계가 시작될 때의 기록 — 뒤) 설비가 승인한 길
+        밖에서 바뀐 기록(machine.outside_change). 없으면 None."""
+        inc = ctx.incidents.get(inc_id) if inc_id else None
+        return machine.outside_change((inc.outside_at_open if inc is not None else None) or window_outside, plant_outside(asset))
+
     def close_incident_effect(inc_id: str, receipt: dict) -> bool:
         return _incident_change(inc_id, lambda inc, fx: machine.on_business_effect(inc, receipt, fx))
 
     def close_incident_result(inc_id: str, level: str, summary: str) -> bool:
         return _incident_change(inc_id, lambda inc, fx: machine.on_result_report(inc, level, summary, fx))
 
-    def recovery_reading(inc_id: str, since: str | None = None, after: str = "work_order") -> dict | None:
-        """사건의 회복 기준 태그 최신값 · 경보 해제 · (since 가 있으면) 재관측 창의 값 흐름. after = 'command' | 'work_order'(창의 종류)."""
+    def recovery_reading(inc_id: str, since: str | None = None, after: str = "work_order", window_outside: dict | None = None) -> dict | None:
+        """사건의 회복 기준 태그 최신값 · 경보 해제 · (since 가 있으면) 재관측 창의 값 흐름. after = 'command' | 'work_order'(창의 종류).
+        outside = 사건이 열린 뒤(그때 설비 상태를 아직 못 받았으면 창이 시작된 뒤 — window_outside) 설비가 승인한 조치 밖에서 바뀐 기록
+        (machine.outside_change) — 있으면 창의 값은 조치의 효과가 아니다."""
         inc = ctx.incidents.get(inc_id)
         if inc is None or inc.recovery is None:
             return None
@@ -529,8 +553,9 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         except (ctx.tag_read_error or ()) as e:     # P5-05: 값 없음(None)과 읽기 실패를 가른다 — 실패 까닭을 판정 기록에 싣는다
             value, reason = None, str(e)
         inside = value is not None and (value < limit if op == "<" else value >= limit)
+        outside = outside_since(inc_id, inc.asset, window_outside)
         reading = {"tag": tag, "op": op, "limit": limit, "value": value, "inside": inside, "cleared": bool(inc.cleared),
-                   "criterion": f"{tag} {op} {limit}", **({"reason": reason} if reason else {})}
+                   "criterion": f"{tag} {op} {limit}", **({"reason": reason} if reason else {}), **({"outside": outside} if outside else {})}
         if since and ctx.window_series is not None:
             # A161-G3: the re-observation window (since = its start) — the trend goes on the reading (the step's
             # REOBSERVATION event) and on the Incident (reobsSeries)
@@ -588,7 +613,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         if entry is None:
             # 흐름 단계가 가리키는 서버가 지워졌거나 이름이 틀렸다 — 무엇을 하면 풀리는지 말한다(이 문장이 처리 건의 단계 실패 문장으로 그대로 간다)
             from hydcommon.words import josa
-            raise LookupError(josa(f"도구 서버 '{name}'", '이') + " 등록되어 있지 않습니다 — [도구 연결]에서 같은 이름으로 등록한 뒤 이 단계를 다시 수행하세요")
+            raise LookupError(josa(f"도구 서버 '{name}'", '이') + " 등록되어 있지 않습니다 — [도구 연결]에서 같은 이름으로 먼저 등록하세요")
         gate = ((entry.get(mcp_registry.META_KEY) or {}).get("gate") or {}) if isinstance(entry, dict) else {}
         if name not in mcp_registry.BASE_SERVERS and gate.get("fingerprint") != mcp_registry.fingerprint(entry):
             from hydcommon.words import josa
@@ -596,7 +621,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                               "이 단계를 다시 수행하세요")
         return entry
 
-    return instances.Hooks(new_incident=open_incident, update_incident_card=update_incident_card, approve_commands=approve_commands,
+    return instances.Hooks(new_incident=open_incident, update_incident_card=update_incident_card, approve_commands=approve_commands, flow_approved=flow_approved,
                            incident_state=incident_state, incident_snapshot=incident_snapshot,
                            open_incidents=open_incidents, process_ended=process_ended,
                            decision_option=decision_option, get_decision=lambda did: ctx.book.get(did), approve_decision=delivery.prepare,
@@ -612,7 +637,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
                            close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
                            read_tag=ctx.latest_tag, close_incident_result=close_incident_result, ack_timeout=ack_timeout,
-                           reobservation_extended=reobservation_extended, reobservation_verdict=reobservation_verdict)
+                           reobservation_extended=reobservation_extended, reobservation_verdict=reobservation_verdict,
+                           outside_after_work_order=outside_after_work_order, plant_outside=plant_outside, outside_since=outside_since)
 
 
 def enterprise_read(name: str, params: dict) -> dict:
@@ -627,14 +653,45 @@ def enterprise_read(name: str, params: dict) -> dict:
         return json.loads(r.read())
 
 
-def plant_restore(asset: str, component: str | None, targets: list[str] | None = None) -> dict:
-    """C2 정비 수행 모사: plant-sim POST /api/fault {asset, type: restore, component | targets}. 응답을 그대로 돌려준다(ok 표시 추가).
-    targets = 승인한 조치 방법이 지식에서 다루는 외란 변수 · 구성 요소 id(service_parts.maintenance_scope) — 가상 설비는 그것만 되돌린다."""
-    body = {"asset": asset, "type": "restore"}
-    if targets is not None:
-        body["targets"] = list(targets)
-    elif component:
-        body["component"] = component
+def _route_reply(rt, policy: dict, admitted: dict) -> dict:
+    """경보 발생이 어디로 갔는가 — 바깥 프로그램이 200 만 받고 자기 흐름이 안 열린 것을 모르지 않게(사람 입력 경보의 route_text 와 같은 꼴)."""
+    target = admitted.get('definition') or policy['target']
+    name = rt.definition_for({'proc_def_id': target['definition'], 'proc_def_version': target['version'], 'tenant_id': rt.tenant_id}).name
+    response = policy['route'] == 'response'
+    return {'route': policy['route'], 'definition': dict(target, name=name), 'instance': admitted.get('instance'), 'incident': admitted.get('incident'),
+            'text': (f"배포된 흐름 「{name}」{particle(name, '이')} 이 경보를 열었습니다" if response else
+                     f"경보 {policy['pattern']}{particle(str(policy['pattern']), '을')} 받는 배포 흐름이 없어 「{name}」(현장 검토)으로 갔습니다 — 이 경보를 받는 "
+                     "흐름을 배포하거나(흐름 가져오기의 「내 경보 종류」), 현장 검토에서 처리하세요")}
+
+
+def _duplicate_alert_text(rt, alert: dict, pid: str | None) -> str:
+    """같은 경보(alertId)를 다시 받았을 때의 거절 문장 — 그 경보가 연 처리 건이 지금 진행 중인지 끝났는지를 사실대로 말한다(전에는 끝난 처리 건도
+    「이미 열린 처리 건」이라고 했다). 바깥 감지 프로그램은 이 문장에서 「이미 열린 처리 건」 · 「이미 받았습니다」를 찾아 이어 간다."""
+    inst = rt.repo.get_instance(pid) if pid else None
+    if inst is None:
+        return f"이 경보({alert.get('alertId')})는 이미 받았습니다 — 그 경보가 연 처리 건 기록은 지금 없습니다. 새 사건이면 새 경보 id(alertId)로 보내세요"
+    if inst.get('status') == 'RUNNING':
+        return f"이 경보로 이미 열린 처리 건이 있습니다: {pid}"
+    return (f"이 경보({alert.get('alertId')})는 이미 받았습니다 — 처리 건 {pid}(끝 「{rt._end_label(inst)}」)로 처리했습니다. "
+            "새 사건이면 새 경보 id(alertId)로 보내세요")
+
+
+def _cleared_reply(rt, alert: dict, admitted: dict) -> dict:
+    """경보 해제를 어느 사건 · 처리 건에 붙였고 사건이 어떻게 됐는가."""
+    from . import definition
+    inc, state = admitted.get('incident'), admitted.get('state')
+    rows = rt.repo.list_instances(None, 1, rt.tenant_id, inc) if inc else []
+    label = definition.state_label(state) if state else '알 수 없음'
+    return {'alertId': alert.get('alertId'), 'state': 'CLEAR', 'incident': inc, 'incident_state': state,
+            'instance': rows[0]['proc_inst_id'] if rows else None,
+            'text': f"해제를 사건 {inc}에 붙였습니다 — 사건: {label}"}
+
+
+def plant_restore(asset: str, targets: list[str], approved: dict) -> dict:
+    """C2 정비 수행 모사: plant-sim POST /api/fault {asset, type: restore, targets, approved}. 응답을 그대로 돌려준다(ok 표시 추가).
+    targets = 승인한 조치 방법이 지식에서 줄인다고 한 외란 변수 id(service_parts.maintenance_scope) — 가상 설비는 그것만 되돌린다.
+    approved = 이 복구를 낸 승인 뒤 단계 {instance, step, approved_by} — 가상 설비는 승인한 길의 변화로 보고 바깥 변화로 세지 않는다."""
+    body = {"asset": asset, "type": "restore", "targets": list(targets), "approved": dict(approved)}
     req = urllib.request.Request(PLANT_SIM_URL + "/api/fault", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"},
                                  method="POST")
     try:
@@ -1001,10 +1058,16 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
 
     @app.post("/api/instances/start")
     async def start_instance(req: StartReq):
-        """정의 하나를 직접 시작하거나(definition_id · version · event_id), 손으로 쓴 경보로 처리 건을 연다(alert). 경보는 Kafka 경보와
-        같은 원천 접수 → 경보 정책 → 배포 흐름 길 하나로만 간다(B-10) — 어느 흐름이 여는지는 정책이 정하고, 같은 경보는 같은 처리 건이다."""
+        """정의 하나를 직접 시작하거나(definition_id · version · event_id), 바깥 원천의 경보로 처리 건을 연다(alert). 경보는 Kafka 경보와
+        같은 원천 접수 → 경보 정책 → 배포 흐름 길 하나로만 간다(B-10) — 어느 흐름이 여는지는 정책이 정하고, 같은 경보는 같은 처리 건이다.
+        경보의 해제(state CLEAR)도 같은 접수로 받아 그 경보의 사건에 붙인다. 응답의 route = 그 경보가 어디로 갔는지(배포된 흐름 · 현장 검토)."""
         rt = _rt()
         try:
+            if req.alert is not None and req.alert.get('state') == 'CLEAR':
+                admitted = await admit_alert(req.alert)
+                if admitted.get('duplicate'):
+                    raise HTTPException(409, f"경보 {req.alert.get('alertId')}의 해제는 이미 받았습니다")
+                return await _in_executor(_cleared_reply, rt, req.alert, admitted)
             if req.alert is not None:
                 policy = await _in_executor(rt.alert_policy, req.alert.get('pattern'))
                 target = policy['target']
@@ -1013,10 +1076,16 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
                                              "흐름을 바꾸려면 그 흐름을 배포하세요")
                 admitted = await admit_alert(req.alert)
                 if admitted.get('duplicate'):
-                    raise HTTPException(409, f"이 경보로 이미 열린 처리 건이 있습니다: {admitted.get('instance')}")
+                    raise HTTPException(409, await _in_executor(_duplicate_alert_text, rt, req.alert, admitted.get('instance')))
                 inst = await _in_executor(rt.repo.get_instance, admitted['instance'])
+                return dict(inst, route=await _in_executor(_route_reply, rt, policy, admitted))
             elif req.definition_id:
-                inst = await _in_executor(rt.start_definition, req.definition_id, req.version, req.event_id, req.variables, None, req.name)
+                # 판본을 비우면 운영 판본(배포한 판본 — 경보가 여는 판본과 같은 포인터): 바깥 프로그램이 새 판을 등록 · 배포할 때마다 판본 번호를
+                # 따라 고치지 않아도 된다. 배포한 판본이 없으면 짐작하지 않고 그 까닭으로 거절한다
+                version = req.version or await _in_executor(rt.repo.deployed_version, req.definition_id, rt.tenant_id)
+                if not version:
+                    raise ValueError(f"흐름 {req.definition_id}에 배포한 판본이 없습니다 — 시작할 판본(version)을 적거나 「판본 · 배포」에서 배포하세요")
+                inst = await _in_executor(rt.start_definition, req.definition_id, version, req.event_id, req.variables, None, req.name)
                 if inst is None:
                     raise HTTPException(409, f"같은 요청 id({req.event_id})로 이미 시작한 처리 건이 있습니다")
             else:
@@ -1171,11 +1240,12 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         except ValueError as e:
             raise HTTPException(409, str(e))
 
-    @app.post('/api/todolist/{wid}/work-order-retry')
-    async def retry_work_order(wid: str, req: ApprovalRetryReq):
+    @app.post('/api/todolist/{wid}/effect-retry')
+    async def retry_effect_step(wid: str, req: ApprovalRetryReq):
+        """재시도를 다 쓰고 멈춘 승인 뒤 단계(정비 요청 등록 · 승인 뒤 MCP 호출)를 승인한 내용 그대로 다시 보낸다(instances.retry_effect_step)."""
         rt=_rt()
         try:
-            await _in_executor(rt.retry_work_order, wid, req.by, req.role)
+            await _in_executor(rt.retry_effect_step, wid, req.by, req.role)
             return await _in_executor(rt.repo.get_workitem,wid)
         except KeyError:
             raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')

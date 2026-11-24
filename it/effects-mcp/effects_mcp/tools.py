@@ -1,6 +1,7 @@
 """hyd-effects 쓰기 도구의 본체(FastMCP 없이 시험할 수 있게 분리). 사람 승인 뒤 process 의 'mcp:call' 부품만 부른다.
 
-  send_mail           SMTP 로 메일 한 통. 수업 기본은 Supabase 로컬의 Inbucket(SMTP 54325, 웹 54324) — 실제 발송 없음.
+  send_mail           SMTP 로 메일 한 통. 수업 메일함은 Supabase 로컬의 Inbucket(업무 DB 망 안의 inbucket:1025 — compose 의 effects-mcp
+                      environment SMTP_HOST · SMTP_PORT) — 실제 발송 없음.
 
 일정 · 기록 같은 업무 쓰기는 여기 두지 않는다 — 기존 enterprise-sim 거래(작업지시 · 구매요청 등, /api/exec)를 process 가 직접 쓴다
 (2026-10-09 지시: 이미 있는 CMMS · ERP 부품을 다시 만들지 않는다).
@@ -26,14 +27,25 @@ from email.message import EmailMessage
 from email.utils import formataddr, make_msgid
 from pathlib import Path
 
-SMTP_HOST = os.getenv("SMTP_HOST", "host.docker.internal")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "54325"))
 MAIL_FROM = os.getenv("EFFECTS_MAIL_FROM", "hyd-process@hyd.local")
 MAX_RECIPIENTS = 20
 CLASS_DOMAIN = "hyd.local"                     # 수업 메일 주소의 도메인(seed 사용자 · 흐름의 공급사 · 생산팀 주소)
 MAX_SUBJECT_CHARS = 200
 MAX_BODY_CHARS = 100_000
 _ADDRESS = re.compile(r"[A-Za-z0-9._%+-]+@" + re.escape(CLASS_DOMAIN))
+
+
+def smtp_address() -> tuple[str, int]:
+    """메일 서버(수업 메일함) 주소 — compose 의 effects-mcp environment(SMTP_HOST · SMTP_PORT)가 준다. 기본값을 두지 않는다: 값이 빠지면 지운 길
+    (호스트에 연 메일함 포트)로 조용히 돌지 않고, 어느 값이 없는지 말하며 도구가 켜지지 않는다."""
+    values = {name: os.environ.get(name, "").strip() for name in ("SMTP_HOST", "SMTP_PORT")}
+    missing = [name for name, value in values.items() if not value]
+    if missing:
+        raise RuntimeError(f"메일함 주소가 없어 메일 도구를 띄우지 않습니다 — 설정되지 않은 값: {' · '.join(missing)}"
+                           "(compose.yaml 의 effects-mcp environment)")
+    if not values["SMTP_PORT"].isdigit():
+        raise RuntimeError(f"SMTP_PORT 값 {values['SMTP_PORT']!r} 이 포트 번호가 아니어서 메일 도구를 띄우지 않습니다(compose.yaml 의 effects-mcp environment)")
+    return values["SMTP_HOST"], int(values["SMTP_PORT"])
 
 
 def ok(document) -> dict:
@@ -98,9 +110,12 @@ def _request_fingerprint(tool: str, request: dict) -> str:
 
 
 class EffectTools:
-    def __init__(self, ledger: Ledger, smtp_factory=None):
+    def __init__(self, ledger: Ledger, smtp: tuple[str, int] | None = None):
+        """smtp: 메일 서버 (주소, 포트) — 없으면 환경 값(smtp_address)."""
         self.ledger = ledger
-        self._smtp = smtp_factory or (lambda: smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10))
+        host, port = smtp or smtp_address()
+        self.smtp = f"{host}:{port}"
+        self._smtp = lambda: smtplib.SMTP(host, port, timeout=10)
         self._once_lock = threading.Lock()     # 확인 → 발송 → 기록을 한 번에 하나씩(같은 키의 동시 재시도가 두 통이 되지 않게)
 
     def _once(self, tool: str, key: str | None, request: dict, work) -> dict:
@@ -123,7 +138,7 @@ class EffectTools:
             except ValueError as e:
                 return error("INVALID", str(e))
             except (OSError, smtplib.SMTPException, urllib.error.URLError, RuntimeError) as e:
-                return error("UNKNOWN", f"메일 서버에 보내지 못했습니다({SMTP_HOST}:{SMTP_PORT}) — {type(e).__name__}: {str(e)[:200]}")
+                return error("UNKNOWN", f"메일 서버에 보내지 못했습니다({self.smtp}) — {type(e).__name__}: {str(e)[:200]}")
             if key:
                 self.ledger.put(key, tool, {"tool": tool, "request": fingerprint, "document": doc})
             return ok(dict(doc, replayed=False))
@@ -155,7 +170,7 @@ class EffectTools:
             with self._smtp() as smtp:
                 smtp.send_message(msg)
             return {"message_id": msg["Message-ID"], "to": rcpt, "cc": copy, "subject": msg["Subject"], "sent_at": _now(),
-                    "smtp": f"{SMTP_HOST}:{SMTP_PORT}"}
+                    "smtp": self.smtp}
         return self._once("send_mail", idempotency_key, request, work)
 
     def smtp_ready(self) -> dict:
@@ -164,5 +179,5 @@ class EffectTools:
             with self._smtp() as smtp:
                 code = smtp.noop()[0]
         except (OSError, smtplib.SMTPException) as e:
-            return {"ok": False, "smtp": f"{SMTP_HOST}:{SMTP_PORT}", "error": f"{type(e).__name__}: {str(e)[:200]}"}
-        return {"ok": code == 250, "smtp": f"{SMTP_HOST}:{SMTP_PORT}"}
+            return {"ok": False, "smtp": self.smtp, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+        return {"ok": code == 250, "smtp": self.smtp}

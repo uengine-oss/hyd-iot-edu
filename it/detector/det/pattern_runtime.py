@@ -169,7 +169,7 @@ class PatternRuntime:
             if problems:
                 cep.interrupt(run.state)
                 continue
-            values = {tag: asset.observations.samples[tag]['value'] for tag in inputs}
+            values = {tag: asset.observations.at_time(tag, at)['value'] for tag in inputs}
             slopes = {tag: asset.windows[(tag, definition.slope_window)].slope() for tag in definition.slopes}
             cond, clear = definition.rule.evaluate(values, slopes), definition.clear.evaluate(values, slopes)
             if cond and clear:
@@ -180,7 +180,7 @@ class PatternRuntime:
                             condition=cond, clear_condition=clear,
                             observation=dict(hold_clock='simulated_seconds', time_scale=self.time_scale,
                                              profile=self.profile, grace_wall_s=self.grace_s,
-                                             ages_wall_s={tag: at-asset.observations.samples[tag]['time'] for tag in inputs}))
+                                             ages_wall_s={tag: at-asset.observations.at_time(tag, at)['time'] for tag in inputs}))
             hold = definition.clear_hold if run.state.phase in ('RAISED', 'CLEARING') else definition.hold
             event = cep._step(run.state, asset_id, at*self.time_scale, code, definition.severity,
                               cond, clear, hold, datetime.fromtimestamp(at, timezone.utc).isoformat(), evidence,

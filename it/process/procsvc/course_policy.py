@@ -228,13 +228,18 @@ class Policy:
 
     # -- AI가 답을 만드는 자리
     def ai_slot(self, definition_id, activity_id, inputs=None):
-        """이 AI 단계를 실행해도 되는가 → 수업 AI 자리 이름(PBL의 수업 밖 단계는 None). 수업 단계의 수업 밖 단계는 거절."""
+        """이 AI 단계를 실행해도 되는가 → 수업 AI 자리 이름. 수업 단계의 수업 밖 단계는 거절한다. PBL 단계에서는 어느 단계든 None 이다 — 자리 이름은
+        워커가 저장된 응답(키 없는 PC의 재생 · 키 있는 PC의 같은 요청 저장 — 뿌리가 같은 한 장치)을 찾는 열쇠라, PBL 의 AI 단계(학생 지식 · 학생 도구
+        서버로 판단하는 단계)에 수업 때의 응답이 끼어들지 않고 늘 실제 AI 로 돈다(사용자 2026-11-22 「재생모드는 수업한정인거고, 캐시랑 재생모드랑 …
+        뿌리는 같다」)."""
         slot = AI_SLOTS.get((definition_id, activity_id))
         if slot == 'question':
             question, limit = (inputs or {}).get('question'), question_max_chars()
             if not isinstance(question, str) or not question.strip() or len(question) > limit:
                 raise AccessDenied(f'질문은 1~{limit}자로 적습니다.')
-        if slot is None and not self.phase.pbl:
+        if self.phase.pbl:
+            return None
+        if slot is None:
             raise AccessDenied(self.REASONS['ai_slot'])
         return slot
 

@@ -21,24 +21,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 TIME_SCALE = time_scale()
 plant = Plant(time_scale=TIME_SCALE)
 edge = Edge(plant, daq_profile=profile_from_env())
-reg = Registry()
-g_ts1 = reg.gauge("plant_ts1_celsius", "oil temperature")
-g_health = reg.gauge("plant_cooler_health", "cooler health 0..1")
-g_leak = reg.gauge("plant_pump_leak", "pump A internal leakage fraction")
-g_wear = reg.gauge("plant_fan_bearing_wear", "fan bearing wear 0..1")
-g_pub = reg.gauge("plant_mqtt_published_total", "messages published")
-
-
-def refresh_gauges():
-    for a, u in plant.units.items():
-        g_ts1.set(u.state.ts1, asset=a)
-        g_health.set(u.state.cooler_health, asset=a)
-        g_leak.set(u.state.leak, asset=a)
-        g_wear.set(u.state.bearing_wear, asset=a)
-    g_pub.set(edge.published)
-
-
-app = make_app("plant-sim (L1 hydraulic units + soft-PLC)", reg, lambda: {**edge.health(), "sim_t": plant.sim_t}, refresh_gauges)
+# 이 서비스에는 지표가 없다: 지표를 읽는 Prometheus(IT)는 공장(OT) 안으로 닿지 않고 긁는 목록에도 가상 설비가 없다(it/prometheus/prometheus.yml).
+# 설비 값은 공장이 내보내는 길(MQTT → 수집)로만 나간다. 아무도 읽지 않던 plant_* 지표 다섯은 지웠다(전수검사 06-12).
+app = make_app("plant-sim (L1 hydraulic units + soft-PLC)", Registry(), lambda: {**edge.health(), "sim_t": plant.sim_t})
 
 
 class FaultReq(BaseModel):
@@ -51,6 +36,12 @@ class FaultReq(BaseModel):
     targets: list[str] | None = None    # restore only: knowledge-graph ids (comp:* · sv:*) an approved maintenance action deals with — only those
     origin: dict | None = None          # C3: the button press behind this request {id, by, user_id, roles} — kept as the unit's injection
     operating_point: bool = False       # restore only: also put FanSpeedSP · LoadSP back to the normal operating point (ends a mitigation)
+    approved: dict | None = None        # restore only: the approved process step behind it {instance, step, approved_by} — not an outside change
+
+
+class ResetReq(BaseModel):
+    button: str | None = None           # the press behind the reset (the process's [설비 초기화] route) — kept in the outside-change record
+    by: str | None = None
 
 
 class ModeReq(BaseModel):
@@ -86,7 +77,7 @@ def fault(req: FaultReq):
         if req.origin is not None and not str(req.origin.get("id") or "").strip():
             raise ValueError("origin needs an id (the press that asked for this injection)")
         return plant.inject(req.asset, req.type, req.target, req.ramp_sim_s, severity=req.severity, component=req.component,
-                            origin=req.origin, operating_point=req.operating_point, targets=req.targets)
+                            origin=req.origin, operating_point=req.operating_point, targets=req.targets, approved=req.approved)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -114,9 +105,11 @@ def manual(req: ManualReq):
 
 
 @app.post("/api/reset")
-def reset():
-    """Lecture helper: put every unit back to the healthy operating point (REMOTE_AUTO, fan 60, load 90, pump A, no faults)."""
-    plant.reset()
+def reset(req: ResetReq | None = None):
+    """Lecture helper: put every unit back to the healthy operating point (REMOTE_AUTO, fan 60, load 90, pump A, no faults).
+    An outside change on every unit (plant.status outside) — the portal's [설비 초기화] comes through the process, which records
+    the press on the open cases and passes the press here."""
+    plant.reset(button=req.button if req else None, by=req.by if req else None)
     t = now_iso()
     for a in plant.units:
         edge.publish_status(a, t)

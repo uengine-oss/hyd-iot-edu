@@ -6,7 +6,9 @@
 만드는 것(git 밖):
   .env              Compose 가 읽는 이 PC 값 — 이 목록이 정본이다(.env.example 은 여기를 가리킨다):
                       COMPOSE_PROJECT_NAME(이 폴더의 프로젝트 이름) · HYD_PORT_<compose 포트>(바깥 포트) · HYD_PORTS(옮긴 포트 표 —
-                      포털이 새 탭 도구 주소에 쓴다) · SUPABASE_DSN · ENTERPRISE_READ_DSN(업무 DB 주소) · EFFECTS_SMTP_PORT(메일함 포트) ·
+                      포털이 새 탭 도구 주소에 쓴다) · HYD_SUPABASE_PROJECT(업무 DB 프로젝트 이름 — compose 가 이 이름으로 업무 DB 망
+                      hyd-business-db-<이름> 을 찾고, 3단계 db-net 이 그 망을 만들어 업무 DB · 메일함을 붙인다. 서비스는 그 망 안의 이름으로
+                      업무 DB · 메일함을 부르므로 업무 DB 주소 · 메일함 포트는 PC 마다 같아 compose.yaml 이 정한다) ·
                       없을 때 한 번 만드는 내부 확인 값 PROCESS_CALLER_TOKEN · CMD_FINGERPRINT_KEY. (AI_MODE 는 hyd_env.py ai-mode 가 적는다)
                     compose.yaml 이 ${이름} 으로 읽지 않는 줄(앞 판의 배속 · 중계 주소 같은 수업 값 등)은 그 줄 앞에 # 를 붙여 끄고 알린다 —
                     수업 구성은 compose.yaml 한 곳이 정한다. COMPOSE_* 는 Compose 자신의 설정이라 남긴다(없는 프로필을 적은 COMPOSE_PROFILES 는 끈다).
@@ -22,6 +24,7 @@ it/supabase/config.toml 은 커밋된 값 그대로 둔다. 앞 판 시작이 �
 (compose 에 없는 볼륨을 모두 지우면 이름을 바꾼 볼륨의 실습 기록까지 지운다).
 
     python scripts/prepare_ports.py            # 시작 2단계가 부른다
+    python scripts/prepare_ports.py db-net     # 시작 3단계(업무 DB 를 켠 뒤): 업무 DB 망 · 붙이기, 다시 만들 서비스 이름
     python scripts/prepare_ports.py retire     # 시작 4단계(compose up) 뒤에 부른다
     python scripts/prepare_ports.py port 8088  # 기본 포트 8088 의 이 PC 바깥 포트
 """
@@ -32,12 +35,12 @@ import json
 import os
 import re
 import secrets
+import shutil
 import socket
 import subprocess
 import sys
 import tomllib
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hyd_env  # noqa: E402
@@ -65,10 +68,6 @@ SECTION_ALIAS = {'inbucket': 'local_smtp'}
 SUPABASE_ENV_HEAD = '# 시작(scripts/prepare_ports.py)이 만드는 이 PC의 업무 DB 이름 · 포트 — Supabase CLI 가 읽는다. 손으로 고치지 않는다(git 에 올라가지 않는다).'
 # 이 PC 안에서만 쓰는 확인 값 — process 만 업무 쓰기 · 메일 도구를 부르게(enterprise-sim · effects-mcp), 승인 장부 지문(cmd-gateway)
 PC_SECRETS = ('PROCESS_CALLER_TOKEN', 'CMD_FINGERPRINT_KEY')
-LOCAL_DSNS = {
-    'SUPABASE_DSN': 'postgresql://postgres:postgres@host.docker.internal:54322/postgres',
-    'ENTERPRISE_READ_DSN': 'postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres',
-}
 # compose.yaml 에서 뺀 볼륨 → 뺀 날 · 까닭. 그 데이터는 지금 판의 어느 코드도 읽지 않는다
 RETIRED_VOLUMES = {
     'enterprise-data': '2026-10-30 — 지운 메모리판 업무 시스템의 상태 파일 자리(업무 데이터는 업무 DB가 원천)',
@@ -77,6 +76,15 @@ RETIRED_VOLUMES = {
 
 class PrepareError(RuntimeError):
     """학생에게 그대로 보이는 까닭(무엇이 · 어디서 · 무엇을 하면 되는지)."""
+
+
+def docker_exe() -> str:
+    """docker 명령의 경로 — 시작 · 점검 셸과 같은 PATH 차례로 찾는다(이 보조를 부른 셸이 1단계에서 확인한 그 docker). 이름만 넘기면 Windows 는
+    PATH 차례가 아니라 파이썬 폴더 · 현재 폴더 · 시스템 폴더를 먼저 찾고 .exe 만 본다."""
+    found = shutil.which('docker')
+    if found is None:
+        raise PrepareError('docker 명령을 찾을 수 없습니다. Docker Desktop 이 설치돼 있는지 확인한 뒤 시작 파일을 다시 실행하세요.')
+    return found
 
 
 def norm(path) -> str:
@@ -153,14 +161,14 @@ def _labels(kind: str, ids: list[str]) -> list[dict]:
     if not ids:
         return []
     fmt = '{{json .Config.Labels}}' if kind == 'container' else '{{json .Labels}}'
-    out = subprocess.check_output(['docker', kind, 'inspect', '--format', fmt, *ids], text=True, encoding='utf-8')
+    out = subprocess.check_output([docker_exe(), kind, 'inspect', '--format', fmt, *ids], text=True, encoding='utf-8')
     return [json.loads(line) or {} for line in out.splitlines() if line.strip()]
 
 
 def docker_inventory() -> dict:
     """{'compose' | 'supabase': {프로젝트 이름: {'roots': {그 컨테이너를 만든 폴더…}, 'volumes': 데이터 볼륨이 있는가}}}."""
-    containers = _labels('container', subprocess.check_output(['docker', 'ps', '-aq'], text=True).split())
-    volumes = _labels('volume', subprocess.check_output(['docker', 'volume', 'ls', '-q'], text=True).split())
+    containers = _labels('container', subprocess.check_output([docker_exe(), 'ps', '-aq'], text=True).split())
+    volumes = _labels('volume', subprocess.check_output([docker_exe(), 'volume', 'ls', '-q'], text=True).split())
     return inventory_from_labels(containers, volumes)
 
 
@@ -260,10 +268,10 @@ def available(port):
 
 def docker_ports(names, mine) -> tuple[set, set]:
     """(이 폴더 프로젝트가 지금 잡고 있는 바깥 포트, 켜진 컨테이너가 잡고 있는 바깥 포트 전부)."""
-    ids = subprocess.check_output(['docker', 'ps', '-q'], text=True).split()
+    ids = subprocess.check_output([docker_exe(), 'ps', '-q'], text=True).split()
     if not ids:
         return set(), set()
-    return ports_from_containers(json.loads(subprocess.check_output(['docker', 'inspect', *ids], text=True, encoding='utf-8')), names, mine)
+    return ports_from_containers(json.loads(subprocess.check_output([docker_exe(), 'inspect', *ids], text=True, encoding='utf-8')), names, mine)
 
 
 def ports_from_containers(containers: list[dict], names, mine) -> tuple[set, set]:
@@ -306,17 +314,6 @@ def allocate(defaults, previous, owned, occupied, probe=available):
         else:
             raise PrepareError(f'포트 {default} 대신 쓸 빈 포트가 이 PC에 없습니다. 쓰지 않는 프로그램을 닫고 다시 시작하세요.')
     return selected
-
-
-def rewrite_url(value, replacements):
-    """Only rewrite local host endpoints, preserving custom remote DB settings."""
-    url = urlsplit(value)
-    if url.hostname not in {"localhost", "127.0.0.1", "host.docker.internal"}:
-        return value
-    if url.port not in replacements:
-        return value
-    netloc = url.netloc.rsplit(":", 1)[0] + ":" + str(replacements[url.port])
-    return urlunsplit(url._replace(netloc=netloc))
 
 
 def read_saved_ports(path: Path) -> dict[int, int]:
@@ -419,11 +416,7 @@ def prepare(root: Path, *, inventory=None, container_ports=None, probe=available
     # 업무 DB 포트는 it/supabase/.env 로 간다 — .env 에는 compose 가 읽는 포트만
     updates = {'COMPOSE_PROJECT_NAME': names[0], **{f'HYD_PORT_{p}': str(ports[p]) for p in sorted(service_ports)},
                'HYD_PORTS': ' '.join(f'{p}={port}' for p, port in sorted(ports.items()) if p != port)}
-    replacements = {54322: ports[54322], 8088: ports[8088], previous[54322]: ports[54322], previous[8088]: ports[8088]}
-    for key, default in LOCAL_DSNS.items():
-        updates[key] = rewrite_url(values.get(key, default), replacements)
-    if values.get('EFFECTS_SMTP_PORT', str(previous[54325])) == str(previous[54325]):
-        updates['EFFECTS_SMTP_PORT'] = str(ports[54325])
+    updates['HYD_SUPABASE_PROJECT'] = names[1]
     for key in PC_SECRETS:                            # 없을 때 한 번만 만든다(있는 값은 그대로 — 바꾸면 진행 중인 승인 장부가 어긋난다)
         if not values.get(key, '').strip():
             updates[key] = secrets.token_urlsafe(32)
@@ -467,16 +460,65 @@ def retire(root: Path) -> list[str]:
     if not record_path.exists():
         raise PrepareError('폴더 기록(.hyd-runtime/project.json)이 없습니다. 시작 파일을 처음부터 다시 실행하세요.')
     compose_name = json.loads(record_path.read_text(encoding='utf-8'))['compose']
-    ids = subprocess.check_output(['docker', 'volume', 'ls', '-q', '--filter', f'label=com.docker.compose.project={compose_name}'], text=True).split()
+    ids = subprocess.check_output([docker_exe(), 'volume', 'ls', '-q', '--filter', f'label=com.docker.compose.project={compose_name}'], text=True).split()
     labels = dict(zip(ids, _labels('volume', ids)))
     notes = []
     for name in retired_targets(compose_name, labels):
-        out = subprocess.run(['docker', 'volume', 'rm', name], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        out = subprocess.run([docker_exe(), 'volume', 'rm', name], capture_output=True, text=True, encoding='utf-8', errors='replace')
         if out.returncode != 0:
             raise PrepareError(f'지금 판이 쓰지 않는 옛 볼륨 {name} 을 지우지 못했습니다: {out.stderr.strip()[:300]} — '
                                f'「docker ps -a --filter volume={name}」로 그 볼륨을 붙든 컨테이너를 확인해 강사에게 알려 주세요.')
         notes.append(f'지금 판이 쓰지 않는 옛 볼륨 {name} 을 지웠습니다({RETIRED_VOLUMES[labels[name]["com.docker.compose.volume"]]}).')
     return notes
+
+
+#: 업무 DB 망(compose.yaml business-db)의 이름 앞부분과, 그 망에서 업무 DB · 메일함 컨테이너를 부르는 이름(컨테이너 이름은 업무 DB 프로젝트마다 다르다)
+DB_NET_PREFIX = 'hyd-business-db-'
+DB_NET_ALIASES = {'supabase_db_{}': 'db.supabase.internal', 'supabase_inbucket_{}': 'inbucket'}
+
+
+def stale_services(containers: list[dict], net_id: str, users: set[str]) -> list[str]:
+    """다시 만들 서비스 — 업무 DB 망을 쓰는 서비스(users)의 컨테이너(docker inspect 꼴) 가운데 지금 그 망(net_id)에 붙지 않은 것.
+    망이 지워졌다 다시 만들어지면(Docker 정리 · 앞 판이 붙던 Supabase 의 망) 멈춰 둔 컨테이너는 옛 망을 기억해 compose 가 다시 만들지 않고
+    「network … not found」로 켜지지 못했다(2026-11-24 실측)."""
+    stale = set()
+    for c in containers:
+        service = ((c.get('Config') or {}).get('Labels') or {}).get('com.docker.compose.service')
+        networks = ((c.get('NetworkSettings') or {}).get('Networks') or {}).values()
+        if service in users and not any((n or {}).get('NetworkID') == net_id for n in networks):
+            stale.add(service)
+    return sorted(stale)
+
+
+def db_network(root: Path) -> list[str]:
+    """시작 3단계(업무 DB 를 켠 뒤): 업무 DB 망을 만들고(끄기가 지우지 않는다) 업무 DB 가 켤 때마다 새로 만드는 업무 DB · 메일함 컨테이너를 그 이름으로
+    붙인다 → 다시 만들 이 폴더 서비스(stale_services). 망 이름은 compose 가 .env 의 HYD_SUPABASE_PROJECT 로 푼 것이고 2단계가 적은 폴더 기록과 같아야 한다."""
+    record_path = root / RUNTIME / 'project.json'
+    if not record_path.exists():
+        raise PrepareError('폴더 기록(.hyd-runtime/project.json)이 없습니다. 시작 파일을 처음부터 다시 실행하세요.')
+    record = json.loads(record_path.read_text(encoding='utf-8'))
+    env = {k: v for k, v in os.environ.items() if k != 'HYD_SUPABASE_PROJECT'}      # .env 의 값이 이긴다(이 창에 남은 값 말고)
+    resolved = json.loads(subprocess.check_output([docker_exe(), 'compose', 'config', '--format', 'json'], cwd=root, env=env, text=True,
+                                                  encoding='utf-8'))
+    net = resolved['networks']['business-db']['name']
+    if net != DB_NET_PREFIX + record['supabase']:
+        raise PrepareError(f'업무 DB 의 이름이 서로 다릅니다(.env 의 HYD_SUPABASE_PROJECT → 망 {net}, 폴더 기록의 업무 DB → {record["supabase"]}). '
+                           '시작 파일을 다시 실행하고, 그래도 같으면 이 줄을 강사에게 알려 주세요.')
+    docker = lambda *args: subprocess.run([docker_exe(), *args], capture_output=True, text=True, encoding='utf-8', errors='replace')   # noqa: E731
+    if docker('network', 'inspect', net).returncode != 0 and (out := docker('network', 'create', net)).returncode != 0:
+        raise PrepareError(f'업무 DB 의 망 {net} 을 만들지 못했습니다: {out.stderr.strip()[:300]}')
+    for pattern, alias in DB_NET_ALIASES.items():
+        box = pattern.format(record['supabase'])
+        found = docker('inspect', '-f', '{{json .NetworkSettings.Networks}}', box)
+        if found.returncode != 0:
+            raise PrepareError(f'업무 DB 의 컨테이너 {box} 가 없습니다 — 3단계의 업무 DB 가 덜 켜졌습니다. 끄기 파일로 끈 뒤 시작 파일을 다시 실행하세요.')
+        if net not in json.loads(found.stdout or '{}') and (out := docker('network', 'connect', '--alias', alias, net, box)).returncode != 0:
+            raise PrepareError(f'업무 DB 의 컨테이너 {box} 를 망 {net} 에 붙이지 못했습니다: {out.stderr.strip()[:300]}')
+    net_id = docker('network', 'inspect', '-f', '{{.Id}}', net).stdout.strip()
+    users = {s for s, spec in resolved['services'].items() if 'business-db' in (spec.get('networks') or {})}
+    ids = subprocess.check_output([docker_exe(), 'ps', '-aq', '--filter', f'label=com.docker.compose.project={record["compose"]}'], text=True).split()
+    containers = json.loads(subprocess.check_output([docker_exe(), 'inspect', *ids], text=True, encoding='utf-8')) if ids else []
+    return stale_services(containers, net_id, users)
 
 
 def saved_port(root: Path, default: int) -> int:
@@ -496,6 +538,9 @@ def main(argv: list[str], root: Path = ROOT) -> int:
         if len(args) == 2 and args[0] == 'port' and args[1].isdigit():
             print(saved_port(root, int(args[1])))
             return 0
+        if args == ['db-net']:
+            print(' '.join(db_network(root)))
+            return 0
     except (PrepareError, hyd_env.EnvFileError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -503,7 +548,7 @@ def main(argv: list[str], root: Path = ROOT) -> int:
         # 명령 · 파일 이름까지만 보인다(.env 값은 예외 글에 들어가지 않는다)
         print(f'포트 준비가 실패했습니다 — {type(exc).__name__}: {exc}', file=sys.stderr)
         return 1
-    print('사용: prepare_ports.py | prepare_ports.py retire | prepare_ports.py port <기본 포트>', file=sys.stderr)
+    print('사용: prepare_ports.py | prepare_ports.py retire | prepare_ports.py db-net | prepare_ports.py port <기본 포트>', file=sys.stderr)
     return 2
 
 

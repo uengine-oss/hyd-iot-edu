@@ -1,6 +1,6 @@
 """effects-mcp (hyd-effects): 사람 승인 뒤 process 의 시스템 task 가 부르는 **쓰기** MCP 서버 (FastMCP, streamable HTTP).
 
-    docker: MCP_PORT=8197 SMTP_HOST=host.docker.internal SMTP_PORT=54325
+    docker: MCP_PORT=8197 SMTP_HOST=inbucket SMTP_PORT=1025(compose — 업무 DB 망 business-db 안의 메일함. 기본값이 없어 두 값이 빠지면 켜지지 않는다 — tools.smtp_address)
     tools : send_mail   (1; 쓰기 — readOnlyHint=false, idempotency_key 로 멱등). 받는 주소는 수업 도메인(@hyd.local)만 — 수업 메일함 Inbucket 으로만 간다
     /healthz: 메일 서버(SMTP)가 답하는가
 

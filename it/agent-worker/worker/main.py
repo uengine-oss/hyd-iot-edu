@@ -88,13 +88,18 @@ def sweep_forever() -> None:
         time.sleep(_SWEEP_INTERVAL_S)
 
 
-def build_runner(repo) -> Runner:
-    """AI_MODE(live · record · replay — 다른 값은 켜지지 않는다)에 따라 AI 응답 자리만 바꾼다. 나머지 실행 · 결과 검사 · 저장은 같다."""
+def require_settings() -> None:
+    """켜기 전에 맨 먼저: 업무 DB · process 주소 · 실행기 인증 파일 가운데 빠진 것을 모두 대며 켜지 않는다. 업무 DB 연결(_repo — 빈 주소면 process 의
+    문장으로 먼저 멈춘다)과 정리 고리보다 앞에서 본다 — 뒤에서 보면 이 안내가 가려졌다."""
     missing = [name for name, value in (("SUPABASE_DSN", settings.supabase_dsn), ("PROCESS_URL", settings.process_url),
                                         ("HYD_WORKER_RUNTIME_KEY_FILE", settings.runtime_key_file)) if not value]
     if missing:
         raise RuntimeError(f"{' · '.join(missing)}(업무 DB · process 주소 · 실행기 인증 파일)이 없어 AI 워커를 켜지 않습니다 — compose.yaml 의 "
                            "agent-worker environment 를 확인하세요")
+
+
+def build_runner(repo) -> Runner:
+    """AI_MODE(live · record · replay — 다른 값은 켜지지 않는다)에 따라 AI 응답 자리만 바꾼다. 나머지 실행 · 결과 검사 · 저장은 같다."""
     cli_sandbox.verify()            # 격리가 켜진 이미지면 이 커널에서 실제로 걸리는지 켜질 때 한 번(G1-25)
     course = ai_replay.Library(settings.ai_replay_dir, ai_replay.COURSE)
     responses = ai_replay.Responses(settings.ai_mode, course=course, cache=ai_replay.Library(settings.ai_cache_dir, ai_replay.REUSE))
@@ -137,6 +142,7 @@ def install_stop_signals() -> list[str]:
 
 def main() -> None:
     global _runner
+    require_settings()
     install_stop_signals()
     threading.Thread(target=serve_http, daemon=True).start()
     threading.Thread(target=sweep_forever, daemon=True).start()

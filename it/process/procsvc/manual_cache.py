@@ -25,7 +25,7 @@ def source_fingerprint(source):
     return _digest({key: source.get(key) for key in ('sha256', 'extractor', 'media_type', 'pages')})
 
 
-def identity(tenant, source, catalog, *, scope, profile, feedback=None):
+def identity(tenant, source, catalog, *, scope, profile):
     if not isinstance(scope, str) or not scope.strip():
         raise ValueError('추출 승인 범위 판본이 필요합니다')
     if not isinstance(profile, dict) or not profile.get('model') or not profile.get('revision'):
@@ -35,21 +35,7 @@ def identity(tenant, source, catalog, *, scope, profile, feedback=None):
                         media_type=source.get('media_type'), pages=source['pages'],
                         definition=manual_extraction.definition(), catalog=catalog,
                         segments=manual_extraction.manual_segments.segments(source),
-                        profile=profile, feedback=manual_extraction.validate_review_feedback(feedback)))
-
-
-def start(rt, source, request_id, catalog, *, scope, profile, feedback=None, execution_run_id=None):
-    key = identity(rt.tenant_id, source, catalog, scope=scope, profile=profile, feedback=feedback)
-    inst = manual_extraction.start(rt, source, request_id, review_feedback=feedback,
-                                   catalog=catalog, cache_identity=key, execution_run_id=execution_run_id)
-    # A failed or in-flight work item is not a successful cache result. We do
-    # not mint another request ID and spend again when it failed. Instructor
-    # authorization of a new profile revision is required for a fresh attempt.
-    _, state = manual_extraction._task_state(rt, inst)
-    return dict(instance=inst['proc_inst_id'], status=state['status'],
-                source_id=source['source_id'], cache=dict(key=key, reused=inst['cache_reused'],
-                                                        validated=False),
-                segments=(engine.variables(inst).get('segment') or {}).get('total', 1))
+                        profile=profile))
 
 
 def result(rt, archive, source, pid, previous_batch):

@@ -11,9 +11,9 @@ cd "$(dirname "$0")/.."
 die() { printf '[멈춤] %s\n' "$*" >&2; exit 1; }
 docker info >/dev/null 2>&1 || die 'Docker가 응답하지 않습니다. Docker Desktop을 연 뒤 다시 실행하세요(Docker가 꺼져 있으면 실습 스택도 이미 꺼져 있습니다).'
 unset COMPOSE_PROFILES
-# stop 은 시작이 정하는 값(AI_MODE · 호출자 토큰 · 지문 키)을 쓰지 않지만 compose 는 파일 전체를 읽는다 — 새 판을 받고 아직 시작하지 않은
-# .env(그 값이 없음)에서도 끌 수 있게 이 명령에만 자리 값을 준다(켜는 명령에는 주지 않는다)
-compose() { AI_MODE=stop PROCESS_CALLER_TOKEN=stop CMD_FINGERPRINT_KEY=stop docker compose "$@"; }
+# stop 은 시작이 정하는 값(compose.yaml 의 ${이름:?…} — AI_MODE · 호출자 토큰 · 지문 키 · 업무 DB 이름)을 쓰지 않지만 compose 는 파일 전체를 읽는다 —
+# 새 판을 받고 아직 시작하지 않은 .env(그 값이 없음)에서도 끌 수 있게 이 명령에만 자리 값을 준다(켜는 명령에는 주지 않는다)
+compose() { AI_MODE=stop PROCESS_CALLER_TOKEN=stop CMD_FINGERPRINT_KEY=stop HYD_SUPABASE_PROJECT=stop docker compose "$@"; }
 compose --profile '*' stop || die '시스템 컨테이너를 멈추지 못했습니다. 위 오류를 보고 Docker Desktop이 켜져 있는지 확인한 뒤 다시 실행하세요.'
 ( cd it/supabase && npx -y "supabase@$SUPABASE_CLI" stop ) || die '업무 DB(Supabase)를 끄지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요(쌓인 데이터는 그대로 있습니다). Docker Desktop의 Containers 화면에서 supabase_ 로 시작하는 컨테이너를 멈춰도 됩니다.'
 running=$(compose ps --status running -q | grep -c . || true)

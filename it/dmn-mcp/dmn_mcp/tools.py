@@ -12,6 +12,7 @@ import psycopg
 
 from agentsvc import card as cardlib, decide as decidelib
 from agentsvc.tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
+from hydcommon import topics
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS, Fabric
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN
@@ -24,15 +25,17 @@ CAUSE_BASIS = "지식 지도의 진단 경로(이상 패턴 → 증상 → 고�
 #: 재고 기준 이탈(SPARE_BELOW_MIN)은 원인 경로가 없다 — 부품이 근거다(purchase_context · evaluate_purchase · submit_purchase).
 #: 2026-10-30 검진 G2-26: 원인 경로가 남아 있을 때 경보의 부품이 아니라 모자란 모든 부품에서 사전 확률 1순위를 골랐다.
 BUSINESS_CAUSE_BASIS = {
-    PM_PATTERN: "지식 지도의 정비 경로(정기 정비가 막는 고장 유형과 그 고장을 일으키는 원인)",
+    PM_PATTERN: "지식 지도의 정비 경로(이 설비의 구성 요소에서 생기는 고장 가운데 정기 정비가 막는 고장 유형과 그 고장을 일으키는 원인)",
 }
 #: 원인 근거의 종류(판단 origin.cause_route) — 화면이 원인을 '진단'으로 읽을지 '정비로 막는 원인'으로 읽을지 정한다.
 #: 라이브 3차: 업무 경보도 cause_basis 에 T1(증상) 문장이 적혀 고장 진단처럼 보였다.
 DIAGNOSIS_ROUTE = "diagnosis"
 BUSINESS_CAUSE_ROUTE = {PM_PATTERN: "prevention"}
 BUSINESS_CAUSES = {
-    # 정기 정비가 막는 고장과 그 원인
-    PM_PATTERN: "MATCH (fm:FailureMode)-[:PREVENTED_BY]->(:Skill) WITH DISTINCT fm MATCH (c:Cause)-[:CAUSES]->(fm) "
+    # 이 설비의 구성 요소에서 생기는 고장 가운데 정기 정비가 막는 고장과 그 원인. 설비를 묻지 않던 때는 문서가 넣은 다른 설비의 예방 절차가 막는 고장의
+    # 원인까지 후보가 돼, 사전 확률이 높으면 그 설비와 무관한 원인이 이 설비 정기 정비의 1순위가 됐다(전수검사 02-11)
+    PM_PATTERN: "MATCH (:Asset {code:$asset})-[:HAS_COMPONENT]->(:Component)<-[:OCCURS_IN]-(fm:FailureMode)-[:PREVENTED_BY]->(:Skill) "
+              "WITH DISTINCT fm MATCH (c:Cause)-[:CAUSES]->(fm) "
               "RETURN c.id AS causeId, c.name AS cause, fm.id AS failureModeId, fm.name AS failureMode, "
               "c.prior AS prior ORDER BY c.prior DESC",
 }
@@ -170,7 +173,7 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
         'facts': facts, 'facts_omitted': facts_omitted,
         'facts_detail': '전체 평가 사실(전체 설비/부품 원천 행 포함)은 read_evaluation_evidence에서 field=facts, option=null로 이어 읽습니다.' if facts_omitted else None,
         'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
-        'options': options, 'error': rec.get('error'), 'source_errors': source_errors,
+        'options': options, 'error': rec.get('error'), 'source_errors': source_errors, 'knowledge': rec.get('knowledge'),
         'provenance': _capped(provenance) if detail_option else None,
         'omitted': f"카드마다 {', '.join(DETAIL_FIELDS)} 와 provenance 는 뺐습니다. 한 카드의 전체 근거가 필요하면 같은 인자에 "
                    "detail_option=<카드 id 또는 SOP ID> 를 더하면 현재 상태로 재계산한 상세 미리보기를 받습니다(칸마다 6000자 상한). "
@@ -199,6 +202,18 @@ def enveloped(fn):
             return error("UNKNOWN", f"{type(e).__name__}: {str(e)[:300]}")
     run.__name__, run.__doc__ = fn.__name__, fn.__doc__
     return run
+
+
+def withheld_may_clear(asset: str, dx: dict) -> bool:
+    """보류된 원인 진단(diagnose 의 결과 dx)이 같은 인자로 다시 부르면 풀릴 수 있는가 — 풀릴 수 있으면 UNAVAILABLE, 아니면 INVALID 로 낸다.
+    근거를 아직 못 받음(UNKNOWN) · 수집기 이상 · 낡은 값 · 시계 어긋남 · 수집하는 설비의 첫 값이 아직 없음은 풀릴 수 있다. 이 시스템이 수집하지
+    않는 설비(가상 설비 topics.ASSETS 밖 — 수집 길이 그 설비의 토픽을 받지 않는다)는 수집기가 정상인데 유온(TS1) 값이 없으면 앞으로도 없다 —
+    다시 불러도 같다(mcp_prom.freshness 의 까닭 문장이 그 설비의 길을 말한다). 전에는 이것도 다시 부를 수 있다고 내 같은 호출이 되풀이됐다."""
+    fresh = dx["freshness"]
+    if fresh.get("ok"):
+        return (dx.get("evidence_status") or {}).get("status") == "UNKNOWN"
+    never_collected = asset not in topics.ASSETS and fresh.get("age_s") is None and (fresh.get("ingest") or {}).get("ok") is True
+    return not never_collected
 
 
 class DmnTools:
@@ -326,7 +341,7 @@ class DmnTools:
             t1, human = cardlib.with_human_evidence(t1, self.human_alert(asset, pattern, alert_id))
         evidence = [e for r in t1 for e in (r.get("evidence") or []) if e["id"] not in human]
         results = {**self.tsdb.evaluate(evidence, asset), **human}
-        causes = cardlib.rank_causes(t1, results)
+        causes = cardlib.rank_causes(t1, results, *decidelib.diagnosis_rules(self.kg, self.tsdb, asset, pattern, t1))
         assessment = cardlib.evidence_status(causes)
         if assessment['withheld']:
             return dict(withheld=True, freshness=fresh, top_cause=None, failure_mode=None,
@@ -335,8 +350,8 @@ class DmnTools:
         card = cardlib.build_card(None, alert, causes, t2, fresh)
         return {"withheld": False, "freshness": fresh, "evidence_status": assessment, "top_cause": causes[0]["id"] if causes else None,
                 "failure_mode": causes[0].get("failureModeId") if causes else None,
-                "causes": [{"id": c["id"], "name": c["name"], "score": c["score"], "prior": c["prior"],
-                            "evidence": c["evidence"]} for c in causes],
+                "causes": [{"id": c["id"], "name": c["name"], "score": c["score"], "prior": c["prior"], "failureModeId": c.get("failureModeId"),
+                            "symptoms": c.get("symptoms") or [], "evidence": c["evidence"], "rules": c["rules"]} for c in causes],
                 "card": card}
 
     # ---- rules and facts (task:candidates · task:compliance)
@@ -398,6 +413,8 @@ class DmnTools:
             # 승인은 처리 건 하나의 승인 단계뿐이다 — 처리 건 밖 판단은 승인할 곳이 없어 영원히 대기로 남았다(검진 W3-05, submit_purchase 와 같은 규칙)
             raise ValueError('이 처리 건의 실제 incident id가 필요합니다(task.json inputs.incident)')
         c, basis = self._diagnosed_cause(asset, pattern, cause, failure_mode)
+        if basis["cause_route"] == DIAGNOSIS_ROUTE:
+            basis["diagnosis"] = self._submitted_diagnosis(asset, pattern, cause, failure_mode, alert_id)
         origin = {"kind": "alert", "alertId": alert_id, "incident": incident, "pattern": pattern, "cause": cause, "failureMode": failure_mode,
                   **basis}
         if process_scope is not None:
@@ -405,12 +422,32 @@ class DmnTools:
         rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c, origin=origin, overrides=overrides or None, do_submit=True)
         if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
             raise ValueError(rec['error'])
-        registered(rec, '조치 카드 판단')
-        res = rec.get("result") or {}
-        return {"id": rec["id"], "status": rec["status"], "recommended": rec.get("recommended"), "explanation": rec.get("explanation"),
-                "cards": [{"rank": o["rank"], "id": o["id"], "sopId": o["sopId"], "name": o["name"], "feasible": o["feasible"], "score": o["score"],
-                           "approver": (o.get("approver") or {}).get("name")} for o in res.get("options", [])],
-                "error": rec.get("error")}
+        # 구매 판단 등록과 같은 카드 비교 칸(agent_view — 카드마다 규정 판정과 이 판단을 계산한 지식의 목록): AI 가 설명에 쓰는 것과 승인 카드가
+        # 같은 판정이고, 다른 때 계산한 판단과 무엇이 다른지 견줄 수 있다(워커 ai_replay.decision_gap)
+        return self._evaluation_view(registered(rec, '조치 카드 판단'), submitted=True)
+
+    def _submitted_diagnosis(self, asset: str, pattern: str, cause: str, failure_mode: str, alert_id: str | None) -> dict:
+        """센서 경보의 판단 등록은 지금 원인 진단의 1순위 원인으로만 한다(전수검사 02-2 · 탐사 N1 — 전에는 진단 지식(T1)에 있기만 하면 받아, 보류된
+        진단 뒤에도 · 1순위가 아닌 원인으로도 판단이 등록됐다). 진단은 이 자리에서 diagnose 와 같은 함수로 다시 한다: 보류면 등록하지 않고(근거를
+        아직 못 받았으면 다시 부를 수 있는 UNAVAILABLE, 다시 불러도 같으면 INVALID — withheld_may_clear), 1순위가 아니면 거절한다. 그 진단 — 원인 순위 ·
+        근거 판정 · 문서 진단 규칙 판정 · 인용 —
+        을 판단 기록(origin.diagnosis)에 싣는다: 처리 건의 진단 이력 · 채점은 AI 가 결과에 옮겨 적은 글이 아니라 이 서버 계산을 읽는다."""
+        dx = self.diagnose(asset, pattern, alert_id)
+        if dx["withheld"]:
+            raise NotRegistered(UNAVAILABLE if withheld_may_clear(asset, dx) else "INVALID",
+                                f"원인 진단이 보류라 판단을 등록하지 않았습니다 — {dx['reason']}")
+        if (cause, failure_mode) != (dx["top_cause"], dx["failure_mode"]):
+            top = dx["causes"][0]
+            raise ValueError(f"{cause}({failure_mode})는 지금 원인 진단의 1순위가 아닙니다 — 1순위는 「{top['name']}」({dx['top_cause']} · "
+                             f"{dx['failure_mode']})입니다. diagnose 결과의 top_cause · failure_mode 로 등록하세요")
+        # 화면(처리 건의 원인 진단 · 단계 상세)이 그리는 칸 그대로: 잰 값의 태그(단위를 붙인다) · 관측 구간(coverage — 경보 뒤 · 판단 전 구간에서
+        # 읽었는가), 원인의 고장 유형 · 증상(지식 경로의 칸). 전에는 이 칸들이 빠져 서버 진단으로 바꾼 뒤 단위 · 증상이 화면에서 사라졌다
+        keep = ("id", "name", "tag", "status", "passed", "value", "expect", "threshold")
+        return {"top_cause": dx["top_cause"], "failure_mode": dx["failure_mode"], "evidence_status": dx["evidence_status"],
+                "causes": [dict({k: c.get(k) for k in ("id", "name", "score", "prior", "failureModeId", "symptoms")}, rules=c["rules"],
+                                evidence=[dict({k: e.get(k) for k in keep}, **({"coverage": e["coverage"]} if "coverage" in e else {}))
+                                          for e in c["evidence"]]) for c in dx["causes"]],
+                "citations": dx["card"]["citations"], "summary": dx["card"]["summary"]}
 
     def _purchase_part(self, asset: str, part_no: str) -> dict:
         if not isinstance(part_no, str) or not part_no or len(part_no) > 120:
@@ -464,13 +501,13 @@ class DmnTools:
                                        process_scope=process_scope, submit=True)
 
     def business_causes(self, asset: str, pattern: str) -> dict:
-        """정기 정비 도래(PM_DUE)의 원인 후보 — 센서 증상이 없으므로 진단(diagnose) 대신 정비가 막는(PREVENTED_BY) 고장의 원인을 그래프에서 읽는다.
+        """정기 정비 도래(PM_DUE)의 원인 후보 — 센서 증상이 없으므로 진단(diagnose) 대신 이 설비의 고장 가운데 정비가 막는(PREVENTED_BY) 고장의 원인을 그래프에서 읽는다.
         돌려준 cause · failure_mode 를 evaluate_cards · submit_decision 에 그대로 넘긴다(원인 한정 SOP 가 후보에서 빠지지 않게)."""
         if pattern == PURCHASE_PATTERN:
             raise ValueError(PURCHASE_ROUTE)
         if pattern not in BUSINESS_CAUSES:
             raise ValueError(f"{pattern}{particle(pattern, '은')} 업무 경보가 아닙니다 — 센서 경보는 diagnose 를 쓰세요")
-        causes = self._graph(BUSINESS_CAUSES[pattern])
+        causes = self._graph(BUSINESS_CAUSES[pattern], asset=asset)
         return {"pattern": pattern, "basis": BUSINESS_CAUSE_BASIS[pattern], "causes": causes,
                 "top_cause": causes[0]["causeId"] if causes else None, "failure_mode": causes[0]["failureModeId"] if causes else None}
 
@@ -508,14 +545,22 @@ class DmnTools:
         if pattern in BUSINESS_CAUSES:
             basis = {"cause_basis": BUSINESS_CAUSE_BASIS[pattern], "cause_route": BUSINESS_CAUSE_ROUTE[pattern]}
             # C2: 업무 경보는 업무 근거로 이어진 원인만 받는다(business_causes 와 같은 질의)
-            listed = [r for r in self.business_causes(asset, pattern)["causes"] if r.get("causeId") == cause]
+            known = self.business_causes(asset, pattern)["causes"]
+            if not known:
+                raise ValueError(cardlib.business_knowledge_missing(self.kg, pattern))    # 예방 정비 지식을 넣기 전 · 비운 뒤
+            listed = [r for r in known if r.get("causeId") == cause]
             if not listed:
                 raise ValueError(f"{cause}는 {pattern}의 업무 근거({BUSINESS_CAUSE_BASIS[pattern]})에 없는 원인입니다. business_causes 결과를 쓰세요")
         else:
             t1 = self.kg.t1_causes(pattern)
+            if not t1:
+                # 지식 지도에 이 경보의 원인 지식이 아예 없다(문서를 넣기 전 · 비운 뒤) — 고칠 것은 인자가 아니라 지식이다. 키 없는 PC에서 준비된 판단을
+                # 다시 등록할 때 학생이 이 문장을 읽는다(worker ai_replay WriteFailed)
+                raise ValueError(cardlib.no_cause_message(self.kg, pattern))
             listed = [r for r in t1 if r.get("causeId") == cause]
         if not listed:
-            raise ValueError(f"{cause}는 {pattern}의 진단 지식(T1)에 없는 원인입니다. diagnose 결과의 원인 id를 쓰세요")
+            raise ValueError(f"{cause}는 {pattern}의 진단 지식(T1)에 없는 원인입니다(지금 지식의 원인: "
+                             f"{', '.join(sorted({r.get('causeId') for r in t1 if r.get('causeId')}))}). diagnose 결과의 원인 id를 쓰세요")
         match = [r for r in listed if r.get("failureModeId") == failure_mode]
         if not match:
             known = sorted({r.get("failureModeId") for r in listed if r.get("failureModeId")})

@@ -52,18 +52,18 @@ def _parameterized(skill, parameters):
     if not isinstance(parameters, dict):
         raise ValueError('조치 변경은 {설정 이름: 값} 꼴이어야 합니다')
     effective = deepcopy(skill)
-    normalized = {}
+    normalized, names = {}, {}
     for key, value in parameters.items():
         actions = [a for a in effective.get('actions', []) if a.get('kind')=='command' and a.get('param')==key]
         if len(actions) != 1 or any(actions[0].get(k) is None for k in ('min','max')):
             raise ValueError(f'{key}: 이 SOP에 변경 가능한 조치와 명시 범위가 없습니다')
         a = actions[0]
-        normalized[key] = number(value, key, a['min'], a['max'])
+        normalized[key], names[key] = number(value, key, a['min'], a['max']), a.get('name') or key
         a['value'] = normalized[key]
     if normalized:
-        labels = {'fan_pct':'팬', 'load_pct':'부하'}
+        # 바꾼 값은 그 조치의 이름(지식의 원자 조치 이름 — 「팬 속도 설정」)으로 부른다 — 수업 냉각 SOP 의 설정 이름 사전을 두지 않는다(탐사 N11)
         effective['name'] = (skill.get('sopId') or skill['name']) + ' 변경안: ' + ', '.join(
-            f'{labels.get(k, k)} {v:g}' + ('%' if k.endswith('_pct') else '') for k,v in sorted(normalized.items()))
+            f'{names[k]} {v:g}' + ('%' if k.endswith('_pct') else '') for k,v in sorted(normalized.items()))
         effective['description'] = '원문 절차의 기본값을 바꿔 검토하는 안입니다. 설비에 실제로 보낼 값은 이 안의 세부 동작에서 확인하세요.'      # 화면 말: Action = 「세부 동작」(UIUX_PLAN 4절 · enterprise.js)
     return effective, normalized
 

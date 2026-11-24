@@ -57,11 +57,10 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
             if approved_cache.covers(source):
-                return approved_cache.start(runtime(), source, request_id, graph(manual_knowledge.catalog),
-                                            body.get('review_feedback'))
+                return approved_cache.start(runtime(), source, request_id, graph(manual_knowledge.catalog))
             app.state.course.document(source['sha256'])
             catalog = graph(manual_knowledge.catalog)          # C1: the ids the document may point at, pinned with the run
-            inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'),catalog=catalog)
+            inst = manual_extraction.start(runtime(),source,request_id,catalog=catalog)
             seg = manual_extraction.engine.variables(inst).get('segment') or {}
             return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id,segments=seg.get('total',1))
         return await run(work)
@@ -96,15 +95,17 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         def work():
             source = archive_factory().get(tenant,source_id)
             if not 1 <= limit <= 100 or offset < 0:raise ValueError('목록 범위가 올바르지 않습니다')
-            context = approved_cache.context(source) if approved_cache.covers(source) else None
-            if context is None:
+            provided = approved_cache.covers(source)
+            if provided:
+                approved_cache.authorize(source)
+            else:
                 app.state.course.document(source['sha256'])
-            cache_prefix = None
-            if context is not None:
-                key = manual_cache.identity(tenant, source, graph(manual_knowledge.catalog), **context)
-                cache_prefix = 'manual-extraction:cache:' + key
+            # 제공 문서의 추출은 캐시 처리 건이다 — 시작 id 의 열쇠에 그때의 지식 목록이 들어 있어, 지금 열쇠로만 찾으면 문서를 적재하거나 비운 뒤 앞 실행이
+            # 목록에서 빠졌다(03-22). 같은 원문 내용(manual_cache.result 가 열 때 대조하는 칸: sha256 · 글 읽는 방식 · 파일 형식)의 캐시 처리 건을 모두 고른다
             rows = runtime().repo.list_source_runs(tenant,manual_extraction.DEFINITION_ID,
-                        'manual-extraction:'+source['source_id']+':',limit+1,offset,cache_prefix=cache_prefix)
+                        'manual-extraction:'+source['source_id']+':',limit+1,offset,
+                        cache_prefix='manual-extraction:cache:' if provided else None,
+                        cache_values={'manual_source': {k: source.get(k) for k in ('sha256', 'extractor', 'media_type')}} if provided else None)
             return dict(items=rows[:limit],offset=offset,limit=limit,next_offset=offset+limit if len(rows)>limit else None)
         return await run(work)
 
@@ -188,6 +189,8 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             app.state.course.document(archive_factory().get(tenant, plan['source_id'])['sha256'])
             if body.get('golden_questions'):
                 app.state.course.action('documents.golden')
+                # 질문의 꼴은 적재 전에 본다 — 적재한 뒤에 질문 꼴로 실패하면 적재는 됐는데 「적재하지 못함」(400)이 가고, 같은 배치로 다시 보내면 판본 충돌이 났다(03-16)
+                manual_golden.validate_questions(body['golden_questions'])
             if body.get('method') == manual_extraction.CONTRACT or body.get('extraction') is not None:
                 binding = body.get('extraction')
                 if not isinstance(binding,dict) or not isinstance(binding.get('instance'),str):
@@ -209,7 +212,11 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             audit('-', plan['by'], 'MANUAL_INGESTED', {key: result[key] for key in
                   ('batch', 'source_id', 'filename', 'sections', 'procedures', 'steps')})
             if body.get('golden_questions'):           # A118: ask right after the commit what this document made answerable
-                result['golden'] = start_golden(result['batch'], body['golden_questions'], plan['by'], body.get('golden_request_id'))
+                try:
+                    result['golden'] = start_golden(result['batch'], body['golden_questions'], plan['by'], body.get('golden_request_id'))
+                except (ValueError, KeyError, HTTPException) as exc:
+                    # 적재는 이미 끝났다 — 실패로 답하지 않고, 질문 확인을 시작하지 못한 까닭을 결과에 싣는다(그 문서의 질문 칸에서 다시 묻는다)
+                    result['golden_error'] = str(getattr(exc, 'detail', None) or exc)
             return result
         return await run(work)
 

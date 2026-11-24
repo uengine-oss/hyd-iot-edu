@@ -42,9 +42,10 @@ def run_scope(given: dict | None) -> dict | None:
 
 
 mcp = FastMCP("hyd-dmn", instructions=(
-    "유압 설비 공장의 결정론 판단 서비스다. 원인 진단(diagnose)은 후보 원인의 사전 확률 × 실제 증거 가중치로 순위를 매긴다. "
+    "유압 설비 공장의 결정론 판단 서비스다. 원인 진단(diagnose)은 후보 원인의 사전 확률 × 실제 증거 가중치로 순위를 매기고, 문서의 진단 규칙 "
+    "dec:diagnose-cause(PRIORITY)가 발화하면 그 원인을 1순위로 둔다(진단 규칙이 있는데 하나도 맞지 않으면 원인을 정하지 않고 보류). "
     "조치 판단은 온톨로지 v2 의 DMN 결정표 dec:action-candidates(COLLECT) · dec:compliance(COLLECT) · dec:rank-actions(UNIQUE)를 "
-    "실제 사실에 대어 같은 입력이면 같은 결과를 낸다. dec:diagnose-cause 규칙(rule:dx-*)은 진단 근거를 설명하는 지식이며 이 서비스가 평가하지 않는다. "
+    "실제 사실에 대어 같은 입력이면 같은 결과를 낸다. submit_decision 은 지금 진단의 1순위 원인으로만 등록한다. "
     "규칙을 임의로 해석하지 말고 이 도구의 결과를 인용하라. "
     "submit_decision·submit_purchase는 판단 카드를 쓰며(process /api/decisions), 설비 명령은 어디서도 나가지 않는다. "
     "FM 없는 원문 구매 SOP는 실제 ERP 부족부품과 Part 범위를 purchase_context/evaluate_purchase로 확인하고 submit_purchase로 제출한다. "
@@ -63,7 +64,7 @@ Overrides = Annotated[dict | None, Field(description="가정 실험용 사실 �
 @mcp.tool(annotations=READ)
 def diagnose(asset: Asset, pattern: Pattern,
              alert_id: Annotated[str | None, Field(description="처리 중인 경보 id (입력의 alert.alertId). 사람 입력 경보(오일 분석 등)는 서버가 이 경보의 입력 결과를 근거로 읽는다. 비우면 그 설비 · 패턴의 처리 중인 사람 입력 경보")] = None) -> dict:
-    """원인 진단: 신선도→후보(T1)→증거 SQL→순위→SOP/가이드. withheld=true이면 근거 미확인 또는 지지 근거 없음이므로 원인을 임의로 골라 후속 조치 판단을 하지 않는다. 원천/규칙을 확인한 뒤 재조회하거나 사람 확인을 요청한다. Evidence의 PASS/FAIL/UNKNOWN과 오류 근거를 보존한다. 센서 증거 규칙이 없는 원인(사람 입력 패턴)은 사람이 입력한 분석 결과(process 서버 기록)가 증거다."""
+    """원인 진단: 신선도→후보(T1)→증거 SQL→순위(문서 진단 규칙이 고른 원인이 1순위)→SOP/가이드. withheld=true이면 근거 미확인 또는 지지 근거 없음이므로 원인을 임의로 골라 후속 조치 판단을 하지 않는다. 원천/규칙을 확인한 뒤 재조회하거나 사람 확인을 요청한다. Evidence의 PASS/FAIL/UNKNOWN과 오류 근거를 보존한다. 센서 증거 규칙이 없는 원인(사람 입력 패턴)은 사람이 입력한 분석 결과(process 서버 기록)가 증거다."""
     return enveloped(lambda: tools.diagnose(asset, pattern, alert_id))()
 
 
@@ -128,13 +129,15 @@ def submit_decision(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: 
                     alert_id: Annotated[str | None, Field(description="경보 id")] = None, overrides: Overrides = None,
                     process_scope: Annotated[dict | None, Field(description="context/task.json의 process_scope 객체를 그대로 전달: tenant/instance/workitem/generation/version/consumer")] = None) -> dict:
     """순위를 매긴 조치 카드 묶음을 process 에 제출한다 (사람이 고를 카드). 쓰기 도구(구매는 submit_purchase). 돌려준 id 가 decision_id 다.
-    process 가 등록을 거절했거나(사유 포함) 연결 실패 · 후보 0개 · 가드레일 거절이면 성공이 아니라 오류 봉투다."""
+    센서 경보는 지금 원인 진단의 1순위 원인(diagnose 의 top_cause · failure_mode)으로만 등록한다 — 진단이 보류면 등록하지 않는다.
+    process 가 등록을 거절했거나(사유 포함) 연결 실패 · 후보 0개 · 가드레일 거절이면 성공이 아니라 오류 봉투다.
+    돌려주는 것은 evaluate_cards 와 같은 카드 비교 칸(카드마다 규정 판정)이다."""
     return enveloped(lambda: tools.submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, overrides, run_scope(process_scope)))()
 
 
 @mcp.tool(annotations=READ)
 def business_causes(asset: Asset, pattern: Pattern) -> dict:
-    """정기 정비 도래 경보(PM_DUE)의 원인 후보 — 센서 증상이 없어 diagnose 대신 쓴다. 정비가 막는(PREVENTED_BY) 고장의 원인.
+    """정기 정비 도래 경보(PM_DUE)의 원인 후보 — 센서 증상이 없어 diagnose 대신 쓴다. 이 설비의 고장 가운데 정비가 막는(PREVENTED_BY) 고장의 원인.
     돌려준 top_cause · failure_mode 를 evaluate_cards · submit_decision 에 넘긴다. 재고 기준 이탈(SPARE_BELOW_MIN)은 원인이 아니라
     부품이 근거라 purchase_context · evaluate_purchase · submit_purchase 를 쓴다."""
     return enveloped(lambda: tools.business_causes(asset, pattern))()

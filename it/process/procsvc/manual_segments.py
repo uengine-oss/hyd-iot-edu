@@ -139,12 +139,11 @@ def _drop_dangling_sop_refs(merged: dict) -> None:
     merged['knowledge']['rules'] = kept
 
 
-def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | None = None) -> dict:
+def merge(source: dict, parts: list[tuple[dict, dict]]) -> dict:
     """parts: [(segment, proposal)] with whole-document anchors. Sections and procedures are concatenated; a ref or SOP id
     that two segments both propose keeps the first and records the duplicate as a warning (a reviewer decides); page
     reviews are joined per page, a page with no text gets a deterministic note; every anchor must lie inside its own
-    segment (a segment may not cite outside its range). A reviewer's MISSING item that no segment produced is recorded,
-    because each segment was told to ignore items outside its range."""
+    segment (a segment may not cite outside its range)."""
     merged = {'source_id': source['source_id'], 'sections': [], 'procedures': [], 'page_reviews': [], 'warnings': []}
     seen_ref, seen_sop, reviews, seen_knowledge = {}, {}, {}, {}
     for seg, prop in sorted(parts, key=lambda x: x[0]['index']):
@@ -184,9 +183,4 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
         if not page['text'].strip() and page['page'] not in reviews:
             reviews[page['page']] = ['원문 글자가 없는 페이지 — 구간 추출 대상이 아니었음(빈 페이지 검토는 원문 보관 단계에서 끝남)']
     merged['page_reviews'] = [{'page': page, 'note': ' / '.join(notes)} for page, notes in sorted(reviews.items())]
-    for item in (review_feedback or {}).get('items') or []:
-        target = item.get('target') or ''
-        if item.get('verdict') == 'MISSING' and target not in seen_ref and target not in seen_sop \
-                and not any(target in w for w in merged['warnings']):
-            merged['warnings'].append(f"검토 항목 {target}(MISSING): 어느 구간도 원문에서 찾지 못했고 이유도 남기지 않음 — 사람이 원문을 다시 확인")
     return merged

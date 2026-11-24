@@ -17,7 +17,9 @@ from . import ingest, legacy_meaning as lm
 ONTOLOGY_Q = ("MATCH (v) WHERE v:StateVariable OR v:Measure "
               "RETURN CASE WHEN v:StateVariable THEN 'StateVariable' ELSE 'Measure' END AS label, v.id AS id, v.name AS name, "
               "v.unit AS unit, coalesce(v.aliases, []) AS aliases ORDER BY id")
-ASSETS_Q = "MATCH (a:Asset) RETURN a.id AS id, a.tag AS tag ORDER BY a.id"
+# 설비 태그 = 운영 데이터(경보 · 태그 · 처리 건)가 쓰는 설비 코드(Asset.code — schema.json). 그래프의 Asset 에는 tag 속성이 없다: 전에는 a.tag 를 읽어
+# 목록이 늘 null 이었고, 옛 DB 의 설비 코드 열(T_EQP01.EQP_CD = HYD-01~03)이 「설비 태그와 하나도 겹치지 않습니다」로 거절됐다(C5)
+ASSETS_Q = "MATCH (a:Asset) RETURN a.id AS id, a.code AS tag ORDER BY a.id"
 
 
 def read_ontology(session) -> dict:
@@ -109,11 +111,10 @@ def register(app, *, driver_factory, tenant, audit, runtime_factory, store_facto
                 raise ValueError('DDL 본문(text)이 필요합니다')
             request_id = body.get('request_id') or str(uuid4())
             rt = runtime()
-            import psycopg
-            from . import ddl_sync
+            from . import ddl_sync, procdb
             from .procdb import SUPABASE_DSN
             # 미리보기와 같은 원천 · 스키마로 해석한다(뜻 검토의 열 키 = 스키마.표.열 이 적재 계획과 같아야 검토가 반영된다)
-            tables, datasource, _ = ddl_sync.place(text, body.get('datasource'), lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+            tables, datasource, _ = ddl_sync.place(text, body.get('datasource'), lambda: procdb.connect(SUPABASE_DSN))
             if not tables:
                 raise ValueError('CREATE TABLE 문을 찾지 못했습니다 — 표 정의(CREATE TABLE)가 든 .sql 파일인지 확인하세요')
             try:

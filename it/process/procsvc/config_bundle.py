@@ -316,8 +316,9 @@ def knowledge_reset(graph, tenant: str, by: str) -> dict:
     수 있는 것부터 되돌리고, 막힌 것은 다른 것이 되돌려진 뒤 다시 해 본다. 한 바퀴 동안 아무것도 되돌려지지 않으면 KnowledgeResetStopped
     (무엇이 왜, 그때까지 되돌린 것) — 조용히 건너뛰지 않는다.
     돌려줌 = {documents: [{filename, batch, restored_batch}], skills: [{id, sopId, name, decision_cases}], ddl_batches: [묶음 id],
-    base_missing: [파일 이름]}. base_missing = 기본 제공 판이 있었는데 지금은 맨 위 판이 없는 문서(학생이 기본 제공 판까지 되돌린 뒤 자기 판을
-    넣었던 문서) — 시작 파일을 다시 실행하면 기본 제공 판이 다시 적재된다(scripts/class_knowledge.py)."""
+    base_missing: [파일 이름]}. base_missing = 기본 제공 판이 있었는데 지금은 맨 위 판이 없는 문서(학생이 문서 등록 이력에서 기본 제공 판까지
+    되돌려 비운 문서). 되돌리기도 시작도 그 문서를 다시 채우지 않는다(scripts/class_knowledge.py 는 이 PC에서 한 번도 적재되지 않은 문서만 넣는다) —
+    학생이 「지식 › 문서 등록」의 제공 문서에서 다시 넣는다."""
     from hydcommon.words import josa
     from . import graph_ingest, manual_graph, skill_graph
     out = {"documents": [], "skills": [], "ddl_batches": [], "base_missing": []}
@@ -519,7 +520,8 @@ def reset_all(rt, *, by: str, audit=None, progress=progress_log.SILENT, graph=No
     return {"steps": steps, **summary,
             "message": ("기준으로 되돌렸습니다 — " + (josa(", ".join(summary["removed"]), "을") + " 지웠습니다" if summary["removed"] else "지울 것이 없었습니다")
                         + ". 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록도 비웠습니다. 기본 제공 것과 처리 건 기록은 그대로입니다"
-                        + (f". 기본 제공 문서 {', '.join(summary['base_missing'])}의 지식이 지금 없습니다 — 시작 파일을 다시 실행하면 다시 적재됩니다"
+                        + (f". 기본 제공 문서 {', '.join(summary['base_missing'])}의 지식은 문서 등록 이력에서 비운 채라 지금 없습니다 — "
+                           "「지식 › 문서 등록」의 제공 문서에서 골라 다시 넣으세요"
                            if summary["base_missing"] else ""))}
 
 

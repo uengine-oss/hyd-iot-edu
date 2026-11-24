@@ -231,9 +231,14 @@ def consent_changes(old, current, time_scale=None, consented_at=None):
             reasons.append(f'{CONTEXT_LABELS.get(key, "예측 조건")} 변경: 새 조치 후보 검토가 필요합니다')
     # TS1 evolves with time. Disturbances, ambient conditions and operating
     # settings may not change behind the reviewed counterfactual.
-    for key in set(old.get('inputs', {})) | set(current.get('inputs', {})):
-        if key != 'ts1' and old['inputs'].get(key) != current['inputs'].get(key):
-            reasons.append(f'예측 입력 {INPUT_LABELS.get(key, "조건")} 변경: 새 조치 후보 검토가 필요합니다')
+    old_in, now_in = old.get('inputs'), current.get('inputs')
+    if not isinstance(old_in, dict) or not isinstance(now_in, dict):
+        # 한쪽 예측에 입력 기록이 없으면 견줄 수 없다 — 전에는 KeyError 로 승인 검사가 까닭 없는 서버 오류로 끝났다(전수검사 02-17)
+        reasons.append('예측 입력 미확인(검토한 예측이나 지금 예측에 입력 기록이 없음): 새 조치 후보 검토가 필요합니다')
+    else:
+        for key in set(old_in) | set(now_in):
+            if key != 'ts1' and old_in.get(key) != now_in.get(key):
+                reasons.append(f'예측 입력 {INPUT_LABELS.get(key, "조건")} 변경: 새 조치 후보 검토가 필요합니다')
     if current.get('predicted_interlocks'):
         reasons.append('예측 구간에서 PLC 인터록이 예상됩니다')
     rates = REVIEW_POLICY['max_adverse_rate_per_sim_min']

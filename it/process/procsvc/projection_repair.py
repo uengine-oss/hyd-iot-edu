@@ -112,7 +112,7 @@ def execution_drift(source,graph):
 def source_snapshot(repo):
     """원천(처리 건 · 작업 행 · 반영 대기열)을 한 시점으로 읽는 연결 하나 — 트랜잭션 안의 repeatable read(P5-25: autocommit 연결에서
     `set transaction` 은 경고만 남기고 문장마다 따로 읽었다). 조회(inspect_execution)와 적용(repair_execution)이 같은 규칙이다."""
-    with repo._psycopg.connect(repo.dsn,autocommit=True,connect_timeout=5,row_factory=repo._dict_row) as c,c.transaction():
+    with repo._connect(autocommit=True) as c,c.transaction():
         c.execute('set transaction isolation level repeatable read')
         yield c
 
@@ -188,7 +188,7 @@ def repair_execution(repo,query,tenant,pid,*,by,reason,plan=None,request_id=None
         return receipt['result']
     observed=graph_state(query,'Execution',pid)
     if digest(observed)!=digest(plan['graph']):raise ValueError('graph changed since inspection; inspect again')
-    with repo._psycopg.connect(repo.dsn,autocommit=True,connect_timeout=5,row_factory=repo._dict_row) as c:
+    with repo._connect(autocommit=True) as c:
         key='execution-projection:'+tenant+':'+pid
         if not c.execute('select pg_try_advisory_lock(hashtextextended(%s,0)) as ok',(key,)).fetchone()['ok']:
             raise ValueError('projection delivery is active; inspect again after it settles')

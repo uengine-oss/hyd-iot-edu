@@ -1,6 +1,6 @@
 """U5 HTTP routes: 나(사람 사용자) · 내 작업함 · 알림. 로직은 inbox.py, 저장은 procdb.
 
-    GET  /api/inbox/users                         사람 사용자(포털의 "나" 선택지)와 각자의 역할
+    GET  /api/inbox/users                         사람 사용자와 각자의 역할(포털은 이 목록의 담당자 행 user:me 하나를 쓴다 — 사람을 고르는 자리는 없다)
     GET  /api/inbox?user_id=                      내 작업함: tasks(me | role) · asked(에이전트 질문) · unassigned_roles · unread
     GET  /api/inbox/notifications?user_id=&unread=1&limit=   알림 목록(나 + 내 역할 앞으로 온 것, 각 행에 포털 link)
     GET  /api/inbox/notifications/unread-count?user_id=
@@ -8,7 +8,7 @@
     GET  /api/inbox/notifications/stream?user_id= 새 알림 실시간(SSE, /api/events/stream 과 같은 생성기)
 
 권한: HYD 포털에는 로그인이 없어 user_id 를 호출자가 준다(기존 by·role 과 같은 수준). 승인 권한(역할 403)은 /select 가 그대로 검사하고,
-"나"(user:*)로 승인하면 그 사람이 내세운 역할의 구성원인지도 본다(inbox.check_actor). 수동 재배정·위임·외부 알림은 범위 밖(TODO A3).
+승인한 사람(user:*)이 내세운 역할의 구성원인지도 본다(inbox.check_actor). 수동 재배정 · 위임 · 외부 알림은 없다(새 기능을 넣지 않는다).
 처리 엔진이 준비되기 전에는 503 (instance_mode._rt)."""
 from __future__ import annotations
 

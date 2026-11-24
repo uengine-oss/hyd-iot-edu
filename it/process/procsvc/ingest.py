@@ -80,11 +80,17 @@ class Table:
 
     @property
     def system_hint(self) -> tuple[str, str] | None:
-        """(system id, name) from the table comment ('-- MES: …') or the table name."""
-        head = (self.comment or "").split(":")[0].strip().upper()
+        """(system id, name) from the table comment ('-- MES: …') or the table name. The comment head is the system the file names:
+        a known one keeps its existing id (sys:mes …), any other upper-case word becomes that system (「-- WMS: 창고」 → sys:wms · WMS) — 전에는
+        알려진 여덟 이름만 알아봐, 학생 표의 시스템이 원천 연결 이름으로 채워지고 화면에서 새 이름을 정할 길이 없었다(C18). The table-name guess
+        (no comment) stays with the known names only — a table name is not a statement of its system."""
+        raw = (self.comment or "").split(":")[0].strip()
+        head = raw.upper()
         for key, sid, name in _SYSTEM_HINTS:
             if head == key or (not head and key.lower() in self.name.lower()):
                 return sid, name
+        if ":" in (self.comment or "") and re.fullmatch(r"[A-Z][A-Z0-9]{1,15}", raw):
+            return "sys:" + raw.lower(), raw
         return None
 
 
@@ -212,6 +218,10 @@ def plan(tables: list[Table], *, filename: str, batch: str, selection: dict[str,
             warnings.append(f"{t.qualified}: 파일에 출처 시스템 표시가 없어 원천 연결 이름으로 채웠습니다 — 아래 「출처 시스템」이 맞는지 확인하세요")
         out_systems.setdefault(sid, {"id": sid, "name": sname, "zone": "IT", "source_id": f"{filename}#{t.qualified}"})
         by_name = {c.name: c for c in t.columns}
+        key_column = asset_column(t)
+        if not key_column:
+            # 설비마다 한 행을 고를 열이 없으면 데이터 원천의 「두 DB 묶어 보기」가 이 표의 값을 설비별로 읽지 못한다 — 적재 전에 말한다(C8)
+            warnings.append(no_asset_key(t.qualified))
         for cname in cols:
             if cname not in by_name:
                 raise ValueError(f"{t.qualified}.{cname}: DDL 에 없는 열")
@@ -220,7 +230,7 @@ def plan(tables: list[Table], *, filename: str, batch: str, selection: dict[str,
             item = {"id": iid, "name": input_name(c.comment, t.name, c.name),
                 "typeRef": c.type_ref, "variable": variable, "system": sid, "datasource": datasource, "catalog": catalog,
                 "schema": t.schema, "table": t.name, "column": c.name, "sqlType": c.type,
-                "assetColumn": "asset" if "asset" in by_name else None,
+                "assetColumn": key_column,
                 "source_id": f"{filename}#{t.qualified}.{display_identifier(c.name)}"}
             if is_point_in_time(c.type):
                 # A086: a business time (납기 일시 · 출하 일시) reaches the rules as signed hours from now, computed at read
@@ -231,6 +241,19 @@ def plan(tables: list[Table], *, filename: str, batch: str, selection: dict[str,
 
 
 DERIVE_HOURS = "hours_from_now"
+_ASSET_REF = re.compile(r'(?:"?\w+"?\.)?"?assets"?\("?code"?\)', re.I)
+
+
+def no_asset_key(qualified: str) -> str:
+    """설비 식별 열이 없는 표의 적재 전 경고 — 옛 DB 뜻 복원이 그 표의 설비 식별 열을 정하면 지운다(legacy_meaning.apply_links)."""
+    return (f"{qualified}: 설비 코드를 가리키는 열(설비 표 assets(code)의 외래 키, 또는 이름이 asset 인 열)이 없어 설비별 값을 읽지 않습니다 — "
+            "옛 DB면 아래 「옛 DB 뜻 복원」에서 설비 식별 열을 정하세요")
+
+
+def asset_column(table) -> str | None:
+    """설비별 값을 읽을 열: 설비 표의 코드(assets(code))를 가리키는 외래 키 열, 없으면 이름이 asset 인 열(업무 DB 의 관례).
+    전에는 이름이 asset 인 열만 보아, 설비 열 이름이 다른 학생 표(equipment_id → assets(code))의 판단 입력이 묶어 보기에서 말없이 빠졌다(C8)."""
+    return next((c.name for c in table.columns if c.references and _ASSET_REF.fullmatch(c.references)), None) or         next((c.name for c in table.columns if c.name == "asset"), None)
 
 
 def input_name(comment: str, table: str, column: str, *, derive: bool = False) -> str:

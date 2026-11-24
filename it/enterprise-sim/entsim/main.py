@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 
 import psycopg
 
+from hydcommon import pg
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
 from .supabase_backend import SupabaseEnterprise
@@ -27,7 +28,11 @@ c_reads = reg.counter("enterprise_reads_total", "reads by system")
 c_exec = reg.counter("enterprise_exec_total", "executed skills by system")
 
 
-SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
+# 업무 DB 주소는 compose 의 enterprise-sim environment 가 준다(업무 DB 망 안의 이름). 기본값을 두지 않는다 — 값이 빠지면 지운 길(호스트에 연 업무 DB
+# 포트)로 조용히 돌지 않고 어느 값이 없는지 말하며 켜지지 않는다
+SUPABASE_DSN = os.environ.get("SUPABASE_DSN", "")
+if not SUPABASE_DSN:
+    raise RuntimeError("SUPABASE_DSN 이 설정되지 않아 enterprise-sim 을 띄우지 않습니다 — 업무 DB 주소입니다(compose.yaml 의 enterprise-sim environment)")
 # 하-05: 쓰기 끝점은 process 만 아는 값(머리글 X-HYD-Process-Caller)이 맞는 요청만 받는다 — 주석 「process 만 부른다」만으로 막지 않는다
 CALLER_HEADER = "X-HYD-Process-Caller"
 CALLER_TOKEN = os.environ.get("PROCESS_CALLER_TOKEN", "")
@@ -38,14 +43,18 @@ WRITE_PATHS = frozenset({"/api/exec", "/api/reanchor", "/erp/spare/reset", "/cmm
 REFUSED, CONFLICT = "22023", "23505"
 #: 켜질 때 업무 DB 를 기다리는 시간 — Docker 를 다시 켜면 업무 DB(Supabase)가 이 컨테이너보다 늦게 뜬다(검진 G2-20: 시작 훅이 traceback 으로 세 번 죽었다)
 START_WAIT_S = 60.0
-ent = SupabaseEnterprise(lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+ent = SupabaseEnterprise(lambda: pg.connect(SUPABASE_DSN))
 app = make_app("enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios, Supabase ent schema)", reg, ent.health)
 
 
-_DB_UNAVAILABLE: tuple = (psycopg.OperationalError, psycopg.InterfaceError)   # 업무 DB 의 연결 · 잠금 · 시간 초과(일시 장애)
+_DB_UNAVAILABLE: tuple = pg.TRANSIENT   # 업무 DB 의 연결 · 잠금 · 시간 초과(일시 장애)
 
 
 def _db_unavailable_detail(e: Exception) -> str:
+    if isinstance(e, pg.DbRefused):
+        return e.detail      # 업무 DB 서버가 이 연결을 받지 않았다(계정 · 암호 · 없는 DB) — 다시 해도 같으므로 「잠시 뒤」를 말하지 않는다
+    if isinstance(e, pg.DbUnreachable) and e.__cause__ is not None:
+        e = e.__cause__      # 다시 맺어 봐도 닿지 않았다 — 까닭은 마지막 연결 오류의 첫 줄(아래 문장은 전과 같다)
     msg = (str(e).splitlines() or [type(e).__name__])[0][:250]
     state = getattr(e, "sqlstate", None)
     if state is None or str(state).startswith("08"):
@@ -128,7 +137,8 @@ def ems_demand():
 # ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 견적 · 예정된 정비 시간 · 발주 조회
 @app.get("/erp/spare_stock")
 def spare_stock(part: str | None = Query(default=None)):
-    """ERP: 중요 예비품 재고(가용 = 실물 - 예약, 재주문점 · 목표 · 입고 예정 · 필요량)와 최근 재고 이동. part 없으면 전부."""
+    """ERP: 중요 예비품 재고와 최근 재고 이동. part 없으면 전부. 계산은 업무 DB 한 곳(ent.spare_row)이 한다: 가용 = 실물 − 예약 + 입고 예정,
+    필요량 = 목표 − 가용(0 아래면 0), 재주문점 아래 = 가용 < 재주문점."""
     return _read("ERP", "spare_stock", part=part)
 
 
@@ -222,14 +232,15 @@ def _anchor_on_start():
     """스택이 뜰 때, 기준점이 이미 지났으면(가장 이른 시나리오 기한이 지금 이전) 지금으로 — 오래 떠 있던 DB 의 '납기까지 −1 h' 같은 지난 시각으로
     판단하지 않게. 지나지 않았으면 옮기지 않는다: 예정된 정비 시간 id 가 기준점 시각을 품어, 재시작(compose 재생성 · OOM)이 옮기면 승인 대기 중인
     B 카드의 창이 사라졌다(점검 E8). 수업 중 기준점은 process 가 설비 처리 건이 없을 때만 옮긴다(scenario_buttons.may_reanchor).
-    업무 DB 가 아직 안 떴으면 START_WAIT_S 동안 기다리고, 그래도 안 되면 까닭 한 줄로 실패한다(Docker 가 다시 켠다)."""
+    업무 DB 가 아직 안 떴으면 START_WAIT_S 동안 기다리고, 그래도 안 되면 까닭 한 줄로 실패한다(Docker 가 다시 켠다). 업무 DB 서버가 연결을 받지
+    않았으면(pg.DbRefused — 계정 · 암호 · 없는 DB) 기다려도 같으므로 곧장 그 까닭으로 실패한다."""
     deadline = time.monotonic() + START_WAIT_S
     while True:
         try:
             stale = ent.scenario_times_stale()
             break
         except psycopg.Error as e:
-            if not _is_db_unavailable(e) or time.monotonic() > deadline:
+            if isinstance(e, pg.DbRefused) or not _is_db_unavailable(e) or time.monotonic() > deadline:
                 # 까닭 한 줄(연결 오류 사슬 없이) — uvicorn 이 「Application startup failed」로 끝내고 Docker 가 다시 켠다
                 raise RuntimeError("enterprise-sim 을 켜지 못했습니다 — " + (
                     _db_unavailable_detail(e) if _is_db_unavailable(e) else _first_line(e))) from None

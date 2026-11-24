@@ -27,6 +27,19 @@ PLC_REASON = "물리 명령은 자동 역명령으로 보상하지 않는다. �
 #: 다시 열 수 있는 사건 상태 — 사건 모델(machine) 한 곳이 갖는다(끝난 사건 definition.TERMINAL 은 다시 열지 않는다)
 REOPENABLE = machine.REOPENABLE
 BLOCKER = "effects_require_compensation_or_review"
+#: 설비 명령 단계의 작업 행 log 에 그 행이 낸 명령을 적는 표시. 적는 곳(instances 의 설비 명령 단계)과 읽는 곳(explained_services · rework_effects)이
+#: 이 둘만 쓴다 — 전에는 세 곳이 같은 글을 따로 적어, 적는 문장을 바꾸면 읽는 쪽이 조용히 다른 답을 냈다(전수검사 12-5)
+COMMAND_MARK = "action.cmd "
+
+
+def command_mark(cmd_id: str) -> str:
+    """작업 행 log 에 적는 「이 행이 명령 cmd_id 를 냈다」 표시."""
+    return f"{COMMAND_MARK}{cmd_id} "
+
+
+def commanded(log) -> bool:
+    """이 작업 행이 설비 명령을 하나라도 냈는가(log 의 표시)."""
+    return COMMAND_MARK in (log or "")
 
 
 class CompensationRefused(ValueError):
@@ -104,12 +117,20 @@ def explained_services(defn, work, affected: set, effects: list[dict], outcome: 
         tool = (defn.activities.get(w["activity_id"]) or {}).get("tool") or ""
         log = w.get("log") or ""
         output = w.get("output") or {}
-        if tool == "incident:command" and any(f"action.cmd {cid} " in log for cid in cmd_ids) and "external call attempted" not in log:
+        # 명령 단계: 그 행이 낸 명령이 정리된(보상 · 사람 확인) 명령이어야 한다. 효과 확인 단계: 읽기만 한다(출력은 회복 여부뿐).
+        # 전에는 두 갈래에 「log 에 external … 이 없음」 조건이 더 있었는데, 그 글을 log 에 적는 곳이 없어 늘 참인 죽은 검사였다(전수검사 12-5)
+        if tool == "incident:command" and any(command_mark(cid) in log for cid in cmd_ids):
             out.add(w["id"])
-        elif tool == "incident:reobserve" and set(output) <= {"recovered"} and "external" not in log:
+        elif tool == "incident:reobserve" and set(output) <= {"recovered"}:
             out.add(w["id"])
-        elif tool.startswith("enterprise:") and ((output.get("work_order") or {}).get("ref") in refs):
-            out.add(w["id"])
+        elif tool.startswith("enterprise:"):
+            # 업무 거래 단계(정비 요청 · 발주 · 입고 확인 …): 그 행이 결과로 남긴 영수증 번호가 모두 정리된(보상 · 사람 확인) 거래의 것이어야 한다.
+            # 아직 거래를 내지 않은 행(입고 예정을 기다리는 입고 확인 — 결과 없음)은 정리할 것이 없다 — 단, 사건의 업무 원장 효과가 하나도 남지
+            # 않았을 때만이다(원장에 그 행의 거래가 있었다면 그것도 정리된 것이다). 전에는 정비 요청 영수증(work_order)만 보아, 발주가 나간 처리 건은
+            # 발주를 취소해도 발주 · 입고 확인 단계가 「이미 실행된 시스템 단계」로 남아 다시 수행이 막혔다
+            mine = {v.get("ref") for v in output.values() if isinstance(v, dict) and v.get("ref")}
+            if mine <= refs and (mine or not outcome.get("pending")):
+                out.add(w["id"])
     return out
 
 
@@ -193,9 +214,14 @@ class EffectRuntime:
                 "scope": "조회는 상태를 바꾸지 않습니다. 되돌릴 수 있는 거래는 보상 요청으로, 나머지는 사람의 확인으로만 해결됩니다."}
 
     def _authorize_review(self, defn, evidence, approvals, by, role, reason):
+        """효과 보상 · 확인을 요청할 수 있는 사람인가. 영수증 · 감사 기록에 「설비 상태를 확인한 사람」으로 남고, 그 영수증이 다시 수행의 문을
+        연다 — 그래서 승인과 같은 규칙(inbox.check_actor: 사용자 표의 사람이고 내세운 역할의 구성원)으로 확인한다. 전에는 빈 값과 역할 등급만
+        봐서 아무 이름 글이나 받았다(새9)."""
+        from . import inbox
         human = {defn.role_endpoint(a.get("role")) for a in defn.activities.values() if engine.is_human(a)}
         if not all(isinstance(v, str) and v.strip() for v in (by, role, reason)):
             raise ValueError("요청자, 역할, 사유가 필요합니다")
+        inbox.check_actor(self.repo, self.tenant_id, by, role)
         if role not in human:
             raise PermissionError("고정 정의의 사람 업무 담당 역할로 요청하세요")
         level, need = _review_level(evidence, approvals, role)

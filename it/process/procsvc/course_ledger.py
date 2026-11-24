@@ -7,6 +7,8 @@
     (POLICY['task'] — 그 작업의 모든 실행을 더한 호출 · 입력 바이트 · 출력 토큰)이 막는다.
   · 시간 기한은 한 번의 실행에만 있다(POLICY['run']['seconds']).
   · 동시 한도는 지금 살아 있는 점유(STARTED · 같은 consumer · 임대 안)의 실행만 센다.
+  · 한도는 단계마다다(limits): 수업 단계는 강사 녹화 크기로 잰 값, PBL 단계(강사가 서명한 단계 선언)는 학생의 실제 규모 문서 · 실데이터가
+    한 번 실행 안에 끝나는 값이다. 실행은 열 때의 단계 한도를 끝까지 쓴다(관문 토큰에 그 단계를 서명해 싣는다 — course_model).
 한도는 이 파일의 POLICY 한 곳이 정한다. 계정 행(PC의 테넌트 하나)은 누적 사용량과 마지막으로 적용한 정책을 담고, 판본이 다르면 로그에 알리고
 바꾼다(사용량은 그대로). 계정은 테넌트라 워커 인증 파일을 새로 만들어도 사용량이 0이 되지 않는다.
 
@@ -25,18 +27,48 @@ from uuid import uuid4
 
 log = logging.getLogger('procsvc.course_ledger')
 
+#: 모델 호출 한 번의 요청 크기 상한(바이트) — 관문(course_model)이 호출마다 잰다
+CALL_INPUT_BYTES = 2_000_000
+#: 수업 단계의 실행에서 모델 호출 하나가 닿는 요청 크기(바이트). 관문이 재는 것은 요청 본문 전체이고, CLI 는 호출마다 그때까지의 대화 전체
+#: (지시문 · 도구 결과 · AI의 추론 덩어리)를 다시 싣는다 — 그래서 호출 하나의 크기는 실행 안에서 계속 커지고, 결과 검사가 돌려보낸 뒤의 차례는
+#: 같은 대화를 이어 가므로 앞 차례가 끝난 크기에서 시작한다. 2026-11-23 수업 한 바퀴(실행 19건 · 호출 144회 · 21.2 MB)의 실측: 호출 하나가 첫
+#: 실행 26 KB → 318 KB, 돌려보낸 뒤 두 번째 차례 342 KB → 506 KB, 세 번째 차례(돌려보내기의 마지막 — instances.CORRECTION_ROUNDS) 529 KB →
+#: 713 KB(교대 인계안). 가장 큰 713 KB 의 1.4배
+COURSE_CALL_BYTES = 1_000_000
 POLICY = dict(
-    revision='2026-10-30-1',
+    revision='2026-11-23-1',
     model='coding',
     max_concurrency=1,
+    # ---- 수업 단계
     # 한 번의 실행(점유 한 번): 강사 녹화의 실행 하나는 모델 호출 8~32회였다(교대 인계안 첫 실행 32회 — 저장소 녹화 message_start 수).
-    # 그 1.5배. 출력 상한은 호출마다 미리 적는 max_tokens(32,000) × 호출 수
-    run=dict(seconds=600, calls=48, input_bytes=8_000_000, output_tokens=1_536_000),
-    # 한 작업의 모든 실행 합(이어 하기 · 재평가 · 재개 · 교정 · 재시작 포함) — 한 번의 실행 다섯 번 몫
-    task=dict(calls=240, input_bytes=40_000_000, output_tokens=7_680_000),
-    # 이 PC의 수업 전체
+    # 그 1.5배. 출력 상한은 호출마다 미리 적는 max_tokens(32,000) × 호출 수. 입력 상한은 호출 수 × 수업 호출 하나의 크기다 — 호출 수 한도와
+    # 짝이 맞아야 한다. 전에는 잰 근거 없이 8,000,000(호출 하나 167 KB 꼴)이라, 돌려보낸 뒤 세 번째 차례가 호출 12번(평균 639 KB · 합 7.67 MB)
+    # 에서 「횟수 · 분량을 다 썼습니다」로 멈췄다(호출 수 한도의 4분의 1 — 2026-11-23 실습 17 교대 인계안)
+    run=dict(seconds=600, calls=48, input_bytes=48 * COURSE_CALL_BYTES, output_tokens=1_536_000),
+    # 한 작업의 모든 실행 합(이어 하기 · 재평가 · 재개 · 교정 · 재시작 포함) — 한 번의 실행 다섯 번 몫. 수업 단계에서는 입력 합이 아래 PC 상한보다
+    # 커서, 입력은 PC 상한이 먼저 막는다
+    task=dict(calls=240, input_bytes=5 * 48 * COURSE_CALL_BYTES, output_tokens=7_680_000),
+    # 이 PC의 수업 전체. 호출 600회 × 평균 167 KB — 수업 한 바퀴의 실측은 호출 144회 · 21.2 MB(평균 147 KB)라 네 바퀴 남짓이다
     pc=dict(calls=600, input_bytes=100_000_000, output_tokens=20_000_000),
+    # ---- PBL 단계(수업 단계 값을 덮는다): 학생 문서는 제공 문서와 달리 실제 AI 로 추출한다. 긴 문서 한 구간의 크기는 워커의 한 번 실행 한도
+    # (worker.settings run_timeout_s 1,800초)에 맞춰 정했다(manual_segments — 82,795자 한 구간이 1,180초 걸린 실측) — 수업 값 600초로는 그 구간이
+    # 「한 번 실행 시간을 넘었습니다」로 다시 해도 또 멈췄다(2026-11-22 탐사 S). 그래서 한 번 실행 시간은 워커 한도와 같고, 한 번 실행의 입력은
+    # 호출 수 × 호출 하나의 상한(그보다 좁히면 호출 수가 아니라 이 값이 먼저 막는다), 작업은 그 다섯 번 몫이다. PC 전체 상한은 두지 않는다 —
+    # 수업 전체를 잰 값이라 PBL 의 실제 규모 일을 막고, 비용의 최종 방어는 강의 중계 키의 한도다(CLAUDE.md 5절 · 이 머리말). PBL 의 사용량은
+    # PC 누적(수업 단계의 PC 한도가 재는 값)에 더하지 않는다(charge).
+    pbl=dict(run=dict(seconds=1800, calls=48, input_bytes=48 * CALL_INPUT_BYTES, output_tokens=1_536_000),
+             task=dict(calls=240, input_bytes=5 * 48 * CALL_INPUT_BYTES, output_tokens=7_680_000),
+             pc=None),
 )
+PHASES = ('course', 'pbl')
+
+
+def limits(policy: dict, phase: str) -> dict:
+    """이 단계의 한도 {run, task, pc(None — 두지 않음)}. 단계 이름은 수업 경계 판정(course_policy.Phase.name)의 것."""
+    if phase not in PHASES:
+        raise ValueError(f'관문 장부 한도를 정할 단계가 아닙니다: {phase!r} (course · pbl)')
+    base = {k: policy[k] for k in ('run', 'task', 'pc')}
+    return dict(base, **policy['pbl']) if phase == 'pbl' else base
 USAGE = ('calls', 'input_bytes', 'output_tokens')
 
 
@@ -50,7 +82,7 @@ class Reason:
 REASONS = {
     'concurrent': Reason('이 PC에서 다른 AI 단계가 아직 실행 중입니다. 그 단계가 끝난 뒤 이 단계를 다시 실행하세요.', 429, False),
     'run_limit': Reason('이 단계의 한 번 실행에서 AI를 부를 수 있는 횟수 · 분량을 다 썼습니다. 같은 단계를 다시 실행하면 새로 시작합니다.', 429, False),
-    'run_time': Reason('이 단계의 한 번 실행 시간(10분)을 넘었습니다. 같은 단계를 다시 실행하면 새로 시작합니다.', 429, False),
+    'run_time': Reason('이 단계의 한 번 실행 시간 한도를 넘었습니다. 같은 단계를 다시 실행하면 새로 시작합니다.', 429, False),
     'task_limit': Reason('이 단계에서 AI를 부를 수 있는 전체 횟수 · 분량(다시 실행 · 재평가 · 이어 하기를 합친 한도)을 다 썼습니다. '
                          '이 한도는 시스템 관리자만 늘릴 수 있습니다 — 더 실행하려면 시스템 관리자에게 알려 주세요.', 429, False),
     'pc_limit': Reason('이 PC의 전체 AI 사용 한도를 다 썼습니다. 이 한도는 시스템 관리자만 늘릴 수 있습니다 — 시스템 관리자에게 알려 주세요.', 429, False),
@@ -64,6 +96,7 @@ REASONS = {
     'relay_budget': Reason('AI 중계 서버의 사용 한도(이 키의 한도 또는 중계 쪽 모델 계정의 잔액)를 다 썼습니다. 키를 발급한 시스템 관리자만 풀 수 있습니다 — '
                            '시스템 관리자에게 알려 주세요.', 429, False),
     'relay_model': Reason('AI 중계 서버가 이 시스템이 쓰는 모델을 받지 않습니다. 시스템 관리자에게 알려 주세요.', 502, False),
+    'relay_address': Reason('AI 중계 서버의 주소가 맞지 않습니다(그 주소에 AI를 부르는 길이 없습니다). 시스템 관리자에게 알려 주세요.', 502, False),
     'relay_busy': Reason('AI 중계 서버가 지금 붐벼 요청을 받지 못했습니다. 1분쯤 뒤 이 단계를 다시 실행하세요.', 429, True),
     'relay_rejected': Reason('AI 중계 서버가 이 요청을 받지 않았습니다. 처리 과정의 원문을 시스템 관리자에게 보여 주세요.', 502, False),
     'relay_empty': Reason('AI 중계 서버가 AI 답 없이 빈 응답을 보냈습니다(중계 쪽 모델 계정 문제). 다시 실행해도 같으니 시스템 관리자에게 알려 주세요.', 502, False),
@@ -138,10 +171,11 @@ class CourseLedger:
                              FROM hyd_course_runs WHERE account=%s AND todo_id=%s''', (tenant, todo_id)).fetchone()
 
     # ---- 점유 한 번 = 실행 하나
-    def open_run(self, tenant: str, row: dict) -> dict:
+    def open_run(self, tenant: str, row: dict, *, phase: str) -> dict:
         """지금 점유(row — worker_credentials._claim 이 확인한 살아 있는 점유)의 실행. 같은 점유면 같은 실행, 새 점유면 새 실행.
-        → {run_id, model, deadline(epoch)}. 거절은 Denied."""
+        phase: 수업 경계 판정의 단계(그 단계의 한도로 연다 — limits). → {run_id, model, deadline(epoch)}. 거절은 Denied."""
         todo_id, consumer = str(row['id']), str(row['consumer'])
+        lim = limits(self.policy, phase)
         now = self.clock()
         with self.connect() as db:
             grant = self._account(db, tenant)
@@ -153,9 +187,9 @@ class CourseLedger:
                     raise Denied('run_time' if not run['active'] else 'claim_ended')
                 return self._view(run)
             used = self._task_use(db, tenant, todo_id)
-            if any(used[f] >= self.policy['task'][f] for f in USAGE):
+            if any(used[f] >= lim['task'][f] for f in USAGE):
                 raise Denied('task_limit')
-            if any(grant[f] >= self.policy['pc'][f] for f in USAGE):
+            if lim['pc'] is not None and any(grant[f] >= lim['pc'][f] for f in USAGE):
                 raise Denied('pc_limit')
             live = db.execute("SELECT count(*) AS n FROM hyd_course_runs WHERE account=%s AND state='OPEN'", (tenant,)).fetchone()['n']
             if live >= self.policy['max_concurrency']:
@@ -163,7 +197,7 @@ class CourseLedger:
             run = db.execute('''INSERT INTO hyd_course_runs(id,account,todo_id,generation,consumer,state,created_at,deadline)
                 VALUES (%s,%s,%s,%s,%s,'OPEN',%s,%s) RETURNING *, true AS active''',
                 (uuid4(), tenant, todo_id, int(row.get('generation') or 0), consumer, now,
-                 now + timedelta(seconds=self.policy['run']['seconds']))).fetchone()
+                 now + timedelta(seconds=lim['run']['seconds']))).fetchone()
             return self._view(run)
 
     def end(self, tenant: str, todo_id: str, consumer: str) -> int:
@@ -177,8 +211,9 @@ class CourseLedger:
     def _view(self, run) -> dict:
         return dict(run_id=str(run['id']), model=self.policy['model'], deadline=run['deadline'].timestamp())
 
-    def charge(self, run_id: str, *, todo_id: str, consumer: str, input_bytes: int, output_tokens: int) -> None:
-        """모델 호출 한 번을 보내기 전에 적는다(출력 상한 전체를 미리 — 다시 보내기도 한 번으로 센다, 돌려주지 않는다)."""
+    def charge(self, run_id: str, *, todo_id: str, consumer: str, input_bytes: int, output_tokens: int, phase: str) -> None:
+        """모델 호출 한 번을 보내기 전에 적는다(출력 상한 전체를 미리 — 다시 보내기도 한 번으로 센다, 돌려주지 않는다). phase: 그 실행을 연 단계."""
+        lim = limits(self.policy, phase)
         for name, amount in (('input_bytes', input_bytes), ('output_tokens', output_tokens)):
             if type(amount) is not int or amount <= 0:
                 raise Denied('bad_request', f'{name} 값이 올바르지 않습니다')
@@ -196,13 +231,17 @@ class CourseLedger:
             amount = dict(calls=1, input_bytes=input_bytes, output_tokens=output_tokens)
             task = self._task_use(db, tenant, run['todo_id'])
             for f in USAGE:
-                if run[f] + amount[f] > self.policy['run'][f]:
+                if run[f] + amount[f] > lim['run'][f]:
                     raise Denied('run_limit')
-                if task[f] + amount[f] > self.policy['task'][f]:
+                if task[f] + amount[f] > lim['task'][f]:
                     raise Denied('task_limit')
-                if grant[f] + amount[f] > self.policy['pc'][f]:
+                if lim['pc'] is not None and grant[f] + amount[f] > lim['pc'][f]:
                     raise Denied('pc_limit')
             db.execute('UPDATE hyd_course_runs SET calls=calls+1, input_bytes=input_bytes+%s, output_tokens=output_tokens+%s WHERE id=%s',
                        (input_bytes, output_tokens, run_id))
-            db.execute('UPDATE hyd_course_grants SET calls=calls+1, input_bytes=input_bytes+%s, output_tokens=output_tokens+%s WHERE account=%s',
-                       (input_bytes, output_tokens, tenant))
+            if lim['pc'] is not None:
+                # PC 누적은 그 한도가 있는 단계(수업)의 몫만 센다. 단계를 가리지 않고 세던 때는 PBL 에서 쓴 실제 규모 일이 수업 전체를 잰 PC 한도를
+                # 채워, PBL 기한 뒤 수업 단계로 돌아온 PC 의 수업 AI 단계가 「이 PC의 전체 AI 사용 한도를 다 썼습니다」로 막혔다. 실행마다의 사용량은
+                # 단계와 무관하게 실행 행(hyd_course_runs)에 남는다
+                db.execute('UPDATE hyd_course_grants SET calls=calls+1, input_bytes=input_bytes+%s, output_tokens=output_tokens+%s WHERE account=%s',
+                           (input_bytes, output_tokens, tenant))

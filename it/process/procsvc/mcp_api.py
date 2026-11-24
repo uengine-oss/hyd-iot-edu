@@ -151,7 +151,7 @@ def register(app, *, runtime_factory, audit):
 
         def work():
             spec, used = spec_of(rt, name)
-            confirmed = frozenset(mcp_registry.confirmed_of(servers_of(rt).get(name)))   # G2 ②: 강사가 읽기로 확인한 도구 — 써 보기도 같은 판정
+            confirmed = frozenset(mcp_registry.confirmed_of(servers_of(rt).get(name)))   # G2 ②: 사람이 읽기로 확인한 도구 — 써 보기도 같은 판정
             return mcp_secrets.redact(in_slot(limit, lambda: mcp_check.call(spec, tool, arguments, limit, max_chars=CALL_RESULT_CHARS,
                                                                             confirmed=confirmed)), used)
         result = await run(work)

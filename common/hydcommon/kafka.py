@@ -77,6 +77,64 @@ def replay_verdict(offset: int, timestamp_ms: int, position: int | None, max_tim
     return 'seen'
 
 
+#: How long the whole probe may take (every partition: its end offset, then its next record or the decode error) before it
+#: gives up loudly. A fetch can be slow without anything being wrong: one broker serves one fetch request of a consumer at a
+#: time, the request in flight for an idle partition waits fetch_max_wait_ms (500 ms) for data, and an overloaded PC adds seconds.
+PROBE_S = 30.0
+
+
+class PoisonProbeError(RuntimeError):
+    """Within the probe time the broker did not answer whether a partition's next record can be read."""
+
+
+async def step_over_poison(cons, probe_s: float | None = None) -> list[tuple]:
+    """After a consume loop ended on a fetch that cannot be decoded (unsupported codec, corrupt batch — the error does not
+    name its partition): fetch each assigned partition on its own. Only a partition that fails again is moved one record past
+    its position and that position is committed; a partition that reads is put back where it was, so the loop reads the
+    probed record again and no healthy partition loses one (before, every assigned partition was stepped by one: a poison
+    record on `alerts` dropped an unrelated command). → [(partition, skipped offset, error text)] of the stepped ones.
+
+    Whether a partition holds the bad record is decided from what the broker answers, never from a timer: a partition with
+    no record at its position (position = end offset) cannot hold it; one with a record is fetched until the record or its
+    error comes back. Before, an answer that took longer than one 500 ms fetch counted as «reads fine» — nothing was stepped
+    and the loop met the same record again on its next start. No answer within probe_s (default PROBE_S) raises
+    PoisonProbeError naming the partition and offset it was waiting for (that partition is put back where it was)."""
+    probe_s = PROBE_S if probe_s is None else probe_s
+    stepped, waiting = [], None
+    try:
+        async with asyncio.timeout(probe_s):
+            for tp in sorted(cons.assignment()):
+                waiting = (tp, None, None)
+                position = await cons.position(tp)
+                waiting = (tp, position, None)
+                end = (await cons.end_offsets([tp]))[tp]
+                waiting = (tp, position, end)
+                if position >= end:
+                    continue                  # nothing waits on this partition — the record that cannot be read is not here
+                while True:
+                    try:
+                        got = await cons.getmany(tp, timeout_ms=500, max_records=1)
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception as exc:  # noqa: BLE001 — this partition's next record is the one that cannot be read
+                        cons.seek(tp, position + 1)
+                        await cons.commit({tp: position + 1})
+                        stepped.append((tp, position, repr(exc)[:200]))
+                        log.error("%s/%s: record at %s cannot be decoded (%s); stepping past it", tp.topic, tp.partition, position, exc)
+                        break
+                    if got:
+                        cons.seek(tp, position)   # it reads — put it back so the loop handles that record
+                        break
+                waiting = None
+    except TimeoutError:
+        tp, position, end = waiting
+        if position is not None:
+            cons.seek(tp, position)
+        raise PoisonProbeError(f"{tp.topic}/{tp.partition}: the broker did not answer within {probe_s:g} s whether the record at "
+                               f"{position} (end {end}) can be read") from None
+    return stepped
+
+
 def bootstrap() -> str:
     return os.getenv("KAFKA_BOOTSTRAP", "redpanda:9092")
 

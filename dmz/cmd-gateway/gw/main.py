@@ -23,7 +23,7 @@ import time
 from collections import deque
 
 from hydcommon import schemas, topics
-from hydcommon.kafka import Delivery, consumer as make_consumer, producer as make_producer
+from hydcommon.kafka import Delivery, consumer as make_consumer, producer as make_producer, step_over_poison
 from hydcommon.metrics import Registry
 from hydcommon.mqtt import Link
 from hydcommon.service import make_app, stop_after_loop_end
@@ -94,6 +94,7 @@ async def run(prod):
         log.info("consuming action.cmd and alerts")
         try:
             async for rec in cons:
+                state.pop("consumer_blocked", None)      # it reads again — an earlier unresolved poison record is behind it
                 if rec.topic == topics.K_ALERTS:
                     await relay_alert(rec.value)
                 else:
@@ -104,7 +105,7 @@ async def run(prod):
             state["consumer_errors"] = state.get("consumer_errors", 0) + 1
             state["consumer_last_error"] = repr(e)[:200]
             log.error("consume loop failed (%s); dropping the record and resuming", e)
-            await _skip_poison(cons)
+            await _skip_poison(cons, "consumer_blocked")
         finally:
             await cons.stop()
         await asyncio.sleep(1)
@@ -120,14 +121,19 @@ def _command_done(task) -> None:
     log.error("command handling failed: %s", state["command_last_error"], exc_info=task.exception())
 
 
-async def _skip_poison(cons) -> None:
-    """Commit one past the position of every assigned partition so the undecodable record is left behind."""
+async def _skip_poison(cons, blocked: str) -> None:
+    """Leave the undecodable record behind — only on the partition that holds it (hydcommon.kafka.step_over_poison): the
+    other topic of this consumer (a command next to a poison alert, or the reverse) keeps its next record. If that cannot be
+    settled, state[blocked] holds why and /healthz is not ok until the loop reads a record again — before, the loop met the
+    same record on every restart while /healthz said ok."""
     try:
-        for tp in cons.assignment():
-            pos = await cons.position(tp)
-            await cons.commit({tp: pos + 1})
-    except Exception as e:  # noqa: BLE001 — logged; the loop resumes from the committed position either way
-        log.warning("could not step over the poison record: %s", e)
+        stepped = await step_over_poison(cons)
+    except Exception as e:  # noqa: BLE001 — shown in /healthz; the loop resumes from the committed position either way
+        state[blocked] = repr(e)[:200]
+        log.error("could not step over the poison record: %s", e)
+        return
+    state.pop(blocked, None)
+    state["poison_skipped"] = state.get("poison_skipped", 0) + len(stepped)
 
 
 async def run_ledger():
@@ -138,6 +144,7 @@ async def run_ledger():
         log.info("consuming audit for approval ledger records")
         try:
             async for rec in cons:
+                state.pop("ledger_blocked", None)
                 result = gw.record_approval(gstate, rec.value)
                 if result == "kept":
                     state["approvals_recorded"] += 1
@@ -150,7 +157,7 @@ async def run_ledger():
             state["ledger_errors"] = state.get("ledger_errors", 0) + 1
             state["ledger_last_error"] = repr(e)[:200]
             log.error("approval ledger loop failed (%s); dropping the record and resuming", e)
-            await _skip_poison(cons)
+            await _skip_poison(cons, "ledger_blocked")
         finally:
             await cons.stop()
         await asyncio.sleep(1)
@@ -174,6 +181,8 @@ async def relay_alert(value) -> None:
     except schemas.RecordError as exc:
         _malformed("alerts", exc)
         return
+    if alert["asset"] not in topics.ASSETS:
+        return                       # 가상 설비 밖(학생 시스템 · 실설비)의 경보 — 공장 표시판(plant/{a}/alert)에는 그 설비가 없다
     display = board.apply(alert)
     if not _publish_board(alert["asset"], display):
         state["alert_relay_failed"] += 1     # 건강(/healthz)에 보인다 — 끊긴 MQTT 는 link 가 503
@@ -194,6 +203,10 @@ async def handle_command(prod, v) -> gw.Decision:
     if isinstance(v, dict) and isinstance(v.get("cmdId"), str) and v["cmdId"] not in gstate.approvals:
         await _await_ledger(v["cmdId"])       # the record is published first; this only covers cross-topic reordering
     d = gw.validate(v, gstate, now())
+    if d.check == gw.REDELIVERED:               # 이미 넘긴 바로 그 명령이 다시 배달됨 — 다시 넘기지도, 거절로 적지도 않고 센다(gw.REDELIVERED)
+        state["redelivered"] = state.get("redelivered", 0) + 1
+        log.warning("cmd %s delivered again after it was forwarded; ignored", v["cmdId"])
+        return d
     cmd = v if isinstance(v, dict) else {}
     asset = cmd.get("asset") if cmd.get("asset") in topics.ASSETS else None
     entry = {"t": now_iso(), "cmdId": cmd.get("cmdId"), "asset": asset, "incident": cmd.get("incident"),
@@ -217,14 +230,15 @@ async def handle_command(prod, v) -> gw.Decision:
             "t": now_iso(), "incident": entry["incident"] if isinstance(entry["incident"], str) else None, "asset": asset,
             "actor": "cmd-gateway", "event": "CMD_REJECTED",
             "detail": {"cmdId": entry["cmdId"] if isinstance(entry["cmdId"], str) else None, "check": d.check,
-                       "reason": d.reason, "reason_text": gw.CHECK_TEXT[d.check]}})
+                       "reason": d.reason, "reason_text": d.text}})
     return d
 
 
 def health() -> dict:
     recent = time.time() - state.get("command_last_error_at", 0) < 60
     return {**{k: v for k, v in state.items() if k != "command_last_error_at"}, **link.health(), **delivery.health(),
-            "ok": link.healthy() and state["kafka"] and delivery.healthy() and not recent and not state.get("consumer_dead", False)}
+            "ok": link.healthy() and state["kafka"] and delivery.healthy() and not recent and not state.get("consumer_dead", False)
+            and not state.get("consumer_blocked") and not state.get("ledger_blocked")}
 
 
 app = make_app("cmd-gateway (L3 DMZ: validated downlink IT -> OT)", reg, health)

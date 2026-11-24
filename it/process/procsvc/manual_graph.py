@@ -6,13 +6,17 @@ replaced; its owner must reconcile that conflict first.
 
 Execution history (F-2): the case projection records which SOP a person chose and which cause an incident
 was diagnosed as by pointing at document-owned nodes (HISTORY_RELATIONS). That history is an audit record, not part of the
-document's graph: it is split off before the drift check, a revision updates surviving nodes in place so it stays attached,
-and a revision or rollback that would drop a node it points at is refused, naming the node and the history.
+document's graph: it is split off before the drift check, and a revision updates surviving nodes in place so it stays attached.
+A revision or rollback that drops a node it points at does not stop on it: the record (its source is the process store, the
+graph node is a projection) keeps the dropped node's id in its own property and only the edge goes; when a later batch brings a
+node with that id back, the edge is put back (detach_history · reattach_history — the same rule as deleting a screen-made skill,
+skill_graph.remove). So a document can be emptied and refilled after people decided cases on it.
 
 Ownership (C1): which nodes a document owns is the document's journal (ManualIngestionDocument.snapshot = the reviewed
 after-state of its head batch). The original four labels (KnowledgeSource · ManualSection · Skill · Step) and their edges
 still carry `_manual_document` because schema v2 declares it there and other readers use it (admin skill edit, AFFECTS).
-The knowledge labels added by C1 (FailureMode · Cause · Evidence · Rule) and their relationships carry no extra property —
+The knowledge labels added by C1 (FailureMode · Cause · Evidence · Rule) and the new items a person chose to put in (Component ·
+Symptom · Sensor of the document's own equipment — manual_knowledge.NEW_KINDS) and their relationships carry no extra property —
 schema v2 stays unchanged — and are owned through the journal only. The snapshot of a document is every owned node and
 every relationship touching one except listed execution history and exact references owned by another active document.
 Unjournaled foreign references are still drift; a referenced node cannot be dropped until its dependent document is reviewed.
@@ -22,6 +26,8 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime, timezone
+
+from hydcommon.words import particle
 
 from .manual_review import canonical, document_key
 from .kgadmin import skill_id
@@ -33,19 +39,25 @@ class Conflict(ValueError):
 
 
 TAGGED_LABELS = ('KnowledgeSource', 'ManualSection', 'Skill', 'Step')          # carry _manual_document (schema-declared)
-KNOWLEDGE_LABELS = ('FailureMode', 'Cause', 'Evidence', 'Rule')                # C1: owned through the journal
+KNOWLEDGE_LABELS = ('FailureMode', 'Cause', 'Evidence', 'Rule',                # C1: owned through the journal
+                    'Component', 'Symptom', 'Sensor')                          # 새 항목 제안(manual_knowledge.NEW_KINDS) — 사람이 넣기를 고른 것
 LABELS = TAGGED_LABELS + KNOWLEDGE_LABELS
 TAGGED_RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS',
                     'AFFECTS', 'DOCUMENTS')
 KNOWLEDGE_RELATIONS = ('OCCURS_IN', 'INDICATES', 'LEADS_TO', 'CAUSES', 'INVOLVES_PART', 'DISTURBS', 'EVIDENCED_BY', 'ADDRESSES',
-                       'CONSISTS_OF', 'HAS_RULE', 'TESTS', 'APPLIES_TO', 'PENALIZES', 'DERIVED_FROM')
+                       'CONSISTS_OF', 'HAS_RULE', 'TESTS', 'APPLIES_TO', 'PENALIZES', 'DERIVED_FROM', 'MONITORED_BY', 'OBSERVED_BY')
 RELATIONS = TAGGED_RELATIONS + KNOWLEDGE_RELATIONS
 # Execution history the case projection attaches to document-owned nodes (procsvc/case_projection.py DECISION_CASE_Q ·
-# INCIDENT_Q): (outside label, relation, owned label). Only these are kept across revisions; any other foreign edge is drift.
-HISTORY_RELATIONS = (('DecisionCase', 'CHOSE', 'Skill'), ('Incident', 'DIAGNOSED_AS', 'Cause'))
+# INCIDENT_Q): (outside label, relation, owned label, the record's own property holding the target id — the projection sets it
+# on every write). Only these are kept across revisions; any other foreign edge is drift.
+HISTORY_RELATIONS = (('DecisionCase', 'CHOSE', 'Skill', 'chosenSkill'), ('Incident', 'DIAGNOSED_AS', 'Cause', 'diagnosedCause'))
 # labels a document's edges may point at outside the document (existing structure or another source's knowledge)
-TARGET_LABELS = LABELS + ('Role', 'System', 'StateVariable', 'Measure', 'Component', 'Symptom', 'Part', 'Action',
-                          'DecisionTable', 'InputData')
+TARGET_LABELS = LABELS + ('Role', 'System', 'StateVariable', 'Measure', 'Part', 'Action', 'DecisionTable', 'InputData')
+#: 거절 문장에서 노드 종류를 부르는 이름 — 지식 지도 화면(it/portal/www/enterprise.js LABEL_KO)과 같은 이름이다(시험 test_manual_graph 가 두 사전을 견준다)
+LABEL_KO = {'KnowledgeSource': '지식 출처', 'ManualSection': '매뉴얼 절', 'Skill': '조치 방법', 'Step': '절차 단계', 'FailureMode': '고장 유형',
+            'Cause': '원인', 'Evidence': '증거', 'Rule': '규칙', 'Role': '역할', 'System': '시스템', 'StateVariable': '상태 변수', 'Measure': '성과 지표',
+            'Component': '구성 요소', 'Symptom': '증상', 'Sensor': '센서', 'Part': '부품', 'Action': '세부 동작', 'DecisionTable': '결정표',
+            'InputData': '입력 데이터'}
 
 
 def ensure_schema(session):
@@ -75,7 +87,33 @@ def owned_keys(snapshot):
 
 def _is_history(edge, from_owned, to_owned):
     return not from_owned and to_owned and any(
-        out in edge['from_labels'] and kind == edge['type'] and own in edge['to_labels'] for out, kind, own in HISTORY_RELATIONS)
+        out in edge['from_labels'] and kind == edge['type'] and own in edge['to_labels'] for out, kind, own, _ in HISTORY_RELATIONS)
+
+
+def detach_history(tx, label, nid):
+    """The history edges into (label, nid) are removed and each record keeps nid in its own property (HISTORY_RELATIONS).
+    Called before that node is deleted. Returns [{from_labels, from_id, type, to_labels, to_id}] of the removed edges."""
+    out = []
+    for source, kind, own, prop in HISTORY_RELATIONS:
+        if own != label:
+            continue
+        out += [dict(r, from_labels=sorted(r['from_labels']), to_labels=[label], to_id=nid, type=kind) for r in tx.run(
+            f'MATCH (x:{source})-[r:{kind}]->(n:{own} {{id:$id}}) SET x.{prop}=n.id '
+            'WITH x, r, labels(x) AS from_labels, x.id AS from_id DELETE r RETURN from_labels, from_id', id=nid).data()]
+    return out
+
+
+def reattach_history(tx, label, nid):
+    """A node (label, nid) that has just been created again gets back the history edges of the records that kept its id
+    (detach_history, or a case projected while the node was absent). Returns the restored edges like detach_history."""
+    out = []
+    for source, kind, own, prop in HISTORY_RELATIONS:
+        if own != label:
+            continue
+        out += [dict(r, from_labels=sorted(r['from_labels']), to_labels=[label], to_id=nid, type=kind) for r in tx.run(
+            f'MATCH (n:{own} {{id:$id}}) MATCH (x:{source}) WHERE x.{prop} = $id AND NOT (x)-[:{kind}]->(n) '
+            f'MERGE (x)-[:{kind}]->(n) RETURN labels(x) AS from_labels, x.id AS from_id', id=nid).data()]
+    return out
 
 
 def _foreign_references(tx, document, owned):
@@ -103,12 +141,14 @@ def _foreign_references(tx, document, owned):
     return result
 
 
-def _snapshot(tx, document, owned=(), foreign=None):
-    """The current graph state of what the document owns, as (graph, history).
+def _snapshot(tx, document, owned=(), foreign=None, journal=None):
+    """The current graph state of what the document owns, as (graph, history, screen).
 
     graph: its journal-owned nodes (plus any node still tagged with the document, so a tagged node missing from the journal
     shows up as drift) and every relationship touching one of them, except history: the HISTORY_RELATIONS edges that come
-    from outside the document into an owned node. Managed cross-document edges are preserved separately."""
+    from outside the document into an owned node, and screen: edges between an owned node and a skill made on the skill screen
+    (C4 — skill_graph links it to the document's failure mode and candidate rules) that the journal does not record. Managed
+    cross-document edges are preserved separately."""
     by_label = {}
     for label, nid in owned:
         by_label.setdefault(label, []).append(nid)
@@ -126,13 +166,21 @@ def _snapshot(tx, document, owned=(), foreign=None):
     found = tx.run('MATCH (a)-[r]->(b) WHERE elementId(a) IN $e OR elementId(b) IN $e '
                    'RETURN elementId(a) AS from_eid, labels(a) AS from_labels, a.id AS from_id, '
                    'elementId(b) AS to_eid, labels(b) AS to_labels, b.id AS to_id, '
+                   'a:Skill AND a._manual_document IS NULL AS from_screen, b:Skill AND b._manual_document IS NULL AS to_screen, '
                    'type(r) AS type, properties(r) AS props', e=list(rows)).data() if rows else []
-    edges, history = [], []
+    edges, history, screen = [], [], []
     managed = {canonical(r['edge']) for r in (_foreign_references(tx, document, owned) if foreign is None else foreign)}
+    recorded = {canonical(e) for e in (journal or {}).get('edges') or []}      # 문서 자신이 그은 관계(규칙이 기존 skill:… 을 가리키는 OUTPUTS 등)는 화면 관계가 아니다
     for edge in found:
         from_owned, to_owned = edge.pop('from_eid') in rows, edge.pop('to_eid') in rows
+        from_screen, to_screen = edge.pop('from_screen'), edge.pop('to_screen')
         edge['from_labels'].sort()
         edge['to_labels'].sort()
+        if ((from_owned and not to_owned and to_screen) or (to_owned and not from_owned and from_screen)) and canonical(edge) not in recorded:
+            # 조치 방법 화면에서 만든 조치 방법(문서 소유가 아닌 Skill — skill_graph.write)이 이 문서의 고장 유형 · 후보 규칙에 그은 관계: 그 화면이 관리하는
+            # 바깥 참조다(다른 문서의 참조와 같은 갈래). 일지 대조에서 빼고 제자리에 둔다 — 이어진 노드를 이 판이 지우면 _replace 가 길을 말하며 거절한다
+            screen.append(edge)
+            continue
         if canonical(edge) in managed:
             managed.remove(canonical(edge))   # a duplicate edge is drift, not another exempt dependency
             continue
@@ -141,11 +189,47 @@ def _snapshot(tx, document, owned=(), foreign=None):
             # place; _replace separately refuses deletion/contract changes.
             continue
         (history if _is_history(edge, from_owned, to_owned) else edges).append(edge)
-    return _sort({'nodes': nodes, 'edges': edges}), sorted(history, key=canonical)
+    return _sort({'nodes': nodes, 'edges': edges}), sorted(history, key=canonical), screen
 
 
 def _node_text(labels, nid):
     return f"{':'.join(labels)} {nid}"
+
+
+def _named(labels, nid, props=None):
+    """학생에게 가는 거절 문장의 노드 이름: 「원인 「팬 구동 불량」」. 이름이 없으면(이 판에도 지금 지식에도 없는 노드) 그 id 를 그대로 둔다."""
+    kind = ' · '.join(LABEL_KO.get(label, label) for label in labels)
+    name = (props or {}).get('name') or (props or {}).get('title') or (props or {}).get('sopId')
+    return f"{kind} 「{name}」" if name else f"{kind} {nid}"
+
+
+def _document_name(tx, document):
+    """문서의 그래프 열쇠(manual_review.document_key — 테넌트 해시:uuid)를 화면에서 부르는 이름으로: 그 문서의 지금 판을 적재한 파일 이름."""
+    row = tx.run('MATCH (d:ManualIngestionDocument {id:$id}) OPTIONAL MATCH (b:ManualIngestionBatch {id:d.head}) RETURN b.receipt AS receipt',
+                 id=document).single()
+    try:
+        name = json.loads(row['receipt']).get('filename') if row and row['receipt'] else None
+    except (TypeError, ValueError):
+        name = None
+    return f"「{name}」" if name else '(적재 기록을 읽지 못한 문서)'
+
+
+def _holder(tx, label, nid):
+    """이미 지식에 있는 노드를 가진 쪽을 거절 문장에서 부르는 말: 그 노드를 적재 기록(일지)에 가진 문서(「다른 문서 「파일 이름」의」), 어느 문서의 것도
+    아니면 기본 제공 지식이나 조치 방법 화면에서 만든 것이다."""
+    for row in tx.run('MATCH (d:ManualIngestionDocument) WHERE d.head IS NOT NULL RETURN d.id AS id, d.snapshot AS snapshot').data():
+        try:
+            mine = (label, nid) in set(owned_keys(json.loads(row['snapshot'])))
+        except (ValueError, TypeError, KeyError, AttributeError):
+            continue      # 읽지 못한 일지로 소유를 짐작하지 않는다(_foreign_references 와 같다)
+        if mine:
+            return f"다른 문서 {_document_name(tx, row['id'])}의"
+    return '기본 제공 지식이나 「지식 › 조치 방법」 화면의'
+
+
+def _node_props(tx, labels, nid):
+    row = tx.run(f"MATCH (n:{':'.join(labels)} {{id:$id}}) RETURN properties(n) AS p", id=nid).single()
+    return row['p'] if row else None
 
 
 def _edge_text(edge):
@@ -185,12 +269,22 @@ def _check_unchanged(expected, current, message):
 
 
 def _history_summary(history):
-    """Kept history per owned node and relation type, e.g. [{node: 'Skill skill:sop-pur-13', type: 'CHOSE', count: 3}]."""
+    """History per owned node and relation type, e.g. [{node: 'Skill skill:sop-pur-13', type: 'CHOSE', count: 3}]."""
     counts = {}
     for edge in history:
         key = (_node_text(edge['to_labels'], edge['to_id']), edge['type'])
         counts[key] = counts.get(key, 0) + 1
     return [dict(node=node, type=kind, count=n) for (node, kind), n in sorted(counts.items())]
+
+
+def _history_receipt(history, detached, reattached):
+    """Receipt fields: history_kept (still attached to a node the batch kept), history_detached (the node went — the record
+    keeps its id), history_reattached (a node came back and got its records' edges again)."""
+    gone = {canonical(dict(from_labels=e['from_labels'], from_id=e['from_id'], type=e['type'], to_labels=e['to_labels'], to_id=e['to_id']))
+            for e in detached}
+    kept = [e for e in history if canonical({k: e[k] for k in ('from_labels', 'from_id', 'type', 'to_labels', 'to_id')}) not in gone]
+    return dict(history_kept=_history_summary(kept), history_detached=_history_summary(detached),
+                history_reattached=_history_summary(reattached))
 
 
 def candidate_joins(plan):
@@ -238,12 +332,17 @@ def desired(plan):
         edge(sections[s['ref']], 'PART_OF', source)
     fms, causes = manual_knowledge.desired(plan, node, edge, sections, skill_id)
     joins = candidate_joins(plan)
+    # 절차의 수행 시스템은 의미 검사(manual_knowledge.check_graph → performers)가 지금 그래프의 설비 구조로 정한 값만 쓴다 — 여기서 절차 종류만 보고 CMMS · SCADA 를
+    # 채우면 다른 설비(학생 설비)의 절차도 이 시스템의 업무 시스템이 수행한다고 지식 지도에 적혔다
+    performers = plan.get('performers')
+    if not isinstance(performers, dict):
+        raise ValueError('절차의 수행 시스템이 정해지지 않았습니다(check_graph를 먼저 거쳐야 합니다)')
     for p in plan['procedures']:
         if p.get('kind') == 'reference':
             manual_references.reference_shape(p['id'], p)
             existing = p.get('existing_skill_id')
             target = ('Skill', existing) if existing else node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'],
-                kind='reference', executable=False, description=f"제공 문서 {plan['filename']}의 참고 절차(실행하지 않음)",
+                kind='reference', executable=False, description=f"문서 {plan['filename']}의 참고 절차(실행하지 않음)",      # 학생이 올린 문서도 같은 판이라 「제공 문서」라 하지 않는다
                 source_id=plan['source_id'], citation=canonical(p['anchor']))
             for step in p['steps']:
                 # Source version identity is distinct from stable active Step.
@@ -273,8 +372,10 @@ def desired(plan):
             edge(skill, 'CONSISTS_OF', ('Action', a['action']), seq=seq, **({'value': a['value']} if a['value'] is not None else {}))
         for c in p.get('addresses') or []:                           # C1: the cause this SOP fixes
             edge(skill, 'ADDRESSES', causes.get(c, ('Cause', c)))
-        performer = 'sys:erp' if p.get('scope') == 'purchase' else 'sys:scada' if p['kind'] == 'control' else 'sys:cmms'
-        edge(('System', performer), 'HAS_SKILL', skill)
+        if p['id'] not in performers:
+            raise ValueError(f"{p['id']}: 이 절차의 수행 시스템이 정해지지 않았습니다(check_graph를 먼저 거쳐야 합니다)")
+        if performers[p['id']]:
+            edge(('System', performers[p['id']]), 'HAS_SKILL', skill)
         for step in p['steps']:
             st = node('Step', skill[1] + ':' + str(step['order']), order=step['order'], text=step['text'],
                       source_id=plan['source_id'], citation=canonical(step['anchor']))
@@ -293,29 +394,52 @@ def sop_conflicts(session, document, sop_ids):
     return session.execute_read(read)
 
 
-def _validate_targets(tx, snapshot, owned):
-    """Every node the snapshot creates is free or already this document's; every edge end outside it exists exactly once."""
+def _validate_targets(tx, snapshot, owned, before=None):
+    """Every node the snapshot creates is free or already this document's; every edge end outside it exists exactly once and is not
+    a node this batch drops (owned by the document now, absent from the snapshot — 검토에서 뺀 원인을 증거가 가리키는 꼴, C3).
+    before = the document graph being replaced (the names of dropped nodes come from it). One refusal names every such end."""
     owned = set(owned)
     mine = {(n['labels'][0], n['props']['id']) for n in snapshot['nodes']}
+    props = {(n['labels'][0], n['props']['id']): n['props'] for n in (*((before or {}).get('nodes') or []), *snapshot['nodes'])}
+    # 절차 번호의 겹침을 먼저 본다 — 겹친 조치 방법의 단계(id 가 그 조치 방법 id 로 시작한다)가 먼저 걸려 「절차 단계 …」로 말하지 않게
+    for node in snapshot['nodes']:
+        if node['labels'][0] != 'Skill':
+            continue
+        nid, number = node['props']['id'], node['props']['sopId']
+        sop = tx.run('MATCH (n:Skill {sopId:$sop}) SET n.id=n.id RETURN n.id AS id', sop=number).single()
+        taken = tx.run('MATCH (n:Skill {id:$id}) SET n.id=n.id RETURN n.id AS id', id=nid).single()
+        held = sop['id'] if sop and (sop['id'] != nid or ('Skill', sop['id']) not in owned) else nid if taken and ('Skill', nid) not in owned else None
+        if held:
+            raise Conflict(f"절차 번호 {number}{particle(number, '은')} {_holder(tx, 'Skill', held)} 조치 방법이 이미 씁니다 — 덮어쓰지 않았습니다. "
+                           "그 문서를 다시 올린 것이면 그 문서의 개정으로 올리고, 다른 문서면 검토 화면의 절차 번호 칸에서 번호를 바꾸세요")
     for node in snapshot['nodes']:
         label, nid = node['labels'][0], node['props']['id']
         old = tx.run(f'MATCH (n:{label} {{id:$id}}) SET n.id=n.id RETURN n.id AS id', id=nid).single()
         if old and (label, nid) not in owned:
-            raise Conflict(f'{label} {nid}: 다른 원천/기존 지식이 소유합니다. 덮어쓰지 않았습니다')
-        if label == 'Skill':
-            sop = tx.run('MATCH (n:Skill {sopId:$sop}) SET n.id=n.id RETURN n.id AS id',
-                         sop=node['props']['sopId']).single()
-            if sop and (sop['id'] != nid or ('Skill', sop['id']) not in owned):
-                raise Conflict(f"SOP 번호 {node['props']['sopId']}는 다른 원천의 스킬이 사용 중입니다")
+            what = _named([label], nid, node['props'])
+            # 지식 후보 · 새 항목은 검토 화면에서 뺄 수 있다. 그 밖(절 · 단계 · 출처)은 이 문서의 원문 판본에서만 생기는 id 라 겹치면 바깥에서 고친 것이다
+            how = ('검토 화면에서 이 항목을 적재에서 제외하세요. 이 문서의 다른 항목은 이미 있는 그 항목을 가리킵니다' if label in KNOWLEDGE_LABELS
+                   else '지식 지도를 바깥에서 고쳤는지 확인하세요')
+            raise Conflict(f"{what}{particle(what, '은')} {_holder(tx, label, nid)} 같은 항목이 이미 지식에 있어 덮어쓰지 않았습니다 — {how}")
+    dangling = {}
     for edge in snapshot['edges']:
-        for side in ('from', 'to'):
+        for side, other in (('from', 'to'), ('to', 'from')):
             labels, nid = edge[side + '_labels'], edge[side + '_id']
             if (labels[0], nid) in mine:
+                continue
+            pointer = _named(edge[other + '_labels'], edge[other + '_id'], props.get((edge[other + '_labels'][0], edge[other + '_id'])))
+            if (labels[0], nid) in owned:
+                dangling.setdefault((tuple(labels), nid, '이 판에서 빠지는데'), []).append(pointer)
                 continue
             pattern = ':'.join(labels)
             rows = tx.run(f'MATCH (n:{pattern} {{id:$id}}) SET n.id=n.id RETURN labels(n) AS labels', id=nid).data()
             if len(rows) != 1 or sorted(rows[0]['labels']) != labels:
-                raise Conflict(f'{pattern} {nid}: 대상이 없거나 유형이 변경됐습니다')
+                dangling.setdefault((tuple(labels), nid, '이 검토본에도 지금 지식 지도에도 없는데'), []).append(pointer)
+    if dangling:
+        def says(labels, nid, why, pointers):
+            node, who = _named(list(labels), nid, props.get((labels[0], nid))), ' · '.join(dict.fromkeys(pointers))
+            return f"{node}{particle(node, '은')} {why} {who}{particle(who, '이')} 가리킵니다 — 가리키는 항목도 함께 빼거나 이 항목을 남기세요"
+        raise Conflict(' / '.join(says(labels, nid, why, pointers) for (labels, nid, why), pointers in dangling.items()))
 
 
 def _node_key(node):
@@ -325,22 +449,34 @@ def _node_key(node):
     return label, node['props']['id']
 
 
-def _replace(tx, current, target, history, foreign=()):
-    """Turn the document graph `current` into `target` in place.
+def _replace(tx, current, target, history, foreign=(), screen=()):
+    """Turn the document graph `current` into `target` in place → (provenance kept, history detached, history reattached).
 
     Caller verified `current` equals the journal, so every relationship in it is the document's own; each is removed by its
     identity and the target's are created. A node kept by the target (same label and id) is updated in place, so the execution
-    history pointing at it (`history`, never deleted) stays attached. A node the target drops is deleted — unless history
-    points at it: then the whole revision is refused before any write. No DETACH DELETE is used: an unexpected foreign
-    reference makes the node delete fail and the whole transaction roll back."""
+    history pointing at it (`history`) stays attached. A node the target drops is deleted; the history pointing at it is
+    detached first (detach_history — the record keeps the id), and a node the target creates gets back the history that kept its
+    id (reattach_history). No DETACH DELETE is used: an unexpected foreign reference makes the node delete fail and the whole
+    transaction roll back."""
     have = {_node_key(n) for n in current['nodes']}
     keep = {_node_key(n) for n in target['nodes']}
     dropped = have - keep
+    names = {_node_key(n): n['props'] for n in current['nodes']}
     for dependency in foreign:
         edge = dependency['edge']
         ends = {(':'.join(edge['from_labels']), edge['from_id']), (':'.join(edge['to_labels']), edge['to_id'])}
         if dropped & ends:
-            raise Conflict(f"문서 {dependency['document']}가 참조하는 노드는 삭제/되돌리기를 할 수 없습니다: {_edge_text(edge)}. 의존 문서를 먼저 검토하세요")
+            label, nid = sorted(dropped & ends)[0]
+            node, other = _named([label], nid, names.get((label, nid))), _document_name(tx, dependency['document'])
+            raise Conflict(f"{node}{particle(node, '은')} 다른 문서 {other}{particle(other, '이')} 가리키고 있어 이 판에서 뺄 수 없습니다 — "
+                           "그 문서를 먼저 되돌리거나, 그 문서가 가리키지 않게 개정한 뒤 다시 하세요")
+    for edge in screen:
+        owned_end, other = ('from', 'to') if (edge['from_labels'][0], edge['from_id']) in have else ('to', 'from')
+        key = (edge[owned_end + '_labels'][0], edge[owned_end + '_id'])
+        if key in dropped:
+            skill = _named(edge[other + '_labels'], edge[other + '_id'], _node_props(tx, edge[other + '_labels'], edge[other + '_id']))
+            raise Conflict(f"「지식 › 조치 방법」에서 만든 {skill}{particle(skill, '이')} 이 판에서 빠지는 {_named([key[0]], key[1], names.get(key))}에 이어져 있습니다 — "
+                           "「지식 › 조치 방법」에서 그 조치 방법을 먼저 지우거나 다른 고장 유형으로 옮긴 뒤 다시 하세요")
     referenced_skills = [nid for label, nid in have if label == 'Skill']
     dependencies = manual_references.incoming_dependencies(tx, referenced_skills)
     for item in dependencies:
@@ -349,7 +485,9 @@ def _replace(tx, current, target, history, foreign=()):
             raise Conflict('기존 Skill에 검증되지 않은 문서 참조가 있어 변경하지 않았습니다')
         sid = dependency['skill']
         if ('Skill', sid) in dropped:
-            raise Conflict(f"Skill {sid}: 문서 {dependency['document']}의 원문 참조가 있어 삭제/되돌리기를 거절했습니다")
+            node, other = _named(['Skill'], sid, names.get(('Skill', sid))), _document_name(tx, dependency['document'])
+            raise Conflict(f"{node}{particle(node, '은')} 다른 문서 {other}{particle(other, '이')} 원문 참조로 가리키고 있어 이 판에서 뺄 수 없습니다 — "
+                           "그 문서를 먼저 되돌린 뒤 다시 하세요")
         # Contract includes active graph edges. Comparing owned nodes/edges is
         # conservative; source-only incoming DOCUMENTS was already split off.
         before_contract = [n for n in current['nodes'] if _node_key(n) == ('Skill', sid)]
@@ -357,12 +495,9 @@ def _replace(tx, current, target, history, foreign=()):
         before_edges = [e for e in current['edges'] if e['from_id'] == sid or e['to_id'] == sid]
         after_edges = [e for e in target['edges'] if e['from_id'] == sid or e['to_id'] == sid]
         if before_contract != after_contract or before_edges != after_edges or current != target:
-            raise Conflict(f"Skill {sid}: 문서 {dependency['document']}가 검토한 실행 계약을 참조합니다. 의존 문서를 먼저 검토하세요")
-    blocked = _history_summary([e for e in history if (':'.join(e['to_labels']), e['to_id']) in dropped])
-    if blocked:
-        named = ', '.join(f"{h['node']} ← {h['type']} {h['count']}건" for h in blocked)
-        raise Conflict(f'새 판에서 빠지는 노드에 판단 이력이 연결돼 있어 거절했습니다(이력은 지우지 않습니다): {named}. '
-                       '그 노드를 새 판에도 남기거나, 이력을 검토한 뒤 다시 적재하세요')
+            node, other = _named(['Skill'], sid, names.get(('Skill', sid))), _document_name(tx, dependency['document'])
+            raise Conflict(f"{node}{particle(node, '은')} 다른 문서 {other}{particle(other, '이')} 검토한 실행 내용(절차 · 연결)을 가리키고 있어 바꿀 수 없습니다 — "
+                           "그 문서를 먼저 되돌린 뒤 다시 하세요")
     for edge in current['edges']:
         a, b = ':'.join(edge['from_labels']), ':'.join(edge['to_labels'])
         if edge['type'] not in RELATIONS:
@@ -371,7 +506,9 @@ def _replace(tx, current, target, history, foreign=()):
                      'WITH r LIMIT 1 DELETE r RETURN count(*) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
         if row['n'] != 1:
             raise Conflict('지울 관계가 기록과 달라 전체 적재를 취소했습니다')
+    detached, reattached = [], []
     for label, nid in sorted(dropped):
+        detached += detach_history(tx, label, nid)
         tx.run(f'MATCH (n:{label} {{id:$id}}) DELETE n', id=nid).consume()
     for node in target['nodes']:
         label, nid = _node_key(node)
@@ -381,6 +518,7 @@ def _replace(tx, current, target, history, foreign=()):
                 raise Conflict(f'{label} {nid}: 제자리에서 바꿀 노드가 기록과 달라 전체 적재를 취소했습니다')
         else:
             tx.run(f'CREATE (n:{label}) SET n=$props', props=node['props']).consume()
+            reattached += reattach_history(tx, label, nid)
     for edge in target['edges']:
         if edge['type'] not in RELATIONS:
             raise Conflict('보관된 관계 유형이 지원 계약과 다릅니다')
@@ -391,7 +529,7 @@ def _replace(tx, current, target, history, foreign=()):
                      'SET r=$props RETURN count(r) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
         if row['n'] != 1:
             raise Conflict('관계의 대상이 없어 전체 적재를 취소했습니다')
-    return [item['verified'] for item in dependencies]
+    return [item['verified'] for item in dependencies], detached, reattached
 
 
 def _receipt(plan, at, replayed=False):
@@ -399,10 +537,12 @@ def _receipt(plan, at, replayed=False):
     return dict(batch=plan['batch'], document_id=plan['document_id'], source_id=plan['source_id'],
                 filename=plan['filename'], by=plan['by'], t=at, status='ACTIVE', replayed=replayed,
                 **({'review_method': plan['review_method']} if plan.get('review_method') else {}),
+                **({'review_scope': plan['review_scope']} if plan.get('review_scope') else {}),
                 **({'provided_revision': plan['provided_revision']} if plan.get('provided_revision') else {}),
                 sections=len(plan['sections']), procedures=len(plan['procedures']),
                 steps=sum(len(p['steps']) for p in plan['procedures']),
-                knowledge={kind: [i['id'] for i in k.get(kind) or []] for kind in manual_knowledge.KINDS},
+                knowledge={kind: [i['id'] for i in k.get(kind) or []] for kind in manual_knowledge.ALL_KINDS
+                           if kind in manual_knowledge.KINDS or k.get(kind)},      # 새 항목은 있을 때만(없는 문서의 영수증은 그대로)
                 actions=sum(len(p.get('actions') or []) for p in plan['procedures']),
                 candidate_activation=candidate_joins(plan), extraction=plan.get('extraction'),
                 references=plan.get('references') or {},
@@ -477,12 +617,12 @@ def commit(session, plan):
             raise Conflict('현재 문서 판본이 문서 등록 이후 변경됐습니다. 문서를 다시 등록해 검토하세요')
         expected = json.loads(head['snapshot']) if head else {'nodes': [], 'edges': []}
         foreign = _foreign_references(tx, plan['document'], owned_keys(expected))
-        before, history = _snapshot(tx, plan['document'], owned_keys(expected), foreign)
+        before, history, screen = _snapshot(tx, plan['document'], owned_keys(expected), foreign, expected)
         _check_unchanged(expected, before, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌었습니다. 변경 내용을 먼저 조정하세요')
-        _validate_targets(tx, after, owned_keys(before))
-        provenance_kept = _replace(tx, before, after, history, foreign)
-        receipt = dict(_receipt(plan, at), removed=removed_nodes(before, after),
-                       history_kept=_history_summary(history), provenance_kept=provenance_kept)
+        _validate_targets(tx, after, owned_keys(before), before)
+        provenance_kept, detached, reattached = _replace(tx, before, after, history, foreign, screen)
+        receipt = dict(_receipt(plan, at), removed=removed_nodes(before, after), provenance_kept=provenance_kept,
+                       **_history_receipt(history, detached, reattached))
         tx.run('CREATE (b:ManualIngestionBatch) SET b=$props', props=dict(id=plan['batch'], tenant=plan['tenant'],
                document=plan['document'], previous=plan['previous_batch'], fingerprint=fingerprint, status='ACTIVE',
                before=canonical(before), after=canonical(after), plan=canonical(plan), receipt=canonical(receipt), createdAt=at)).consume()
@@ -516,7 +656,7 @@ def rollback(session, tenant, batch, by):
         except ValueError as exc:
             raise Conflict(str(exc)) from exc
         foreign = _foreign_references(tx, document, owned_keys(after))
-        current, history = _snapshot(tx, document, owned_keys(after), foreign)
+        current, history, screen = _snapshot(tx, document, owned_keys(after), foreign, after)
         _check_unchanged(after, current, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌어 되돌릴 수 없습니다. 먼저 변경을 검토하세요')
         before = json.loads(record['before'])
         if record.get('previous'):
@@ -528,14 +668,14 @@ def rollback(session, tenant, batch, by):
                 manual_references.check_plan(tx, json.loads(prior['plan']))
             except ValueError as exc:
                 raise Conflict(str(exc)) from exc
-        _validate_targets(tx, before, owned_keys(current))
-        provenance_kept = _replace(tx, current, before, history, foreign)
+        _validate_targets(tx, before, owned_keys(current), current)
+        provenance_kept, detached, reattached = _replace(tx, current, before, history, foreign, screen)
         tx.run('MATCH (d:ManualIngestionDocument {id:$id}) SET d.head=$head, d.snapshot=$snapshot',
                id=document, head=record.get('previous'), snapshot=record['before']).consume()
         tx.run('MATCH (b:ManualIngestionBatch {id:$id}) SET b.status="ROLLED_BACK", b.rolledBackBy=$by, b.rolledBackAt=$at',
                id=batch, by=by.strip(), at=datetime.now(timezone.utc).isoformat()).consume()
         return dict(batch=batch, status='ROLLED_BACK', replayed=False, restored_batch=record.get('previous'),
-                    history_kept=_history_summary(history), provenance_kept=provenance_kept)
+                    provenance_kept=provenance_kept, **_history_receipt(history, detached, reattached))
     return session.execute_write(run)
 
 

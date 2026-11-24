@@ -1,16 +1,22 @@
 """사건(Incident)의 상태 표 · 시한 · 에스컬레이션 사유 문장 — machine.py 가 사건을 이 상태들로 옮긴다.
 
     GUIDE_RECEIVED → AWAITING_APPROVAL → CMD_ISSUED → AWAITING_ACK → ACKED → RE_OBSERVING → RESOLVED → WORK_ORDER_CREATED → CLOSED
+    설비 명령 없이 실행하는 승인: AWAITING_APPROVAL → APPROVED_EXECUTING → (정비 요청 접수) WORK_ORDER_CREATED → CLOSED · (입고 확인 · 결과 보고) CLOSED
     끝(실패 · 다른 결말): ESCALATED(책임자 확인 — 사유 코드 Incident.reason) · REJECTED_BY_OPERATOR · RESOLVED_WITHOUT_ACTION
 
 회복 기준(태그 · 비교 · 한계)은 처리 건 정의의 alertPolicy 하나가 갖는다(코드에 사본을 두지 않는다 — P1-20). 상태 · 사유의 사람 이름은
 이 파일 하나가 갖고 다른 모듈은 state_label · escalation_cause 로 읽는다.
 """
 from hydcommon.words import particle
+
 # (state id, 사람 이름, BPMN element type)
+# APPROVED_EXECUTING: 사람이 승인했고 승인한 안에 이 흐름이 낼 설비 명령이 없다 — 흐름의 승인 뒤 단계(정비 요청 · 발주 · 내 시스템 호출 · 기다림 ·
+# 효과 확인)가 실행하는 중이다(machine.on_flow_approved). 승인 전에만 여는 문(판단 접수 · 원인 진단 바꾸기 · 승인 · 반려 · 설비 명령)은 이 상태에서
+# 닫히고, 이 상태의 경보 해제는 「조치 전 자연 회복」이 아니다. 설비 명령이 있는 승인은 이 상태를 거치지 않고 명령 단계가 CMD_ISSUED 로 옮긴다
 STEPS = [
     ("GUIDE_RECEIVED", "판단 카드 받음", "startEvent"),
     ("AWAITING_APPROVAL", "담당자 승인 대기", "userTask"),
+    ("APPROVED_EXECUTING", "승인 — 흐름이 실행 중", "serviceTask"),
     ("CMD_ISSUED", "설비 명령 보냄(유효 120초)", "serviceTask"),
     ("AWAITING_ACK", "설비 응답 기다림(30초)", "receiveTask"),
     ("ACKED", "설비 응답 받음", "intermediateEvent"),
@@ -57,6 +63,11 @@ GATEWAY_REJECTED = "GATEWAY_REJECTED"
 TRIPPED_BEFORE_ACTION = "TRIPPED_BEFORE_ACTION"
 #: 결과 보고(svc:report)가 미달 · 지연으로 사건을 닫았다(machine.on_result_report) — 결과 보고의 틀이 그 문장이다
 RESULT_REPORT = "RESULT_REPORT"
+#: 처리 건이 열린 뒤 설비가 승인한 길 밖에서 바뀌었다(가상 설비의 바깥 변화 기록 — machine.outside_change) — 뒤에 그 변화의 사람 말
+OUTSIDE_CHANGE = "OUTSIDE_CHANGE"
+#: 승인 전에 경보가 풀렸는데 그때까지 설비가 승인한 길 밖에서 바뀌었는지 모른다 — 받은 바깥 변화 기록이 처리 건이 열릴 때부터 해제까지 이어지지
+#: 않는다(main.outside_at_clear: 다시 켠 process 는 꺼져 있던 동안 · 꺼지기 전의 기록을 다 갖지 못한다). 뒤에 무엇이 끊겼는지
+OUTSIDE_UNKNOWN = "OUTSIDE_UNKNOWN"
 
 
 def escalation_cause(reason: str | None) -> tuple[str, bool] | None:
@@ -87,10 +98,18 @@ def escalation_cause(reason: str | None) -> tuple[str, bool] | None:
     if code == "UNSUPPORTED_RECOVERY_CRITERION":
         return ("이 경보 패턴에는 회복 기준이 없어 효과 확인으로 판정하지 못했습니다", True)
     if code == "UNSUPPORTED_ALERT_PATTERN":
-        return ("이 경보 패턴에는 회복 기준이 없어 처리 흐름 대신 현장 검토로 넘겼습니다", False)
+        # 이 사건을 연 흐름이 이 경보 종류를 받지 않는다(Incident.supported — 경보 정책의 triage 길). 회복 기준(시계열 태그)은 선택이라 까닭이 아니다
+        return ("이 경보를 받는 배포 흐름이 없어 처리 흐름 대신 현장 검토로 넘겼습니다 — 이 경보를 받는 흐름을 배포하거나(흐름 가져오기의 "
+                "「내 경보 종류」) 현장 검토에서 처리하세요", False)
     if code == TRIPPED_BEFORE_ACTION:
         return (f"승인 전에 경보가 풀렸지만 설비가 보호 정지(사유 {detail or '없음'}) 중이었습니다 — 회복이 아니라 설비가 멈춰 값이 내려간 것이라 "
-                "조치 없이 끝내지 않고 책임자 확인으로 넘겼습니다. 보호 정지 원인과 쿨러 · 설비 상태를 사람이 확인하세요", False)
+                "조치 없이 끝내지 않고 책임자 확인으로 넘겼습니다. 보호 정지 원인과 설비 상태를 사람이 확인하세요", False)
+    if code == OUTSIDE_CHANGE:
+        return (f"처리 건이 열린 뒤 설비가 승인한 조치 밖에서 바뀌었습니다({detail or '무엇인지 기록 없음'}) — 바뀐 뒤의 값으로는 자연 회복인지도, "
+                "승인한 조치가 효과를 냈는지도 잴 수 없어 책임자 확인으로 넘겼습니다. 설비 상태를 사람이 확인하세요", False)
+    if code == OUTSIDE_UNKNOWN:
+        return (f"승인 전에 경보가 풀렸지만, 그 전에 설비가 승인한 조치 밖에서 바뀌었는지 알 수 없습니다({detail or '무엇이 끊겼는지 기록 없음'}) — "
+                "자연 회복이라고 단정하지 않고 책임자 확인으로 넘겼습니다. 그동안 현장 조작이나 설비 초기화가 있었는지 사람이 확인하세요", False)
     if code == PROCESS_ENDED:
         return (f"처리 건이 「{detail or '끝'}」{particle(detail or '끝', '으로')} 끝나 사건을 책임자 확인으로 닫았습니다 — 조치가 끝까지 가지 않았으니 설비 상태를 사람이 "
                 "확인하세요", False)

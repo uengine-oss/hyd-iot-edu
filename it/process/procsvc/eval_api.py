@@ -97,7 +97,7 @@ def http_evaluate(agent_url: str, timeout: float = 120.0):
     return evaluate
 
 
-def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, incidents: dict, runtime_factory, audit,
+def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, runtime_factory, audit,
              decide_fn=None, evaluate_fn=None):
     judges = {'decide': decide_fn or http_decide(agent_url), 'evaluate': evaluate_fn or http_evaluate(agent_url)}
     stores: dict = {}
@@ -150,13 +150,17 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
             raise ValueError('누가 적었는지(by)가 필요합니다')
         return by.strip()[:120]
 
+    def fact_choices() -> dict:
+        """정답표의 가정 사실 칸 — 기본 제공 현장의 넷과 지금 지식의 표 · 열에 이은 판단 입력(judgment_eval.fact_choices)."""
+        return je.fact_choices(graph_read(lambda tx: [r.data() for r in tx.run(je.BOUND_INPUTS_Q)]))
+
     # ---------------------------------------------------------------- 정답표
     @app.get('/api/eval/golden')
     async def golden():
         items = await run(lambda: store().golden_list())
         from hydcommon.topics import ASSETS
         return {'items': items, 'storage': store().kind, 'paths': je.PATH_NOTES, 'weights': je.DEFAULT_WEIGHTS, 'max_repeats': je.MAX_REPEATS,
-                'assets': list(ASSETS), 'facts': je.FACT_CHOICES,
+                'assets': list(ASSETS), 'facts': await run(fact_choices),
                 'empty_note': None if items else '정답표가 비어 있습니다. 경보 상황마다 기대 원인 · 허용 1순위 조치 · 빠질 조치 · 있어야 할 근거를 적어 저장하세요.'}
 
     def save(req: GoldenReq, create: bool, iid: str | None = None) -> dict:
@@ -209,17 +213,18 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
     def candidates(limit: int) -> list[dict]:
         rt = runtime()
         items = store().golden_list()
+        choices = fact_choices()
         out = []
         for inst in rt.repo.list_instances(limit=max(limit * 4, 20), tenant_id=rt.tenant_id):
-            c = je.instance_candidate(inst, book.get)
+            c = je.instance_candidate(inst, book.get, tuple(choices))
             if not c:
                 continue
             try:
-                c['item'] = je.match_item(items, c)['id']
+                c['item'] = je.match_item(items, c, choices)['id']
                 c['match_note'] = None
             except ValueError as exc:
                 c['item'], c['match_note'] = None, str(exc)
-            c.pop('guide_card', None)
+            c.pop('judged_facts')
             out.append(c)
             if len(out) >= limit:
                 break
@@ -289,10 +294,8 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
                     raise je.NotFound(spec['item'])
                 item = by_id[spec['item']]
             else:
-                item = je.match_item(golden, cand)
-            d = book.get(cand['decision_id'])
-            inc = incidents.get(((d or {}).get('origin') or {}).get('incident'))
-            judged = je.worker_judgement(cand, d, cand.get('guide_card') or getattr(inc, 'card', None))
+                item = je.match_item(golden, cand, fact_choices())
+            judged = je.worker_judgement(cand, book.get(cand['decision_id']))
             groups.setdefault(item['id'], [item, [], []])
             groups[item['id']][1].append(judged)
             groups[item['id']][2].append({k: cand[k] for k in ('instance', 'name', 'status', 'started', 'decision_id', 'chosen_skill')})

@@ -2,7 +2,9 @@
 rem Docker Desktop, VS Code, Node.js, Git, Python, WSL이 없거나 수업 기준(scripts\versions.txt)보다 낮으면 설치/업데이트. 같거나 높으면 유지.
 chcp 65001 >nul
 cd /d "%~dp0.."
-net session >nul 2>&1
+rem 관리자 판정은 fltmc(필터 드라이버 목록 — 관리자만 읽는다)로 한다. net session 은 Server 서비스가 꺼진 PC 에서는 관리자 창에서도 실패해
+rem 승격 요청이 되풀이됐다.
+fltmc >nul 2>&1
 if errorlevel 1 (
   echo 관리자 권한이 필요합니다. 묻는 창이 뜨면 「예」를 누르세요.
   powershell -NoProfile -Command "try { Start-Process -FilePath '%~f0' -Verb RunAs -ErrorAction Stop } catch { exit 1 }"

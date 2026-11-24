@@ -1,6 +1,6 @@
 {
   "name": "hyd-iot-edu ontology",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "namespace": "https://uengine-oss.github.io/hyd-iot-edu/ontology#",
   "description": "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다.",
   "conventions": {
@@ -848,7 +848,7 @@
       "label_ko": "증거",
       "layer": "diagnosis",
       "standard": "MIMOSA 확증 규칙",
-      "description": "원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다.",
+      "description": "원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다. 이 시스템이 수집하지 않는 값(문서가 넣은 다른 설비의 센서 태그)을 읽는 증거는 sql 없이 note에 판단 엔진이 평가하지 않는다는 사실을 적는다 — 그 값은 그 설비를 맡은 에이전트가 그 설비 시스템의 도구 서버로 읽는다.",
       "properties": [
         {
           "name": "id",
@@ -868,8 +868,14 @@
         {
           "name": "sql",
           "type": "string",
-          "required": true,
-          "description": "시계열 DB 검증 질의. %(asset)s 매개변수 하나, 숫자 열 하나(value)를 돌려준다"
+          "required": false,
+          "description": "시계열 DB 검증 질의. %(asset)s 매개변수 하나, 숫자 열 하나(value)를 돌려준다. tag가 수집 계약(hydcommon.daq_contract)의 태그일 때만 있다"
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "required": false,
+          "description": "sql이 없는 증거(수집하지 않는 값을 읽는다)를 판단 엔진이 평가하지 않는다는 문장"
         },
         {
           "name": "expect",
@@ -1579,6 +1585,7 @@
           "description": "사건 상태기계의 현재 상태 (procsvc/machine.py)",
           "values": [
             "AWAITING_APPROVAL",
+            "APPROVED_EXECUTING",
             "CMD_ISSUED",
             "AWAITING_ACK",
             "ACKED",

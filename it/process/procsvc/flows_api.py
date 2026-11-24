@@ -1,7 +1,7 @@
 """B3: bpmn.io 그림 가져오기 API — 매핑 · 사전 검사 · 판본 등록 · 그림 다시 받기 · 기준으로 되돌리기.
 
   GET  /api/flows/catalog                        부품(기준 정의에서 읽은 시나리오 부품 + 일반 부품) · 역할 · 에이전트 · 경보 패턴
-  POST /api/flows/import {xml, file_name, definition_id?, start_patterns?}
+  POST /api/flows/import {xml, file_name, definition_id?}
                                                  .bpmn 읽기 → 같은 흐름 id 의 앞선 매핑 유지 → 초안 저장 → 사전 검사 결과
   GET  /api/flows                                내가 가져온 흐름(초안) · 등록한 판본 — 강사가 설치한 수업 흐름은 class_flow 표시
   GET  /api/flows/{id}                           초안 하나(읽은 그림 · 매핑 · 사전 검사 · 판본 · 등록할 수 있는가)
@@ -40,8 +40,6 @@ class ImportReq(BaseModel):
     xml: str
     file_name: str | None = None
     definition_id: str | None = None
-    # 새 경보 초안에만 적용. None은 기존 센서 기본값, []는 명시적으로 미선택.
-    start_patterns: list[str] | None = None
     # 수업 흐름 설치(course_bootstrap — 시작.bat, 프로세스 안 호출)만 true — 지금 수업 흐름으로 배포된 흐름 id 를 다시 가져온다.
     class_flow: bool = False
 
@@ -106,8 +104,15 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         return out
 
     def ctx_for(rt, store, cat, def_id, draft) -> dict:
+        # 경보로 열리는 기본 제공 흐름의 이름: 수업 흐름 · 기준 흐름 · 받는 흐름이 없는 경보가 가는 현장 검토 흐름(rt.reference_ids)
+        taken = {name: did for did, name in class_flows(rt).items()} | {rt.defn.name: rt.defn.id}
+        for rid in sorted(set(getattr(rt, 'reference_ids', None) or ()) - {rt.defn.id}):
+            row = rt.repo.get_proc_def(rid, rt.tenant_id)
+            if not row or not row.get('name'):
+                raise LookupError(f"기본 제공 흐름 '{rid}'의 등록된 정의를 찾을 수 없습니다 — 흐름 이름 검사를 할 수 없습니다")
+            taken[row['name']] = rid
         return {"catalog": cat, "definition_id": def_id, "version": store.next_version(def_id), "file_name": draft.get("file_name"),
-                "xml_sha256": bpmn_import.xml_sha256(draft["bpmn"]), "name": None}
+                "xml_sha256": bpmn_import.xml_sha256(draft["bpmn"]), "name": None, "taken_names": taken}
 
     def registration(rt, store, def_id, draft, mapping, class_flow_ids, bootstrap=False) -> dict:
         """이 초안을 지금 판본으로 등록할 수 있는가(W3-08 — 「검사 통과」 뒤 등록에서야 거절되지 않게 사전 검사와 같은 화면에서 미리 알린다).
@@ -202,8 +207,6 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             mapping, report = bpmn_import.merge_mapping(parsed, (old or {}).get("mapping"), cat)
             if not req.class_flow:
                 mapping = app.state.course.imported_mapping(mapping, (old or {}).get("mapping"))
-            if old is None and req.start_patterns is not None and mapping["start"].get("kind") == "alert":
-                mapping["start"]["patterns"] = list(req.start_patterns)
             report["previous"] = old is not None
             draft = {"bpmn": req.xml, "file_name": req.file_name}
             store.save_draft(def_id, req.xml, req.file_name, mapping)

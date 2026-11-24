@@ -76,14 +76,53 @@ def validate_result(form, inst, output):
             raise ValueError('인계 확인은 설비 조치·발주·정비 완료가 아님을 확인하세요')
 
 
+UNMATCHED_SHOWN = 5     # 돌려보내는 글에 싣는 맞지 않는 근거 수
+CALLS_SHOWN = 5         # 그 근거의 도구를 실제로 부른 인자를 싣는 수(서로 다른 것만)
+ARGUMENT_CHARS = 700    # 인자 하나를 싣는 길이 — 넘는 인자(긴 SQL)는 싣지 않고 길이만 말한다(잘린 인자를 옮겨 적으면 또 맞지 않는다)
+
+
+def _arguments(value) -> str:
+    text = json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return text if len(text) <= ARGUMENT_CHARS else f'({len(text):,}자 인자 — 이 작업의 그 호출 기록에 있는 그대로)'
+
+
+def unmatched_evidence(evidence, checked, calls) -> str:
+    """실제 호출과 맞지 않는 근거를 번호 · 도구 · 적은 인자와, 그 도구를 이 작업에서 성공적으로 부른 실제 인자로 적는다(돌려보내는 글).
+    전에는 「모든 조회 근거가 … 일치해야 합니다」뿐이라 AI가 어느 근거가 틀렸는지 모르고 차례마다 모든 조회를 처음부터 다시 한 뒤 같은 곳을 또
+    틀렸다(2026-11-23 실습 17: 근거 14개 중 8번째 하나 — 적은 인자 {"table":…,"offset":0,"limit":20}, 실제 호출 인자에는 offset 이 없음 — 가
+    두 번 돌려보내지고 세 번째 차례는 호출 12번 · 입력 7.67 MB 로 한 번 실행의 한도에 닿았다)."""
+    lines = []
+    wrong = [i for i, e in enumerate(checked) if not e['verified']]
+    for i in wrong[:UNMATCHED_SHOWN]:
+        item = evidence[i] if isinstance(evidence[i], dict) else {}
+        same_tool = []
+        for call in calls:
+            if call.get('data') and call.get('ok') and ask._matches(dict(item, query=call.get('_input')), call):
+                text = _arguments(call.get('_input'))
+                if text not in same_tool:
+                    same_tool.append(text)
+        actual = (('이 작업에서 이 도구를 성공적으로 부른 인자: ' + ' · '.join(same_tool[:CALLS_SHOWN])
+                   + (f' 외 {len(same_tool) - CALLS_SHOWN}개' if len(same_tool) > CALLS_SHOWN else '')) if same_tool
+                  else '이 작업에서 이 도구를 성공적으로 부른 기록이 없습니다')
+        lines.append(f"evidence[{i}] {ask.short_tool(item.get('tool'))} 에 적은 query {_arguments(item.get('query'))} — 이 인자 그대로 성공한 호출이 "
+                     f'없습니다({actual})')
+    more = f' 외 {len(wrong) - UNMATCHED_SHOWN}개' if len(wrong) > UNMATCHED_SHOWN else ''
+    return (f'맞지 않는 근거 {len(wrong)}개: ' + '; '.join(lines) + more + '. 이 근거만 고치세요 — query 를 실제로 부른 인자와 글자 그대로 같게 하거나, '
+            '그 인자로 부른 적이 없는 근거는 빼고 evidence_indices 를 맞추세요. 나머지 근거는 이미 실제 호출과 일치하므로 같은 조회를 다시 하지 않아도 됩니다.')
+
+
 def validate_trace(repo, wi, form, output):
     if (form or {}).get('contract') != DRAFT or not output.get('evidence'):
         return
     calls = ask.tool_calls(repo.list_events(todo_id=wi['id']), repo.get_event_payload)
     verdict = ask.verdict(dict(answer=output['handover_summary'], evidence=output['evidence']), calls)
     evidence = verdict.get('evidence') or []
-    if len(evidence) != len(output['evidence']) or any(not e['verified'] for e in evidence):
-        raise ValueError('인계안의 모든 조회 근거가 현재 작업의 성공한 실제 도구 호출과 일치해야 합니다')
+    if len(evidence) != len(output['evidence']):
+        # 판정이 근거를 하나도 견주지 못했다 — 이 작업에 성공한 조회가 없다(ask.verdict)
+        raise ValueError('인계안의 모든 조회 근거가 현재 작업의 성공한 실제 도구 호출과 일치해야 합니다 — 이 작업에서 성공한 조회 도구 호출이 하나도 없습니다')
+    if any(not e['verified'] for e in evidence):
+        raise ValueError('인계안의 모든 조회 근거가 현재 작업의 성공한 실제 도구 호출과 일치해야 합니다 — '
+                         + unmatched_evidence(output['evidence'], evidence, calls))
 
 
 def reconcile_trace(repo, wi, form, output):

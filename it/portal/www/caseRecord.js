@@ -199,7 +199,7 @@
       namesUnread: read.agents.state === 'error' || read.people.state === 'error' };   // 이름 목록(AI 에이전트 · 사람)을 못 읽음 — 머리 요약에 한 줄(사유는 「기록에 없는 것」)
   }
 
-  // 이 처리 건이 이미 아는 이름: 판단의 대안 · 승인 역할 · 시나리오(원인 · 고장 유형), 진단 카드의 원인 · 조치, AI 에이전트 이름
+  // 이 처리 건이 이미 아는 이름: 판단의 대안 · 승인 역할 · 시나리오(원인 · 고장 유형), 판단 기록의 원인 진단(서버 진단)의 원인 후보, AI 에이전트 이름
   function caseNames(v, d, agents, people) {
     const n = {};
     const put = (id, name) => { if (id && name && typeof name === 'string' && !n[id]) n[id] = name; };
@@ -208,10 +208,8 @@
       Object.entries(d.roles || {}).forEach(([id, r]) => put(id, r && r.name));
       const o = d.origin || {}, sc = d.scenario || {};
       put(o.cause, sc.cause); put(o.failureMode, sc.failureMode);
+      (((o.diagnosis || {}).causes) || []).forEach(c => put(c.id, c.name));
     }
-    const gc = v.guide_card || {};
-    (gc.causes || []).forEach(c => { put(c.id, c.name); put(c.failureModeId, c.failureMode); });
-    (gc.skills || []).forEach(k => { put(k.id, k.name); if (k.approver) put(k.approver.id, k.approver.name); });
     if (v.chosen_option) put(v.chosen_option.id, v.chosen_option.name);
     (agents || []).forEach(a => put(a.id, a.name));
     (people || []).forEach(p => put(p.id, p.name));
@@ -346,7 +344,7 @@
       chips.push(chip(`데이터 ${prov.length || dataCalls.length}건`));
     }
     // 지식 경로 (진단: 경보 → 증상 → 고장 유형 ← 원인 · 증거, 판단: 원인 → 조치 → 규칙 · 출처 절 · 득실 경로)
-    const kg = knowledgeHtml(ctx, owns('guide_card') || owns('cause') ? v.guide_card : null, owns('decision') ? d : null);
+    const kg = knowledgeHtml(ctx, owns('guide_card') || owns('cause') ? serverDiagnosis(d) : null, owns('decision') ? d : null);
     if (kg) sections.push(sec('지식 경로 · 출처', kg, { open: true }));
     // 도구 호출 — 요청 → 결과 한 줄씩, 보조 작업(도구 불러오기 · 파일 · 명령)은 접어 둔다
     if (b.rows.length) {
@@ -369,7 +367,7 @@
       sections.push(sec('비교한 대안', r.state === 'loading' ? '<p class="muted">판단 기록을 읽는 중입니다…</p>'
         : `<p class="cr-gapline">판단 기록${W().id(v.decision_id)}을 읽지 못했습니다 — ${e(r.error || '이유 모름')}</p>`, { open: true }));
     }
-    const cause = owns('cause') && v.cause ? (((v.guide_card || {}).causes || []).find(c => c.id === v.cause) || {}).name || nm(v.cause) : '';
+    const cause = owns('cause') && v.cause ? nm(v.cause) : '';
     const cw = W().causeWords(d && d.origin && d.origin.cause_route);
     if (cause) chips.push(chip(`${cw.cause} ${cause}`, 'warning'));
     // 끝맺는 말이 산문이면 그대로, 출력 계약(JSON — SQL · 적재 통계가 든다)이면 산문 칸에 흘리지 않고 원문 접기로(W1-13)
@@ -396,12 +394,25 @@
       now: lastOpen ? `${W().toolName(lastOpen.tool)} — ${W().ask(lastOpen.tool, lastOpen.input)}` : b.live ? '다음 행동을 정하는 중' : '', ids: [w.user_id, w.activity_id] });
   }
 
+  // 원인 진단 = 이 처리 건이 등록한 판단 기록의 서버 진단(origin.diagnosis — 판단 엔진이 판단을 등록할 때 다시 한 진단: 원인 순위 · 근거 판정 ·
+  // 인용). AI 가 결과 칸에 옮겨 적은 가이드 카드(guide_card)는 원인 · 근거로 쓰지 않는다 — 서버가 대조하지 않은 글이다(2026-11-22 탐사 N1).
+  // 등록한 판단이 없거나 센서 진단으로 원인을 정한 판단이 아니면 null — 원인 후보 · 잰 값을 그리지 않는다
+  function serverDiagnosis(d) {
+    const dx = d && d.origin && d.origin.diagnosis;
+    if (!dx || typeof dx !== 'object' || !Array.isArray(dx.causes)) return null;
+    const fm = (d.scenario && d.scenario.failureMode) || '';
+    return { topCause: dx.top_cause, summary: dx.summary, citations: dx.citations || [],
+             causes: dx.causes.map(c => c.id === dx.top_cause ? { ...c, failureModeId: dx.failure_mode, failureMode: fm } : c) };
+  }
+
   function knowledgeHtml(ctx, gc, d) {
     const out = [];
     if (gc && typeof gc === 'object') {
       const top = (gc.causes || []).find(c => c.id === gc.topCause) || (gc.causes || [])[0];
-      const pat = (gc.alert && gc.alert.pattern) || ctx.v.pattern;
-      if (top) out.push(pathHtml([['경보', W().pattern(pat), pat], ['증상', (top.symptoms || []).join(' · ')], ['고장 유형', top.failureMode, top.failureModeId], ['원인', top.name, top.id]], ['→', '→', '←']));
+      const pat = ctx.v.pattern;
+      const symptoms = top && (top.symptoms || []).length ? [['증상', top.symptoms.join(' · ')]] : [];
+      if (top) out.push(pathHtml([['경보', W().pattern(pat), pat], ...symptoms, ['고장 유형', top.failureMode, top.failureModeId], ['원인', top.name, top.id]],
+        [...symptoms.map(() => '→'), '→', '←']));
       const causes = (gc.causes || []);
       if (causes.length) out.push(`<h4 class="cr-h">원인 후보와 증거 — 센서 기록에서 잰 값</h4><div class="table-container"><table class="table cr-table"><thead><tr><th>원인</th><th>점수</th><th>증거</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${
         causes.map(c => (c.evidence || [{}]).map((x, i) => `<tr${c.id === (top && top.id) ? ' data-pick' : ''}>${i === 0 ? `<td rowspan="${(c.evidence || [{}]).length}">${named(c.name, c.id)}</td><td rowspan="${(c.evidence || [{}]).length}" class="num">${e(W().num(c.score))}</td>` : ''}<td>${e(x.name || '–')}</td><td class="num">${x.value != null ? e(W().num(x.value)) : '–'}</td><td class="num">${x.threshold != null ? `${e(W().sym(x.expect))} ${e(W().num(x.threshold))}` : '–'}</td><td>${x.status ? UI.chipText(x.passed ? '맞음' : '아님', x.passed ? 'success' : 'neutral') : ''}</td></tr>`).join('')).join('')}</tbody></table></div>`);
@@ -504,15 +515,17 @@
     const opt = (d && (d.options || []).find(o => o.id === optId)) || v.chosen_option || {};
     const changed = d && optId && d.recommended && optId !== d.recommended;
     const reason = (hist && hist.reason) || (appr && appr.payload && appr.payload.reason) || '';
-    const plan = (appr && appr.payload && appr.payload.plan) || {};
-    const todo = [...(plan.ot || []), ...(plan.enterprise || [])];
-    const acts = todo.length ? todo : (opt.actions || []);
+    // 승인한 안의 조치(값을 바꿔 승인했으면 승인 원문의 그 값). 승인은 효과를 내지 않고 흐름의 단계가 낸다 — 이 흐름이 내지 않는 조치는 서버가 판단에 싣는다
+    // (options[].flow_skips · flow_skip_text — instances.skipped_actions)
+    const approved = (appr && appr.payload && appr.payload.plan && appr.payload.plan.option) || opt;
+    const acts = approved.actions || [];
+    const skipped = new Set((opt.flow_skips || []).map(x => x.code));
     const sections = [];
     if (by || when) sections.push(sec('누가 · 언제 · 무엇을', `<dl class="kv"><dt>승인한 사람</dt><dd><b>${e(by || '–')}</b>${W().id(byId !== by ? byId : '')}${role ? ` · ${e(W().who(role))}${W().id(role)}` : ''}</dd>
       <dt>승인한 시각</dt><dd>${e(when ? new Date(when).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) + ' ' + hhmmss(when) : '–')}</dd><dt>고른 안</dt><dd>${named(W().text(opt.name || nm(optId) || '–'), optId)} ${changed ? UI.chipText('추천안 대신 고름', 'warning') : d ? UI.chipText('추천안 그대로', 'success') : ''}</dd>
       ${opt.approver && opt.approver.name ? `<dt>필요한 승인 권한</dt><dd>${e(opt.approver.name)}</dd>` : ''}${reason ? `<dt>남긴 사유</dt><dd>${e(reason)}</dd>` : ''}
       <dt>기다린 시간</dt><dd>${e(b.t0 && b.t1 ? fmtMs(ts(b.t1) - ts(b.t0)) : '–')} <span class="muted">(승인 요청이 올라온 때부터)</span></dd></dl>`, { open: true }));
-    if (acts.length) sections.push(sec('승인으로 시스템에 넘긴 일', `<ul class="cr-list">${acts.map(a => `<li>${e(W().action({ code: a.code, value: a.value }))} <span class="muted">→ ${e(W().system(a.system || a.target))}</span>${W().id(a.code)}</li>`).join('')}</ul>`, { open: true }));
+    if (acts.length) sections.push(sec('승인한 안의 조치', `<ul class="cr-list">${acts.map(a => `<li>${e(W().action({ code: a.code, value: a.value }))} <span class="muted">→ ${e(W().system(a.system || a.target))}${skipped.has(a.code) ? ' · 이 흐름은 실행하지 않음' : ''}</span>${W().id(a.code)}</li>`).join('')}</ul>${opt.flow_skip_text ? `<p class="muted">${e(opt.flow_skip_text)}.</p>` : ''}`, { open: true }));
     const cc = appr && appr.payload && appr.payload.current_check;
     if (cc) sections.push(sec('승인 순간 다시 확인한 값', `<p>${cc.allowed ? UI.chipText('그대로 실행해도 됨', 'success') : UI.chipText('실행 불가', 'danger')} ${(cc.reasons || []).map(r => e(W().text(r.annotation || r.rule || r))).join(' · ')}${cc.checked_at ? ` <span class="muted">${e(hhmmss(cc.checked_at))}</span>` : ''}</p>
       ${kvTable(Object.entries(cc.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object').map(([k, x]) => [W().fieldName(k,cc.facts), UI.valueText(k, x), k]))}${(cc.unknown || []).length ? `<p class="cr-gapline">그 순간 읽지 못한 값: ${e(cc.unknown.map(k => W().fieldName(k, cc.facts)).join(', '))}</p>` : ''}`));
@@ -1090,9 +1103,10 @@
     const recorded = w.output?.decision || w.draft?.decision;
     const recordedId = w.output?.decision_id || w.draft?.decision_id || (produced.includes('decision_id') ? m.decision?.id : null);
     const d = owns('decision') ? (recorded ? UI.recordedDecision(m.decision, recorded, recordedId) : m.decision) : null;
-    const gc = owns('guide_card') || owns('cause') ? v.guide_card : null;
-    const top = gc && typeof gc === 'object' ? ((gc.causes || []).find(c => c.id === (v.cause || gc.topCause)) || (gc.causes || []).find(c => c.id === gc.topCause) || (gc.causes || [])[0]) : null;
-    const cause = owns('cause') && v.cause ? (top && top.id === v.cause ? top.name : nm(v.cause)) : '';
+    // 원인 진단은 이 처리 건이 등록한 판단의 서버 진단(serverDiagnosis) — 이 단계가 판단을 냈으면 그 판단, 아니면(앞 단계의 진단) 처리 건의 판단
+    const gc = owns('guide_card') || owns('cause') ? serverDiagnosis(owns('decision') ? d : m.decision) : null;
+    const top = gc ? (gc.causes.find(c => c.id === gc.topCause) || gc.causes[0] || null) : null;
+    const cause = owns('cause') && v.cause ? nm(v.cause) : '';
     const opts = d && (d.options || []).length ? [...d.options].sort((a, b) => (b.id === d.recommended) - (a.id === d.recommended) || (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99))) : [];
     const rec = opts.find(o => o.id === d.recommended) || null;
     const recName = rec ? W().text(rec.name) : '';
@@ -1116,8 +1130,8 @@
     const evid = [];
     // 「관측값과 맞습니다」는 센서 진단일 때만 한다 — 업무 경보의 원인은 관측값으로 가린 것이 아니라 지식 지도의 길(정비가 막는 고장 · 부품이 고치는 원인)로 찾은 것이다
     const fmName = d && d.scenario && d.scenario.failureMode ? W().text(d.scenario.failureMode) : '';
-    if (told && diagnosed) evid.push(['network', `지식 지도의 원인 후보 가운데 <b>${e(told)}</b>${W().josa(told, '이/가')} 관측값과 맞습니다${top && top.failureMode ? ` <span class="muted">— 고장 유형: ${e(top.failureMode)}</span>` : ''}.`]);
-    else if (told) evid.push(['network', `${e(cw.cause)}${W().josa(cw.cause, '은/는')} <b>${e(told)}</b>입니다${fmName && cw.failureMode ? ` <span class="muted">— ${e(cw.failureMode)}: ${e(fmName)}</span>` : ''}. 지식 지도에서 찾았고, 센서 값으로 진단한 것이 아닙니다.`]);
+    if (told && diagnosed && top) evid.push(['network', `지식 지도의 원인 후보 가운데 <b>${e(told)}</b>${W().josa(told, '이/가')} 관측값과 맞습니다${top && top.failureMode ? ` <span class="muted">— 고장 유형: ${e(top.failureMode)}</span>` : ''}.`]);
+    else if (told && !diagnosed) evid.push(['network', `${e(cw.cause)}${W().josa(cw.cause, '은/는')} <b>${e(told)}</b>입니다${fmName && cw.failureMode ? ` <span class="muted">— ${e(cw.failureMode)}: ${e(fmName)}</span>` : ''}. 지식 지도에서 찾았고, 센서 값으로 진단한 것이 아닙니다.`]);
     const tagOf = x => x.tag || (x.coverage && x.coverage.tag) || '';      // 증거가 읽은 시계열 태그(단위를 여기서 찾는다)
     const unit = x => tagOf(x) ? W().unit(String(tagOf(x)).toLowerCase()) : '';
     (top ? (top.evidence || []).filter(x => x && x.name && x.value != null).slice(0, 6) : []).forEach(x =>

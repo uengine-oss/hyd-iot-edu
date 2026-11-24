@@ -9,7 +9,8 @@ case "$(uname -s)" in
                    "$local_apps/Docker/Docker Desktop.exe"; do
       if [ -f "$desktop" ]; then
         DD_EXE="$desktop"
-        PATH="$(dirname "$desktop")/resources/bin:$PATH"
+        # PATH 에 docker 가 없을 때만(PATH 가 바뀌기 전에 연 창) 그 자리를 더한다 — 있으면 그 docker 를 그대로 쓴다(앞에 끼우면 PATH 의 docker 를 가린다)
+        command -v docker >/dev/null 2>&1 || PATH="$(dirname "$desktop")/resources/bin:$PATH"
         break
       fi
     done

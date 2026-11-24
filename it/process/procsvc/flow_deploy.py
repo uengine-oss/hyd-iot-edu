@@ -1,8 +1,9 @@
 """B4 (확정 TODO B4) — 흐름 판본 배포: 경보 패턴 → 지금 배포된 흐름, 기준 흐름으로 되돌리기, 기준과 비교.
 
 경보 하나가 어느 흐름으로 열리는가 (기존 alert_policy 계약 그대로 — `alert_policy.for_definition(raw, pattern)`):
-  1. 배포 API로 배포된(마지막 배포 기록이 deploy/rollback) 학생 흐름 중, 메시지 시작 + `alertPolicy.patterns`에 그 패턴이 있는
-     흐름 — 여러 개면 가장 최근에 배포한 것.
+  1. 배포 API로 배포된(마지막 배포 기록이 deploy/rollback) 흐름 중, 메시지 시작 + `alertPolicy.patterns`에 그 패턴이 있는
+     흐름 — 학생이 배포한 흐름이 기본 제공 흐름(수업 흐름)보다 먼저이고, 같은 쪽에서 여러 개면 가장 최근에 배포한 것. 시작 6단계가 바뀐
+     수업 흐름의 새 판본을 배포해도 학생 흐름이 맡던 경보를 가져가지 않는다(D-5 — 학생 흐름을 내리는 길은 [기준 흐름으로 되돌리기] 하나다).
   2. 없으면 기준 흐름(경보 진입 정의 `anomaly_response`)의 운영 판본(`proc_def.prod_version`). 지원하지 않는 패턴은 그 정의의
      `alertPolicy.unsupported`(사람 검토 alert_triage)로 간다 — 지금까지와 같다.
 이미 열린 처리 건은 자기 판본(`bpm_proc_inst.proc_def_version`)으로 끝까지 간다(판본은 열 때 고정).
@@ -60,14 +61,14 @@ def _require_base(rt) -> None:
 
 
 def _candidates(rt) -> list[tuple[dict, engine.Definition]]:
-    """Student flows on the alert path, newest deployment first."""
+    """Flows on the alert path: the student's own deployments first, then the class flows; newest deployment first within each."""
     refs, out = _reference_ids(rt), []
     for head in rt.repo.deployed_heads(rt.tenant_id):
         if head['id'] in refs or head.get('last_action') not in ROUTING_ACTIONS:
             continue
         defn = rt.definition_for({'proc_def_id': head['id'], 'tenant_id': rt.tenant_id, 'proc_def_version': head['prod_version']})
         out.append((head, defn))
-    return out
+    return sorted(out, key=lambda pair: bool(pair[0].get('class_flow')))          # 안정 정렬 — 같은 쪽 안의 최근 배포 차례는 그대로
 
 
 def route_definition(rt, pattern) -> engine.Definition:

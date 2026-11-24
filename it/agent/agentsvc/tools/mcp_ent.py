@@ -15,9 +15,10 @@ import urllib.parse
 import urllib.request
 
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
-#: enterprise-sim 은 읽기마다 업무 DB 연결을 새로 열고 그 연결 한도가 5초다(entsim/main.py connect_timeout=5). 이쪽 한도가 그보다 길어야
-#: 업무 DB 가 끊겼을 때 enterprise-sim 이 내는 까닭(503 「업무 DB에 연결하지 못했습니다」)을 받는다 — 같은 5초면 늘 이쪽이 먼저 끊고
-#: 「응답 없음」만 남았다(2026-10-30 키 있는 한 바퀴 실습 12: 06:10:40~46 업무 DB 연결이 끊긴 동안 재고 조회가 5초에 끊김).
+#: enterprise-sim 은 읽기마다 업무 DB 연결을 hydcommon.pg.connect 로 새로 맺는다 — 한 번 기다림 3초, 다시 맺어 보는 것까지 다 합쳐
+#: 7초(pg.CONNECT_BUDGET_S). 이쪽 한도가 그보다 길어야 업무 DB 가 끊겼을 때 enterprise-sim 이 내는 까닭(503 「업무 DB에 연결하지 못했습니다」 ·
+#: 서버가 연결을 받지 않은 까닭)을 받는다 — 같거나 짧으면 늘 이쪽이 먼저 끊고 「응답 없음」만 남았다(2026-10-30 키 있는 한 바퀴 실습 12:
+#: 06:10:40~46 업무 DB 연결이 끊긴 동안 재고 조회가 그때의 한도 5초에 끊김).
 TIMEOUT_S = 15.0
 
 

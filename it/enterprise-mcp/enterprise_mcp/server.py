@@ -25,7 +25,11 @@ from pydantic import Field
 from .tools import EnterpriseTools, guarded
 from hydcommon.enterprise import reader_connection as connect_reader
 
-DSN = os.getenv("ENTERPRISE_DSN", "postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres")
+# 업무 DB 전용 읽기 계정 주소는 compose 의 enterprise-mcp environment 가 준다(업무 DB 망 안의 이름). 기본값을 두지 않는다 — 값이 빠지면 지운 길
+# (호스트에 연 업무 DB 포트)로 조용히 돌지 않고 어느 값이 없는지 말하며 켜지지 않는다
+DSN = os.environ.get("ENTERPRISE_DSN", "")
+if not DSN:
+    raise SystemExit("ENTERPRISE_DSN 이 설정되지 않아 enterprise-mcp 를 띄우지 않습니다 — 업무 DB 전용 읽기 계정 주소입니다(compose.yaml 의 enterprise-mcp environment)")
 TOOLSETS = {
     "maintenance": ("pm_status", "maintenance_windows", "cmms_history", "mes_orders"),
     "purchasing": ("spare_stock", "part_quotes", "scm_suppliers"),
@@ -97,7 +101,8 @@ def ems_demand() -> dict:
 
 @mcp.tool(annotations=READ)
 def spare_stock(part: Annotated[str | None, Field(description="부품 번호 (예: P-PMP-SEAL). 비우면 모든 중요 예비품")] = None) -> dict:
-    """ERP: 중요 예비품 재고 — 실물 · 예약 · 가용(실물-예약) · 입고 예정 · 재주문점 · 목표 재고 · 필요량(목표-가용-입고 예정) · 재주문점 이탈 여부와 최근 재고 이동."""
+    """ERP: 중요 예비품 재고 — 실물 · 예약 · 입고 예정 · 가용(실물 − 예약 + 입고 예정) · 재주문점 · 목표 재고 · 필요량(목표 − 가용, 0 아래면 0) ·
+    재주문점 이탈 여부(가용 < 재주문점)와 최근 재고 이동. 계산은 업무 DB 한 곳(ent.spare_row)이 한다."""
     return guarded(tools.read)("spare_stock", part=part)
 
 

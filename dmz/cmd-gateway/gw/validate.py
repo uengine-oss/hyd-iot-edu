@@ -25,12 +25,20 @@ from hydcommon.timeutil import parse_iso
 
 RATE_LIMIT_PER_S = 2
 APPROVALS_KEPT = 512
+#: 설비는 상태를 1초마다 보낸다. 마지막 상태가 이보다 오래됐으면 지금의 운전 모드가 아니다 — 가상 설비나 공장 쪽 다리가 멈춘 뒤 남은 값(브로커가
+#: 보존한 상태 포함)을 믿고 명령을 넘기지 않는다(받을 설비가 없어 응답 시한으로만 끝나던 길).
+STATUS_MAX_AGE_S = 10.0
 #: The checks validate() applies, in order (a rejection names one of them; gw/main adds PUBLISH_CHECK when the broker did
 #: not take a command that passed them all). The forwarded-command audit record lists exactly these, so an auditor can match a later rejection's `check` to the list a pass went through.
 CHECKS = ("SCHEMA", "WHITELIST", "EXPIRED", "DUPLICATE", "APPROVAL", "MODE", "RATE_LIMIT")
 #: Rejection after every check passed: the command could not be handed to the plant — the DMZ broker connection or the
 #: plant-side bridge is down (gw/main.handle_command, G3b-14).
 PUBLISH_CHECK = "MQTT"
+#: Not a rejection: the very command this gateway already forwarded came again (the event log delivered the record a second
+#: time — a rebalance before the consumed position was committed). Nothing is sent and no CMD_REJECTED is written: the first
+#: delivery was forwarded and the PLC executed it, so a "rejected" record would end the case as refused although the command
+#: ran (전수검사 06-8). gw/main counts it for /healthz.
+REDELIVERED = "REDELIVERED"
 #: What a person reads for each rejection (the audit record's reason_text; process shows it on the case).
 CHECK_TEXT = {"SCHEMA": "명령 형식이 맞지 않아 설비로 보내지 않았습니다",
               "WHITELIST": "이 설비가 받지 않는 조치라 보내지 않았습니다",
@@ -38,6 +46,8 @@ CHECK_TEXT = {"SCHEMA": "명령 형식이 맞지 않아 설비로 보내지 않�
               "DUPLICATE": "이미 보낸 명령이라 다시 보내지 않았습니다",
               "APPROVAL": "승인 기록과 맞지 않는 명령이라 보내지 않았습니다",
               "MODE": "설비가 원격 자동 모드가 아니어서 보내지 않았습니다 — 운전 모드를 원격 자동으로 돌린 뒤 다시 승인합니다",
+              # 검사 ⑥ 의 다른 까닭: 운전 모드를 알 수 없음(상태를 받은 적 없음 · 마지막 상태가 낡음) — 「원격 자동이 아니어서」와 할 일이 다르다
+              "MODE_UNKNOWN": "설비 상태가 들어오지 않아 지금 운전 모드를 알 수 없어 보내지 않았습니다 — 설비 연결이 돌아온 뒤 다시 승인합니다",
               "RATE_LIMIT": "1초에 너무 많은 명령이 와서 보내지 않았습니다",
               # 검사는 통과했지만 설비로 넘길 길이 끊김(DMZ 브로커 연결 또는 공장 쪽 브리지) — 보내지 못한 명령을 「보냄」으로 적지 않는다(G3b-14)
               PUBLISH_CHECK: "설비 통신(MQTT)이 끊겨 명령을 설비로 보내지 못했습니다 — 설비 연결이 돌아온 뒤 다시 승인합니다"}
@@ -53,9 +63,15 @@ class GatewayState:
 
 class Decision(NamedTuple):
     ok: bool
-    check: str            # PASS | one of CHECKS | PUBLISH_CHECK
+    check: str            # PASS | one of CHECKS | PUBLISH_CHECK | REDELIVERED
     reason: str | None
     mqtt_payload: dict | None
+    text_key: str | None = None   # CHECK_TEXT 의 열쇠가 검사 이름과 다를 때(같은 검사의 다른 까닭 — MODE_UNKNOWN)
+
+    @property
+    def text(self) -> str:
+        """사람이 읽는 거절 문장(감사 기록의 reason_text)."""
+        return CHECK_TEXT[self.text_key or self.check]
 
 
 def record_approval(st: GatewayState, audit_event: dict) -> str:
@@ -106,6 +122,8 @@ def validate(cmd: dict, st: GatewayState, now: datetime) -> Decision:
         return Decision(False, "EXPIRED", f"expired at {cmd['expiresAt']}", None)
     # ④ duplicate
     if cmd["cmdId"] in st.seen_cmd_ids:
+        if _approval_problem(cmd, st) is None:      # the same approved command again — a second delivery, not another command
+            return Decision(False, REDELIVERED, f"cmdId {cmd['cmdId']} already forwarded (same command delivered again)", None)
         return Decision(False, "DUPLICATE", f"cmdId {cmd['cmdId']} already forwarded", None)
     # ⑤ approval ledger (A148): process recorded this exact command before publishing it
     problem = _approval_problem(cmd, st)
@@ -114,7 +132,10 @@ def validate(cmd: dict, st: GatewayState, now: datetime) -> Decision:
     # ⑥ PLC mode (from the latest retained status)
     status = st.last_status.get(cmd["asset"])
     if not status:
-        return Decision(False, "MODE", f"no status seen for {cmd['asset']}", None)
+        return Decision(False, "MODE", f"no status seen for {cmd['asset']}", None, "MODE_UNKNOWN")
+    age = (now - parse_iso(status["t"])).total_seconds()
+    if age > STATUS_MAX_AGE_S:
+        return Decision(False, "MODE", f"last status of {cmd['asset']} is {age:.0f} s old (at most {STATUS_MAX_AGE_S:.0f} s)", None, "MODE_UNKNOWN")
     if status.get("mode") != "REMOTE_AUTO":
         return Decision(False, "MODE", f"PLC mode is {status.get('mode')} (REMOTE_AUTO required)", None)
     # ⑦ rate limit

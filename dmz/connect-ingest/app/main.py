@@ -19,7 +19,7 @@ import logging
 import time
 
 from hydcommon import schemas, topics
-from hydcommon.kafka import Delivery, producer as make_producer
+from hydcommon.kafka import ERROR_WINDOW_S, Delivery, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.mqtt import Link
 from hydcommon.service import _stop_process, make_app
@@ -33,7 +33,7 @@ g_age = reg.gauge("ingest_last_event_age_seconds", "seconds since last accepted 
 g_queue = reg.gauge("ingest_queue_depth", "messages waiting for Kafka")
 
 QUEUE_MAX = 20000
-state = {"last_ts": 0.0, "count": 0, "dropped": 0, "malformed": 0, "last_malformed": None, "kafka": False}
+state = {"last_ts": 0.0, "count": 0, "dropped": 0, "last_dropped_at": None, "malformed": 0, "last_malformed": None, "kafka": False}
 delivery = Delivery()
 queue: asyncio.Queue = asyncio.Queue(maxsize=QUEUE_MAX)
 loop: asyncio.AbstractEventLoop | None = None
@@ -78,9 +78,11 @@ link = Link("connect-ingest", _on_message, on_connect=_on_connect, behind_bridge
 
 
 def _enqueue(item):
-    """Runs on the loop thread; drop (and count) instead of raising when Kafka falls behind."""
+    """Runs on the loop thread; drop (and count) instead of raising when Kafka falls behind. A drop is a lost plant value:
+    /healthz is not ok for ERROR_WINDOW_S after it (the same window as a record the broker refused — hydcommon.kafka)."""
     if queue.full():
         state["dropped"] += 1
+        state["last_dropped_at"] = time.time()
         return
     queue.put_nowait(item)
 
@@ -111,14 +113,22 @@ async def age_updater():
         await asyncio.sleep(1)
 
 
+def dropped_recently(now: float | None = None) -> bool:
+    """A plant value was dropped (queue full — Kafka behind) within the last ERROR_WINDOW_S seconds."""
+    at = state["last_dropped_at"]
+    return at is not None and (time.time() if now is None else now) - at < ERROR_WINDOW_S
+
+
 def health() -> dict:
     """/healthz body. `ok` (-> 200/503 in hydcommon.service) holds only while the MQTT link is up without a recent handler
-    failure, the plant-side bridge reports both legs up, the Kafka producer runs, the broker accepted the recent records and the pump task is alive — the agent's
-    data-trust check (mcp_prom.freshness) and the compose healthcheck both read this, so a broken leg must not look healthy."""
-    return {"ok": link.healthy() and state["kafka"] and delivery.healthy() and not state.get("pump_dead", False),
+    failure, the plant-side bridge reports both legs up, the Kafka producer runs, the broker accepted the recent records, no plant
+    value was dropped recently (queue full) and the pump task is alive — the agent's data-trust check (mcp_prom.freshness) and the
+    compose healthcheck both read this, so a broken leg or lost values must not look healthy."""
+    lost = dropped_recently()
+    return {"ok": link.healthy() and state["kafka"] and delivery.healthy() and not lost and not state.get("pump_dead", False),
             **link.health(), **delivery.health(), "kafka": state["kafka"],
             "pump_dead": state.get("pump_dead", False), "pump_error": state.get("pump_error"), "replicated": state["count"],
-            "dropped": state["dropped"], "malformed": state["malformed"], "last_malformed": state["last_malformed"],
+            "dropped": state["dropped"], "dropped_recently": lost, "malformed": state["malformed"], "last_malformed": state["last_malformed"],
             "queue": queue.qsize(), "last_event_age_s": round(time.time() - state["last_ts"], 1) if state["last_ts"] else None}
 
 

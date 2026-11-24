@@ -53,11 +53,13 @@ def failure_mode_rule_id(failure_mode):
 
 
 def ensure_candidate_rule(tx, failure_mode):
-    """이 고장 유형만으로 고르는 후보 규칙이 없으면 하나 만든다(있으면 그대로). 조치 방법 화면에서 고장 유형에 연결한 조치 방법은 이 규칙의
-    결과로 판단 후보가 된다 — 「이 고장 유형에 쓸 수 있는 조치 방법은 무엇인가」(dec:action-candidates 의 물음) 그대로다. 수업 지식의 후보 규칙은
-    문서가 경보 · 원인 조건으로 진술한 것뿐이라, 이 규칙이 없으면 화면에서 만든 조치 방법은 저장만 되고 어느 판단에도 나오지 않았다.
+    """조치 방법 화면이 관리하는 이 고장 유형의 후보 규칙(rule:cand-<고장 유형>)이 없으면 하나 만든다(있으면 그대로). 조치 방법 화면에서 고장 유형에
+    연결한 조치 방법은 이 규칙의 결과로 판단 후보가 된다 — 「이 고장 유형에 쓸 수 있는 조치 방법은 무엇인가」(dec:action-candidates 의 물음) 그대로다.
+    수업 지식의 후보 규칙은 문서가 경보 · 원인 조건으로 진술한 것뿐이라, 이 규칙이 없으면 화면에서 만든 조치 방법은 저장만 되고 어느 판단에도 나오지
+    않았다. 문서가 고장 유형만으로 고르는 후보 규칙을 적재했어도 화면 몫의 규칙을 따로 둔다 — 문서의 규칙에 화면 조치 방법을 이으면 그 관계가 문서
+    그래프의 것으로 세어져 그 문서의 개정 · 되돌리기를 묶었다(탐사 C4 · 2026-11-13 03-19).
     모양은 시드 · 문서 적재의 규칙과 같다: 결정표의 한 행, when 은 TESTS 를 그대로 적은 글(시드 검사 seed_checks 가 대조한다)."""
-    if candidate_rules(tx, failure_mode):
+    if tx.run('MATCH (r:Rule {id:$id}) RETURN r.id AS id', id=failure_mode_rule_id(failure_mode)).single():
         return
     made = tx.run(
         "MATCH (t:DecisionTable {id:'dt:action-candidates'}), (i:InputData {id:'in:failure-mode'}), (f:FailureMode {id:$fm}) "
@@ -71,16 +73,37 @@ def ensure_candidate_rule(tx, failure_mode):
 
 
 def link_candidate_rules(tx, sid, failure_mode):
-    """A075 (meeting L253~302, L301): a skill matched to a failure mode joins that failure mode's candidate rules (OUTPUTS),
-    so the DMN judgment (dec:action-candidates → compliance → rank) can offer it. Idempotent; returns the rule ids."""
-    rules = candidate_rules(tx, failure_mode)
-    for rule in rules:
-        tx.run('MATCH (r:Rule {id:$rule}),(k:Skill {id:$id}) MERGE (r)-[:OUTPUTS]->(k)', rule=rule, id=sid).consume()
-    return rules
+    """A075 (meeting L253~302, L301): a skill matched to a failure mode joins that failure mode's candidate rule (OUTPUTS),
+    so the DMN judgment (dec:action-candidates → compliance → rank) can offer it. 화면에서 만든 조치 방법은 화면 몫의 규칙(rule:cand-<고장 유형> —
+    ensure_candidate_rule) 하나에만 잇는다: 문서가 적재한 규칙에 잇지 않는다(그 문서를 묶었다 — 탐사 C4). Idempotent; returns the rule ids."""
+    rule = failure_mode_rule_id(failure_mode)
+    if len(tx.run('MATCH (r:Rule {id:$rule}),(k:Skill {id:$id}) MERGE (r)-[:OUTPUTS]->(k) RETURN r.id AS id', rule=rule, id=sid).data()) != 1:
+        raise ValueError(f'이 고장 유형의 후보 규칙({rule})이 없어 조치 방법을 판단 후보에 잇지 못했습니다 — 저장하지 않았습니다')
+    return [rule]
 
 
 def _relation_refused(rel):
+    if not rel:
+        # 사람이 고르지 않은 관계를 「근본 조치」로 채우지 않는다(전수검사 02-4 · 탐사 C15 와 같은 갈래)
+        return "고장 유형과의 관계를 고르세요 — 근본 조치 · 완화 조치 · 예방 조치 가운데 원문 절차가 하는 일입니다"
     return f"고장 유형과 조치 방법의 관계 '{rel}'{particle(rel, '은')} 쓸 수 없습니다 — 근본 조치 · 완화 조치 · 예방 조치 가운데 고르세요"
+
+
+def _plant_failure_mode(tx, failure_mode, verb):
+    """화면 조치 방법을 이을 고장 유형의 판정 한 곳(만들기 · 다른 고장 유형으로 옮기기): 지금 지식에 하나 있고, 이 시스템이 운영하는 설비(설비에 딸린
+    구성 요소)의 고장이어야 한다. 이 화면이 만드는 것은 이 시스템의 정비 시스템(CMMS)이 정비 요청을 내는 조치 방법이다(문서 적재의 수행 시스템 판정
+    manual_knowledge.performers 와 같은 규칙) — 다른 설비(문서가 새 항목으로 넣은 학생 설비)의 고장에 이으면 그 설비의 정비를 이 시스템 CMMS 가 한다고
+    지식 지도에 적게 된다. 그 설비의 절차는 그 설비 문서의 검토로 넣고 실행은 흐름의 「승인 뒤 MCP 호출」이 한다. verb = '만들' · '옮길'."""
+    rows=tx.run('MATCH (f:FailureMode {id:$fm}) SET f.id=f.id '
+                'RETURN f.name AS name, EXISTS { (f)-[:OCCURS_IN]->(:Component)<-[:HAS_COMPONENT]-(:Asset) } AS plant',fm=failure_mode).data()
+    if len(rows)!=1:
+        raise ValueError('고른 고장 유형이 지금 지식에 없거나 중복되어 저장하지 않았습니다 — 화면을 다시 열어 고장 유형을 다시 고르세요'
+                         '(그 고장 유형을 넣은 문서가 그 사이 되돌려졌을 수 있습니다)')
+    if not rows[0]['plant']:
+        name=f"「{rows[0]['name']}」" if rows[0]['name'] else failure_mode
+        raise ValueError(f"고장 유형 {name}{particle(name, '은')} 이 시스템이 운영하는 설비의 고장이 아니라 이 화면에서 조치 방법을 {verb} 수 없습니다 — 이 화면은 "
+                         '이 시스템의 정비 시스템이 정비 요청을 내는 조치 방법만 다룹니다. 그 설비의 절차는 그 설비 문서를 「지식 › 문서 등록」에서 검토해 넣고, '
+                         '실행은 그 설비 시스템을 연결한 흐름의 「승인 뒤 MCP 호출」로 하세요')
 
 
 def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by):
@@ -129,13 +152,14 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
                 raise ValueError('설비 명령 조치 방법은 이 화면에서 만들 수 없습니다 — 어떤 명령을 어떤 값으로 낼지(팬 속도 · 부하 등)는 원문 절차에서 '
                                  '정하므로 [문서 등록]으로 넣으세요. 이 화면에서는 정비 요청 조치 방법을 만듭니다')
             performer='sys:cmms'
-            for label,nid in [('FailureMode',values['failureMode']),('System',performer)]:
-                target=tx.run(f'MATCH (n:{label} {{id:$id}}) SET n.id=n.id RETURN n.id AS id',id=nid).data()
-                if len(target)!=1:raise ValueError(f'{label} 대상이 없거나 중복되어 생성하지 않았습니다')
+            if len(tx.run('MATCH (n:System {id:$id}) SET n.id=n.id RETURN n.id AS id',id=performer).data())!=1:
+                raise ValueError('정비 요청을 내는 정비 시스템(CMMS)이 지식에 없거나 중복되어 조치 방법을 만들지 않았습니다 — 시작 파일을 다시 실행해 기본 지식을 넣은 뒤 다시 하세요')
+            _plant_failure_mode(tx,values['failureMode'],'만들')
             step_ids=[sid+'/step/'+str(i) for i in range(1,len(values['steps'])+1)]
             if tx.run('MATCH (n:Step) WHERE n.id IN $ids RETURN n.id AS id LIMIT 1',ids=step_ids).single():
                 raise Conflict('기존 단계 ID와 충돌합니다. 다른 지식의 단계를 교체하지 않았습니다')
             tx.run('CREATE (k:Skill {id:$id,sopId:$sop,kind:$kind})',id=sid,sop=values['sopId'],kind=values['kind']).consume()
+            manual_graph.reattach_history(tx,'Skill',sid)      # 같은 id 의 조치 방법을 지웠다 다시 만들면 그것을 고른 판단 기록이 다시 이어진다
             for i,text in enumerate(values['steps'],1):
                 tx.run('MATCH (k:Skill {id:$id}) CREATE (s:Step {id:$sid,order:$order,text:$text}) CREATE (k)-[:HAS_STEP]->(s)',id=sid,sid=step_ids[i-1],order=i,text=text).consume()
             rel=values['relation']
@@ -147,15 +171,15 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
                           id=sid,sop=values['sopId']).data())!=1:
                 raise ValueError('정비 요청 동작(WO_CREATE)이 지식에 없거나 중복되어 생성하지 않았습니다')
         elif values.get('failureMode'):
-            rel=values.get('relation') or 'REMEDIED_BY'
+            # 관계는 검사(kgadmin.validate_skill)가 정한 값 하나 — 여기서 또 「근본 조치」로 채우지 않는다(전수검사 02-4: 기본값 사본이 둘이었다)
+            rel=values.get('relation')
             if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError(_relation_refused(rel))
-            target=tx.run('MATCH (n:FailureMode {id:$id}) SET n.id=n.id RETURN n.id AS id',id=values['failureMode']).data()
-            if len(target)!=1:raise ValueError('FailureMode 대상이 없거나 중복되어 변경하지 않았습니다')
+            _plant_failure_mode(tx,values['failureMode'],'옮길')      # 만드는 길과 같은 판정 — 다시 잇는 길로 다른 설비의 고장에 붙일 수 없다
             tx.run('MATCH (:FailureMode)-[old:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k:Skill {id:$id}) DELETE old',id=sid).consume()
             tx.run('MATCH (r:Rule)-[old:OUTPUTS]->(k:Skill {id:$id}) WHERE r.id STARTS WITH "rule:cand-" DELETE old',id=sid).consume()
             tx.run(f'MATCH (f:FailureMode {{id:$fm}}),(k:Skill {{id:$id}}) CREATE (f)-[:{rel}]->(k)',fm=values['failureMode'],id=sid).consume()
         # 예방 조치(PREVENTED_BY, 정기 정비) 스킬은 경보 대응 후보 규칙에 합류시키지 않는다 — 정기 정비 도래 후보는 문서의 규칙이 정한다
-        if values.get('failureMode') and (values.get('relation') or 'REMEDIED_BY') in kgadmin.CORRECTIVE_RELATIONS:
+        if values.get('failureMode') and values.get('relation') in kgadmin.CORRECTIVE_RELATIONS:
             ensure_candidate_rule(tx,values['failureMode'])
             link_candidate_rules(tx,sid,values['failureMode'])
         tx.run('MATCH (k:Skill {id:$id}) SET k.name=$name,k.description=$description',id=sid,name=values['name'],description=values['description']).consume()
@@ -200,7 +224,8 @@ def remove(session, sid, *, by, request_id=None):
       * 문서에서 적재한 조치 방법은 지우지 않는다 — 그 문서의 묶음 되돌리기가 지운다(소유 · 되돌리기 기록이 묶음에 있다).
       * 문서의 규칙이 결과 · 적용 대상으로 가리키거나 다른 문서의 단계가 인용하는 조치 방법도 지우지 않는다 — 지우면 그 문서의 적재 기록과
         그래프가 어긋나 그 문서를 되돌릴 수 없게 된다. 그 문서를 먼저 되돌리라고 말한다.
-      * 이 조치 방법을 고른 판단 기록(DecisionCase)은 남는다. 그 기록에서 이 조치 방법으로 가는 연결만 없어지고, 몇 건인지 돌려준다.
+      * 이 조치 방법을 고른 판단 기록(DecisionCase)은 남는다. 그 기록에서 이 조치 방법으로 가는 연결만 없어지고(기록은 고른 조치 방법의 id 를
+        제 속성 chosenSkill 로 남긴다 — manual_graph.detach_history), 몇 건인지 돌려준다. 같은 id 로 다시 만들면 연결이 다시 선다.
       * 이 조치 방법만 내던 화면 후보 규칙(rule:cand-<고장 유형>)은 함께 지운다(결과 없는 규칙을 남기지 않는다).
     돌려줌 = {id, sopId, name, deleted: True, decision_cases, removed_rules}. 없으면 KeyError."""
     if not isinstance(by, str) or not by.strip():
@@ -230,6 +255,7 @@ def remove(session, sid, *, by, request_id=None):
             raise Conflict(f"{josa(what, '이')} 이 조치 방법을 가리킵니다 — 그 문서를 「지식 › 문서 등록」의 등록 이력에서 먼저 되돌린 뒤 지우세요")
         tx.run('MATCH (k:Skill {id:$id}) OPTIONAL MATCH (k)-[:HAS_STEP]->(st:Step) DETACH DELETE st', id=sid).consume()
         rules = [r['id'] for r in tx.run("MATCH (r:Rule)-[:OUTPUTS]->(:Skill {id:$id}) WHERE r.id STARTS WITH 'rule:cand-' RETURN r.id AS id", id=sid).data()]
+        manual_graph.detach_history(tx, 'Skill', sid)       # 판단 기록은 고른 조치 방법의 id 를 제 속성으로 남긴다(문서 되돌리기와 같은 규칙)
         tx.run('MATCH (k:Skill {id:$id}) DETACH DELETE k', id=sid).consume()
         removed = [r['id'] for r in tx.run('MATCH (r:Rule) WHERE r.id IN $ids AND NOT (r)-[:OUTPUTS]->() WITH r, r.id AS id DETACH DELETE r RETURN id', ids=rules).data()]
         result = {'id': sid, 'sopId': found['sopId'], 'name': found['name'], 'deleted': True, 'decision_cases': found['cases'],

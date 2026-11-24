@@ -75,6 +75,7 @@ class Incident:
     recovery_policy: dict | None = None
     superseded: list[dict] = field(default_factory=list)   # commands/work orders of generations retired by rework (A072)
     reobs_series: dict | None = None    # A161-G3: the recovery tag's sampled values during the re-observation window (reobs_series.py)
+    outside_at_open: dict | None = None  # 사건이 열릴 때 그 설비의 바깥 변화 기록(plant.status outside) — outside_change 가 이것과 견준다
 
     @property
     def pattern(self) -> str | None:
@@ -89,6 +90,13 @@ class Incident:
             return None
         criterion = policy.get('criterion')
         return tuple(criterion) if criterion else None
+
+    @property
+    def supported(self) -> bool:
+        """이 사건을 연 흐름이 이 경보 종류를 받는가(경보 정책의 response 길). 시계열 회복 기준(recovery)은 선택이다 — 없으면 회복은 원천의
+        해제뿐이고(alert_policy 머리말), 그래도 받는 경보다. 받지 않는 경보(triage)의 사건은 처음부터 현장 검토다."""
+        policy = self.recovery_policy or {}
+        return policy.get('pattern') == self.pattern and policy.get('route') == 'response'
 
     @classmethod
     def from_card(cls, incident_id: str, card: dict, recovery_policy: dict) -> "Incident":
@@ -132,7 +140,7 @@ def _audit(inc: Incident, fx: Effects, actor: str, event: str, detail: dict | No
 @_transition
 def on_card(inc: Incident) -> None:
     inc.history.append({"state": "GUIDE_RECEIVED", "t": now_iso(), "note": f"alert {inc.alert_id}"})
-    if inc.recovery is None:
+    if not inc.supported:
         inc.reason='UNSUPPORTED_ALERT_PATTERN'
         _go(inc,'ESCALATED',inc.reason)
     else:
@@ -188,6 +196,22 @@ def on_approve(inc: Incident, approved_by: str, option: dict, actions: list[dict
 
 
 @_transition
+def on_flow_approved(inc: Incident, approved_by: str, fx: Effects) -> bool:
+    """사람이 승인했고 승인한 안에 이 흐름이 낼 설비 명령이 없다(정비 요청만 · 발주 · 승인 뒤 MCP 호출 …) — 승인 대기를 끝내고 「승인 — 흐름이
+    실행 중」(APPROVED_EXECUTING)으로 간다. 그 뒤 끝은 흐름의 업무 효과(on_work_order · on_business_effect)나 결과 보고(on_result_report)가 정한다.
+    전에는 이런 사건이 닫힐 때까지 승인 대기로 남아, 승인 뒤 몇 분 동안 사건 목록 · 해제 응답이 승인 전이라고 말했고 승인 전에만 여는 문(판단 접수 ·
+    원인 진단 바꾸기)이 열려 있었다. 승인 대기가 아닌 사건(이미 이 상태 — 같은 승인 단계를 다시 처리 · 끝난 사건)은 그대로 둔다(False)."""
+    if inc.state != "AWAITING_APPROVAL":
+        return False
+    if not isinstance(approved_by, str) or not approved_by.strip():
+        raise ValueError(f"사건 {inc.id}: 승인한 사람 기록이 없는 승인은 적지 않습니다")
+    inc.approved_by = approved_by
+    _audit(inc, fx, "operator", "GUIDE_APPROVED", {"approvedBy": approved_by, "actions": []})
+    _go(inc, "APPROVED_EXECUTING", "사람 승인 — 설비 명령 없이 흐름이 실행")
+    return True
+
+
+@_transition
 def on_command_sent(inc: Incident, cmd_id: str, now: datetime, fx: Effects) -> None:
     """원장과 명령이 Kafka 에 실린 것을 확인한 뒤: ACK 를 기다린다. 마감은 사건에 적고(벽시계 ACK_TIMEOUT_S) 명령 단계 행이 저장한다."""
     if inc.state != "CMD_ISSUED" or inc.cmd_id != cmd_id:
@@ -210,7 +234,7 @@ def on_command_send_failed(inc: Incident, cmd_id: str, error: str, fx: Effects) 
 
 #: 재작업이 다시 열 수 있는 사건 상태 — 이 표 하나(재작업 효과 판정 effect_compensation 도 이것을 쓴다, P4-10). 끝난 사건(definition.TERMINAL)과
 #: 명령이 오가는 중(CMD_ISSUED · AWAITING_ACK)은 다시 열지 않는다 — 끝난 사건은 새 경보가 새 처리 건으로 다룬다.
-REOPENABLE = {"AWAITING_APPROVAL", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED"}
+REOPENABLE = {"AWAITING_APPROVAL", "APPROVED_EXECUTING", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED"}
 
 
 @_transition
@@ -240,11 +264,15 @@ def on_recheck_reopen(inc: Incident, request_id: str, by: str, reason: str, fx: 
     person's re-analysis after the maintenance — went back to a new judgment and approval. The closed work order moves to
     `superseded` (kept, never undone) and the Incident waits for the next approval. Only that closure may reopen: a case
     that issued a command, or ended any other way (escalated · rejected · cleared), is not reopened here. Idempotent per
-    request id (the re-entered work item)."""
+    request id (the re-entered work item).
+    설비 명령 없이 흐름이 실행 중인 사건(APPROVED_EXECUTING — 승인 뒤 MCP 호출 · 기다림 · 확인이 미달이라 흐름이 새 판단 · 승인으로 되돌아감)도 같다:
+    앞 승인은 `superseded` 로 옮기고 다음 승인을 기다린다(되돌아간 뒤에도 「승인 — 실행 중」으로 남으면 새 판단 접수 · 반려가 막힌다)."""
     if any(s.get("request_id") == request_id and s.get("kind") == "recheck" for s in inc.superseded):
         return False
-    if inc.state != "CLOSED" or inc.cmd_id or not inc.work_order or inc.recovery is None:
-        raise ValueError(f"재분석 뒤 다시 판단은 설비 명령 없이 작업지시로 닫힌 사건만 엽니다 (지금 {inc.state}, 명령 {inc.cmd_id or '없음'})")
+    closed_by_work_order = inc.state == "CLOSED" and not inc.cmd_id and bool(inc.work_order)
+    if not (closed_by_work_order or inc.state == "APPROVED_EXECUTING") or not inc.supported:
+        raise ValueError(f"재분석 뒤 다시 판단은 설비 명령 없이 작업지시로 닫혔거나 승인 뒤 흐름이 실행 중인 사건만 엽니다 "
+                         f"(지금 {d.state_label(inc.state)}, 명령 {inc.cmd_id or '없음'})")
     inc.superseded.append({"request_id": request_id, "kind": "recheck", "state_before": inc.state, "cmdId": None, "actions": inc.actions,
                            "ack": None, "approvedBy": inc.approved_by, "workOrder": inc.work_order,
                            "workOrderRequest": inc.work_order_request, "reason_before": inc.reason, "closed_before": inc.closed,
@@ -275,7 +303,18 @@ def on_status(inc: Incident, status: dict, now: datetime, fx: Effects) -> None:
     result = status.get("result")
     if result not in ("DONE", "REJECTED"):
         return
-    inc.ack = {"result": result, "reason": status.get("reason"), "interlock": status.get("interlock"), "t": status.get("t")}
+    said = None
+    if result == "REJECTED":
+        # 사유 코드(MODE_MISMATCH …)는 감사 · ack 에 두고, 사람이 읽는 사유는 PLC 가 상태에 함께 싣는 문장(plc.status_payload reason_text —
+        # 「운전 모드 확인 필요」)이다. 전에는 코드가 결과 보고 문장에 그대로 실렸다(「…(사유 MODE_MISMATCH)」 — 2026-11-22 F4)
+        # 문장 없이 온 거절도 거절이다 — 실패로 던지면 사건이 응답 대기로 남아 뒤에 「설비 응답이 오지 않음」(ACK 시간 초과)이라는 틀린 까닭으로
+        # 닫힌다(설비는 응답했다). 문장이 없다는 사실과 사유 코드를 그대로 적는다(가상 설비는 늘 문장을 싣는다 — plc.TEXT)
+        said = status.get("reason_text")
+        if not isinstance(said, str) or not said.strip() or said.strip() == "–":
+            said = f"설비가 거절 사유 문장을 보내지 않음 — 사유 코드 {status.get('reason') or '없음'}"
+        said = said.strip()
+    inc.ack = {"result": result, "reason": status.get("reason"), "interlock": status.get("interlock"), "t": status.get("t"),
+               **({"reason_text": said} if said else {})}
     if result == "DONE":
         _audit(inc, fx, "plc", "ACK_DONE", {"cmdId": inc.cmd_id})
         _go(inc, "ACKED")
@@ -283,9 +322,9 @@ def on_status(inc: Incident, status: dict, now: datetime, fx: Effects) -> None:
         _go(inc, "RE_OBSERVING", f"효과 확인 시작 — 설비 시간 {d.REOBSERVE_SIM_S // 60}분 동안 지켜본다",
             reobservation={"tag": tag, "op": op, "limit": limit, "sim_s": d.REOBSERVE_SIM_S})
     else:
-        inc.reason = f"PLC REJECTED: {status.get('reason')}"
-        _audit(inc, fx, "plc", "ACK_REJECTED", {"cmdId": inc.cmd_id, "reason": status.get("reason")})
-        _go(inc, "ESCALATED", f"PLC 가 명령을 거절함 — {status.get('reason')}")
+        inc.reason = f"PLC REJECTED: {inc.ack['reason_text']}"
+        _audit(inc, fx, "plc", "ACK_REJECTED", {"cmdId": inc.cmd_id, "reason": status.get("reason"), "reason_text": inc.ack["reason_text"]})
+        _go(inc, "ESCALATED", f"PLC 가 명령을 거절함 — {inc.ack['reason_text']}")
 
 
 @_transition
@@ -307,29 +346,67 @@ def on_gateway_rejected(inc: Incident, cmd_id: str, check: str, text: str, fx: E
 def active_trip(asset: str, incidents, since: str | None = None) -> str | None:
     """그 설비가 보호 정지 중이거나, since(이 사건이 열린 시각) 뒤에 보호 정지가 있었으면 그 사유. 보호 정지는 감지기가 따로 경보(근거
     {"trip": 사유})를 올리고 PLC 가 TRIP 을 벗어날 때 같은 경보를 해제한다(detector cep.trip_alert). 사람이 보호 정지를 먼저 풀고 냉각 경보가
-    나중에 풀려도 그 사이 설비가 멈춰 식은 값이다 — 회복이 아니다(독립 검증 2026-11-02)."""
+    나중에 풀려도 그 사이 설비가 멈춰 식은 값이다 — 회복이 아니다(독립 검증 2026-11-02). 돌려주는 사유는 그 보호 정지 경보의 이름(감지기가
+    지식 지도의 패턴 이름을 싣는다 — 「과열 인터록 트립」)이고, 이름이 없는 경보(지식 지도에 없는 보호 정지 사유)만 PLC 의 사유 코드다 — 그 밖에
+    아는 말이 없다. 전에는 늘 코드(OVERTEMP)가 결과 보고 문장에 실렸다."""
     for other in incidents:
-        evidence = ((other.card or {}).get("alert") or {}).get("evidence") or {}
+        alert = (other.card or {}).get("alert") or {}
+        evidence = alert.get("evidence") or {}
         if other.asset == asset and evidence.get("trip") and (not other.cleared or (since is not None and other.created >= since)):
-            return str(evidence["trip"])
+            return str(alert.get("name") or evidence["trip"])
     return None
 
 
+def outside_change(before: dict | None, now: dict | None) -> dict | None:
+    """설비의 바깥 변화 기록(plant.status outside — 가상 설비가 싣는다: boot · seq · what · by · at) 둘을 견준다. before(사건이 열릴 때 ·
+    효과 확인 창이 시작될 때) 뒤에 승인한 길(명령 관문을 지난 명령 · 승인 뒤 정비 복구) 밖에서 설비가 바뀌었으면 지금 기록, 아니면 None.
+    한쪽이라도 기록이 없으면(그 기록을 싣지 않는 원천 — 실설비 등, 또는 사건이 열릴 때 설비 상태를 아직 받지 못함) 견줄 것이 없어 None 이다 —
+    그런 설비의 수동 조작은 PLC 가 운전 모드(원격 수동 · 현장 제어)와 마지막 명령 출처로 알린다."""
+    if not isinstance(before, dict) or not isinstance(now, dict):
+        return None
+    if (now.get("boot"), now.get("seq")) == (before.get("boot"), before.get("seq")):
+        return None
+    return dict(now)
+
+
+def outside_words(change: dict) -> str:
+    """바깥 변화 기록 → 사유 문장에 싣는 말(가상 설비의 what · 누가 · 언제)."""
+    what = str(change.get("what") or change.get("kind") or "기록 없음")
+    who = f" · {change['by']}" if change.get("by") else ""
+    return f"{what}{who}" + (f" · {change['at']}" if change.get("at") else "")
+
+
 @_transition
-def on_alert(inc: Incident, alert: dict, fx: Effects, trip: str | None = None) -> None:
+def on_alert(inc: Incident, alert: dict, fx: Effects, trip: str | None = None, outside: dict | None = None,
+             outside_unknown: str | None = None) -> None:
     """경보 해제. trip = 같은 설비가 지금 보호 정지 중이면 그 사유(풀리지 않은 보호 정지 경보의 근거 — main._apply_source_event).
-    보호 정지 중의 해제는 회복이 아니다(설비가 멈춰 값이 내려갔다) — 「조치 전 자연 회복」으로 끝내지 않고 책임자 확인으로."""
+    보호 정지 중의 해제는 회복이 아니다(설비가 멈춰 값이 내려갔다) — 「조치 전 자연 회복」으로 끝내지 않고 책임자 확인으로.
+    outside = 사건이 열린 뒤 설비가 승인한 길 밖에서 바뀐 기록(outside_change — [설비 초기화] · [쿨러 복구] · 현장 패널 · 가상 설비 재시작).
+    그 뒤의 해제는 자연 회복이 아니다(바깥에서 설비를 되돌렸다) — 책임자 확인으로.
+    outside_unknown = 해제가 난 때까지 바뀌었는지 모르는 까닭(받은 바깥 변화 기록이 끊겼다 — main.outside_at_clear). 모르면 자연 회복이라고
+    단정하지 않는다 — 그 까닭으로 책임자 확인으로.
+    「조치 전」은 승인 대기(AWAITING_APPROVAL)뿐이다. 사람이 승인한 뒤의 사건(APPROVED_EXECUTING · 명령이 오가는 상태)은 해제만 적고, 끝은 흐름의
+    업무 효과 · 결과 보고 · 효과 확인이 정한다."""
     if alert.get("alertId") != inc.alert_id or alert.get("state") != "CLEAR":
         return
     inc.cleared = True
-    _audit(inc, fx, "detector", "ALERT_CLEARED", {"alertId": inc.alert_id, **({"trip": trip} if trip else {})})
+    _audit(inc, fx, "detector", "ALERT_CLEARED",
+           {"alertId": inc.alert_id, **({"trip": trip} if trip else {}), **({"outside": outside} if outside else {}),
+            **({"outside_unknown": outside_unknown} if outside_unknown else {}),
+            **({"after_approval": True} if inc.state == "APPROVED_EXECUTING" else {})})
     if inc.state == "AWAITING_APPROVAL":
-        if inc.recovery is None:
+        if not inc.supported:
             inc.reason='UNSUPPORTED_ALERT_PATTERN'
             _go(inc,'ESCALATED',inc.reason)
         elif trip:
             inc.reason = f"{d.TRIPPED_BEFORE_ACTION}: {trip}"
             _go(inc, "ESCALATED", f"조치 전에 경보가 풀렸지만 설비가 보호 정지 중({trip})")
+        elif outside:
+            inc.reason = f"{d.OUTSIDE_CHANGE}: {outside_words(outside)}"
+            _go(inc, "ESCALATED", f"조치 전에 경보가 풀렸지만 그 전에 설비가 승인한 조치 밖에서 바뀜({outside_words(outside)})"[:300])
+        elif outside_unknown:
+            inc.reason = f"{d.OUTSIDE_UNKNOWN}: {outside_unknown}"
+            _go(inc, "ESCALATED", f"조치 전에 경보가 풀렸지만 그 전에 설비가 승인한 조치 밖에서 바뀌었는지 모름({outside_unknown})"[:300])
         else:
             _go(inc, "RESOLVED_WITHOUT_ACTION", "조치 전에 경보가 풀림")
 
@@ -385,6 +462,11 @@ def on_reobservation(inc: Incident, cmd_id: str, passed: bool, reading: dict, ex
     if not criterion:
         inc.reason = "UNSUPPORTED_RECOVERY_CRITERION"
         _go(inc, "ESCALATED", inc.reason, reobservation=fields)
+    elif reading.get("outside"):
+        # 효과 확인 창 동안(또는 사건이 열린 뒤) 설비가 승인한 조치 밖에서 바뀌었다 — 창의 값은 조치의 효과가 아니다(service_parts._reobserve)
+        inc.reason = f"{d.OUTSIDE_CHANGE}: {outside_words(reading['outside'])}"
+        _go(inc, "ESCALATED", f"효과를 잴 수 없음 — 설비가 승인한 조치 밖에서 바뀜({outside_words(reading['outside'])})"[:300],
+            reobservation=fields)
     elif not passed:
         inc.reason = "MITIGATION_FAILED"
         _go(inc, "ESCALATED", f"회복 미달 — {tag} {value if value is not None else '값 없음'} (기준 {criterion}, "
@@ -392,6 +474,19 @@ def on_reobservation(inc: Incident, cmd_id: str, passed: bool, reading: dict, ex
     else:
         # Recovery is an observation. The CMMS service supplies an actual receipt before this Incident can claim a work order and close.
         _go(inc, "RESOLVED", f"회복 — {tag} {value} (기준 {criterion})", reobservation=fields)
+    return True
+
+
+@_transition
+def on_outside_after_work_order(inc: Incident, change: dict, fx: Effects) -> bool:
+    """설비 명령 없이 작업지시로 닫힌 사건(on_work_order — 정비형 흐름)의 정비 뒤 효과 확인 창에서, 사건이 열린 뒤 설비가 승인한 조치 밖에서
+    바뀐 것을 봤다(service_parts._reobserve). 창의 값은 정비의 효과가 아니다 — 회복 확인 없이 종결로 남기지 않고 그 까닭으로 책임자 확인으로
+    바꾼다(결과 보고의 미달 보고가 같은 사건을 다시 닫지 않는다 — 이미 끝난 상태). 그런 사건이 아니면 그대로(False)."""
+    if inc.state != "CLOSED" or inc.cmd_id or not inc.work_order:
+        return False
+    inc.reason = f"{d.OUTSIDE_CHANGE}: {outside_words(change)}"
+    _audit(inc, fx, "process", "INCIDENT_ESCALATED", {"outside": change, "after": "work_order"})
+    _go(inc, "ESCALATED", f"정비 뒤 효과를 잴 수 없음 — 설비가 승인한 조치 밖에서 바뀜({outside_words(change)})"[:300])
     return True
 
 
@@ -412,7 +507,7 @@ def on_work_order(inc: Incident, receipt: dict, fx: Effects, *, work_order_only:
             raise ValueError('conflicting CMMS receipt for the same Incident')
         if inc.state == 'CLOSED':
             return
-    if inc.state != 'RESOLVED' and not (work_order_only and inc.state == 'AWAITING_APPROVAL'):
+    if inc.state != 'RESOLVED' and not (work_order_only and inc.state == 'APPROVED_EXECUTING'):
         raise ValueError(f'cannot record work order in state {inc.state}')
     inc.work_order = dict(receipt, id=ref, t=now_iso())
     _audit(inc, fx, 'process', 'WORK_ORDER_CREATED', inc.work_order)
@@ -425,15 +520,16 @@ def on_work_order(inc: Incident, receipt: dict, fx: Effects, *, work_order_only:
 
 @_transition
 def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
-    """C2: 설비 명령 · 작업지시 없이 업무 효과로 끝나는 처리 건(예비품 구매: 발주 → 입고 확인)의 사건 종결. 승인 대기(AWAITING_APPROVAL)에서
-    효과 확인 영수증으로 닫는다. 이미 끝난 사건은 그대로 둔다(False). 명령이 나간 사건은 재관측 · 작업지시로 닫히므로 거절한다."""
+    """C2: 설비 명령 · 작업지시 없이 업무 효과로 끝나는 처리 건(예비품 구매: 발주 → 입고 확인)의 사건 종결. 사람 승인 뒤 흐름이 실행 중인
+    사건(APPROVED_EXECUTING)을 효과 확인 영수증으로 닫는다 — 승인 없는 사건(승인 대기)은 닫지 않는다. 이미 끝난 사건은 그대로 둔다(False).
+    명령이 나간 사건은 재관측 · 작업지시로 닫히므로 거절한다."""
     ref = receipt.get('ref')
     if receipt.get('ok') is not True or not isinstance(ref, str) or not ref.strip():
         raise ValueError('업무 효과 종결에는 실제 영수증 번호가 필요합니다')
     if inc.state in d.TERMINAL:
         return False
-    if inc.state != 'AWAITING_APPROVAL' or inc.cmd_id:
-        raise ValueError(f'업무 효과로 닫을 수 없는 사건 상태입니다: {inc.state}')
+    if inc.state != 'APPROVED_EXECUTING' or inc.cmd_id:
+        raise ValueError(f'업무 효과로 닫을 수 없는 사건 상태입니다: {d.state_label(inc.state)}')
     _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'businessEffect': dict(receipt), 'cmdId': None})
     _go(inc, 'CLOSED', f"업무 처리로 종결 — {receipt.get('kind') or '영수증'} {ref}")
     return True
@@ -442,7 +538,8 @@ def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
 @_transition
 def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bool:
     """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김),
-    반려(rejected, 캡스톤 G1 사람 승인의 반려 가지)는 on_reject 와 같은 REJECTED_BY_OPERATOR(명령 전 승인 대기 사건만).
+    반려(rejected, 캡스톤 G1 사람 승인의 반려 가지)는 on_reject 와 같은 REJECTED_BY_OPERATOR(승인 대기 사건만 — 승인 뒤 흐름이 실행 중인 사건은
+    이미 승인한 것이라 반려로 닫지 않는다).
     이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정)은 그대로 둔다(False)."""
     if level not in ('ok', 'fail', 'rejected'):
         raise ValueError('결과 보고 등급은 ok · fail · rejected 입니다')
@@ -457,7 +554,7 @@ def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bo
         return False
     if level == 'rejected':
         if inc.state != 'AWAITING_APPROVAL':
-            raise ValueError(f'반려 결과 보고는 승인 대기 중인 사건만 닫습니다 (사건 {inc.id} 상태 {inc.state})')
+            raise ValueError(f'반려 결과 보고는 승인 대기 중인 사건만 닫습니다 (사건 {inc.id} 지금: {d.state_label(inc.state)})')
         inc.reason = summary
         _audit(inc, fx, 'process', 'GUIDE_REJECTED', {'resultReport': summary, 'level': level})
         _go(inc, 'REJECTED_BY_OPERATOR', f"결과 보고: {summary}"[:300])

@@ -16,10 +16,8 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from hydcommon.words import josa
-from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.metrics import Registry
-from hydcommon.skill_scope import PURCHASE_PATTERN
+from hydcommon.pg import answer_unreachable
 from hydcommon.service import make_app
 from . import card as cardlib, decide as decidelib, guardrail, whatif
 from .runs import Run
@@ -46,6 +44,11 @@ def pipeline(run) -> None:
         if policy.get('route')!='response':
             run.finish('WITHHELD','이 경보는 명시된 사람 검토 경로에서 확인합니다')
             return
+        if alert.get("pattern") in cardlib.BUSINESS_PATTERNS:
+            # 업무 표 감시가 낸 경보(정기 정비 도래 · 재고 기준 이탈)는 센서 원인 진단 대상이 아니다 — 진단 길로 돌리면 늘 빈 원인 후보로 보류되고
+            # 까닭이 「원인 지식이 없어 매뉴얼을 적재하라」로 나왔다(매뉴얼을 넣어도 풀리지 않는다, 탐사 N9). 규칙 판단 길과 같은 문장 한 곳
+            run.finish('WITHHELD', cardlib.no_cause_message(kg, alert["pattern"]))
+            return
         # 1. data trust (mcp-prom)
         fresh = mcp_prom.freshness(tsdb, asset)
         run.step("freshness", fresh, note="mcp-prom: 데이터 신선도·수집 상태")
@@ -64,7 +67,7 @@ def pipeline(run) -> None:
         evidence = [e for r in t1 for e in (r.get("evidence") or []) if e["id"] not in human]
         results = {**tsdb.evaluate(evidence, asset), **human}
         run.step("evidence", results, note="mcp-tsdb: Evidence SQL 템플릿 실행 (tag_1s)")
-        causes = cardlib.rank_causes(t1, results)
+        causes = cardlib.rank_causes(t1, results, *decidelib.diagnosis_rules(kg, tsdb, asset, alert.get("pattern", ""), t1))
         assessment = cardlib.evidence_status(causes)
         if assessment['withheld']:
             run.card = cardlib.build_card(None, alert, causes, {}, fresh)
@@ -72,7 +75,7 @@ def pipeline(run) -> None:
             run.finish('WITHHELD', assessment['reason'])
             return
         run.step("rank", [{"id": c["id"], "name": c["name"], "score": c["score"], "prior": c["prior"]} for c in causes],
-                 note="원인 점수 = 사전확률 × 통과 증거 가중치 비율")
+                 note="원인 점수 = 사전확률 × 통과 증거 가중치 비율, 문서의 진단 규칙(dec:diagnose-cause)이 고른 원인이 1순위")
         # 4. T2: the failure mode's SOP skills for the top cause (mcp-kg)
         t2 = {causes[0]["id"]: kg.t2_skills(causes[0]["id"])} if causes else {}
         run.step("t2_skills", [{"sop": r.get("sopId"), "skill": r.get("name"), "relation": r.get("relation"), "kind": r.get("kind"),
@@ -116,6 +119,7 @@ def health() -> dict:
 
 
 app = make_app("agent (L8: ontology-grounded guide cards, read-only tools)", reg, health)
+answer_unreachable(app)      # 시계열 DB · 업무 DB 연결을 다시 맺어 봐도 닿지 않은 요청은 raw 500 이 아니라 503 과 읽을 문장
 
 
 class EvaluationReq(BaseModel):
@@ -207,40 +211,29 @@ def ontology_patterns():
     rows = k.patterns()
     for row in rows:
         row["judgeable"] = bool(k.t1_causes(row["code"]))
-        row["reason"] = None if row["judgeable"] else _no_cause_message(k, row["code"])
+        row["reason"] = None if row["judgeable"] else cardlib.no_cause_message(k, row["code"])
     return rows
-
-
-#: 설비 센서가 아니라 업무 표 감시가 내는 경보(it/neo4j/v2/scenario_structure.cypher — detectionMode · Symptom 없음). 원인 진단 대상이 아니다
-BUSINESS_PATTERNS = frozenset({PM_PATTERN, PURCHASE_PATTERN})
-
-
-def _no_cause_message(k, pattern: str) -> str:
-    """원인 후보가 없을 때 학생이 읽는 문장(2026-10-25 수업 한 바퀴: 「no cause candidates for pattern …」가 판단 규칙 · 손익 화면에 그대로 보였다).
-    고장 유형이 없는 패턴(정기 정비 도래 · 재고 기준 이탈)은 원인 진단 대상이 아니라 업무 흐름의 에이전트가 판단한다."""
-    meta = next((p for p in k.patterns() if p.get("code") == pattern), {})
-    name = meta.get("name") or pattern
-    if pattern in BUSINESS_PATTERNS:
-        quoted = f"'{name}'"
-        return f"{josa(quoted, '은')} 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름(정기 정비 · 예비품 구매)의 에이전트가 판단합니다. 쿨러 성능 저하 같은 설비 이상 패턴을 고르세요"
-    return f"'{name}'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 실행하세요"
 
 
 def _manual_decide(k, req: DecideReq, capture: dict | None = None) -> dict:
     """Same pipeline as an alert, without submitting: T1 causes → evidence → top cause → action cards."""
     t1 = k.t1_causes(req.pattern)
     if not t1:
-        raise HTTPException(404, _no_cause_message(k, req.pattern))
+        raise HTTPException(404, cardlib.no_cause_message(k, req.pattern))
     try:
         results = tsdb.evaluate([e for r in t1 for e in (r.get("evidence") or [])], req.asset)
     except Exception as e:  # noqa: BLE001 — 근거 조회 실패는 그 까닭과 함께 보류(값 없음으로 판단하지 않는다)
         log.warning("evidence source unavailable: %s", e)
         raise HTTPException(503, f'설비 근거(시계열 DB)를 읽지 못해 판단을 보류합니다 — {type(e).__name__}: {str(e)[:200]}') from e
-    causes = cardlib.rank_causes(t1, results)
+    causes = cardlib.rank_causes(t1, results, *decidelib.diagnosis_rules(k, tsdb, req.asset, req.pattern, t1))
     assessment = cardlib.evidence_status(causes)
     if assessment['withheld']:
         raise HTTPException(409, {'reason': assessment['reason'], 'evidence_status': assessment, 'causes': causes})
     if req.facts and req.facts.get("cause"):
+        if req.facts["cause"] not in {c["id"] for c in causes}:
+            # 진단 지식에 없는 원인을 가정하면 조용히 1순위 원인으로 판단하던 것(탐사 N10) — 그 가정은 받지 않는다
+            raise HTTPException(422, f"가정한 원인 {req.facts['cause']}은 이 경보의 진단 지식(원인 후보)에 없습니다 — 원인 후보: "
+                                     + ", ".join(f"{c['name']}({c['id']})" for c in causes))
         causes.sort(key=lambda c: c["id"] != req.facts["cause"])
     d = decidelib.decide(k, decisions, tsdb, req.asset, req.pattern, causes[0], origin={"kind": "manual", "pattern": req.pattern},
                          overrides={x: v for x, v in (req.facts or {}).items() if x != "cause"}, do_submit=False, capture=capture)

@@ -134,7 +134,7 @@
     const rule = e.expect && e.threshold != null ? ` ${hydWords.sym(e.expect)} ${num(e.threshold)}${unit}` : '';
     return `<div class="td-cond">${UI.chipText(label, tone)} ${esc(UI.idText(e.name || e.id || ''))}${esc(rule)} <span class="muted">· ${esc(UI.t('inc.observed'))} ${esc(num(e.value))}${esc(unit)}${e.weight != null ? ` · 가중치 ${esc(num(e.weight))}` : ''}</span>${status === 'UNKNOWN' && (e.error || e.reason) ? ` <span class="muted">${esc(UI.idText(e.error || e.reason))}</span>` : ''}</div>`;
   }
-  // 원인 점수 · 조건 표 (guide_card.causes — 내장 판단 경로는 agentsvc card.rank_causes 의 prior · score · evidence 그대로)
+  // 원인 점수 · 조건 표 (판단 기록 origin.diagnosis.causes — 판단 엔진이 판단을 등록할 때 다시 한 진단, agentsvc card.rank_causes 의 prior · score · evidence)
   function causesTable(causes, top) {
     if (!causes.length) return '';
     const scored = causes.some(c => c.prior != null || (c.evidence || []).length);
@@ -159,13 +159,14 @@
         : (d.order || []).length ? `<ol class="td-list">${d.order.map(o=>orderItem({...o,name:o.name || boundDecision(v)?.options?.find(x=>x.id===o.id)?.name})).join('')}</ol>` : '';
       return `<p class="muted">이 단계가 그때 낸 추천입니다. 나중에 승인에서 고른 안과는 다를 수 있습니다.</p>${d.explanation ? `<p>${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
     },
-    guide_card(g) {
-      const causes = g.causes || [];
-      const rec = (g.recommended || []).map(a => `<span class="badge" data-variant="secondary">${esc(window.hydCards ? hydCards.actionLabel(a) : (a.code || a.name || ''))}</span>`).join('');
-      const fm = typeof g.failureMode === 'object' ? (g.failureMode || {}).name : UI.name(g.failureMode);
-      if (!causes.length && !rec && !fm) return '';
-      return `${fm ? `<p><b>${esc(UI.t('var.failure_mode'))}</b> ${esc(UI.idText(fm))}</p>` : ''}${g.withheld && (g.evidence_status || {}).reason ? `<p class="muted" data-tone="danger">${esc(g.evidence_status.reason)}</p>` : ''}
-        ${causes.length ? `<p><b>${esc(UI.t('inc.causes'))}</b></p>${causesTable(causes, g.topCause)}` : ''}${rec ? `<p><b>${esc(UI.t('inc.recommended'))}</b></p><div class="chips">${rec}</div>` : ''}`;
+    // 원인 진단 결과 칸은 AI 에이전트가 진단 도구의 결과를 옮겨 적은 글이다 — 서버가 대조하지 않으므로 원인 후보 · 잰 값 표로 그리지 않는다. 표는 이 단계가
+    // 등록한 판단의 서버 진단(판단 기록 origin.diagnosis — 판단 엔진이 등록할 때 다시 한 진단, 처리 건의 원인 진단과 같은 것)으로 그리고, 그 판단이 없는
+    // 단계(판단을 등록하기 전 단계)는 그 사실만 말한다. AI 가 적은 글은 아래 원문 접기에 그대로 있다
+    guide_card(g, v) {
+      const dx = boundDecision(v)?.origin?.diagnosis;
+      if (!dx || !Array.isArray(dx.causes)) return `<p class="muted">원인 후보와 잰 값은 판단 엔진이 판단을 등록할 때 다시 한 진단으로 보입니다 — 이 단계는 판단을 등록하지 않아, AI 에이전트가 적은 결과를 아래 원문으로만 둡니다.</p>`;
+      const fm = dx.failure_mode ? UI.name(dx.failure_mode) : '';
+      return `${fm ? `<p><b>${esc(UI.t('var.failure_mode'))}</b> ${esc(UI.idText(fm))}</p>` : ''}<p><b>${esc(UI.t('inc.causes'))}</b></p>${causesTable(dx.causes, dx.top_cause)}`;
     },
     compliance(c) {
       const rows = Object.entries(c).filter(([id]) => !id.startsWith('_'));    // 워커가 붙인 _basis(판정 근거 · 쓴 사실 · 출처)는 후보가 아니다
@@ -190,12 +191,6 @@
       return rows.length ? `<span class="chips">${rows.map(([k, n]) => `<span class="badge" data-variant="secondary">${esc(n)} ${esc(c[k].length)}</span>`).join('')}</span>` : '';
     },
     segment(s) { return s.index != null ? `<b>${esc(s.index)} / ${esc(s.total)}</b>${s.title ? ` <span class="muted">${esc(s.title)}</span>` : ''}` : ''; },
-    review_feedback(f) {
-      const items = Array.isArray(f) ? f : f.items || f.reviews || [];
-      if (!Array.isArray(items) || !items.length) return '';
-      const by = items.reduce((m, x) => { const k = x.verdict || x.status || '–'; m[k] = (m[k] || 0) + 1; return m; }, {});
-      return `<span class="chips">${Object.entries(by).map(([k, n]) => `<span class="badge" data-variant="secondary">${esc({ OK: '맞음', WRONG: '틀림', MISSING: '빠짐' }[k] || k)} ${esc(n)}</span>`).join('')}</span>`;
-    },
     proposal(p) {
       if (!Array.isArray(p.procedures) && !Array.isArray(p.sections)) return '';
       const procs = p.procedures || [];

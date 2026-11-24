@@ -40,6 +40,10 @@ def validate(archive, tenant, body):
         raise ValueError('원문과 추출 내용을 검토한 담당자와 reviewed=true가 필요합니다')
     if body.get('review_method') is not None and body['review_method'] not in ('human-reviewed', 'user-delegated-ai-review'):
         raise ValueError('검토 수행 방식(review_method)이 지원 계약과 다릅니다')
+    # review_scope='automatic': 사람이 검토 화면을 열지 않고 자동 검증만 통과한 판(포털의 「한 번에 적재」). 적재 기록이 그 사실을 남긴다 — 전에는 그 판도
+    # 「담당자가 검토함」으로만 남았다(C10). review_method(기본 제공 판의 표시 — config_bundle · class_knowledge 가 그것으로 기본 제공 판을 가린다)와는 다른 칸이다
+    if body.get('review_scope') not in (None, 'automatic'):
+        raise ValueError('검토 범위(review_scope)는 자동 검증만 거친 적재(automatic)일 때만 씁니다')
     # 기본 제공 판의 판 표시: 시작할 때 서명 묶음의 검토본을 넣는 적재(scripts/class_knowledge.py)만 싣는다 — 그 적재가 「지금 묶음 판이 이미
     # 들어 있는가」를 담당자 칸의 자유 글이 아니라 이 칸으로 가린다(담당자 칸에 같은 글을 적은 판이 기본 제공 판으로 읽히던 것).
     revision = body.get('provided_revision')
@@ -142,14 +146,19 @@ def validate(archive, tenant, body):
                  **{k: extra[k] for k in ('actions', 'addresses') if extra.get(k)}))
     from hydcommon.maintenance_policy import consistent_packages
     consistent_packages(checked_procedures)
-    # C1: the reviewed knowledge part (고장 유형 · 원인 · 증거 · 규칙). Existence in the graph is checked at commit.
-    knowledge = manual_knowledge.validate(body.get('knowledge'), sections=set(checked_sections), sops=sop_ids, anchor=anchor)
+    # C1: the reviewed knowledge part (고장 유형 · 원인 · 증거 · 규칙 · 사람이 넣기를 고른 새 항목). Existence in the graph is checked at commit.
+    knowledge = manual_knowledge.validate(body.get('knowledge'), sections=set(checked_sections), sops=sop_ids, anchor=anchor, reviewed=True)
+    new = [i for kind in manual_knowledge.NEW_KINDS for i in (knowledge or {}).get(kind) or []]
+    if new and body.get('review_scope') == 'automatic':
+        # 새 항목은 사람이 항목마다 넣기를 고른 것만 들어간다 — 검토 화면을 열지 않은 적재(한 번에 적재)는 그 고름이 없다(몰래 만들지 않는다)
+        raise ValueError(f"자동 검증만 거친 적재에는 새 항목(구성 요소 · 증상 · 센서) {len(new)}개를 넣지 않습니다 — 검토 화면에서 항목마다 「넣기」 · 「제외」를 고른 뒤 적재하세요")
     return dict(batch=batch, tenant=tenant, document=document_key(tenant, source['document_id']),
                 source_id=source['source_id'], document_id=source['document_id'],
                 sha256=source['sha256'], filename=source['filename'], extractor=source['extractor'],
                 previous_batch=body.get('previous_batch'), by=str(body['by']).strip(),
                 method=str(body.get('method') or 'human-reviewed'),
                 **({'review_method': body['review_method']} if body.get('review_method') else {}),
+                **({'review_scope': body['review_scope']} if body.get('review_scope') else {}),
                 **({'provided_revision': revision} if revision else {}),
                 sections=list(checked_sections.values()), procedures=checked_procedures,
                 **({'knowledge': knowledge} if knowledge and any(knowledge.values()) else {}))

@@ -592,6 +592,9 @@
     const P = window.hydApprove.pick(d, I.form.option);
     // 값을 바꿔 미리 본 안이 있으면 「승인하면 시스템이 …」 줄은 미리 본 조치(바꾼 값)를 말한다 — 실제로 나가는 명령이 그 값이다(부하 70 %를 75 %로 바꿔 승인하면 75 %가 나간다)
     if (reviewed) P.actions = (reviewed.actions || []).map(x => hydCards.actionLabel(x, reviewed)).filter(Boolean);
+    // 이 흐름이 승인 뒤 내지 않는 이 안의 동작(서버 판정 — 판단 응답의 options[].flow_skips · flow_skip_text): 「승인하면 시스템이 …」 줄에서 빼고, 나가지 않는다는 문장을 따로 보인다
+    const skipped = new Set((P.cur.flow_skips || []).map(s => s.code));
+    if (skipped.size) { const src = reviewed || P.cur; P.actions = (src.actions || []).filter(x => !skipped.has(x.code)).map(x => hydCards.actionLabel(x, src)).filter(Boolean); }
     // 값 조정 · 미리 보기(설비에 보내는 값이 있는 안)와 사건 정보는 [다른 안 고르기]를 편 자리에 있다
     const adjust = fanA || loadA || pumpA || chosen.maintenancePlan || chosen.economicComparison ? UI.fold(fanA || loadA || pumpA ? '조치 값 조정 · 미리 보기' : '현재 조건 다시 확인 · 미리 보기', UI.section('', `${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}`) +
       `<div id="tdReviewed">${reviewed ? `<p><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.optionDetail(reviewed, { decision: review.snapshot })}` : `<p class="muted">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
@@ -610,7 +613,8 @@
     // 승인하면 무슨 일이 일어나는가: 서버가 준 그 안의 조치 목록 그대로(없으면 그 줄을 그리지 않는다)
     // 모든 안이 같은 까닭으로 제외됐으면 그 까닭을 여기서 한 번만 말한다(안마다 되풀이하지 않는다 — 원문은 아래 접기에)
     const will = P.none ? `<p>${none.same ? `${esc(none.reasons.join(' · '))}. 그래서 AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다.` : `AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 까닭은 아래에 있습니다.`}</p>`
-      : P.actions.length ? `<p>${P.state === 'execution' ? `승인하면 시스템이 ${esc(P.actions.join(' · '))}${josa(P.actions[P.actions.length - 1], '을/를')} 실행합니다.` : `${esc(UI.t('eval.calcOnly'))} 계산에 포함된 조치: ${esc(P.actions.join(' · '))}`}${P.changed ? ' <span class="muted">추천안 대신 직접 고른 안입니다.</span>' : ''}</p>` : P.changed ? '<p class="muted">추천안 대신 직접 고른 안입니다.</p>' : '';
+      : (P.actions.length ? `<p>${P.state === 'execution' ? `승인하면 시스템이 ${esc(P.actions.join(' · '))}${josa(P.actions[P.actions.length - 1], '을/를')} 실행합니다.` : `${esc(UI.t('eval.calcOnly'))} 계산에 포함된 조치: ${esc(P.actions.join(' · '))}`}${P.changed ? ' <span class="muted">추천안 대신 직접 고른 안입니다.</span>' : ''}</p>` : P.changed ? '<p class="muted">추천안 대신 직접 고른 안입니다.</p>' : '')
+        + (P.cur.flow_skip_text ? `<p>${esc(P.cur.flow_skip_text)}.</p>` : '');
     const previewNow = I.form.needPreview && I.form.option ? `<button type="button" class="btn" data-variant="outline" id="tdPreviewNow" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>` : '';
     const acts = mode === 'reject'
       ? `<button type="button" class="btn" data-variant="destructive" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>반려 확정</button><button type="button" class="btn" data-variant="ghost" id="tdModeOff">취소</button>`
@@ -990,7 +994,7 @@
     setHtml(host.querySelector('[data-recover-lead]'), slot ? '이 단계에서 할 수 있는 조치입니다. 필요한 것을 펼쳐 진행하세요.' : view.instance.status === 'RUNNING' ? '조건이나 판단 근거가 바뀌었을 때 쓰는 기능입니다. 멈춘 단계가 생기면 그 단계 아래에 같은 것이 나옵니다.' : '');
     const ap = host.querySelector('[data-approvals]');
     const folds = new Map([...ap.querySelectorAll('details')].map(d => [d.querySelector('summary')?.textContent.trim(), d.open]));
-    if (setHtml(ap, approvalHtml(view) + workOrderRetryHtml(view))) {
+    if (setHtml(ap, approvalHtml(view) + effectRetryHtml(view))) {
       ap.querySelectorAll('details').forEach(d => { const k = d.querySelector('summary')?.textContent.trim(); if (folds.has(k)) d.open = folds.get(k); });
       wireApprovalButtons(ap);
     }
@@ -1003,13 +1007,15 @@
   // 재전달 · 폐기 폼의 승인 역할: 승인 기록에 남은 역할을 읽기 전용으로 보이고 값은 숨은 칸에 싣는다. 못 읽었으면 그 까닭
   const roleField = (key, r) => r ? UI.readonly('승인 역할', esc(who(r))) + `<input type="hidden" data-retry-role="${esc(key)}" value="${esc(r)}">`
     : `<input type="hidden" data-retry-role="${esc(key)}" value=""><p class="muted" data-tone="danger">승인 기록에서 승인 역할을 읽지 못했습니다.</p>`;
-  function workOrderRetryHtml(view) {
-    const failed = view.workitems.filter(w => w.tool === 'enterprise:WO_CREATE' && w.status === 'PENDING');
-    const approval = (view.approvals || []).find(a => a.status === 'DELIVERED');
-    const roles = Object.keys(approval?.payload?.plan?._snapshot?.roles || {});
-    return failed.map(w => { const f = retryForm(w.id); return UI.fold(`${esc(UI.t('inst.woFailed'))} ${UI.chipText('실패', 'danger')}`, `<div data-approval-panel="${esc(w.id)}"><p class="muted" data-tone="danger">${esc(w.log || '')}</p><p class="muted">자동 재시도를 마쳤습니다. 오류를 해결한 뒤 승인했던 같은 내용으로 다시 전달할 수 있습니다.</p>
-      ${UI.section('', `${UI.actorInput(`data-retry-by="${esc(w.id)}"`, f.by)}${roleField(w.id, consentRole(approval, roles))}`)}
-      ${UI.actions(`<button type="button" class="btn" data-size="sm" data-work-order-retry="${esc(w.id)}" ${I.busy || !roles.length ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>`, !roles.length ? '승인 원문을 확인할 수 없어 별도 검토가 필요합니다.' : I.pmsg[w.id] || '')}</div>`, { open: true }); }).join('');
+  // 재시도를 다 쓰고 멈춘 승인 뒤 단계(정비 요청 등록 · 승인 뒤 MCP 호출)를 승인한 내용 그대로 다시 보내는 판 — 어느 단계가 그렇게 되는지와 다시 보낼
+  // 승인의 역할은 서버가 정한다(처리 건의 attention 단계 행동 effect_retry · retry_role — procsvc instances.approved_resend · resend_role).
+  // 화면은 승인 기록을 다시 뒤져 판정하지 않는다: 전에는 처음 찾은 전달된 승인의 역할을 넣어, 한 처리 건에 전달된 승인이 둘이면 지금 판단의 승인이 아닌 것의 역할을 넣을 수 있었다
+  function effectRetryHtml(view) {
+    const byId = new Map(view.workitems.map(w => [w.id, w]));
+    return ((view.attention || {}).steps || []).filter(s => (s.actions || []).includes('effect_retry')).map(s => {
+      const w = byId.get(s.workitem), role = s.retry_role || '', f = retryForm(w.id); return UI.fold(`「${esc(w.activity_name || w.activity_id)}」 ${esc(UI.t('inst.stepFailed'))} ${UI.chipText('실패', 'danger')}`, `<div data-approval-panel="${esc(w.id)}"><p class="muted" data-tone="danger">${esc(w.log || '')}</p><p class="muted">자동 재시도를 마쳤습니다. 오류를 해결한 뒤 승인했던 같은 내용으로 다시 전달할 수 있습니다.</p>
+      ${UI.section('', `${UI.actorInput(`data-retry-by="${esc(w.id)}"`, f.by)}${roleField(w.id, role)}`)}
+      ${UI.actions(`<button type="button" class="btn" data-size="sm" data-effect-retry="${esc(w.id)}" ${I.busy || !role ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>`, !role ? '승인 원문을 확인할 수 없어 별도 검토가 필요합니다.' : I.pmsg[w.id] || '')}</div>`, { open: true }); }).join('');
   }
   // 재전달 · 폐기 폼의 칸 값은 다시 그려도 남도록 상태에 둔다(작업 id 마다). 담당자 기본값은 지금의 승인자 칸 값("나"면 그 id)
   function retryForm(key) {
@@ -1070,8 +1076,7 @@
     const varRows = (inst.variables_data || []).filter(row => !internal.has(row.key)).map(row => {
       const value = row.value, name = UI.terms['var.' + row.key] || (row.name && row.name !== row.key ? row.name.replace(/\s*[\(—(].*$/, '') : row.key);
       const shown = row.key === 'pattern' ? UI.patternName(value) : row.key === 'chosen_skill_kind' ? (value === 'control' ? UI.t('chip.control') : value === 'work_order' ? UI.t('chip.workOrder') : value)
-        : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || UI.name(value)
-        : row.key === 'failure_mode' ? UI.idText((typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || UI.name(value))
+        : row.key === 'cause' || row.key === 'failure_mode' ? window.hydWords.idName(value)      // 판단 기록 · 서버 진단의 이름(caseRecord caseNames) — AI 가 옮겨 적은 카드가 아니다
         : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : ['approved_role', 'approved_by'].includes(row.key) ? who(value) : typeof value === 'string' ? UI.idText(value) : value;
       const body = value !== null && typeof value === 'object' ? UI.raw(value, { title: UI.t('inst.structured') }) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
       const source = (inst.variable_sources || {})[row.key];
@@ -1198,17 +1203,17 @@
       input.addEventListener('input', save); input.addEventListener('change', save);
     });
     box.querySelectorAll('[data-discard-retry]').forEach(button => button.addEventListener('click', () => { button.disabled = true; sendDiscard(button.dataset.discardRetry); }));
-    box.querySelectorAll('[data-approval-retry], [data-work-order-retry]').forEach(button => button.addEventListener('click', async () => {
+    box.querySelectorAll('[data-approval-retry], [data-effect-retry]').forEach(button => button.addEventListener('click', async () => {
       if (I.busy) return;
       const panel = button.closest('[data-approval-panel]');
       const by = panel.querySelector('[data-retry-by]').value.trim();
       const role = panel.querySelector('[data-retry-role]').value;
-      const key = button.dataset.workOrderRetry || button.dataset.approvalRetry;
+      const key = button.dataset.effectRetry || button.dataset.approvalRetry;
       if (!by || !role) { I.pmsg[key] = UI.t('form.err.byRole'); renderRecovery(); return; }
       I.busy = true; button.disabled = true;
       try {
-        const workOrder = button.dataset.workOrderRetry;
-        const path = workOrder ? `${encodeURIComponent(workOrder)}/work-order-retry` : `${encodeURIComponent(button.dataset.approvalRetry)}/approval-retry`;
+        const step = button.dataset.effectRetry;
+        const path = step ? `${encodeURIComponent(step)}/effect-retry` : `${encodeURIComponent(button.dataset.approvalRetry)}/approval-retry`;
         await postJ(API.process + `/api/todolist/${path}`, { by, role });
         I.pmsg[key] = '';
       } catch (e) { I.pmsg[key] = e.message; }

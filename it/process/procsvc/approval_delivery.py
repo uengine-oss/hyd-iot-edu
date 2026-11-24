@@ -157,7 +157,8 @@ class ApprovalDelivery:
             log.exception('could not record the stopped delivery of %s', wid)
 
     def deliver_approval(self, wid, now=None):
-        """승인 하나를 전달한다(업무 거래 실행 → DELIVERED). #17: 전달은 그것만으로 커밋한다 — 뒤따르는 흐름 진행(_advance_delivered)이
+        """승인 하나를 전달한다(현재 조건 검사 → 판단 장부에 승인 원문 → DELIVERED). 전달은 효과를 내지 않는다 — 업무 거래 · 설비 명령은 흐름의 단계가
+        낸다(approval_hooks.DecisionDelivery.deliver). #17: 전달은 그것만으로 커밋한다 — 뒤따르는 흐름 진행(_advance_delivered)이
         실패해도 전달을 되돌려 같은 승인을 2초마다 다시 보내지 않는다. 진행 실패는 엔진의 보통 실패 길(_fail: 기록 · 재시도 · 멈춤)로 간다."""
         now = self._now(now)
         wi = self.repo.get_workitem(wid)
@@ -173,15 +174,8 @@ class ApprovalDelivery:
                 return
             row['attempts'] += 1
             try:
-                # The hook applies only the committed snapshot. It does not send PLC commands.
-                if self.hooks.deliver_approval is not None:
-                    results = self.hooks.deliver_approval(deepcopy(row))
-                else:
-                    results = [self.hooks.exec_enterprise(row['decision_id'], item)
-                               for item in row['payload']['plan'].get('enterprise', [])
-                               if item.get('code') not in set(row['payload'].get('deferred') or ['WO_CREATE'])]
-                if any(r.get('ok') is not True for r in results):
-                    raise RuntimeError(str([r for r in results if r.get('ok') is not True]))
+                # The hook applies only the committed snapshot. It sends no PLC command and no business transaction.
+                results = self.hooks.deliver_approval(deepcopy(row))
             except Exception as error:
                 from .current_approval import ApprovalReviewRequired
                 kind = 'review_required' if isinstance(error, ApprovalReviewRequired) else 'transient'

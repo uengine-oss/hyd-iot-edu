@@ -27,6 +27,7 @@ from uuid import UUID
 import psycopg
 
 from .enterprise import ReaderRoleRefused, reader_connection
+from .pg import DbUnreachable
 from .sql_read import MAX_ROWS, TIMESERIES_FUNCTIONS, SqlRejected, guard
 
 from .data_sources import ENT, LEGACY, SOURCES, TS, TS_TABLES      # 원천 표의 정본(가져올 것이 없는 모듈 — 워커도 읽는다)
@@ -45,10 +46,15 @@ CLASS_KEYS = (
     dict(klass='Part', label='부품', key='partNo', key_label='부품 번호', source=ENT, table='parts', column='part_no'),
     dict(klass='Supplier', label='공급사', key='id', key_label='공급사 식별자', source=ENT, table='suppliers', column='id'),
 )
+# other: 이 시스템이 운영하는 설비(Asset -HAS_COMPONENT-> 구성 요소)를 재지 않는 센서 — 문서가 새 항목으로 넣은 다른 설비의 센서다(procsvc/manual_knowledge 머리말).
+# 그 태그는 이 시스템의 수집 계약 밖이라 시계열 DB에 없고, 그 값은 그 설비 시스템을 연결한 도구 서버가 낸다 — 원천에서 찾지 않고 그 까닭(OTHER_EQUIPMENT)과 함께 따로 싣는다
 CLASS_Q = """MATCH (n) WHERE n:Asset OR n:Sensor OR n:Actuator OR n:Part OR n:Supplier
 RETURN [l IN labels(n) WHERE l IN ['Asset','Sensor','Actuator','Part','Supplier']][0] AS klass, n.id AS id, n.name AS name,
-       n.code AS code, n.tag AS tag, n.unit AS unit, n.resource AS resource, n.partNo AS partNo
+       n.code AS code, n.tag AS tag, n.unit AS unit, n.resource AS resource, n.partNo AS partNo,
+       n:Sensor AND NOT EXISTS { MATCH (:Asset)-[:HAS_COMPONENT]->(:Component)-[:MONITORED_BY]->(n) } AS other
 ORDER BY klass, id"""
+OTHER_EQUIPMENT = ('다른 설비의 센서입니다 — 이 시스템이 운영하는 설비의 구성 요소를 재지 않아 이 시스템이 수집하는 값이 아니므로 시계열 DB에서 찾지 않습니다. '
+                   '그 값은 그 설비의 시스템을 연결한 도구 서버가 냅니다')
 def inputs_query() -> str:
     """판단 입력 데이터와 출처 질의 — 정본은 템플릿 it/neo4j/templates/t3_inputs.cypher 하나(agent · dmn-mcp 의 판단 입력 도구와 같은 파일).
     이미지는 /srv/templates(KG_TEMPLATES — process · dmn-mcp · agent Dockerfile 이 같은 폴더를 넣는다). 없으면 그 자리와 함께 실패한다."""
@@ -60,8 +66,10 @@ def inputs_query() -> str:
         raise RuntimeError(f"판단 입력 질의 템플릿이 없습니다: {path} (KG_TEMPLATES — 이미지에 it/neo4j/templates 를 넣는다)") from None
 
 
-LIMIT_Q = """MATCH (p:AnomalyPattern)-[t:TESTS]->(i:InputData {variable: $variable}) WHERE t.operator IN ['>', '>=']
-RETURN p.name AS pattern, t.operator AS operator, t.value AS value, t.unit AS unit ORDER BY p.id LIMIT 1"""
+# 교차 조회의 기준값 = 그 조회가 이름으로 가리킨 이상 패턴(code)이 그 입력(variable)에 건 상한. 전에는 그 입력을 > 로 검사하는 패턴 가운데 id 차례로
+# 첫째를 골라, 같은 입력을 보는 패턴이 하나 더 생기면 기준이 말없이 그 패턴의 값으로 바뀌었다(전수검사 06-14).
+LIMIT_Q = """MATCH (p:AnomalyPattern {code: $pattern})-[t:TESTS]->(i:InputData {variable: $variable}) WHERE t.operator IN ['>', '>=']
+RETURN p.name AS pattern, t.operator AS operator, t.value AS value, t.unit AS unit ORDER BY t.value"""
 
 # 정의된 교차 조회: 한 질문 = 원천별 SELECT 몇 개(모두 가드 통과) + 그 결과에서 고른 답. 답은 계산하지 않고 원천 값을 그대로 옮긴다.
 CROSS_QUERIES = {
@@ -85,7 +93,7 @@ CROSS_QUERIES = {
     'hot-lots-vs-ts1': dict(
         title='고온 구간 로트와 실제 유온 기록',
         question='품질 시스템이 고온 구간으로 기록한 로트와, 시계열에 남은 최근 60분 유온이 기준을 넘은 시간은 어떤가?',
-        params={'ts1_limit': 'ts1'},
+        params={'ts1_limit': ('COOLER_DEGRADATION', 'ts1')},      # 고온 구간의 기준 = 쿨러 성능 저하 패턴의 유온 상한
         parts=[dict(id='lots', source=ENT, purpose='QMS 고온 구간 로트 — 기록된 고온 시간(분), 출하 대기 로트 · 수량 · 클레임 위험',
                     sql="select hot_min, auto_lot, auto_qty, auto_claim, gen_lot, gen_qty from ent.quality_profiles where asset = %(asset)s"),
                dict(id='ts1', source=TS, purpose='TS1이 기준(지식 그래프의 이상 패턴 임계치)을 넘은 분 수 · 최고값, 최근 60분',
@@ -158,6 +166,8 @@ def failure_reason(exc: BaseException) -> str:
     and SQLSTATE; only a connection that failed before any session is judged by its connect message (CONNECT_REASONS)."""
     if isinstance(exc, SourceUnavailable):
         return exc.reason
+    if isinstance(exc, DbUnreachable) and exc.__cause__ is not None:
+        exc = exc.__cause__        # 다시 맺어 봐도 안 된 연결 — 까닭은 마지막 연결 오류의 원문으로 가른다(아래)
     if isinstance(exc, ReaderRoleRefused):
         return '전용 읽기 계정이 아닌 계정으로 연결돼 거부했습니다 (쓰기 권한이 있는 계정은 쓰지 않습니다)'
     state = getattr(exc, 'sqlstate', None)
@@ -323,12 +333,13 @@ class Fabric:
         except Exception as e:  # noqa: BLE001 — neo4j driver errors have no common base we import here
             graph, nodes, inputs = self._fail(e), [], []
         live, keys_found = {}, {}
+        own = [n for n in nodes if not n.get('other')]          # 다른 설비의 센서는 원천에서 찾지 않는다(CLASS_Q other)
         for sid in SOURCES:
             try:
                 with self._session(sid) as cur:
                     tables = {t['name']: {c['name']: c for c in t['columns']} for t in self._tables(cur, sid)}
                     for b in (b for b in CLASS_KEYS if b['source'] == sid and b['table'] in tables and b['column'] in tables[b['table']]):
-                        wanted = sorted({n[b['key']] for n in nodes if n['klass'] == b['klass'] and n.get(b['key'])})
+                        wanted = sorted({n[b['key']] for n in own if n['klass'] == b['klass'] and n.get(b['key'])})
                         if wanted:
                             recent = f' and {RECENT}' if b.get('recent') else ''
                             cur.execute(f"select distinct {ident(b['column'])} from {ident(SOURCES[sid]['schema'])}.{ident(b['table'])} "
@@ -340,10 +351,12 @@ class Fabric:
         classes = []
         for b in CLASS_KEYS:
             src = live[b['source']]
-            wanted = [n for n in nodes if n['klass'] == b['klass'] and n.get(b['key'])]
+            wanted = [n for n in own if n['klass'] == b['klass'] and n.get(b['key'])]
+            other = [{'id': n['id'], 'name': n.get('name'), 'key': n[b['key']]} for n in nodes if n.get('other') and n['klass'] == b['klass'] and n.get(b['key'])]
             row = {'klass': b['klass'], 'label': b['label'], 'key': b['key'], 'key_label': b['key_label'], 'source': b['source'],
                    'source_label': SOURCES[b['source']]['label'], 'table': b['table'], 'column': b['column'],
-                   'window': '최근 10분 관측' if b.get('recent') else None, 'instances': len(wanted)}
+                   'window': '최근 10분 관측' if b.get('recent') else None, 'instances': len(wanted),
+                   **({'other': other, 'other_reason': OTHER_EQUIPMENT} if other else {})}
             if not src['ok']:
                 row.update(state='SOURCE_DOWN', reason=src['reason'])
             elif b['table'] not in src['tables'] or b['column'] not in src['tables'][b['table']]:
@@ -415,10 +428,11 @@ class Fabric:
             raise ValueError(f"정의되지 않은 교차 조회입니다: {query} (가능: asset, sql, {', '.join(CROSS_QUERIES)})")
         q = CROSS_QUERIES[query]
         params, notes = {'asset': asset}, []
-        for name, variable in (q.get('params') or {}).items():
-            rows = self._graph_rows(LIMIT_Q, variable=variable)       # the threshold is knowledge, not a code constant
-            if not rows or rows[0].get('value') is None:
-                raise SourceUnavailable(f'지식 그래프에 {variable} 임계치가 없습니다')
+        for name, (pattern, variable) in (q.get('params') or {}).items():
+            rows = self._graph_rows(LIMIT_Q, pattern=pattern, variable=variable)       # the threshold is knowledge, not a code constant
+            if len(rows) != 1 or rows[0].get('value') is None:
+                raise SourceUnavailable(f'지식 그래프에 이 조회의 기준인 이상 패턴 {pattern}의 {variable} 임계치가 없습니다' if not rows else
+                                        f'지식 그래프의 이상 패턴 {pattern}에 {variable} 임계치가 {len(rows)}개라 기준을 정할 수 없습니다')
             params[name] = rows[0]['value']
             notes.append(f"기준값 {rows[0]['operator']} {rows[0]['value']}{rows[0].get('unit') or ''} — 지식 그래프 '{rows[0]['pattern']}' 패턴")
         parts = [dict(p, statement=guard_for(p['source'], p['sql'], n)) for p in q['parts']]
@@ -485,7 +499,22 @@ class Fabric:
                                       'rows': [[jsonable(v) for v in r] for r in rows[:min(n, 5)]], 'row_count': min(len(rows), min(n, 5)),
                                       'row_limit': min(n, 5), 'at_row_limit': len(rows) > min(n, 5)})
                 for i in inputs:
-                    if i.get('datasource') != ENT or i.get('schema') != 'ent' or not i.get('assetColumn') or i.get('table') not in tables:
+                    if not (i.get('table') and i.get('column')) or i.get('datasource') not in SOURCES:
+                        continue      # 표 · 열로 정하지 않은 입력과 등록 안 된 원천의 입력은 연결 표(links — UNBOUND · OUTSIDE · UNREGISTERED)가 상태를 말한다
+                    # 표 · 열로 연결된 판단 입력은 설비별 값을 읽지 못해도 빼지 않고 까닭과 함께 넣는다(C8) — 빼면 묶음 머리가 「이어진 값 0개」라고 해 연결이 없는 것처럼 보였다
+                    if i['datasource'] != ENT or i.get('schema') != 'ent':
+                        values.append(_value('InputData', i['name'], i['variable'], None, None, i['datasource'], i['table'], i['column'], None, None,
+                                             state='NOT_IN_VIEW', reason=f"묶어 보기는 업무 DB(ent 스키마)의 표만 설비 코드로 읽습니다 — 이 입력은 "
+                                                                         f"{SOURCES[i['datasource']]['label']}({SOURCES[i['datasource']]['schema']} 스키마)의 열입니다"))
+                        continue
+                    if not i.get('assetColumn'):
+                        values.append(_value('InputData', i['name'], i['variable'], None, None, ENT, i['table'], i['column'], None, None, state='NO_ASSET_KEY',
+                                             reason='설비 식별 열이 정해지지 않아 설비별 값을 읽지 않습니다 — 「지식 › 문서 등록 › 업무 DB 표 정의」에서 설비 코드를 '
+                                                    '가리키는 열이 있는 표 정의로 다시 적재하세요(옛 DB면 「옛 DB 뜻 복원」에서 설비 식별 열을 정합니다)'))
+                        continue
+                    if i['table'] not in tables:
+                        values.append(_value('InputData', i['name'], i['variable'], None, None, ENT, i['table'], i['column'],
+                                             f"{i['assetColumn']} = '{asset}'", None, state='MISSING', reason='원천에 이 표가 없습니다'))
                         continue
                     tcols = {c['name'] for c in tables[i['table']]['columns']}
                     if i.get('column') not in tcols or i['assetColumn'] not in tcols:

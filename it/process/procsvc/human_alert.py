@@ -30,9 +30,9 @@ from hydcommon.words import josa, particle
 HUMAN_SOURCE = "human_input"
 
 # 사람 입력 경보 패턴 계약. items = 분석 항목(지식 sym:oil-analysis-out-of-spec 의 aliases · 교육용 매뉴얼 HM-9.1 표의 항목).
-# policy = 흐름 정의 alertPolicy.patterns 에 들어갈 회복 기준(alert_policy.validate 계약: tag · op · limit · requireClear).
-#   작동유는 센서 해제(CLEAR)가 없다 — 정비형 흐름(작업지시)에서는 쓰이지 않고, 누가 설비 명령 · 재관측을 넣은 흐름을 만들면
-#   재관측이 "해제 없음"으로 상급자에게 간다(사람 재분석이 회복 판단). 유온 기준은 HM-9.1 표의 정상(55 ℃ 이하)과 같은 값.
+# policy = 흐름 정의 alertPolicy.patterns 에 들어갈 회복 계약(alert_policy 머리말). 작동유에는 실시간 센서도 해제(CLEAR)를 내는 원천도 없어 시계열
+#   회복 기준을 두지 않는다(전에는 계약을 채우려고 유온 TS1 < 55 를 넣었다 — 오일 상태와 무관). 이 경보로 여는 흐름에 효과 확인(재관측)을 두면 흐름
+#   가져오기 사전 검사가 그 칸에서 까닭과 함께 막는다(bpmn_import.unobservable_patterns). 회복은 사람이 다시 분석해 확인한다.
 PATTERNS: dict[str, dict] = {
     "OIL_ANALYSIS": {
         "name": "오일 분석 기준 이탈 (사람 입력)",
@@ -45,7 +45,7 @@ PATTERNS: dict[str, dict] = {
             {"key": "cleanliness", "text": "청정도 (NAS · ISO 4406)", "unit": "등급"},
             {"key": "viscosity", "text": "점도 변화", "unit": "%"},
         ],
-        "policy": {"tag": "TS1", "op": "<", "limit": 55.0, "requireClear": True},
+        "policy": {"requireClear": True},
     },
 }
 

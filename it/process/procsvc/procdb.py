@@ -21,6 +21,8 @@ import threading
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
+
+from hydcommon.pg import DbUnreachable, connect      # 연결을 맺는 한 곳(다시 시도 · 예산 · 닿지 않을 때의 문장)
 from .approval_store import PgApprovals
 from .rework_store import PgReworks
 from .effect_store import PgEffects
@@ -32,7 +34,22 @@ from .effect_parts import TOOLS as C2_SERVICE_TOOLS
 #: process 가 다시 돌려 보는 서비스 줄(멱등 처리기만): 사건 경로 · CMMS 작업지시 + C2 승인 뒤 실행 부품(기다리는 부품은 끝날 때까지 여기서 다시 본다)
 SERVICE_QUEUE_TOOLS = ('incident:command', 'incident:reobserve', 'enterprise:WO_CREATE', *C2_SERVICE_TOOLS)
 
-SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
+def business_dsn() -> str:
+    """process 의 업무 DB 쓰기 주소(SUPABASE_DSN) — compose 의 process environment 가 준다(업무 DB 망 안의 이름). 기본값을 두지 않는다: 값이 빠지면
+    지운 길(호스트에 연 업무 DB 포트)로 조용히 돌지 않고 어느 값이 없는지 말하며 실패한다."""
+    dsn = os.environ.get("SUPABASE_DSN", "").strip()
+    if not dsn:
+        raise RuntimeError("SUPABASE_DSN 이 설정되지 않았습니다 — process 가 쓰는 업무 DB 주소입니다(compose.yaml 의 process environment, "
+                           "컨테이너 밖에서 돌릴 때는 그 값을 직접 준다)")
+    return dsn
+
+
+def __getattr__(name):
+    """`procdb.SUPABASE_DSN` · `from .procdb import SUPABASE_DSN` — 가져올 때가 아니라 읽는 때에 business_dsn() 으로 본다(이 모듈의 순수 함수
+    version_key 등만 쓰는 도구는 그 값 없이 가져온다)."""
+    if name == "SUPABASE_DSN":
+        return business_dsn()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 WORKITEM_COLS = ("id", "user_id", "username", "proc_inst_id", "root_proc_inst_id", "execution_scope", "proc_def_id", "version_tag", "version",
                  "activity_id", "activity_name", "start_date", "end_date", "status", "description", "tool", "due_date", "tenant_id",
@@ -61,12 +78,15 @@ def consumer_name() -> str:
 # ---------------------------------------------------------------- postgres (Supabase)
 class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthoring):
     def __init__(self, dsn: str | None = None):
-        import psycopg
         from psycopg.rows import dict_row
         from psycopg.types.json import Jsonb
-        self._psycopg, self._dict_row, self._Jsonb = psycopg, dict_row, Jsonb
-        self.dsn = dsn or SUPABASE_DSN
+        self._dict_row, self._Jsonb = dict_row, Jsonb
+        self.dsn = dsn or business_dsn()
         self._local = threading.local()
+
+    def _connect(self, **options):
+        """이 저장소의 연결 하나(행은 사전으로) — 다시 시도와 예산은 hydcommon.pg.connect 한 곳."""
+        return connect(self.dsn, row_factory=self._dict_row, **options)
 
     @contextmanager
     def _conn(self):
@@ -74,14 +94,14 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         if active is not None:
             yield active
         else:
-            with self._psycopg.connect(self.dsn, autocommit=True, connect_timeout=5, row_factory=self._dict_row) as connection:
+            with self._connect(autocommit=True) as connection:
                 yield connection
 
     @contextmanager
     def event_transaction(self, key: str):
         if getattr(self._local, "connection", None) is not None:
             raise RuntimeError("nested event transaction")
-        with self._psycopg.connect(self.dsn, connect_timeout=5, row_factory=self._dict_row) as connection:
+        with self._connect() as connection:
             self._local.connection = connection
             try:
                 connection.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (key,))
@@ -120,7 +140,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         바깥 응답을 기다리는 동안 같은 처리 건의 쓰기를 막지 않게). 안에서 쓰면 DB 가 거절한다."""
         if getattr(self._local, "connection", None) is not None:
             raise RuntimeError("nested storage transaction; a snapshot opens its own")
-        with self._psycopg.connect(self.dsn, connect_timeout=5, row_factory=self._dict_row) as c:
+        with self._connect() as c:
             c.execute("set transaction isolation level repeatable read read only")
             self._local.connection = c
             try:
@@ -139,7 +159,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
     def instance_transaction(self, tenant_id: str, proc_inst_id: str):
         if getattr(self._local,'connection',None) is not None:
             raise RuntimeError('nested storage transaction; runtime must reuse its transition')
-        with self._psycopg.connect(self.dsn,connect_timeout=5,row_factory=self._dict_row) as c:
+        with self._connect() as c:
             self._local.connection=c
             try:
                 row=c.execute('select proc_inst_id from bpm_proc_inst where tenant_id=%s and proc_inst_id=%s for update',
@@ -347,19 +367,22 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                         self._Jsonb([{'key':'incident','value':incident_id}]),asset,self._Jsonb([{'key':'asset','value':asset}]),limit)).fetchall()
             return [self._row(r) for r in rows]
 
-    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None, status=None, exclude_def=None):
+    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None, cache_values=None, status=None, exclude_def=None):
         """시작 요청 id(start_event_id)의 앞부분으로 고른 처리 건(최신부터, 변수 없이 요약 칸만). def_id=None 이면 모든 정의,
         status 를 주면 그 상태만, exclude_def 를 주면 그 정의는 빼고(시나리오 버튼 상태가 「이 버튼 경보로 연 처리 건」을 처리 건 전부를
-        변수째 읽지 않고 고른다 — P4-05)."""
+        변수째 읽지 않고 고른다 — P4-05). cache_prefix 를 주면 그 앞부분으로 시작한 처리 건도 함께 고르되, cache_values({변수 이름: 그 값이 품어야
+        할 부분})를 주면 그 변수가 그 값을 품는 것만이다 — 제공 문서의 추출 캐시 처리 건은 시작 id 가 그때의 지식 목록을 넣은 열쇠라, 지식이
+        바뀐 뒤(문서 적재 · 비움)에도 앞 실행을 원문 내용으로 찾는다(03-22)."""
+        match = self._Jsonb([{'key': k, 'value': v} for k, v in (cache_values or {}).items()])
         with self._conn() as c:
             return [self._row(r) for r in c.execute('''select proc_inst_id,proc_def_id,status,start_date,end_date,end_event
                 from bpm_proc_inst
                 where tenant_id=%s and (%s::text is null or proc_def_id=%s) and (%s::text is null or proc_def_id<>%s)
                 and is_deleted=false and (%s::text is null or status::text=%s) and
-                (left(start_event_id,%s)=%s or (%s <> '' and left(start_event_id,%s)=%s))
+                (left(start_event_id,%s)=%s or (%s <> '' and left(start_event_id,%s)=%s and variables_data @> %s::jsonb))
                 order by start_date desc,proc_inst_id desc limit %s offset %s''',
                 (tenant_id,def_id,def_id,exclude_def,exclude_def,status,status,len(event_prefix),event_prefix,cache_prefix or '',
-                 len(cache_prefix or ''),cache_prefix or '',limit,offset)).fetchall()]
+                 len(cache_prefix or ''),cache_prefix or '',match,limit,offset)).fetchall()]
 
     def hide_instances(self, tenant_id, def_id, ids):
         if not ids:return 0
@@ -486,7 +509,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         from . import service_progress as progress
         progress.validate_rows(events, proc_inst_id, todo_id)
         # Deliberately bypass _conn(): it reuses the locked business connection.
-        with self._psycopg.connect(self.dsn, connect_timeout=5, row_factory=self._dict_row) as c:
+        with self._connect() as c:
             c.execute("set local statement_timeout='5000ms'")
             inst = c.execute('select proc_inst_id,tenant_id,status,is_deleted from bpm_proc_inst where proc_inst_id=%s', (proc_inst_id,)).fetchone()
             wi = c.execute('select id,proc_inst_id,tenant_id,status,agent_orch,user_id,consumer from todolist where id=%s', (todo_id,)).fetchone()
@@ -540,7 +563,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         since: None(마지막 limit 건) 또는 앞서 받은 stream_cursor(`s:` + 위치 20자리, 그 위치부터 포함)."""
         if since is not None and not str(since).startswith('s:'):
             raise ValueError(f'처리 기록 흐름의 이어 받기 위치 {since!r}를 알 수 없습니다(s:로 시작하는 stream_cursor만 받습니다)')
-        with self._psycopg.connect(self.dsn, row_factory=self._dict_row, connect_timeout=5) as c:
+        with self._connect() as c:
             c.execute('select public.publish_event_positions()')
             c.commit()
             base = "select e.*, 's:' || lpad(e.stream_position::text,20,'0') as stream_cursor from events e where e.stream_position is not null"

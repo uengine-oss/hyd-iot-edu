@@ -6,7 +6,14 @@
   - 증거(Evidence) — 태그 · 집계 · 구간 · 비교 · 임계값. 시계열 SQL은 서버가 정해진 틀로 만든다(문서 · 에이전트가 SQL을 쓰지 않음)
   - 규칙(Rule) — 기존 결정표(진단 · 후보 · 규정)의 새 행. 기존 판단 입력을 TESTS, 출력 · 적용 대상, 감점 지표, 근거 절(DERIVED_FROM)
   - 원자 조치 값 — SOP가 쓰는 기존 Action과 값(CONSISTS_OF {value, seq}): 설비 명령 값 · 발주 공급사 · 작업지시 SOP. ADDRESSES(원인)
-스키마 v2의 기존 클래스 · 관계만 쓴다. 새 Action · 입력 · 결정표 · 증상은 만들지 않는다(시드 구조에 있는 것만 가리킨다).
+  - 새 항목 제안(NEW_KINDS) — 지금 지식에 없는 그 문서 설비의 구성 요소(Component) · 증상(Symptom -OBSERVED_BY-> Sensor) · 센서
+    (Sensor — 그 설비 시스템이 쓰는 태그, Component -MONITORED_BY->). 고장 유형 · 원인처럼 원문 인용이 있고, 사람이 검토 화면에서 항목마다
+    넣기를 골라야(approved) 적재된다 — 추출 제안은 승인하지 못하고, 자동 검증만 거친 적재(한 번에 적재)는 새 항목을 싣지 못한다(uEngine Ontology
+    Studio 의 틀 바꾸기 제안 tbox_proposals 와 같은 자리: 틀에 없는 개념은 데이터가 아니라 사람이 승인할 제안이다).
+스키마 v2의 기존 클래스 · 관계만 쓴다. 새 Action · 입력 · 결정표 · 경보 패턴 · 부품 · 공급사 · 상태 변수 · 성과 지표 · 설비(Asset)는 만들지 않는다
+(시드 구조에 있는 것만 가리킨다 — 설비 한 대와 그 운영 데이터는 그 현장의 시스템이 도구 서버로 준다). 가상 설비(설비 Asset 에 딸린 구성 요소)의 구조는
+넓히지 않는다: 새 증상 · 새 센서 · 수집하지 않는 값을 읽는 증거는 설비에 딸린 구성 요소의 고장 유형에 잇지 않고, 그 설비의 수집 태그(hydcommon.daq_contract)는
+설비에 딸리지 않은 구성 요소의 증거로 쓰지 않는다(new_item_issues).
 사람이 검토 화면에서 확인 · 수정한 것만 적재된다(manual_review.validate → manual_graph.commit).
 """
 from __future__ import annotations
@@ -22,11 +29,20 @@ from hydcommon.skill_scope import purchase_rule_problem
 from . import kgadmin
 
 KINDS = ('failure_modes', 'causes', 'evidence', 'rules')
-LIMITS = {'failure_modes': 50, 'causes': 100, 'evidence': 200, 'rules': 200}
+NEW_KINDS = ('components', 'symptoms', 'sensors')          # 새 항목 제안 — 사람이 항목마다 넣기를 골라야 적재된다(머리말)
+ALL_KINDS = KINDS + NEW_KINDS
+LIMITS = {'failure_modes': 50, 'causes': 100, 'evidence': 200, 'rules': 200, 'components': 50, 'symptoms': 100, 'sensors': 100}
 ID_RE = {'failure_modes': re.compile(r'^fm:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'causes': re.compile(r'^cause:[a-z0-9]+(?:-[a-z0-9]+)*$'),
-         'evidence': re.compile(r'^evd:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'rules': re.compile(r'^rule:[a-z0-9]+(?:-[a-z0-9]+)*$')}
-LABEL = {'failure_modes': 'FailureMode', 'causes': 'Cause', 'evidence': 'Evidence', 'rules': 'Rule'}
-REF_RE = {p: re.compile(rf'^{p}:[a-z0-9]+(?:-[a-z0-9.]+)*$') for p in ('comp', 'sym', 'part', 'sv', 'msr', 'in', 'action', 'role', 'skill', 'fm', 'cause')}
+         'evidence': re.compile(r'^evd:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'rules': re.compile(r'^rule:[a-z0-9]+(?:-[a-z0-9]+)*$'),
+         'components': re.compile(r'^comp:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'symptoms': re.compile(r'^sym:[a-z0-9]+(?:-[a-z0-9]+)*$'),
+         'sensors': re.compile(r'^sen:[a-z0-9]+(?:-[a-z0-9]+)*$')}
+LABEL = {'failure_modes': 'FailureMode', 'causes': 'Cause', 'evidence': 'Evidence', 'rules': 'Rule',
+         'components': 'Component', 'symptoms': 'Symptom', 'sensors': 'Sensor'}
+#: 새 항목 한 건을 학생 화면에서 부르는 이름(검토 화면 · 지식 지도와 같은 이름 — it/portal/www/enterprise.js LABEL_KO)
+NEW_KIND_KO = {'components': '구성 요소', 'symptoms': '증상', 'sensors': '센서'}
+REF_RE = {p: re.compile(rf'^{p}:[a-z0-9]+(?:-[a-z0-9.]+)*$') for p in ('comp', 'sym', 'sen', 'part', 'sv', 'msr', 'in', 'action', 'role', 'skill', 'fm', 'cause')}
+#: 그 설비 시스템이 쓰는 센서 태그의 꼴(문서가 새 센서로 제안하는 태그 — 수집 계약의 태그는 TAGS)
+SENSOR_TAG_RE = re.compile(r'^[A-Za-z][A-Za-z0-9_.-]{0,63}$')
 SOP_RE = kgadmin.SOP_ID_RE
 TABLES = {'dt:diagnose-cause': ('SELECT',), 'dt:action-candidates': ('SELECT',), 'dt:compliance': ('EXCLUDE', 'WARN', 'PENALTY')}
 OPERATORS = ('<', '<=', '>', '>=', '==', '!=')
@@ -92,7 +108,9 @@ def _skill_ref(value, sops, name):
     segment, so its existence is checked on the merged whole-document proposal (manual_segments.merge · validate_proposal)."""
     if isinstance(value, str) and SOP_RE.fullmatch(value):
         if sops is not None and value not in sops:
-            raise ValueError(f'{name}: {value}는 이 문서의 SOP가 아닙니다. 다른 문서의 스킬은 skill:… id로 가리키세요')
+            # 추출 제안(AI)에도 검토본(사람)에도 같은 문장이다 — 검토에서 그 절차를 뺐거나 번호를 바꿨으면 이 규칙도 함께 빼거나 고쳐야 한다
+            raise ValueError(f'{name}: 절차 {value}{particle(value, "이")} 이 문서의 절차 목록에 없습니다 — 그 절차를 남기거나 이 규칙을 함께 빼세요'
+                             '(다른 문서의 조치 방법은 skill:… id로 가리킵니다)')
         return value
     return _ref(value, 'skill', name)
 
@@ -191,19 +209,24 @@ def validate_link(sop, link, *, sops, require_failure_mode):
     return out
 
 
-def validate(knowledge, *, sections, sops, anchor):
+def validate(knowledge, *, sections, sops, anchor, reviewed=False):
     """Shape · enum · range · internal reference checks of the knowledge part of a proposal or a reviewed body.
-    `anchor(value)` validates (and may complete) one citation. Graph existence is checked at commit (check_graph)."""
+    `anchor(value)` validates (and may complete) one citation. Graph existence is checked at commit (check_graph).
+    reviewed=False: an extraction proposal (or its preview) — a new item (NEW_KINDS) carries no approval. reviewed=True: the body a
+    person reviewed — every new item in it must carry approved=true (the reviewer chose 「넣기」). The result always has the four
+    knowledge kinds and a new kind only when it has items (a document with no new items keeps the plan shape it always had)."""
     if knowledge is None:
         return None
-    if not isinstance(knowledge, dict) or set(knowledge) - set(KINDS):
-        raise ValueError(f'knowledge는 {list(KINDS)} 목록을 가진 객체입니다')
+    if not isinstance(knowledge, dict) or set(knowledge) - set(ALL_KINDS):
+        raise ValueError(f'knowledge는 {list(ALL_KINDS)} 목록을 가진 객체입니다')
     out, seen, errors = {}, set(), []
-    for kind in KINDS:
+    for kind in ALL_KINDS:
         items = knowledge.get(kind) or []
         if not isinstance(items, list) or len(items) > LIMITS[kind]:
             errors.append(f'knowledge.{kind}: 최대 {LIMITS[kind]}개의 목록이어야 합니다')
             items = []
+        if kind in NEW_KINDS and not items:
+            continue
         out[kind] = []
         for item in items:
             try:
@@ -213,6 +236,8 @@ def validate(knowledge, *, sections, sops, anchor):
                 if not isinstance(nid, str) or not ID_RE[kind].fullmatch(nid) or nid in seen:
                     raise ValueError(f'knowledge.{kind}: id 형식 또는 중복을 확인하세요 ({nid!r}, 예: {ID_RE[kind].pattern})')
                 seen.add(nid)
+                if kind in NEW_KINDS:
+                    _approval(kind, nid, item, reviewed)
                 section = item.get('section')
                 if section not in sections:
                     raise ValueError(f'{nid}: section {section!r}이 sections의 ref에 없습니다')
@@ -220,16 +245,24 @@ def validate(knowledge, *, sections, sops, anchor):
                 out[kind].append(_ITEM[kind](item, base, sops))
             except ValueError as exc:
                 errors.append(str(exc))
-    own = {k: {i['id'] for i in out[k]} for k in KINDS}
-    for c in out['causes']:
-        if c['failure_mode'] not in own['failure_modes'] and not c['failure_mode'].startswith('fm:'):
-            errors.append(f"{c['id']}: 고장 유형이 필요합니다")
-    for e in out['evidence']:
-        if e['cause'] not in own['causes'] and not REF_RE['cause'].fullmatch(e['cause']):
-            errors.append(f"{e['id']}: 원인 id가 필요합니다")
+    tags = [s['tag'] for s in out.get('sensors') or []]
+    for tag in sorted({t for t in tags if tags.count(t) > 1}):
+        errors.append(f"knowledge.sensors: 태그 {tag}{particle(tag, '을')} 쓰는 새 센서가 둘 이상입니다 — 센서 하나가 태그 하나입니다")
+    # 원인의 고장 유형 · 증거의 원인이 실제로 있는지는 꼴(_ref)이 아니라 그래프가 본다 — 적재 전 검사(REFERENCE_NOT_FOUND)와 적재(manual_graph._validate_targets).
+    # 증거 · 센서 · 새 증상이 지금 지식의 설비 구조와 맞는지도 그래프가 본다(new_item_issues)
     if errors:
         raise ValueError(' / '.join(dict.fromkeys(errors)))
     return out
+
+
+def _approval(kind, nid, item, reviewed):
+    """새 항목의 넣기 표시(approved). 추출 제안(AI)은 승인하지 못하고, 사람이 검토한 본문은 넣기를 고른 항목만 담는다."""
+    approved = item.get('approved')
+    what = f"새 {NEW_KIND_KO[kind]} 「{item.get('name') or nid}」"
+    if reviewed and approved is not True:
+        raise ValueError(f"{nid}: {what}{particle(what, '은')} 사람이 검토 화면에서 「넣기」를 골라야 적재됩니다 — 넣지 않으려면 「제외」를 고르세요")
+    if not reviewed and approved is not None:
+        raise ValueError(f"{nid}: 추출 제안은 {what}{particle(what, '을')} 승인하지 않습니다(approved 칸을 쓰지 마세요) — 넣을지는 사람이 검토 화면에서 고릅니다")
 
 
 def source_value_warnings(proposal):
@@ -286,10 +319,12 @@ def _cause(item, base, sops):
 
 
 def _evidence(item, base, sops):
+    """tag 가 수집 계약의 태그면 판단 엔진이 평가할 시계열 SQL 을 서버가 만든다. 그 밖의 태그는 센서(이 문서의 새 센서나 지금 지식의 센서)의 태그여야
+    하고(new_item_issues 가 그래프로 본다) SQL 이 없다 — 이 시스템이 수집하지 않는 값이라 평가하지 않는다는 문장(unevaluated_note)이 그 자리에 선다."""
     nid = base['id']
     tag, agg, expect = item.get('tag'), item.get('aggregate'), item.get('expect')
-    if tag not in TAGS:
-        raise ValueError(f'{nid}: tag는 수집 계약의 태그여야 합니다 {sorted(TAGS)}')
+    if tag not in TAGS and not (isinstance(tag, str) and SENSOR_TAG_RE.fullmatch(tag)):
+        raise ValueError(f'{nid}: tag는 수집 계약의 태그 {sorted(TAGS)} 또는 센서의 태그(이 문서가 새로 제안하는 센서 · 지금 지식의 센서)여야 합니다 ({tag!r})')
     if agg not in AGGREGATES:
         raise ValueError(f'{nid}: aggregate는 {AGGREGATES} 중 하나')
     if expect not in EXPECTS:
@@ -298,10 +333,49 @@ def _evidence(item, base, sops):
     if type(window) is not int or not 1 <= window <= 3600:
         raise ValueError(f'{nid}: window_seconds는 1~3600 정수')
     threshold = _number(item.get('threshold'), f'{nid} 임계치')
-    return dict(base, cause=_ref(item.get('cause'), 'cause', f'{nid} 원인'), name=_text(item.get('name'), f'{nid} 이름', 120),
-                tag=tag, aggregate=agg, window_seconds=window, expect=expect, threshold=threshold,
-                weight=_number(item.get('weight'), f'{nid} 가중치 weight', 0.0, 1.0),
-                rule=evidence_rule(tag, agg, window, expect, threshold), sql=evidence_sql(tag, agg, window))
+    out = dict(base, cause=_ref(item.get('cause'), 'cause', f'{nid} 원인'), name=_text(item.get('name'), f'{nid} 이름', 120),
+               tag=tag, aggregate=agg, window_seconds=window, expect=expect, threshold=threshold,
+               weight=_number(item.get('weight'), f'{nid} 가중치 weight', 0.0, 1.0), rule=evidence_rule(tag, agg, window, expect, threshold))
+    if tag in TAGS:
+        out['sql'] = evidence_sql(tag, agg, window)
+    return out
+
+
+def unevaluated_note(tag, sensor_name=None):
+    """수집하지 않는 값을 읽는 증거의 한 문장 — 지식(Evidence.note)과 적재 전 검사의 참고(notices)가 이 한 곳의 글을 쓴다."""
+    what = f"「{sensor_name}」(태그 {tag})" if sensor_name else f"태그 {tag}"
+    return (f"이 증거가 읽는 {what}{particle(what, '은')} 이 시스템이 수집하는 설비 값이 아니어서 판단 엔진이 이 증거를 평가하지 않습니다 — "
+            "이 설비를 맡은 에이전트가 그 설비 시스템을 연결한 도구 서버로 값을 읽어 확인합니다")
+
+
+def _aliases(item, nid):
+    aliases = item.get('aliases') or []
+    if not isinstance(aliases, list) or len(aliases) > 10:
+        raise ValueError(f'{nid}: aliases는 최대 10개의 문자열 목록입니다')
+    return [_text(a, f'{nid} 별칭', 60) for a in aliases]
+
+
+def _component(item, base, sops):
+    nid = base['id']
+    return dict(base, name=_text(item.get('name'), f'{nid} 이름', 120), aliases=_aliases(item, nid))
+
+
+def _symptom(item, base, sops):
+    nid = base['id']
+    return dict(base, name=_text(item.get('name'), f'{nid} 이름', 120), aliases=_aliases(item, nid),
+                sensors=_refs(item.get('sensors'), 'sen', f'{nid} 관측 센서', limit=10))
+
+
+def _sensor(item, base, sops):
+    nid, tag = base['id'], item.get('tag')
+    if not isinstance(tag, str) or not SENSOR_TAG_RE.fullmatch(tag):
+        raise ValueError(f'{nid}: tag는 그 설비 시스템이 쓰는 센서 태그입니다(영문자로 시작하는 영문자 · 숫자 · _ . - 64자 이내 — {tag!r})')
+    if tag in TAGS:
+        raise ValueError(f"{nid}: 태그 {tag}{particle(tag, '은')} 이 시스템이 수집하는 유압 설비 값의 이름이라 새 센서의 태그로 쓸 수 없습니다 — "
+                         "이 문서 설비의 값이면 그 설비 시스템에서 이 이름과 겹치지 않는 태그를 적으세요")
+    return dict(base, name=_text(item.get('name'), f'{nid} 이름', 120), tag=tag,
+                unit=_text(item.get('unit'), f'{nid} 단위', 20, required=False) or None,
+                component=_ref(item.get('component'), 'comp', f'{nid} 구성 요소'))
 
 
 def _rule(item, base, sops):
@@ -331,11 +405,11 @@ def _rule(item, base, sops):
         if table == 'dt:diagnose-cause':
             outputs = [_ref(o, 'cause', f'{nid} 출력 원인') for o in outputs]
         else:
-            outputs = [_skill_ref(o, sops, f'{nid} 출력 SOP') for o in outputs]
+            outputs = [_skill_ref(o, sops, f'규칙 {nid}의 결과') for o in outputs]
     else:
         if outputs:
             raise ValueError(f'{nid}: {effect} 규칙은 applies_to(대상 SOP, 비우면 모든 후보)를 씁니다')
-        applies = [_skill_ref(o, sops, f'{nid} 적용 SOP') for o in applies]
+        applies = [_skill_ref(o, sops, f'규칙 {nid}의 적용 대상') for o in applies]
     outputs, applies = list(dict.fromkeys(outputs)), list(dict.fromkeys(applies))
     penalty = item.get('penalty')
     penalizes = item.get('penalizes')
@@ -351,11 +425,12 @@ def _rule(item, base, sops):
                 penalizes=penalizes, order=order, annotation=_text(item.get('annotation'), f'{nid} 설명', 500, required=False))
 
 
-_ITEM = {'failure_modes': _fm, 'causes': _cause, 'evidence': _evidence, 'rules': _rule}
+_ITEM = {'failure_modes': _fm, 'causes': _cause, 'evidence': _evidence, 'rules': _rule,
+         'components': _component, 'symptoms': _symptom, 'sensors': _sensor}
 
 
 def anchors(knowledge):
-    for kind in KINDS:
+    for kind in ALL_KINDS:
         for item in (knowledge or {}).get(kind) or []:
             if isinstance(item, dict) and isinstance(item.get('anchor'), dict):
                 yield item['anchor']
@@ -368,11 +443,16 @@ def skill_of(ref, skill_id):
 # ------------------------------------------------------------------ graph side (read-only; commit-time checks)
 
 CATALOG_Q = {
-    'components': 'MATCH (n:Component) RETURN n.id AS id, n.name AS name ORDER BY id',
+    # assets: 그 구성 요소가 딸린 설비(Asset -HAS_COMPONENT->)의 코드 — 문서는 그 관계를 만들지 않으므로 빈 목록이면 문서가 넣은 구성 요소다(new_item_issues)
+    # (목록은 정렬해 읽는다 — 카탈로그는 제공 문서 추출의 캐시 열쇠에 들어가 같은 지식이면 같은 글이어야 한다)
+    'components': 'MATCH (n:Component) RETURN n.id AS id, n.name AS name, n.aliases AS aliases, '
+                  'COLLECT { MATCH (a:Asset)-[:HAS_COMPONENT]->(n) RETURN a.code ORDER BY a.code } AS assets ORDER BY id',
+    'sensors': 'MATCH (n:Sensor) RETURN n.id AS id, n.name AS name, n.tag AS tag, n.unit AS unit, '
+               'COLLECT { MATCH (c:Component)-[:MONITORED_BY]->(n) RETURN c.id ORDER BY c.id } AS components ORDER BY id',
     # 2026-10-25 final4: 정기 정비 정책의 model_assets(원문 '1~3호기')를 옮길 설비 목록이 없어 PM-02 추출의 정책이 모두 빠졌다
     'assets': 'MATCH (n:Asset) RETURN n.id AS id, n.code AS code, n.name AS name ORDER BY id',
     'symptoms': 'MATCH (n:Symptom) OPTIONAL MATCH (p:AnomalyPattern)-[:DETECTS]->(n) '
-                'RETURN n.id AS id, n.name AS name, [c IN collect(DISTINCT p.code) WHERE c IS NOT NULL] AS patterns ORDER BY id',
+                'RETURN n.id AS id, n.name AS name, n.aliases AS aliases, [c IN collect(DISTINCT p.code) WHERE c IS NOT NULL] AS patterns ORDER BY id',
     'patterns': 'MATCH (n:AnomalyPattern) RETURN n.id AS id, n.code AS code, n.name AS name ORDER BY id',
     'parts': 'MATCH (n:Part) OPTIONAL MATCH (n)-[x:SUPPLIED_BY]->(s:Supplier) OPTIONAL MATCH (c:Component)-[:USES_PART]->(n) '
              'RETURN n.id AS id, n.name AS name, n.partNo AS partNo, collect(DISTINCT c.id) AS usedIn, '
@@ -421,8 +501,10 @@ def catalog(session):
 
 def conflicts(session, knowledge, document=None):
     """Before commit (review aid): which proposed knowledge ids already exist in the graph and who holds them. Read-only;
-    the commit-time ownership check stays the hard rule. A reviewer drops such an item and refers to the existing id."""
-    ids = [(LABEL[k], i['id']) for k in KINDS for i in (knowledge or {}).get(k) or [] if isinstance(i, dict) and i.get('id')]
+    the commit-time ownership check stays the hard rule. A reviewer drops such an item and refers to the existing id.
+    owner_name = 그 항목을 가진 문서의 지금 판을 적재한 파일 이름(검사 문장이 문서를 그 이름으로 부른다 — 문서의 그래프 열쇠는 학생이 읽을 이름이 아니다)."""
+    import json
+    ids = [(LABEL[k], i['id']) for k in ALL_KINDS for i in (knowledge or {}).get(k) or [] if isinstance(i, dict) and i.get('id')]
     if not ids:
         return []
     def read(tx):
@@ -431,11 +513,17 @@ def conflicts(session, knowledge, document=None):
             row = tx.run(f'MATCH (n:{label} {{id:$id}}) RETURN n.id AS id', id=nid).single()
             if not row:
                 continue
-            doc = tx.run('MATCH (d:ManualIngestionDocument) WHERE d.snapshot CONTAINS $needle RETURN d.id AS id LIMIT 1',
+            doc = tx.run('MATCH (d:ManualIngestionDocument) WHERE d.snapshot CONTAINS $needle '
+                         'OPTIONAL MATCH (b:ManualIngestionBatch {id:d.head}) RETURN d.id AS id, b.receipt AS receipt LIMIT 1',
                          needle='"id":"' + nid + '"').single()
             if doc and doc['id'] == document:
                 continue                      # the same document's earlier batch — a re-ingest replaces it
-            out.append(dict(id=nid, label=label, owner=doc['id'] if doc else 'seed', kind='other_document' if doc else 'seed_or_admin'))
+            try:
+                name = json.loads(doc['receipt']).get('filename') if doc and doc['receipt'] else None
+            except (TypeError, ValueError):
+                name = None
+            out.append(dict(id=nid, label=label, owner=doc['id'] if doc else 'seed', kind='other_document' if doc else 'seed_or_admin',
+                            **({'owner_name': name} if name else {})))
         return out
     return session.execute_read(read)
 
@@ -523,7 +611,7 @@ def graph_semantics(plan, catalog):
             if t['input'] not in inputs:
                 issue('RULE_INPUT_NOT_DECLARED', r['id'], 'knowledge.rules.tests',
                       f"{r['id']}: 규칙이 견주는 입력 {t['input']}은 판단 「{table.get('name') or table['decision']}」이 읽는 입력이 아니라서 "
-                      "이 규칙을 적재할 수 없습니다. 판단이 읽는 입력은 기본 제공 지식이 정해 둔 것뿐입니다 — 지식 › 데이터 원천에서 표 정의로 만든 "
+                      "이 규칙을 적재할 수 없습니다. 판단이 읽는 입력은 기본 제공 지식이 정해 둔 것뿐입니다 — 「지식 › 문서 등록 › 업무 DB 표 정의」로 만든 "
                       "입력은 판단 규칙에 쓸 수 없습니다. 이 판단이 읽는 입력 가운데 하나로 바꾸세요: "
                       + ', '.join(f"{i}({inputs[i].get('name') or inputs[i].get('variable')})" for i in sorted(inputs)))
             else:
@@ -534,7 +622,10 @@ def graph_semantics(plan, catalog):
             outputs = [own.get(ref) or stored.get(ref) for ref in r.get('outputs') or []]
             for output in outputs:
                 if output and (output.get('kind') == 'reference' or output.get('executable') is False):
-                    issue('RULE_OUTPUT_NOT_EXECUTABLE', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 참고 절차는 실행 후보 Rule 출력이 될 수 없습니다")
+                    what = f"「{output.get('name')}」({output.get('sopId') or output.get('id')})" if output.get('name') else str(output.get('sopId') or output.get('id'))
+                    issue('RULE_OUTPUT_NOT_EXECUTABLE', r['id'], 'knowledge.rules.outputs',
+                          f"{r['id']}: 이 규칙이 조치 후보로 내는 절차 {what}{particle(what, '은')} 원문만 보관하는 참고 절차라 후보가 될 수 없습니다 — "
+                          "이 규칙을 함께 빼거나 그 절차의 종류를 되돌리세요")
                 if output and output.get('id') in own and any(t.get('variable') == 'pattern' and t.get('value') == PM_PATTERN for t in r['tests']):
                     effect_codes = [actions.get(a['action'],{}).get('code') for a in output.get('actions') or []]
                     if sum(code in ('WO_CREATE','WO_RESCHEDULE') for code in effect_codes) != 1:
@@ -551,6 +642,178 @@ def graph_semantics(plan, catalog):
     return plan, issues
 
 
+def _plain(text):
+    return re.sub(r'\s+', '', str(text or '')).lower()
+
+
+def component_assets(knowledge, catalog):
+    """구성 요소 id → 그것이 딸린 설비(Asset -HAS_COMPONENT->)의 코드 목록. 이 문서의 새 구성 요소와 문서가 넣은 구성 요소는 [](문서는 그 관계를 만들지
+    않는다). 카탈로그의 구성 요소에 설비 목록(assets)이 있어야 한다 — 없는 옛 카탈로그는 부르는 쪽(new_item_issues)이 먼저 가린다."""
+    out = {c['id']: list(c['assets'] or []) for c in catalog['components']}
+    out.update({c['id']: [] for c in (knowledge or {}).get('components') or []})
+    return out
+
+
+def _failure_mode_plants(knowledge, catalog):
+    """고장 유형 id → 그 고장이 생기는 구성 요소가 딸린 설비 코드 목록([] = 설비에 딸리지 않은 구성 요소, None = 구성 요소를 모름)."""
+    assets = component_assets(knowledge, catalog)
+    rows = {r['id']: r for r in catalog['failure_modes']}
+    rows.update({r['id']: r for r in (knowledge or {}).get('failure_modes') or []})      # 이 문서의 판이 지금 지식의 같은 id 를 대신한다(개정)
+    return {fm: assets.get(r.get('component')) for fm, r in rows.items()}
+
+
+def outside_plant(knowledge, catalog):
+    """설비에 딸리지 않은 구성 요소에서 생기는 고장 유형 id(이 문서의 것 · 지금 지식의 것) — 판단 엔진(경보 → 증상 → 고장 유형)이 닿지 않는 곳이다."""
+    return {fm for fm, codes in _failure_mode_plants(knowledge, catalog).items() if codes == []}
+
+
+def performers(plan, catalog):
+    """절차마다 그 절차를 수행하는 이 시스템의 업무 시스템 {절차 번호: System id 또는 None} — 적재(manual_graph.desired)가 이 한 판정으로 System -HAS_SKILL-> Skill 을
+    긋는다. 구매 절차는 ERP(이 시스템 업무 데이터의 부품 · 공급사를 산다), 이 시스템이 운영하는 설비(설비에 딸린 구성 요소)의 고장 조치는 설비 명령이면 SCADA ·
+    정비 요청이면 CMMS. 그 밖의 설비(문서가 새 항목으로 넣은 다른 설비 — 학생 설비)의 절차는 None 이다: 그 실행은 그 설비 시스템을 도구 서버로 연결한 흐름의
+    「승인 뒤 MCP 호출」이 하므로, 이 시스템의 CMMS · SCADA 가 수행한다고 지식 지도에 적지 않는다. 참고 절차는 수행하지 않아 싣지 않는다."""
+    plant = {fm for fm, codes in _failure_mode_plants(plan.get('knowledge'), catalog).items() if codes}
+    out = {}
+    for p in plan['procedures']:
+        if p.get('kind') == 'reference':
+            continue
+        if p.get('scope') == 'purchase':
+            out[p['id']] = 'sys:erp'
+        elif p.get('failureMode') in plant:
+            out[p['id']] = 'sys:scada' if p['kind'] == 'control' else 'sys:cmms'
+        else:
+            out[p['id']] = None
+    return out
+
+
+def new_item_issues(knowledge, catalog, procedures):
+    """새 항목(구성 요소 · 증상 · 센서)과 그것을 쓰는 증거 · 고장 유형 · 원인 · 절차가 지금 지식의 설비 구조와 맞는가 → (issues, notices).
+    적재 전 검사(manual_preflight.validate)와 적재(check_graph)가 같은 판정을 쓴다. 가상 설비의 구조는 넓히지 않는다(머리말) — 설비에 딸린
+    구성 요소(카탈로그 components 의 assets 가 있는 것)와 수집 태그(TAGS)의 센서가 그 설비의 구조다. procedures = 연결을 풀어 둔 절차 목록(검토 계획의 꼴).
+      ① 새 센서의 태그는 다른 센서가 쓰지 않는다. 새 센서는 설비에 딸린 구성 요소에 붙지 않는다
+      ② 새 증상은 설비에 딸린 구성 요소의 고장 유형을 가리키지 않고, 그 관측 센서는 수집 태그의 센서가 아니다. 설비에 딸리지 않은 구성 요소의
+         고장 유형은 경보 패턴이 감지하는 증상을 쓰지 않는다(쓰면 그 설비의 경보가 이 고장 유형까지 닿는다)
+      ③ 수집하지 않는 태그를 읽는 증거는 이 문서의 새 센서나 지금 지식의 센서를 가리키고, 그 원인의 고장 유형은 설비에 딸리지 않은 구성 요소에서
+         생긴다. 수집 태그를 읽는 증거의 고장 유형은 설비에 딸린 구성 요소에서 생긴다(다른 설비의 증거가 이 시스템의 수집 값을 읽지 않게)
+      ④ 설비에 딸리지 않은 구성 요소의 고장(다른 설비)의 원인 · 고장 조치는 이 시스템 설비의 부품 · 상태 변수(INVOLVES_PART · DISTURBS · AFFECTS sv:)와
+         이 시스템의 원자 조치(CONSISTS_OF — 카탈로그의 원자 조치는 모두 이 시스템의 구동기 · 업무 시스템을 TARGETS 로 가리킨다)를 가리키지 않는다. 성과
+         지표(msr:)는 회사의 지표라 가리킬 수 있다. 구매 절차는 고장 유형이 없어 해당하지 않는다(이 시스템 업무 데이터의 부품을 산다)
+    notices(고칠 곳이 아니라 알고 넘어갈 것): 판단 엔진이 평가하지 않는 증거(unevaluated_note), 지금 지식의 같은 종류 항목과 이름이 같은 새 항목.
+    구성 요소의 설비 · 센서 목록이 없는 카탈로그(그 칸이 생기기 전에 추출 작업에 고정한 것)로는 판정하지 않고 CATALOG_OUTDATED 한 건으로 말한다."""
+    k = knowledge or {}
+    issues, notices = [], []
+
+    def issue(code, owner, field, message):
+        issues.append(dict(code=code, sop=owner, field=field, message=message))
+    if 'sensors' not in catalog or any('assets' not in c for c in catalog['components']):
+        issue('CATALOG_OUTDATED', None, 'catalog', '이 검사에 쓴 지금 지식 목록이 구성 요소의 설비 · 센서를 싣지 않은 옛 목록이라 새 항목과 증거의 설비 구조를 '
+              '판정하지 않았습니다 — 지금 지식으로 다시 검사하세요(AI 추출 결과를 다시 열면 다시 검사합니다)')
+        return issues, notices
+    own = {kind: {i['id']: i for i in k.get(kind) or []} for kind in ('components', 'symptoms', 'sensors', 'failure_modes', 'causes')}
+    components = {c['id']: c for c in catalog['components']}
+    sensors = {s['id']: s for s in catalog['sensors']}
+    fms = {r['id']: r for r in catalog['failure_modes']}
+    causes = {r['id']: r for r in catalog['causes']}
+    plant = component_assets(k, catalog).get       # 구성 요소 → 그것이 딸린 설비 코드(문서가 넣은 것은 [], 모르는 것은 None — 그 참조는 적재 전 검사가 짚는다)
+
+    def named(row, nid):
+        return f"「{(row or {}).get('name') or nid}」"
+    comp_name = lambda cid: named(own['components'].get(cid) or components.get(cid), cid)            # noqa: E731
+    fm_name = lambda fm: named(own['failure_modes'].get(fm) or fms.get(fm), fm)                    # noqa: E731
+    fm_component = lambda fm: (own['failure_modes'].get(fm) or fms.get(fm) or {}).get('component')     # noqa: E731
+    cause_fms = lambda c: [own['causes'][c]['failure_mode']] if c in own['causes'] else list((causes.get(c) or {}).get('failureModes') or [])   # noqa: E731
+    for sid, s in own['sensors'].items():
+        taken = next((r for r in sensors.values() if r.get('tag') == s['tag'] and r['id'] != sid), None)
+        if taken:
+            there = named(taken, taken['id'])
+            issue('SENSOR_TAG_TAKEN', sid, 'tag', f"{sid}: 새 센서 「{s['name']}」의 태그 {s['tag']}{particle(s['tag'], '은')} 지금 지식의 센서 {there}{particle(there, '이')} "
+                  "이미 씁니다 — 같은 값이면 새 센서를 제외하고 그 센서를 쓰게 AI 추출을 다시 하세요")
+        codes = plant(s['component'])
+        if codes:
+            issue('NEW_ITEM_ON_PLANT', sid, 'component', f"{sid}: 새 센서 「{s['name']}」{particle(s['name'], '은')} 설비 {' · '.join(codes)}의 구성 요소 {comp_name(s['component'])}에 "
+                  "붙어 있습니다 — 그 설비의 센서는 지금 지식에 있는 것만 씁니다. 다른 설비의 센서면 그 설비의 구성 요소에 붙이세요")
+    for sym, s in own['symptoms'].items():
+        for sen in s['sensors']:
+            row = own['sensors'].get(sen) or sensors.get(sen)
+            if row and row.get('tag') in TAGS:
+                there = named(row, sen)
+                issue('NEW_ITEM_ON_PLANT', sym, 'sensors', f"{sym}: 새 증상 「{s['name']}」의 관측 센서 {there}{particle(there, '은')} 이 시스템이 수집하는 설비 값의 "
+                      "센서입니다 — 그 설비의 증상은 지금 지식에 있는 것만 씁니다")
+    patterned = {r['id']: r for r in catalog['symptoms'] if r.get('patterns')}
+    for f in own['failure_modes'].values():
+        codes = plant(f['component'])
+        for sym in f['symptoms'] if codes is not None else ():
+            if codes and sym in own['symptoms']:
+                new = own['symptoms'][sym]['name']
+                issue('NEW_ITEM_ON_PLANT', f['id'], 'symptoms', f"{f['id']}: 고장 유형 「{f['name']}」{particle(f['name'], '은')} 설비 {' · '.join(codes)}의 구성 요소 "
+                      f"{comp_name(f['component'])}에서 생기는데 새 증상 「{new}」{particle(new, '을')} 가리킵니다 — 그 설비의 증상은 지금 지식에 있는 것만 씁니다")
+            if not codes and sym in patterned:
+                name = named(patterned[sym], sym)
+                issue('PLANT_SYMPTOM_ON_OTHER', f['id'], 'symptoms', f"{f['id']}: 고장 유형 「{f['name']}」{particle(f['name'], '은')} 설비에 딸리지 않은 구성 요소 "
+                      f"{comp_name(f['component'])}에서 생기는데, 증상 {name}{particle(name, '은')} 이 시스템의 경보가 감지하는 설비 증상이라 그 경보가 이 고장 유형까지 "
+                      "닿습니다 — 이 문서 설비의 증상을 새 항목으로 쓰세요")
+    known_tags = {r['tag'] for r in sensors.values() if r.get('tag')} | {s['tag'] for s in own['sensors'].values()}
+    own_names = {s['tag']: s['name'] for s in own['sensors'].values()}       # 그래프의 증거 문장(desired)과 같은 이름 — 이 문서의 새 센서만
+    for e in k.get('evidence') or []:
+        collected = e['tag'] in TAGS
+        if not collected and e['tag'] not in known_tags:
+            issue('REFERENCE_NOT_FOUND', e['id'], 'tag', f"{e['id']}: 증거 「{e['name']}」{particle(e['name'], '이')} 읽는 태그 {e['tag']}{particle(e['tag'], '은')} 이 시스템의 "
+                  "수집 값도, 이 문서의 새 센서도, 지금 지식의 센서도 아닙니다 — 그 값을 재는 센서를 새 항목으로 넣거나 이 증거를 적재에서 제외하세요")
+            continue
+        for fm in cause_fms(e['cause']):
+            cid = fm_component(fm)
+            codes = plant(cid) if cid else None
+            if codes is None:
+                continue
+            if not collected and codes:
+                issue('NEW_ITEM_ON_PLANT', e['id'], 'tag', f"{e['id']}: 증거 「{e['name']}」{particle(e['name'], '은')} 이 시스템이 수집하지 않는 값({e['tag']})을 읽는데, "
+                      f"그 원인의 고장 유형 {fm_name(fm)}{particle(fm_name(fm), '은')} 설비 {' · '.join(codes)}의 구성 요소 {comp_name(cid)}에서 생깁니다 — "
+                      "그 설비의 증거는 이 시스템의 수집 값을 읽습니다")
+            if collected and not codes:
+                issue('PLANT_TAG_ON_OTHER', e['id'], 'tag', f"{e['id']}: 증거 「{e['name']}」{particle(e['name'], '은')} 이 시스템이 수집하는 유압 설비 값 "
+                      f"{e['tag']}{particle(e['tag'], '을')} 읽는데, 그 원인의 고장 유형 {fm_name(fm)}{particle(fm_name(fm), '은')} 설비에 딸리지 않은 구성 요소 "
+                      f"{comp_name(cid)}에서 생깁니다 — 이 문서 설비의 값이면 그 값을 재는 센서를 새 항목으로 넣고 그 태그를 쓰세요")
+        if not collected:
+            notices.append(dict(code='EVIDENCE_NOT_EVALUATED', sop=e['id'], field='tag',
+                                message=f"증거 「{e['name']}」: " + unevaluated_note(e['tag'], own_names.get(e['tag']))))
+    outside = outside_plant(k, catalog)
+    lookup = {key: {r['id']: r for r in catalog.get(key) or []} for key in ('parts', 'state_variables', 'actions')}
+
+    def plant_link(owner, field, who, fm, what, key, nid, fix):
+        target = f"{what} {named(lookup[key].get(nid), nid)}"
+        issue('PLANT_LINK_ON_OTHER', owner, field, f"{owner}: {who}{particle(who, '은')} 설비에 딸리지 않은 구성 요소 {comp_name(fm_component(fm))}에서 생기는 "
+              f"고장 {fm_name(fm)}{particle(fm_name(fm), '을')} 다루는데, 이 시스템이 운영하는 설비의 {target}{particle(target, '을')} 가리킵니다 — 다른 설비의 "
+              f"지식은 이 시스템 설비의 부품 · 상태 변수 · 원자 조치에 잇지 않습니다(그 설비의 실행은 그 설비 시스템을 도구 서버로 연결한 흐름이 합니다). {fix}")
+    for c in own['causes'].values():
+        if c['failure_mode'] in outside:
+            who, fix = f"원인 「{c['name']}」", '이 원인을 적재에서 제외하거나 AI 추출을 다시 하세요'
+            for part in c['parts']:
+                plant_link(c['id'], 'parts', who, c['failure_mode'], '부품', 'parts', part, fix)
+            for d in c['disturbs']:
+                plant_link(c['id'], 'disturbs', who, c['failure_mode'], '상태 변수', 'state_variables', d['target'], fix)
+    for p in procedures:
+        if p.get('kind') == 'reference' or p.get('scope') == 'purchase' or p.get('failureMode') not in outside:
+            continue
+        who = f"절차 「{p.get('name') or p['id']}」"
+        for a in p.get('actions') or []:
+            plant_link(p['id'], 'link.actions', who, p['failureMode'], '원자 조치', 'actions', a['action'], 'AI 추출을 다시 하세요')
+        for a in p.get('affects') or []:
+            if str(a.get('target')).startswith('sv:'):
+                plant_link(p['id'], 'link.affects', who, p['failureMode'], '상태 변수', 'state_variables', a['target'], '이 절차의 영향 칸에서 그 상태 변수를 지우세요')
+    existing = {'components': catalog['components'], 'symptoms': catalog['symptoms'], 'sensors': catalog['sensors']}
+    for kind in NEW_KINDS:
+        for nid, item in own[kind].items():
+            words = {_plain(w) for w in [item['name'], *(item.get('aliases') or [])]} - {''}
+            same = next((r for r in existing[kind] if r['id'] != nid
+                         and words & ({_plain(w) for w in [r.get('name'), *(r.get('aliases') or [])]} - {''})), None)
+            if same:
+                what, there = NEW_KIND_KO[kind], named(same, same['id'])
+                notices.append(dict(code='NEW_ITEM_SAME_NAME', sop=nid, field=kind, message=(
+                    f"새 {what} 「{item['name']}」{particle(item['name'], '과')} 이름이 같은 {what} {there}{particle(there, '이')} 지금 지식에 있습니다 — "
+                    "같은 것이면 이 새 항목을 제외하고 AI 추출을 다시 해 있는 항목을 가리키게 하세요. 다른 설비의 것이면 그대로 넣어도 됩니다")))
+    return issues, notices
+
+
 def check_graph(session, plan, skill_id):
     """Commit rechecks the live catalog before writes and keeps its legacy plan contract."""
     def read(tx):
@@ -559,13 +822,18 @@ def check_graph(session, plan, skill_id):
                     skills=tx.run(CATALOG_Q['skills']).data(),
                     decision_tables=tx.run(CATALOG_Q['decision_tables']).data())
         if any(p.get('scope') == 'purchase' for p in plan['procedures']):
-            out.update({key: tx.run(CATALOG_Q[key]).data() for key in ('parts', 'systems', 'roles')})
+            out.update({key: tx.run(CATALOG_Q[key]).data() for key in ('systems', 'roles')})
+        # 새 항목 · 증거 · 다른 설비의 원인 · 절차와 설비 구조의 판정(new_item_issues), 절차의 수행 시스템(performers)이 읽는 것 — 적재 전 검사와 같은 판정을 지금 그래프로 다시 한다
+        out.update({key: tx.run(CATALOG_Q[key]).data() for key in ('components', 'sensors', 'symptoms', 'failure_modes', 'causes', 'parts', 'state_variables')})
         return out
-    checked, issues = graph_semantics(plan, session.execute_read(read))
+    current = session.execute_read(read)
+    checked, issues = graph_semantics(plan, current)
+    issues += new_item_issues(plan.get('knowledge'), current, plan['procedures'])[0]
     if issues:
         raise ValueError(' / '.join(i['message'] for i in issues))
     if 'knowledge' in checked:
         plan['knowledge'] = checked['knowledge']
+    plan['performers'] = performers(plan, current)       # 적재(manual_graph.desired)가 긋는 System -HAS_SKILL-> Skill — 지금 그래프의 설비 구조로 정한다
     from . import manual_references
     references = session.execute_read(lambda tx: manual_references.check_plan(tx, plan))
     if references:
@@ -577,6 +845,18 @@ def desired(plan, node, edge, sections, skill_id):
     """Graph additions of the knowledge part (manual_graph.desired calls this with its node/edge builders)."""
     k = plan.get('knowledge') or {}
     fms, causes = {}, {}
+    named = lambda item: dict(name=item['name'], **({'aliases': item['aliases']} if item.get('aliases') else {}))     # noqa: E731
+    for c in k.get('components') or []:              # 새 항목(사람이 넣기를 고른 것) — 고장 유형 · 원인과 같이 이 문서가 가진다
+        node('Component', c['id'], **named(c))
+    sensor_names = {}
+    for s in k.get('sensors') or []:
+        sensor_names[s['tag']] = s['name']
+        n = node('Sensor', s['id'], tag=s['tag'], **named(s), **({'unit': s['unit']} if s.get('unit') else {}))
+        edge(('Component', s['component']), 'MONITORED_BY', n)
+    for s in k.get('symptoms') or []:
+        n = node('Symptom', s['id'], **named(s))
+        for sensor in s['sensors']:
+            edge(n, 'OBSERVED_BY', ('Sensor', sensor))
     for f in k.get('failure_modes') or []:
         fms[f['id']] = node('FailureMode', f['id'], name=f['name'])
     for c in k.get('causes') or []:
@@ -585,7 +865,10 @@ def desired(plan, node, edge, sections, skill_id):
             props['aliases'] = c['aliases']
         causes[c['id']] = node('Cause', c['id'], **props)
     for e in k.get('evidence') or []:
-        n = node('Evidence', e['id'], name=e['name'], rule=e['rule'], sql=e['sql'], expect=e['expect'], threshold=e['threshold'],
+        # 수집 태그는 판단 엔진이 평가하는 시계열 SQL 을, 그 밖의 센서 태그는 평가하지 않는다는 문장을 갖는다(unevaluated_note — 지식을 읽는 에이전트도 본다).
+        # 지금 지식의 센서 이름은 적재 기록에 넣지 않는다(바뀌면 이 문서 그래프가 일지와 달라진다) — 이 문서의 새 센서만 이름으로 부른다
+        judged = dict(sql=e['sql']) if 'sql' in e else dict(note=unevaluated_note(e['tag'], sensor_names.get(e['tag'])))
+        n = node('Evidence', e['id'], name=e['name'], rule=e['rule'], **judged, expect=e['expect'], threshold=e['threshold'],
                  weight=e['weight'], tag=e['tag'], windowSeconds=e['window_seconds'])
         edge(causes.get(e['cause'], ('Cause', e['cause'])), 'EVIDENCED_BY', n)
     for f in k.get('failure_modes') or []:
