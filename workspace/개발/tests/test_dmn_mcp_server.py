@@ -70,6 +70,18 @@ def test_처리_건_incident_없이는_판단을_제출하지_않는다(tool_ser
     assert body['result'] == 'error' and body['error_kind'] == 'INVALID' and 'incident' in body['message']
 
 
+@pytest.mark.parametrize('args, field', [
+    ({'asset': 'HYD-01', 'pattern': ''}, 'pattern'),
+    ({'asset': '', 'pattern': 'COOLER_DEGRADATION'}, 'asset'),
+    ({'asset': 'HYD-01', 'pattern': '  '}, 'pattern'),
+], ids=['빈_경보_패턴', '빈_설비', '공백뿐인_경보_패턴'])
+def test_설비나_경보_패턴이_빈_원인_진단은_진단하지_않고_빈_칸을_대며_거절한다(tool_servers, seeded_graph, args, field):
+    """빈 이상 패턴이 진단까지 가서 「이 경보의 원인 지식이 지식 지도에 없어 …매뉴얼을 적재」로 엉뚱한 까닭을 냈다 — agent 의 규칙 판단 요청과 같은
+    규칙(2026-11-24 3회차 실습 04): 빈 글은 그 칸 이름을 댄 입력 오류다."""
+    is_error, out = call(tool_servers['hyd-dmn'], 'diagnose', args)
+    assert is_error and field in out and '원인 지식' not in out and 'withheld' not in out, out
+
+
 def test_건강_검사는_Neo4j에_닿으면_200이다(stack, seeded_graph):
     r = httpx.get(stack.services['dmn-mcp'].url + '/healthz', timeout=20)
     assert r.status_code == 200 and r.json() == {'ok': True, 'neo4j': True}

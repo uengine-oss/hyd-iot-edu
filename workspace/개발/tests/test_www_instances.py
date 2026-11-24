@@ -1014,3 +1014,51 @@ def test_승인한_내용_그대로_다시_보내기는_서버가_정한_단계�
         page.locator('[data-effect-retry="r3"]').click()
         page.wait_for_function('() => !hydInstances.I.busy', timeout=10000)
         assert sent == [('todolist/r3/effect-retry', {'by': 'user:me', 'role': 'role:maint-mgr'})], sent
+
+
+def test_사람에게_되물은_단계는_답하지_않고_사유를_적어_닫을_수_있고_사유가_없으면_보내지_않는다():
+    """질문 · 답 칸(「내가 할 일」의 에이전트의 질문)에는 [답변]만 있어 답하지 않으려는 사람은 그 단계를 끝낼 길이 없었다(2026-11-24). [답하지 않고 닫기]는
+    같은 [단계 닫기](POST /api/todolist/{id}/close — 서버 close_agent_task)를 사유 · 담당자와 함께 보낸다. 사유가 비었으면 보내지 않고 그 자리에서 말한다,
+    [취소]하면 답 칸으로 돌아간다."""
+    asked = _wi('r1', 'T_agent', 'IN_PROGRESS', 41, agent_orch='cliagents', agent_mode='COMPLETE', user_id='agent:cooling', draft_status='HUMAN_ASKED')
+    task = {**asked, 'proc_inst_id': 'ai', 'proc_inst_name': '냉각 긴급 대응 HYD-02', 'tool': None, 'inputs': {}, 'events': []}
+    events = [{'id': 'e1', 'todo_id': 'r1', 'proc_inst_id': 'ai', 'job_id': 'J1', 'event_type': 'human_asked', 'crew_type': 'agent', 'timestamp': _iso(41, 5),
+               'data': {'text': '팬 속도를 올려도 됩니까?', 'options': []}}]
+    sent = []
+
+    def answer(route):
+        from urllib.parse import urlparse, parse_qs
+        u = urlparse(route.request.url)
+        api, q = u.path.split('/api/', 1)[-1], parse_qs(u.query)
+        if api == 'instances/ai':
+            row = next(r for r in ROWS if r['proc_inst_id'] == 'ai')
+            return route.fulfill(json={'instance': {**row, 'end_event': None, 'variable_sources': {}, 'initial_variables': {}}, 'definition': CASE_DEF,
+                                       'workitems': [asked], 'events': events, 'approvals': [], 'reworks': [], 'attention': None,
+                                       'flow_order': {a['id']: i for i, a in enumerate(CASE_DEF['activities'])}})
+        if api == 'todolist':
+            return route.fulfill(json=[task] if (q.get('proc_inst_id') or ['ai'])[0] == 'ai' else [])
+        if api == 'todolist/r1/close' and route.request.method == 'POST':
+            sent.append(route.request.post_data_json)
+            return route.fulfill(json={'workitem': 'r1', 'status': 'CANCELLED', 'instance': 'ai', 'instance_status': 'COMPLETED', 'instance_ended': True})
+        return _answer(route)
+    with _case_page(height=1400) as page:
+        page.route('**/svc/process/api/**', answer)
+        _pick(page, 'ai')
+        page.wait_for_selector('#tdAskClose', timeout=15000)
+        assert '팬 속도를 올려도 됩니까?' in page.inner_text('#todoPanel') and page.is_visible('#tdAnswer')
+        page.click('#tdAskClose')
+        page.wait_for_selector('#tdAskCloseReason', timeout=5000)
+        assert not page.is_visible('#tdAnswer') and '에이전트에게 답이 가지 않고' in page.inner_text('#todoPanel')
+        page.click('#tdAskCloseGo')                                                    # 사유 없이 — 보내지 않는다
+        page.wait_for_function("() => document.querySelector('#todoPanel').innerText.includes('사유를 입력하세요')", timeout=5000)
+        assert sent == []
+        page.click('#tdAskCloseAbort')                                                 # 취소하면 답 칸으로
+        page.wait_for_selector('#tdAnswer', timeout=5000)
+        page.click('#tdAskClose')
+        page.fill('#tdAskCloseReason', '이 질문에는 답하지 않음')
+        page.click('#tdAskCloseGo')
+        page.wait_for_function('() => !hydInstances.I.busy', timeout=10000)
+        assert sent == [{'by': 'user:me', 'reason': '이 질문에는 답하지 않음'}], sent
+        # 끝난 뒤 알림은 일어난 일 그대로다 — 단계는 취소로 끝난다(기본 알림 「다음 단계로 넘어갑니다」가 아니다, 2026-11-24 적대 검토)
+        page.wait_for_function("() => [...document.querySelectorAll('.toast')].some(n => (n.dataset.text || n.innerText).includes('답하지 않고 닫았습니다'))", timeout=5000)
+        assert '다음 단계로 넘어갑니다' not in ' '.join(page.locator('.toast').all_inner_texts())

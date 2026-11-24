@@ -469,3 +469,125 @@ def test_관문이_정한_한_번_실행_기한을_넘으면_그_실제_기한�
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert task['draft_status'] == 'FAILED'
     assert friendly(course.rt, task['id'])['friendly'].startswith('AI 단계가 한 번 실행 시간(1초)을 넘어 멈췄습니다')
+
+
+# ---------------------------------------------------------------- 사람에게 되물은 단계를 답하지 않고 닫기(2026-11-24)
+ASKED_BACK = '이 질문에 답하려면 어느 설비의 기록을 보면 되나요?'
+
+
+def _asked_back(course, worker, proc_inst_id, run):
+    """실제 워커가 그 처리 건의 AI 단계에서 사람에게 되묻고 멈춘다(결과가 사람 질문 — runner._pause). 돌려줌 = 그 단계 행."""
+    question = json.dumps({'__human_input__': {'question': ASKED_BACK, 'options': []}}, ensure_ascii=False)
+    asked = dict(run, events=[e for e in run['events'] if e['kind'] != 'result'] + [{'kind': 'result', 'text': question}])
+    assert worker('live', RecordedCli(asked, result_file=None, calls=model_turns(asked))).poll_once() == 1
+    task = next(w for w in course.rt.repo.list_workitems(proc_inst_id=proc_inst_id, limit=None) if w.get('agent_orch') and w['status'] == 'IN_PROGRESS')
+    assert (task['draft_status'], task['consumer']) == ('HUMAN_ASKED', None), task      # 워커는 점유를 놓고 사람의 답을 기다린다
+    return task
+
+
+def _close(course, task, reason='답하지 않기로 함 — 시험'):
+    return course.world.api('POST', f"/api/todolist/{task['id']}/close", {'by': OPERATOR['by'], 'reason': reason})
+
+
+def _ask(course, question, agent):
+    from conftest import DEFINITIONS
+    from procsvc import ask
+    return ask.start(course.rt, question, agent, OPERATOR['by'], definitions_dir=DEFINITIONS, worker_probe=lambda: {'reachable': True})
+
+
+def test_사람에게_되물은_질문은_답하지_않고_사유와_함께_닫으면_AI_를_다시_부르지_않고_다시_켜도_닫힌_질문이다(course, worker, relay):
+    """되물음은 답하기(→ 워커가 이어서 AI 를 부름) 말고는 끝낼 길이 없어, 답하지 않으려는 사람은 그 질문을 영영 닫지 못했다(2026-11-24 이 PC 포털에
+    남은 질문). 같은 [단계 닫기](POST /close)로 닫는다: 질문하기 보기는 「닫음」, 처리 건은 사람이 닫음으로 끝, 기록에 누가 · 왜, 답 넣기는 거절,
+    워커는 다시 집지 않고(관문 호출 0), process 를 다시 켜도 그대로다."""
+    from procsvc import ask
+    doc, question = recorded_question()
+    view = ask_question(course.rt, question)
+    task = _asked_back(course, worker, view['id'], doc['runs'][0])
+    said = ask.view(course.rt, view['id'])
+    assert said['state'] == 'asking' and '답하지 않으려면 사유를 적고 닫을 수 있습니다' in said['message'], said
+    # 질문한 사람의 내 작업함에 그 되물음이 보인다(전에는 질문하기 처리 건의 담당 · 참여자가 답변 에이전트뿐이라 아무에게도 보이지 않았다 — inbox.question_people)
+    assert [a['id'] for a in inbox.inbox_view(course.rt, OPERATOR['by'])['asked']] == [task['id']]
+    status, out = _close(course, task, '고객센터 번호는 이 시스템에서 다룰 질문이 아님')
+    assert status == 200 and out['instance_ended'] and out['end_event'] == 'closed-by-human', out
+    closed = [e for e in events_of(course.rt, task['id']) if e['job_id'] == 'TASK_CLOSED']
+    assert [(e['data']['name'], e['data']['by'], e['data']['reason'], e['data']['previous']['kind']) for e in closed] == \
+        [('답하지 않고 닫음', OPERATOR['by'], '고객센터 번호는 이 시스템에서 다룰 질문이 아님', 'asking')], closed
+    asked = events_of(course.rt, task['id'], 'human_asked')[-1]
+    status, out = course.world.api('POST', f"/api/todolist/{task['id']}/human-response", {'job_id': asked['job_id'], 'answer': '늦은 답', 'by': OPERATOR['by']})
+    assert status == 409 and '사람의 답변을 기다리는 상태가 아닙니다' in str(out), (status, out)      # 닫은 뒤에는 답이 에이전트에게 가지 않는다
+    assert inbox.inbox_view(course.rt, OPERATOR['by'])['asked'] == []
+    calls = len(relay.requests)
+    assert worker('live', RecordedCli(doc['runs'][0])).poll_once() == 0 and len(relay.requests) == calls
+    for when in ('지금', '다시 켠 뒤'):
+        if when == '다시 켠 뒤':
+            course.world.restart()
+        said = ask.view(course.rt, view['id'])
+        assert said['state'] == 'closed' and task_of(course.rt, view['id'])['status'] == 'CANCELLED', (when, said)
+        assert said['message'] == '사람이 닫은 질문입니다 — 사유: 고객센터 번호는 이 시스템에서 다룰 질문이 아님', said   # 내부 기록 꼬리표 없이
+        assert course.rt.repo.get_instance(view['id'])['status'] == 'COMPLETED', when
+    assert worker('live', RecordedCli(doc['runs'][0])).poll_once() == 0 and len(relay.requests) == calls
+
+
+def test_처리_건_단계의_되물음도_닫으면_처리_건이_사람이_닫음으로_끝나고_닫힌_단계는_또_닫지_않는다(course, worker):
+    """질문하기가 아닌 흐름의 AI 단계(교대 인수인계의 인계안 작성)가 사람에게 되물었을 때도 같은 길이다 — 그 뒤 단계(사람 단계)에 닿지 않았으므로 처리 건은
+    사람이 닫음으로 끝난다. 닫지 않은 되물음은 멈춘 단계가 아니다(stuck 아님 — 처리 건 주의 표시에 멈춤으로 세지 않는다)."""
+    first = start_handover(course.rt)
+    task = _asked_back(course, worker, first['proc_inst_id'], recording('handover/draft-1')['runs'][0])
+    assert course.rt.stuck(task) is None and (course.rt.instance_view(first['proc_inst_id'])['attention'] or {}).get('state') != 'stuck'
+    status, out = _close(course, task, '인수인계는 구두로 했음')
+    assert status == 200 and out['instance_ended'] and out['end_event'] == 'closed-by-human', out
+    assert task_of(course.rt, first['proc_inst_id'], DRAFT)['status'] == 'CANCELLED'
+    status, out = _close(course, task)
+    assert status == 409, out                                                                # 닫힌 단계를 또 닫지 않는다
+
+
+def test_되물음을_닫은_에이전트는_지울_때_넘길_열린_단계가_없고_닫지_않은_되물음은_지우기_단추가_닫지_않고_답하면_이어진다(course, worker):
+    """닫지 않은 되물음은 그대로다: 질문하기의 [끝난 기록 지우기]는 답을 기다리는 질문을 닫지 않고(누가 답할 수 있는 질문), 답하면 워커 차례로 돌아간다.
+    그 질문의 에이전트를 지우면 열린 되물음은 기본 담당에게 넘어간다(지운 에이전트로 남지 않게 — return_open_rows). 닫은 되물음은 넘기지 않는다."""
+    from procsvc import agent_authoring, ask
+    doc, question = recorded_question()
+
+    def my_agent(name):
+        return agent_authoring.clone_agent(course.rt.repo, course.rt.tenant_id, ask.DEFAULT_AGENT, {'name': name}, by=OPERATOR['by'])['id']
+    closed_by, open_by = my_agent('되물음 닫을 에이전트'), my_agent('되물음 둘 에이전트')
+    closed_q = _ask(course, question, closed_by)
+    closed_task = _asked_back(course, worker, closed_q['id'], doc['runs'][0])
+    open_q = _ask(course, question + ' ', open_by)
+    open_task = _asked_back(course, worker, open_q['id'], doc['runs'][0])
+    assert _close(course, closed_task)[0] == 200
+    status, out = course.world.api('POST', '/api/ask/reset', {'by': OPERATOR['by']})
+    assert status == 200 and out['kept_running'] == 1 and course.rt.repo.get_instance(open_q['id'])['status'] == 'RUNNING', out
+    assert task_of(course.rt, open_q['id'])['draft_status'] == 'HUMAN_ASKED'
+    status, out = course.world.api('DELETE', f"/api/agents/{closed_by}?by={OPERATOR['by']}")
+    assert status == 200 and out['returned_tasks'] == [], out
+    status, out = course.world.api('DELETE', f"/api/agents/{open_by}?by={OPERATOR['by']}")
+    assert status == 200 and [t['todo_id'] for t in out['returned_tasks']] == [open_task['id']], out
+    moved = task_of(course.rt, open_q['id'])
+    assert (moved['status'], moved['draft_status']) == ('IN_PROGRESS', 'HUMAN_ASKED') and moved['user_id'] != open_by, moved
+    asked = events_of(course.rt, open_task['id'], 'human_asked')[-1]
+    status, out = course.world.api('POST', f"/api/todolist/{open_task['id']}/human-response", {'job_id': asked['job_id'], 'answer': 'HYD-01', 'by': OPERATOR['by']})
+    assert status == 200 and task_of(course.rt, open_q['id'])['draft_status'] == 'FB_REQUESTED', (status, out)
+
+
+def test_사람이_묶이지_않은_흐름의_되물음은_처리_건_화면에서_이_PC_의_사람이_답하고_닫는다(course, worker):
+    """2026-11-24 적대 검토: 사람 단계가 없는 흐름(에이전트만 — 학생이 그린 흐름. 직접 시작 · 경보 시작은 시작한 사람을 남기지 않는다)의
+    되물음은 워커가 「사람 단계가 없어 알림을 보내지 않았습니다 — 처리 건 화면에서 답하세요」라고 적는데(runner._askers_of 빈 목록), 서버는
+    「배정된 담당자만」 403 으로 답과 닫기를 막아 그 질문이 영영 남았다. 사람(user:* · role:*)이 하나도 묶이지 않은 처리 건의 되물음은 이 PC 에
+    등록된 사람이 목록에서 보고 답하거나 닫는다(inbox.question_people)."""
+    from conftest import DEFINITIONS
+    from procsvc import ask, engine
+    doc, question = recorded_question()
+    raw = ask.definition(DEFINITIONS)
+    course.rt.register_definition(raw)
+    tasks = []
+    for n in (1, 2):                                       # 같은 흐름을 사람 없이 직접 둘 시작 — 하나는 답하고 하나는 닫는다
+        inst = course.rt.start_definition(ask.DEFINITION_ID, raw['version'], f'no-person-{n}', values={'question': question + ' ' * n})
+        assert 'asked_by' not in engine.variables(inst) and inbox.question_people(inst) is None
+        tasks.append(_asked_back(course, worker, inst['proc_inst_id'], doc['runs'][0]))
+    assert sorted(a['id'] for a in inbox.inbox_view(course.rt, OPERATOR['by'])['asked']) == sorted(t['id'] for t in tasks)
+    answered, closed = tasks
+    asked = events_of(course.rt, answered['id'], 'human_asked')[-1]
+    status, out = course.world.api('POST', f"/api/todolist/{answered['id']}/human-response", {'job_id': asked['job_id'], 'answer': 'HYD-01', 'by': OPERATOR['by']})
+    assert status == 200 and task_of(course.rt, answered['proc_inst_id'])['draft_status'] == 'FB_REQUESTED', (status, out)
+    status, out = _close(course, closed, '사람 단계 없는 흐름 — 답하지 않기로 함')
+    assert status == 200 and out['instance_ended'] and out['end_event'] == 'closed-by-human', out

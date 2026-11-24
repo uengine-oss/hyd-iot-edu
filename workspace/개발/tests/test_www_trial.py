@@ -14,8 +14,9 @@ PLANT = {'units': {'PRESS-07': UNIT, 'PRESS-08': UNIT}, 't': '2026-11-14T00:00:0
 PATTERNS = [{'id': 'pattern:x', 'code': 'SEAL_WEAR', 'name': '씰 마모', 'failureModes': []}]
 
 
-def _page(answers, sent):
-    """index.html 을 띄우고, /svc/ 요청은 answers(주소 끝 → 응답 또는 (상태, 응답))로 답한다. POST 본문은 sent 에 남는다."""
+def _page(answers, sent, held=None):
+    """index.html 을 띄우고, /svc/ 요청은 answers(주소 끝 → 응답 또는 (상태, 응답))로 답한다. POST 본문은 sent 에 남는다.
+    held = {'tails': [주소 끝], 'routes': []}: 그 주소의 요청은 답하지 않고 routes 에 쌓는다(서버 응답이 늦는 동안 — 시험이 나중에 route.fulfill 로 답한다)."""
     from playwright.sync_api import sync_playwright
     app = FastAPI()
     app.mount('/', StaticFiles(directory=WWW, html=True))
@@ -23,6 +24,9 @@ def _page(answers, sent):
 
     def answer(route):
         url = route.request.url.split('?')[0]
+        if held is not None and any(url.endswith(tail) for tail in held['tails']):
+            held['routes'].append(route)
+            return
         if route.request.method == 'POST':
             sent.append((url, json.loads(route.request.post_data or '{}')))
         hit = next((body for tail, body in answers.items() if url.endswith(tail)), {})
@@ -299,6 +303,79 @@ def test_원인_진단_대상이_아닌_이상_패턴을_고르면_누르기_전
         page.select_option('#wiPattern', 'PM_DUE')
         page.wait_for_function("document.querySelector('#wiLoad').disabled", timeout=8000)
         assert why in page.inner_text('#whatifView .io-in, #whatifView')
+    finally:
+        close()
+
+
+def test_규칙_판단은_설비_목록을_다시_읽어_채우면_오류_판을_거두고_모의_판단을_켠다():
+    """2026-11-24 적대 검토: 설비 목록 읽기가 실패한 뒤 [다시 시도]로 채우면, 채운 직후 화면 읽기가 일찍 끝나 「설비 목록을 읽지 못했습니다」 판이
+    남고 [모의 판단]이 꺼진 채였다(단추 상태를 정하는 한 곳 decRunState 를 건너뜀)."""
+    fail = {'on': True}
+    plant = lambda _: (503, {'detail': '설비 시뮬레이터가 응답하지 않습니다'}) if fail['on'] else PLANT      # noqa: E731
+    page, close = _page({'/plant-sim/api/state': plant, '/api/ontology/patterns': PATTERNS}, [])
+    try:
+        open_screen(page, 'decision')
+        page.wait_for_selector("#decResult [role='alert']", timeout=15000)
+        assert '설비 목록을 읽지 못했습니다' in page.inner_text("#decResult [role='alert']") and page.locator('#decRun').is_disabled()
+        fail['on'] = False
+        page.locator('#decResult [data-retry]').click()
+        page.wait_for_function("document.querySelectorAll('#decAsset option').length > 0 && !document.querySelector('#decResult [role=\"alert\"]')"
+                               " && !document.querySelector('#decRun').disabled", timeout=8000)
+    finally:
+        close()
+
+def test_규칙_판단은_이상_패턴_칸이_서버_목록으로_채워지기_전에는_모의_판단을_청하지_않는다():
+    """2026-11-24 3회차 실습 04: 화면을 열자마자 [모의 판단]을 누르면 이상 패턴 칸이 채워지기 전이라 빈 패턴으로 판단을 청했고, 서버가 「''의 원인 지식이
+    아직 없습니다 — …매뉴얼을 적재한 뒤 다시 실행하세요」로 답했다(지난 판단 줄도 패턴 이름 없이 「판단할 수 없음」). 단추는 켜져 있는데 까닭을 틀리게
+    말했다. 이상 패턴 목록이 늦게 오는 동안(설비 칸은 이미 채워짐) 단추는 꺼져 있고, 단추를 눌러도 · 조건 칸에서 Enter 를 쳐도 판단을 청하지 않는다.
+    목록이 오면 단추가 켜지고, 누르면 고른 패턴으로 청한다."""
+    sent, held = [], {'tails': ['/api/ontology/patterns'], 'routes': []}
+    page, close = _page({'/plant-sim/api/state': PLANT, '/api/agent/decide': (409, {'detail': {'reason': '현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.', 'causes': []}})},
+                        sent, held)
+    try:
+        open_screen(page, 'decision')
+        page.wait_for_function("document.querySelectorAll('#decAsset option').length > 0", timeout=8000)
+        page.wait_for_function("document.querySelectorAll('#decPattern option').length === 0", timeout=8000)
+        assert page.locator('#decRun').is_disabled()
+        page.locator('#decRun').click(force=True)
+        page.locator('#decForm details.io-more > summary').click()
+        page.locator('#decFan').fill('5')
+        page.locator('#decFan').press('Enter')
+        page.wait_for_timeout(500)
+        assert [body for url, body in sent if url.endswith('/api/agent/decide')] == [] and page.locator('#decPast').is_hidden()
+        # 이상 패턴 목록이 온다(앱 머리의 이름표 읽기와 이 화면의 고르기 칸 읽기 — 늦춘 요청 모두에 답한다)
+        assert held['routes'], '이상 패턴 목록 요청이 없었다'
+        for route in held['routes']:
+            route.fulfill(json=PATTERNS)
+        page.wait_for_function("document.querySelectorAll('#decPattern option').length > 0 && !document.querySelector('#decRun').disabled", timeout=8000)
+        page.locator('#decRun').click()
+        page.wait_for_selector('#decResult .panel-head h2', timeout=8000)
+        assert [body['pattern'] for url, body in sent if url.endswith('/api/agent/decide')] == ['SEAL_WEAR']
+    finally:
+        close()
+
+
+def test_판단_보류의_까닭은_규칙_판단과_조건별_손익에서_같은_화면_이름으로_보인다():
+    """2026-11-24 3회차 실습 04: 고장 없는 설비에서 조건별 손익 [기준 계산]의 「계산하지 못했습니다」 글이 문서 진단 규칙을 「COOLER_DEGRADATION 경보에서 …」로
+    코드 그대로 보였다 — 규칙 판단의 같은 보류 글은 「쿨러 성능 저하 경보에서 …」였다. 서버의 같은 보류(409, 까닭 칸 reason)를 두 화면이 같은 이름으로
+    보인다(규칙 설명은 문서 원문이라 경보 패턴 코드를 그대로 담고, 화면이 경보 패턴 목록의 이름으로 읽는다)."""
+    reason = '문서의 진단 규칙 「SEAL_WEAR 경보에서 토출 압력이 165 bar 미만이면 축 씰 마모를 1순위 원인으로 둔다.」가 지금 설비 값에 맞지 않아 원인을 정하지 않고 조치를 보류합니다.'
+    held = (409, {'detail': {'reason': reason, 'evidence_status': {'status': 'UNSUPPORTED', 'reason': reason}, 'causes': []}})
+    page, close = _page({'/plant-sim/api/state': PLANT, '/api/ontology/patterns': PATTERNS, '/api/agent/decide': held, '/api/agent/whatif': held}, [])
+    try:
+        page.wait_for_function("Object.keys(UI.patterns).length > 0", timeout=8000)
+        open_screen(page, 'decision')
+        page.wait_for_function("!document.querySelector('#decRun').disabled", timeout=8000)
+        page.locator('#decRun').click()
+        page.wait_for_selector('#decResult [data-dec-why]', timeout=8000)
+        decided = page.inner_text('#decResult [data-dec-why]')
+        open_screen(page, 'whatif')
+        page.wait_for_function("document.querySelectorAll('#wiPattern option').length > 0 && !document.querySelector('#wiLoad').disabled", timeout=8000)
+        page.locator('#wiLoad').click()
+        page.wait_for_selector("#whatifView [role='alert']", timeout=8000)
+        said = page.inner_text("#whatifView [role='alert']")
+        assert decided == reason.replace('SEAL_WEAR', '씰 마모'), decided
+        assert decided in said and 'SEAL_WEAR' not in said, said
     finally:
         close()
 

@@ -127,6 +127,28 @@ def test_판단_사례는_판단_원문이_적은_판단_모델에_잇고_모델
     assert sorted(node['out']) == [f'CHOSE>{SKILL}', 'DECIDED_BY>role:operator', 'FOR_INCIDENT>INC-CASE-1']
 
 
+def test_그래프에_옮긴_사건_판단_노드와_그_관계는_온톨로지_스키마를_지킨다(case):
+    """2026-11-24: 사건의 diagnosedCause · 판단의 chosenSkill 을 노드 속성으로 쓰기 시작했는데(지식을 되돌렸다 다시 넣어도 기록이 대상을
+    부른다) 온톨로지 정본(it/neo4j/v2/schema.json)에 그 속성이 없어, 처리 건이 하나라도 생긴 그래프는 검사(ontology_v2 validate)가 늘
+    실패했다(이 PC 47건). 시드만 넣은 그래프를 재는 검사 시험은 이 노드를 본 적이 없었다 — 옮긴 노드와 그 관계를 스키마로 잰다."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+    import ontology_v2 as onto
+    store, projector, graph, _ = case
+    store.save({'INC-CASE-1': _incident()}, {'DEC-CASE-1': _decision()}, [])
+    projector.drain()
+    _retry_now(store)                                                                          # 판단이 사건보다 먼저 집혔으면 사건 뒤에 다시
+    projector.drain()
+    assert store.case_projection_status()['pending'] == 0
+    with graph.driver.session() as session:
+        nodes, rels = onto.read_rows(session)
+    mine = {'INC-CASE-1', 'case:DEC-CASE-1'}
+    nodes = [n for n in nodes if n['props'].get('id') in mine]
+    rels = [r for r in rels if r['a'] in mine]
+    assert {n['props']['id']: n['props'].get('diagnosedCause') or n['props'].get('chosenSkill') for n in nodes} ==         {'INC-CASE-1': CAUSE, 'case:DEC-CASE-1': SKILL}
+    assert onto.validate(nodes, rels, onto.load_schema()) == []
+
 def _retry_now(store):
     """실패 행의 다시 시도 시각을 지금으로(늘어나는 간격을 기다리지 않고 다음 반영이 집게)."""
     store.db.execute('update case_projection_outbox set retry_at=0')

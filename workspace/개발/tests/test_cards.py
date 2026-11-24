@@ -176,3 +176,18 @@ def test_조치_방법의_관계는_이_판단의_고장_유형에_대한_것이
     assert (got['relation'], got['failureModeId']) == (relation, failure_mode if relation else None)
     pm = cards.scoped_skills('PM_DUE', cards.with_relation(skills, failure_mode))
     assert ('skill:x' in pm) is (relation == 'PREVENTED_BY')
+
+
+def test_판단_기록의_규칙_줄은_그_규칙의_설명을_싣는다():
+    """2026-11-24 3회차 실습 04: 규칙 판단의 「적용한 규칙」 표에 「규칙 표시 이름 미등록」 줄이 여덟 보였다. 판단 기록(trace)이 규칙 id 만 실어, 화면이
+    고정 이름 사전(names.json — 수업 문서의 규칙만 담긴 생성물)에서 이름을 찾았고, 학생이 올린 다른 설비 문서의 규칙은 그 사전에 없다. 규칙에는 이름이
+    없고 지식의 설명(Rule.annotation — t3_dmn 의 annotation)이 그 규칙의 사람 말이다 — 후보 규칙 · 규정 규칙 줄마다 그 규칙의 설명을 싣는다."""
+    student = {'decision': 'dec:action-candidates', 'rule': 'rule:apu-drain-action', 'effect': 'SELECT',
+               'tests': [{'variable': 'cause', 'operator': '==', 'value': 'cause:apu-drain-valve-stuck'}], 'outputs': []}
+    dmn = [dict(r, annotation=f"{r['rule']} 를 문서가 설명한 문장") for r in DMN + [student]]
+    said = {r['rule']: r['annotation'] for r in dmn}
+    facts = {'pattern': 'COOLER_DEGRADATION', 'cause': 'cause:cooler-fin-fouling', 'plc_mode': 'REMOTE_MANUAL', 'order_due_h': 6.0,
+             'windows_by_variable': WINDOWS}
+    trace = cards.evaluate(dmn, COOL, facts, {}, [], [], {})['trace']
+    assert {t['decision'] for t in trace} == {'dec:action-candidates', 'dec:compliance'} and 'rule:apu-drain-action' in {t['rule'] for t in trace}, trace
+    assert [t['annotation'] for t in trace] == [said[t['rule']] for t in trace], trace

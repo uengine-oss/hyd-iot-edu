@@ -87,3 +87,26 @@ def test_틀린_비밀번호는_연결할_때_인증_오류다(neo4j_graph, monk
     with graphdb.connect() as driver, pytest.raises(neo4j.exceptions.AuthError):
         driver.verify_connectivity()
 
+
+
+def test_그래프에_닿지_못한_오류만_까닭을_내고_질의_결함은_가리지_않는다(neo4j_graph, monkeypatch):
+    """answer_unreachable 이 503 으로 바꿀지 가르는 한 곳(unreachable_reason)을 실제 드라이버가 낸 오류로 잰다 — 질의 시간 한도 넘김 ·
+    연결 실패는 「잠시 뒤 다시」 까닭, 문법 오류(코드 결함)는 None 이라 500 으로 남는다(2026-11-24 재시작 직후 판단 실험이 시간 한도를 넘겨
+    까닭 없는 500 이었다)."""
+    from neo4j import unit_of_work
+
+    @unit_of_work(timeout=0.05)
+    def slow(tx):
+        return tx.run('UNWIND range(1, 50000000) AS x RETURN count(x) AS n').single()
+    with graphdb.connect() as driver, driver.session() as s:
+        with pytest.raises(neo4j.exceptions.ClientError) as timed_out:
+            s.execute_read(slow)
+        with pytest.raises(neo4j.exceptions.CypherSyntaxError) as syntax:
+            s.run('MATCH (n RETURN n').consume()
+    assert 'TransactionTimedOut' in timed_out.value.code
+    assert '제때 답하지 않아' in graphdb.unreachable_reason(timed_out.value)
+    assert graphdb.unreachable_reason(syntax.value) is None
+    monkeypatch.setenv('NEO4J_URI', 'bolt://127.0.0.1:1')          # 아무도 듣지 않는 포트
+    with graphdb.connect(connection_timeout=2) as driver, pytest.raises(neo4j.exceptions.ServiceUnavailable) as gone:
+        driver.verify_connectivity()
+    assert '연결하지 못해' in graphdb.unreachable_reason(gone.value)

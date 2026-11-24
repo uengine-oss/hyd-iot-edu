@@ -108,6 +108,22 @@ def test_그래프가_끊기면_상태_확인이_503_과_까닭이고_다시_이
     assert call(health)[1]['neo4j'] is True
 
 
+def test_그래프가_끊기면_판단_실험_요청은_까닭_없는_500_이_아니라_503_과_까닭이고_다시_이어지면_답한다(agent_via_line):
+    """2026-11-24: 지식 그래프 질의가 시간 한도를 넘기자 조건별 손익이 「Internal Server Error」 500 이었다 — 같은 판단의 시계열 DB 실패는
+    503 과 까닭인데 그래프 실패만 날것이었다. 앱 한 곳(hydcommon.graphdb.answer_unreachable)이 판단 · 조건별 손익 · 패턴 목록 모두를 503 과
+    까닭으로 답한다."""
+    service, line = agent_via_line
+    asks = [(service.url + '/api/agent/decide', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}),
+            (service.url + '/api/agent/whatif', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}),
+            (service.url + '/api/ontology/patterns', None)]
+    line.cut()
+    for url, body in asks:
+        status, out = call(url, body)
+        assert status == 503 and '지식 그래프(Neo4j)' in out['detail'], (url, status, out)
+    line.join()
+    until(lambda: call(*asks[2])[0] == 200, '그래프가 다시 이어진 뒤 패턴 목록 200', timeout=60)
+
+
 @pytest.mark.parametrize('alert', [
     {'alertId': 'A', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'state': 'CLEAR'},
     {'alertId': '', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'state': 'RAISE'},
@@ -150,11 +166,20 @@ def test_수동_판단에서_진단_지식에_없는_원인을_가정하면_1순
     ('/api/agent/decide', {'pattern': 'COOLER_DEGRADATION'}, 'asset'),
     ('/api/agent/decide', {'asset': 'HYD-02'}, 'pattern'),
     ('/api/agent/decide', {}, 'asset'),
+    ('/api/agent/decide', {'asset': 'HYD-02', 'pattern': ''}, 'pattern'),
+    ('/api/agent/decide', {'asset': '', 'pattern': 'COOLER_DEGRADATION'}, 'asset'),
     ('/api/agent/whatif', {'asset': 'HYD-02'}, 'pattern'),
     ('/api/agent/whatif', {}, 'asset'),
-], ids=['판단 — 설비 없음', '판단 — 경보 패턴 없음', '판단 — 빈 본문', '조건별 손익 — 경보 패턴 없음', '조건별 손익 — 빈 본문'])
+    ('/api/agent/whatif', {'asset': 'HYD-02', 'pattern': ''}, 'pattern'),
+    ('/api/agent/decide', {'asset': 'HYD-02', 'pattern': ' '}, 'pattern'),
+    ('/api/agent/whatif', {'asset': '  ', 'pattern': 'COOLER_DEGRADATION'}, 'asset'),
+], ids=['판단 — 설비 없음', '판단 — 경보 패턴 없음', '판단 — 빈 본문', '판단 — 빈 경보 패턴', '판단 — 빈 설비',
+        '조건별 손익 — 경보 패턴 없음', '조건별 손익 — 빈 본문', '조건별 손익 — 빈 경보 패턴',
+        '판단 — 공백뿐인 경보 패턴', '조건별 손익 — 공백뿐인 설비'])
 def test_설비나_경보_패턴이_빠진_판단_요청은_수업_사례로_대신_돌지_않고_빠진_칸을_말한다(stack, path, body, missing):
-    """가짜 · 해피패스 조사 8: 인자가 빠진 호출이 오류 대신 HYD-01 · 쿨러 열화로 돌아, 다른 설비를 물은 쪽이 그 답을 자기 설비의 것으로 읽었다."""
+    """가짜 · 해피패스 조사 8: 인자가 빠진 호출이 오류 대신 HYD-01 · 쿨러 열화로 돌아, 다른 설비를 물은 쪽이 그 답을 자기 설비의 것으로 읽었다.
+    빈 글도 빠진 것이다(2026-11-24 3회차 실습 04): 규칙 판단 화면을 열자마자 누르면 빈 패턴이 원인 지식 조회까지 가서 404 「''의 원인 지식이 아직
+    없습니다 — 매뉴얼을 적재」로 엉뚱한 까닭을 말했다 — 그 칸 이름을 단 입력 거절이어야 한다."""
     status, out = call(stack.services['agent'].url + path, body)
     assert status == 422 and any(missing in (d.get('loc') or []) for d in out['detail']), out
 

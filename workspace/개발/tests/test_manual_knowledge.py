@@ -59,6 +59,20 @@ def test_지식의_빈틈은_무엇이_틀렸는지_모아_거절한다(change, 
         check(knowledge)
 
 
+def test_설명이_없는_규칙은_적재하지_않고_그_규칙을_대며_거절한다():
+    """규칙에는 이름이 없어 설명(annotation)이 하나뿐인 사람 말이다 — 판단 기록 · 규칙 판단의 「적용한 규칙」 표 · 검토 화면이 이 글로 규칙을 부른다.
+    전에는 비워도 받아, 다른 설비 문서를 실제 AI 로 추출한 적재(2026-11-23)의 후보 규칙 여덟이 화면에 「규칙 표시 이름 미등록」으로 보였다
+    (2026-11-24 3회차 실습 04). 빠진 것과 빈칸만 있는 것 모두 그 규칙 id 를 대며 거절한다(추출이면 AI 교정으로 돌아간다)."""
+    knowledge = deepcopy(HM8['knowledge'])
+    missing, blank = knowledge['rules'][0], knowledge['rules'][1]
+    missing.pop('annotation')
+    blank['annotation'] = '  '
+    with pytest.raises(ValueError) as e:
+        check(knowledge)
+    assert all(f"{r['id']} 설명(annotation" in str(e.value) for r in (missing, blank)), e.value
+    assert check(deepcopy(HM8['knowledge']))['rules'][0]['annotation'] == HM8['knowledge']['rules'][0]['annotation'].strip()
+
+
 def test_절차_연결은_빈_글을_값_없음으로_읽는다():
     assert mk.blanks_as_absent({'failureMode': ' ', 'actions': [{'action': 'action:fan', 'value': ''}]}) == \
         {'failureMode': None, 'actions': [{'action': 'action:fan', 'value': None}]}
