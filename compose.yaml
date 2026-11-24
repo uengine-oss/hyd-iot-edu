@@ -29,7 +29,17 @@ x-py-health: &py-health
 # 상태(/healthz · /metrics)를 읽는 서비스뿐이다.
 # 연결을 먼저 여는 쪽은 공장(OT)이다: 공장 브로커(ot-broker)는 OT 망에만 붙고, 경계 망에 나와 있는 공장 쪽 부품은 공장 쪽 브리지(ot-bridge) 하나다.
 # 이 브리지는 들어오는 입구 없이 ot-broker 와 DMZ 브로커(dmz-broker) 양쪽에 스스로 접속해 값을 내보내고 승인된 명령을 가져온다. 그래서 DMZ · IT 의
-# 어떤 컨테이너도 공장 안으로 연결을 열 수 없다(이름 · 계정이 아니라 망으로 — 닿을 주소도 열린 입구도 없다).
+# 어떤 컨테이너도 공장 브로커 · 브리지로 연결을 열 수 없다(이름 · 계정이 아니라 망으로 — 닿을 주소도 열린 입구도 없다).
+# PC 에 여는 입구는 학생이 브라우저로 여는 화면 넷뿐이다: 포털(portal 8088), 관제 화면(fuxa 1881), 추이 화면(grafana 3000), 그래프 브라우저
+# (neo4j 7474 · 접속 7687). 이 PC 의 Docker 는 PC 에 연 입구를 다른 망의 컨테이너에도 그 포트 연결의 컨테이너 주소로 닿게 둔다(2026-11-24 실측,
+# Docker 엔진 29.9.3 — PC 에 열지 않은 포트는 다른 망에서 막힌다). 그래서 서비스 API · 이벤트 로그 · 시계열 DB ·
+# MCP 서버 · 브로커는 PC 에 열지 않는다 — 열면 공장 · DMZ 의 컨테이너가 IT 의 승인 API · 이벤트 로그 · 데이터 저장소로, IT 가 공장 안으로 곧장
+# 닿는다. 화면과 시작 · 점검 도구는 서비스를 포털의 같은 출처 길 /svc/<서비스>/ 로 부른다(it/portal/nginx.conf). 남긴 화면 넷도 같은 까닭으로
+# 다른 망의 컨테이너에서 닿고(관제 화면은 공장 안 수동 조작 · 운전 모드를 낸다), 포털에 닿으면 포털이 부르는 서비스 API 에도 닿는다 — 로그인을
+# 두지 않는 이 시스템에서 이 차이는 포털 시스템 구성 화면 「영역 경계」가 밝힌다. 개발 PC 에서 서비스 포트를 열려면 compose.override.yaml(RUNBOOK §5).
+# compose 밖에서 시작 3단계가 켜는 업무 DB(Supabase CLI 2.119.0)는 업무 DB · API 관문 · 메일함 포트를 PC 의 모든 주소(0.0.0.0)에 연다 — CLI 에
+# 여는 주소를 고르는 설정이 없고, 시작의 마이그레이션 · 시험 · 개발 도구가 그 포트로 붙는다. 그래서 업무 DB 는 다른 망의 컨테이너에서도, 방화벽이
+# 막지 않으면 같은 망의 다른 PC 에서도 CLI 의 기본 계정으로 닿는다(2026-11-25 실측 — 같은 화면 「영역 경계」 · 「인증 · 암호화」가 밝힌다).
 #   값:   설비 → ot-broker → ot-bridge ⇒ dmz-broker → connect-ingest → redpanda          (⇒ = 공장 쪽이 여는 연결)
 #   명령: process → redpanda → cmd-gateway → dmz-broker ⇐ ot-bridge → ot-broker → 설비   (ot-bridge 가 와서 가져간다)
 # 이 구조의 판정은 workspace/개발/tests/test_zones.py 한 곳이다(망 정의 + 실제로 연결을 열어 보는 시험).
@@ -67,9 +77,7 @@ services:
     image: eclipse-mosquitto:2.0.22       # 공장 쪽 브리지 · DMZ 브로커와 같은 이미지
     user: "1883:1883"
     networks: [ot-net]                    # OT 망에만 붙는다 — 공장 밖(DMZ · IT)에서는 이 브로커에 닿을 길이 없다. 밖과는 ot-bridge 가 잇는다
-    # 입구 · 계정 · 토픽 규칙은 ot/broker 한 곳(mosquitto.conf 머리말). 호스트 1883 · 8083(웹소켓 — 3회차 대시보드 구독) = 바깥 입구(컨테이너 1884 · 8083,
-    # 계정 student — 구독만). 서비스가 쓰는 안쪽 입구(컨테이너 1883)는 호스트에 열지 않는다 — 설비 명령은 명령 관문이 검증한 것을 ot-bridge 만 낸다
-    ports: ["127.0.0.1:${HYD_PORT_1883:-1883}:1884", "127.0.0.1:${HYD_PORT_8083:-8083}:8083"]
+    # 입구 · 토픽 규칙은 ot/broker 한 곳(mosquitto.conf 머리말). PC 에 포트를 열지 않는다 — 설비 명령은 명령 관문이 검증한 것을 ot-bridge 만 낸다
     volumes: ["./ot/broker:/mosquitto/config:ro"]
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "1883"]
@@ -84,7 +92,6 @@ services:
     mem_limit: 96m
     build: { context: ., dockerfile: ot/plant-sim/Dockerfile }
     networks: [ot-net, sim-net]           # sim-net: process · portal 이 가상 설비 API(:8000)만 부른다(브로커에는 닿지 않는다)
-    ports: ["127.0.0.1:${HYD_PORT_8000:-8000}:8000"]
     environment:
       MQTT_HOST: ot-broker
       TIME_SCALE: *time-scale
@@ -145,7 +152,8 @@ services:
     mem_limit: 24m
     image: eclipse-mosquitto:2.0.22
     user: "1883:1883"
-    networks: [ot-dmz-net]                # 호스트에도 IT 쪽 경계 망에도 열지 않는다
+    networks: [ot-dmz-net]                # 경계 망 1 에만 붙는다(IT 쪽 경계 망에도 PC 에도 열지 않는다)
+    # 입구 · 토픽 규칙은 dmz/broker 한 곳(mosquitto.conf 머리말). 입구는 경계 망의 1883 하나이고 PC 에 열지 않는다
     volumes: ["./dmz/broker:/mosquitto/config:ro"]
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "1883"]
@@ -160,7 +168,6 @@ services:
     mem_limit: 128m
     build: { context: ., dockerfile: dmz/connect-ingest/Dockerfile }
     networks: [ot-dmz-net, dmz-it-net]
-    ports: ["127.0.0.1:${HYD_PORT_8093:-8093}:8093"]
     environment:
       MQTT_HOST: dmz-broker               # 공장 브로커(ot-broker)가 아니다 — DMZ 는 공장 안으로 접속하지 않는다
       KAFKA_BOOTSTRAP: redpanda:9092
@@ -178,7 +185,6 @@ services:
     mem_limit: 128m
     build: { context: ., dockerfile: dmz/cmd-gateway/Dockerfile }
     networks: [ot-dmz-net, dmz-it-net]
-    ports: ["127.0.0.1:${HYD_PORT_8090:-8090}:8090"]
     environment:
       MQTT_HOST: dmz-broker
       KAFKA_BOOTSTRAP: redpanda:9092
@@ -206,7 +212,6 @@ services:
       - --overprovisioned
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:${HYD_PORT_19092:-19092}
-    ports: ["127.0.0.1:${HYD_PORT_19092:-19092}:19092", "127.0.0.1:${HYD_PORT_9644:-9644}:9644"]
     volumes: ["redpanda-data:/var/lib/redpanda/data"]
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
@@ -247,7 +252,6 @@ services:
     command: ["postgres", "-c", "shared_buffers=64MB", "-c", "work_mem=4MB", "-c", "max_connections=40",
               "-c", "timescaledb.max_background_workers=4", "-c", "max_worker_processes=10", "-c", "timescaledb.telemetry_level=off"]
     networks: [it-net]
-    ports: ["127.0.0.1:${HYD_PORT_5432:-5432}:5432"]
     environment:
       POSTGRES_USER: hyd
       POSTGRES_PASSWORD: hyd
@@ -268,7 +272,6 @@ services:
     mem_limit: 128m
     build: { context: ., dockerfile: it/connect-sink/Dockerfile }
     networks: [it-net]
-    ports: ["127.0.0.1:${HYD_PORT_8094:-8094}:8094"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
@@ -308,7 +311,6 @@ services:
     mem_limit: 256m
     build: { context: ., dockerfile: it/detector/Dockerfile }
     networks: [it-net]
-    ports: ["127.0.0.1:${HYD_PORT_8092:-8092}:8092"]
     volumes: ["detector-data:/data"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
@@ -379,7 +381,6 @@ services:
     mem_limit: 192m
     build: { context: ., dockerfile: it/agent/Dockerfile }
     networks: [it-net, dmz-it-net, business-db]   # dmz-it-net: 설비 값이 지금 것인지 볼 때 수집기(connect-ingest) 상태를 읽는다(tools/mcp_prom.py)
-    ports: ["127.0.0.1:${HYD_PORT_8091:-8091}:8091"]
     environment:
       TSDB_READ_DSN: *tsdb-read-dsn
       DAQ_PROFILE: *daq-profile          # 근거 구간의 공백 한도 = 감지기와 같은 수집 계약
@@ -405,7 +406,6 @@ services:
     build: { context: ., dockerfile: it/process/Dockerfile }
     networks: [it-net, sim-net, business-db]   # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
                                           # ot-net · 경계 망에는 붙이지 않는다 — IT 서비스가 브로커(ot-broker)에 직접 닿으면 DMZ(cmd-gateway)가 유일한 하향 통로가 아니게 된다
-    ports: ["127.0.0.1:${HYD_PORT_8080:-8080}:8080"]
     volumes: ["process-data:/data", "worker-runtime:/run/hyd-credentials"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
@@ -444,7 +444,6 @@ services:
     mem_limit: 96m
     build: { context: ., dockerfile: it/enterprise-sim/Dockerfile }
     networks: [it-net, business-db]
-    ports: ["127.0.0.1:${HYD_PORT_8095:-8095}:8095"]
     environment:
       # 업무 DB(Supabase ent 스키마)가 원천이다
       SUPABASE_DSN: *business-db-dsn
@@ -459,7 +458,6 @@ services:
     mem_limit: 128m
     build: { context: ., dockerfile: it/effects-mcp/Dockerfile }
     networks: [it-net, business-db]
-    ports: ["127.0.0.1:${HYD_PORT_8197:-8197}:8197"]
     environment:
       # 메일은 이 PC의 업무 DB 메일함(Supabase Inbucket)으로만 — 망 business-db 안의 이름 · 받는 포트(바깥 포트와 상관없음)
       SMTP_HOST: inbucket
@@ -499,7 +497,6 @@ services:
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
     networks: [it-net, business-db]
-    ports: ["127.0.0.1:${HYD_PORT_8199:-8199}:8199"]
     environment:
       ENTERPRISE_DSN: *business-read-dsn
     healthcheck:
@@ -512,7 +509,6 @@ services:
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
     networks: [it-net, business-db]
-    ports: ["127.0.0.1:${HYD_PORT_8196:-8196}:8196"]
     environment:
       ENTERPRISE_DSN: *business-read-dsn
       ENTERPRISE_MCP_TOOLSET: maintenance
@@ -527,7 +523,6 @@ services:
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
     networks: [it-net, business-db]
-    ports: ["127.0.0.1:${HYD_PORT_8195:-8195}:8195"]
     environment:
       ENTERPRISE_DSN: *business-read-dsn
       ENTERPRISE_MCP_TOOLSET: purchasing
@@ -542,7 +537,6 @@ services:
     mem_limit: 192m
     build: { context: ., dockerfile: it/dmn-mcp/Dockerfile }
     networks: [it-net, dmz-it-net, business-db]   # dmz-it-net: agent 와 같은 까닭(INGEST_URL)
-    ports: ["127.0.0.1:${HYD_PORT_8198:-8198}:8198"]
     environment:
       TSDB_READ_DSN: *tsdb-read-dsn
       DAQ_PROFILE: *daq-profile          # 근거 구간의 공백 한도 = 감지기와 같은 수집 계약
@@ -565,7 +559,6 @@ services:
     mem_limit: 768m
     build: { context: ., dockerfile: it/agent-worker/Dockerfile }
     networks: [it-net, business-db]
-    ports: ["127.0.0.1:${HYD_PORT_8097:-8097}:8097"]
     # 저장된 AI 응답(재생모드.md): 강사 저장(AI_MODE=record)은 저장소 폴더에 쓰고, 키 없는 PC 재생은 git pull 로 받은 그 폴더를 읽는다
     volumes: ["worker-data:/workspace", "worker-runtime:/run/hyd-credentials:ro", "./it/agent-worker/replay:/srv/replay"]
     environment:

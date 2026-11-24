@@ -151,22 +151,82 @@ def port(root: Path, default: int) -> int:
         raise CheckError(str(exc)) from None
 
 
+def service(root: Path, name: str) -> str:
+    """서비스 API 주소 — 포털의 같은 출처 길(prepare_ports.service_url). 서비스 포트는 PC 에 열지 않는다."""
+    try:
+        return prepare_ports.service_url(root, name)
+    except prepare_ports.PrepareError as exc:
+        raise CheckError(str(exc)) from None
+
+
 PORTAL_PATHS = ('/', '/svc/process/healthz')   # 화면 · 포털을 거쳐 서비스로 가는 같은 출처 길(포털 nginx.conf)
+DOCKER_LISTENERS = ('com.docker.', 'wslrelay', 'vpnkit', 'docker')     # Docker Desktop 이 PC 에 연 포트를 듣는 제 프로그램(이름 앞부분)
 
 
-def portal_problems(root: Path) -> list[str]:
-    """포털 화면과, 포털을 거쳐 process 에 닿는 같은 출처 길 — 응답하지 않은 주소와 까닭."""
-    problems = []
-    for path in PORTAL_PATHS:
-        url = f'{H}:{port(root, 8088)}{path}'
-        try:
-            with urllib.request.urlopen(url, timeout=5) as response:
-                if response.status != 200:
-                    problems.append(f'포털({url})이 {response.status} 로 응답함')
-        except urllib.error.HTTPError as exc:
-            problems.append(f'포털({url})이 {exc.code} 로 응답함')
-        except (urllib.error.URLError, OSError) as exc:
-            problems.append(f'포털({url})이 응답하지 않음({exc})')
+def _portal_answer(url: str) -> tuple[str | None, bool]:
+    """(문제 — 없으면 None, PC 에서 연결 단계에서 실패했는가)."""
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            return (None if response.status == 200 else f'{response.status} 로 응답함'), False
+    except urllib.error.HTTPError as exc:
+        return f'{exc.code} 로 응답함', False
+    except (urllib.error.URLError, OSError) as exc:
+        return f'응답하지 않음({exc})', True
+
+
+def portal_inside() -> bool:
+    """포털 컨테이너 안에서 화면과 같은 출처 길(process)이 답하는가 — 컨테이너 상태 검사와 같은 wget."""
+    script = ' && '.join(f'wget -q -O /dev/null http://127.0.0.1{path}' for path in PORTAL_PATHS)
+    try:
+        out = subprocess.run([docker_exe(), 'compose', 'exec', '-T', 'portal', 'sh', '-c', script], capture_output=True, cwd=ROOT, timeout=60)
+    except subprocess.TimeoutExpired:
+        return False                                    # 1분 안에 안에서도 답하지 않았다
+    return out.returncode == 0
+
+
+def port_listeners(port_no: int) -> list[str]:
+    """이 PC 에서 그 포트를 듣는 프로그램 「이름(PID n)」 — Docker Desktop 자신은 뺀다. Windows 는 netstat · tasklist, Mac 은 lsof."""
+    found = {}
+    if sys.platform == 'win32':
+        for line in subprocess.run(['netstat', '-ano', '-p', 'TCP'], capture_output=True, text=True, errors='replace').stdout.splitlines() +                 subprocess.run(['netstat', '-ano', '-p', 'TCPv6'], capture_output=True, text=True, errors='replace').stdout.splitlines():
+            words = line.split()
+            if len(words) == 5 and words[3] == 'LISTENING' and words[1].rsplit(':', 1)[-1] == str(port_no):
+                row = subprocess.run(['tasklist', '/FI', f'PID eq {words[4]}', '/FO', 'CSV', '/NH'], capture_output=True, text=True,
+                                     errors='replace').stdout.strip()
+                found[words[4]] = row.split('","')[0].strip('"') if row.startswith('"') else '?'
+    elif sys.platform == 'darwin':
+        out = subprocess.run(['lsof', '-nP', f'-iTCP:{port_no}', '-sTCP:LISTEN', '-Fpc'], capture_output=True, text=True, errors='replace').stdout
+        pid = None
+        for line in out.splitlines():
+            if line[:1] == 'p':
+                pid = line[1:]
+            elif line[:1] == 'c' and pid:
+                found[pid] = line[1:]
+    return [f'{name}(PID {pid})' for pid, name in sorted(found.items()) if not name.lower().startswith(DOCKER_LISTENERS)]
+
+
+def portal_problems(root: Path, wait: float = 30, *, inside=portal_inside, listeners=port_listeners, sleep=time.sleep,
+                    clock=time.monotonic) -> list[str]:
+    """포털 화면과, 포털을 거쳐 process 에 닿는 같은 출처 길 — 응답하지 않은 주소와 까닭. 막 다시 만든 포털이 PC 쪽 포트를 받기까지 wait 초 동안
+    다시 두드린다. PC 에서 연결이 끊기면(2026-11-25 학생 PC: 컨테이너는 모두 정상인데 「Remote end closed connection without response」) 포털
+    컨테이너 안에서 같은 길을 두드려, 포털 · process 의 탓인지 이 PC 에서 그 포트로 들어가는 연결(Docker Desktop)의 탓인지 가르고 할 일을 말한다."""
+    port_no = port(root, 8088)
+    deadline = clock() + wait
+    while True:
+        bad = {path: why for path in PORTAL_PATHS if (why := _portal_answer(f'{H}:{port_no}{path}'))[0]}
+        if not bad or clock() >= deadline:
+            break
+        sleep(3)
+    problems = [f'포털({H}:{port_no}{path})이 {why}' for path, (why, _) in bad.items()]
+    if any(cut for _, cut in bad.values()):
+        if inside():
+            others = listeners(port_no)
+            problems.append(f'포털 컨테이너 안에서는 화면과 서비스 길이 답합니다 — 이 PC 에서 포트 {port_no}번으로 들어가는 연결만 끊깁니다. '
+                            + (f'이 PC 에서 그 포트를 다른 프로그램이 듣고 있습니다: {", ".join(others)} — 그 프로그램을 끄고 시작 파일을 다시 실행하세요.'
+                               if others else 'Docker Desktop 의 포트 연결이 끊긴 것입니다: 작업 표시줄의 Docker 아이콘에서 Restart 로 Docker Desktop 을 다시 켠 뒤 '
+                                              '시작 파일을 다시 실행하세요.'))
+        else:
+            problems.append('포털 컨테이너 안에서도 답하지 않습니다 — 「docker compose logs portal」(서비스 길이면 「docker compose logs process」)의 마지막 줄이 까닭입니다.')
     return problems
 
 
@@ -193,7 +253,7 @@ def relay(call: bool = False) -> dict:
 def check_ai(root: Path, *, call: bool = False, relay_fn=relay, health_fn=None) -> tuple[str, str]:
     want = hyd_env.read(root / '.env').get('AI_MODE', '')
     try:
-        health = (health_fn or (lambda: http('GET', f'{H}:{port(root, 8097)}/health', timeout=5)))()
+        health = (health_fn or (lambda: http('GET', f"{service(root, 'agent-worker')}/health", timeout=5)))()
     except (CheckError, urllib.error.URLError, OSError) as exc:
         return FAIL, f'AI 워커가 응답하지 않습니다({exc}). 「docker compose logs agent-worker」로 확인하세요.'
     got = health.get('ai_mode') or ''
@@ -411,7 +471,7 @@ def cooler_route(process: str) -> tuple[str, str] | None:
 
 
 def cooler_round(root: Path, record) -> None:
-    process, plant, detector, agent = (f'{H}:{port(root, p)}' for p in (8080, 8000, 8092, 8091))
+    process, plant, detector, agent = (service(root, s) for s in ('process', 'plant-sim', 'detector', 'agent'))
     ai_mode = hyd_env.read(root / '.env').get('AI_MODE', '')
     hyd01 = lambda: http('GET', f'{detector}/api/detector/state')['assets'][ASSET]
     view = lambda pid: http('GET', f'{process}/api/instances/{pid}')

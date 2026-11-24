@@ -403,7 +403,7 @@ async function pollHealth() {
       const key = c.health;
       const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 4000);
       try {
-        if (c.health.endsWith('/healthz')) {            // 우리 서비스: 같은 출처의 /healthz 가 JSON 으로 답한다
+        if (c.health.startsWith('/svc/')) {             // 우리 서비스 /healthz · 포털이 넘기는 이벤트 저장 준비 상태: 같은 출처 — 응답 코드로 가른다(본문 JSON 도 읽는다)
           const r = await fetch(c.health, { cache: 'no-store', signal: controller.signal }); healthState[key] = r.ok ? 'up' : 'down';
           said[key] = await r.json().catch(() => null);
         } else {                                         // 바깥 도구: 그 포트에 닿는지만 본다

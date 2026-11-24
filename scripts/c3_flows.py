@@ -1,6 +1,6 @@
 """수업 흐름 A(냉각) · B(정기 정비) · C(예비품 구매)가 지금 판으로 배포돼 있는지 확인하고 없거나 옛 판이면 배포한다 — 시작 6단계가 부른다.
 
-    python scripts/c3_flows.py ensure      # 이 PC의 process(포트 표 .hyd-runtime/ports.json 의 8080 자리)에 POST /api/course-bootstrap
+    python scripts/c3_flows.py ensure      # 이 PC의 process(포털의 같은 출처 길 /svc/process — prepare_ports.service_url)에 POST /api/course-bootstrap
 
 흐름 그림 · 매핑의 정본은 it/process/procsvc/course_flows.json 하나이고, 비교 · 가져오기 → 사전 검사 → 등록 → 배포는 process 의
 /api/course-bootstrap(it/process/procsvc/course_bootstrap.py)이 한다. 배포된 판이 같은 내용이면 아무것도 바꾸지 않는다.
@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def process_url(root: Path = ROOT) -> str:
     """이 PC의 process 주소 — 점검(check_stack)과 같은 포트 표 한 곳에서."""
-    return f'http://127.0.0.1:{prepare_ports.saved_port(root, 8080)}'
+    return prepare_ports.service_url(root, 'process')
 
 
 def report(result: dict) -> list[str]:

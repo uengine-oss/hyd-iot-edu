@@ -1,6 +1,6 @@
 """수업용 기본 지식: 강사 서명 추출 묶음의 HM-8 · PM-02 · PR-07 검토본을 포털 지식 관리와 같은 API로 넣는다 — 시작 7단계가 부른다.
 
-    python scripts/class_knowledge.py ensure        # 이 PC의 process(포트 표 .hyd-runtime/ports.json 의 8080 자리)
+    python scripts/class_knowledge.py ensure        # 이 PC의 process(포털의 같은 출처 길 /svc/process — prepare_ports.service_url)
 
 왜(사용자 결정 2026-10-25): 학생 PC의 시작 지식(구조판)에는 고장 · 원인 · 조치가 없어 4회차 인제스천보다 앞선 판단 · What-if 실습이
 후보 0개였다. 그래서 검토본을 처음부터 넣고, 4회차 인제스천은 같은 문서를 다시 올려 과정을 배우는 실습(문서 개정)으로 둔다.
@@ -184,7 +184,7 @@ def main(argv: list[str]) -> int:
         print("사용: class_knowledge.py ensure", file=sys.stderr)
         return 2
     try:
-        api = f"http://127.0.0.1:{prepare_ports.saved_port(ROOT, 8080)}"
+        api = prepare_ports.service_url(ROOT, "process")
         for line in ensure(http_call(api)):
             print(line)
     except (Stop, prepare_ports.PrepareError) as exc:

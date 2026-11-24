@@ -64,7 +64,7 @@ case "$AI_MODE_WANT" in
 esac
 # 프로젝트 이름 · 포트: 같은 폴더면 그대로, 옮긴 폴더면 이어받고, 다른 폴더가 쓰는 이름 · 다른 프로그램이 쓰는 포트는 피한다(까닭은 위에 출력)
 "${PYTHON[@]}" scripts/prepare_ports.py || die "이 PC의 프로젝트 이름 · 포트를 준비하지 못했습니다. 바로 위의 까닭대로 고친 뒤 다시 실행하세요."
-# 기본 포트 → 이 PC의 바깥 포트(.hyd-runtime/ports.json — 방금 정한 표. 6 · 7 · 8단계 스크립트도 이 표에서 process 주소를 찾는다)
+# 기본 포트 → 이 PC의 바깥 포트(.hyd-runtime/ports.json — 방금 정한 표. 6 · 7 · 8단계 스크립트도 이 표의 포털 포트로 서비스를 부른다 — 서비스 포트는 PC 에 열지 않는다)
 PORTAL="http://127.0.0.1:$("${PYTHON[@]}" scripts/prepare_ports.py port 8088)"
 # 이 뒤의 compose 는 .env 의 AI_MODE · 포트 · 업무 DB 이름을 쓴다. 이 창에 다른 값(빈 값 포함)이 남아 있으면 그것이 이기므로 비운다
 unset COMPOSE_PROFILES AI_MODE HYD_SUPABASE_PROJECT
@@ -72,15 +72,31 @@ unset COMPOSE_PROFILES AI_MODE HYD_SUPABASE_PROJECT
 say "3/8 업무 DB(Supabase) 켜기 · 업데이트"
 command -v npx >/dev/null 2>&1 || die "npx(Node.js)가 없습니다. $INSTALL_ENTRY 을 실행하세요."
 SUPA=(npx -y "supabase@$SUPABASE_CLI")   # it/supabase/.env(2단계가 씀)의 이 PC 업무 DB 이름 · 포트를 CLI 가 스스로 읽는다
-( cd it/supabase && "${SUPA[@]}" start >/dev/null ) || die "업무 DB(Supabase)가 켜지지 않았습니다. 위 오류에 포트가 겹친다는 내용(port is already allocated)이 있으면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 이미지를 받다가 멈췄으면(timeout · connection · TLS) 인터넷 연결을 확인하고 다시 실행하세요 — 받은 데까지는 이어서 받습니다. 그래도 같으면 위 오류를 강사에게 알려 주세요."
+supa_start() { ( cd it/supabase && "${SUPA[@]}" start >/dev/null ) || die "업무 DB(Supabase)가 켜지지 않았습니다. 위 오류에 포트가 겹친다는 내용(port is already allocated)이 있으면 $STOP_ENTRY 로 끈 뒤 다시 실행하세요. 이미지를 받다가 멈췄으면(timeout · connection · TLS) 인터넷 연결을 확인하고 다시 실행하세요 — 받은 데까지는 이어서 받습니다. 그래도 같으면 위 오류를 강사에게 알려 주세요."; }
+supa_start
+# CLI 는 업무 DB 컨테이너가 켜져 있으면 빠진 컨테이너 · 시드를 채우지 않는다 — 처음 시작이 도중에 끊겨 남은 DB 와 빠진 메일함을 여기서 바로잡는다(prepare_ports.db_state)
+db_state=$("${PYTHON[@]}" scripts/prepare_ports.py db-state) || die "업무 DB 의 상태를 확인하지 못했습니다. 바로 위의 까닭대로 고친 뒤 다시 실행하세요."
+case "$db_state" in
+  ok) ;;
+  restart)
+    echo "업무 DB 의 컨테이너 일부가 없거나 꺼져 있어 업무 DB 를 다시 켭니다(쌓인 데이터는 그대로)."
+    ( cd it/supabase && "${SUPA[@]}" stop >/dev/null ) || die "업무 DB(Supabase)를 다시 켜려고 끄지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요."
+    supa_start;;
+  reinit)
+    echo "업무 DB 가 처음 준비(구조 · 기본 데이터)를 마치지 못한 채 남아 있습니다(처음 시작이 도중에 끊긴 PC). 이 업무 DB 에는 아직 실습 기록이 없어, 비우고 처음부터 다시 준비합니다."
+    ( cd it/supabase && "${SUPA[@]}" stop --no-backup >/dev/null ) || die "처음 준비를 마치지 못한 업무 DB 를 비우지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요."
+    supa_start;;
+  *) die "업무 DB 상태를 알 수 없습니다: $db_state";;
+esac
 # supabase start는 이미 만든 DB에 새 판의 마이그레이션을 적용하지 않는다. 새 판의 업무 시스템이 그 표를 기다리다 멈추지 않게 여기서 적용한다
 ( cd it/supabase && "${SUPA[@]}" migration up --local ) || die "업무 DB 업데이트(마이그레이션)가 실패했습니다. 도움을 요청할 때 위 오류의 파일 이름을 그대로 전해 주세요."
 # 업무 DB 를 부르는 서비스는 이 시스템의 망(compose.yaml business-db)에서 업무 DB · 메일함을 db.supabase.internal · inbucket 으로 부른다. 그 망을 만들고
-# 업무 DB 가 켤 때마다 새로 만드는 두 컨테이너를 붙이며, 지워진 옛 망을 기억해 켜지지 못할 서비스 컨테이너는 다시 만들게 지운다(이름 붙은 볼륨 — 실습 기록 —
-# 은 그대로. 까닭은 compose.yaml 의 business-db 머리말)
+# 업무 DB 가 켤 때마다 새로 만드는 두 컨테이너를 붙이며, 다시 만들어야 하는 서비스 컨테이너는 지워 4단계가 다시 만들게 한다 — 지워진 옛 망을 기억해 켜지지
+# 못할 것과, 업무 DB 가 비워져 새로 만들어지기 전에 켜져 옛 DB 에 넣은 것을 새 DB 에 다시 넣지 않을 것(prepare_ports.stale_services). 이름 붙은 볼륨 —
+# 실습 기록 — 은 그대로(까닭은 compose.yaml 의 business-db 머리말)
 stale=$("${PYTHON[@]}" scripts/prepare_ports.py db-net) || die "업무 DB 의 망을 준비하지 못했습니다. 바로 위의 까닭대로 고친 뒤 다시 실행하세요."
 if [ -n "$stale" ]; then
-  echo "업무 DB 의 망이 바뀌어 이 서비스는 다시 만듭니다: $stale"
+  echo "업무 DB 가 새로 만들어졌거나 그 망이 바뀌어, 업무 DB 를 쓰는 이 서비스는 다시 만듭니다: $stale"
   docker compose rm -f -s -v $stale >/dev/null || die "다시 만들 서비스($stale)를 지우지 못했습니다. 도움을 요청할 때 위 오류를 그대로 전해 주세요."
 fi
 

@@ -24,12 +24,14 @@ it/supabase/config.toml 은 커밋된 값 그대로 둔다. 앞 판 시작이 �
 (compose 에 없는 볼륨을 모두 지우면 이름을 바꾼 볼륨의 실습 기록까지 지운다).
 
     python scripts/prepare_ports.py            # 시작 2단계가 부른다
-    python scripts/prepare_ports.py db-net     # 시작 3단계(업무 DB 를 켠 뒤): 업무 DB 망 · 붙이기, 다시 만들 서비스 이름
+    python scripts/prepare_ports.py db-state   # 시작 3단계(업무 DB 를 켠 뒤): ok · restart · reinit(db_state — 처음 준비가 끊긴 DB · 빠진 컨테이너)
+    python scripts/prepare_ports.py db-net     # 시작 3단계(마이그레이션 뒤): 업무 DB 망 · 붙이기, 다시 만들 서비스 이름(stale_services)
     python scripts/prepare_ports.py retire     # 시작 4단계(compose up) 뒤에 부른다
     python scripts/prepare_ports.py port 8088  # 기본 포트 8088 의 이 PC 바깥 포트
 """
 from __future__ import annotations
 
+import datetime
 import hashlib
 import json
 import os
@@ -375,7 +377,8 @@ def prepare(root: Path, *, inventory=None, container_ports=None, probe=available
     """이 폴더의 이름 · 포트를 정해 기록하고 알릴 말을 돌려준다. inventory · container_ports · probe · exists 는 Docker · 운영체제 자리."""
     runtime = root / RUNTIME
     compose_text = (root / 'compose.yaml').read_text(encoding='utf-8')
-    service_ports = {int(p) for p in re.findall(r'\$\{HYD_PORT_(\d+):-', compose_text)}
+    # PC 에 실제로 여는 포트(compose ports 의 127.0.0.1 묶음)만 — 바깥 주소를 알리기만 하는 자리(redpanda 의 external 알림)는 열지 않으므로 고르지 않는다
+    service_ports = {int(p) for p in re.findall(r'127\.0\.0\.1:\$\{HYD_PORT_(\d+):-', compose_text)}
     env_path = root / '.env'
     try:
         values = hyd_env.read(env_path)
@@ -474,18 +477,79 @@ def retire(root: Path) -> list[str]:
 
 #: 업무 DB 망(compose.yaml business-db)의 이름 앞부분과, 그 망에서 업무 DB · 메일함 컨테이너를 부르는 이름(컨테이너 이름은 업무 DB 프로젝트마다 다르다)
 DB_NET_PREFIX = 'hyd-business-db-'
-DB_NET_ALIASES = {'supabase_db_{}': 'db.supabase.internal', 'supabase_inbucket_{}': 'inbucket'}
+DB_BOX = 'supabase_db_{}'             # 업무 DB 컨테이너 — 그 데이터 볼륨도 같은 이름이다(Supabase CLI 2.119.0. 볼륨을 지우면 다음 켜기가 새 DB 를 만든다)
+DB_NET_ALIASES = {DB_BOX: 'db.supabase.internal', 'supabase_inbucket_{}': 'inbucket'}
 
 
-def stale_services(containers: list[dict], net_id: str, users: set[str]) -> list[str]:
-    """다시 만들 서비스 — 업무 DB 망을 쓰는 서비스(users)의 컨테이너(docker inspect 꼴) 가운데 지금 그 망(net_id)에 붙지 않은 것.
-    망이 지워졌다 다시 만들어지면(Docker 정리 · 앞 판이 붙던 Supabase 의 망) 멈춰 둔 컨테이너는 옛 망을 기억해 compose 가 다시 만들지 않고
-    「network … not found」로 켜지지 못했다(2026-11-24 실측)."""
-    stale = set()
+DB_SEEDED = ('public.tenants', 'hyd')   # 업무 DB 의 처음 준비(마이그레이션 + it/supabase/seed.sql)가 끝났다는 표시 — 시드가 넣는 회사(테넌트)
+
+
+def db_state(tables: dict[str, int | None], seeded: bool, running: dict[str, bool]) -> str:
+    """시작 3단계(업무 DB 를 켠 뒤)가 업무 DB 로 할 일 — 'ok' · 'restart' · 'reinit'. 처음 준비가 끝나지 않은 DB 에 기록이 있으면 멈춘다(PrepareError).
+    tables: 회사 · 사람 표의 줄 수(표가 없으면 None), seeded: 시드의 회사가 있는가, running: 시스템이 부르는 업무 DB · 메일함 컨테이너가 켜져 있는가.
+
+    Supabase CLI(2.119.0)는 업무 DB 컨테이너가 켜져 있으면 「이미 켜짐」으로 보고 빠진 컨테이너를 만들지도, 꺼진 것을 켜지도, 시드를 넣지도 않는다.
+    그래서 처음 시작이 업무 DB 를 준비하는 도중에 끊기면(창 닫기) 반쯤 만든 DB 가 남고, 다시 눌러도 끄고 켜도(「백업에서 시작」) 시드가 들어가지 않아
+    process 가 「tenant hyd 없음」(외래키)으로 켜지지 못한 채 4단계가 「시스템을 켜지 못했습니다」로 멈췄다(2026-11-25 실측 — 학생 PC 「Supabase 가
+    남아 있어서 안 된다」). 시드의 회사가 없으면 회사 · 사람 표도 비어 있을 때만(처음 준비를 마치지 못한 DB — 시스템이 회사 없이는 아무것도 쓰지
+    못하므로 실습 기록이 있을 수 없다) 비우고 처음부터 다시 준비한다('reinit'). 시드가 있는데 메일함 · 업무 DB 컨테이너가 없거나 꺼져 있으면 데이터를
+    그대로 두고 업무 DB 를 다시 켠다('restart' — 끄기가 하는 stop 과 같은 길)."""
+    if not seeded:
+        kept = {name: rows for name, rows in tables.items() if rows}
+        if kept:
+            raise PrepareError(f'업무 DB 에 시드의 회사(테넌트 hyd)가 없는데 기록이 있습니다({", ".join(f"{k} {v}줄" for k, v in kept.items())}) — '
+                               '처음 준비가 끝나지 않은 DB 가 아니라 지우지 않고 멈춥니다. 이 줄을 그대로 강사에게 알려 주세요.')
+        return 'reinit'
+    return 'ok' if all(running.values()) else 'restart'
+
+
+def business_db(root: Path) -> str:
+    """db_state 를 이 PC 의 업무 DB 에서 잰다(시작 3단계 — 업무 DB 를 켠 뒤, 마이그레이션 앞)."""
+    record_path = root / RUNTIME / 'project.json'
+    if not record_path.exists():
+        raise PrepareError('폴더 기록(.hyd-runtime/project.json)이 없습니다. 시작 파일을 처음부터 다시 실행하세요.')
+    name = json.loads(record_path.read_text(encoding='utf-8'))['supabase']
+    box = DB_BOX.format(name)
+    def sql(query):
+        out = subprocess.run([docker_exe(), 'exec', box, 'psql', '-U', 'postgres', '-d', 'postgres', '-tAc', query], capture_output=True, text=True,
+                             encoding='utf-8', errors='replace')
+        if out.returncode != 0:
+            raise PrepareError(f'업무 DB({box})에 묻지 못했습니다: {(out.stderr or out.stdout).strip()[:300]}')
+        return out.stdout.strip()
+    names = ('public.tenants', 'public.users')
+    exists = dict(zip(names, sql('select ' + ', '.join(f"to_regclass('{n}') is not null" for n in names)).split('|')))
+    tables = {n: (int(sql(f'select count(*) from {n}')) if exists[n] == 't' else None) for n in names}
+    seeded = exists[DB_SEEDED[0]] == 't' and sql(f"select count(*) from {DB_SEEDED[0]} where id = '{DB_SEEDED[1]}'") == '1'
+    states = subprocess.run([docker_exe(), 'inspect', '-f', '{{.State.Running}}', *(p.format(name) for p in DB_NET_ALIASES)], capture_output=True,
+                            text=True, encoding='utf-8', errors='replace').stdout.split()
+    running = {p.format(name): i < len(states) and states[i] == 'true' for i, p in enumerate(DB_NET_ALIASES)}
+    return db_state(tables, seeded, running)
+
+
+def docker_instant(text: str) -> datetime.datetime:
+    """docker 가 주는 시각 글 → 시각. 컨테이너 Created 는 UTC 나노초 「…Z」, 볼륨 CreatedAt 은 데몬의 지역 시각이다(Docker Desktop 은 「…Z」,
+    리눅스 데몬은 「…+09:00」 꼴도 온다) — 초까지 견준다."""
+    m = re.fullmatch(r'(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+)?(Z|[+-]\d\d:\d\d)', (text or '').strip())
+    if not m:
+        raise PrepareError(f'docker 가 준 시각을 읽지 못했습니다: {text!r}')
+    return datetime.datetime.fromisoformat(m[1] + ('+00:00' if m[2] == 'Z' else m[2]))
+
+
+def stale_services(containers: list[dict], net_id: str, users: set[str], db_created: str) -> list[str]:
+    """다시 만들 서비스 — 업무 DB 를 쓰는 서비스(users)의 컨테이너(docker inspect 꼴) 가운데
+      - 지금 업무 DB 망(net_id)에 붙지 않은 것: 망이 지워졌다 다시 만들어지면(Docker 정리 · 앞 판이 붙던 Supabase 의 망) 멈춰 둔 컨테이너는 옛 망을
+        기억해 compose 가 다시 만들지 않고 「network … not found」로 켜지지 못했다(2026-11-24 실측).
+      - 지금 업무 DB 의 데이터 볼륨(그 만든 시각 db_created — docker volume inspect 의 CreatedAt 글)보다 먼저 만든 것: 업무 DB 를 비우고 새로 만들면(데이터 볼륨을
+        지움) 켜져 있던 서비스는 옛 DB 에 켜질 때 넣은 것(process 의 기준 흐름 배포 — instance_mode._bootstrap_definition)을 새 DB 에 다시 넣지 않아,
+        시작 6단계가 「배포된 운영 판본이 없습니다: anomaly_response」로 몇 번을 다시 눌러도 멈췄다(2026-11-25 실측). 다시 만든 서비스는 켜질 때
+        새 DB 에 다시 넣는다."""
+    db_made, stale = docker_instant(db_created), set()
     for c in containers:
         service = ((c.get('Config') or {}).get('Labels') or {}).get('com.docker.compose.service')
+        if service not in users:
+            continue
         networks = ((c.get('NetworkSettings') or {}).get('Networks') or {}).values()
-        if service in users and not any((n or {}).get('NetworkID') == net_id for n in networks):
+        if docker_instant(c.get('Created')) < db_made or not any((n or {}).get('NetworkID') == net_id for n in networks):
             stale.add(service)
     return sorted(stale)
 
@@ -515,10 +579,15 @@ def db_network(root: Path) -> list[str]:
         if net not in json.loads(found.stdout or '{}') and (out := docker('network', 'connect', '--alias', alias, net, box)).returncode != 0:
             raise PrepareError(f'업무 DB 의 컨테이너 {box} 를 망 {net} 에 붙이지 못했습니다: {out.stderr.strip()[:300]}')
     net_id = docker('network', 'inspect', '-f', '{{.Id}}', net).stdout.strip()
+    volume = DB_BOX.format(record['supabase'])
+    db_created = docker('volume', 'inspect', '-f', '{{.CreatedAt}}', volume)
+    if db_created.returncode != 0:
+        raise PrepareError(f'업무 DB 의 데이터 볼륨 {volume} 을 읽지 못했습니다({(db_created.stderr or db_created.stdout).strip()[:300]}) — 3단계의 업무 DB 가 '
+                           '덜 켜졌습니다. 끄기 파일로 끈 뒤 시작 파일을 다시 실행하세요.')
     users = {s for s, spec in resolved['services'].items() if 'business-db' in (spec.get('networks') or {})}
     ids = subprocess.check_output([docker_exe(), 'ps', '-aq', '--filter', f'label=com.docker.compose.project={record["compose"]}'], text=True).split()
     containers = json.loads(subprocess.check_output([docker_exe(), 'inspect', *ids], text=True, encoding='utf-8')) if ids else []
-    return stale_services(containers, net_id, users)
+    return stale_services(containers, net_id, users, db_created.stdout.strip())
 
 
 def saved_port(root: Path, default: int) -> int:
@@ -526,6 +595,12 @@ def saved_port(root: Path, default: int) -> int:
     if not ports:
         raise PrepareError('포트 표(.hyd-runtime/ports.json)가 없습니다. 시작 파일을 먼저 실행하세요.')
     return ports.get(default, default)
+
+
+def service_url(root: Path, service: str) -> str:
+    """이 PC 에서 서비스 API 를 부르는 주소 — 포털의 같은 출처 길 /svc/<서비스>(it/portal/nginx.conf 가 서비스 이름으로 넘긴다). 서비스 포트는
+    PC 에 열지 않는다(compose.yaml 머리말 — PC 에 연 포트는 다른 망의 컨테이너에서도 닿는다). 시작 · 점검 · 개발 도구가 모두 이것을 쓴다."""
+    return f'http://127.0.0.1:{saved_port(root, 8088)}/svc/{service}'
 
 
 def main(argv: list[str], root: Path = ROOT) -> int:
@@ -540,6 +615,9 @@ def main(argv: list[str], root: Path = ROOT) -> int:
             return 0
         if args == ['db-net']:
             print(' '.join(db_network(root)))
+            return 0
+        if args == ['db-state']:
+            print(business_db(root))
             return 0
     except (PrepareError, hyd_env.EnvFileError) as exc:
         print(str(exc), file=sys.stderr)
