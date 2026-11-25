@@ -2,7 +2,7 @@
 
 쓰는 법: <py> workspace/강의제작/제작도구/검사/대본전후html.py <설정.json> <출력.html>
 
-설정 JSON:
+설정 JSON(옛대본은 git 판 「refs/…:경로」 · 「커밋:경로」 또는 파일 경로):
 {
   "제목": "…",
   "머리": "머리말 마크다운 파일 경로(문단 · '- ' 목록 · '## ' 제목 · '**굵게**'만 읽는다)",
@@ -33,7 +33,8 @@ E = html.escape
 
 
 def read_src(src):
-    if ':' in src and src.split(':', 1)[0].startswith('refs/'):
+    rev = src.split(':', 1)[0] if ':' in src else ''
+    if rev.startswith('refs/') or re.fullmatch(r'[0-9a-f]{7,40}(~\d+)?', rev):
         return subprocess.run(['git', 'show', src], capture_output=True, check=True).stdout.decode('utf-8')
     return Path(src).read_bytes().decode('utf-8')
 
@@ -122,6 +123,8 @@ def section(sec):
         on = old_no(n, sec)
         ot, op = (old[on][0], old[on][1]) if on is not None and on in old else ('', [])
         same_text = '\n\n'.join(paras) == '\n\n'.join(op)
+        # 고침 꼴이라도 장을 통째로 다시 쓴 장(옛 낭독과 닮은 정도가 절반 아래)은 낱말 전후가 뒤엉켜 읽을 수 없으므로 새로 꼴로 보인다
+        rewritten = mode == '고침' and op and not same_text and difflib.SequenceMatcher(None, '\n'.join(op), '\n'.join(paras), autojunk=False).ratio() < 0.5
         if mode == '고침' and sec.get('바뀐장만') and same_text and n not in changed_screens:
             continue
         n_shown += 1
@@ -131,8 +134,9 @@ def section(sec):
             tag = '<span class="tag new">새 장</span>'
         elif n in changed_screens:
             tag = '<span class="tag scr">화면 바뀜</span>'
-        if mode == '고침' and not same_text:
-            tag += '<span class="tag txt">낭독 바뀜</span>'
+        if mode == '고침' and not same_text and op:
+            tag += '<span class="tag txt">' + ('낭독 새로 씀' if rewritten else '낭독 바뀜') + '</span>'
+        rewritten = rewritten or (mode == '고침' and not op)   # 옛 판에 없는 새 장은 새 낭독만 보인다
         parts.append(f'<article id="s{sec.get("키", "")}{n}"><h3>{label}장 · {E(title)} {tag}</h3>')
         nimg = img(Path(sec['새그림']) / f's-{n:02d}.png') if sec.get('새그림') else None
         oimg = img(Path(sec['옛그림']) / f's-{on:02d}.png') if (n in changed_screens and on and sec.get('옛그림')) else None
@@ -140,7 +144,7 @@ def section(sec):
             parts.append(f'<div class="two"><figure><img src="{oimg}"><figcaption>옛 화면</figcaption></figure><figure><img src="{nimg}"><figcaption>새 화면</figcaption></figure></div>')
         elif nimg:
             parts.append(f'<figure><img src="{nimg}"></figure>')
-        if mode == '새로':
+        if mode == '새로' or rewritten:
             parts.append('<div class="say">' + ''.join(f'<p>{E(p)}</p>' for p in paras) + '</div>')
             if op:
                 parts.append('<details><summary>옛 판 낭독 보기</summary><div class="old">' + ''.join(f'<p>{E(p)}</p>' for p in op) + '</div></details>')
