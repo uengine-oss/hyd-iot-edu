@@ -11,7 +11,8 @@
       "이름": "2회차 01편 · 클래스와 인스턴스",
       "대본": "workspace/…/01_이론_클래스와인스턴스.md",           # 지금 판(작업 트리)
       "옛대본": "refs/heads/workspace:workspace/…/01_….md",      # git 판(ref:경로) 또는 파일 경로
-      "꼴": "새로" | "고침",       # 새로: 새 낭독을 본문으로 · 옛 낭독은 접어 둠 / 고침: 낱말 단위 전후(지운 말 · 넣은 말)
+      "꼴": "새로" | "고침" | "나란히",  # 새로: 새 낭독을 본문으로 · 옛 낭독은 접어 둠 / 고침: 낱말 단위 전후(지운 말 · 넣은 말) / 나란히: 왼쪽 옛 판 · 오른쪽 새 판을 두 줄로 두고 바뀐 문장만 칠함(고친 곳이 많아 낱말 전후가 읽히지 않을 때)
+      "옛이름": "astra 판", "새이름": "최종판",  # 나란히 꼴의 두 줄 머리(없으면 옛 판 · 새 판)
       "새그림": "작업/…/렌더/새판",   # 새 판 장 그림 폴더(s-NN.png)
       "옛그림": "workspace/…/슬라이드/통합반_02일차",  # 옛 판 장 그림 폴더(화면이 바뀐 장만 옛 그림을 함께 보인다)
       "화면바뀐장": [29, 39, 48, 69],
@@ -75,6 +76,25 @@ def words_diff(a, b):
     return ''.join(out)
 
 
+def split_sents(text):
+    return [s for s in re.split(r'(?<=[.?!])\s+|(?<=[.?!]」)\s+', text.strip()) if s]
+
+
+def _norm(s):
+    return re.sub(r'[\s‘’“”「」\'"*]', '', s)
+
+
+def side(paras, other, cls):
+    """나란히 꼴의 한 줄: 반대편 문장 가운데 가장 닮은 것과 85%보다 덜 닮은 문장만 cls로 칠한다
+    (따옴표 · 띄어쓰기만 다른 문장까지 칠하면 거의 모든 문장이 칠해져 무엇을 바꿨는지 보이지 않는다)."""
+    have = [_norm(s) for p in other for s in split_sents(p)]
+
+    def changed(s):
+        n = _norm(s)
+        return not any(difflib.SequenceMatcher(None, n, h, autojunk=False).ratio() >= 0.85 for h in have)
+    return ''.join('<p>' + ' '.join(f'<span class="{cls}">{E(s)}</span>' if changed(s) else E(s) for s in split_sents(p)) + '</p>' for p in paras)
+
+
 def md(text):
     out, lst = [], []
 
@@ -136,6 +156,8 @@ def section(sec):
             tag = '<span class="tag scr">화면 바뀜</span>'
         if mode == '고침' and not same_text and op:
             tag += '<span class="tag txt">' + ('낭독 새로 씀' if rewritten else '낭독 바뀜') + '</span>'
+        if mode == '나란히' and not same_text:
+            tag += '<span class="tag txt">낭독 바뀜</span>'
         rewritten = rewritten or (mode == '고침' and not op)   # 옛 판에 없는 새 장은 새 낭독만 보인다
         parts.append(f'<article id="s{sec.get("키", "")}{n}"><h3>{label}장 · {E(title)} {tag}</h3>')
         nimg = img(Path(sec['새그림']) / f's-{n:02d}.png') if sec.get('새그림') else None
@@ -144,7 +166,14 @@ def section(sec):
             parts.append(f'<div class="two"><figure><img src="{oimg}"><figcaption>옛 화면</figcaption></figure><figure><img src="{nimg}"><figcaption>새 화면</figcaption></figure></div>')
         elif nimg:
             parts.append(f'<figure><img src="{nimg}"></figure>')
-        if mode == '새로' or rewritten:
+        if mode == '나란히':
+            heads = f'<div class="lab">{E(sec.get("옛이름", "옛 판"))}</div><div class="lab">{E(sec.get("새이름", "새 판"))}</div>'
+            if len(op) == len(paras):   # 옛 판 문단을 새 판 문단에 맞춰 둔 경우: 문단끼리 한 줄씩 나란히
+                rows = ''.join(f'<div>{side([a], [b], "gone")}</div><div>{side([b], [a], "chg")}</div>' for a, b in zip(op, paras))
+            else:
+                rows = f'<div>{side(op, paras, "gone")}</div><div>{side(paras, op, "chg")}</div>'
+            parts.append(f'<div class="two pair">{heads}{rows}</div>')
+        elif mode == '새로' or rewritten:
             parts.append('<div class="say">' + ''.join(f'<p>{E(p)}</p>' for p in paras) + '</div>')
             if op:
                 parts.append('<details><summary>옛 판 낭독 보기</summary><div class="old">' + ''.join(f'<p>{E(p)}</p>' for p in op) + '</div></details>')
@@ -174,6 +203,8 @@ del{background:#ffe1e1;color:#a11;text-decoration:line-through} ins{background:#
 .new{background:#1d4f91;color:#fff} .scr{background:#f2b33d;color:#3a2a00} .txt{background:#e5ebf5;color:#1d4f91}
 details{margin:8px 0} summary{cursor:pointer;color:#1d4f91} .whole{background:#f6f8fb;padding:10px 14px;border-radius:8px}
 nav a{margin-right:14px}
+.pair{align-items:start} .pair p{margin:8px 0} .lab{font-size:13px;font-weight:bold;color:#1d4f91;border-bottom:1px solid #d9dee8;margin-bottom:4px}
+.chg{background:#fff1b8} .gone{background:#eceff4;color:#5b6575}
 """
 
 
