@@ -52,7 +52,7 @@ def cypher_source(integrated=False):
     """integrated = 통합반 그래프 랩이면 멈춤 문구를 장부의 이름(CYPHER_TERMS)으로 바꾼다."""
     source = (P.HERE / 'lab_cypher.py').read_text(encoding='utf-8')
     names = {'WIPE', 'PARAM', 'TARGET', 'QUESTION', 'LabDbOff', 'model_graph', 'endpoint', 'cypher', 'rows_of',
-             'statements', 'guard', 'read', 'run_file', 'constraints_file', 'constraints', 'duplicates', 'try_create_twice', 'CONSTRAINT', 'load_file', 'questions', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
+             'statements', 'guard', 'read', 'run_file', 'constraints_file', 'constraints', 'duplicates', 'try_create_twice', 'CONSTRAINT', 'load_file', 'questions', 'CLAUSE', 'WRITES', 'top_level', 'path_query', 'walked', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
     text = ('from pathlib import Path\nimport json, re, urllib.request, urllib.error\nfrom app.utils import db as local_db\n'
             "HERE = Path(__file__).resolve().parents[2]\nSTATE = HERE / '.lab_connection.json'\n_ENDPOINT = None\n\n" + P.extract(source, names))
     text = text.replace(P.extract(source, {'endpoint'}).strip(), ENDPOINT.strip())
@@ -100,8 +100,6 @@ def endpoint():
 def actions_source(L):
     """통합반 그래프 랩의 기능 코드(실전반 생성기는 P.actions_source와 EXTRA_ACTIONS를 따로 쓴다)."""
     text = P.actions_source(L)
-    text = text.replace('처음 켠 랩 DB는 비어 있습니다(0). 적재한 뒤에는 두 칸이 같아야 합니다.',
-                        '처음 만든 DB는 비어 있습니다(0). 첫 적재 뒤에는 모델과 개수를 대조합니다. 수정 뒤에는 수정본과 선택한 삭제 범위로 개수 차이를 확인합니다.')
     text = text.replace("    d = C.diff_graphs(before, after)",
                         "    save_json('before_update.json', before)\n    save_json('after_update.json', after)\n    d = C.diff_graphs(before, after)")
     text = text.replace("'수정 전 → 수정 뒤(적재 직후와 견줌)'", "'수정 전 → 수정 뒤'")
@@ -114,7 +112,7 @@ def sources(previous):
     _, model = C.model_graph()
     files = [(p.name, len(R.read_table(p))) for p in sorted((HERE / 'data').glob('*.csv'))]
     return [R.verdict('info', f'사용할 모델에 노드 {counts["노드"]}개 · 관계 {counts["관계"]}개가 있습니다', f'{R.rel(path)} · 원자료 표 {len(files)}개'),
-            R.class_map('사용할 모델 — 종류마다 인스턴스 수와 관계', model, note='동그란 상자 하나가 종류(클래스)이고 오른쪽 위 수가 그 종류의 인스턴스 수입니다. 화살표의 글은 관계 이름과 그 관계의 수입니다.'),
+            R.class_map('사용할 모델 — 종류마다 인스턴스 수와 관계', model, note='상자 = 종류(클래스), 오른쪽 수 = 인스턴스 수, 화살표의 글 = 관계 이름과 수.'),
             R.counts('원자료 파일마다 행 수', files),
             R.folded(R.counts('사용할 모델: ' + R.rel(path), sorted(counts.items())))]
 
@@ -122,8 +120,7 @@ def sources(previous):
 def prepare(previous):
     from app.utils import db as local_db
     local_db.prepare()
-    out = start(previous)
-    return out[:1] + [R.note('이 폴더의 랩 DB를 준비했습니다.')] + out[1:]
+    return start(previous)
 
 
 def save_json(name, value):
@@ -138,9 +135,7 @@ def export(previous):
     save_json('graph.json', graph)
     save_json('schema.json', json.loads(path.with_name('schema.json').read_text(encoding='utf-8-sig')))
     return [R.verdict('ok', f'랩 DB의 그래프를 저장했습니다 — 노드 {len(graph["nodes"])}개 · 관계 {len(graph["rels"])}개', 'output/schema.json(종류와 관계) · output/graph.json(노드와 관계)'),
-            R.class_map('저장한 그래프 — 종류마다 노드 수와 관계', graph),
-            R.counts('저장한 그래프', [('노드', len(graph['nodes'])), ('관계', len(graph['rels']))]),
-            R.note('output/schema.json · output/graph.json에 저장했습니다.')]
+            R.class_map('저장한 그래프 — 종류마다 노드 수와 관계', graph)]
 
 
 def check(previous):

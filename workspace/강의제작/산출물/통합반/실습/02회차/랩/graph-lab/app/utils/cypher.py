@@ -222,6 +222,107 @@ def questions(path):
     return out
 
 
+CLAUSE = re.compile(r'\b(OPTIONAL\s+MATCH|MATCH|WHERE|WITH|RETURN|UNWIND|CALL|ORDER\s+BY|SKIP|LIMIT|UNION|CREATE|MERGE|SET|DELETE|DETACH|REMOVE|FOREACH|LOAD\s+CSV)\b', re.I)
+
+
+WRITES = {'CREATE', 'MERGE', 'SET', 'DELETE', 'DETACH', 'REMOVE', 'FOREACH', 'LOAD CSV'}
+
+
+def top_level(text):
+    """쿼리 글과 같은 길이의 글 — 따옴표 · 주석 · 괄호((), [], {}) 안은 빈칸으로 바꿔, 맨 바깥에 적힌 절 이름과 쉼표만 남긴다."""
+    out, depth, i, n = [], 0, 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch in '\'"`':
+            j = i + 1
+            while j < n and text[j] != ch:
+                j += 2 if text[j] == chr(92) else 1
+            out.append(' ' * (min(j, n - 1) - i + 1))
+            i = j + 1
+        elif text.startswith('//', i):
+            j = text.find('\n', i)
+            j = n if j < 0 else j
+            out.append(' ' * (j - i))
+            i = j
+        elif text.startswith('/*', i):
+            j = text.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            out.append(' ' * (j - i))
+            i = j
+        else:
+            if ch in ')]}':
+                depth = max(0, depth - 1)
+            out.append(ch if depth == 0 and ch not in '([{' or ch == '\n' else ' ')
+            if ch in '([{':
+                depth += 1
+            i += 1
+    return ''.join(out)[:n]
+
+
+def path_query(text):
+    """조회 쿼리 → (같은 패턴을 그대로 두고 패턴마다 경로 이름을 붙여 RETURN *로 끝낸 쿼리, 붙인 경로 수, 뺀 꼬리에 LIMIT · SKIP이 있었는가).
+    쿼리가 랩 DB에서 실제로 지난 노드와 관계를 받으려고 쓴다. 학생의 쿼리 파일은 바꾸지 않는다. 읽지 못하는 꼴이면 그 까닭을 말하며 멈춘다."""
+    flat = top_level(text)
+    marks = [(m.start(), m.end(), re.sub(r'\s+', ' ', m.group(1).upper())) for m in CLAUSE.finditer(flat)]
+    wrote = sorted({k for _, _, k in marks if k in WRITES})
+    if wrote:
+        raise RuntimeError('데이터를 바꾸는 절(' + ' · '.join(wrote) + ')이 있는 쿼리라 길을 보려고 다시 실행하지 않았습니다.')
+    if any(k == 'UNION' for _, _, k in marks):
+        raise RuntimeError('UNION으로 이은 쿼리는 갈래마다 패턴이 달라 한 그림으로 읽지 못합니다.')
+    ends = [i for i, m in enumerate(marks) if m[2] == 'RETURN']
+    if not ends:
+        raise RuntimeError('맨 바깥에 RETURN이 없어 어디까지가 패턴인지 읽지 못했습니다.')
+    out, pos, named = [], 0, 0
+    for i, (start, end, kind) in enumerate(marks[:ends[-1]]):
+        if kind not in ('MATCH', 'OPTIONAL MATCH'):
+            continue
+        stop = marks[i + 1][0]
+        cuts = [end] + [end + k for k, ch in enumerate(flat[end:stop]) if ch == ','] + [stop]
+        pieces = []
+        for a, b in zip(cuts, cuts[1:]):
+            piece = text[a:b].lstrip(',')
+            if re.match(r'\s*[A-Za-z_]\w*\s*=', flat[a:b].lstrip(',')):      # 이미 경로 이름이 있는 패턴
+                pieces.append(piece)
+            else:
+                named += 1
+                pieces.append(f' path_for_picture_{named} = ' + piece.strip() + ' ')
+        out.append(text[pos:end] + ','.join(pieces))
+        pos = stop
+    if not out:
+        raise RuntimeError('맨 바깥에 MATCH 패턴이 없어 따라간 길을 읽지 못했습니다.')
+    tail = flat[marks[ends[-1]][0]:]
+    return ''.join(out) + text[pos:marks[ends[-1]][0]] + 'RETURN *', named, bool(re.search(r'(?<![.\w])(LIMIT|SKIP)\s+[\d$]', tail, re.I))
+
+
+def walked(path, number, params):
+    """`// 질문 <번호>` 쿼리의 패턴이 랩 DB에서 실제로 지난 노드와 관계. {'nodes': [{'labels', 'props'}], 'rels': [(유형, 시작 id, 끝 id)], 'lost': 그리지 못한 패턴 수, 'cut': LIMIT · SKIP이 있었는가}.
+    결과 열을 무엇으로 돌려주든(식별자 · 이름) 패턴이 같으면 같은 길이다. 읽지 못하면 까닭을 RuntimeError로 알린다."""
+    line, text = questions(path)[str(number)]
+    query, named, cut = path_query(text)
+    need = sorted(set(PARAM.findall(query)))
+    body = json.dumps({'statements': [{'statement': query, 'parameters': {k: params[k] for k in need if k in params}, 'resultDataContents': ['graph']}]}).encode()
+    req = urllib.request.Request(endpoint(), body, {'Content-Type': 'application/json', 'Accept': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read())
+    except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+        raise LabDbOff(f'랩 DB 꺼짐 — 연결하지 못했습니다({e}). python run.py db 로 DB를 다시 준비하세요.')
+    if data.get('errors'):
+        raise RuntimeError('패턴에 경로 이름을 붙여 다시 실행하니 DB가 받지 않았습니다 — ' + '; '.join(e.get('message', '').split('\n')[0] for e in data['errors']))
+    result = data['results'][0]
+    nodes, rels, key = {}, [], {}
+    for item in result['data']:
+        for n in item['graph']['nodes']:
+            key[n['id']] = n['properties'].get('id', n['id'])
+            nodes[key[n['id']]] = {'labels': sorted(n['labels']), 'props': n['properties']}
+    for item in result['data']:
+        for r in item['graph']['relationships']:
+            if r['startNode'] in key and r['endNode'] in key:
+                rels.append((r['type'], key[r['startNode']], key[r['endNode']]))
+    kept = sum(1 for c in result['columns'] if c.startswith('path_for_picture_'))
+    return {'nodes': list(nodes.values()), 'rels': list(dict.fromkeys(rels)), 'lost': named - kept, 'cut': cut}
+
+
 def query(path, number=None, params=None):
     """`// 질문 <번호>` 조회 하나(또는 전부)를 실행. [(번호, 줄, 열, 행)]. 문장의 $ 자리 가운데 params에 없는 것이 있으면 멈춘다."""
     qs = questions(path)

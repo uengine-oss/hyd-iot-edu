@@ -24,12 +24,12 @@ def split_guide(guide, out):
     body = []
     for sec in sections:
         m = re.match(r'<section id="s(\d+)"', sec)
-        found = re.findall(r'<details\b.*?</details>', sec, flags=re.S)
+        found = re.findall(r'<details class="answer".*?</details>', sec, flags=re.S)
         if found:
             if not m:
                 raise SystemExit(f'{guide}: 단계 절 밖에 정답 토글이 있다 — 나눌 수 없음')
             (toggles/f'{int(m.group(1)):02d}.txt').write_text(''.join(text_of(d) for d in found), encoding='utf-8', newline='\n')
-        body.append(re.sub(r'<details\b.*?</details>', '\n[정답 보기 — 막히면 정답_토글/이 단계 번호.txt]\n', sec, flags=re.S))
+        body.append(re.sub(r'<details class="answer".*?</details>', '\n[정답 보기 — 막히면 정답_토글/이 단계 번호.txt]\n', sec, flags=re.S))
     (out/'가이드_본문.txt').write_text(text_of(''.join(body)), encoding='utf-8', newline='\n')
     return len(list(toggles.iterdir()))
 

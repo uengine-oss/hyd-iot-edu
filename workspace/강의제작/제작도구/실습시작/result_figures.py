@@ -46,6 +46,17 @@ def link(text, url, note=''):
     return {'kind': 'link', 'text': text, 'url': url, 'note': note}
 
 
+def raw(title, text):
+    """그림과 같은 내용을 담은 원문 글(터미널 출력 같은 것) — 접어 두고 눌러서 편다."""
+    return {'kind': 'note', 'text': text, 'fold': title}
+
+
+def ordered(block):
+    """값의 차례까지 견주는 대조 표 — 화면이 조각을 다시 늘어놓지 않고 적힌 차례 그대로 보인다."""
+    block['ordered'] = True
+    return block
+
+
 def folded(block):
     """근거 표를 접어 둔다(눌러서 편다)."""
     block['fold'] = True
@@ -79,51 +90,19 @@ def count_bars(title, heads, left, right, note=''):
     return bars(title, heads, [(k, left.get(k, 0), right.get(k, 0)) for k in keys], note=note)
 
 
-def path_figure(title, data, asked, cells, note=''):
-    """물은 값에서 쿼리 결과에 나온 대상까지, 그래프의 관계를 따라 가장 짧게 이어지는 길을 그린다.
-    data = graph.json 꼴의 그래프, asked = 물은 값, cells = 쿼리 결과의 칸 값들. 물은 값과 같은 식별자(또는 그 값을 속성에 가진) 노드가 없으면 None."""
-    nodes = {n['props'].get('id'): n for n in data['nodes']}
-    near = {}
-    for r in data['rels']:
-        near.setdefault(r['a'], []).append((r['b'], r))
-        near.setdefault(r['b'], []).append((r['a'], r))
-    holds = lambda n, value: any(v == value or (isinstance(v, list) and value in v) for v in n['props'].values())
-    start = [i for i in nodes if i == asked] or [i for i, n in nodes.items() if holds(n, asked)]
-    if not start:
+def walk_figure(title, walk, asked, note=''):
+    """쿼리의 패턴이 랩 DB에서 실제로 지난 노드와 관계(cypher.walked가 돌려준 것)를 그린다. 지난 노드가 하나도 없으면 None.
+    결과 값으로 길을 짐작하지 않는다 — 그림의 선은 모두 DB가 그 패턴으로 맞춘 관계다."""
+    if not walk['nodes']:
         return None
-    back, depth, queue = {s: None for s in start}, {s: 0 for s in start}, list(start)
-    while queue:
-        cur = queue.pop(0)
-        for other, r in near.get(cur, []):
-            if other not in back and other in nodes:
-                back[other], depth[other] = (cur, r), depth[cur] + 1
-                queue.append(other)
-    values = {v for v in cells if isinstance(v, str) and len(v) > 1}
-    hits = {i for i in back if i in values and i not in start}
-    if not hits:      # 결과에 식별자가 없으면, 물은 값 둘레(세 걸음 안)에서 결과의 값을 속성으로 가진 노드
-        hits = {i for i in back if 0 < depth[i] <= 3 and any(holds(nodes[i], v) for v in values)}
-    used, on_path = set(start), []
-    for i in hits:
-        while back.get(i):
-            cur, r = back[i]
-            on_path.append((r['type'], r['a'], r['b']))
-            used.add(i)
-            i = cur
-    on_path += [(r['type'], r['a'], r['b']) for r in data['rels'] if r['a'] in used and r['b'] in used]
-    on_path = list(dict.fromkeys(on_path))
-    out = [graph_node(nodes[i], mark='ask' if i in start else '') for i in nodes if i in used]
-    links = [edge(a, b, t, 'hit') for t, a, b in on_path]
-    around = {}
-    for s in start:
-        for other, r in near.get(s, []):
-            if other not in used and other in nodes:
-                around.setdefault(other, r)
-    for other, r in list(around.items())[:8]:
-        out.append(graph_node(nodes[other], mark='dim'))
-        links.append(edge(r['a'], r['b'], r['type'], 'dim'))
-    more = f' 둘레의 다른 대상은 {len(around)}개 가운데 8개만 흐리게 그렸습니다.' if len(around) > 8 else ''
-    return graph(title, out, links, note=note + more)
-
+    holds = lambda n: any(v == asked or (isinstance(v, list) and asked in v) for v in n['props'].values())
+    more = []
+    if walk['lost']:
+        more.append(f'WITH 뒤로 넘어가지 않은 패턴 {walk["lost"]}개는 그리지 못했습니다.')
+    if walk['cut']:
+        more.append('LIMIT · SKIP으로 줄이기 전에 지난 길을 모두 그렸습니다.')
+    return graph(title, [graph_node(n, mark='ask' if holds(n) else '') for n in walk['nodes']],
+                 [edge(a, b, t, 'hit') for t, a, b in walk['rels']], note=' '.join([note] + more).strip())
 
 def graph_counts(data):
     """graph.json 꼴의 그래프 → {'노드': n, '관계': n, '종류 <레이블>': n, '관계 <유형>': n}."""

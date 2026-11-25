@@ -123,6 +123,49 @@ def http(folder, statement):
     return [x['row'] for x in data['results'][0]['data']]
 
 
+def walk_view(folder, action):
+    """질문 화면의 「쿼리가 따라간 길」 그림마다 (노드 식별자, 관계, 관계 표시)."""
+    return {b['title']: (sorted(n['id'] for n in b['nodes']), sorted((l['text'], l['a'], l['b']) for l in b['links']), sorted({l['mark'] for l in b['links']}))
+            for b in result(folder, action) if b['kind'] == 'graph' and b['title'].startswith('쿼리가 따라간 길')}
+
+
+def walk_trials(folder, graph):
+    """질문 화면의 「쿼리가 따라간 길」(리허설 v55 막힘 1) — 쿼리의 패턴이 랩 DB에서 실제로 지난 노드 · 관계만 그리고(쓰지 않은 관계 · 다른 설비의 같은 이름 대상을 칠하지 않는다),
+    결과 열을 식별자 대신 이름으로 돌려줘도 세 질문 모두 같은 길이며, 읽지 못하는 쿼리는 그림 없이 까닭을 말한다."""
+    import csv, io, re
+    query = folder / 'app/features/query.cypher'
+    kept = query.read_bytes()
+    text = kept.decode('utf-8')
+    first = {a: walk_view(folder, a) for a in ('sensors', 'parts', 'usage')}
+    assert all(first.values()), first
+    rows = [r for r in csv.DictReader(io.StringIO('\n'.join(x for x in (folder / 'app/features/expected.csv').read_text(encoding='utf-8-sig').splitlines() if not x.startswith('#'))))]
+    asked = next(r['물을_값'] for r in rows if r['질문'] == '1')
+    rels = graph['rels']
+    comps = {r['b'] for r in rels if r['type'] == 'HAS_COMPONENT' and r['a'] == asked}
+    seen = [('MONITORED_BY', r['a'], r['b']) for r in rels if r['type'] == 'MONITORED_BY' and r['a'] in comps]
+    q1 = text[text.index('// 질문 1'):text.index(';', text.index('// 질문 1'))]
+    if 'OBSERVES' in q1:
+        seen += [('OBSERVES', r['a'], r['b']) for r in rels if r['type'] == 'OBSERVES' and r['a'] in {b for _, _, b in seen}]
+    want = sorted(seen + [('HAS_COMPONENT', asked, c) for c in {a for t, a, _ in seen if t == 'MONITORED_BY'}])      # 생성 모델에서 따로 센 질문 1의 길
+    (nodes, links, marks), = first['sensors'].values()
+    assert links == want and marks == ['hit'] and nodes == sorted({asked} | {x for _, a, b in want for x in (a, b)}), (links[:5], want[:5])
+    assert not any(t == 'USES_PART' for t, _, _ in links)
+    renamed, count = re.subn(r'\b(\w+)\.id AS (\w+)', r'\1.name AS \2', text)      # 결과 열을 식별자 대신 이름으로(센서처럼 이름이 없으면 빈 값)
+    assert count >= 3, count
+    query.write_text(renamed, encoding='utf-8', newline='\n')
+    again = {a: walk_view(folder, a) for a in ('sensors', 'parts', 'usage')}
+    assert again == first, '결과 열의 꼴을 바꾸니 따라간 길이 달라졌다'
+    body = q1.split('\n', 1)[1]
+    query.write_text(text.replace(q1, q1 + '\nUNION\n' + body), encoding='utf-8', newline='\n')
+    blocks = result(folder, 'sensors')
+    assert not [b for b in blocks if b['kind'] == 'graph'], '읽지 못하는 쿼리에 그림을 그렸다'
+    said = [c for b in blocks if b['kind'] == 'cards' for c in b['items'] if c['title'] == '이 쿼리에서 길을 읽지 못했습니다']
+    assert said and 'UNION' in said[0]['text'], said
+    equal_answers(blocks)
+    query.write_bytes(kept)
+    return [{'walked_path': 'sensors · parts · usage', 'only_pattern_relations': True, 'same_when_columns_are_names': True, 'unreadable_query_says_why': True}]
+
+
 def constraint_view(folder):
     blocks = result(folder, 'constraints')
     table = next(b for b in blocks if b['kind'] == 'table' and b['title'].startswith('종류마다'))
@@ -240,6 +283,8 @@ def trials(starter, work):
             equal_answers(result(folder, 'sensors'))
             equal_answers(result(folder, 'parts'))
             before = equal_answers(result(folder, 'usage'))
+            if change == '남김':
+                records += walk_trials(folder, graph)
             # 빈 결정이면 멈춤: 정한_것.csv 지점 줄이 비어 있으면 그 결정을 쓰는 기능(수정본 반영)이 그 줄을 짚고 멈춘다
             decisions = folder / 'app/features/decisions.csv'
             filled = decisions.read_bytes()

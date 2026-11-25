@@ -137,18 +137,20 @@ CHOSEN_CHECK = '''def chosen_errors(root):
     p = root / '결과' / '정한_것.csv'
     if not p.is_file():
         return ['결과/정한_것.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
-    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    kept = [(no, x) for no, x in enumerate(p.read_text(encoding='utf-8-sig').splitlines(), 1) if x.strip() and not x.lstrip().startswith('#')]
+    lines = [x for _, x in kept]      # kept = (편집기 줄 번호, 글) — 오류는 편집기에서 보이는 줄로 짚는다
     rows = list(csv.DictReader(io.StringIO('\\n'.join(lines))))
     need = ''' + repr(CHOSEN_COLUMNS) + '''
     if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
         return ['결과/정한_것.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
     out = []
-    for n, r in enumerate(rows, 1):
+    for (no, _), r in zip(kept[1:], rows):
+        where = f'결과/정한_것.csv:{no}(지점 「' + ((r.get('지점') or '').strip() or '이름 없음') + '」)'
         empty = [c for c in need if not (r.get(c) or '').strip()]
         if empty:
-            out.append(f'결과/정한_것.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+            out.append(where + ': 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
         elif not re.search(r'[^\\s:]+:\\d+', r['근거']):
-            out.append(f'결과/정한_것.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+            out.append(where + ': 근거에 파일:줄이 없습니다(예: data/field_notes.md:12).')
     return out
 '''
 

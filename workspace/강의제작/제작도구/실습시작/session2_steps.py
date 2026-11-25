@@ -80,6 +80,11 @@ def need_decided(points):
                          '선택지와 그 결과를 따져 보고 내가 고른 것과 근거를 적은 뒤 다시 실행합니다.')
 
 
+def shown_if(block):
+    """볼 행이 있을 때만 펼쳐 두는 표(행이 없으면 「자세히 보기」로 접는다)."""
+    return block if block['rows'] else R.folded(block)
+
+
 def tally(blocks):
     """대조 표들의 견줌을 세어 화면 맨 위 결론 한 줄을 만든다."""
     states = [r['state'] for b in blocks if b['kind'] == 'compare' for r in b['rows']]
@@ -124,13 +129,13 @@ def run_check():
             items.append(dict(title=name, icon='bad' if hit else 'ok', state='bad' if hit else '', badge=f'{{len(hit)}}건' if hit else '', lines=hit[:3]))
         if left:
             items.append(dict(title='그 밖에 확인할 것', icon='bad', state='bad', badge=f'{{len(left)}}건', lines=left[:5]))
-        cards = [R.cards('구조 검사가 맞춰 본 것', items, note='구조만 봅니다. 값의 뜻과 질문별 답은 원자료와 따로 대조합니다.')]
+        cards = [R.cards('구조 검사가 맞춰 본 것', items)]
     if not ok:
         return [R.error('python check.py — 구조 확인 필요', text)] + cards
     made = HERE / '결과/graph.json'
     figure = [R.class_map('검사한 그래프 — 종류마다 개수와 관계', R.read_json(made))] if made.is_file() else []
     last = lines[-1] if lines else ''
-    return [R.verdict('ok', '구조 검사 통과', last.split(':', 1)[1].strip() if last.startswith('구조 검사 통과') and ':' in last else '')] + cards + figure + [R.note('python check.py\\n' + text)]
+    return [R.verdict('ok', '구조 검사 통과', last.split(':', 1)[1].strip() if last.startswith('구조 검사 통과') and ':' in last else '')] + cards + figure + [R.raw('터미널 출력 원문', 'python check.py\\n' + text)]
 '''
 
 DESIGN_INTEGRATED = '''"""{title} — 기능마다 실제 결과를 블록으로 돌려준다. 제공 파일 — 바꾸지 않는다."""
@@ -177,8 +182,8 @@ def sources(previous):
     out = [R.verdict('info', f'원자료 표 {{len(rows)}}개 · {{sum(n for _, n in rows)}}행을 읽었습니다', '표와 표는 같은 값이 나오는 칸으로 이어집니다.'),
            R.graph('원자료 표가 이어지는 칸', [R.node(name, '원자료 표', sub=f'{{len(t)}}행', props=dict(열=' · '.join(t[0]) if t else '', 행=len(t))) for name, t in tables.items()],
                    [R.edge(a, b, f'{{label}} ({{n}}값)') for a, b, label, n in table_links(tables)],
-                   note='화살표는 줄마다 값이 다른 칸(그 표의 열쇠)에서, 같은 값을 쓰는 표로 갑니다. 괄호는 두 표에 함께 나온 값의 수입니다. 표 이름에 마우스를 올리면 열 이름이 보입니다.'),
-           R.counts('원자료 파일마다 행 수(머리줄 뺌)', rows)]
+                   note='화살표 = 한 표에서 줄마다 값이 다른 칸(열쇠)의 값을 다른 표가 쓰는 곳. 괄호 = 두 표에 함께 나온 값의 수.'),
+           R.folded(R.counts('원자료 파일마다 행 수(머리줄 뺌)', rows))]
     drawing = HERE / '자료/관계그림.json'
     if drawing.is_file():   # 그림 도구 JSON은 편집기로 열면 그림이 아니라 글이라, 여기서 그림으로 보인다
         import json
@@ -190,7 +195,6 @@ def sources(previous):
                            [R.edge(r['fromId'], r['toId'], r.get('type', '')) for r in g.get('relationships', [])]))
         out.append(R.folded(R.table('출발 그림(자료/관계그림.json)의 연결 — 시작 → 끝', ['시작', '관계', '끝'],
                                     [(cap.get(r['fromId'], r['fromId']), r.get('type', ''), cap.get(r['toId'], r['toId'])) for r in g.get('relationships', [])])))
-    out.append(R.note('원자료는 설비 대장 · 구성 요소 · 센서 · 예비품 · 품번 교차표와 현장 메모입니다. 결과 화면은 단계마다 다시 씁니다.'))
     return out
 
 
@@ -198,7 +202,7 @@ def expected(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답', '근거'], KEY)
     return [R.verdict('info', f'기대 답 {{len(rows)}}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.'),
             question_cards(rows, lambda r: r['물을_값'] + (' → ' + r['항목'] if r.get('항목') else '')),
-            R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows)]
+            R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows))]
 
 
 def design(previous):
@@ -208,18 +212,18 @@ def design(previous):
     nodes = [R.node(k, k, sub='식별자 ' + v, badge=f"{{prev[k]['개수']}}개" if k in prev else '', mark='bad' if k in twice else '', props=dict(식별자_만드는_법=v)) for k, v in ids.items()]
     out = [R.verdict('warn', f'식별자가 겹치는 원자료 행 {{len(clash)}}곳', '겹친 식별자 하나는 대상 하나가 됩니다 — 같은 대상인지 그 원자료 줄로 봅니다.') if clash else
            R.verdict('ok', '식별자가 겹치는 원자료 행이 없습니다', f'클래스 {{len(ids)}}개 · 관계 {{len(links)}}개'),
-           R.graph('내가 설계한 클래스와 관계 — 화살표는 관계 방향, 글은 관계 이름 · 카디널리티', nodes, [R.edge(v[1], v[2], f'{{v[0]}} · {{v[3]}}') for v in links.values()],
-                   note='상자 하나가 클래스(종류)이고 아래 작은 글이 식별자를 만드는 법입니다. 오른쪽 위 수는 원자료 행마다 그 식별자를 지었을 때 서로 다른 식별자의 수입니다. 빨간 테두리는 식별자가 겹친 행이 있는 클래스입니다.')]
+           R.graph('내가 설계한 클래스와 관계', nodes, [R.edge(v[1], v[2], f'{{v[0]}} · {{v[3]}}') for v in links.values()],
+                   note='상자 = 클래스, 아래 글 = 식별자 만드는 법, 오른쪽 수 = 서로 다른 식별자 수. 화살표의 글 = 관계 이름 · 카디널리티.' + (' 빨간 테두리 = 식별자가 겹친 클래스.' if clash else ''))]
     if clash:
         out.append(R.cards('식별자가 겹친 곳', [dict(title=i, badge=k, state='bad', icon='warn', kind=k, lines=[('겹친 원자료 행', rows)]) for k, i, rows in clash]))
-    out += [R.table('종류와 식별자 만드는 법(결과/설계.csv)', ['대상', 'ID_만드는_법'], [(k, v) for k, v in ids.items()],
+    out += [R.folded(R.table('종류와 식별자 만드는 법(결과/설계.csv)', ['대상', 'ID_만드는_법'], [(k, v) for k, v in ids.items()],
                     note=('실물 행이 있어 구성 요소(자리)와 일련번호가 붙은 실물을 따로 둡니다.' if '실물' in ids else
-                          '실물 행이 없어 일련번호는 구성 요소의 속성으로 둡니다.')),
-            R.table('관계와 방향 · 카디널리티(결과/관계.csv)', ['연결', '관계 이름', '시작 → 끝', '카디널리티'], [(k, v[0], f'{{v[1]}} → {{v[2]}}', v[3]) for k, v in links.items()],
-                    note='카디널리티는 시작 쪽 수:끝 쪽 수이고 1은 많아야 하나입니다. 만든 연결이 적은 수를 넘으면 그 단계에서 멈추고 관계.csv 줄과 원자료 줄을 짚습니다.')]
-    out.append(R.counts('원자료 행마다 내 식별자를 지으면 — 서로 다른 식별자 수', [(k, v['개수']) for k, v in prev.items()]))
-    out.append(R.table('식별자가 겹치는 원자료 행(이름을 맞추기 전)', ['대상', '식별자', '행'], clash,
-                       note='겹친 식별자 하나는 대상 하나가 됩니다. 같은 대상의 겹침인지, 다른 대상을 한 식별자로 짓는 것인지는 그 원자료 줄로 봅니다.'))
+                          '실물 행이 없어 일련번호는 구성 요소의 속성으로 둡니다.'))),
+            R.folded(R.table('관계와 방향 · 카디널리티(결과/관계.csv)', ['연결', '관계 이름', '시작 → 끝', '카디널리티'], [(k, v[0], f'{{v[1]}} → {{v[2]}}', v[3]) for k, v in links.items()],
+                    note='카디널리티는 시작 쪽 수:끝 쪽 수이고 1은 많아야 하나입니다. 만든 연결이 적은 수를 넘으면 그 단계에서 멈추고 관계.csv 줄과 원자료 줄을 짚습니다.'))]
+    out.append(R.folded(R.counts('원자료 행마다 내 식별자를 지으면 — 서로 다른 식별자 수', [(k, v['개수']) for k, v in prev.items()])))
+    out.append(R.folded(R.table('식별자가 겹치는 원자료 행(이름을 맞추기 전)', ['대상', '식별자', '행'], clash,
+                       note='겹친 식별자 하나는 대상 하나가 됩니다. 같은 대상의 겹침인지, 다른 대상을 한 식별자로 짓는 것인지는 그 원자료 줄로 봅니다.')))
     return out
 
 
@@ -241,7 +245,7 @@ def names(previous):
         many = [s for s, u in seats.items() if len(u) > 1]
         out += [R.verdict('info', f'구성 요소 자리 {{len(seats)}}곳에 실물 {{len(info["실물"])}}대', ('실물이 둘 이상 달렸던 자리: ' + ' · '.join(many)) if many else '자리마다 실물이 하나입니다.'),
                 R.graph('구성 요소 자리와 그 자리에 달린 실물(일련번호) — 지금 · 지난', nodes, links,
-                        note='왼쪽이 구성 요소 자리, 오른쪽이 그 자리에 달린 실물입니다. 흐린 실물은 지난 실물(교체되어 떼어 낸 것)이고, 이 모델에서는 그 실물의 자리와 이력을 물을 수 있습니다.',
+                        note='왼쪽 = 구성 요소 자리, 오른쪽 = 그 자리에 달린 실물. 점선 = 지난 실물(교체되어 떼어 낸 것).',
                         marks=dict(ask='실물이 둘 이상 달렸던 자리', gone='지난 실물'))]
     else:
         out.append(R.verdict('info', '실물을 따로 두지 않았습니다', '일련번호는 구성 요소의 속성(지금 달린 것 하나)입니다.'))
@@ -253,13 +257,14 @@ def names(previous):
                                   '이름을 맞춰도 설비마다 구성 요소는 따로 하나씩입니다.')),
             R.folded(R.table('원자료 이름 그대로 둔 구성 요소(그 모델의 설비가 하나)', ['원자료 행', '설비', '모델', '계통', '원자료 이름'], n['그대로'],
                              note='모델이 다른 설비의 구성 요소는 이름이 비슷해도 맞추지 않습니다.')),
-            R.table('설비별 구성 요소 — 원자료 행 수와 만든 대상 수', ['설비', '원자료 행', '만든 구성 요소'], rows)]
+            R.folded(R.table('설비별 구성 요소 — 원자료 행 수와 만든 대상 수', ['설비', '원자료 행', '만든 구성 요소'], rows))]
     if info['실물'] is not None:
-        out.append(R.table('구성 요소 자리마다 실물(일련번호)', ['구성 요소 식별자', '일련번호', '지금 · 지난', '원자료 행'], info['실물'],
-                           note='일련번호가 적힌 구성 요소 행마다 실물 하나입니다. 지난 실물은 결과/행_처리.csv의 「지난 실물」 행이고, 이 모델에서 그 실물의 자리와 이력을 물을 수 있습니다.'))
+        out.append(R.folded(R.table('구성 요소 자리마다 실물(일련번호)', ['구성 요소 식별자', '일련번호', '지금 · 지난', '원자료 행'], info['실물'],
+                           note='일련번호가 적힌 구성 요소 행마다 실물 하나입니다. 지난 실물은 결과/행_처리.csv의 「지난 실물」 행이고, 이 모델에서 그 실물의 자리와 이력을 물을 수 있습니다.')))
     else:
         out.append(R.note('실물을 따로 두지 않았습니다. 일련번호는 구성 요소의 속성(지금 달린 것 하나)이고, 결과/행_처리.csv에서 뺀 행의 실물(철거된 장치)은 이 모델에서 물을 수 없습니다.'))
-    out.append(R.table('결과/행_처리.csv에 적었지만 쓰이지 않은 행', ['파일', '행'], info['unused']))
+    if info['unused']:
+        out.append(R.table('결과/행_처리.csv에 적었지만 쓰이지 않은 행', ['파일', '행'], info['unused']))
     return out
 
 
@@ -275,12 +280,11 @@ def sensors(previous):
                     note='왼쪽 센서들이 오른쪽 물리량 하나를 잽니다. 같은 물리량이라고 본 센서끼리만 한 줄에 모입니다.')]
     if info['변환']:
         out.append(R.cards('단위를 기준 단위로 바꾼 센서', [dict(title=r[1], badge=f'{{r[3]}} → {{r[4]}}', kind='센서', lines=[('물리량', r[2]), ('원래 정상값 / 한계', r[5]), ('바꾼 정상값 / 한계', r[6]), ('원자료 행', r[0])]) for r in info['변환']]))
-    return out + [R.counts('센서와 물리량', [('센서', len(info['센서'])), ('물리량', len(groups))]),
-                  R.table('물리량마다 묶인 센서(same_quantity · quantity_name)', ['물리량', '센서 수', '설비:태그', '기준 단위'], [(k, len(v), ' · '.join(sorted(v)), base[k]) for k, v in sorted(groups.items())]),
+    return out + [R.folded(R.table('물리량마다 묶인 센서(same_quantity · quantity_name)', ['물리량', '센서 수', '설비:태그', '기준 단위'], [(k, len(v), ' · '.join(sorted(v)), base[k]) for k, v in sorted(groups.items())])),
                   R.folded(R.table('물리량마다 원자료에 적힌 단위와 기준 단위(제공 코드)', ['물리량', '원자료에 적힌 단위', '기준 단위'], info['단위'],
                                    note='기준 단위는 그 물리량의 센서 행이 가장 많이 쓴 단위입니다. 단위가 다른 값을 그대로 견주면 어긋나므로 제공 코드가 기준 단위로 바꿉니다.')),
-                  R.table('단위를 기준 단위로 바꾼 센서 행(제공 코드)', ['원자료 행', '센서 식별자', '물리량', '원래 단위', '모델의 단위', '원래 정상값 / 한계', '바꾼 정상값 / 한계'], info['변환'],
-                          note='원래 값과 바꾼 값을 그 원자료 줄로 견줍니다. 값이 없는 칸은 0이 아니라 「없음」입니다.')]
+                  R.folded(R.table('단위를 기준 단위로 바꾼 센서 행(제공 코드)', ['원자료 행', '센서 식별자', '물리량', '원래 단위', '모델의 단위', '원래 정상값 / 한계', '바꾼 정상값 / 한계'], info['변환'],
+                          note='원래 값과 바꾼 값을 그 원자료 줄로 견줍니다. 값이 없는 칸은 0이 아니라 「없음」입니다.'))]
 
 
 def parts(previous):
@@ -291,22 +295,20 @@ def parts(previous):
     lost = info['못_찾은_칸']
     wrong = [r for r in info['카디널리티'] if r[5] != '맞음']
     return [R.verdict('warn', f'사내 품번을 찾지 못한 교체부품 칸 {{len(lost)}}개', '그 칸의 글을 품번 교차표와 견줍니다.') if lost else
-            R.verdict('ok', f'교체부품 칸 {{len(info["이은_부품"])}}개를 부품 {{len(usage)}}개에 이었습니다', '여러 표기가 사내 품번 하나로 모였고, 모델 파일을 새로 썼습니다.'),
+            R.verdict('ok', f'교체부품 칸 {{len(info["이은_부품"])}}개를 부품 {{len(usage)}}개에 이었습니다', '여러 표기가 사내 품번 하나로 모였고, 모델 파일을 새로 썼습니다.' + ('' if wrong else ' 적은 카디널리티와 만든 연결도 모두 맞습니다.')),
             R.gather('여러 가지로 적힌 품번이 사내 품번 하나로 모이는 모습', ('다른 표기(다른 이름으로 남김)', '부품 · 사내 품번', '쓰는 설비'),
                      [dict(left=[x.strip() for x in str(r[3]).split(' · ') if x.strip()], mid=dict(text=r[1], kind='부품', sub=r[2]),
                            right=[dict(text=c, kind='설비') for c in sorted(usage.get(r[0], []))]) for r in info['다른_표기']],
                      note='가운데가 부품 하나(사내 품번)입니다. 왼쪽은 그 부품을 찾는 다른 이름, 오른쪽은 그 부품을 쓰는 설비입니다.'),
-            R.cards('관계마다 적은 카디널리티와 실제로 만든 연결', [dict(title=r[1], badge=r[2], icon='ok' if r[5] == '맞음' else 'bad', state='' if r[5] == '맞음' else 'bad',
-                                                       lines=[('연결', r[0]), ('시작 하나에 이어진 끝(최대)', str(r[3])), ('끝 하나에 이어진 시작(최대)', str(r[4])), ('견줌', r[5])]) for r in info['카디널리티']]),
             R.folded(R.table('부품의 식별자와 사내 품번 · 다른 표기', ['식별자', '사내 품번', '품명', '다른 표기'], info['다른_표기'],
                              note='사내 품번 하나에 부품 하나이고, 예전 품번 · 줄여 쓴 표기 · 제조사 품번은 그 부품을 찾는 다른 이름으로 남깁니다.')),
             R.folded(R.table('교체부품 칸마다 찾은 사내 품번', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '사내 품번', '찾은 법'], info['이은_부품'])),
-            R.table('사내 품번을 찾지 못한 교체부품 칸(잇지 않음)', ['원자료 행', '설비', '구성 요소', '교체부품 칸'], info['못_찾은_칸'],
-                    note='품번 교차표에 없는 표기는 짐작해 잇지 않습니다. 여기 줄이 있으면 그 칸의 글을 품번 교차표와 견줍니다.'),
+            shown_if(R.table('사내 품번을 찾지 못한 교체부품 칸(잇지 않음)', ['원자료 행', '설비', '구성 요소', '교체부품 칸'], info['못_찾은_칸'],
+                    note='품번 교차표에 없는 표기는 짐작해 잇지 않습니다. 여기 줄이 있으면 그 칸의 글을 품번 교차표와 견줍니다.')),
             R.table('교체부품 칸이 빈 구성 요소(잇지 않음)', ['원자료 행', '설비', '구성 요소', '교체부품 칸'], info['빈_칸'],
                     note='빈 칸은 부품으로 잇지 않습니다. 교체 부품이 따로 없는 구성 요소인지, 아직 확인하지 못한 칸인지는 현장 메모와 그 원자료 줄로 봅니다.'),
             R.folded(R.table('부품마다 쓰는 설비', ['사내 품번', '설비 수', '설비'], [(p, len(v), ' · '.join(sorted(v))) for p, v in sorted(usage.items())])),
-            R.folded(R.table('관계마다 적은 카디널리티와 만든 연결', ['연결', '관계', '적은 것', '시작 하나에 이어진 끝(최대)', '끝 하나에 이어진 시작(최대)', '견줌'], info['카디널리티'])),
+            (lambda block: block if wrong else R.folded(block))(R.table('관계마다 적은 카디널리티와 만든 연결', ['연결', '관계', '적은 것', '시작 하나에 이어진 끝(최대)', '끝 하나에 이어진 시작(최대)', '견줌'], info['카디널리티'])),
             R.note('결과/schema.json · 결과/graph.json을 새로 썼습니다.')]
 
 
@@ -333,9 +335,9 @@ def ask(previous):
     out = [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', [{{'짝': key(r), '답': r['기대_답']}} for r in rows if not value(r)],
                      [{{'짝': key(r), '답': r['답']}} for r in keep if not value(r)], ['답'], same=same, note=note)]
     if any(value(r) for r in rows):
-        out.append(R.compare('질문 2 센서 값 — 단위 · 정상값 · 한계 · 한계구분 차례', '짝', [{{'짝': key(r), '답': r['기대_답']}} for r in rows if value(r)],
+        out.append(R.ordered(R.compare('질문 2 센서 값 — 단위 · 정상값 · 한계 · 한계구분 차례', '짝', [{{'짝': key(r), '답': r['기대_답']}} for r in rows if value(r)],
                              [{{'짝': key(r), '답': r['답']}} for r in keep if value(r)], ['답'], same=exact,
-                             note='값은 차례까지 견줍니다. 단위를 바꾼 센서는 바꾼 단위의 값, 값이 없는 칸은 「없음」, 단위를 정하지 못했으면 「미확인」입니다.'))
+                             note='값은 차례까지 견줍니다. 단위를 바꾼 센서는 바꾼 단위의 값, 값이 없는 칸은 「없음」, 단위를 정하지 못했으면 「미확인」입니다.')))
     return [tally(out)] + out
 
 
@@ -472,7 +474,7 @@ def browser():
         url = json.loads(C.STATE.read_text(encoding='utf-8')).get('browser')
     except (OSError, ValueError):
         url = None
-    return [R.link('Neo4j Browser에서 이 랩 DB 열기', url, note='Neo4j 실습에서 쓴 것과 같은 화면이 새 탭으로 열립니다. 연결 창이 뜨면 Database user에 neo4j를 적고 Password는 비워 둔 채 Connect를 누릅니다(이 폴더 전용 랩 DB라 비밀번호가 없습니다).')] if url else []
+    return [R.link('Neo4j Browser에서 이 랩 DB 열기', url, note='연결 창이 뜨면 Database user에 neo4j, Password는 비워 두고 Connect.')] if url else []
 
 
 def start(previous):
@@ -486,15 +488,14 @@ def start(previous):
             R.verdict('info', f'랩 DB에 노드 {{have.get("노드", 0)}}개 · 관계 {{have.get("관계", 0)}}개', f'모델 파일과 개수가 다른 항목 {{len(differ)}}개 — 적재나 수정이 반영된 것인지 봅니다.'),
             R.count_bars('모델 파일과 지금 랩 DB의 개수', ('모델 파일', '랩 DB'), model, have),
             R.folded(R.table(f'모델 파일({{R.rel(path)}})과 지금 랩 DB의 개수', ['항목', '모델 파일', '랩 DB'], rows)),
-            R.note('처음 켠 랩 DB는 비어 있습니다(0). 적재한 뒤에는 두 칸이 같아야 합니다.' if empty else
-                   '이 폴더의 랩 DB에 전에 넣은 대상이 남아 있습니다 — 랩 DB 칸이 지금 개수입니다. 모델 파일 칸과 다르면 적재나 수정이 반영된 것인지 봅니다.')] + browser()
+            ] + browser()
 
 
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '볼_열', '기대_답', '근거'], ['질문', '물을_값'])
     return [R.verdict('info', f'기대 답 {{len(rows)}}줄을 정했습니다', '쿼리 결과를 이 답과 견줍니다.'),
             question_cards(rows, lambda r: r['물을_값'] + ' → ' + r['볼_열']),
-            R.table('내가 정한 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows)]
+            R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows))]
 
 
 def constraints(previous):
@@ -531,25 +532,37 @@ def constraints(previous):
         rows.append((label, 'id', unique.get(label, '없음'), first.get(label, ''), answer))
         locked = label in unique and (said or label not in first)
         cards.append(dict(title=label, kind=label, icon='lock' if locked else 'open', state='ok' if locked else 'bad', badge=unique.get(label, '유일 제약 없음'),
-                          text=(f'같은 식별자 「{{first[label]}}」로 노드를 두 번 만들면 → ' + ('DB가 거절' if said else 'DB가 받아 줌(노드가 둘 생김)')) if label in first else answer,
-                          lines=[('DB의 답', said)] if said else []))
+                          text=(f'「{{first[label]}}」로 두 번 만들기 → ' + ('DB가 거절' if said else 'DB가 받아 줌(노드가 둘 생김)')) if label in first else answer,
+                          lines=[('DB가 한 말' + (' — 같은 식별자의 노드가 이미 있다는 뜻' if 'already exists' in said else ''), said)] if said else []))
     after = db(C.counts)
     if after != before:
         raise RuntimeError(f'유일 제약 시험이 랩 DB의 개수를 바꿨습니다: {{before}} → {{after}}')
     opened = [c['title'] for c in cards if c['state'] == 'bad']
     return [R.verdict('warn', f'유일 제약이 없는 종류 {{len(opened)}}개 — ' + ' · '.join(opened), '이 종류는 같은 식별자의 노드가 둘 생길 수 있습니다.') if opened else
             R.verdict('ok', f'종류 {{len(labels)}}개 모두 식별자에 유일 제약이 걸렸습니다', '같은 식별자로 새로 만들면 DB가 거절합니다.'),
-            R.cards('종류마다 걸린 자물쇠 — 같은 식별자로 두 번 만들 때 DB의 답', cards, note=f'종류마다 그 종류의 식별자 하나로 CREATE를 두 번 실행해 본 실제 결과입니다. 시험한 노드는 모두 되돌려 랩 DB에 남기지 않았습니다(노드 {{before["노드"]}}개 그대로).'),
-            R.table('제약 쿼리마다 DB가 한 일', ['쿼리', '새로 건 제약'], [(R.rel(path) + f':{{line}}', res.get('stats', {{}}).get('constraints_added', 0) or '0(이미 걸려 있음)') for line, res in done]),
-            R.table('랩 DB에 걸려 있는 제약(SHOW CONSTRAINTS)', ['이름', '제약 종류', '레이블', '속성'], [(name, kind, ' · '.join(labels_), ' · '.join(props)) for name, kind, entity, labels_, props in have]),
-            R.table('종류마다 — 식별자의 유일 제약과, 같은 식별자로 노드를 두 번 만들 때 DB의 답', ['종류', '식별자', '유일 제약', '시험한 식별자', 'DB의 답'], rows,
+            R.cards('종류마다 걸린 자물쇠 — 같은 식별자로 두 번 만들 때 DB의 답', cards, note='종류마다 같은 식별자로 CREATE를 두 번 실행해 본 실제 결과입니다. 시험한 노드는 되돌렸습니다.'),
+            R.folded(R.table('제약 쿼리마다 DB가 한 일', ['쿼리', '새로 건 제약'], [(R.rel(path) + f':{{line}}', res.get('stats', {{}}).get('constraints_added', 0) or '0(이미 걸려 있음)') for line, res in done])),
+            R.folded(R.table('랩 DB에 걸려 있는 제약(SHOW CONSTRAINTS)', ['이름', '제약 종류', '레이블', '속성'], [(name, kind, ' · '.join(labels_), ' · '.join(props)) for name, kind, entity, labels_, props in have])),
+            R.folded(R.table('종류마다 — 식별자의 유일 제약과, 같은 식별자로 노드를 두 번 만들 때 DB의 답', ['종류', '식별자', '유일 제약', '시험한 식별자', 'DB의 답'], rows,
                     note='모델의 종류(레이블)마다 그 종류의 식별자 하나로 CREATE를 두 번 실행해 본 실제 결과입니다. 유일 제약이 걸린 종류는 DB가 거절하고, 「없음」인 종류는 받아 줍니다. '
-                         f'시험한 노드는 모두 되돌려 랩 DB에 남기지 않았습니다(노드 {{before["노드"]}}개 그대로).')]
+                         f'시험한 노드는 모두 되돌려 랩 DB에 남기지 않았습니다(노드 {{before["노드"]}}개 그대로).'))]
+
+
+STATS = dict(nodes_created='만든 노드', nodes_deleted='지운 노드', relationships_created='만든 관계', relationship_deleted='지운 관계', relationships_deleted='지운 관계',
+             properties_set='넣은 속성 값', labels_added='붙인 레이블', labels_removed='뗀 레이블', constraints_added='건 제약', constraints_removed='푼 제약')
+
+
+def changed(stats):
+    """DB가 돌려준 바뀐 수 — 한국어 뜻을 앞에 쓰고, DB가 쓰는 이름은 괄호에 근거로 둔다."""
+    seen = [(k, v) for k, v in stats.items() if isinstance(v, int) and not isinstance(v, bool) and v]
+    if not seen:
+        return '바뀐 것 없음'
+    return ' · '.join(f'{{STATS.get(k, k)}} {{v}}' for k, v in seen) + ' (' + ', '.join(f'{{k}} {{v}}' for k, v in seen) + ')'
 
 
 def load_once():
     out = db(C.load_file, HERE / '결과/load.cypher')
-    return [(R.rel(HERE / '결과/load.cypher') + f':{{line}}', target, n, ', '.join(f'{{k}} {{v}}' for k, v in res.get('stats', {{}}).items() if isinstance(v, int) and v)) for line, target, n, res in out]
+    return [(R.rel(HERE / '결과/load.cypher') + f':{{line}}', target, n, changed(res.get('stats', {{}}))) for line, target, n, res in out]
 
 
 def load(previous):
@@ -564,8 +577,7 @@ def load(previous):
             R.verdict('ok', f'모델 파일과 랩 DB의 개수가 같습니다 — 노드 {{have.get("노드", 0)}}개 · 관계 {{have.get("관계", 0)}}개', '모델의 종류는 레이블이, 인스턴스는 노드가 됐습니다.'),
             R.count_bars('모델 파일 ↔ 랩 DB 개수', ('모델 파일', '랩 DB'), model, have)] + (
             [R.around_figure(f'랩 DB에 들어간 그래프의 한 부분 — 「{{roots[0]}}」에서 두 걸음', inside, roots[0])] if roots else []) + [
-            R.class_map('랩 DB 전체 — 종류(레이블)마다 노드 수와 관계', inside),
-            R.table('적재 문장마다 넘긴 행과 바뀐 것', ['문장', '넣을 것', '넘긴 행', '바뀐 것'], done),
+            R.folded(R.table('적재 문장마다 넘긴 행과 바뀐 것', ['문장', '넣을 것', '넘긴 행', '바뀐 것'], done)),
             R.folded(R.table('모델 파일 ↔ 랩 DB 개수', ['항목', '모델 파일', '랩 DB', '견줌'], rows))] + browser()
 
 
@@ -577,8 +589,8 @@ def again(previous):
     return [R.verdict('bad', f'다시 넣으니 개수가 달라졌습니다 — {{len(grew)}}개 항목', ' · '.join(f'{{k}} {{before.get(k, 0)}} → {{after.get(k, 0)}}' for k in grew[:6])) if grew else
             R.verdict('ok', f'다시 넣어도 그대로입니다 — 노드 {{after.get("노드", 0)}}개 · 관계 {{after.get("관계", 0)}}개', '같은 적재를 한 번 더 실행했지만 늘어난 것이 없습니다.'),
             R.count_bars('같은 적재를 한 번 더 — 앞과 뒤의 개수', ('한 번 넣은 뒤', '한 번 더 넣은 뒤'), before, after),
-            R.before_after('같은 적재를 한 번 더 — 개수 전후', before, after,
-                           note='늘어남이 있으면 같은 대상을 알아보는 열쇠(MERGE)가 다시 실행할 때 새로 만들고 있는 것입니다.')]
+            ] + ([R.before_after('같은 적재를 한 번 더 — 개수 전후', before, after,
+                           note='늘어남이 있으면 같은 대상을 알아보는 열쇠(MERGE)가 다시 실행할 때 새로 만들고 있는 것입니다.')] if grew else [])
 
 
 def load_and_again(previous):
@@ -600,16 +612,23 @@ def ask_question(number):
     if len(names) > 1:
         raise R.Stop(f'결과/query.cypher:{{line}}: 질문 {{number}}의 $ 자리가 {{len(names)}}개({{", ".join(names)}}) — 물을 값 하나를 $ 자리 하나로 받습니다.')
     blocks, exp, act, blanks = [], [], [], 0
-    inside = db(C.export_graph)
     for r in rows or [{{'물을_값': '', '볼_열': ''}}]:
         params = {{names[0]: r['물을_값']}} if names else {{}}
         (_, _, cols, data), = db(C.query, path, str(number), params)
         if r['물을_값']:
-            walked = R.path_figure(f'쿼리가 따라간 길 — 물은 값 「{{r["물을_값"]}}」', inside, r['물을_값'], [v for row in data for v in row],
-                                   note='물은 값(점선 테두리)에서 쿼리 결과에 나온 대상까지, 랩 DB의 관계를 따라 이어지는 길입니다.')
-            blocks.append(walked or R.cards(f'쿼리가 따라간 길 — 물은 값 「{{r["물을_값"]}}」', [dict(title=r['물을_값'], icon='warn', state='warn', badge='랩 DB에 없음',
-                                            text='이 값과 같은 식별자를 가졌거나 이 값을 속성(다른 이름 포함)으로 가진 노드가 랩 DB에 없습니다. 그래서 따라갈 길이 없습니다.')]))
-        blocks.append(R.table(f'질문 {{number}} — 물은 값 「{{r["물을_값"]}}」', cols, [[shown(v) for v in row] for row in data]))
+            head = f'쿼리가 따라간 길 — 물은 값 「{{r["물을_값"]}}」'
+            try:
+                walk = C.walked(path, str(number), params)
+            except C.LabDbOff as e:
+                raise R.Stop(str(e))
+            except RuntimeError as e:      # 짐작해 그리지 않는다 — 읽지 못한 까닭을 말한다
+                walk = None
+                blocks.append(R.cards(head, [dict(title='이 쿼리에서 길을 읽지 못했습니다', icon='warn', state='warn', text=str(e) + ' 그림만 없고, 아래 쿼리 결과와 기대 답 대조는 그대로입니다.')]))
+            if walk is not None:
+                blocks.append(R.walk_figure(head, walk, r['물을_값'], note='쿼리의 MATCH 패턴이 랩 DB에서 실제로 지난 노드와 관계입니다. 굵은 테두리 = 물은 값.')
+                              or R.cards(head, [dict(title=r['물을_값'], icon='warn', state='warn', badge='맞는 노드 없음',
+                                                     text='이 값으로 물으니 쿼리의 MATCH 패턴에 맞는 노드가 랩 DB에 하나도 없습니다. 그래서 따라간 길이 없습니다.')]))
+        blocks.append(R.folded(R.table(f'질문 {{number}} — 물은 값 「{{r["물을_값"]}}」 쿼리 결과', cols, [[shown(v) for v in row] for row in data])))
         if r.get('볼_열'):
             if r['볼_열'] not in cols:
                 raise R.Stop(f'결과/기대_답.csv: 볼_열 「{{r["볼_열"]}}」이 질문 {{number}} 결과의 열({{", ".join(cols)}})에 없습니다.')
@@ -671,12 +690,12 @@ def change(previous):
     left, right = side('수정 전', before, set(d['사라진 노드']), set()), side('수정 뒤', after, set(), set(d['늘어난 노드']))
     counted = f'값이 바뀐 노드 {{len(moved)}}개 · 사라진 노드 {{len(d["사라진 노드"])}}개 · 늘어난 노드 {{len(d["늘어난 노드"])}}개'
     return [R.verdict('ok' if same else 'warn', '수정본 반영 — ' + counted, '같은 수정을 한 번 더 실행해도 더 바뀐 것이 없습니다.' if same else '같은 수정을 한 번 더 실행하니 또 바뀌었습니다 — 아래 안내를 봅니다.'),
-            R.cards('바뀐 노드 — 전 → 뒤', cards, note='식별자로 찾아 값만 고친 노드는 「값 바뀜」, 지운 노드는 「사라짐」입니다. 수정본의 줄과 하나씩 견줍니다.') if cards else R.note('노드의 값 · 개수에 바뀐 것이 없습니다.')] + (
-            [R.pair('바뀐 노드를 수정 전과 뒤로 나란히', left, right, note='점선 테두리는 값이 바뀐 노드이고 아래 작은 글이 그때의 값입니다. 흐린 노드는 수정 뒤 사라지는 노드입니다. 16개까지만 그립니다.')] if touched else []) + [
-            R.count_bars('수정 전 ↔ 수정 뒤 개수', ('수정 전', '수정 뒤'), R.graph_counts(before), R.graph_counts(after)),
-            R.table('수정 전 → 수정 뒤(적재 직후와 견줌)', ['바뀜', '개수', '대상'], rows),
-            R.counts('수정 뒤 개수', [('노드', len(after['nodes'])), ('관계', len(after['rels']))]),
-            R.note('같은 수정을 한 번 더 실행: ' + ('더 바뀐 것 없음' if same else '또 바뀜 — ' + '; '.join(f'{{k}} {{len(v)}}' for k, v in d2.items() if v)))] + browser()
+            R.cards('바뀐 노드 — 전 → 뒤', cards, note='수정본의 줄과 하나씩 견줍니다.') if cards else R.note('노드의 값 · 개수에 바뀐 것이 없습니다.')] + (
+            [R.pair('바뀐 노드를 수정 전과 뒤로 나란히', left, right, note='굵은 테두리 = 값이 바뀐 노드(아래 글 = 그때의 값), 점선 = 수정 뒤 사라지는 노드. 16개까지만 그립니다.')] if d['사라진 노드'] or d['늘어난 노드'] else []) + ([R.count_bars('수정 전 ↔ 수정 뒤 개수', ('수정 전', '수정 뒤'), R.graph_counts(before), R.graph_counts(after))]
+                                      if len(before['nodes']) != len(after['nodes']) or len(before['rels']) != len(after['rels']) else []) + [
+            R.folded(R.table('수정 전 → 수정 뒤(적재 직후와 견줌)', ['바뀜', '개수', '대상'], rows)),
+            R.folded(R.counts('수정 뒤 개수', [('노드', len(after['nodes'])), ('관계', len(after['rels']))])),
+            R.raw('같은 수정을 한 번 더 실행한 결과', '같은 수정을 한 번 더 실행: ' + ('더 바뀐 것 없음' if same else '또 바뀜 — ' + '; '.join(f'{{k}} {{len(v)}}' for k, v in d2.items() if v)))] + browser()
 
 
 def portal(previous):
@@ -711,11 +730,11 @@ def portal(previous):
     theirs = R.graph('기준 지도(포털 지식 지도의 같은 길)', [R.node(x['id'], x['종류'], sub=x['알아볼 값'], props=dict(알아볼_값=x['알아볼 값'])) for x in ref['대상']],
                      [R.edge(r['시작'], r['끝'], r['관계']) for r in ref['관계']])
     return [R.verdict('info', '내 그래프와 기준 지도를 나란히 놓았습니다', f'내 그래프 노드 {{len(keep)}}개 · 기준 지도 노드 {{len(ref["대상"])}}개 — 같은 대상을 몇 개로 셌는지 견줍니다.'),
-            R.pair('같은 길을 두 그래프가 어떻게 그렸나', mine, theirs, note=ref['설명'] + ' — 설비 여럿이 구성 요소 하나를 함께 가리키는지, 설비마다 따로 두었는지 식별자와 화살표로 견줍니다.'),
-            R.table('내 그래프 — 기준 지도의 설비에서 시작하는 관계(시작 → 끝)', ['시작 id', '관계', '끝 id'], links,
-                    note='아래 기준 지도 표와 식별자 · 관계 방향을 견줍니다.'),
-            R.table('기준 지도 — 포털 지식 지도의 같은 길(시작 → 끝)', ['시작 id', '관계', '끝 id'],
-                    [(name[r['시작']], f"{{r['관계']}}({{r['화면 이름']}})", name[r['끝']]) for r in ref['관계']], note=ref['설명'])] + browser()
+            R.pair('같은 길을 두 그래프가 어떻게 그렸나', mine, theirs, note='설비 여럿이 구성 요소 하나를 함께 가리키는지, 설비마다 따로 두었는지 식별자와 화살표로 견줍니다.'),
+            R.folded(R.table('내 그래프 — 기준 지도의 설비에서 시작하는 관계(시작 → 끝)', ['시작 id', '관계', '끝 id'], links,
+                    note='기준 지도 표와 식별자 · 관계 방향을 견줍니다.')),
+            R.folded(R.table('기준 지도 — 포털 지식 지도의 같은 길(시작 → 끝)', ['시작 id', '관계', '끝 id'],
+                    [(name[r['시작']], f"{{r['관계']}}({{r['화면 이름']}})", name[r['끝']]) for r in ref['관계']], note=ref['설명']))] + browser()
 
 
 STEPS = {steps}

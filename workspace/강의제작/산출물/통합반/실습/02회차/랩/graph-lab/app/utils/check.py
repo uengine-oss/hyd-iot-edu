@@ -6,11 +6,11 @@ for _stream in (sys.stdout, sys.stderr):
     _stream.reconfigure(encoding='utf-8')
 import hashlib as _h
 _PROVIDED = {
- "app/ui/render.py": "27f6283a8837af19681af69884d24a42ff195c31af1630f46566959e86107648",
- "app/utils/actions.py": "469090a0a21032e0f9b42f56562722fb119ca98dd4780f0d8c9d3da87917e61c",
- "app/utils/cypher.py": "626a1fae630f551140a8a2d533f44c1f45c54f01cc7b536a05290112d107782b",
+ "app/ui/render.py": "f9170a056453a35cc5583eb052eefba6450e29eb6e6fcaf264a896b66cf7be58",
+ "app/utils/actions.py": "bfdb8fd2bebeb1aa52ded65877f9fcb070dcd4b7f3e24e168f4095ef49f245d0",
+ "app/utils/cypher.py": "6edc3bc097ca1958a4724d6798c0ab7459453e01a957ba2375d729ca42b40f9e",
  "app/utils/db.py": "c5c30d996a68370af862ac30f2f573579cc3641aacf96887f2903992fe04b708",
- "app/utils/results.py": "4f9bf01cf492c2b305b90eb2c94c19b81aa8d0f47176273069b5c9bb4250d79e",
+ "app/utils/results.py": "25458cd98ea82bbcc688cbba9bfd2e746bcd62d8121da1f33da764fbb06ece6a",
  "run.py": "719e59ea92ccad25b31355ef67fd096c0ff47751ae8cbb0944420d185f38d10f"
 }
 def provided_errors(root):
@@ -28,18 +28,20 @@ def chosen_errors(root):
     p = root / 'app/features' / 'decisions.csv'
     if not p.is_file():
         return ['app/features/decisions.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
-    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    kept = [(no, x) for no, x in enumerate(p.read_text(encoding='utf-8-sig').splitlines(), 1) if x.strip() and not x.lstrip().startswith('#')]
+    lines = [x for _, x in kept]      # kept = (편집기 줄 번호, 글) — 오류는 편집기에서 보이는 줄로 짚는다
     rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
     need = ['지점', '고른_것', '근거', '바뀌는_답']
     if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
         return ['app/features/decisions.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
     out = []
-    for n, r in enumerate(rows, 1):
+    for (no, _), r in zip(kept[1:], rows):
+        where = f'app/features/decisions.csv:{no}(지점 「' + ((r.get('지점') or '').strip() or '이름 없음') + '」)'
         empty = [c for c in need if not (r.get(c) or '').strip()]
         if empty:
-            out.append(f'app/features/decisions.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+            out.append(where + ': 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
         elif not re.search(r'[^\s:]+:\d+', r['근거']):
-            out.append(f'app/features/decisions.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+            out.append(where + ': 근거에 파일:줄이 없습니다(예: data/field_notes.md:12).')
     return out
 _root = Path(__file__).resolve().parents[2]
 _pre = provided_errors(_root) + chosen_errors(_root)
