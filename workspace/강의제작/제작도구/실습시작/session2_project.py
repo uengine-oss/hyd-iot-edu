@@ -3,6 +3,8 @@ from pathlib import Path
 import ast
 import re
 
+import lab_frame as F
+
 HERE = Path(__file__).resolve().parent
 NAMES = {
     '설비_대장.csv': 'equipment.csv', '구성요소_목록.csv': 'components.csv',
@@ -102,6 +104,7 @@ import webbrowser
 from app.utils import actions, results
 from app.ui.render import page
 
+''' + F.UTF8_OUT + '''
 ROOT = Path(__file__).resolve().parent
 
 
@@ -166,7 +169,10 @@ def actions_source(L):
     text = text.replace('import show_result as R', 'from app.utils import results as R')
     text = text.replace('import model_tool as M', 'from app.utils import model as M')
     text = text.replace('import lab_cypher as C', 'from app.utils import cypher as C')
-    text = text.replace("[sys.executable, 'check.py']", "[sys.executable, '-m', 'app.utils.check']")
+    old = "[sys.executable, '-X', 'utf8', 'check.py']"
+    if text.count(old) != 1:
+        raise ValueError('구조 검사를 부르는 줄이 바뀌었습니다 — session2_steps.COMMON의 run_check를 다시 봅니다.')
+    text = text.replace(old, "[sys.executable, '-X', 'utf8', '-m', 'app.utils.check']")
     text = text.replace('python check.py', 'python run.py check')
     text = text.replace('결과 화면은 단계마다 다시 씁니다.', '실행한 기능의 결과를 이 화면에서 확인합니다.')
     return text

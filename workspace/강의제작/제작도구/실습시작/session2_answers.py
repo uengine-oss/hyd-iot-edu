@@ -319,12 +319,24 @@ LOAD_BLANK = F.blank_text('적재 파일 — 문장마다 바로 위에 「// �
                           '넣을 수 있는 종류 · 관계는 입력/schema.json에 있습니다.', '//')
 QUERY_BLANK = F.blank_text('조회 파일 — 조회마다 바로 위에 「// 질문 <번호>」 한 줄, 물을 값은 $ 자리 하나로 받고, 조회 끝에 ;를 붙임(빠지면 다음 질문이 앞 조회에 묻힘).', '//')
 UPDATE_BLANK = F.blank_text('수정 파일 — 수정본의 줄을 이미 넣은 그래프에 반영하는 문장들(문장 끝 ;). 전체를 지우는 문장은 실행되지 않습니다.', '//')
+# 유일 제약 걸음의 빈 틀(두 반 공용 — 실전반 그래프 랩을 다시 만들 때 그 랩의 빈 틀 목록에 이 줄을 더한다). 식별자 속성 이름과 쿼리 꼴은 적지 않는다(코딩랩 K-4).
+CONSTRAINT_FILE = '결과/constraints.cypher'
+CONSTRAINT_BLANK = F.blank_text('제약 쿼리 파일 — 종류마다 식별자에 유일 제약을 거는 쿼리들(쿼리 끝 ;). 데이터를 넣는 쿼리는 여기에 쓰지 않습니다(python run.py constraints가 실행).\n'
+                                '종류와 그 식별자는 입력/schema.json에 있습니다.', '//')
 # 통합반 그래프 랩의 빈 틀 — 이론이 세운 이름 「쿼리」 하나로 부른다(과정 용어 장부). 위 셋은 실전반 랩이 쓴다.
 BLANKS_INTEGRATED = {
+    CONSTRAINT_FILE: CONSTRAINT_BLANK,
     '결과/load.cypher': F.blank_text('적재 쿼리 파일 — 쿼리마다 바로 위에 「// 넣을 것: <종류 또는 관계>」 한 줄, 행은 $rows로 받음(python show_result.py가 실행).\n'
                                    '넣을 수 있는 종류 · 관계는 입력/schema.json에 있습니다.', '//'),
     '결과/query.cypher': F.blank_text('조회 쿼리 파일 — 쿼리마다 바로 위에 「// 질문 <번호>」 한 줄(역량 질문의 번호), 물을 값은 $ 자리 하나로 받고, 쿼리 끝에 ;를 붙임(빠지면 다음 질문이 앞 쿼리에 묻힘).', '//'),
     '결과/update.cypher': F.blank_text('수정 쿼리 파일 — 수정본의 줄을 이미 넣은 그래프에 반영하는 쿼리들(쿼리 끝 ;). 전체를 지우는 쿼리는 실행되지 않습니다.', '//')}
+
+
+def constraint_answer(schema):
+    """모델의 종류마다 식별자(id)에 유일 제약을 건다 — 이미 있으면 그대로 둔다(IF NOT EXISTS). 두 반 공용."""
+    lines = ['// 유일 제약 — 종류(레이블)마다 식별자 id가 겹치는 노드를 저장할 때 DB가 막는다. 이미 걸려 있으면 그대로 둔다(IF NOT EXISTS).']
+    lines += [f'CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS FOR (n:{label}) REQUIRE n.id IS UNIQUE;' for label in sorted(schema['classes'])]
+    return '\n'.join(lines) + '\n'
 
 
 def load_answer(graph):

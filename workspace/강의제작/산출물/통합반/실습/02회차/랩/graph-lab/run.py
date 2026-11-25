@@ -8,6 +8,10 @@ import webbrowser
 from app.utils import actions, results
 from app.ui.render import page
 
+# 출력은 늘 UTF-8로 쓴다 — 한국어 Windows에서 AI가 이 명령을 대신 실행하면 파이썬이 cp949로 써서 한글이 깨지고 「—」 같은 글자에서 멈춘다.
+for _stream in (sys.stdout, sys.stderr):
+    _stream.reconfigure(encoding='utf-8')
+
 ROOT = Path(__file__).resolve().parent
 
 

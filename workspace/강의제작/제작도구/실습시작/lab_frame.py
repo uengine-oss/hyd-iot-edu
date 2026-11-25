@@ -35,6 +35,15 @@ ENV_EXAMPLE = (f'# 이 파일을 복사해 이름을 .env로 바꾸고, {ENV_KEY
 
 BOM_DOCS = {'START.md', 'README.md', '입출력_계약.md'}
 
+# 학생이 실행하는 제공 파일(run.py · check.py)의 `import sys` 뒤에 넣는 줄 — 새 구조 랩의 출력은 모두 이 한 곳을 쓴다.
+# 한국어 Windows의 파이썬(3.14까지)은 출력이 콘솔이 아니면 cp949로 쓴다. Codex는 명령을 PowerShell로 대신 돌려 그 출력을 UTF-8로 읽으므로
+# 한글이 모두 깨지고, cp949에 없는 글자(「—」)에서 UnicodeEncodeError로 멈췄다(2026-11-25 실측 — 코딩랩.md 「함정」). 콘솔에 직접 찍을 때는 이미 UTF-8이라 바뀌는 것이 없다.
+# 시험은 reference/session2_project_trials.command가 학생 조건(UTF-8 모드 꺼짐 · cp949 파이프)으로 돌려 이 줄이 빠진 판을 잡는다.
+UTF8_OUT = '''# 출력은 늘 UTF-8로 쓴다 — 한국어 Windows에서 AI가 이 명령을 대신 실행하면 파이썬이 cp949로 써서 한글이 깨지고 「—」 같은 글자에서 멈춘다.
+for _stream in (sys.stdout, sys.stderr):
+    _stream.reconfigure(encoding='utf-8')
+'''
+
 
 def write(path, text):
     """학생 파일 · 생성물은 늘 LF로 쓴다(Windows의 CRLF가 검사 · 완성본 바이트를 흔들지 않게).

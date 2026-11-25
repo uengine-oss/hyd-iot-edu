@@ -1,13 +1,17 @@
 from pathlib import Path
 import sys
+
+# 출력은 늘 UTF-8로 쓴다 — 한국어 Windows에서 AI가 이 명령을 대신 실행하면 파이썬이 cp949로 써서 한글이 깨지고 「—」 같은 글자에서 멈춘다.
+for _stream in (sys.stdout, sys.stderr):
+    _stream.reconfigure(encoding='utf-8')
 import hashlib as _h
 _PROVIDED = {
  "app/ui/render.py": "f2a80ab6f2d359d26b9610dadab032638decd2496da7a9aac143a1a704320c64",
- "app/utils/actions.py": "e58e65ca0ce3d6a66822b6f73d25878d64608e9c0632bfa33b7077099b538bc8",
- "app/utils/cypher.py": "cf8e67dafa5b136a90c81577d59804c05caa8393fe4c6a7be4cf3cd32c193180",
+ "app/utils/actions.py": "fb5c348b2852fec078c6f197da127ef73893601a7fd1a262747068905689986c",
+ "app/utils/cypher.py": "626a1fae630f551140a8a2d533f44c1f45c54f01cc7b536a05290112d107782b",
  "app/utils/db.py": "0c15bbfc33696a8d804884ec9485b4e19b6d407a74424288c954be978260f76a",
  "app/utils/results.py": "fe094e682a25063316b9f8e914fd9b78c6af455bac538f4cc6655b94ce1a8433",
- "run.py": "a2be7676a114229a2f866a562d53df8f281f5acba64e724816df9cb0a78f1878"
+ "run.py": "76fae2ddf709854f57e5d08effeee4ffd7896264a38d3564a4a206c9bed0313e"
 }
 def provided_errors(root):
     out = []

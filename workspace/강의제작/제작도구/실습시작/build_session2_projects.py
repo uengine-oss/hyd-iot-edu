@@ -24,7 +24,11 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v50-lab', 'graph-lab': 'v53-lab'}
+VERSIONS = {'ontology-lab': 'v51-lab', 'graph-lab': 'v54-lab'}
+# v51-lab(설계) · v54-lab(그래프) — 2026-11-25, 사용자 「결함 근본을 수정하셈」: ① 출력 글자표 — 제공 run.py · check.py가 출력을 UTF-8로 쓰고(lab_frame.UTF8_OUT), 구조 검사는 UTF-8 모드로 띄운다.
+#   한국어 Windows에서 Codex가 `python run.py`를 대신 돌리면 파이썬이 cp949로 써서 한글이 모두 깨지고 「—」에서 UnicodeEncodeError로 멈췄다(실측: 코딩랩.md 「함정」).
+#   ② 그래프 랩에 유일 제약 걸음(가이드 06단계 · 빈 틀 constraints.cypher · `python run.py constraints`) — 이론 48 · 57 · 58장 「식별자에 유일 제약을 걸고 넣을 때는 MERGE」의 앞 절반이 랩에 없었다.
+#   두 고침의 원본은 두 반 공용 자리(lab_frame · session2_project.RUN · session2_steps.COMMON · GRAPH · lab_cypher · session2_answers.CONSTRAINT_*)에 있다. AGENTS.md는 두 랩 모두 앞 판과 같다.
 # v53-lab(2026-11-23, 그래프 랩만): 06 「뭐부터 해야 할까?」의 ON CREATE SET 줄을 다른 힌트와 같은 물음 · 권유 꼴로(가이드 P-5 — 힌트에 까닭 문장 · 「~하지 않게」 꼴을 쓰지 않음). 랩 폴더는 v51과 같다.
 # v52-lab(2026-11-23, 그래프 랩만): 가이드 정답 부탁 · 힌트를 완성본에 맞춤 — 06 넣기는 「SET」 대신 값을 처음 만들 때만 넣는 ON CREATE SET(맨 SET이면 수정본 반영 뒤 load · repeat이 이름 · 상태를 옛 값으로 되돌려 질문 3이 「다름」), 질문 2에서 교체 부품이 없는 구성 요소(구동 모터)는 「없음」으로 남김(04 기대 답 · 08 쿼리, 완성본 query.cypher의 OPTIONAL MATCH · expected.csv). 랩 폴더는 v51과 같다.
 # v51-lab(2026-11-20, 그래프 랩만 — workspace 84561f36, lab_package --version으로 묶음): 기준 지도(data/reference_map.json)의 쿨러 → 센서 관계 화면 이름을 포털 main ca7fdee8의 「감시 센서」로. 이 생성기는 main의 enterprise.js를 읽어 같은 바이트를 낸다.
@@ -153,7 +157,7 @@ def checker(folder, L):
                 if p.relative_to(folder).as_posix().startswith(('app/ui/', 'app/utils/')) or p.name == 'run.py']
     guard = F.provided_guard(folder, provided)
     chosen = P.convert(F.CHOSEN_CHECK)
-    head = ('from pathlib import Path\nimport sys\n' + guard + chosen +
+    head = ('from pathlib import Path\nimport sys\n\n' + F.UTF8_OUT + guard + chosen +
             '_root = Path(__file__).resolve().parents[2]\n_pre = provided_errors(_root) + chosen_errors(_root)\n')
     body = P.convert(B.CHECKER).replace('Path(__file__).resolve().parent', 'Path(__file__).resolve().parents[2]')
     body = body.replace("root/'app/features'", "root/'output'")
@@ -277,8 +281,8 @@ def completed(starter, destination, work):
         target = folder / 'app/features/expected.csv'   # 칸 뜻 머리는 학생 빈 틀과 같은 줄을 쓴다(v36 검토 — 강사 참조의 머리는 「0줄」 꼴을 모른다)
         head = (starter / 'app/features/expected.csv').read_text(encoding='utf-8').split('\n', 1)[0]
         target.write_text(head + '\n' + target.read_text(encoding='utf-8').split('\n', 1)[1], encoding='utf-8', newline='')
-        title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py load\npython run.py update\npython run.py usage'
-        context, actions, rules = instance(folder), ('load', 'repeat', 'sensors', 'parts', 'update', 'usage', 'compare', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
+        title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py constraints\npython run.py load\npython run.py update\npython run.py usage'
+        context, actions, rules = instance(folder), ('constraints', 'load', 'repeat', 'sensors', 'parts', 'update', 'usage', 'compare', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial, extra_rules=rules, readme_file=False)   # 완성본을 Codex로 열어도 같은 랩별 경계

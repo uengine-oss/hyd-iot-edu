@@ -21,6 +21,7 @@ WIPE = re.compile(r'MATCH\s*\(\s*\w*\s*\)\s*(DETACH\s+)?DELETE', re.I)
 PARAM = re.compile(r'\$(\w+)')
 TARGET = re.compile(r'^\s*//\s*넣을 것:\s*(\S+)\s*$')
 QUESTION = re.compile(r'^\s*//\s*질문\s*(\S+)')
+CONSTRAINT = re.compile(r'^\s*CREATE\s+CONSTRAINT\b', re.I)
 
 
 class LabDbOff(RuntimeError):
@@ -174,6 +175,57 @@ def run_file(path):
         except RuntimeError as e:
             raise RuntimeError(f'{path}:{line}: 실행 실패 — {e}')
     return out
+
+
+def constraints_file(path):
+    """제약 쿼리 파일 실행. 쿼리는 모두 제약을 거는 쿼리(CREATE CONSTRAINT …)여야 한다. [(줄, 결과)]."""
+    parts = statements(read(path))
+    guard(path, parts)
+    for line, s, _ in parts:
+        if not CONSTRAINT.match(s):
+            raise RuntimeError(f'{path}:{line}: 이 파일에는 제약을 거는 쿼리(CREATE CONSTRAINT …)만 둡니다. 데이터를 넣는 쿼리는 적재 쿼리 파일에 씁니다.')
+    out = []
+    for line, s, _ in parts:
+        try:
+            out.append((line, cypher([(s, {})])[0]))
+        except LabDbOff:
+            raise
+        except RuntimeError as e:
+            raise RuntimeError(f'{path}:{line}: 실행 실패 — {e}')
+    return out
+
+
+def constraints():
+    """랩 DB에 걸려 있는 제약. [(이름, 종류, 대상, 레이블 또는 관계 유형 목록, 속성 목록)]."""
+    return rows_of(cypher([('SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties '
+                            'RETURN name, type, entityType, labelsOrTypes, properties ORDER BY name', {})])[0])[1]
+
+
+def duplicates(labels, key='id'):
+    """레이블마다 같은 식별자 값을 가진 노드가 둘 이상인 것. [(레이블, 값, 노드 수)]."""
+    quoted = lambda x: '`' + x.replace('`', '``') + '`'
+    res = cypher([(f'MATCH (n:{quoted(l)}) WITH n.{quoted(key)} AS v, count(*) AS c WHERE v IS NOT NULL AND c > 1 RETURN v, c ORDER BY toString(v)', {}) for l in labels])
+    return [(l, r['row'][0], r['row'][1]) for l, x in zip(labels, res) for r in x['data']]
+
+
+def try_create_twice(label, value, key='id'):
+    """같은 식별자 값으로 노드를 두 번 만드는 것(CREATE)을 한 트랜잭션에서 시도하고, 받아 주든 거절하든 되돌려 랩 DB에 남기지 않는다.
+    DB가 거절하면 DB의 답(글)을, 둘 다 받아 주면 None을 돌려준다."""
+    quoted = lambda x: '`' + x.replace('`', '``') + '`'
+    one = {'statement': f'CREATE (n:{quoted(label)} {{{quoted(key)}: $value}})', 'parameters': {'value': value}}
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    try:
+        opened = urllib.request.Request(endpoint().removesuffix('/commit'), json.dumps({'statements': [one, one]}).encode(), headers)
+        with urllib.request.urlopen(opened, timeout=60) as r:
+            data = json.loads(r.read())
+        if data.get('errors'):      # 오류가 난 트랜잭션은 DB가 되돌린다
+            return '; '.join(e.get('message', '') for e in data['errors'])
+        with urllib.request.urlopen(urllib.request.Request(data['commit'].removesuffix('/commit'), headers=headers, method='DELETE'), timeout=60) as r:
+            if json.loads(r.read()).get('errors'):
+                raise RuntimeError('유일 제약을 시험한 트랜잭션을 되돌리지 못했습니다.')
+    except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+        raise LabDbOff(f'랩 DB 꺼짐 — 연결하지 못했습니다({e}). python lab_db.py 로 DB를 다시 준비하세요.')
+    return None
 
 
 def load_file(path, graph=None):

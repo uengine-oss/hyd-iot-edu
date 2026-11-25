@@ -24,12 +24,13 @@ import session2_answers as A
 import session2_project as P
 import verify_reference as V
 from lab_package import ROOT
-from reference.session2_project_trials import command, put
+from reference.session2_project_trials import command, put, student_condition_selftest
 
 
 def fill(folder, change='남김'):
     graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
-    put(folder, {'결과/load.cypher': A.load_answer(graph),
+    schema = json.loads((folder / 'data/model/schema.json').read_text(encoding='utf-8'))
+    put(folder, {A.CONSTRAINT_FILE: A.constraint_answer(schema), '결과/load.cypher': A.load_answer(graph),
                  '결과/update.cypher': A.update_integrated(change),
                  '결과/query.cypher': A.query_text([A.QUERY_INTEGRATED[n] for n in (1, 2, 3)]),
                  '결과/정한_것.csv': B.chosen_text([B.graph_chosen('통합반')[change]])}, True)
@@ -111,8 +112,97 @@ def per_asset(graph):
     return out
 
 
+def http(folder, statement):
+    """시험이 랩 DB에 직접 보내는 쿼리(제공 코드 밖 — 겹친 노드를 일부러 만들고 지우거나 개수를 따로 세는 데만 쓴다)."""
+    import urllib.request
+    state = json.loads((folder / '.lab_connection.json').read_text(encoding='utf-8'))
+    body = json.dumps({'statements': [{'statement': statement}]}).encode()
+    with urllib.request.urlopen(urllib.request.Request(state['http'] + '/db/neo4j/tx/commit', body, {'Content-Type': 'application/json'}), timeout=60) as r:
+        data = json.loads(r.read())
+    assert not data['errors'], data['errors']
+    return [x['row'] for x in data['results'][0]['data']]
+
+
+def constraint_view(folder):
+    blocks = result(folder, 'constraints')
+    table = next(b for b in blocks if b['kind'] == 'table' and b['title'].startswith('종류마다'))
+    return {row[0]: row for row in table['rows']}, blocks
+
+
+def constraint_trials(folder, graph):
+    """유일 제약 걸음(빈 랩 DB에서) — 빈 틀 · 제약이 아닌 쿼리는 멈추고, 건 종류만 DB가 거절하며, 시험이 데이터를 남기지 않고, 다시 걸어도 되고,
+    제약이 걸린 뒤 CREATE로 넣는 쿼리는 두 번째 실행에서 DB가 거절한다."""
+    out = []
+    path = folder / 'app/features/constraints.cypher'
+    answer = path.read_text(encoding='utf-8')
+    schema = json.loads((folder / 'data/model/schema.json').read_text(encoding='utf-8'))
+    labels = sorted(schema['classes'])
+    assert sorted({n['labels'][0] for n in graph['nodes']}) == labels, '제공 모델의 종류와 인스턴스의 레이블이 다름'
+    count = lambda: http(folder, 'MATCH (n) RETURN count(n)')[0][0]
+    constraints = lambda: http(folder, 'SHOW CONSTRAINTS YIELD name RETURN count(*)')[0][0]
+    path.write_text(P.convert(A.CONSTRAINT_BLANK), encoding='utf-8', newline='\n')
+    assert '실행할 쿼리가 없습니다' in command(folder, 'run.py', 'constraints', '--no-open', ok=False)
+    path.write_text(answer + "CREATE (:Asset {id: 'X'});\n", encoding='utf-8', newline='\n')
+    stopped = command(folder, 'run.py', 'constraints', '--no-open', ok=False)
+    assert f'constraints.cypher:{len(labels) + 2}: 이 파일에는 제약을 거는 쿼리' in stopped, stopped[-400:]
+    assert count() == 0 and constraints() == 0, '멈춘 실행이 랩 DB를 바꿈'
+    out.append({'constraints': 'blank-and-non-constraint-query', 'stopped': True, 'db_untouched': True})
+    # 한 종류를 빼고 걸면: 그 종류만 「없음」 · 「받아 줌」이고, 시험한 노드는 남지 않는다
+    missing = 'Part'
+    lines = answer.splitlines(keepends=True)
+    assert sum(f'(n:{missing})' in x for x in lines) == 1
+    path.write_text(''.join(x for x in lines if f'(n:{missing})' not in x), encoding='utf-8', newline='\n')
+    rows, _ = constraint_view(folder)
+    assert sorted(rows) == labels
+    assert rows[missing][2] == '없음' and rows[missing][4].startswith('받아 줌'), rows[missing]
+    assert all(rows[l][2] != '없음' and rows[l][4].startswith('거절') and 'already exists' in rows[l][4] for l in labels if l != missing), rows
+    assert count() == 0, '유일 제약 시험이 노드를 남김'
+    out.append({'constraints': 'one-class-left-out', 'unconstrained_accepts_twice': missing, 'others_rejected': len(labels) - 1, 'nodes_left': 0})
+    path.write_text(answer, encoding='utf-8', newline='\n')
+    rows, blocks = constraint_view(folder)
+    assert all(rows[l][2] != '없음' and rows[l][4].startswith('거절') for l in labels), rows
+    shown = next(b for b in blocks if b['kind'] == 'table' and 'SHOW CONSTRAINTS' in b['title'])
+    assert len(shown['rows']) == len(labels) == constraints()
+    again, _ = constraint_view(folder)       # 다시 걸어도 같다(IF NOT EXISTS)
+    assert again == rows and count() == 0
+    out.append({'constraints': 'all-classes', 'unique_constraints': len(labels), 'rejected': len(labels), 'rerun_same': True, 'nodes_left': 0})
+    # 유일 제약이 걸린 뒤: MERGE 대신 CREATE로 넣는 쿼리는 처음에는 들어가고, 다시 넣으면 DB가 거절해 오류로 멈추며 개수는 그대로다(이론 57장)
+    load = folder / 'app/features/load.cypher'
+    merge = load.read_text(encoding='utf-8')
+    create = merge.replace('MERGE (n:', 'CREATE (n:').replace(' ON CREATE SET n = row;', ' SET n = row;')
+    assert create.count('CREATE (n:') == len(labels)
+    load.write_text(create, encoding='utf-8', newline='\n')
+    try:
+        result(folder, 'load')
+        assert count() == len(graph['nodes'])
+        refused = command(folder, 'run.py', 'repeat', '--no-open', ok=False)
+        assert 'load.cypher:' in refused and 'already exists' in refused, refused[-500:]
+        assert count() == len(graph['nodes']), 'DB가 거절한 다시 넣기가 노드를 늘림'
+    finally:
+        load.write_text(merge, encoding='utf-8', newline='\n')
+    rows, _ = constraint_view(folder)        # 데이터가 들어 있는 랩 DB에서 다시 실행: 첫 CREATE부터 거절되고 개수는 그대로
+    assert all(rows[l][4].startswith('거절') for l in labels) and count() == len(graph['nodes'])
+    out.append({'constraints': 'create-instead-of-merge', 'first_load_ok': True, 'second_load_rejected_by_db': True, 'nodes_unchanged': count(), 'rerun_on_loaded_db': True})
+    return out
+
+
+def legacy_db_trials(folder, graph):
+    """제약 없이 먼저 넣은 랩 DB(앞 판으로 실습하던 폴더)에서 유일 제약 걸음이 도는가 — 겹친 노드가 있으면 종류 · 식별자 · 개수를 짚고 멈추고, 겹침을 정리하면 걸린다."""
+    result(folder, 'load')
+    labels = sorted({n['labels'][0] for n in graph['nodes']})
+    first = next(n['props']['id'] for n in graph['nodes'] if n['labels'] == ['Asset'])
+    http(folder, f"CREATE (:Asset {{id: '{first}', lab_trial: true}})")
+    stopped = command(folder, 'run.py', 'constraints', '--no-open', ok=False)
+    assert f'Asset 「{first}」 2개' in stopped and 'constraints.cypher:' in stopped, stopped[-600:]
+    http(folder, 'MATCH (n:Asset {lab_trial: true}) DELETE n')
+    rows, _ = constraint_view(folder)
+    assert all(rows[l][2] != '없음' and rows[l][4].startswith('거절') for l in labels), rows
+    assert http(folder, 'MATCH (n) RETURN count(n)') == [[len(graph['nodes'])]]
+    return [{'constraints': 'on-db-loaded-without-constraints', 'duplicate_named_and_stopped': f'Asset {first}', 'after_cleanup_all_constrained': len(labels), 'nodes_unchanged': True}]
+
+
 def trials(starter, work):
-    records, usage = [], {}
+    records, usage = student_condition_selftest(starter, work, 'sources'), {}
     (renamed, new_name), (retired, status) = D.LAB_RENAMED, D.LAB_RETIRED
     truth = D.TRUTH['assets']
     counted = {a: {'Component': len(t['components']), 'Sensor': len(t['sensors']), 'Unit': sum(1 for (x, _) in D.SERIALS if x == a) + (D.REMOVED_PUMP[0] == a)}
@@ -139,6 +229,7 @@ def trials(starter, work):
         expected_file.write_bytes(kept)
         records.append({'same_pair_twice': 'expected', 'stopped_with_way_out': True})
         with instance(folder) as state:
+            records += constraint_trials(folder, graph) if change == '남김' else legacy_db_trials(folder, graph)
             result(folder, 'load')
             result(folder, 'export')
             initial = json.loads((folder / 'output/graph.json').read_text(encoding='utf-8'))

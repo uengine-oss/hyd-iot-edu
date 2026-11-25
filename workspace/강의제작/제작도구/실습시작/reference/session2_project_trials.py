@@ -8,6 +8,7 @@
 - 빈 틀을 일부러 망가뜨리면(카디널리티 · 지난 실물 · 물리량 이름 · 빈 결정 · 처리 안 한 철거 줄 · 한 물리량에 섞인 단위) 제공 코드가 그 줄을 짚고 멈추고,
   교체부품 칸의 표기를 교차표에 없는 글로 바꾸면 잇지 않고 화면에 보인다. 모델을 망가뜨리면(ID 중복 · 끝점 없음 · 관계 방향) 구조 검사가 잡는다.
 - 학생 ZIP과 완성본 ZIP을 새 폴더에 풀어 첫 명령과 재실행이 된다.
+- 모든 실행은 학생 조건(command — UTF-8 모드 꺼짐 · cp949 파이프 · 받는 쪽은 UTF-8로 읽음)으로 돌고, 글자표 결함을 되살린 사본을 그 조건이 잡는다(student_condition_selftest).
 사용: python reference/session2_project_trials.py <ontology-lab 폴더>
 """
 from pathlib import Path
@@ -33,12 +34,56 @@ from lab_package import ROOT
 ACTIONS = ['sources', 'expected', 'design', 'names', 'quantities', 'parts', 'query', 'check']
 
 
+# 학생 조건 — 한국어 Windows의 학생 PC에서 Codex가 명령을 대신 돌릴 때와 같다(2026-11-25 실측, 코딩랩.md 「함정」): 파이썬 UTF-8 모드가 꺼져 있고
+# 출력은 콘솔이 아닌 파이프이며(파이썬이 cp949로 쓴다), 받는 쪽은 그 바이트를 UTF-8로 읽는다. 이 PC의 작업 환경은 PYTHONUTF8=1이라, 이 값을 끄지 않으면 결함이 가려진다.
+# PYTHONWARNDEFAULTENCODING은 제공 코드가 글자표를 적지 않고 파일을 열거나 자식 프로세스를 읽는 곳을 EncodingWarning으로 드러낸다.
+STUDENT = {'PYTHONUTF8': '0', 'PYTHONIOENCODING': 'cp949', 'PYTHONWARNDEFAULTENCODING': '1', 'PYTHONDONTWRITEBYTECODE': '1'}
+
+
 def command(folder, *args, ok=True):
-    result = subprocess.run([sys.executable, *args], cwd=folder, capture_output=True, text=True, encoding='utf-8', env=os.environ | {'PYTHONUTF8': '1', 'PYTHONDONTWRITEBYTECODE': '1'})
-    output = result.stdout + result.stderr
+    """랩 명령 하나를 학생 조건(STUDENT)으로 돌린다. 2회차 강사 참조 시험(두 반)의 모든 실행이 이 함수를 거친다.
+    출력이 UTF-8이 아니거나, 글자표 오류로 멈추거나, 글자표를 적지 않은 입출력이 있으면 실패다."""
+    result = subprocess.run([sys.executable, *args], cwd=folder, capture_output=True, env=os.environ | STUDENT)
+    raw = result.stdout + result.stderr
+    try:
+        output = raw.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise AssertionError((str(folder), args, f'출력이 UTF-8이 아닙니다({e}) — 학생 PC에서 AI가 대신 실행하면 한글이 깨집니다', raw[:300]))
+    for mark in ('UnicodeEncodeError', 'UnicodeDecodeError', 'EncodingWarning', '�'):
+        if mark in output:
+            raise AssertionError((str(folder), args, f'학생 조건에서 글자표 문제({mark!r})', output[-1500:]))
     if (result.returncode == 0) != ok:
         raise AssertionError((str(folder), args, result.returncode, output))
     return output
+
+
+def student_condition_selftest(starter, work, action=None):
+    """자가시험 — 글자표 결함을 일부러 되살린 사본(제공 파일에서 lab_frame.UTF8_OUT을 지우고 구조 검사를 UTF-8 모드 없이 띄움)을 command가 잡는가.
+    못 잡으면 학생 조건 시험이 없는 것과 같다. 고친 랩 그대로의 사본은 같은 명령을 통과해야 한다."""
+    import lab_frame as F
+    records = []
+    for name, files, args in (('run.py-without-utf8-output', {'run.py': F.UTF8_OUT}, ('run.py', *([action] if action else []), '--no-open')),
+                              ('check-child-without-utf8', {'app/utils/actions.py': "'-X', 'utf8', ", 'app/utils/check.py': F.UTF8_OUT}, ('run.py', 'check', '--no-open')),
+                              ('check.py-direct-without-utf8-output', {'app/utils/check.py': F.UTF8_OUT}, ('-m', 'app.utils.check'))):
+        good, broken = work / f'selftest-{name}-good', work / f'selftest-{name}'
+        for copy in (good, broken):
+            shutil.copytree(starter, copy, ignore=shutil.ignore_patterns('__pycache__', 'output', '.lab_connection.json'))
+        for path, piece in files.items():
+            text = (broken / path).read_text(encoding='utf-8')
+            assert text.count(piece) == 1, (name, path, '되살릴 자리를 찾지 못함')
+            (broken / path).write_text(text.replace(piece, ''), encoding='utf-8', newline='\n')
+        fails = args[-1] != '--no-open' or 'check' in args      # 받은 그대로의 랩에서 구조 검사는 「아직 검사할 결과가 없습니다」로 끝난다(종료 1)
+        command(good, *args, ok=not fails)
+        try:
+            command(broken, *args, ok=not fails)
+        except AssertionError as e:
+            reason = e.args[0][2]
+            if not (isinstance(reason, str) and ('글자표' in reason or 'UTF-8' in reason)):      # 종료 코드가 달라 실패한 것은 잡은 것이 아니다
+                raise AssertionError((name, '되살린 글자표 결함이 글자표 판정이 아닌 다른 까닭으로 실패함', e.args[0]))
+            records.append({'selftest': name, 'caught': reason[:80]})
+        else:
+            raise AssertionError((name, '되살린 글자표 결함을 학생 조건 시험이 잡지 못함'))
+    return records
 
 
 def put(folder, files, convert=False):
@@ -284,7 +329,8 @@ def main():
     with D.for_course('통합반'), tempfile.TemporaryDirectory(prefix='trials-', dir=base) as temp:
         work = Path(temp).resolve()
         assert work.is_relative_to(base) and work != base
-        records = ontology(args.folder.resolve(), work)
+        records = student_condition_selftest(args.folder.resolve(), work)
+        records += ontology(args.folder.resolve(), work)
         records += fresh_packages(args.folder.resolve(), work)
         report = base / 'ontology-results.json'
         report.write_text(json.dumps({'kind': '강사 참조 실행; 학생 AI 시험 아님', 'records': records}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

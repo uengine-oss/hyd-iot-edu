@@ -1,12 +1,16 @@
 from pathlib import Path
 import sys
+
+# 출력은 늘 UTF-8로 쓴다 — 한국어 Windows에서 AI가 이 명령을 대신 실행하면 파이썬이 cp949로 써서 한글이 깨지고 「—」 같은 글자에서 멈춘다.
+for _stream in (sys.stdout, sys.stderr):
+    _stream.reconfigure(encoding='utf-8')
 import hashlib as _h
 _PROVIDED = {
  "app/ui/render.py": "f2a80ab6f2d359d26b9610dadab032638decd2496da7a9aac143a1a704320c64",
- "app/utils/actions.py": "ece028f2abba78ef6449b2f966fd221f43b5bf54572235dbe9b6c5f5093193f4",
+ "app/utils/actions.py": "6e9459aad51e0d91adfd78217248592e86ef0b7d4097ddc09e0a3cc1085cb412",
  "app/utils/model.py": "ee65f0ccbd4ae14eef4b2d3e3e8161c45ab3a0472034779c489daa191fc37d9f",
  "app/utils/results.py": "fe094e682a25063316b9f8e914fd9b78c6af455bac538f4cc6655b94ce1a8433",
- "run.py": "a2be7676a114229a2f866a562d53df8f281f5acba64e724816df9cb0a78f1878"
+ "run.py": "76fae2ddf709854f57e5d08effeee4ffd7896264a38d3564a4a206c9bed0313e"
 }
 def provided_errors(root):
     out = []

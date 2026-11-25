@@ -44,7 +44,7 @@ def cypher_source(integrated=False):
     """integrated = 통합반 그래프 랩이면 멈춤 문구를 장부의 이름(CYPHER_TERMS)으로 바꾼다."""
     source = (P.HERE / 'lab_cypher.py').read_text(encoding='utf-8')
     names = {'WIPE', 'PARAM', 'TARGET', 'QUESTION', 'LabDbOff', 'model_graph', 'endpoint', 'cypher', 'rows_of',
-             'statements', 'guard', 'read', 'run_file', 'load_file', 'questions', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
+             'statements', 'guard', 'read', 'run_file', 'constraints_file', 'constraints', 'duplicates', 'try_create_twice', 'CONSTRAINT', 'load_file', 'questions', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
     text = ('from pathlib import Path\nimport json, re, urllib.request, urllib.error\nfrom app.utils import db as local_db\n'
             "HERE = Path(__file__).resolve().parents[2]\nSTATE = HERE / '.lab_connection.json'\n_ENDPOINT = None\n\n" + P.extract(source, names))
     text = text.replace(P.extract(source, {'endpoint'}).strip(), ENDPOINT.strip())
@@ -153,7 +153,7 @@ def check(previous):
 
 COMMANDS = {
     'sources': ('원자료와 모델', sources), 'db': ('랩 DB 준비', prepare), 'status': ('모델과 DB 개수', start),
-    'expected': ('기대 답', expected), 'load': ('모델 적재', load), 'repeat': ('같은 적재 다시 실행', again),
+    'expected': ('기대 답', expected), 'constraints': ('유일 제약 걸기', constraints), 'load': ('모델 적재', load), 'repeat': ('같은 적재 다시 실행', again),
     'sensors': ('설비별 센서', q1), 'parts': ('설비별 교체 부품', q2), 'usage': ('부품의 사용 설비', q3),
     'update': ('수정본 반영', change), 'compare': ('기준 지도와 비교', portal),
     'export': ('그래프 저장', export), 'check': ('구조 검사', check),
