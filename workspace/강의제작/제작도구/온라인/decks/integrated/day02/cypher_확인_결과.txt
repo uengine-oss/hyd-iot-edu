@@ -70,6 +70,56 @@ n
    > MATCH (p:Part) DETACH DELETE p;
    (종료 코드 0)
 
+######## 48장 DB에 걸지 않은 규칙 — 품번에 유일 제약만 건 DB에 거꾸로 그은 가진다를 넣는다
+== 48-5 유일 제약 만들기
+   > CREATE CONSTRAINT part_partno_unique IF NOT EXISTS FOR (p:Part) REQUIRE p.partNo IS UNIQUE;
+   (종료 코드 0)
+== 48-6 오일 쿨러에서 2호기로 거꾸로 그은 가진다
+   > CREATE (:Component {code: 'EQ-02-COOLER', name: '오일 쿨러'})-[:HAS_COMPONENT]->(:Asset {code: 'EQ-02', name: '2호기'});
+   (종료 코드 0)
+== 48-7 구성 요소에서 설비로 간 가진다의 수
+   > MATCH (:Component)-[r:HAS_COMPONENT]->(:Asset) RETURN count(r) AS n;
+n
+1
+   (종료 코드 0)
+== 정리
+   > MATCH (n) DETACH DELETE n;
+   (종료 코드 0)
+
+######## 58장 품번에 유일 제약을 건 뒤의 MERGE
+== 58-7 MERGE 첫 번째
+   > MERGE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 58-8 MERGE 두 번째(같은 쿼리)
+   > MERGE (:Part {partNo: 'CC-2040'});
+   (종료 코드 0)
+== 58-9 품번 CC-2040인 부품 노드 수
+   > MATCH (p:Part {partNo: 'CC-2040'}) RETURN count(p) AS n;
+n
+1
+   (종료 코드 0)
+== 정리
+   > MATCH (p:Part) DETACH DELETE p;
+   (종료 코드 0)
+== 58-10 이름까지 적은 MERGE 첫 번째
+   > MERGE (:Part {partNo: 'CC-2040', name: '쿨러 코어'});
+   (종료 코드 0)
+== 58-11 이름을 다르게 적은 MERGE(품번은 같다)
+   > MERGE (:Part {partNo: 'CC-2040', name: '쿨러코어'});
+Node(1) already exists with label `Part` and property `partNo` = 'CC-2040'
+   (종료 코드 1)
+== 58-12 품번 CC-2040인 부품 노드 수
+   > MATCH (p:Part {partNo: 'CC-2040'}) RETURN count(p) AS n;
+n
+1
+   (종료 코드 0)
+== 정리
+   > MATCH (p:Part) DETACH DELETE p;
+   (종료 코드 0)
+== 정리
+   > DROP CONSTRAINT part_partno_unique;
+   (종료 코드 0)
+
 ######## 1 · 2단원의 예(1~3호기, 2호기의 구성 요소 셋, 세 오일 쿨러가 같은 쿨러 코어를 쓴다)를 넣는다
 == 예 넣기
    > CREATE (e1:Asset {code: 'EQ-01', name: '1호기'}), (e2:Asset {code: 'EQ-02', name: '2호기'}), (e3:Asset {code: 'EQ-03', name: '3호기'}),
@@ -105,10 +155,21 @@ c.name
 "쿨러 팬"
 "오일 쿨러"
    (종료 코드 0)
+== 53장 머리를 반대로 적은 줄 — 구성 요소에서 설비로 가는 가진다
+   > MATCH (c:Component)-[:HAS_COMPONENT]->(:Asset {code: 'EQ-02'})
+   > RETURN c.name;
+   (종료 코드 0)
 == 56장 WHERE
    > MATCH (:Asset {code: 'EQ-02'})
    >       -[:HAS_COMPONENT]->(c:Component)
    > WHERE c.name = '오일 쿨러'
+   > RETURN c.code;
+c.code
+"EQ-02-COOLER"
+   (종료 코드 0)
+== 56장 같은 조건을 중괄호에 적은 쿼리
+   > MATCH (:Asset {code: 'EQ-02'})
+   >       -[:HAS_COMPONENT]->(c:Component {name: '오일 쿨러'})
    > RETURN c.code;
 c.code
 "EQ-02-COOLER"

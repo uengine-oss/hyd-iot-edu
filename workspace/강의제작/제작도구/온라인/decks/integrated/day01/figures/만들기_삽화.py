@@ -1805,6 +1805,8 @@ def _card_icon(kind, cx, cy, k=1.0):
         return g(cx, cy + 1 * k, 0.72 * k, monitor(0, 0, ON, kind="text"))
     if kind == "agent":
         return g(cx, cy + 6 * k, 0.78 * k, agent_icon(0, 0, ON))
+    if kind == "graph":
+        return g(cx, cy, 0.92 * k, graph_icon(0, 0, ON), boost=1.0)
     raise ValueError(kind)
 
 
@@ -2150,7 +2152,82 @@ def evidence_two_ways() -> str:
     return svg(o, FW, FH)
 
 
-NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
+# 63장: 위 가운데 물음 칸 하나에서 세 단으로 점선 가지가 내려간다(같은 물음을 세 방법에). 세 단은 같은 높이의 49장 꼴이고,
+# 위는 그림(기록 묶음 전부 → AI · 기록 여섯 장 가운데 두 장만 골라 → AI · AI → 고장 유형에서 원인 셋까지 모두), 가운데는 방법의 설명,
+# 맨 아래 띠는 이 물음에서 나오는 결과다. 지식 그래프 단만 파란 테두리와 하늘색 띠로 강조한다.
+F63W = dict(xs=(3, 410, 817), w=380, top=122, T=292, B=444, bot=507, q=(330, 2, 870, 76), bus_y=94)
+
+
+def three_ways() -> str:
+    s = F63W
+    xs, w, top, T, B, bot = s["xs"], s["w"], s["top"], s["T"], s["B"], s["bot"]
+    qx0, qy0, qx1, qy1 = s["q"]
+    o: list[str] = _f_box(qx0, qy0, qx1 - qx0, qy1 - qy0, r=18)
+    o += dash_line(600, qy1 + 5, 600, s["bus_y"], GREY, 3.5, 8, 6)
+    o += dash_line(xs[0] + w / 2, s["bus_y"], xs[2] + w / 2, s["bus_y"], GREY, 3.5, 8, 6)
+    for x in xs:
+        o += _f_branch(x + w / 2, s["bus_y"], top - 5)
+    for i, x in enumerate(xs):
+        if i < 2:
+            o += _f_banded(x, top, w, bot, B, PALE, NAVY, 3, LIGHT, T)
+            o.append(line(x + 2, B, x + w - 2, B, stroke=NAVY, sw=2))
+        else:
+            o += _f_banded(x, top, w, bot, B, SKY, BLUE, 5, PALE, T)
+    cy = (top + T) / 2
+    # 그대로 준다: 기록 묶음 전부를 AI에게 건넨다
+    x = xs[0]
+    ax = x + 78
+    px, py = x + 268, cy
+    for k, (ox, oy) in enumerate(((-28, -22), (-14, -11), (0, 0), (14, 11), (28, 22))):
+        o += g(px + ox, py + oy, 0.5, note_doc(0, 0, NORM), boost=1.6)
+    o.append(arrow([(px - 28 - 25 - 14, cy), (ax + 50 + 12, cy)], NAVY, sw=6, size=18))
+    o += _f_disc(ax, cy, 50, "agent", ring=True)
+    # 찾아 읽게 한다: 여섯 장 가운데 물음과 가까운 두 장만 골라 건넨다
+    x = xs[1]
+    ax = x + 78
+    cols, rows = (x + 214, x + 278, x + 342), (cy - 42, cy + 42)
+    for ci, dx in enumerate(cols):
+        for ri, dy in enumerate(rows):
+            picked = ci == 0
+            o += g(dx, dy, 0.42, note_doc(0, 0, NORM if picked else OFF), boost=1.8)
+    for dy in rows:
+        o.append(arrow([(cols[0] - 21 - 10, dy), (ax + 50 + 12, cy + (dy - cy) * 0.35)], BLUE, sw=5, size=16))
+    o += _f_disc(ax, cy, 50, "agent", ring=True)
+    # 지식 그래프를 조회한다: AI → 고장 유형 → 일으킨다를 거꾸로 따라 원인 셋이 모두
+    x = xs[2]
+    ax = x + 78
+    fm = (x + 196, cy, 26)
+    cs = [(x + 310, cy - 58, 20), (x + 334, cy, 20), (x + 310, cy + 58, 20)]
+    o.append(arrow([(ax + 50 + 10, cy), (fm[0] - fm[2] - 10, cy)], BLUE, sw=6, size=17))
+    for c in cs:
+        o += _edge_arrow(c, fm, BLUE, sw=5, size=15)
+    o += _f_disc(ax, cy, 50, "agent", ring=True)
+    o.append(circle(fm[0], fm[1], fm[2], fill=SKY, stroke=NAVY, sw=3.5))
+    for cx_, cy_, cr in cs:
+        o.append(circle(cx_, cy_, cr, fill=SKY, stroke=NAVY, sw=3.5))
+    return svg(o, FW, FH)
+
+
+# 64장: 한 줄 카드 넷(문서 → 사람 → 지식 그래프 → AI 에이전트)과, 문서에서 AI 에이전트로 바로 가는 아래 길.
+# 문서를 정해 둔 이름으로 옮겨 넣고 확인하는 사람 카드만 연하늘 · 파란 테두리로 강조한다.
+F64W = dict(xs=(150, 450, 750, 1050), w=240, top=24, h=322, r=56, disc_y=104, low_y=452)
+ROW64 = ("doc", "person", "graph", "agent")
+
+
+def kg_with_search() -> str:
+    s = F64W
+    xs, w, top, h = s["xs"], s["w"], s["top"], s["h"]
+    ay, gap = s["disc_y"], 11
+    o: list[str] = []
+    for i in range(3):
+        o.append(arrow([(xs[i] + w / 2 + gap, ay), (xs[i + 1] - w / 2 - gap, ay)], NAVY, sw=6, size=19))
+    o.append(arrow([(xs[0], top + h + 10), (xs[0], s["low_y"]), (xs[3], s["low_y"]), (xs[3], top + h + 12)], NAVY, sw=6, size=19))
+    for i, (x, kind) in enumerate(zip(xs, ROW64)):
+        o += _f_vcard(x, top, w, h, s["r"], kind, i == 1, ay)
+    return svg(_f_down(o, 16), FW, FH)
+
+
+NEW_ONLY: set = {"같은물음_세방법.svg", "지식그래프_함께쓰기.svg", "경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
                  "값_같은숫자.svg", "메모_다시적기.svg", "물음_따라가기.svg", "조치_두화살표.svg",
                  "온톨로지_두띠.svg", "속성_증거.svg", "이름_제각각.svg", "관계_읽기찾기.svg", "메모_두읽기.svg",
                  "통로_창고.svg", "원인후보_갈래.svg", "데이터_정보_지식.svg", "고장온톨로지_여덟종류.svg", "근거_두길.svg"}
@@ -2180,12 +2257,13 @@ def main():
            "조치_두화살표.svg": two_actions(),
            "온톨로지_두띠.svg": ontology_two_bands(), "속성_증거.svg": property_evidence(),
            "이름_제각각.svg": names_apart(), "관계_읽기찾기.svg": read_and_search(),
-           "데이터_정보_지식.svg": data_info_knowledge(), "고장온톨로지_여덟종류.svg": fault_ontology(), "근거_두길.svg": evidence_two_ways()}
+           "데이터_정보_지식.svg": data_info_knowledge(), "고장온톨로지_여덟종류.svg": fault_ontology(), "근거_두길.svg": evidence_two_ways(),
+           "같은물음_세방법.svg": three_ways(), "지식그래프_함께쓰기.svg": kg_with_search()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
             continue          # 승인된 그림은 다시 쓰지 않는다
-        (HERE / name).write_text(text, encoding="utf-8")
+        (HERE / name).write_text(text, encoding="utf-8", newline="")
         print("wrote", name)
 
 

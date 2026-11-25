@@ -19,13 +19,13 @@ for _, t in new: out.append(H.sub(f"## SLIDE {k:02d} — ", t, count=1)); k += 1
 for n, t in after: out.append(H.sub(f"## SLIDE {n + delta:02d} — ", t, count=1))
 res = head + "".join(before) + "".join(out)
 if not res.endswith("\n"): res += "\n"
-Path(o.deck).write_text(res, encoding="utf-8")
+Path(o.deck).write_text(res, encoding="utf-8", newline="")   # 줄 끝을 바꾸지 않는다(CLAUDE.md 6절)
 print(f"덱: {o.a}~{o.b}({o.b - o.a + 1}장) → {len(new)}장, 뒤 장 {delta:+d}, 전체 {len(before) + len(out)}장")
 def sh(n): return n + delta if n > o.b else n
 for f in o.대본:
     p = Path(f); s = p.read_text(encoding="utf-8")
     s2 = re.sub(r"\[SLIDE (\d+)(~(\d+))?\]", lambda m: f"[SLIDE {sh(int(m.group(1))):02d}" + (f"~{sh(int(m.group(3))):02d}" if m.group(3) else "") + "]", s)
-    p.write_text(s2, encoding="utf-8"); print("대본 옮김:", p.name)
+    p.write_text(s2, encoding="utf-8", newline=""); print("대본 옮김:", p.name)
 if o.구성:
     p = Path(o.구성); j = json.loads(p.read_text(encoding="utf-8"))
     j["slide_count"] = j["slide_count"] + delta
@@ -34,4 +34,4 @@ if o.구성:
     for r in j["rows"]:
         a, b = r["slides"]
         r["slides"] = [sh(a) if a > o.b else a, (b + delta) if (a <= o.a and b >= o.b) else sh(b)]
-    p.write_text(json.dumps(j, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); print("구성 옮김, slide_count", j["slide_count"])
+    p.write_text(json.dumps(j, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline=""); print("구성 옮김, slide_count", j["slide_count"])
