@@ -3,16 +3,19 @@
 
 쓰는 법(저장소 루트에서):
   OPENAI_KEY_FILE=<키 파일> <py> workspace/강의제작/제작도구/검사/바깥검토.py \
-      --지시 <지시.md> [--사실 <사실.md>] --글 <글.md> --출력 <폴더> [--모델 gpt-6.2-astra]
+      --지시 <지시.md> [--사실 <사실.md>] --글 <글.md> [--그림 <장.png …>] --출력 <폴더> [--모델 gpt-6.2-astra]
 
 - 키는 환경변수 OPENAI_API_KEY 또는 OPENAI_KEY_FILE(키 한 줄, 또는 `이름=값` 줄이 든 파일)로만 받는다.
   키 값과 키 파일 경로는 출력하거나 파일에 적지 않는다.
 - 지시와 사실은 instructions로, 글은 input으로 Responses API(https://api.openai.com/v1/responses)에 보낸다.
   사실은 「앞에서 배운 것 · 바꾸면 안 되는 이름」을 적은 한 장이다.
+- 그림(장 렌더 png)을 주면 글 뒤에 같은 순서로 붙여 보낸다. 모델이 화면에 적힌 이름과 그림을 보고 대본을 맞추게 하려는 것이다.
+  요청.json에는 그림 데이터 대신 파일 이름만 적는다.
 - 출력 폴더에 요청.json(키 없음) · 응답.json · 결과.md를 쓰고, 이미 있으면 멈춘다(덮어쓰지 않는다).
 - 유료 호출이다. 보내기 전에 글자 수를 찍고, 끝나면 응답의 토큰 수를 찍는다.
 """
 import argparse
+import base64
 import json
 import os
 import sys
@@ -70,6 +73,7 @@ def main():
     ap.add_argument('--지시', required=True)
     ap.add_argument('--사실')
     ap.add_argument('--글', required=True)
+    ap.add_argument('--그림', nargs='+', default=[])
     ap.add_argument('--출력', required=True)
     ap.add_argument('--모델', default='gpt-6.2-astra')
     a = ap.parse_args()
@@ -82,9 +86,22 @@ def main():
     if a.사실:
         instructions += '\n\n## 바꾸면 안 되는 것과 앞에서 배운 것\n\n' + read(a.사실, '사실')
     text = read(a.글, '글')
-    body = {'model': a.모델, 'instructions': instructions, 'input': text}
+    pics = []
+    for g in a.그림:
+        gp = Path(g)
+        if not gp.is_file() or gp.suffix.lower() != '.png':
+            sys.exit(f'바깥검토: 그림은 있는 png 파일이어야 한다 — {g}')
+        pics.append(gp)
+    if pics:
+        content = [{'type': 'input_text', 'text': text}]
+        content += [{'type': 'input_image', 'image_url': 'data:image/png;base64,' + base64.b64encode(gp.read_bytes()).decode('ascii')} for gp in pics]
+        body = {'model': a.모델, 'instructions': instructions, 'input': [{'role': 'user', 'content': content}]}
+        shown = {**body, 'input': [{'role': 'user', 'content': [content[0]] + [{'type': 'input_image', '그림': gp.name} for gp in pics]}]}
+    else:
+        body = {'model': a.모델, 'instructions': instructions, 'input': text}
+        shown = body
     secret = key()
-    print(f'바깥검토: {a.모델}에 보냄 — 지시 {len(instructions):,}자 · 글 {len(text):,}자', flush=True)
+    print(f'바깥검토: {a.모델}에 보냄 — 지시 {len(instructions):,}자 · 글 {len(text):,}자 · 그림 {len(pics)}장', flush=True)
 
     req = urllib.request.Request(URL, json.dumps(body, ensure_ascii=False).encode('utf-8'),
                                  {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + secret})
@@ -101,7 +118,7 @@ def main():
         sys.exit(f'바깥검토: 응답에 글이 없다 — 상태 {resp.get("status")}, 응답 앞부분 {raw[:1500]}')
 
     out.mkdir(parents=True, exist_ok=True)
-    (out / '요청.json').write_text(json.dumps(body, ensure_ascii=False, indent=1), encoding='utf-8', newline='')
+    (out / '요청.json').write_text(json.dumps(shown, ensure_ascii=False, indent=1), encoding='utf-8', newline='')
     (out / '응답.json').write_text(json.dumps(resp, ensure_ascii=False, indent=1), encoding='utf-8', newline='')
     (out / '결과.md').write_text(result + '\n', encoding='utf-8', newline='')
     u = resp.get('usage') or {}
