@@ -13,7 +13,7 @@ import pytest
 
 import student_apu as apu
 from conftest import OPERATOR, STUDENT_HOST, TENANT
-from procsvc import approval_part, mcp_registry
+from procsvc import approval_part, definition, mcp_registry
 from procsvc import agent_authoring as A
 from procsvc.bpmn_store import FlowStore
 from test_student_system_link import pbl, _ok          # noqa: F401 — pbl 은 고정물(PBL 단계를 연다)
@@ -234,8 +234,10 @@ def test_내_현장_경보가_내_흐름을_열고_승인_반려와_해제까지
         [written] = site.called('record_maintenance')                                          # 정확히 한 번, 사람이 고른 안으로
         assert (written['case_id'], written['sop'], written['performed_by']) == (pid, 'SOP-APU-03', ME) and written['idempotency_key']
         assert site.log() == [(pid, 'SOP-APU-03', '공기 배관 누설 점검 · 체결부 조임', ME)]
-        assert (report['outcome'], world.incident(pid).state) == ('정상', 'CLOSED'), report
-        assert _states(world.incident(pid))[-3:] == ['AWAITING_APPROVAL', 'APPROVED_EXECUTING', 'CLOSED']
+        # 정상 보고지만 내 시스템이 아직 해제를 보내지 않았다 — 사건은 닫지 않고 해제를 기다린다(보고만으로 고쳐졌다고 말하지 않는다)
+        assert (report['outcome'], world.incident(pid).state) == ('정상', 'AWAITING_CLEAR'), report
+        assert (report['incident_closed'], report['incident_state']) == (False, 'AWAITING_CLEAR'), report
+        assert _states(world.incident(pid))[-3:] == ['AWAITING_APPROVAL', 'APPROVED_EXECUTING', 'AWAITING_CLEAR']
     else:
         assert (inst['status'], inst['end_event']) == ('COMPLETED', 'E_no')
         assert site.called('record_maintenance') == [] and site.log() == []
@@ -246,6 +248,9 @@ def test_내_현장_경보가_내_흐름을_열고_승인_반려와_해제까지
     status, cleared = _alert(world, clear)                                                        # 바깥 프로그램이 보내는 해제(같은 alertId)
     assert status == 200 and cleared['incident'] == inc.id and cleared['state'] == 'CLEAR', cleared
     assert world.incident(pid).cleared and world.incident(pid).state == ('CLOSED' if decision == approval_part.APPROVE else 'REJECTED_BY_OPERATOR')
+    if decision == approval_part.APPROVE:
+        assert cleared['text'].endswith('사건: 종결'), cleared['text']
+        assert world.incident(pid).history[-1]['note'] == '결과 보고 뒤 원천 경보가 풀려 종결'
     assert _alert(world, clear)[0] == 409, '같은 해제를 두 번 받지 않는다'
 
 
@@ -445,7 +450,7 @@ def test_승인_뒤_내_시스템_쓰기_단계가_멈추면_원인을_고친_�
     inst = world.inst(pid)
     assert (inst['status'], inst['end_event']) == ('COMPLETED', 'E_done'), [(w['activity_id'], w['status'], w.get('log')) for w in world.rows(pid)]
     assert site.log() == [(pid, 'SOP-APU-03', '공기 배관 누설 점검 · 체결부 조임', ME)]           # 승인한 안 그대로, 정확히 한 번
-    assert world.values(pid)['result_report']['outcome'] == '정상' and world.incident(pid).state == 'CLOSED'
+    assert world.values(pid)['result_report']['outcome'] == '정상' and world.incident(pid).state == 'AWAITING_CLEAR', '해제가 오기 전에는 닫지 않는다'
     status, refused = world.api('POST', f"/api/todolist/{stopped['id']}/effect-retry", {'by': ME, 'role': ROLE_ID})
     assert status == 409 and '다시 보낼 수 있는 단계가 아닙니다' in str(refused), refused         # 끝난 단계는 다시 보내지 않는다
 
@@ -470,3 +475,25 @@ def test_내_현장_처리_건의_기다림에_붙인_경계_타이머는_벽시
     inst = world.inst(pid)
     assert (inst['status'], inst['end_event']) == ('COMPLETED', 'E_slow'), [(w['activity_id'], w['status'], w.get('log')) for w in world.rows(pid)]
     assert world.values(pid)['result_report']['outcome'] == '지연'
+
+
+def test_정상_보고_뒤_내_시스템이_해제를_끝내_보내지_않으면_벽시계_30분_뒤_책임자_확인으로_넘기고_늦은_해제는_그대로_둔다(world, flow, site, relay):
+    """2026-11-25 감사: 승인 → 정비 기록 → 결과 보고(정상)로 끝난 내 현장 처리 건이, 경보가 켜진 채 「종결」로 보였다. 이제 사건은 해제를 기다리고,
+    시한(내 현장은 벽시계 30분 — definition.CLEAR_WAIT_S)이 지나도 해제가 없으면 조치가 효과를 냈다는 확인이 없으니 책임자 확인으로 넘긴다."""
+    pid, clear = _to_approval(world, site)
+    _ok(_approve(world, pid, approval_part.APPROVE, option='A'))
+    world.poll(3)
+    inc = world.incident(pid)
+    assert world.inst(pid)['status'] == 'COMPLETED' and inc.state == 'AWAITING_CLEAR', [(w['activity_id'], w['status']) for w in world.rows(pid)]
+    listed = next(i for i in _ok(world.api('GET', '/api/incidents')) if i['id'] == inc.id)
+    assert (listed['state'], listed['terminal'], listed['clearDueAt']) == ('AWAITING_CLEAR', False, inc.clear_due_at), '열린 사건으로 센다'
+    world.clock.advance(definition.CLEAR_WAIT_S - 2)
+    world.poll(2)
+    assert inc.state == 'AWAITING_CLEAR', '30분 시한이 30분 전에 지났다'
+    world.clock.advance(3)
+    assert world.poll(2) == [], '폴링의 해제 기다림 일이 실패했다'
+    assert (inc.state, inc.reason) == ('ESCALATED', f'{definition.CLEAR_TIMEOUT}: 30분') and inc.closed
+    assert '원천 경보가 30분 안에 해제되지 않았습니다' in definition.escalation_cause(inc.reason)[0]
+    status, cleared = _alert(world, clear)                                                        # 늦게 온 해제
+    assert status == 200 and cleared['text'].endswith('사건: 책임자 확인'), cleared
+    assert inc.cleared and inc.state == 'ESCALATED', '책임자 확인으로 넘긴 사건을 늦은 해제가 다시 닫지 않는다'

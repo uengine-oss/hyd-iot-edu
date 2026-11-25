@@ -1651,6 +1651,26 @@ def test_승인_대기_중_바깥에서_설비를_되돌려_경보가_풀리면_
 
 
 @pytest.mark.parametrize('how', ['cooler_restore', 'plant_reset'], ids=['[쿨러 복구]', '[설비 초기화]'])
+def test_정상_보고_뒤_해제를_기다리는_중_바깥에서_설비를_되돌려_경보가_풀리면_종결이_아니라_책임자_확인이다(world, how):
+    """2026-11-25: 정상 결과 보고가 해제를 기다리게 한 사건(AWAITING_CLEAR)의 해제도 승인 대기의 해제와 같이 바깥 변화를 본다 — 보고 뒤 [쿨러 복구] ·
+    [설비 초기화]로 풀린 경보를 「결과 보고 뒤 해제로 종결」로 닫으면 학생은 흐름이 고쳤다고 믿는다. 결과 보고 자리는 흐름의 결과 보고 단계가 부르는
+    훅(close_incident_result) 그대로이고, 설비 · 감지기 · 원천 접수 · 해제 판정은 실제 길이다."""
+    from procsvc import definition
+    alert, pid, decision = world.start_cooling()
+    inc = world.incident(pid)
+    assert world.rt.hooks.close_incident_result(inc.id, 'ok', '정상 — 도구 호출을 마쳤습니다', world.rt._now())
+    assert inc.state == 'AWAITING_CLEAR' and not inc.cleared
+    _outside(world, how)
+    for _ in range(10):
+        world.pass_time(10)
+        if inc.cleared:
+            break
+    assert inc.cleared, '바깥에서 결함을 되돌렸는데 감지기가 경보를 풀지 않았다'
+    assert inc.state == 'ESCALATED' and str(inc.reason).startswith(definition.CLEAR_UNPROVEN), (inc.state, inc.reason)
+    assert f'[{"쿨러 복구" if how == "cooler_restore" else "설비 초기화"}]' in definition.escalation_cause(inc.reason)[0]
+
+
+@pytest.mark.parametrize('how', ['cooler_restore', 'plant_reset'], ids=['[쿨러 복구]', '[설비 초기화]'])
 def test_효과_확인_중_바깥에서_설비를_되돌리면_지는_값을_승인했어도_정상으로_끝나지_않는다(world, how):
     """D-1 · T-4: 팬 값을 낮춰(덜 식는 값) 승인한 뒤 효과 확인 창에서 바깥 조작으로 설비를 되돌리면, 전에는 창 끝의 값과 해제만 보아 「회복 → 정상」이
     승인한 조치 덕으로 적혔다. 바깥 변화 뒤의 값은 조치의 효과가 아니다 — 미달(책임자 확인)과 그 까닭."""

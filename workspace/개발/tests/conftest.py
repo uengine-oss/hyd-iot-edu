@@ -45,6 +45,7 @@ import itertools
 import json
 import math
 import os
+import random
 import re
 import shlex
 import shutil
@@ -84,12 +85,27 @@ OPERATOR = dict(by='user:me', role='role:operator')
 
 
 # ---------------------------------------------------------------- 공통 도우미
+FREE_PORTS = range(20000, 32768)      # 운영체제가 바깥 연결에 내주는 임시 포트 구간(Windows 49152~65535 · Linux 32768~60999) 밖
+_GIVEN = set()
+
+
 def _free_port():
-    """모든 주소에서 빈 포트. 시험 서비스(MCP 서버)는 0.0.0.0 에 묶고 Docker 는 시험 컨테이너 포트를 0.0.0.0 에 연다 — 127.0.0.1 에서만 확인하면
-    Windows 는 다른 프로세스가 0.0.0.0 에 쥔 포트도 내줘, 앞 묶음이 남긴 컨테이너의 포트와 겹친 서비스가 켜지지 못했다(2026-11-24, WinError 10048)."""
-    with socket.socket() as s:
-        s.bind(('0.0.0.0', 0))
-        return s.getsockname()[1]
+    """모든 주소에서 비어 있는 포트 번호를 FREE_PORTS 에서 하나 골라 준다(이 묶음에서 이미 준 번호는 다시 주지 않는다). 번호만 정하고 서비스가 뒤에 묶는다.
+    ① 시험 서비스(MCP 서버)와 Docker 는 0.0.0.0 에 묶는다 — 127.0.0.1 에서만 확인하면 Windows 는 다른 프로세스가 0.0.0.0 에 쥔 포트도 내줘, 앞 묶음이 남긴
+    컨테이너의 포트와 겹친 서비스가 켜지지 못했다(2026-11-24, WinError 10048). ② 운영체제에 빈 포트를 달라고 하면(포트 0) 임시 포트 구간의 번호가 오는데,
+    서비스가 묶기 전에 이 PC 의 바깥 연결이 같은 번호를 가져가 dmn-mcp 가 켜지지 못했다(2026-11-25, WinError 10048) — 그래서 임시 포트 구간 밖에서 고른다.
+    막힌 구간(Hyper-V 가 잡아 둔 포트)은 묶기가 실패해 건너뛴다."""
+    for port in random.sample(FREE_PORTS, 200):
+        if port in _GIVEN:
+            continue
+        with socket.socket() as s:
+            try:
+                s.bind(('0.0.0.0', port))
+            except OSError:
+                continue
+        _GIVEN.add(port)
+        return port
+    raise RuntimeError(f'포트 {FREE_PORTS.start}~{FREE_PORTS.stop - 1} 에서 200번 골라도 빈 포트가 없다 — 이 PC 에서 그 구간을 쥔 프로그램을 확인한다')
 
 
 def until(condition, what, timeout=15.0):
@@ -1336,8 +1352,18 @@ def open_screen(page, tab):
     # 그 화면의 줄이 접힌 메뉴 안에 있으면 먼저 펼친다(화면이 하나뿐인 메뉴의 줄은 접기 안에 있지 않다)
     if page.evaluate("tab => { const fold = document.querySelector(`#menuList a[data-tab='${tab}']`).closest('details'); return !!fold && !fold.open; }", tab):
         page.locator(f"#menuList summary[data-menu='{menu}']").click()
+        # 키트는 메뉴를 0.15초에 걸쳐 펼친다(details::details-content 전환). 다 펼치기 전에는 그 화면의 줄 자리에 아래 메뉴 줄이 아직 겹쳐 있어,
+        # 바쁜 PC에서 바로 누르면 아래 메뉴 줄을 누른다(2026-11-25 전체 회귀에서 「질문하기」 자리에 「시스템」 줄이 있었다) — 그 줄이 누를 자리에 나올 때까지 기다린다
+        page.wait_for_function("""tab => { const a = document.querySelector(`#menuList a[data-tab='${tab}']`), r = a.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return !!hit && a.contains(hit); }""", arg=tab)
     link.click()
-    assert page.evaluate('() => state.tab') == tab, f'{tab} 화면이 열리지 않았다'
+    now = page.evaluate('() => state.tab')
+    seen = None if now == tab else page.evaluate("""tab => {
+        const a = document.querySelector(`#menuList a[data-tab='${tab}']`), r = a.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return { 지금화면: state.tab, 펼침: a.closest('details') ? a.closest('details').open : null, 자리: [r.x, r.y, r.width, r.height].map(Math.round),
+                 그자리의것: hit ? hit.outerHTML.slice(0, 160) : null, 주소: location.hash, 메뉴줄: document.documentElement.dataset.rail || '' }; }""", tab)
+    assert now == tab, f'{tab} 화면이 열리지 않았다 — {seen}'
 
 
 @pytest.fixture(scope='session')

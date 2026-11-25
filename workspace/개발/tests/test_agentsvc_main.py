@@ -8,7 +8,7 @@ import urllib.request
 
 import pytest
 
-from conftest import until
+from conftest import _free_port, until
 
 
 def call(url, body=None, timeout=30):
@@ -26,11 +26,7 @@ class BoltLine:
     join() 하면 같은 주소로 다시 듣는다(Neo4j 가 다시 뜬 것과 같다)."""
 
     def __init__(self, target_port):
-        import socket
-        self.target, self.port, self.pairs, self.server = target_port, None, [], None
-        with socket.socket() as probe:
-            probe.bind(('127.0.0.1', 0))
-            self.port = probe.getsockname()[1]
+        self.target, self.port, self.pairs, self.server = target_port, _free_port(), [], None      # 끊은 뒤 같은 번호로 다시 묶는다 — 임시 포트 구간 밖의 번호
         self.join()
 
     def join(self):

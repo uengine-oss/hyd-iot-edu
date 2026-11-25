@@ -242,3 +242,51 @@ def test_등록이_막혀_있으면_까닭_줄을_늘_두지_않고_서버_등�
             b.close()
     finally:
         served.close()
+
+
+# 말줄임으로 잘려 보이는 글(text-overflow: ellipsis 이고 상자보다 글이 넓다)과 그 글 전체 · 마우스를 올린 뒤의 말풍선(title)
+CUT_JS = r"""sel => [...document.querySelectorAll(sel)].map(n => ({ text: n.textContent.replace(/\s+/g, ' ').trim(), cut: getComputedStyle(n).textOverflow === 'ellipsis' && n.scrollWidth > n.clientWidth + 1 }))"""
+
+
+def test_서버_목록에서_말줄임으로_잘린_이름에_마우스를_올리면_전체_이름이_말풍선으로_나오고_다_보이는_이름에는_없다():
+    """2026-11-25 실제 브라우저 탐사: 1366 · 1920 모두 서버 목록의 「지하철 APU 운영 데이…」처럼 잘린 이름에 마우스를 올려도 전체 이름이 나오지 않았다.
+    잘린 글의 말풍선은 셸(shell.js) 한 곳이 단다 — 잘린 글에만 달고, 다 보이는 글에는 달지 않는다."""
+    from playwright.sync_api import sync_playwright
+    long_name = '지하철 APU 운영 데이터 — 실측 신호 · 회사 고장 보고 · 정비 기록(MetroPT-3)'
+    servers = [{**SERVER, 'name': 'metro-apu', 'description': long_name, 'agents': []}, {**SERVER, 'name': 'tool-wear', 'description': '공구 마모'}]
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+
+    def answer(route):
+        url = route.request.url.split('?')[0]
+        if url.endswith('/tools'):
+            return route.fulfill(json={'status': 'ok', 'tools': [{'name': 'read_tool_wear', 'read': True}]})
+        if url.endswith('/api/mcp/servers'):
+            return route.fulfill(json={'servers': servers, 'list_timeout_s': 5})
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1366, 'height': 768})
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'mcp')
+            page.wait_for_function("!!document.querySelector(\"#mcpServers [data-name='metro-apu'] .row-meta\") && document.querySelector(\"#mcpServers [data-name='metro-apu'] .row-meta\").textContent.includes('도구 1개')", timeout=15000)
+            rows = page.evaluate(CUT_JS, '#mcpServers .row-title')
+            assert rows == [{'text': long_name, 'cut': True}, {'text': '공구 마모', 'cut': False}], rows
+            long_title = page.locator("#mcpServers [data-name='metro-apu'] .row-title")
+            assert long_title.get_attribute('title') is None                     # 마우스를 올리기 전에는 달지 않는다
+            long_title.hover()
+            assert long_title.get_attribute('title') == long_name
+            short_title = page.locator("#mcpServers [data-name='tool-wear'] .row-title")
+            short_title.hover()
+            assert short_title.get_attribute('title') is None
+            # 창이 넓어져 다 보이게 되면 다시 올렸을 때 말풍선을 뗀다(낡은 말풍선을 남기지 않는다)
+            page.evaluate("() => { document.querySelector('#mcpServers').style.width = '2400px'; }")
+            page.mouse.move(1, 1)
+            long_title.hover()
+            assert page.evaluate(CUT_JS, "#mcpServers [data-name='metro-apu'] .row-title")[0]['cut'] is False and long_title.get_attribute('title') is None
+            b.close()
+    finally:
+        served.close()

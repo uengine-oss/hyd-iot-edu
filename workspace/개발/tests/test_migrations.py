@@ -151,6 +151,17 @@ OLD_SKILL_NAMES = {      # 077 까지의 seed.sql 이 넣던 설명과 문서 �
 }
 
 
+#: 084 전의 쿨러 경보 이름(스킬 본문 · 에이전트 목표) — 경보 패턴 이름(쿨러 성능 저하) 하나로 맞췄다
+OLD_COOLER = ('쿨러 과열 경보(COOLER_DEGRADATION) 한 건에서', '쿨러 성능 저하 경보(COOLER_DEGRADATION) 한 건에서')
+OLD_COOLING_GOAL = '쿨러 과열 경보의 원인을 진단하고, 냉각 조치 후보를 규정 · 회사 목표로 비교해 추천 카드 한 장과 지는 대안을 올린다'
+
+
+def seed_goal(agent):
+    import re
+    seed = (MIGRATIONS.parent / 'seed.sql').read_text(encoding='utf8')
+    return re.search(r"\('" + re.escape(agent) + r"',\s*null,\s*'[^']*',\s*'agent',\s*true,\s*'agent',\s*'([^']*)'", seed).group(1)
+
+
 def apply_between(conn, after, upto):
     """after 판 다음부터 upto 판까지의 마이그레이션을 차례로 넣는다."""
     for sql in sorted(MIGRATIONS.glob('*.sql')):
@@ -178,7 +189,8 @@ def test_새_DB의_기본_제공_스킬_설명과_문서에는_작업자끼리_�
 
 
 def test_이미_쓰던_DB의_기본_제공_스킬은_지금_seed와_같아지고_고친_설명과_내가_만든_스킬은_그대로다(scratch_db):
-    """seed.sql 은 새로 만든 DB 에만 들어간다 — 쓰던 DB 는 078 이 같은 내용으로 맞춘다."""
+    """seed.sql 은 새로 만든 DB 에만 들어간다 — 쓰던 DB 는 078 과 그 뒤의 마이그레이션(084 — 쿨러 경보를 경보 패턴 이름 하나로)이 같은 내용으로 맞춘다.
+    에이전트 목표도 같다(084). 고친 설명 · 다른 테넌트 · 내가 만든 스킬 · 다른 테넌트의 에이전트 목표는 건드리지 않는다."""
     import psycopg
     with psycopg.connect(scratch_db, autocommit=True) as conn:
         for sql in sorted(MIGRATIONS.glob('*.sql')):
@@ -188,14 +200,20 @@ def test_이미_쓰던_DB의_기본_제공_스킬은_지금_seed와_같아지고
         conn.execute("INSERT INTO tenants(id, name) VALUES ('hyd', '시험 공장'), ('other', '다른 공장')")
         for skill, (old_description, old_title) in OLD_SKILL_NAMES.items():
             _, body = seed_skill(skill)
-            old_body = old_title + body[body.index('\n'):]
+            old_body = (old_title + body[body.index('\n'):]).replace(OLD_COOLER[1], OLD_COOLER[0])     # 084 전의 본문은 옛 경보 이름
             for tenant, name, description, origin in (('hyd', skill, old_description, 'seed'), ('other', skill, old_description, 'seed'),
                                                       ('hyd', skill + '-mine', old_description, 'user')):
                 conn.execute('INSERT INTO tenant_skills(tenant_id, skill_name, description, content, origin) VALUES (%s, %s, %s, %s, %s)',
                              (tenant, name, description, old_body, origin))
         conn.execute("UPDATE tenant_skills SET description='내가 고친 설명' WHERE tenant_id='hyd' AND skill_name='pm-schedule-planning'")
-        conn.execute(next(MIGRATIONS.glob(SKILL_PLAIN_NAMES + '_*.sql')).read_text(encoding='utf8'))
+        conn.execute("INSERT INTO users(id, username, role, is_agent, goal, tenant_id) VALUES ('agent:cooling', '냉각 긴급 대응 에이전트', 'agent', true, %s, 'hyd'), "
+                     "('agent:other-cooling', '다른 에이전트', 'agent', true, %s, 'other')", (OLD_COOLING_GOAL, OLD_COOLING_GOAL))
+        for sql in sorted(MIGRATIONS.glob('*.sql')):           # 078 과 그 뒤 — 쓰던 DB 가 새 판을 받으면 시작이 차례로 적용한다
+            if sql.name >= SKILL_PLAIN_NAMES:
+                conn.execute(sql.read_text(encoding='utf8'))
+        goals = dict(conn.execute("SELECT id, goal FROM users WHERE id LIKE 'agent:%cooling'").fetchall())
         now = {(t, n): (d, c) for t, n, d, c in conn.execute('SELECT tenant_id, skill_name, description, content FROM tenant_skills').fetchall()}
+    assert goals == {'agent:cooling': seed_goal('agent:cooling'), 'agent:other-cooling': OLD_COOLING_GOAL}, goals
     for skill, (old_description, old_title) in OLD_SKILL_NAMES.items():
         description, body = seed_skill(skill)
         want_description = '내가 고친 설명' if skill == 'pm-schedule-planning' else description

@@ -38,6 +38,17 @@ def _approved():
     return inc
 
 
+WAIT_S = 90.0     # 결과 보고 뒤 해제를 기다리는 벽시계 초(가상 설비 사건 30분 ÷ 배속 20 — definition.clear_wait_s)
+
+
+def _report(inc, level, summary, fx, now=NOW):
+    return machine.on_result_report(inc, level, summary, fx, clear_wait_s=WAIT_S, now=now)
+
+
+def _clear(inc, fx=None, **why):
+    machine.on_alert(inc, {'alertId': inc.alert_id, 'state': 'CLEAR'}, fx or Recorder(), **why)
+
+
 def _awaiting_ack():
     inc, fx = _incident(), Recorder()
     cmd = machine.on_approve(inc, 'user:me', OPTION, [{'code': 'FAN_SET', 'fan_pct': 100}], NOW, fx)
@@ -187,8 +198,9 @@ def test_사유_문장이_없는_PLC_거절도_거절로_닫고_문장이_없다
 @pytest.mark.parametrize('level, state, reason', [('ok', 'CLOSED', None), ('fail', 'ESCALATED', definition.RESULT_REPORT)])
 def test_결과_보고가_사건을_닫으면_미달에도_사유를_남긴다(level, state, reason):
     """P1-31: 전에는 미달 · 지연으로 닫은 사건만 사유 칸이 비었다."""
-    inc, fx = _incident(), Recorder()
-    assert machine.on_result_report(inc, level, '재관측 기준 미달', fx)
+    inc, fx = _approved(), Recorder()
+    _clear(inc, fx)
+    assert _report(inc, level, '재관측 기준 미달', fx)
     assert (inc.state, inc.reason) == (state, reason)
     if state == 'ESCALATED':
         assert definition.escalation_cause(inc.reason) is None, '문장은 결과 보고 틀이 쓴다'
@@ -211,8 +223,10 @@ def test_사건을_맡은_처리_건이_끝나면_열린_사건을_책임자_확
 
 
 def _closed():
-    inc = _incident()
-    machine.on_result_report(inc, 'ok', '정상', Recorder())
+    inc = _approved()
+    _clear(inc)
+    _report(inc, 'ok', '정상', Recorder())
+    assert inc.state == 'CLOSED'
     return inc
 
 
@@ -226,7 +240,7 @@ def test_재작업은_끝나지_않은_사건만_다시_열고_같은_요청은_
     assert inc.history[-1]['note'].startswith('다시 수행으로 사건을 다시 엶')
     assert not machine.on_rework_reopen(inc, 'REQ-1', 'user:me', 'role:operator', '다시 판단', {}, fx), '같은 요청 id 는 한 번만'
     escalated = _incident()
-    machine.on_result_report(escalated, 'fail', '미달', fx)
+    _report(escalated, 'fail', '미달', fx)
     with pytest.raises(ValueError, match='ESCALATED'):
         machine.on_rework_reopen(escalated, 'REQ-2', 'user:me', 'role:operator', '다시', {}, fx)
 
@@ -301,7 +315,7 @@ def test_정비형_사건의_효과_확인에서_바깥_변화를_봤으면_종�
     assert inc.state == 'CLOSED'
     assert machine.on_outside_after_work_order(inc, RESET, fx) and inc.state == 'ESCALATED'
     assert inc.reason.startswith(definition.OUTSIDE_CHANGE)
-    assert machine.on_result_report(inc, 'fail', '효과 확인(15분) 기준 미달', fx) is False, '결과 보고가 그 까닭을 덮어쓰지 않는다'
+    assert _report(inc, 'fail', '효과 확인(15분) 기준 미달', fx) is False, '결과 보고가 그 까닭을 덮어쓰지 않는다'
     other, fx = _re_observing()[0], Recorder()
     assert machine.on_outside_after_work_order(other, RESET, fx) is False, '명령을 낸 사건은 효과 확인 판정이 적는다'
 
@@ -327,7 +341,7 @@ def test_시계열_회복_기준이_없는_내_시스템_경보도_받고_회복
     assert inc.state == state and inc.cleared, (inc.state, inc.reason)
     if approved:
         assert fx.events[-1]['detail'].get('after_approval') is True
-        assert machine.on_result_report(inc, 'ok', '정비 기록을 남겼습니다', fx) and inc.state == 'CLOSED'
+        assert _report(inc, 'ok', '정비 기록을 남겼습니다', fx) and inc.state == 'CLOSED'
 
 
 def test_설비_명령_없는_승인은_사건을_승인_뒤_실행_중으로_옮기고_승인_전에만_여는_문을_닫는다():
@@ -344,7 +358,7 @@ def test_설비_명령_없는_승인은_사건을_승인_뒤_실행_중으로_�
     with pytest.raises(ValueError, match='cannot reject'):
         machine.on_reject(inc, 'user:me', '늦은 반려', fx)
     with pytest.raises(ValueError, match='승인 대기 중인 사건만'):
-        machine.on_result_report(inc, 'rejected', '늦은 반려', fx)
+        _report(inc, 'rejected', '늦은 반려', fx)
     assert inc.state == 'APPROVED_EXECUTING'
     with pytest.raises(ValueError, match='승인한 사람 기록이 없는'):
         machine.on_flow_approved(_incident(), '', fx)
@@ -353,8 +367,8 @@ def test_설비_명령_없는_승인은_사건을_승인_뒤_실행_중으로_�
 @pytest.mark.parametrize('close, state', [
     (lambda inc, fx: machine.on_work_order(inc, {'ok': True, 'ref': 'WO-7'}, fx, work_order_only=True), 'CLOSED'),
     (lambda inc, fx: machine.on_business_effect(inc, {'ok': True, 'ref': 'GR-7', 'kind': 'goods_receipt'}, fx), 'CLOSED'),
-    (lambda inc, fx: machine.on_result_report(inc, 'ok', '정상', fx), 'CLOSED'),
-    (lambda inc, fx: machine.on_result_report(inc, 'fail', '미달', fx), 'ESCALATED'),
+    (lambda inc, fx: (_clear(inc, fx), _report(inc, 'ok', '정상', fx)), 'CLOSED'),
+    (lambda inc, fx: _report(inc, 'fail', '미달', fx), 'ESCALATED'),
     (lambda inc, fx: machine.on_process_ended(inc, '사람이 닫음', fx), 'ESCALATED'),
 ], ids=['정비 요청 영수증', '입고 확인', '결과 보고 정상', '결과 보고 미달', '처리 건이 끝남'])
 def test_승인_뒤_실행_중인_사건은_업무_효과와_결과_보고와_처리_건_끝으로_닫힌다(close, state):
@@ -389,15 +403,71 @@ def test_승인_뒤_흐름이_새_승인으로_되돌아가면_사건도_승인_
     assert other.state == 'AWAITING_APPROVAL' and other.superseded[-1]['state_before'] == 'APPROVED_EXECUTING'
 
 
-@pytest.mark.parametrize('cleared', [False, True], ids=['원천_경보_켜짐', '원천_경보_해제됨'])
-def test_정상_결과_보고로_닫을_때_원천_경보가_아직_켜져_있으면_그_사실을_이력과_감사에_싣는다(cleared):
-    """2026-11-25 감사: 학생 현장 흐름(승인 → 도구 호출 → 결과 보고)이 「정상」으로 보고하면 원천 경보가 켜진 채로도 사건이 정상 종결로만 보여,
-    학생은 명령을 보내면 고쳐진다고 믿었다. 결과 보고는 흐름이 정한 판정이라 따르되(닫는다), 경보가 아직 켜져 있다는 사실을 함께 남긴다."""
+def test_정상_결과_보고인데_원천_경보가_켜져_있으면_닫지_않고_해제를_기다렸다가_해제로_종결한다():
+    """2026-11-25 감사: 학생 현장 흐름(승인 → 도구 호출 → 결과 보고)이 「정상」으로 보고하면 원천 경보가 켜진 채로도 사건이 정상 종결로 보여,
+    학생은 보고만 하면 고쳐진다고 믿었다. 결과 보고는 흐름이 정한 판정이지만 사건은 원천의 해제까지 기다린다."""
     inc, fx = _approved(), Recorder()
-    if cleared:
-        machine.on_alert(inc, {'alertId': 'ALT-1', 'state': 'CLEAR'}, fx)
-    assert machine.on_result_report(inc, 'ok', '도구 호출을 마쳤습니다', fx) and inc.state == 'CLOSED'
-    note = inc.history[-1]['note']
-    closed = [e for e in fx.events if e['event'] == 'INCIDENT_CLOSED']
-    assert ('원천 경보는 아직 해제되지 않았습니다' in note) is (not cleared), note
-    assert len(closed) == 1 and closed[0]['detail'].get('alertStillActive', False) is (not cleared)
+    assert _report(inc, 'ok', '도구 호출을 마쳤습니다', fx)
+    assert (inc.state, inc.closed, inc.clear_due_at) == ('AWAITING_CLEAR', None, '2026-10-30T09:01:30.000Z')
+    assert inc.state not in definition.TERMINAL and inc.to_dict()['clearDueAt'] == inc.clear_due_at
+    assert '해제를 기다림(10-30 18:01까지)' in inc.history[-1]['note'], '시한은 화면과 같은 한국 시각으로'
+    assert fx.events[-1]['event'] == 'INCIDENT_AWAITING_CLEAR'
+    assert _report(inc, 'ok', '같은 보고를 다시', fx) is False, '이미 해제를 기다리는 사건은 보고가 다시 바꾸지 않는다'
+    assert machine.on_process_ended(inc, '처리 완료', fx) is False, '처리 건이 끝나도 해제 기다림은 이어진다'
+    assert machine.on_clear_timeout(inc, NOW, fx) is False and inc.state == 'AWAITING_CLEAR', '마감 전'
+    _clear(inc, fx)
+    assert (inc.state, inc.reason) == ('CLOSED', None) and inc.closed
+    assert inc.history[-1]['note'] == '결과 보고 뒤 원천 경보가 풀려 종결'
+    assert [e['event'] for e in fx.events[-2:]] == ['ALERT_CLEARED', 'INCIDENT_CLOSED']
+    assert machine.on_clear_timeout(inc, datetime(2026, 10, 30, 10, 0, tzinfo=timezone.utc), fx) is False, '종결한 사건은 마감이 바꾸지 않는다'
+
+
+@pytest.mark.parametrize('alert, words', [(ALERT, '설비 시간 30분'), (SITE_ALERT, '30분')], ids=['가상 설비', '학생 현장'])
+def test_해제_시한이_지나도_원천_경보가_풀리지_않으면_책임자_확인으로_넘긴다(alert, words):
+    inc = machine.Incident.from_card('INC-2', {'alert': alert, 'causes': []}, recovery_policy=dict(POLICY, pattern=alert['pattern'], criterion=None))
+    machine.on_card(inc)
+    fx = Recorder()
+    machine.on_flow_approved(inc, 'user:me', fx)
+    _report(inc, 'ok', '도구 호출을 마쳤습니다', fx)
+    after = datetime(2026, 10, 30, 9, 1, 31, tzinfo=timezone.utc)
+    assert machine.on_clear_timeout(inc, after, fx)
+    assert (inc.state, inc.reason) == ('ESCALATED', f'{definition.CLEAR_TIMEOUT}: {words}') and inc.closed
+    assert inc.history[-1]['note'] == f'결과 보고 뒤 원천 경보가 {words} 안에 풀리지 않음'
+    text, reobserved = definition.escalation_cause(inc.reason)
+    assert f'원천 경보가 {words} 안에 해제되지 않았습니다' in text and reobserved is False
+    assert machine.on_clear_timeout(inc, after, fx) is False, '한 번만 넘긴다'
+    _clear(inc, fx)
+    assert inc.state == 'ESCALATED', '책임자 확인으로 넘긴 뒤의 해제는 사건을 다시 닫지 않는다'
+
+
+def test_해제_시한은_경보를_내는_쪽의_시계다():
+    assert definition.clear_wait_s('HYD-01', 20.0) == definition.CLEAR_WAIT_S / 20.0, '가상 설비 — 설비 시간(배속)'
+    assert definition.clear_wait_s('APU-01', 20.0) == float(definition.CLEAR_WAIT_S), '학생 현장 — 벽시계'
+
+
+@pytest.mark.parametrize('why, words', [
+    ({'trip': 'OVERTEMP'}, '설비가 보호 정지(사유 OVERTEMP) 중이었습니다'),
+    ({'outside': RESET}, '그 전에 설비가 승인한 조치 밖에서 바뀌었습니다'),
+    ({'outside_unknown': '다시 켠 뒤 기록이 끊김'}, '그 전에 설비가 승인한 조치 밖에서 바뀌었는지 알 수 없습니다(다시 켠 뒤 기록이 끊김)'),
+], ids=['보호 정지', '바깥 변화', '바깥 변화 모름'])
+def test_결과_보고_뒤의_해제가_조치의_효과인지_알_수_없으면_종결하지_않고_책임자_확인으로(why, words):
+    inc, fx = _approved(), Recorder()
+    _report(inc, 'ok', '도구 호출을 마쳤습니다', fx)
+    _clear(inc, fx, **why)
+    assert inc.state == 'ESCALATED' and inc.reason.startswith(f'{definition.CLEAR_UNPROVEN}: {words}'), inc.reason
+    assert words in definition.escalation_cause(inc.reason)[0]
+    assert fx.events[-1]['event'] == 'INCIDENT_ESCALATED'
+
+
+def test_정상_결과_보고_때_원천_경보가_이미_풀렸으면_바로_종결한다():
+    inc, fx = _approved(), Recorder()
+    _clear(inc, fx)
+    assert _report(inc, 'ok', '도구 호출을 마쳤습니다', fx) and (inc.state, inc.clear_due_at) == ('CLOSED', None)
+
+
+def test_해제를_기다리는_사건도_다시_수행으로_다시_열고_해제_기다림을_함께_물린다():
+    inc, fx = _approved(), Recorder()
+    _report(inc, 'ok', '도구 호출을 마쳤습니다', fx)
+    assert machine.on_rework_reopen(inc, 'REQ-3', 'user:me', 'role:operator', '다시 판단', {}, fx)
+    assert (inc.state, inc.clear_due_at) == ('AWAITING_APPROVAL', None)
+    assert inc.superseded[-1]['state_before'] == 'AWAITING_CLEAR'

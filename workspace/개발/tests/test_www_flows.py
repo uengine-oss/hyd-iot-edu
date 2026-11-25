@@ -232,3 +232,44 @@ def test_파일_고르기_칸은_감싸기_전에_이미_고른_파일이_있으
     finally:
         served.close()
     assert got == ['my-own.bpmn', '선택한 파일 없음'], got
+
+
+def test_흐름_목록에서_말줄임으로_잘린_이름에_마우스를_올리면_전체_이름이_말풍선으로_나온다():
+    """2026-11-25 실제 브라우저 탐사: 1366 · 1920 모두 흐름 목록의 「에이전트에게 질…」 「문서 원천의 에이전…」처럼 상태 알약에 밀려 잘린 이름에 마우스를 올려도
+    전체 이름이 나오지 않았다. 잘린 글의 말풍선은 셸(shell.js) 한 곳이 단다 — 잘린 이름에만 달고, 다 보이는 이름에는 달지 않는다.
+    이 판정은 목록의 모양만 보므로 process 응답(흐름 목록 · 정의 목록)은 이 시험이 준다(꼴은 procsvc GET /api/flows · GET /api/process/definitions)."""
+    from playwright.sync_api import sync_playwright
+    long_name = '교대 인수인계 — 야간조에서 주간조로 넘기는 설비 상태와 미완료 정비 확인'
+    drafts = [{'proc_def_id': 'my_long', 'mapping': {'name': long_name}}, {'proc_def_id': 'my_short', 'mapping': {'name': '짧은 흐름'}}]
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+
+    def answer(route):
+        path = urlsplit(route.request.url).path
+        if path == '/svc/process/api/flows':
+            return route.fulfill(json={'drafts': drafts, 'versions': []})
+        if path == '/svc/process/api/process/definitions':
+            return route.fulfill(json=[])
+        if path.startswith('/svc/process/api/flows/my_'):
+            return route.fulfill(status=404, json={'detail': '없음'})
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1366, 'height': 768})
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'flows')
+            page.wait_for_selector("#flowList [data-open='my_short'] .row-title", timeout=15000)
+            rows = page.evaluate(r"""() => [...document.querySelectorAll('#flowList .row-title')].map(n => [n.closest('.row').dataset.open, n.textContent.trim(), n.scrollWidth > n.clientWidth + 1])""")
+            assert rows == [['my_long', long_name, True], ['my_short', '짧은 흐름', False]], rows
+            cut = page.locator("#flowList [data-open='my_long'] .row-title")
+            cut.hover()
+            assert cut.get_attribute('title') == long_name
+            whole = page.locator("#flowList [data-open='my_short'] .row-title")
+            whole.hover()
+            assert whole.get_attribute('title') is None
+            b.close()
+    finally:
+        served.close()

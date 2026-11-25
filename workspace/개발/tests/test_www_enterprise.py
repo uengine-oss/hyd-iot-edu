@@ -475,3 +475,61 @@ def test_같은_그래프는_서버가_준_차례가_달라도_늘_같은_자리
         assert len(b) == 8 and {k: v for k, v in a.items() if k in b} != b      # 데이터가 다르면 자리도 달라진다
     finally:
         reload(SMALL)
+
+
+# 문서에서 뽑은 절차 단계: id 는 문서 · 원문 해시가 이어진 250자, 이름은 원문 한 문장(실제 그래프의 PM-02 「시운전 확인」 단계와 같은 꼴)
+DOC_SID = 'manual:39989446-ba9c-4800-8be2-e2f3e798a29d:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a'
+DOC_ROOT = 'manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:39989446-ba9c-4800-8be2-e2f3e798a29d:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a'
+STEP_ID = DOC_ROOT + ':reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:1'
+STEP_NAME = '정비 뒤 부하 90 %로 15분 시운전해 토출 압력 PS1 178 bar 이상, 유량 FS1 8.8 l/min 이상, 팬 진동 VS1 1.2 mm/s 미만이 유지되면 정상이다.'
+MANUAL = {'nodes': SMALL['nodes'] + [
+    {'id': STEP_ID, 'label': 'Step', 'name': STEP_NAME, 'props': {'text': STEP_NAME, 'order': 1, 'source_id': DOC_SID,
+                                                                 'citation': json.dumps({'page': 1, 'quote': STEP_NAME, 'source_id': DOC_SID}, ensure_ascii=False)}},
+    {'id': DOC_ROOT + ':section:313cd9c0', 'label': 'ManualSection', 'name': '시운전 확인', 'props': {'source_id': DOC_SID}},
+    {'id': 'skill:sop-pm-2-9', 'label': 'Skill', 'name': '시운전 확인', 'props': {}},
+    {'id': 'ks:' + DOC_ROOT[:90], 'label': 'KnowledgeSource', 'name': 'PM-02_powerpack-pm-checklist.md', 'props': {'kind': 'manual', 'source_id': DOC_SID}}],
+    'edges': SMALL['edges'] + [{'from': 'skill:sop-pm-2-9', 'to': STEP_ID, 'type': 'HAS_STEP'}, {'from': STEP_ID, 'to': DOC_ROOT + ':section:313cd9c0', 'type': 'REFERS_TO'},
+                               {'from': DOC_ROOT + ':section:313cd9c0', 'to': 'ks:' + DOC_ROOT[:90], 'type': 'PART_OF'}]}
+
+
+def test_문서에서_뽑은_항목을_고르면_이름과_출처가_앞에_있고_해시_id는_한_줄로_줄며_캔버스_이름은_잘리지_않는다():
+    """2026-11-25 실제 브라우저 탐사(1366 × 768): 매뉴얼 절 · 절차 단계를 고르면 오른쪽 판의 이름 바로 아래에 250자 해시 id 가 일곱 줄로 펼쳐졌고,
+    캔버스 위 그 이름은 한 줄로 그려져 양 끝이 캔버스 밖으로 잘렸다.
+    지금: 판의 머리는 이름 → 출처 문서(그 항목의 source_id 와 같은 지식 출처의 이름) → ID 차례이고, ID 는 한 줄 조각으로 줄어 끝이 「…」이며 전체는 말풍선(누르면 복사)에 있다.
+    캔버스 위 고른 항목의 이름은 두 호 사이 폭 안에서 두 줄까지 쓰고 넘치면 끝을 말줄임하며, 그 점에 마우스를 올리면 전체 이름이 말풍선으로 나온다. 다른 이름과 겹치지 않는다."""
+    holder = {'graph': MANUAL}
+    gen = serve_onto(holder)
+    page = next(gen)
+    try:
+        tap(page, STEP_ID)
+        head = page.evaluate(r"""id => { const h = document.querySelector('#ontoNode .node-head'), idc = h.querySelector('.node-id .idc'), R = e => e.getBoundingClientRect();
+          const order = [...h.querySelectorAll('h2, .node-src, .node-id')].map(e => e.matches('h2') ? 'name' : e.matches('.node-src') ? 'src' : 'id');
+          const elsewhere = [...h.querySelectorAll('*')].filter(e => !(idc && (e === idc || idc.contains(e))) && [...e.childNodes].some(c => c.nodeType === 3 && c.textContent.includes(id.slice(0, 40))));
+          return { order, name: h.querySelector('h2').textContent, src: h.querySelector('.node-src')?.textContent.trim() || '', elsewhere: elsewhere.length,
+            idc: idc && { title: idc.title, cut: idc.scrollWidth > idc.clientWidth, ellipsis: getComputedStyle(idc).textOverflow, display: getComputedStyle(idc).display, height: R(idc).height, inside: R(idc).right <= R(h).right + 0.5 } }; }""", STEP_ID)
+        assert head['order'] == ['name', 'src', 'id'] and head['name'] == STEP_NAME, head
+        assert head['src'] == '출처 문서 PM-02_powerpack-pm-checklist.md', head['src']
+        assert head['elsewhere'] == 0 and head['idc'] and head['idc']['title'] == STEP_ID, head      # 해시 id 는 ID 조각 한 곳에만(전체는 그 말풍선)
+        # 한 줄로 줄고 끝이 「…」 — text-overflow 는 블록 상자의 글에만 그려진다(키트 조각의 inline-flex 는 말줄임 없이 자른다)
+        assert head['idc']['cut'] and head['idc']['ellipsis'] == 'ellipsis' and head['idc']['display'] in ('block', 'inline-block') and head['idc']['height'] <= 24 and head['idc']['inside'], head['idc']
+        # 캔버스: 고른 항목의 이름은 두 줄까지 · 끝이 말줄임 · 캔버스 안이고, 보이는 이름끼리 겹치지 않는다
+        pick = page.evaluate(r"""id => { const cy = hydEnt.kg.cy, n = cy.getElementById(id), b = n.renderedBoundingBox({ includeNodes: false, includeLabels: true, includeOverlays: false });
+          return { lines: n.style('label').split('\n'), x1: b.x1, x2: b.x2, w: cy.width() }; }""", STEP_ID)
+        assert 1 < len(pick['lines']) <= 2 and pick['lines'][-1].endswith('…') and STEP_NAME.startswith(pick['lines'][0]), pick
+        assert pick['x1'] >= 0 and pick['x2'] <= pick['w'], pick
+        got = page.evaluate(OVERLAP_JS)
+        assert not got['pairs'] and not got['covered'], got
+        # 잘린 이름의 점에 마우스를 올리면 전체 이름이 말풍선으로, 잘리지 않은 이름의 점에서는 말풍선이 없다
+        at = lambda nid: page.evaluate("id => { const p = hydEnt.kg.cy.getElementById(id).renderedPosition(), b = document.getElementById('ontoMap').getBoundingClientRect(); return [b.left + p.x, b.top + p.y]; }", nid)
+        page.mouse.move(*at(STEP_ID))
+        page.wait_for_timeout(200)
+        assert page.get_attribute('#ontoMap', 'title') == STEP_NAME
+        page.mouse.move(*at('skill:sop-pm-2-9'))
+        page.wait_for_timeout(200)
+        assert page.get_attribute('#ontoMap', 'title') == ''
+        # 출처를 모르는 항목(손으로 넣은 지식)에는 출처 줄이 없고 ID 는 그대로 조각이다
+        tap(page, STEP_ID)                                                      # 고른 것을 풀고(다시 누름) 다른 항목을 고른다
+        tap(page, 'fm:cool')
+        assert page.locator('#ontoNode .node-src').count() == 0 and page.inner_text('#ontoNode .node-id .idc').endswith('fm:cool')
+    finally:
+        gen.close()

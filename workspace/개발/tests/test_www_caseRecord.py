@@ -451,3 +451,18 @@ def test_일이_끝난_단계의_결과를_처리_흐름이_받는_사이에는_
     v['workitems'][1]['draft_status'] = 'FAILED'
     got = run(FILES, "out(hydRecord.build(DATA, { agents: [], people: [] }, []).steps.filter(s => s.key !== 'start' && s.sentence).map(s => s.sentence))", v)
     assert '결과 기록이 없습니다' in got[1] and '실행 실패' in got[1], got
+
+
+@pytest.mark.parametrize('state, expected', [
+    ('AWAITING_CLEAR', '원천 경보가 아직 켜져 있어 사건을 닫지 않고 해제를 기다립니다 (11. 25. 18:30까지) — 해제되면 종결하고, 그때까지 풀리지 않으면 책임자 확인으로 넘어갑니다'),
+    ('CLOSED', '원천 경보가 아직 켜져 있어 해제를 기다렸고, 뒤에 경보가 풀려 사건을 종결했습니다'),
+    ('ESCALATED', '원천 경보가 아직 켜져 있어 해제를 기다렸습니다 — 지금 사건: 책임자 확인'),
+], ids=['기다리는 중', '해제로 종결', '시한 지나 책임자 확인'])
+def test_정상_보고가_해제를_기다리게_한_사건은_보고가_닫았다고_하지_않고_그_뒤에_어떻게_됐는지를_지금_사건으로_말한다(state, expected):
+    """2026-11-25: 정상 결과 보고인데 원천 경보가 켜져 있으면 사건은 해제를 기다린다(machine.on_result_report). 화면이 「이 보고가 사건을 닫았습니다」라고 하면
+    학생은 보고만으로 고쳐졌다고 믿는다. 시각은 화면의 한국 시각이다(수업 PC 시간대 — 시험은 TZ 를 한국으로 둔다)."""
+    report = {'outcome': '정상', 'level': 'ok', 'incident_closed': False, 'incident_state': 'AWAITING_CLEAR'}
+    incident = {'state': state, 'clearDueAt': '2026-11-25T09:30:00.000Z', 'cleared': state == 'CLOSED'}
+    said = run(FILES, "out(hydResultReport.incidentMeaning(DATA.report, DATA.incident, {state: 'ok'}))", {'report': report, 'incident': incident})
+    assert said == expected, said
+    assert '이 보고가 사건을 닫았습니다' not in said

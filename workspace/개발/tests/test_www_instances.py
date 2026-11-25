@@ -248,6 +248,23 @@ def test_목록은_거르기_단추_없이_내가_할_일_진행_중_처리_완�
         assert page.locator("#instList .row[data-inst='q1']").get_attribute('aria-current') == 'true'
 
 
+def test_목록_줄에서_말줄임으로_잘린_이름과_보조_줄에_마우스를_올리면_전체_글이_말풍선으로_나온다():
+    """2026-11-25 실제 브라우저 탐사: 1366 · 1920 모두 상태 알약이 긴 줄의 이름이 「냉각 긴급 대응 HYD-…」로 잘렸는데 마우스를 올려도 전체 이름이 나오지 않았다.
+    잘린 글의 말풍선은 셸(shell.js) 한 곳이 단다 — 목록의 이름 · 보조 줄 가운데 잘린 것에만 달고, 다 보이는 것에는 달지 않는다."""
+    with _case_page(width=1366, height=768) as page:
+        cut = page.evaluate(r"""() => [...document.querySelectorAll('#instList .row-title, #instList .row-meta')].filter(n => n.scrollWidth > n.clientWidth + 1)
+          .map(n => [n.closest('.row').dataset.inst + (n.classList.contains('row-title') ? ':title' : ':meta'), n.textContent.replace(/\s+/g, ' ').trim()])""")
+        assert ['ai:title', ROWS[1]['proc_inst_name']] in cut, cut                  # 이름이 긴 진행 중인 건은 잘려 보인다
+        for key, text in cut:
+            pid, part = key.split(':')
+            node = page.locator(f"#instList .row[data-inst='{pid}'] .row-{part}").first
+            node.hover()
+            assert node.get_attribute('title') == text, (key, text)
+        whole = page.locator("#instList .row[data-inst='d1'] .row-title").first      # 다 보이는 짧은 이름에는 달지 않는다
+        whole.hover()
+        assert whole.inner_text() == '끝난 건 1' and whole.get_attribute('title') is None
+
+
 def test_다른_화면의_처리_건에서_보기로_온_시스템_작업은_접힌_묶음을_편_채로_그_건을_연다():
     """질문하기 · 문서 등록의 「처리 건에서 보기」는 주소 #/instances/<처리 건>으로 온다. 시스템 작업 묶음이 접혀 있어도 그 길은 그대로 그 건을 열고,
     고른 줄이 접힌 묶음 안에 숨지 않게 묶음이 펴진 채로 보인다."""

@@ -13,6 +13,7 @@
 - node 가 없으면 까닭을 내고 실패한다(건너뛰지 않는다).
 """
 import json
+import os
 import shutil
 import subprocess
 
@@ -41,8 +42,9 @@ def run(files, script, data=None, prelude=None):
     node = shutil.which('node')
     if not node:
         pytest.fail('node 가 없어 포털 화면 JS 를 돌리지 못했다 — 개발 PC에 Node.js 를 설치하고 PATH 에 둔다', pytrace=False)
+    # 화면의 시각은 브라우저 시간대로 적고 수업 PC 는 한국이다(hydcommon.timeutil.KOREA) — 시험도 한국 시간대로 돌려, 시험 PC 의 시간대가 판정을 바꾸지 않게 한다
     proc = subprocess.run([node, '-e', LOADER], input=json.dumps({'www': str(WWW), 'files': files, 'script': script, 'data': data, 'prelude': prelude}),
-                          capture_output=True, text=True, encoding='utf-8', timeout=60)
+                          capture_output=True, text=True, encoding='utf-8', timeout=60, env=dict(os.environ, TZ='Asia/Seoul'))
     if proc.returncode:
         pytest.fail(f'포털 JS 실행 실패({", ".join(files)}):\n{proc.stderr[-3000:]}', pytrace=False)
     return json.loads(proc.stdout)

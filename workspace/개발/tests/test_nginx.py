@@ -5,7 +5,6 @@ docker 가 없으면 까닭을 내고 실패한다. 끝나면 컨테이너 · �
 import json
 import os
 import shutil
-import socket
 import subprocess
 import time
 import urllib.error
@@ -14,7 +13,7 @@ import uuid
 
 import pytest
 
-from conftest import ROOT
+from conftest import ROOT, _free_port
 
 IMAGE, STUB_IMAGE = 'nginx:1.27-alpine', 'python:3.12-slim'
 # 서비스 대역: 받은 그대로의 경로(+쿼리) · 방식 · 본문 길이를 JSON 으로
@@ -39,12 +38,6 @@ def _docker(*args, check=True):
     if check and p.returncode:
         pytest.fail(f'docker {" ".join(args[:3])} 실패: {p.stderr[-800:]}', pytrace=False)
     return p.stdout.strip()
-
-
-def _free_port():
-    with socket.socket() as s:
-        s.bind(('127.0.0.1', 0))
-        return s.getsockname()[1]
 
 
 @pytest.fixture(scope='module')

@@ -505,3 +505,46 @@ def test_홈_그림의_값이_지나는_길을_누르면_시스템_구성이_열
     assert seen == {'cursor': 'pointer', 'text': '시스템 구성 →', 'shown': True, 'below': True, 'centered': True, 'underline': 'underline'}, seen
     link.locator('.m-bus rect').click()
     assert page.evaluate('() => state.tab') == 'home'
+
+
+# 홈 그림(main.js · plant.css 홈 구획)의 글자 · 알약 · 원의 화면 상자. 글자의 화면 크기 = 계산된 글자 크기(그림 단위) × 그림이 화면에 그려진 배율(getScreenCTM)
+HERO_GEO = r"""() => { const svg = document.querySelector('#mainHero svg'), k = svg.getScreenCTM().a, R = e => e.getBoundingClientRect(), box = e => { const b = R(e); return [b.left, b.top, b.right, b.bottom]; };
+  const hit = (a, b) => a[0] < b[2] - 0.5 && b[0] < a[2] - 0.5 && a[1] < b[3] - 0.5 && b[1] < a[3] - 0.5, group = e => e.closest('g.m-node, g.m-agent, g.m-sensor');
+  const texts = [...svg.querySelectorAll('text')].filter(t => t.textContent.trim() && R(t).width > 0);
+  const lines = texts.flatMap(t => t.querySelector('tspan') ? [...t.querySelectorAll('tspan')] : [t]);      // 두 줄로 넘긴 글은 줄마다
+  const shapes = [...svg.querySelectorAll('.m-node rect, .m-agent circle:not(.m-halo), .m-sensor circle')];
+  const name = e => e.textContent.trim().slice(0, 16), s = R(svg), hero = document.querySelector('#mainHero');
+  const pairs = (list, f) => list.flatMap((a, i) => list.slice(i + 1).filter(b => f(a, b)).map(b => [name(a), name(b)]));
+  return { small: texts.map(t => [name(t), +(parseFloat(getComputedStyle(t).fontSize) * k).toFixed(1)]).filter(x => x[1] < 11),
+    textHit: pairs(lines, (a, b) => hit(box(a), box(b))), shapeHit: pairs(shapes, (a, b) => hit(box(a), box(b))),
+    onOther: lines.flatMap(t => shapes.filter(sh => group(sh) !== group(t) && hit(box(t), box(sh))).map(sh => [name(t), name(group(sh) || sh)])),
+    out: lines.filter(t => { const b = R(t); return b.left < s.left - 0.5 || b.right > s.right + 0.5 || b.top < s.top - 0.5 || b.bottom > s.bottom + 0.5; }).map(name),
+    live: [...document.querySelectorAll('#mLive tspan')].map(t => t.textContent), scrollX: hero.scrollWidth - hero.clientWidth,
+    cardsTop: R(document.querySelector('#mainStages')).top, n: texts.length }; }"""
+
+
+def test_홈_그림의_글자는_1366_창에서_11px_이상이고_서로_겹치거나_그림_밖으로_잘리지_않는다(portal):
+    """2026-11-25 실제 브라우저 탐사: 1366 × 768 에서 그림이 창 높이에 맞춰 0.62배로 줄어 그림 글자 54개 중 53개가 11px 미만이었다(센서 이름 약 7px).
+    그림은 0.8배 아래로 줄지 않고 글자는 그림 단위 14 이상이다 — 그 창 크기들에서 모든 글자가 11px 이상이고, 글자끼리 · 알약 · 원끼리 겹치지 않으며, 글자가 다른 항목의 알약 · 원 위에
+    놓이지 않고, 그림 밖으로 잘리지 않으며, 1366 폭에서는 그림을 옆으로 끌 일이 없고 단계 카드가 첫 화면에 걸린다.
+    설비 세 대가 모두 보호 정지 · 원격 수동이라 실시간 값 줄이 길어져도 왼쪽 영역을 넘지 않고 다음 줄로 넘어가 가운데 줄의 「시스템 구성 →」에 겹치지 않는다."""
+    page = portal
+    tags = {'TS1': 66.0, 'TS3': 39.0, 'CE': 60.0, 'PS1': 182.0, 'FS1': 9.0, 'VS1': 0.58, 'EPS1': 2.9, 'FanSpeedSP': 60.0, 'LoadSP': 90.0}
+    units = {'HYD-01': {'tags': tags, 'status': {'mode': 'REMOTE_MANUAL', 'state': 'TRIP'}}, 'HYD-02': {'tags': tags, 'status': {'mode': 'LOCAL', 'state': 'RUN'}},
+             'HYD-03': {'tags': tags, 'status': {'mode': 'REMOTE_MANUAL', 'state': 'RUN'}}}
+    page.route('**/svc/plant-sim/api/state', lambda route: route.fulfill(json={'time_scale': 20, 'units': units}))
+    try:
+        for size in ({'width': 1366, 'height': 768}, {'width': 1280, 'height': 720}, {'width': 1920, 'height': 1080}):
+            page.set_viewport_size(size)
+            page.evaluate("() => { selectTab('main'); scrollTo(0, 0); }")
+            page.wait_for_function("() => document.querySelector('#mLive').textContent.includes('보호 정지')", timeout=15000)      # 시험이 준 실시간 값을 받아 그린 뒤
+            page.wait_for_timeout(300)
+            got = page.evaluate(HERO_GEO)
+            assert got['n'] >= 54 and not got['small'], (size, got['small'])
+            assert not got['textHit'] and not got['shapeHit'] and not got['onOther'] and not got['out'], (size, got)
+            assert len(got['live']) == 2 and got['live'][0].startswith('실시간 유온') and got['live'][1].startswith('HYD-'), got['live']      # 넘친 값은 다음 줄로
+            if size['width'] == 1366:
+                assert got['scrollX'] <= 0 and got['cardsTop'] < size['height'] - 60, got      # 옆으로 끌 일이 없고, 단계 카드의 이름 · 값이 첫 화면에 걸린다
+    finally:
+        page.unroute('**/svc/plant-sim/api/state')
+        page.set_viewport_size({'width': 1366, 'height': 768})
