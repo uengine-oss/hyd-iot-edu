@@ -156,6 +156,14 @@ export async function palette(p, name, file = false) {
  await focused('quick', 'F1 명령 ' + name); await p.keyboard.press('Enter'); await p.waitForTimeout(1500);
 }
 
+// 오른쪽 칸의 탭 「Chat | Codex」 가운데 Codex를 앞에 둔다(학생 화면처럼 두 탭이 다 있고, 새 프로필은 Chat이 앞에 있다). Codex 탭이 없으면 멈춘다.
+export async function showCodex(p) {
+ const tab = () => p.evaluate(() => { const e = [...document.querySelectorAll('.part.auxiliarybar .composite-bar .action-item')].find(x => (x.querySelector('.action-label')?.getAttribute('aria-label') || x.textContent || '').trim().startsWith('Codex')); if (!e) return null; const b = e.getBoundingClientRect(); return {x: b.x + b.width / 2, y: b.y + b.height / 2, on: e.classList.contains('checked')}; });
+ let t = null; for (let k = 0; k < 20 && !(t = await tab()); k++) await p.waitForTimeout(1000);
+ if (!t) throw Error('오른쪽 칸에 Codex 탭이 없음 — 확장과 폴더 신뢰를 본다(촬영준비 길 2 · 3) (segs/lab-common.mjs showCodex)');
+ if (!t.on) { await p.mouse.click(t.x, t.y); await p.waitForTimeout(4000); if (!(await tab())?.on) throw Error('Codex 탭이 앞에 오지 않음 (segs/lab-common.mjs showCodex)'); }
+}
+
 // 폴더 신뢰(촬영준비 길 3): 상태 표시줄에 Restricted Mode가 있으면 Workspace Trust 편집기의 Trust 단추를 좌표로 누르고, 그 표시가 사라진 뒤 창을 새로 고친다. 이미 신뢰한 폴더면 아무것도 하지 않는다.
 // 그 폴더에 지난 터미널이 살아 있으면 웹 VS Code가 그것을 되살리려고 「Do you trust the authors of the files in this folder?」 창을 편집기 위에 늦게 띄운다.
 // 그 창이 떠 있는 동안에는 편집기의 Trust 단추가 눌리지 않으므로, 떠 있으면 그 창의 「Trust Folder & Continue」를 누른다(같은 신뢰다).
@@ -250,8 +258,7 @@ export async function resetLab(key, {restore = [], top = [], reload = false} = {
  await p.mouse.click(r.x, r.y); await focused('explorer', 'README 열기'); await p.keyboard.press('Enter'); await p.waitForTimeout(1500);
  await p.mouse.click(r.x + 600, 500); await focused('editor', 'README 맨 위로'); await p.keyboard.press('Control+Home');
  }
- const cx = await p.evaluate(() => { const e = [...document.querySelectorAll('.part.auxiliarybar .composite-bar .action-label')].find(x => (x.getAttribute('aria-label') || '').startsWith('Codex')); if (!e) return null; const b = e.getBoundingClientRect(); return {x: b.x + b.width / 2, y: b.y + b.height / 2}; });
- if (cx) { await p.mouse.click(cx.x, cx.y); await p.waitForTimeout(4000); }
+ await showCodex(p);
  // 빈 입력칸에서 Enter가 눌리면 Codex가 「Unable to send message」 상자를 띄운다(요청은 나가지 않는다) — 있으면 OK로 닫는다.
  for (let k = 0; (await p.text()).includes('Unable to send message'); k++) {   // 웹뷰가 자리 잡기 전에는 단추 크기가 0이라 누를 수 없다 — 잠시 뒤 다시
   if (k >= 10) throw Error('Codex 「Unable to send message」 상자를 닫지 못함');
