@@ -129,7 +129,7 @@ def constraint_view(folder):
     return {row[0]: row for row in table['rows']}, blocks
 
 
-def constraint_trials(folder, graph):
+def constraint_trials(folder, graph, empty='실행할 쿼리가 없습니다', convert=P.convert):
     """유일 제약 걸음(빈 랩 DB에서) — 빈 틀 · 제약이 아닌 쿼리는 멈추고, 건 종류만 DB가 거절하며, 시험이 데이터를 남기지 않고, 다시 걸어도 되고,
     제약이 걸린 뒤 CREATE로 넣는 쿼리는 두 번째 실행에서 DB가 거절한다."""
     out = []
@@ -140,8 +140,8 @@ def constraint_trials(folder, graph):
     assert sorted({n['labels'][0] for n in graph['nodes']}) == labels, '제공 모델의 종류와 인스턴스의 레이블이 다름'
     count = lambda: http(folder, 'MATCH (n) RETURN count(n)')[0][0]
     constraints = lambda: http(folder, 'SHOW CONSTRAINTS YIELD name RETURN count(*)')[0][0]
-    path.write_text(P.convert(A.CONSTRAINT_BLANK), encoding='utf-8', newline='\n')
-    assert '실행할 쿼리가 없습니다' in command(folder, 'run.py', 'constraints', '--no-open', ok=False)
+    path.write_text(convert(A.CONSTRAINT_BLANK), encoding='utf-8', newline='\n')
+    assert empty in command(folder, 'run.py', 'constraints', '--no-open', ok=False)
     path.write_text(answer + "CREATE (:Asset {id: 'X'});\n", encoding='utf-8', newline='\n')
     stopped = command(folder, 'run.py', 'constraints', '--no-open', ok=False)
     assert f'constraints.cypher:{len(labels) + 2}: 이 파일에는 제약을 거는 쿼리' in stopped, stopped[-400:]

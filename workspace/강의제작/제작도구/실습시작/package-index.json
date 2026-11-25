@@ -41,15 +41,16 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기",
-      "version": "v26-practical",
+      "version": "v27-practical",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "8029d7bc2bd7a9f06ddd417feba80010870e21238d5ea703fed6cf95253eee44",
+      "sha256": "95a4b0ed73c539e415eab4d8e6dd0114a29732bced2431afe319e9ca297f8ba8",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
         "Codex와 모델 파악하기",
         "질문과 기대 답 정하기",
+        "식별자에 유일 제약 걸기",
         "모델 적재하기",
         "사용 설비와 공급 조건 조회하기",
         "다른 표기와 없는 품번 구별하기",
@@ -58,7 +59,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/graph-lab_guide.html",
-        "sha256": "c4b95dcc24c2b3e2c654818568ec252f244fb3ea8764fa319951799b99b098ae"
+        "sha256": "f8626acd35499e9cd6f4db8b937dae295e658b0249ddf9ef3961b1320d008776"
       }
     },
     {
@@ -66,10 +67,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "설비·부품·공급 정보를 연결하는 온톨로지 설계하기",
-      "version": "v26-practical",
+      "version": "v27-practical",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "a234b2682e72ef4c1d84394de995dbd40b52ac0ae46783fc6e5529020eeb695b",
+      "sha256": "96e973fa213352c44a33d8bb935eb7cc64e480aaf30eab31eb11951b79487975",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -82,7 +83,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "bf96fdf2c2dea9bd68879ca2236c24201bd2489c50a22971ee7eabdab73b0a98"
+        "sha256": "0ef17791a9f33a4cd8ed58dbe31849b2f700ebd355aab432e239019a868b3765"
       }
     },
     {

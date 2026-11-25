@@ -74,7 +74,8 @@ def need_decided(points):
 
 
 def run_check():
-    p = subprocess.run([sys.executable, '-m', 'app.utils.check'], cwd=HERE, capture_output=True, text=True, encoding='utf-8', errors='replace')
+    # 검사는 UTF-8 모드(-X utf8)로 띄워 그 출력을 UTF-8로 읽는다 — 한국어 Windows의 파이썬은 파이프에 cp949로 써서 결과 화면의 한글이 깨진다
+    p = subprocess.run([sys.executable, '-X', 'utf8', '-m', 'app.utils.check'], cwd=HERE, capture_output=True, text=True, encoding='utf-8')
     text = (p.stdout + p.stderr).strip()
     return [R.note('python run.py check\n' + text)] if p.returncode == 0 else [R.error('python run.py check — 구조 확인 필요', text)]
 
@@ -112,6 +113,47 @@ def start(previous):
     return [R.table(f'모델 파일({R.rel(path)})과 지금 랩 DB의 개수', ['항목', '모델 파일', '랩 DB'], rows),
             R.note('처음 켠 랩 DB는 비어 있습니다(0). 적재한 뒤에는 두 칸이 같아야 합니다.' if not any(have.values()) else
                    '이 폴더의 랩 DB에 전에 넣은 대상이 남아 있습니다 — 랩 DB 칸이 지금 개수입니다. 모델 파일 칸과 다르면 적재나 수정이 반영된 것인지 봅니다.')]
+
+
+def constraints(previous):
+    """유일 제약 걸기 — 학생의 제약 쿼리를 실행하고, 지금 쓰는 모델의 종류마다 식별자(id)에 유일 제약이 걸렸는지와 같은 식별자로 노드를 두 번 만들 때 DB가 하는 답을 보인다.
+    시험한 노드는 받아 주든 거절하든 되돌린다(랩 DB의 개수가 전후로 같지 않으면 멈춘다)."""
+    path = HERE / 'app/features/constraints.cypher'
+    model_path, graph = C.model_graph()
+    labels = sorted(json.loads(model_path.with_name('schema.json').read_text(encoding='utf-8-sig'))['classes'])
+    first = {}
+    for n in graph['nodes']:
+        first.setdefault(n['labels'][0], n['props'].get('id'))
+    before = db(C.counts)
+    try:
+        done = C.constraints_file(path)
+    except C.LabDbOff as e:
+        raise R.Stop(str(e))
+    except RuntimeError as e:
+        twice = db(C.duplicates, labels)
+        if twice:
+            raise R.Stop(f'{e}\n랩 DB에 같은 식별자의 노드가 이미 겹쳐 있어 유일 제약을 걸 수 없습니다 — ' + ' / '.join(f'{l} 「{v}」 {c}개' for l, v, c in twice)
+                         + '. 겹친 노드를 하나만 남긴 뒤 다시 실행합니다.')
+        raise R.Stop(str(e))
+    have = db(C.constraints)
+    unique = {labels_[0]: name for name, kind, entity, labels_, props in have
+              if entity == 'NODE' and ('UNIQUE' in kind or kind == 'NODE_KEY') and len(labels_) == 1 and props == ['id']}
+    rows = []
+    for label in labels:
+        if label not in first:
+            answer = '모델에 이 종류의 인스턴스가 없어 시험하지 않음'
+        else:
+            said = db(C.try_create_twice, label, first[label])
+            answer = '거절 — ' + said if said else '받아 줌 — 같은 식별자의 노드가 둘 생깁니다'
+        rows.append((label, 'id', unique.get(label, '없음'), first.get(label, ''), answer))
+    after = db(C.counts)
+    if after != before:
+        raise RuntimeError(f'유일 제약 시험이 랩 DB의 개수를 바꿨습니다: {before} → {after}')
+    return [R.table('제약 쿼리마다 DB가 한 일', ['쿼리', '새로 건 제약'], [(R.rel(path) + f':{line}', res.get('stats', {}).get('constraints_added', 0) or '0(이미 걸려 있음)') for line, res in done]),
+            R.table('랩 DB에 걸려 있는 제약(SHOW CONSTRAINTS)', ['이름', '제약 종류', '레이블', '속성'], [(name, kind, ' · '.join(labels_), ' · '.join(props)) for name, kind, entity, labels_, props in have]),
+            R.table('종류마다 — 식별자의 유일 제약과, 같은 식별자로 노드를 두 번 만들 때 DB의 답', ['종류', '식별자', '유일 제약', '시험한 식별자', 'DB의 답'], rows,
+                    note='모델의 종류(레이블)마다 그 종류의 식별자 하나로 CREATE를 두 번 실행해 본 실제 결과입니다. 유일 제약이 걸린 종류는 DB가 거절하고, 「없음」인 종류는 받아 줍니다. '
+                         f'시험한 노드는 모두 되돌려 랩 DB에 남기지 않았습니다(노드 {before["노드"]}개 그대로).')]
 
 
 def load_once():
@@ -241,6 +283,7 @@ COMMANDS = {
     'db': ('랩 DB 준비', prepare),
     'status': ('모델과 DB 개수', start),
     'expected': ('기대 답', expected),
+    'constraints': ('유일 제약 걸기', constraints),
     'load': ('모델 적재', load),
     'repeat': ('같은 적재 다시 실행', again),
     'usage': ('사용 설비와 공급 조건', q1),

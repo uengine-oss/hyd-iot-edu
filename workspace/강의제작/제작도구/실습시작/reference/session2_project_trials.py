@@ -40,10 +40,12 @@ ACTIONS = ['sources', 'expected', 'design', 'names', 'quantities', 'parts', 'que
 STUDENT = {'PYTHONUTF8': '0', 'PYTHONIOENCODING': 'cp949', 'PYTHONWARNDEFAULTENCODING': '1', 'PYTHONDONTWRITEBYTECODE': '1'}
 
 
-def command(folder, *args, ok=True):
+def command(folder, *args, ok=True, student=True):
     """랩 명령 하나를 학생 조건(STUDENT)으로 돌린다. 2회차 강사 참조 시험(두 반)의 모든 실행이 이 함수를 거친다.
-    출력이 UTF-8이 아니거나, 글자표 오류로 멈추거나, 글자표를 적지 않은 입출력이 있으면 실패다."""
-    result = subprocess.run([sys.executable, *args], cwd=folder, capture_output=True, env=os.environ | STUDENT)
+    출력이 UTF-8이 아니거나, 글자표 오류로 멈추거나, 글자표를 적지 않은 입출력이 있으면 실패다.
+    student=False는 학생 랩이 아닌 계산(옛 판과 대조하려고 강사 코드로 다시 만드는 모델)에만 쓴다 — 그 실행은 이 PC의 UTF-8 모드로 돈다."""
+    result = subprocess.run([sys.executable, *args], cwd=folder, capture_output=True,
+                            env=os.environ | (STUDENT if student else {'PYTHONUTF8': '1', 'PYTHONDONTWRITEBYTECODE': '1'}))
     raw = result.stdout + result.stderr
     try:
         output = raw.decode('utf-8')

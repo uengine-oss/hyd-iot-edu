@@ -9,7 +9,7 @@
 - 실제 실행한 명령·결과·변경 파일을 보고한다. 실행하지 않은 것을 성공했다고 말하지 않는다.
 - 키와 비밀번호를 코드·결과·기록에 적지 않는다. 열어 둔 프로젝트 폴더 밖의 파일은 읽지 않는다.
 
-- 이 실습에서 구현하는 파일은 `app/features/load.cypher`와 `app/features/query.cypher`이고, 학생 기록은 `app/features/review.md`·`expected.csv`·`decisions.csv`다.
+- 이 실습에서 구현하는 파일은 `app/features/constraints.cypher` · `app/features/load.cypher` · `app/features/query.cypher`이고, 학생 기록은 `app/features/review.md`·`expected.csv`·`decisions.csv`다.
 - 실행 결과와 내보낸 그래프는 `output/`에 생긴다. 자기 모델을 쓰면 `app/features/model/`에 schema.json과 graph.json을 함께 둔다.
 - `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). 학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.
 - 한 번에 요청받은 기능 파일 하나만 고친 뒤 멈춘다. 랩 DB를 쓰는 명령(`python run.py` 기능)은 학생이 자기 터미널에서 실행하고, AI는 학생이 붙여 준 터미널 출력과 결과 화면으로 확인한다. AI가 그 명령을 직접 실행하지 않는다.

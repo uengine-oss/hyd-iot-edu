@@ -29,7 +29,7 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩'
-VERSION = 'v26-practical'   # 2026-11-17: 독립 검토 고칠목록(가이드 문장, 요령 까닭은 lab_frame 한 곳) — 작업 2026-11-17_코딩랩-원리중심-학생결정자. 그 앞: v25 학생은 AI로 자료를 파악하고 추천안을 따져 결정(코딩랩 K-3 · AI 경계 · 가이드 문장). 그 앞: 2026-11-12: 공용 원자료 보강(친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거 · 제작 사실 걷기), 제공 모델 카디널리티 표기 · 검사기 카디널리티 검사 · 대조 단추 글자 — 작업 판정/보강_20261112
+VERSION = 'v27-practical'   # 2026-11-25(사용자 「결함 근본을 수정하셈」 · 「하는김에 실전반도」): 통합반 v51 · v54와 같은 두 고침만 — 출력 글자표(run.py · check.py는 lab_frame.UTF8_OUT, 구조 검사 자식은 -X utf8 — 통합02 공용 원본에서 받는다), 그래프 랩의 유일 제약 걸음(가이드 05단계 · 빈 틀 constraints.cypher · python run.py constraints). 과제 · 자료 · 결정 지점 · 가이드의 다른 글은 v26과 같다. 그 앞 v26 2026-11-17: 독립 검토 고칠목록(가이드 문장, 요령 까닭은 lab_frame 한 곳) — 작업 2026-11-17_코딩랩-원리중심-학생결정자. 그 앞: v25 학생은 AI로 자료를 파악하고 추천안을 따져 결정(코딩랩 K-3 · AI 경계 · 가이드 문장). 그 앞: 2026-11-12: 공용 원자료 보강(친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거 · 제작 사실 걷기), 제공 모델 카디널리티 표기 · 검사기 카디널리티 검사 · 대조 단추 글자 — 작업 판정/보강_20261112
 WORK = ROOT / '작업/검사/practical2-projects'
 PR07 = 'purchasing_standard_pr07.md'
 LABS = {'ontology': 'ontology-lab', 'graph': 'graph-lab'}
@@ -234,6 +234,13 @@ def graph():
             prompt=('지금 대화에서 내가 정한 질문 · 자료 · 기준일 · 지킬 조건을 `review.md`에, 내가 받아들인 기대 답을 근거 줄과 함께 `expected.csv`에, '
                     '쓰는 사람에 따라 갈리는 답에서 내가 고른 것과 이유, 내가 열어 본 근거 줄을 `decisions.csv`에 적어 줘. 볼_열은 비워 두고, 내가 정하지 않은 것은 먼저 물어봐.'),
             cmd='python run.py expected', check='화면에 내가 적은 입력·기대 답·근거가 보입니다. 이 답으로 조회 결과를 대조합니다.', ai=True),
+        section('식별자에 유일 제약 걸기', [
+            '모델을 넣기 전에 식별자마다 **유일 제약**을 겁니다. 유일 제약은 값이 겹치는 것을 저장할 때 DB가 막는 DB 제약 조건으로, 걸어 두면 누가 어떤 쿼리로 넣든 같은 식별자의 노드가 둘 생기지 않습니다. '
+            '이론에서 본 대로 CREATE로 넣는 쿼리는 유일 제약이 걸린 뒤 두 번째 실행에서 DB가 거절해 오류로 멈추고, MERGE는 있으면 찾아 쓰므로 멈추지 않습니다. 그래서 식별자에 유일 제약을 걸고 넣을 때는 MERGE를 씁니다.',
+            '어느 값이 겹치면 안 되는지 Codex와 확인한 뒤, 종류(레이블)마다 식별자에 유일 제약을 거는 쿼리를 `app/features/constraints.cypher`에만 작성하도록 요청합니다. 쿼리 한 줄이 무엇을 하는지 풀어 달라고 하고 내 말로 한 문장으로 말해 봅니다. '
+            '아래 명령은 내 터미널에서 실행합니다. 제공 도구가 쿼리를 실행한 뒤, 종류마다 같은 식별자로 노드를 두 번 만들어 보고 DB의 답을 보여 줍니다(시험한 노드는 남기지 않습니다).'],
+            prompt='`data/model/schema.json`의 종류(레이블)마다 식별자 `id`에 유일 제약을 거는 쿼리를 `constraints.cypher`에 작성해 줘. 다시 실행해도 오류가 나지 않게 IF NOT EXISTS를 쓰고 쿼리 끝에 ;를 붙여 줘. 데이터를 넣는 쿼리와 다른 파일은 아직 작성하지 마. 작성한 뒤 쿼리 한 줄이 무엇을 하는지 풀어 줘.',
+            cmd='python run.py constraints', check='「종류마다」 표에서 종류마다 유일 제약의 이름이 보이고 DB의 답이 모두 「거절」인지 봅니다. 「없음」 · 「받아 줌」인 종류가 있으면 그 종류의 쿼리가 빠진 것입니다.', ai=True),
         section('모델 적재하기', [
             '이론에서 본 대로 스키마의 종류(클래스) 이름은 그래프의 레이블이 되고, 대상 하나(인스턴스)는 노드, 관계 정의의 시작·끝은 관계의 방향이 됩니다. CREATE는 실행할 때마다 새로 만들고, MERGE는 같은 것이 있으면 찾고 없으면 만듭니다. '
             '그래서 다시 적재해도 늘지 않으려면 같은 대상을 무엇으로 알아볼지(MERGE의 열쇠) 먼저 Codex와 정합니다.',
@@ -257,7 +264,8 @@ def graph():
             '`review.md`에 기준일·저장 시점·확인하지 못한 점을 짧게 남깁니다. 실습 폴더 전체를 USB나 개인 클라우드에 보관합니다. 계정 없이 결과를 실행할 때는 클래스룸의 별도 `graph-lab-completed.zip`을 사용합니다.'],
             cmd='python run.py db',
             check='같은 폴더의 랩 DB가 열렸는지 봅니다. 새로 만든 랩 DB라 비어 있다는 안내가 나오면 바로 아래 접힌 안내의 적재를 먼저 실행합니다.',
-            when_new=[('python run.py load', '새 랩 DB에 넣은 개수가 사용한 모델과 같은지 봅니다.')],
+            when_new=[('python run.py constraints', '새 랩 DB에 종류마다 유일 제약이 다시 걸렸는지 봅니다.'),
+                      ('python run.py load', '새 랩 DB에 넣은 개수가 사용한 모델과 같은지 봅니다.')],
             followup=[('python run.py usage', 'F5를 눌러 조회 결과가 유지되는지 봅니다.'),
                       ('python run.py aliases', '다른 표기와 없는 품번의 결과도 유지되는지 봅니다.'),
                       ('python run.py export', '`output/schema.json`과 `graph.json`에 저장한 개수를 확인합니다.'),
@@ -267,7 +275,7 @@ def graph():
 # ───────────── 프로젝트 ─────────────
 ONTOLOGY_RULES = ('- 이 실습에서 구현하는 파일은 `app/features/quote_rule.py`와 `app/features/approval_rule.py`이고, 학생 기록은 `app/features/requirements.md`·`expected.csv`·`decisions.csv`다.' + NL +
                   '- 모델은 `python run.py approval`이 `output/schema.json`·`output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.')
-GRAPH_RULES = ('- 이 실습에서 구현하는 파일은 `app/features/load.cypher`와 `app/features/query.cypher`이고, 학생 기록은 `app/features/review.md`·`expected.csv`·`decisions.csv`다.' + NL +
+GRAPH_RULES = ('- 이 실습에서 구현하는 파일은 `app/features/constraints.cypher` · `app/features/load.cypher` · `app/features/query.cypher`이고, 학생 기록은 `app/features/review.md`·`expected.csv`·`decisions.csv`다.' + NL +
                '- 실행 결과와 내보낸 그래프는 `output/`에 생긴다. 자기 모델을 쓰면 `app/features/model/`에 schema.json과 graph.json을 함께 둔다.')
 ONTOLOGY_EXPECT = [('질문 2는 사내 품번/공급사.', '질문 2는 사내 품번/공급사(공급사는 approved_suppliers.csv의 이름), 원자료에 없는 품번은 비움.'),
                    ('「승인 여부 · 단가(만원) · 불량률(0~1) · 납기(일)」', '「승인 또는 비승인 · 단가(만원 숫자) · 불량률(0~1 소수) · 납기(일 수)」'),
@@ -406,6 +414,8 @@ def build_graph(folder):
             if name == '결과/기대_답.csv':
                 text = replace_all(text, [(EXPECT_OLD, EXPECT_NEW)] + GRAPH_EXPECT)
             write(folder / convert(name), convert(text).replace('python show_result.py가 실행', 'python run.py load가 실행'))
+    import session2_answers as A
+    write(folder / convert(A.CONSTRAINT_FILE), convert(A.CONSTRAINT_BLANK))   # 유일 제약 걸음의 빈 틀(두 반 공용)
     write(folder / 'app/features/review.md', GRAPH_REVIEW)
     utilities, ui = S2.result_sources()
     write(folder / 'app/utils/results.py', utilities)
@@ -416,7 +426,7 @@ def build_graph(folder):
     extra = GP.EXTRA_ACTIONS.split('\nCOMMANDS = {', 1)[0]
     actions += extra + commands_source({
         'sources': ('원자료와 모델', 'sources'), 'db': ('랩 DB 준비', 'prepare'), 'status': ('모델과 DB 개수', 'start'),
-        'expected': ('기대 답', 'expected'), 'load': ('모델 적재', 'load'), 'repeat': ('같은 적재 다시 실행', 'again'),
+        'expected': ('기대 답', 'expected'), 'constraints': ('유일 제약 걸기', 'constraints'), 'load': ('모델 적재', 'load'), 'repeat': ('같은 적재 다시 실행', 'again'),
         'usage': ('사용 설비와 공급 조건', 'q1'), 'aliases': ('다른 표기와 없는 품번', 'q2'),
         'export': ('그래프 저장', 'export'), 'check': ('구조 검사', 'check')})
     write(folder / 'app/utils/actions.py', convert(actions))
@@ -469,9 +479,10 @@ def fill_graph(folder, branch='ㄴ'):
     """정답 토글 기본 갈래(build_labs.default_graph_branch) — 조회 갈래 ㄴ은 7.4 정보를 함께, ㄱ은 네 값만."""
     import session2_answers as A
     graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
+    schema = json.loads((folder / 'data/model/schema.json').read_text(encoding='utf-8'))
     expected = replace_all(B.graph_expect_text(B.graph_expect_rows('실전반', graph), '실전반'), [(EXPECT_OLD, EXPECT_NEW)] + GRAPH_EXPECT)
     load = replace_all(A.load_answer(graph), [('(ON CREATE SET — 다시 적재해도 수정본이 고친 값을 되돌리지 않음)', '(ON CREATE SET — 처음 만들 때만 넣음)')])
-    put(folder, {'결과/load.cypher': load,
+    put(folder, {A.CONSTRAINT_FILE: A.constraint_answer(schema), '결과/load.cypher': load,
                  '결과/query.cypher': A.query_text([A.QUERY_PRACTICAL[1][branch], A.QUERY_PRACTICAL[2]]),
                  '결과/정한_것.csv': B.chosen_text([B.graph_chosen('실전반')[branch]]),
                  '결과/기대_답.csv': expected})
@@ -535,8 +546,8 @@ def completed(starter, destination, work):
     else:
         from reference.session2_graph_trials import instance
         fill_graph(folder)
-        title, initial = B.graph_lab('실전반')['title'], 'python run.py db\npython run.py load\npython run.py usage'
-        context, actions = instance(folder), ('load', 'repeat', 'usage', 'aliases', 'export', 'check', 'usage')
+        title, initial = B.graph_lab('실전반')['title'], 'python run.py db\npython run.py constraints\npython run.py load\npython run.py usage'
+        context, actions = instance(folder), ('constraints', 'load', 'repeat', 'usage', 'aliases', 'export', 'check', 'usage')
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단 기준 한 가지를 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial,

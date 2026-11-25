@@ -23,8 +23,8 @@ import data_session2 as D                  # noqa: E402
 import session2_answers as A               # noqa: E402
 import verify_reference as V               # noqa: E402
 from lab_package import ROOT               # noqa: E402
-from reference.session2_project_trials import command   # noqa: E402
-from reference.session2_graph_trials import docker, instance, normalized   # noqa: E402
+from reference.session2_project_trials import command, student_condition_selftest   # noqa: E402
+from reference.session2_graph_trials import docker, instance, normalized, constraint_trials, legacy_db_trials   # noqa: E402
 import reference.session2_check_trials as CT   # noqa: E402
 
 BACK = {'supply_terms.csv': D.QUOTE_FILE, 'approved_suppliers.csv': D.AVL_FILE, BP.PR07: D.PR07_FILE}
@@ -94,7 +94,7 @@ def ontology(starter, graph_starter, work, logs):
         BP.put(new, files)
         for name, text in files.items():
             B.write(legacy / name, text)
-        command(legacy, '-c', "import supply_tool as M; M.write_model(M.pairs('승인')[0])")
+        command(legacy, '-c', "import supply_tool as M; M.write_model(M.pairs('승인')[0])", student=False)   # 옛 판 대조용 계산 — 학생 랩이 아니다
         actions = (['sources', 'expected', 'quotes', 'approval', 'query', 'check'] if branch == 'ㄴ' else
                    ['quotes', 'approval', 'check'] if branch in B.QUOTE_BRANCH else ['approval', 'check'])
         for action in actions:
@@ -241,6 +241,8 @@ def graph(starter, work, logs):
         assert '실행할 문장이 없습니다' in empty
         BP.fill_graph(folder, branch)
         with instance(folder) as state:
+            # 유일 제약 걸음: 갈래 ㄴ은 빈 랩 DB에서(빈 틀 · 제약 아닌 쿼리 · 한 종류 빠짐 · CREATE로 다시 넣기), 갈래 ㄱ은 제약 없이 먼저 넣은 랩 DB에서
+            records += (constraint_trials(folder, model, empty='실행할 문장이 없습니다', convert=BP.convert) if branch == 'ㄴ' else legacy_db_trials(folder, model))
             logs[f'graph-{branch}-load'], _ = blocks(folder, 'load')
             blocks(folder, 'export')
             initial = json.loads((folder / 'output/graph.json').read_text(encoding='utf-8'))
@@ -350,6 +352,7 @@ def new_db(folder, state, initial, logs):
     _, status = blocks(folder, 'status')
     table = next(b for b in status if b['kind'] == 'table')
     assert all(row[2] == 0 for row in table['rows']), table['rows'][:3]
+    blocks(folder, 'constraints')
     blocks(folder, 'load')
     blocks(folder, 'export')
     assert normalized(json.loads((folder / 'output/graph.json').read_text(encoding='utf-8'))) == normalized(initial)
@@ -385,7 +388,7 @@ def fresh(starter, work, logs):
         records.append({'lab': starter.name, 'fresh_completed': True, 'regenerated_models_equal': True, 'query_rows_same': rows, 'check': 'pass'})
     else:
         with instance(folder):
-            for action in ('load', 'export', 'check'):
+            for action in ('constraints', 'load', 'export', 'check'):
                 logs['completed-graph-' + action], _ = blocks(folder, action)
             exported = json.loads((folder / 'output/graph.json').read_text(encoding='utf-8'))
             assert normalized(exported) == normalized(json.loads(before['graph.json']))
@@ -410,6 +413,8 @@ def main():
         assert work.is_relative_to(base) and work != base
         onto, graph_lab = args.ontology.resolve(), args.graph.resolve()
         report = {'kind': '강사 코드 실행 · 옛 판 대조 · 실제 별도 DB; 학생 AI 시험 · GUI 시험 아님'}
+        # 랩 명령은 모두 학생 조건(command — UTF-8 모드 꺼짐 · cp949 파이프)으로 돈다. 글자표 결함을 되살린 사본을 그 조건이 잡는지부터 본다
+        report['student_condition_selftest'] = student_condition_selftest(onto, work / 'st-ontology') + student_condition_selftest(graph_lab, work / 'st-graph', 'sources')
         report['ontology'] = ontology(onto, graph_lab, work, logs)
         print(f"설계 랩 {len(report['ontology'])}갈래 통과", flush=True)
         checks, bad = checker_trials(onto, graph_lab, work)
