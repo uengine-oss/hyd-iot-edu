@@ -1594,6 +1594,7 @@
             "RE_OBSERVING",
             "RESOLVED",
             "WORK_ORDER_CREATED",
+            "AWAITING_CLEAR",
             "CLOSED",
             "ESCALATED",
             "REJECTED_BY_OPERATOR",

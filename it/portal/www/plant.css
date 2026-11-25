@@ -6,7 +6,8 @@
 /* ================================================================= 홈 그림(main.js) — 포털에서 하나뿐인 어두운 판. 밝은 캔버스 토큰에 어두운 값을 이 판 안에서만 다시 준다 */
 .hm-hero { --cv-bg: #16202d; --cv-bg-2: #1b2638; --cv-grid: #223046; --cv-border: #29394c; --cv-node: #1b2430; --cv-node-now: #232f5c; --cv-edge: #53637a;
   --cv-ink: #e8edf3; --cv-ink-2: #9aa7b5; --cv-ink-3: #6b7a8c; --cv-steel: #cfd8e3; --cv-value: #f5c46b; --cv-blue: #7aa2ff; --cv-green: #4ade80; --cv-amber: #f5a623;
-  --cv-red: #f07167; --cv-violet: #b794f6; --cv-teal: #2dd4bf; --cv-now: #8b93ff; background-size: 22px 22px; }
+  --cv-red: #f07167; --cv-violet: #b794f6; --cv-teal: #2dd4bf; --cv-now: #8b93ff; background-size: 22px 22px;
+  --hm-fs: 14px; }      /* 그림 글자의 바닥(그림 단위). 그림은 0.8배 아래로 줄지 않으므로(아래 홈 구획) 화면에서 11.2px 아래로 줄지 않는다 */
 .m-hero-svg {
   display: block;
   width: 100%;
@@ -42,16 +43,16 @@
   stroke-width: 2;
 }
 .m-lbl {
-  font-size: 12.5px;
+  font-size: var(--hm-fs);
   fill: var(--cv-ink-2);
 }
 .m-cap {
-  font-size: 13px;
+  font-size: var(--hm-fs);
   fill: var(--cv-steel);
   font-weight: 600;
 }
 .m-live {
-  font-size: 12.5px;
+  font-size: var(--hm-fs);
   fill: var(--cv-value);
   font-variant-numeric: tabular-nums;
 }
@@ -90,7 +91,7 @@
   stroke-width: 2;
 }
 .m-sensor text {
-  font-size: 10px;
+  font-size: var(--hm-fs);
   fill: #ffd2cc;
   font-weight: 600;
 }
@@ -113,12 +114,12 @@
   stroke-width: 1.5;
 }
 .m-bus-t {
-  font-size: 13px;
+  font-size: 15px;
   fill: #e6eefc;
   font-weight: 600;
 }
 .m-bus-s {
-  font-size: 10.5px;
+  font-size: var(--hm-fs);
   fill: #9fb4d9;
 }
 .m-edge {
@@ -132,7 +133,7 @@
   animation: mFlow 2.2s linear infinite;
 }
 .m-node-t {
-  font-size: 12px;
+  font-size: var(--hm-fs);
   fill: var(--cv-ink);
 }
 .m-halo {
@@ -145,12 +146,12 @@
   transform-origin: center;
 }
 .m-agent-t {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   fill: #fff;
 }
 .m-agent-s {
-  font-size: 10.5px;
+  font-size: var(--hm-fs);
   fill: #d9ccff;
 }
 .m-loop {
@@ -161,7 +162,7 @@
   animation: mFlow 1.4s linear infinite reverse;
 }
 .m-loop-t {
-  font-size: 12.5px;
+  font-size: var(--hm-fs);
   fill: #ffd58a;
   font-weight: 600;
 }
@@ -400,9 +401,11 @@
 
 /* ================================================================= 홈 (5-7): 이야기 한 줄 → 그림 한 장 → 단계 카드 넷 */
 #mainHero.hm-hero { padding: 16px; overflow: auto; }
-#mainHero .m-hero-svg { min-width: 880px; max-height: max(360px, calc(100dvh - 420px)); }      /* 그림 아래 단계 카드가 첫 화면에 걸리게 높이를 창에 맞춘다(그림은 비율을 지켜 가운데에 놓인다) */
+/* 그림(1200 × 580 단위)은 그림 아래 단계 카드가 첫 화면에 걸리게 높이를 창에 맞추되(비율을 지켜 가운데에 놓인다) 0.8배(960 × 464px) 아래로는 줄지 않는다 — 글자(--hm-fs 14 단위 이상)가
+   화면에서 11px 아래로 줄지 않게(1366 × 768 에서 0.62배로 줄어 센서 이름이 6px 이던 것을 고침). 그보다 낮은 창에서는 카드가 아래로 밀리고, 좁은 창에서는 그림을 끌어서 본다 */
+#mainHero .m-hero-svg { min-width: 960px; max-height: max(464px, calc(100dvh - 420px)); }
 /* 홈 그림에 더한 것: 영역 표시 · PLC · 제어선 · 고리 위의 이름표. 색은 캔버스 토큰 */
-.hm-zone-tag { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .04em; }
+.hm-zone-tag { font-size: var(--hm-fs); font-weight: 600; }
 .hm-plc { fill: var(--cv-node-now); stroke: var(--cv-amber); stroke-width: 1.6; }
 .hm-ctl { fill: none; stroke: var(--cv-steel); stroke-width: 1.4; stroke-dasharray: 4 4; opacity: .7; }
 .hm-tag { fill: var(--cv-bg); stroke: var(--cv-amber); stroke-width: 1; }
@@ -410,7 +413,7 @@
 .hm-stages .stat-label { color: var(--foreground); font-weight: 500; white-space: pre; }
 /* 그림 가운데의 「값이 지나는 길」은 시스템 구성으로 가는 링크다: 발치의 「시스템 구성 →」과, 올리거나 초점을 주면 밝아지는 테가 누를 수 있다는 것을 보인다 */
 .hm-arch { cursor: pointer; outline: none; }
-.hm-arch-t { font-size: 12.5px; font-weight: 600; fill: #cfe0ff; text-decoration: underline; text-underline-offset: 3px; }
+.hm-arch-t { font-size: var(--hm-fs); font-weight: 600; fill: #cfe0ff; text-decoration: underline; text-underline-offset: 3px; }
 .hm-arch:is(:hover, :focus-visible) .m-bus rect { stroke: #cfe0ff; stroke-width: 2; }
 .hm-arch:is(:hover, :focus-visible) .hm-arch-t { fill: #fff; }
 @media (max-width: 1100px) {

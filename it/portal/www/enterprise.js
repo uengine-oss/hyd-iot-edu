@@ -234,6 +234,7 @@ function kgPathLay(center, path, box) {
 const KG = { SEED: 20261114, HUB: 14, ZOOM_MAX: 3, ZOOM_PICK: 1.25, STEP: [17, 26], STEP_TIGHT: 15, LABEL: 180, BG: '#f7f8fa', INK: '#16181d', INK_2: '#3d434f', EDGE: '#8e96a4', NOW: '#171717', NOW_INK: '#525252', HIT: '#e58a0a', BLUE: '#005ad7',
   PATH_RELS: ['DETECTS', 'INDICATES', 'CAUSES', 'MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY'],
   FONT: 11.5, FONT_HUB: 12.5, NAME_W: 120, NAME_W_HUB: 180, NAME_W_HIT: 220,      // 이름의 글자 크기(px)와 한 줄 폭의 한도 — 넘으면 말줄임
+  PICK_W: 360, PICK_LINES: 2,      // 고른 항목의 이름(14px · 700): 한 줄 폭의 한도와 줄 수 — 넘으면 끝을 말줄임(전체는 오른쪽 판의 제목 · 점의 말풍선)
   nearSize: ele => 11 + ele.data('size') * 0.14 };      // 모은 이웃의 점은 화면에서 13 ~ 17px(이어진 수의 차이는 남기되 세로 간격 안에 들어오게)
 const kgCollator = new Intl.Collator('ko');
 // 이름의 화면 폭(px): 브라우저에서는 실제 글꼴로 재고, 잴 수 없는 곳(시험의 node)에서는 어림한다(한글 · 한자는 글자 크기만큼, 그 밖은 0.6배)
@@ -243,6 +244,26 @@ function kgTextW(text, px, weight = 500) {
     if (ctx && ctx.measureText) { ctx.font = `${weight} ${px}px "Pretendard Variable", Pretendard, sans-serif`; const w = ctx.measureText(String(text)).width; if (w > 0) return w; }
   }
   let w = 0; for (const ch of String(text)) w += ch.charCodeAt(0) > 0x2E7F ? px : ch === ' ' ? px * 0.3 : px * 0.6; return w;
+}
+/** 이름을 한 줄 폭 maxW(px) 안에서 줄을 나눈다: 띄어쓰기 자리에서 끊고(띄어쓰기 없이 긴 낱말은 그 안에서), maxLines 줄을 넘으면 마지막 줄 끝을 「…」로 줄인다.
+    → { text: 줄을 \n 으로 이은 글, lines, w(가장 긴 줄의 폭), clipped }. 고른 항목의 이름이 한 줄로 캔버스 양 끝 밖까지 그려져 잘리던 것을 막는다 */
+function kgWrapName(text, px, weight, maxW, maxLines) {
+  const chars = Array.from(String(text).replace(/\s+/g, ' ').trim()), lines = [], fits = (i, n) => kgTextW(chars.slice(i, i + n).join(''), px, weight) <= maxW;
+  let i = 0;
+  while (i < chars.length && lines.length < maxLines) {
+    let lo = 1, hi = chars.length - i, n = 1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (fits(i, mid)) { n = mid; lo = mid + 1; } else hi = mid - 1; }
+    if (i + n < chars.length) { const sp = chars.slice(i, i + n).lastIndexOf(' '); if (sp > 0) n = sp + 1; }
+    lines.push(chars.slice(i, i + n).join('').trim()); i += n;
+    while (chars[i] === ' ') i++;
+  }
+  const clipped = i < chars.length;
+  if (clipped) {
+    let last = Array.from(lines[lines.length - 1]);
+    while (last.length && kgTextW(last.join('') + '…', px, weight) > maxW) last.pop();
+    lines[lines.length - 1] = last.join('').trimEnd() + '…';
+  }
+  return { text: lines.join('\n'), lines: lines.length, w: Math.max(0, ...lines.map(l => kgTextW(l, px, weight))), clipped };
 }
 /** 겹치지 않게 보일 이름을 고른다(화면 좌표). 늘 보이는 이름이 서로 포개지거나 점에 가려 읽히지 않던 것을 막는다.
     items: [{ id, x, y, r(점 반지름), w, h(이름 상자), prio }] — prio 가 큰 것부터 자리를 잡는다. fixed: 이미 자리가 정해진 글자 상자들 [x0, y0, x1, y1](고른 항목 · 모은 이웃 · 묶음 이름).
@@ -303,7 +324,7 @@ function kgMakeRoom(center, box, at) {
     left · right = 위에서 아래로 놓을 이웃 id 들(left = 고른 항목을 가리키는 것, right = 고른 항목이 가리키는 것). box = 캔버스 { w, h }.
     id 가 'head:' 로 시작하는 것은 관계 이름 줄이다(그 아래 이웃들의 관계 이름을 적는 자리 — 줄의 맨 끝에 혼자 남기지 않는다).
     한 쪽의 이웃은 세로 간격 17 ~ 26 으로 타원 호에 놓는다(이름을 바깥쪽에 한 줄씩 쓸 수 있는 간격). 한 줄에 다 못 놓으면 바깥쪽에 줄을 더해 고르게 나눈다.
-    → { at: Map(id → { x, y, side: 'L' | 'R' }), labelW(이름을 쓸 폭), bounds: { x0, y0, x1, y1 }(고른 항목 · 이웃 · 이름이 다 들어가는 상자) } */
+    → { at: Map(id → { x, y, side: 'L' | 'R' }), labelW(이름을 쓸 폭), rx(호의 가로 반지름 — 고른 항목의 이름은 두 호 사이에 쓴다), bounds: { x0, y0, x1, y1 }(고른 항목 · 이웃 · 이름이 다 들어가는 상자) } */
 function kgGather(center, left, right, box) {
   const [sMin, sMax] = KG.STEP, availH = Math.max(120, box.h - 230);
   const rx = Math.max(96, Math.min(210, (box.w - 2 * KG.LABEL - 64) / 2));
@@ -331,13 +352,29 @@ function kgGather(center, left, right, box) {
     });
   };
   place(left, 'L'); place(right, 'R');
-  return { at, labelW, bounds: { x0: center.x - Math.max(reach.L, 90), x1: center.x + Math.max(reach.R, 90), y0: center.y - halfH - 56, y1: center.y + halfH + 28 } };
+  return { at, labelW, rx, bounds: { x0: center.x - Math.max(reach.L, 90), x1: center.x + Math.max(reach.R, 90), y0: center.y - halfH - 56, y1: center.y + halfH + 28 } };
 }
 
 const kg = { cy: null, of: null, key: null, home: new Map(), raw: new Map(), deg: new Map(), labelW: KG.LABEL, colW: 120, back: null, moved: false, matches: [], matchAt: 0, state: null, raf: 0, at: null };
 const kgColor = n => ONTO_GROUPS[groupOf(n.label)].color;
 const kgKey = n => ONTO_GROUPS[groupOf(n.label)].key;
 const kgPx = px => ele => px / ele.cy().zoom();      // 화면에서 늘 같은 크기
+// 고른 항목의 이름을 쓸 폭(화면 px): KG.PICK_W 와 캔버스 폭 안, 이웃을 모았으면 두 호 사이(이웃의 점 · 이름은 호의 바깥쪽에 있다). 8px 눈금으로 잘라 확대하는 동안 줄이 자꾸 바뀌지 않게 한다
+const kgPickW = cy => { const lim = [KG.PICK_W, cy.width() - 32]; if (kg.at && kg.at.rx) lim.push(2 * kg.at.rx * cy.zoom() - 32); return Math.max(140, Math.floor(Math.min(...lim) / 8) * 8); };
+function kgPickName(ele) {
+  const name = ele.data('name'), maxW = kgPickW(ele.cy()), key = name + '|' + maxW, got = ele.scratch('_pick');
+  if (got && got.key === key) return got.v;
+  const v = kgWrapName(name, 14, 700, maxW, KG.PICK_LINES);
+  ele.scratch('_pick', { key, v });
+  return v;
+}
+// 점에 마우스를 올렸을 때 그 이름이 말줄임으로 잘려 보이면 캔버스의 말풍선(title)으로 전체 이름을 보인다 — 그려진 이름의 폭 · 글자 크기를 Cytoscape 가 계산한 값으로 잰다
+function kgNameClipped(n) {
+  if (n.hasClass('pick')) return kgPickName(n).clipped;
+  if (n.style('text-wrap') !== 'ellipsis') return false;
+  const z = n.cy().zoom();
+  return kgTextW(n.data('name'), parseFloat(n.style('font-size')) * z, n.style('font-weight')) > parseFloat(n.style('text-max-width')) * z + 1;
+}
 const kgStill = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 오른쪽 판(디자인 기준 6-3): 항목이나 묶음을 골랐을 때(와 읽기 실패를 알릴 때)만 열린다. 열고 닫으면 캔버스 폭이 바뀌므로 그림의 크기를 곧바로 다시 잰다 —
 // 고른 항목 둘레에 이웃을 모으는 자리(kgGather)는 판이 열린 뒤의 폭으로 정해야 한다. kgSideOpen 은 고르기 전에, kgSide 는 판의 내용을 쓸 때 부른다
@@ -391,8 +428,9 @@ function kgStyle() {
     { selector: 'node.hit', style: { 'border-color': KG.HIT, 'border-width': kgPx(2.5), color: KG.INK, 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, 'text-max-width': kgPx(KG.NAME_W_HIT), 'z-index': 60 } },
     // 모은 이웃이 검색에도 걸렸다: 글자색 · 테두리는 검색의 것, 크기와 폭은 모은 줄의 것(넓히면 왼쪽 줄의 이름이 캔버스 밖으로 잘린다)
     { selector: 'node.near.hit', style: { 'font-size': kgPx(12), 'text-max-width': ele => kg.labelW / ele.cy().zoom() } },
+    // 고른 항목의 이름: 두 호 사이 폭 안에서 두 줄까지(kgPickName — 줄은 \n 으로 이미 나눠 두어 Cytoscape 는 그 자리에서만 꺾는다), 넘치면 끝을 말줄임
     { selector: 'node.pick', style: { width: kgPx(26), height: kgPx(26), 'border-color': KG.NOW, 'border-width': kgPx(2.5), 'underlay-color': KG.NOW, 'underlay-opacity': 0.1, 'underlay-padding': kgPx(7), 'underlay-shape': 'ellipse', color: KG.INK,
-        label: 'data(name)', 'font-size': kgPx(14), 'font-weight': 700, 'z-index': 99, 'text-wrap': 'none', 'text-max-width': 2000, 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': kgPx(-8), 'text-margin-x': 0 } },
+        label: ele => kgPickName(ele).text, 'font-size': kgPx(14), 'font-weight': 700, 'z-index': 99, 'text-wrap': 'wrap', 'text-max-width': kgPx(4000), 'line-height': 1.3, 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': kgPx(-8), 'text-margin-x': 0 } },
     { selector: 'node.pick.hit', style: { 'border-color': KG.HIT, color: KG.INK } },      // 고른 것이 검색에도 걸렸다: 테두리는 검색의 주황, 글자는 그대로 검정
     { selector: '.off', style: { display: 'none' } },
   ];
@@ -446,8 +484,9 @@ function kgBuild(g) {
   cy.on('viewport', () => kgLabelsSoon());
   cy.on('tap', 'node', ev => { if (ev.target.hasClass('gtitle')) kgGroup(ent.group === ev.target.data('g') ? null : ev.target.data('g')); else kgPick(ev.target.id()); });
   cy.on('tap', ev => { if (ev.target === cy && ent.sel != null) kgPick(null); });      // 빈 곳을 누르면 고른 것이 풀린다
-  cy.on('mouseover', 'node', ev => { if (!ev.target.hasClass('gtitle')) ev.target.addClass('hover'); $('#ontoMap').style.cursor = 'pointer'; });
-  cy.on('mouseout', 'node', ev => { ev.target.removeClass('hover'); $('#ontoMap').style.cursor = ''; });
+  cy.on('mouseover', 'node', ev => { const n = ev.target, map = $('#ontoMap'); if (!n.hasClass('gtitle')) n.addClass('hover'); map.style.cursor = 'pointer';
+    map.title = !n.hasClass('gtitle') && !n.hasClass('rhead') && kgNameClipped(n) ? n.data('name') : ''; });      // 잘린 이름의 전체는 말풍선으로
+  cy.on('mouseout', 'node', ev => { ev.target.removeClass('hover'); const map = $('#ontoMap'); map.style.cursor = ''; map.title = ''; });
 }
 // 보일 이름을 다시 고른다(kgPlaceLabels). 부르는 때: 그린 뒤 · 상태가 바뀐 뒤 · 항목이 옮겨 간 뒤 · 화면을 옮기거나 확대한 뒤 · 캔버스 크기가 바뀐 뒤
 function kgLabels() {
@@ -474,7 +513,11 @@ function kgLabels() {
     if (n.hasClass('dim')) return;
     const p = n.renderedPosition(), r = n.renderedWidth() / 2;
     discs.push({ id: n.id(), x: p.x, y: p.y, r: r + 1 });
-    if (n.hasClass('pick')) fixed.push(box(n, 14, 700, 2000, 'T'));
+    if (n.hasClass('pick')) {      // 고른 항목의 이름(줄 수만큼 높다). 이웃을 모은 뒤 폭이 바뀌었으면 이름을 다시 나눈다
+      const pl = kgPickName(n), w = pl.w + 6, h = pl.lines * 14 * 1.3 + 4;
+      if (n.style('label') !== pl.text) n.updateStyle();
+      fixed.push([p.x - w / 2, p.y - r - h - 10, p.x + w / 2, p.y - r - 2]);
+    }
     else if (n.hasClass('near')) fixed.push(box(n, 12, 500, kg.labelW, n.data('side') || 'R'));
     else if (n.hasClass('path') && n.data('side')) fixed.push(box(n, 12, 500, n.data('side') === 'B' ? kg.colW : kg.labelW, n.data('side')));
     else {
@@ -626,7 +669,17 @@ function kgGroup(key) {
 // 흐름 이름을 못 읽었을 때의 한 줄(화면 머리 아래) — 통계 글에 이어 붙이지 않는다
 function ontoNote(text) { const n = $('#ontoNote'); n.textContent = text; n.hidden = !text; }
 
-/* ---------------- 오른쪽 판(고른 것이 있을 때만): 묶음 · 종류 → 이름 → ID → 속성 → 이어진 항목(관계 이름별 조각) → 그 밖의 속성 ---------------- */
+/* ---------------- 오른쪽 판(고른 것이 있을 때만): 묶음 · 종류 → 이름 → 출처 문서 → ID → 속성 → 이어진 항목(관계 이름별 조각) → 그 밖의 속성 ---------------- */
+// 문서에서 뽑은 항목(매뉴얼 절 · 절차 단계 …)의 출처 문서 이름: 그 항목의 source_id(없으면 인용 위치의 source_id)와 같은 source_id 를 가진 지식 출처 항목의 이름.
+// 그래프에 그 지식 출처가 없으면 ''(이름을 지어 붙이지 않는다 — 원래 값은 「그 밖의 속성」에 있다)
+function sourceDocName(n) {
+  const p = n.props || {};
+  let sid = p.source_id;
+  if (!sid && p.citation) { try { sid = (typeof p.citation === 'string' ? JSON.parse(p.citation) : p.citation).source_id; } catch (_) { sid = ''; } }
+  if (!sid || n.label === 'KnowledgeSource') return '';
+  for (const m of kg.raw.values()) if (m.label === 'KnowledgeSource' && m.props && m.props.source_id === sid) return nodeName(m);
+  return '';
+}
 function renderNodePanel() {
   const box = $('#ontoNode');
   const g = ent.graph; if (!g || !kg.cy) return;
@@ -677,7 +730,11 @@ function renderNodePanel() {
     const total = groups.reduce((sum, x) => sum + x.ids.length, 0);
     const relHtml = groups.map(x => `<section class="rel-group" data-dir="${x.dir}"><h4>${UI.icon(x.dir === 'out' ? 'arrow-right' : 'arrow-left')}${esc(x.title)} <span class="num">${x.ids.length}</span>${x.note ? `<span class="rel-note">${esc(x.note)}</span>` : ''}</h4>` +
       `<div class="chips">${x.ids.slice(0, 14).map(o => chip(o)).join('')}${x.ids.length > 14 ? `<details class="rel-more"><summary class="chip">+${x.ids.length - 14}</summary><div class="chips">${x.ids.slice(14).map(o => chip(o)).join('')}</div></details>` : ''}</div></section>`).join('');
-    kgSide(`<div class="node-head fade-in"><span class="gtag" style="--c:${group.color}"><i></i>${esc(group.title)} · ${esc(LABEL_KO[n.label] || n.label)}</span><h2>${esc(nodeName(n))}</h2><p class="mono">${esc(id)}</p>` +
+    // 머리: 종류 → 이름 → 출처 문서(문서에서 뽑은 항목만) → ID. ID 는 사람이 읽지 않는 기계 번호라(문서에서 뽑은 항목은 해시가 이어진 250자) 한 줄 조각(UI.id — 넘치면 말줄임,
+    // 전체는 말풍선, 누르면 복사)으로 둔다. 이름으로 찾지 못할 때 ID 로 찾는 길(찾기 칸)은 그대로다
+    const src = sourceDocName(n);
+    kgSide(`<div class="node-head fade-in"><span class="gtag" style="--c:${group.color}"><i></i>${esc(group.title)} · ${esc(LABEL_KO[n.label] || n.label)}</span><h2>${esc(nodeName(n))}</h2>` +
+      (src ? `<p class="node-src">출처 문서 <b>${esc(src)}</b></p>` : '') + `<p class="node-id">${UI.id(id, { label: 'ID' })}</p>` +
       (lead ? `<p class="node-lead">${esc(UI.words(lead))}</p>` : '') + `</div>` +
       (named.length ? `<div class="node-sec"><dl class="kv">${named.map(([k, v]) => `<dt>${esc(PROP_KO[k])}</dt><dd>${value((PROP_VALUE_KO[k] || {})[v] || v, k)}</dd>`).join('')}</dl></div>` : '') +
       `<div class="node-sec"><h3>이어진 항목<span class="num">${total}</span></h3>${relHtml || '<p class="muted">이어진 항목이 없습니다.</p>'}</div>` +

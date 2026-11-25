@@ -168,7 +168,8 @@ class Hooks:
     plant_outside: Callable[[str], dict | None] | None = None        # (설비) → 마지막 바깥 변화 기록(효과 확인 · 시운전 창의 시작 기준)
     outside_since: Callable[..., dict | None] | None = None          # (사건|None, 설비, 창 시작 기록) → 사건이 열린 뒤의 바깥 변화(없으면 None)
     read_tag: Callable[[str, str], float | None] | None = None        # (설비, 태그) → 최신값 (시운전 확인)
-    close_incident_result: Callable[[str, str, str], bool] | None = None   # (사건, 등급 ok|fail, 요약) → 결과 보고로 사건 종결
+    close_incident_result: Callable[[str, str, str, datetime], bool] | None = None   # (사건, 등급 ok|fail|rejected, 요약, 시각) → 결과 보고로 사건 종결 · 해제 기다림
+    clear_wait_timeouts: Callable[[datetime], int] = _hook('clear_wait_timeouts')  # (시각) → 해제 기다림 마감이 지난 사건을 책임자 확인으로 (machine.on_clear_timeout)
     case_started: Callable[[dict], None] | None = None                # C3: 처리 건이 막 열렸을 때(수업 버튼 연결 — 설비 주입 id 로)
 
 

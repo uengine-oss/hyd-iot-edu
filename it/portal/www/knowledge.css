@@ -248,7 +248,12 @@ ul.doc-issues { list-style: disc; } ol.doc-issues { list-style: decimal; }
 .node-head { position: sticky; top: 0; z-index: 1; padding: 22px 22px 16px; border-bottom: 1px solid var(--border); background: var(--card); }
 .node-head h2 { margin: 8px 0 0; font-size: var(--fs-lg); line-height: 26px; font-weight: 600; overflow-wrap: anywhere; }
 .node-head p { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--muted-foreground); overflow-wrap: anywhere; }
-.node-head p.mono { font-size: var(--fs-xs); }
+.node-head p.node-src { margin-top: 6px; overflow-wrap: anywhere; }
+.node-head p.node-src b { font-weight: 500; color: var(--foreground); }
+/* ID: 기계 번호는 한 줄 조각(UI.id) — 판 폭을 넘으면 말줄임으로 줄고, 전체는 말풍선 · 누르면 복사 */
+.node-head p.node-id { display: flex; min-width: 0; margin-top: 8px; }
+.node-head p.node-id .idc { display: block; min-width: 0; line-height: 22px; }      /* 키트 조각(inline-flex)은 넘친 글을 말줄임 없이 자르므로, 이 자리에서는 블록으로 두어 끝에 「…」가 보이게 한다 */
+.node-head p.node-id .idc > span { margin-right: 6px; }
 .node-head p.node-lead { margin-top: 8px; color: var(--foreground); }
 .node-sec { padding: 18px 22px; border-bottom: 1px solid var(--border); }
 .node-sec:last-child { border-bottom: 0; }

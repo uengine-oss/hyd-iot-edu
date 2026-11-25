@@ -2,18 +2,19 @@
    사람이 승인한 조치는 명령 관문(DMZ)을 거쳐 PLC 로 내려간다(PLC 가 받을지 정한다). 실시간 값은 app.js 가 읽은 state.plant 를 쓴다.
    그림 가운데의 「값이 지나는 길」을 누르면 시스템 구성 화면이 열린다(그 길의 발치에 「시스템 구성 →」이 보인다).
    그림 아래: 단계 카드 넷(지식 넣기 → 고장 내기 → 판단과 승인 → 결과 보기) — 카드마다 그 단계의 지금 값 하나와 그 화면으로 가는 길(UI.statCard, 디자인기준 4-17 · 5-4).
-   모양은 plant.css 의 홈 구획(그림 .m-* · .hm-*). */
+   모양은 plant.css 의 홈 구획(그림 .m-* · .hm-*). 그림의 글자는 모두 그림 단위 14 이상이고 그림은 0.8배 아래로 줄지 않는다 — 화면에서 11px 아래로 줄지 않는다(plant.css 홈 구획).
+   그래서 자리(좌표)는 14 단위 글자가 서로 · 알약 · 원과 겹치지 않게 잡았다(시험: test_www_shell.py 홈 그림 글자). */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
   // 지식 지도의 항목(실제 온톨로지에서 읽기 좋게 고른 일부 — it/neo4j/v2/instances.cypher 구조판 + 매뉴얼 HM-8 의 절차)
   const N = [
     ['asset', 'HYD-01', 'asset', 700, 318], ['ts1', '센서 TS1', 'asset', 690, 226], ['ce', '센서 CE', 'asset', 706, 410],
-    ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
-    ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', '절차 SOP-COOL-11', 'action', 1105, 152],
+    ['sym', '증상 · 유온 상승', 'obs', 790, 168], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 280], ['cause', '원인 · 쿨러 핀 오염', 'failure', 930, 208],
+    ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', '절차 SOP-COOL-11', 'action', 1100, 154],
     ['agent', '인공지능 에이전트', 'agent', 960, 326], ['scn', '판단 · 납기 vs 보전', 'decision', 1090, 262],
-    ['kpi1', '성과 지표 · 납기 준수율', 'org', 1095, 356], ['kpi2', '성과 지표 · 부품 단가', 'org', 1012, 428], ['dept', '영업팀 · 구매팀', 'org', 1112, 472],
-    ['pol', '규정 · 유온 65 ℃', 'org', 826, 450], ['erp', '구매 · 재고', 'sys', 770, 494], ['mes', '생산 관리', 'sys', 862, 516], ['cmms', '정비 관리', 'sys', 962, 516],
-    ['skill', '조치 · 정비 요청', 'sys', 1066, 526],
+    ['kpi1', '성과 지표 · 납기 준수율', 'org', 1092, 356], ['kpi2', '성과 지표 · 부품 단가', 'org', 1012, 428], ['dept', '영업팀 · 구매팀', 'org', 1112, 476],
+    ['pol', '규정 · 유온 65 ℃', 'org', 830, 448], ['erp', '구매 · 재고', 'sys', 764, 494], ['mes', '생산 관리', 'sys', 860, 534], ['cmms', '정비 관리', 'sys', 968, 534],
+    ['skill', '조치 · 정비 요청', 'sys', 1106, 534],
   ];
   const E = [['asset', 'ts1'], ['asset', 'ce'], ['sym', 'ts1'], ['sym', 'fm'], ['cause', 'fm'], ['cause', 'act'], ['act', 'sop'],
     ['cause', 'scn'], ['scn', 'kpi1'], ['scn', 'kpi2'], ['kpi1', 'dept'], ['kpi2', 'dept'], ['pol', 'scn'], ['erp', 'agent'], ['mes', 'agent'],
@@ -22,15 +23,15 @@
   function nodeSvg([id, label, g, x, y]) {
     if (id === 'agent') {
       const [first, ...rest] = String(label).split(/\s+/);
-      // 원 안에 두 줄로 쓴다: 세 글자를 넘으면 원 폭에 맞춘다
-      const fit = text => Array.from(text).length > 3 ? ' textLength="46" lengthAdjust="spacingAndGlyphs"' : '';
+      // 원 안에 두 줄로 쓴다(원 r 34 — 네 글자 두 줄이 줄이지 않고 들어간다). 네 글자를 넘으면 원 폭에 맞춘다
+      const fit = text => Array.from(text).length > 4 ? ' textLength="58" lengthAdjust="spacingAndGlyphs"' : '';
       const second = rest.join(' ');
-      return `<g class="m-agent"><circle cx="${x}" cy="${y}" r="44" class="m-halo"/><circle cx="${x}" cy="${y}" r="30" fill="#1b2430" stroke="#fff" stroke-width="2"/>` +
-        `<text x="${x}" y="${y - 6}" text-anchor="middle" class="m-agent-t"${fit(first)}>${esc(first)}</text><text x="${x}" y="${y + 15}" text-anchor="middle" class="m-agent-s"${fit(second)}>${esc(second)}</text></g>`;
+      return `<g class="m-agent"><circle cx="${x}" cy="${y}" r="48" class="m-halo"/><circle cx="${x}" cy="${y}" r="34" fill="#1b2430" stroke="#fff" stroke-width="2"/>` +
+        `<text x="${x}" y="${y - 7}" text-anchor="middle" class="m-agent-t"${fit(first)}>${esc(first)}</text><text x="${x}" y="${y + 16}" text-anchor="middle" class="m-agent-s"${fit(second)}>${esc(second)}</text></g>`;
     }
-    const w = Math.max(64, label.length * 12 + 20);
-    return `<g class="m-node"><rect x="${x - w / 2}" y="${y - 13}" width="${w}" height="26" rx="13" fill="#1b2430" stroke="${G[g]}" stroke-width="1.6"/>` +
-      `<circle cx="${x - w / 2 + 12}" cy="${y}" r="4" fill="${G[g]}"/><text x="${x - w / 2 + 22}" y="${y + 4.5}" class="m-node-t">${label}</text></g>`;
+    const w = Math.max(64, label.length * 14 + 20);      // 첫 자리 — 글꼴이 뜬 뒤 fitNodes 가 실제 글 폭으로 다시 맞춘다
+    return `<g class="m-node"><rect x="${x - w / 2}" y="${y - 14}" width="${w}" height="28" rx="14" fill="#1b2430" stroke="${G[g]}" stroke-width="1.6"/>` +
+      `<circle cx="${x - w / 2 + 12}" cy="${y}" r="4" fill="${G[g]}"/><text x="${x - w / 2 + 22}" y="${y}" dominant-baseline="central" class="m-node-t">${label}</text></g>`;
   }
 
   // 가운데 줄: 값이 지나는 길. 칸마다 영역(OT · DMZ · IT)을 적는다 — 관제(운전 화면)와 MQTT 는 OT, 수집 중계는 DMZ, Kafka 와 탐지는 IT
@@ -50,7 +51,7 @@
       const agent = a === 'agent' || b === 'agent';
       return `<line x1="${A[3]}" y1="${A[4]}" x2="${B[3]}" y2="${B[4]}" class="m-edge${agent ? ' m-edge-agent' : ''}"/>`;
     }).join('');
-    const bus = BUS.map(c => `${c.zone ? `<text x="548" y="${c.y - 16}" class="hm-zone-tag" fill="${ZONE_FILL[c.zone]}">${c.zone}</text>` : ''}` +
+    const bus = BUS.map(c => `${c.zone ? `<text x="548" y="${c.y - 18}" class="hm-zone-tag" fill="${ZONE_FILL[c.zone]}">${c.zone}</text>` : ''}` +
       `<text x="580" y="${c.y}" text-anchor="middle" class="m-bus-t">${c.t}</text><text x="580" y="${c.y + 18}" text-anchor="middle" class="m-bus-s">${c.s}</text>`).join('');
     return `<svg viewBox="0 0 1200 580" role="img" aria-labelledby="mainHeroTitle mainHeroDesc" class="m-hero-svg">
   <title id="mainHeroTitle">유압설비와 지식 지도 기반 에이전트 조치 흐름</title>
@@ -101,27 +102,27 @@
     <rect x="116" y="104" width="114" height="48" rx="8" class="hm-plc"/>
     <text x="173" y="124" text-anchor="middle" class="m-bus-t">PLC</text><text x="173" y="142" text-anchor="middle" class="m-bus-s">제어 · 보호 정지</text>
     <!-- 센서 -->
-    <g class="m-sensor"><circle cx="118" cy="430" r="15"/><text x="118" y="434" text-anchor="middle">TS1</text></g>
-    <g class="m-sensor"><circle cx="300" cy="238" r="13"/><text x="300" y="242" text-anchor="middle">PS1</text></g>
-    <g class="m-sensor"><circle cx="496" cy="300" r="13"/><text x="496" y="304" text-anchor="middle">CE</text></g>
-    <g class="m-sensor"><circle cx="306" cy="328" r="13"/><text x="306" y="332" text-anchor="middle">VS1</text></g>
+    <g class="m-sensor"><circle cx="118" cy="430" r="17"/><text x="118" y="430" text-anchor="middle" dominant-baseline="central">TS1</text></g>
+    <g class="m-sensor"><circle cx="300" cy="242" r="17"/><text x="300" y="242" text-anchor="middle" dominant-baseline="central">PS1</text></g>
+    <g class="m-sensor"><circle cx="496" cy="300" r="17"/><text x="496" y="300" text-anchor="middle" dominant-baseline="central">CE</text></g>
+    <g class="m-sensor"><circle cx="306" cy="330" r="17"/><text x="306" y="330" text-anchor="middle" dominant-baseline="central">VS1</text></g>
     <text x="70" y="532" class="m-cap">유압 파워유닛 HYD-01 · 02 · 03  —  보호 정지 65 ℃</text>
     <text x="70" y="552" class="m-live" id="mLive">실시간 값 불러오는 중…</text>
   </g>
 
   <!-- 값이 지나는 길: 센서 → MQTT(관제가 지금 값을 받는다) → DMZ 수집 중계 → Kafka → 탐지 → 경보 -->
-  <path d="M133 430 C 230 506, 500 440, 540 232" class="m-data"/>
-  <path d="M313 238 C 380 236, 480 228, 540 220" class="m-data"/>
-  <path d="M509 298 C 522 282, 530 252, 540 226" class="m-data"/>
+  <path d="M135 430 C 230 506, 500 440, 540 232" class="m-data"/>
+  <path d="M317 242 C 380 238, 480 228, 540 220" class="m-data"/>
+  <path d="M513 296 C 524 280, 530 252, 540 226" class="m-data"/>
   <a class="hm-arch" href="#/home" data-go-tab="home" aria-label="시스템 구성 보기 — 값이 올라오고 승인된 명령이 내려가는 구조"><title>시스템 구성에서 이 구조를 자세히 봅니다</title>
   <g class="m-bus">
     <rect x="540" y="110" width="80" height="420" rx="10"/>
     <line x1="540" y1="262" x2="620" y2="262" class="m-sep"/><line x1="540" y1="340" x2="620" y2="340" class="m-sep"/>
     ${bus}
-    <path d="M580 196 v-22" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <path d="M580 246 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <path d="M580 324 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <path d="M580 402 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 196 v-20" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 242 v18" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 320 v18" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 400 v22" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
   </g>
   <text x="580" y="552" text-anchor="middle" class="hm-arch-t">시스템 구성 →</text>
   </a>
@@ -151,6 +152,23 @@
     catch (e) { graphCount = null; graphError = e.message; if (!loadCounts.retry) loadCounts.retry = setTimeout(() => { loadCounts.retry = null; loadCounts().then(renderLive); }, 30000); }
   }
 
+  /* 실시간 값 줄: 왼쪽 영역(그림 단위 x 70 ~ 510) 안에 쓴다. 설비마다 「보호 정지」 · 「(원격 수동)」이 붙어 한 줄을 넘으면 넘는 설비부터 다음 줄로 넘긴다
+     (넘친 채 두면 가운데 줄의 「시스템 구성 →」 위에 겹친다). 가려진 동안에는 글 폭을 잴 수 없어(0) 한 줄로 두고, 보이는 동안 1초마다 다시 맞춘다 */
+  const LIVE_W = 440;
+  function setLive(live, head, parts) {
+    live.textContent = head + parts.join('   ');
+    if (live.getComputedTextLength() <= LIVE_W) return;
+    live.textContent = '';
+    const line = dy => { const t = document.createElementNS('http://www.w3.org/2000/svg', 'tspan'); t.setAttribute('x', live.getAttribute('x')); if (dy) t.setAttribute('dy', dy); live.append(t); return t; };
+    const first = line(0); first.textContent = head + parts[0];
+    let i = 1;
+    for (; i < parts.length; i++) {
+      const before = first.textContent; first.textContent = before + '   ' + parts[i];
+      if (first.getComputedTextLength() > LIVE_W) { first.textContent = before; break; }
+    }
+    if (i < parts.length) line(18).textContent = parts.slice(i).join('   ');
+  }
+
   function renderLive() {
     const live = document.getElementById('mLive'); if (!live) return;
     const box = document.getElementById('mainStages');
@@ -160,7 +178,7 @@
     if (!u) live.textContent = UI.t('main.noConn');
     else {
       const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
-      live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
+      setLive(live, UI.t('main.liveTs1') + '  ·  ', parts);
       alarms = Object.values(u).filter(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP').length;      // 기준은 app.js TS_HOT 한 곳
       document.getElementById('mOilBody')?.classList.toggle('hot', alarms > 0);
     }
@@ -192,9 +210,9 @@
       const r = g.querySelector('rect'), t = g.querySelector('text'), dot = g.querySelector('circle');
       const cx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) / 2;
       const measured = t.getComputedTextLength(); if (!measured) return;
-      const w = Math.ceil(measured) + 40;
+      const w = Math.ceil(measured) + 38;
       r.setAttribute('x', cx - w / 2); r.setAttribute('width', w);
-      dot.setAttribute('cx', cx - w / 2 + 12); t.setAttribute('x', cx - w / 2 + 23);
+      dot.setAttribute('cx', cx - w / 2 + 13); t.setAttribute('x', cx - w / 2 + 24);
     });
     fitNodes(); document.fonts.ready.then(fitNodes);
     // 다른 화면 주소로 들어왔으면 홈이 가려진 채라 글자 폭을 잴 수 없다 — 홈이 보일 때 다시 맞춘다

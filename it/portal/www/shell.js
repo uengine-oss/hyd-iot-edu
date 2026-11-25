@@ -167,7 +167,25 @@
     dlg.addEventListener('click', e => { if (e.target === dlg && pressedOutside) dlg.close(); });
   }
 
+  /* ------------------------------------------------ 말줄임으로 잘린 글의 전체 글
+     말줄임(text-overflow: ellipsis · 줄 수 자르기)으로 실제로 잘려 보이는 글에 마우스를 올리면 그 글 전체를 말풍선(title)으로 보인다. 목록 줄의 이름 · 보조 줄(디자인기준 4-13),
+     조각, 화면 머리의 한 문장처럼 잘릴 수 있는 글을 화면마다 손으로 달지 않고 여기 한 곳이 단다(잘린 글이 「에이전트에게 질…」로 끝나 전체를 볼 길이 없던 것을 고침).
+     잘리지 않은 글에는 달지 않고(창이 넓어져 다 보이게 되면 뗀다), 화면이 직접 단 말풍선(title · data-tooltip)은 덮지 않는다 */
+  function fullTextTip(e) {
+    for (let n = e.target; n && n.nodeType === 1 && n !== document.body; n = n.parentElement) {
+      if (n.hasAttribute('title') && !n.hasAttribute('data-full-text')) return;
+      const cs = getComputedStyle(n), clamp = !!cs.webkitLineClamp && cs.webkitLineClamp !== 'none';
+      if (!(cs.textOverflow === 'ellipsis' && cs.overflowX !== 'visible') && !clamp) continue;
+      const text = n.textContent.replace(/\s+/g, ' ').trim();
+      const cut = clamp ? n.scrollHeight > n.clientHeight + 1 : n.scrollWidth > n.clientWidth + 1;
+      if (cut && text && !n.closest('[data-tooltip]')) { n.title = text; n.setAttribute('data-full-text', ''); }
+      else if (n.hasAttribute('data-full-text')) { n.removeAttribute('title'); n.removeAttribute('data-full-text'); }
+      return;
+    }
+  }
+
   function start() {
+    document.addEventListener('mouseover', fullTextTip);
     startFinder();
     const bell = document.getElementById('shellBell');
     // 종 = 알림: 처리 건 화면으로 가서 「알림」 접기를 펼쳐 보인다(inbox.js openNotices)

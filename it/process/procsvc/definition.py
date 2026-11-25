@@ -2,6 +2,7 @@
 
     GUIDE_RECEIVED → AWAITING_APPROVAL → CMD_ISSUED → AWAITING_ACK → ACKED → RE_OBSERVING → RESOLVED → WORK_ORDER_CREATED → CLOSED
     설비 명령 없이 실행하는 승인: AWAITING_APPROVAL → APPROVED_EXECUTING → (정비 요청 접수) WORK_ORDER_CREATED → CLOSED · (입고 확인 · 결과 보고) CLOSED
+    결과 보고가 정상인데 원천 경보가 아직 켜져 있으면: → AWAITING_CLEAR → (경보 해제) CLOSED · (해제 시한 CLEAR_WAIT_S 지남) ESCALATED
     끝(실패 · 다른 결말): ESCALATED(책임자 확인 — 사유 코드 Incident.reason) · REJECTED_BY_OPERATOR · RESOLVED_WITHOUT_ACTION
 
 회복 기준(태그 · 비교 · 한계)은 처리 건 정의의 alertPolicy 하나가 갖는다(코드에 사본을 두지 않는다 — P1-20). 상태 · 사유의 사람 이름은
@@ -23,6 +24,7 @@ STEPS = [
     ("RE_OBSERVING", "효과 확인 중(설비 시간 15분)", "timerEvent"),
     ("RESOLVED", "회복 판정(경보 해제 · 회복 기준 충족)", "exclusiveGateway"),
     ("WORK_ORDER_CREATED", "정비 요청 등록", "serviceTask"),
+    ("AWAITING_CLEAR", "결과 보고 뒤 경보 해제 기다림", "intermediateEvent"),
     ("CLOSED", "종결", "endEvent"),
 ]
 FAILURE_STATES = {
@@ -37,6 +39,11 @@ CMD_EXPIRY_S = 120           # wall clock (v3 7.2)
 REOBSERVE_SIM_S = 15 * 60    # simulated seconds; divided by TIME_SCALE — 재관측 단계 행의 마감으로 저장한다(service_parts._reobserve)
 REOBSERVE_MAX_EXTENSIONS = 3   # extra third-windows while the value is already inside the limit but the detector CLEAR (hysteresis held 60 s)
                                # has not landed yet. A072 run 4 (1x): one extension ended 3 s before CLEAR arrived → MITIGATION_FAILED on a recovered plant.
+#: 결과 보고가 정상(ok)인데 원천 경보가 아직 켜져 있을 때 해제를 기다리는 시간(machine.on_result_report → AWAITING_CLEAR). 결과 보고는 흐름이 정한
+#: 판정이라 따르지만, 경보가 켜진 채 「종결」로 닫으면 학생은 보고만 하면 고쳐진다고 믿는다(2026-11-25 감사 — 학생 현장 흐름: 승인 → 도구 호출 →
+#: 결과 보고). 시계는 경보를 내는 쪽의 시계다(engine 머리말 「시간 규칙」 — clear_wait_s): 가상 설비 사건은 설비 시간(감지기가 설비 시간으로 해제한다),
+#: 그 밖의 현장은 벽시계(실제 현장의 30분은 30분이다). 효과 확인 창(REOBSERVE_SIM_S)과 그 연장을 모두 덮는 길이다.
+CLEAR_WAIT_S = 30 * 60
 
 
 def state_label(state: str | None) -> str:
@@ -47,12 +54,26 @@ def state_label(state: str | None) -> str:
     return names[state]
 
 
+def clear_wait_s(asset: str, time_scale: float) -> float:
+    """결과 보고 뒤 원천 경보 해제를 기다리는 벽시계 초(CLEAR_WAIT_S). 가상 설비 셋(hydcommon.topics.ASSETS — engine.plant_case 와 같은 기준)의
+    사건은 설비 시간이라 배속(TIME_SCALE)으로 나누고, 그 밖의 설비 · 시스템의 사건은 그대로(벽시계)다."""
+    from hydcommon.topics import ASSETS
+    return CLEAR_WAIT_S / time_scale if asset in ASSETS else float(CLEAR_WAIT_S)
+
+
+def clear_wait_words(asset: str) -> str:
+    """해제 시한을 사람 말로 — 사유 문장(CLEAR_TIMEOUT)과 사건 이력이 같은 말을 쓴다."""
+    from hydcommon.topics import ASSETS
+    return f"설비 시간 {CLEAR_WAIT_S // 60}분" if asset in ASSETS else f"{CLEAR_WAIT_S // 60}분"
+
+
 def as_json() -> dict:
     return {"steps": [{"id": s, "label": l, "type": t} for s, l, t in STEPS],
             "failure": [{"id": k, "label": v} for k, v in FAILURE_STATES.items()],
             "terminal": sorted(TERMINAL),
             "timers": {"ack_timeout_s": ACK_TIMEOUT_S, "cmd_expiry_s": CMD_EXPIRY_S,
-                       "reobserve_sim_s": REOBSERVE_SIM_S, "reobserve_max_extensions": REOBSERVE_MAX_EXTENSIONS}}
+                       "reobserve_sim_s": REOBSERVE_SIM_S, "reobserve_max_extensions": REOBSERVE_MAX_EXTENSIONS,
+                       "clear_wait_s": CLEAR_WAIT_S}}
 
 
 #: 처리 건이 끝나 사건을 책임자 확인으로 닫은 사유 코드의 머리(machine.on_process_ended) — 뒤에 처리 건이 끝난 곳의 이름이 붙는다
@@ -68,6 +89,11 @@ OUTSIDE_CHANGE = "OUTSIDE_CHANGE"
 #: 승인 전에 경보가 풀렸는데 그때까지 설비가 승인한 길 밖에서 바뀌었는지 모른다 — 받은 바깥 변화 기록이 처리 건이 열릴 때부터 해제까지 이어지지
 #: 않는다(main.outside_at_clear: 다시 켠 process 는 꺼져 있던 동안 · 꺼지기 전의 기록을 다 갖지 못한다). 뒤에 무엇이 끊겼는지
 OUTSIDE_UNKNOWN = "OUTSIDE_UNKNOWN"
+#: 결과 보고(정상) 뒤 원천 경보가 해제 시한(CLEAR_WAIT_S) 안에 풀리지 않았다(machine.on_clear_timeout) — 뒤에 시한의 사람 말(clear_wait_words)
+CLEAR_TIMEOUT = "CLEAR_TIMEOUT"
+#: 결과 보고(정상) 뒤 원천 경보가 풀렸지만 그 해제가 승인한 조치의 효과인지 알 수 없다 — 보호 정지 중 · 승인한 조치 밖의 설비 변화 · 그 변화를
+#: 모름(machine.on_alert 의 AWAITING_CLEAR 갈래). 뒤에 그 까닭
+CLEAR_UNPROVEN = "CLEAR_UNPROVEN"
 
 
 def escalation_cause(reason: str | None) -> tuple[str, bool] | None:
@@ -110,6 +136,12 @@ def escalation_cause(reason: str | None) -> tuple[str, bool] | None:
     if code == OUTSIDE_UNKNOWN:
         return (f"승인 전에 경보가 풀렸지만, 그 전에 설비가 승인한 조치 밖에서 바뀌었는지 알 수 없습니다({detail or '무엇이 끊겼는지 기록 없음'}) — "
                 "자연 회복이라고 단정하지 않고 책임자 확인으로 넘겼습니다. 그동안 현장 조작이나 설비 초기화가 있었는지 사람이 확인하세요", False)
+    if code == CLEAR_TIMEOUT:
+        return (f"결과 보고는 정상이었지만 원천 경보가 {detail or '해제 시한'} 안에 해제되지 않았습니다 — 조치가 효과를 냈다는 확인이 없어 종결하지 않고 "
+                "책임자 확인으로 넘겼습니다. 설비 상태와 경보를 보낸 쪽을 사람이 확인하세요", False)
+    if code == CLEAR_UNPROVEN:
+        return (f"결과 보고 뒤 원천 경보가 풀렸지만 {detail or '그 까닭을 알 수 없습니다'} — 승인한 조치의 효과인지 알 수 없어 종결하지 않고 책임자 확인으로 "
+                "넘겼습니다. 설비 상태를 사람이 확인하세요", False)
     if code == PROCESS_ENDED:
         return (f"처리 건이 「{detail or '끝'}」{particle(detail or '끝', '으로')} 끝나 사건을 책임자 확인으로 닫았습니다 — 조치가 끝까지 가지 않았으니 설비 상태를 사람이 "
                 "확인하세요", False)

@@ -91,7 +91,7 @@ insert into public.users (id, email, username, role, is_agent, agent_type, goal,
   -- C3 (2026-10-09): 시나리오 에이전트 셋 — 흐름마다 판단 · 제안 task 에 하나씩 묶는다(흐름 매핑의 agent). 붙이는 MCP 서버(tools)가 서로 다르다:
   -- A 는 지금처럼(neo4j · enterprise · hyd-dmn), B 는 보전용 업무 MCP, C 는 구매용 업무 MCP. 둘은 도구가 겹치지 않고 자유 SQL 이 없다(C2 §6).
   ('agent:cooling',   null, '냉각 긴급 대응 에이전트', 'agent', true, 'agent',
-   '쿨러 과열 경보의 원인을 진단하고, 냉각 조치 후보를 규정 · 회사 목표로 비교해 추천 카드 한 장과 지는 대안을 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
+   '쿨러 성능 저하 경보의 원인을 진단하고, 냉각 조치 후보를 규정 · 회사 목표로 비교해 추천 카드 한 장과 지는 대안을 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
   ('agent:pm-plan',   null, '정기 정비 계획 에이전트', 'agent', true, 'agent',
    '정기 정비 도래 경보에서 운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지(정비 시간) 카드를 올린다', 'neo4j,hyd-dmn,enterprise-maint', 'hyd'),
   ('agent:spare-buy', null, '예비품 구매 에이전트', 'agent', true, 'agent',
@@ -140,9 +140,9 @@ on conflict do nothing;
 -- C3 (2026-10-09) 시나리오 에이전트의 스킬(SKILL.md 본문) — 워커가 작업 공간의 .claude/skills/<이름>/SKILL.md 로 넣는다(agents_store).
 -- ============================================================================
 insert into public.tenant_skills (tenant_id, skill_name, description, content, origin) values
-  ('hyd', 'cooling-emergency-response', '쿨러 과열 경보 — 원인 진단 · 냉각 조치 제안', $skill$# 냉각 긴급 대응
+  ('hyd', 'cooling-emergency-response', '쿨러 성능 저하 경보 — 원인 진단 · 냉각 조치 제안', $skill$# 냉각 긴급 대응
 
-쿨러 과열 경보(COOLER_DEGRADATION) 한 건에서 원인을 진단하고, 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 올린다.
+쿨러 성능 저하 경보(COOLER_DEGRADATION) 한 건에서 원인을 진단하고, 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 올린다.
 승인 전에는 조회 · 계산만 한다. 설비 명령은 사람 승인 뒤 시스템이 낸다.
 
 ## 절차

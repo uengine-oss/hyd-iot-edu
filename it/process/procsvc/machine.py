@@ -6,6 +6,7 @@ v3 section 9 sequence: approve → action.cmd (expiresAt = +120 s) → ACK withi
 시한은 여기서 재지 않는다(메모리 타이머 없음). ACK 마감(ack_due_at)은 사건에 적고, 명령 단계 작업 행이 그 시각을 저장해 폴링이
 판정한다(on_ack_timeout). 재관측 창 · 연장 · 판정 규칙은 재관측 단계 하나(service_parts._reobserve)가 갖고, 이 기계는 그 판정을
 사건에 적기만 한다(on_reobservation). 그래서 process 가 다시 켜져도 재관측은 저장한 마감으로 이어진다.
+결과 보고(정상) 뒤 원천 경보 해제를 기다리는 마감(clear_due_at)도 사건에 적고, 처리 건이 끝난 뒤라 폴링이 사건 기록으로 판정한다(on_clear_timeout).
 """
 from hydcommon.words import particle
 from dataclasses import dataclass, field
@@ -16,7 +17,7 @@ import itertools
 import secrets
 import threading
 
-from hydcommon.timeutil import korea_text, now_iso, plus_seconds, to_iso
+from hydcommon.timeutil import korea_text, now_iso, parse_iso, plus_seconds, to_iso
 from . import definition as d
 
 _cmd_seq = itertools.count(1)
@@ -63,6 +64,7 @@ class Incident:
     approval_id: str | None = None      # A148: the approval ledger record id the gateway matches the command against
     expires_at: str | None = None
     ack_due_at: str | None = None       # 명령을 보낸 뒤 ACK 를 기다리는 마감(벽시계, definition.ACK_TIMEOUT_S) — 명령 단계 행이 이 시각을 저장한다
+    clear_due_at: str | None = None     # 결과 보고(정상) 뒤 원천 경보 해제를 기다리는 마감(definition.clear_wait_s) — 폴링이 사건 기록으로 판정한다
     approved_by: str | None = None
     actions: list[dict] = field(default_factory=list)
     ack: dict | None = None
@@ -112,7 +114,7 @@ class Incident:
         # pattern: 이 사건을 연 경보의 종류(이상 패턴 코드) — 목록 응답은 card 를 싣지 않으므로(크다) 화면이 이름을 쓰려면 이 칸이 있어야 한다
         return {"id": self.id, "asset": self.asset, "alertId": self.alert_id, "pattern": self.pattern, "state": self.state, "reason": self.reason,
                 "history": self.history, "cmdId": self.cmd_id, "approvalId": self.approval_id, "expiresAt": self.expires_at,
-                "ackDueAt": self.ack_due_at, "approvedBy": self.approved_by,
+                "ackDueAt": self.ack_due_at, "clearDueAt": self.clear_due_at, "approvedBy": self.approved_by,
                 "actions": self.actions, "ack": self.ack, "cleared": self.cleared, "workOrder": self.work_order,
                 "workOrderRequest": self.work_order_request,
                 "reobsExtensions": self.reobs_extensions,
@@ -234,7 +236,7 @@ def on_command_send_failed(inc: Incident, cmd_id: str, error: str, fx: Effects) 
 
 #: 재작업이 다시 열 수 있는 사건 상태 — 이 표 하나(재작업 효과 판정 effect_compensation 도 이것을 쓴다, P4-10). 끝난 사건(definition.TERMINAL)과
 #: 명령이 오가는 중(CMD_ISSUED · AWAITING_ACK)은 다시 열지 않는다 — 끝난 사건은 새 경보가 새 처리 건으로 다룬다.
-REOPENABLE = {"AWAITING_APPROVAL", "APPROVED_EXECUTING", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED"}
+REOPENABLE = {"AWAITING_APPROVAL", "APPROVED_EXECUTING", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "AWAITING_CLEAR"}
 
 
 @_transition
@@ -251,6 +253,7 @@ def on_rework_reopen(inc: Incident, request_id: str, by: str, role: str, reason:
                            "workOrderRequest": inc.work_order_request, "reason_before": inc.reason, "effects": effects,
                            "by": by, "role": role, "reason": reason, "t": now_iso()})
     inc.cmd_id, inc.expires_at, inc.ack_due_at, inc.approved_by, inc.actions, inc.ack = None, None, None, None, [], None
+    inc.clear_due_at = None                               # 물린 판의 결과 보고가 건 해제 기다림도 함께 물린다
     inc.work_order, inc.work_order_request, inc.reobs_extensions, inc.reason, inc.closed = None, None, 0, None, None
     _audit(inc, fx, "operator", "INCIDENT_REOPENED", {"request_id": request_id, "by": by, "role": role, "reason": reason,
                                                        "superseded": inc.superseded[-1]["cmdId"], "effects": effects})
@@ -386,7 +389,9 @@ def on_alert(inc: Incident, alert: dict, fx: Effects, trip: str | None = None, o
     outside_unknown = 해제가 난 때까지 바뀌었는지 모르는 까닭(받은 바깥 변화 기록이 끊겼다 — main.outside_at_clear). 모르면 자연 회복이라고
     단정하지 않는다 — 그 까닭으로 책임자 확인으로.
     「조치 전」은 승인 대기(AWAITING_APPROVAL)뿐이다. 사람이 승인한 뒤의 사건(APPROVED_EXECUTING · 명령이 오가는 상태)은 해제만 적고, 끝은 흐름의
-    업무 효과 · 결과 보고 · 효과 확인이 정한다."""
+    업무 효과 · 결과 보고 · 효과 확인이 정한다.
+    결과 보고(정상) 뒤 해제를 기다리는 사건(AWAITING_CLEAR)은 해제로 종결한다 — 같은 까닭(보호 정지 · 바깥 변화 · 그 변화를 모름)이 있으면 그 해제는
+    승인한 조치의 효과라고 말할 수 없어 책임자 확인(CLEAR_UNPROVEN)으로."""
     if alert.get("alertId") != inc.alert_id or alert.get("state") != "CLEAR":
         return
     inc.cleared = True
@@ -409,6 +414,17 @@ def on_alert(inc: Incident, alert: dict, fx: Effects, trip: str | None = None, o
             _go(inc, "ESCALATED", f"조치 전에 경보가 풀렸지만 그 전에 설비가 승인한 조치 밖에서 바뀌었는지 모름({outside_unknown})"[:300])
         else:
             _go(inc, "RESOLVED_WITHOUT_ACTION", "조치 전에 경보가 풀림")
+    elif inc.state == "AWAITING_CLEAR":
+        why = (f"설비가 보호 정지(사유 {trip}) 중이었습니다" if trip else
+               f"그 전에 설비가 승인한 조치 밖에서 바뀌었습니다({outside_words(outside)})" if outside else
+               f"그 전에 설비가 승인한 조치 밖에서 바뀌었는지 알 수 없습니다({outside_unknown})" if outside_unknown else None)
+        if why:
+            inc.reason = f"{d.CLEAR_UNPROVEN}: {why}"[:300]
+            _audit(inc, fx, "process", "INCIDENT_ESCALATED", {"alertId": inc.alert_id, "after": "result_report", "reason": inc.reason})
+            _go(inc, "ESCALATED", f"결과 보고 뒤 경보가 풀렸지만 {why}"[:300])
+        else:
+            _audit(inc, fx, "process", "INCIDENT_CLOSED", {"alertId": inc.alert_id, "after": "result_report"})
+            _go(inc, "CLOSED", "결과 보고 뒤 원천 경보가 풀려 종결")
 
 
 @_transition
@@ -536,11 +552,13 @@ def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
 
 
 @_transition
-def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bool:
+def on_result_report(inc: Incident, level: str, summary: str, fx: Effects, *, clear_wait_s: float, now: datetime) -> bool:
     """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김),
     반려(rejected, 캡스톤 G1 사람 승인의 반려 가지)는 on_reject 와 같은 REJECTED_BY_OPERATOR(승인 대기 사건만 — 승인 뒤 흐름이 실행 중인 사건은
     이미 승인한 것이라 반려로 닫지 않는다).
-    이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정)은 그대로 둔다(False)."""
+    정상 보고인데 원천 경보가 아직 해제되지 않았으면 닫지 않고 해제를 기다린다(AWAITING_CLEAR, 마감 = now + clear_wait_s — definition.CLEAR_WAIT_S).
+    해제가 오면 on_alert 가 종결하고, 마감이 지나면 on_clear_timeout 이 책임자 확인으로 넘긴다.
+    이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정) · 이미 해제를 기다리는 사건은 그대로 둔다(False)."""
     if level not in ('ok', 'fail', 'rejected'):
         raise ValueError('결과 보고 등급은 ok · fail · rejected 입니다')
     if level == 'fail' and inc.state == 'CLOSED' and not inc.cmd_id and inc.work_order:
@@ -550,7 +568,7 @@ def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bo
         _audit(inc, fx, 'process', 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level, 'after': 'work_order'})
         _go(inc, 'ESCALATED', f"결과 보고: {summary}"[:300])
         return True
-    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING'):
+    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING', 'AWAITING_CLEAR'):
         return False
     if level == 'rejected':
         if inc.state != 'AWAITING_APPROVAL':
@@ -559,15 +577,28 @@ def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bo
         _audit(inc, fx, 'process', 'GUIDE_REJECTED', {'resultReport': summary, 'level': level})
         _go(inc, 'REJECTED_BY_OPERATOR', f"결과 보고: {summary}"[:300])
         return True
+    if level == 'ok' and not inc.cleared:
+        inc.clear_due_at = to_iso(plus_seconds(now, clear_wait_s))
+        _audit(inc, fx, 'process', 'INCIDENT_AWAITING_CLEAR', {'resultReport': summary, 'level': level, 'clearDueAt': inc.clear_due_at})
+        _go(inc, 'AWAITING_CLEAR', f"결과 보고: {summary}"[:300] + f" — 원천 경보가 아직 켜져 있어 해제를 기다림({korea_text(inc.clear_due_at)}까지)")
+        return True
     if level == 'fail':
         inc.reason = d.RESULT_REPORT       # P1-31: 사유 칸을 비워 두지 않는다 — 문장은 결과 보고 틀이다(escalation_cause 는 None)
-    # 정상 보고로 닫는데 원천 경보가 아직 해제되지 않았으면 그 사실을 기록과 이력에 싣는다 — 결과 보고는 흐름이 정한 판정이라 따르되, 경보가 켜진 채
-    # 「정상 종결」만 보이면 학생은 명령을 보내면 고쳐진다고 믿는다(2026-11-25 감사 — 학생 현장 흐름: 승인 → 도구 호출 → 결과 보고)
-    still = level == 'ok' and not inc.cleared
-    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED',
-           {'resultReport': summary, 'level': level, **({'alertStillActive': True} if still else {})})
-    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED',
-        f"결과 보고: {summary}"[:300] + (' — 원천 경보는 아직 해제되지 않았습니다' if still else ''))
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level})
+    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED', f"결과 보고: {summary}"[:300])
+    return True
+
+
+@_transition
+def on_clear_timeout(inc: Incident, now: datetime, fx: Effects) -> bool:
+    """결과 보고(정상) 뒤 해제를 기다리던 사건의 마감(clear_due_at)이 지났는데 원천 경보가 풀리지 않았다 — 조치가 효과를 냈다는 확인이 없으니
+    책임자 확인으로. 해제를 기다리는 사건이 아니거나 마감 전이면 그대로(False)."""
+    if inc.state != 'AWAITING_CLEAR' or inc.cleared or not inc.clear_due_at or parse_iso(inc.clear_due_at) > now:
+        return False
+    wait = d.clear_wait_words(inc.asset)
+    inc.reason = f"{d.CLEAR_TIMEOUT}: {wait}"
+    _audit(inc, fx, 'process', 'CLEAR_TIMEOUT', {'alertId': inc.alert_id, 'clearDueAt': inc.clear_due_at})
+    _go(inc, 'ESCALATED', f"결과 보고 뒤 원천 경보가 {wait} 안에 풀리지 않음")
     return True
 
 
@@ -575,8 +606,9 @@ def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bo
 def on_process_ended(inc: Incident, end_label: str, fx: Effects) -> bool:
     """사건을 맡은 처리 건이 사건을 닫지 않고 끝났다(카드 선택 시한 → 상급자 호출 끝, 사람이 멈춘 AI 단계를 닫음, 승인 폐기 …). 처리 건은 끝났는데
     사건만 「승인 대기」로 남으면 아무도 닫을 수 없고 열린 사건 수가 부풀었다(P1-01 · H-10) — 책임자 확인(ESCALATED)으로 닫고 끝난 곳을 사유에
-    남긴다. 이미 끝난 사건과 명령이 오가는 중(CMD_ISSUED · AWAITING_ACK · RE_OBSERVING — 사건이 스스로 판정한다)은 그대로 둔다(False)."""
-    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING'):
+    남긴다. 이미 끝난 사건과 명령이 오가는 중(CMD_ISSUED · AWAITING_ACK · RE_OBSERVING — 사건이 스스로 판정한다), 결과 보고 뒤 해제를 기다리는 사건
+    (AWAITING_CLEAR — 해제 · 해제 마감이 정한다)은 그대로 둔다(False)."""
+    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING', 'AWAITING_CLEAR'):
         return False
     inc.reason = f"{d.PROCESS_ENDED}: {end_label}"
     _audit(inc, fx, 'process', 'INCIDENT_ESCALATED', {'processEnded': end_label, 'stateBefore': inc.state})

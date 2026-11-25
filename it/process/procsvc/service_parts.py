@@ -525,8 +525,12 @@ class ServicePartsRuntime:
         if level != "info" and v.get("incident") and self.hooks.close_incident_result is not None:
             # 반려는 사건의 사유(on_reject 의 reason 과 같은 자리)가 곧 사람이 적은 반려 사유다 — 요약(사유 틀)을 함께 싣는다
             note = f"{outcome} — {title}" + (f": {summary}" if level == "rejected" and summary else "")
-            closed = self.hooks.close_incident_result(v["incident"], level, note)
-        report["incident_closed"] = bool(closed)
+            closed = self.hooks.close_incident_result(v["incident"], level, note, self._now(now))
+        # 닫았는가는 사건이 끝난 상태로 갔는가다 — 정상 보고라도 원천 경보가 켜져 있으면 사건은 해제를 기다린다(machine.on_result_report)
+        state = self.hooks.incident_state(v["incident"]) if v.get("incident") else None
+        report["incident_closed"] = bool(closed) and state in incident_def.TERMINAL
+        if state is not None:
+            report["incident_state"] = state      # 보고를 낸 때의 사건 상태(화면이 「해제 기다림」 뒤 어떻게 됐는지를 지금 사건과 견준다)
         recipients = list(inst.get("participants") or [])
         for notice in cfg.get("notify", []):
             if engine.eval_condition(notice["when"], v):

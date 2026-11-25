@@ -491,10 +491,10 @@ def _apply_source_event(receipt):
     with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
         if receipt['kind']=='CLEAR' and not inc.cleared:
             trip=machine.active_trip(inc.asset,list(incidents.values()),since=inc.created)
-            # 바깥 변화는 「조치 전 자연 회복」인지 가를 때(승인 대기 · 받는 흐름 · 보호 정지 아님 — machine.on_alert)만 본다. 해제가 난 때(해제의
-            # t)까지만 본다 — 해제 처리가 늦게 돌면(접수 처리 대기 · 다시 켬) 그 뒤에 누른 [설비 초기화]가 자연 회복을 「바깥 변화」로 바꿨다. 해제에
-            # 시각이 없으면 지금까지의 바깥 변화를 모두 본다. 그때까지의 기록이 끊겼으면 모른다고 남긴다(outside_at_clear — 다시 켠 뒤 늦게 처리한 해제)
-            judged=inc.state=='AWAITING_APPROVAL' and inc.supported and not trip
+            # 바깥 변화는 그 해제가 회복인지 가를 때(승인 대기의 「조치 전 자연 회복」 · 결과 보고 뒤 해제 기다림의 종결, 받는 흐름 · 보호 정지 아님 —
+            # machine.on_alert)만 본다. 해제가 난 때(해제의 t)까지만 본다 — 해제 처리가 늦게 돌면(접수 처리 대기 · 다시 켬) 그 뒤에 누른 [설비 초기화]가
+            # 자연 회복을 「바깥 변화」로 바꿨다. 해제에 시각이 없으면 지금까지의 바깥 변화를 모두 본다. 그때까지의 기록이 끊겼으면 모른다고 남긴다(outside_at_clear — 다시 켠 뒤 늦게 처리한 해제)
+            judged=inc.state in ('AWAITING_APPROVAL','AWAITING_CLEAR') and inc.supported and not trip
             outside,unknown=outside_at_clear(inc,source_time(value)) if judged else (None,None)
             machine.on_alert(inc,value,Fx(inc),trip=trip,outside=outside,outside_unknown=unknown)
         elif receipt['kind']=='ACK':

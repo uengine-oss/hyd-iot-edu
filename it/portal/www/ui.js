@@ -335,7 +335,7 @@ const UI = {
   /* ---------- 상태 이름 (UIUX_PLAN §5 + 사건 상태) ---------- */
   states: {
     PENDING_APPROVAL: "승인 대기", AWAITING_APPROVAL: "조치 선택 대기", APPROVED_EXECUTING: "승인 — 실행 중", GUIDE_RECEIVED: "분석 완료", CMD_ISSUED: "명령 전송", AWAITING_ACK: "설비 응답 대기",
-    ACKED: "설비 응답", RE_OBSERVING: "효과 확인 중", RESOLVED: "이상 완화", WORK_ORDER_CREATED: "정비 요청 완료", CLOSED: "종결",
+    ACKED: "설비 응답", RE_OBSERVING: "효과 확인 중", RESOLVED: "이상 완화", WORK_ORDER_CREATED: "정비 요청 완료", AWAITING_CLEAR: "경보 해제 기다림", CLOSED: "종결",
     ESCALATED: "책임자 확인", REJECTED_BY_OPERATOR: "반려", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
     PARTIAL: "일부 실행", REJECTED: "반려", CLOSED_UNAPPROVED: "승인 전 종료", FAILED: "실패", SUBMITTED: "제출됨", DONE: "완료", RUNNING: "진행 중",
     RUN: "운전 중", TRIP: "보호 정지", STOP: "계획 정지", RAISED: "경보 발생", RAISE: "경보 발생", CLEAR: "경보 해제", CLEARING: "회복 확인 중",
@@ -352,7 +352,7 @@ const UI = {
     neutral: ['EVALUATED', 'TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED', 'CANCELLED'],
     accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'APPROVED_EXECUTING', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
     success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'CLEAR', 'OK'],      // 초록은 정상 · 끝남 · 연결됨에만 — 계산이 끝났다는 것(EVALUATED)은 상태색을 쓰지 않는다
-    warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE', 'ESCALATED'],
+    warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'AWAITING_CLEAR', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE', 'ESCALATED'],
     danger: ['FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
   },
   // 처리 건 값(variables_data 행 목록) → {키: 값} — 화면 모듈이 같은 펼치기를 따로 두지 않는다(W1-11)
@@ -479,7 +479,7 @@ const UI = {
     STATE_CHANGED: '상태 변경', REOBSERVE_DONE: '효과 확인 완료', ACK_DONE: '설비 응답 완료', ALERT_CLEARED: '경보 해제', CMD_PUBLISHED: '설비에 명령',
     MANUAL_INGESTED: '매뉴얼 등록', REOBSERVATION: '효과 확인', REOBSERVATION_EXTENDED: '효과 확인 연장', APPROVAL_CURRENT_CHECK: '승인 조건 재확인',
     SKILL_EDITED: '조치 방법 수정', SKILL_EXECUTED: '조치 실행', WORK_ORDER_CREATED: '정비 요청', EFFECT_ACKNOWLEDGED: '영향 확인 기록',
-    INCIDENT_ENDED_BEFORE_ACTION: '조치 전 사건 종료', INCIDENT_REOPENED: '사건 다시 열림', TIMER_IGNORED: '지난 타이머 무시', MANUAL_GOLDEN_REQUESTED: '매뉴얼 확인 질문 요청',
+    INCIDENT_ENDED_BEFORE_ACTION: '조치 전 사건 종료', INCIDENT_REOPENED: '사건 다시 열림', INCIDENT_AWAITING_CLEAR: '경보 해제 기다림', INCIDENT_ESCALATED: '책임자 확인으로 넘김', CLEAR_TIMEOUT: '경보 해제 시간 초과', TIMER_IGNORED: '지난 타이머 무시', MANUAL_GOLDEN_REQUESTED: '매뉴얼 확인 질문 요청',
     INSTANCE_STARTED: '처리 건 시작', TASK_COMPLETED: '단계 완료', TASK_PENDING: '조건 미충족', TASK_REVIEW_REQUIRED: '새 판단 · 승인 필요', SELECT_TIMEOUT: '선택 시간 초과',
     task_started: '단계 시작', task_completed: '단계 완료', task_working: '진행', tool_usage_started: '도구 호출', tool_usage_finished: '도구 결과',
     human_asked: '사람에게 질문', human_response: '사람의 답변', task_cancelled: '단계 취소', error: '오류',

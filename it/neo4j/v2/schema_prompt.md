@@ -91,7 +91,7 @@
 
 실행 중에 쌓이는 기록: 사건과 사람의 판단 사례(업무 기록), 처리 건 · 작업 · 배포 판본의 투영(실행 기록), 적재 · 투영 · 편집의 영수증(내부 기록 — 지식 지도에는 보이지 않는다).
 
-- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|APPROVED_EXECUTING|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, diagnosedCause, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
+- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|APPROVED_EXECUTING|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|AWAITING_CLEAR|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, diagnosedCause, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
 - `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|CLOSED_UNAPPROVED|EXECUTED|PARTIAL], source_incident_id, chosenSkill, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건(승인 투영). 고른 스킬과 사유가 남는다. 선례 조회(t3_precedents)는 seeded=true인 미리 넣은 예시 사례만 센다 — 승인할 때마다 순위가 바뀌지 않게 하려는 것이며, 예시 사례를 넣지 않은 그래프에서는 선례 몫이 0이다.
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.

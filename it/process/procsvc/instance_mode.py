@@ -342,7 +342,7 @@ def sweep_worker_leases(rt: instances.InstanceRuntime) -> int:
 def poll_round(rt: instances.InstanceRuntime, tick: int) -> list[str]:
     """폴링 한 바퀴(B-11). 일마다 따로 가둔다 — 처리 건 하나 · 일 하나의 예외가 타이머 발화나 다른 일을 멈추지 않는다(처리 건 단위
     격리는 각 일 안에서 한다). 돌려줌 = 실패한 일의 이름(비면 성공)."""
-    steps = [("engine", rt.poll_once), ("timers", rt.fire_timeouts)]
+    steps = [("engine", rt.poll_once), ("timers", rt.fire_timeouts), ("clear wait", lambda: rt.hooks.clear_wait_timeouts(rt._now()))]
     if tick % LEASE_SWEEP_EVERY == 0:
         steps.append(("worker leases", lambda: sweep_worker_leases(rt)))
     failed = []
@@ -534,8 +534,16 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
     def close_incident_effect(inc_id: str, receipt: dict) -> bool:
         return _incident_change(inc_id, lambda inc, fx: machine.on_business_effect(inc, receipt, fx))
 
-    def close_incident_result(inc_id: str, level: str, summary: str) -> bool:
-        return _incident_change(inc_id, lambda inc, fx: machine.on_result_report(inc, level, summary, fx))
+    def close_incident_result(inc_id: str, level: str, summary: str, at) -> bool:
+        from . import definition
+        return _incident_change(inc_id, lambda inc, fx: machine.on_result_report(
+            inc, level, summary, fx, clear_wait_s=definition.clear_wait_s(inc.asset, ctx.time_scale), now=at))
+
+    def clear_wait_timeouts(at) -> int:
+        """결과 보고(정상) 뒤 원천 경보 해제를 기다리는 사건 가운데 마감이 지난 것을 책임자 확인으로(machine.on_clear_timeout). 돌려줌 = 넘긴 사건 수.
+        처리 건은 이미 끝났으므로 작업 행의 마감이 아니라 사건 기록의 마감(clear_due_at)으로 판정한다 — process 가 다시 켜져도 저장한 마감으로 잇는다."""
+        due = [inc.id for inc in list(ctx.incidents.values()) if inc.state == 'AWAITING_CLEAR']
+        return sum(_incident_change(inc_id, lambda inc, fx: machine.on_clear_timeout(inc, at, fx)) for inc_id in due)
 
     def recovery_reading(inc_id: str, since: str | None = None, after: str = "work_order", window_outside: dict | None = None) -> dict | None:
         """사건의 회복 기준 태그 최신값 · 경보 해제 · (since 가 있으면) 재관측 창의 값 흐름. after = 'command' | 'work_order'(창의 종류).
@@ -636,7 +644,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            ensure_actor_schema=lambda: ctx.cypher(execution_graph.ACTOR_CONSTRAINT_Q), audit=ctx.audit,
                            enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
                            close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
-                           read_tag=ctx.latest_tag, close_incident_result=close_incident_result, ack_timeout=ack_timeout,
+                           read_tag=ctx.latest_tag, close_incident_result=close_incident_result, clear_wait_timeouts=clear_wait_timeouts,
+                           ack_timeout=ack_timeout,
                            reobservation_extended=reobservation_extended, reobservation_verdict=reobservation_verdict,
                            outside_after_work_order=outside_after_work_order, plant_outside=plant_outside, outside_since=outside_since)
 
