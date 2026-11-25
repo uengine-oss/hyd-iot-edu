@@ -285,6 +285,86 @@ export async function newTerminal(c, ctx) {
  await c.clickSel('.menubar-menu-button', 'Terminal'); await shown('New Terminal');
  await c.menuItem('New Terminal');
 }
+// ── Codex 패널(웹뷰) ── 녹화 브라우저는 웹뷰 프레임 안의 요소까지 잰다. 이름이나 글이 있는 단추와 입력칸은 비율 좌표로 어림하지 않고 codexEl로 잰다.
+// want = {label: 'aria-label의 앞 글'}(예: 'New chat' · 'Archive chat') | {text: '정확히 같은 글'} | {input: true}(요청 입력칸). 보이는 요소가 하나가 아니면 멈춘다.
+// 돌려주는 값 = 그 요소의 가운데(바깥 문서의 CSS px)와 크기 {x, y, w, h}.
+export async function codexEl(c, ctx, want) {
+ const name = want.input ? '입력칸' : want.label ?? want.text;
+ const q = await c.serial(async () => {
+  const hits = [];
+  for (const f of ctx.p.frames()) {
+   if (f === ctx.p.mainFrame()) continue;
+   const l = want.input ? f.locator('[contenteditable=true]') : want.label != null ? f.locator('[aria-label^=' + JSON.stringify(want.label) + ']') : f.getByText(want.text, {exact: true});
+   try { const n = await l.count(); for (let i = 0; i < n; i++) if (await l.nth(i).isVisible()) { const b = await l.nth(i).boundingBox(); if (b) hits.push(b); } }
+   catch (e) { if (!/detached|destroyed|closed|navigat/i.test(String(e?.message ?? e))) throw e; }   // 웹뷰가 다시 그려지는 순간의 프레임만 건너뛴다
+  }
+  if (hits.length !== 1) throw Error((ctx.cueId ?? '(큐 밖)') + ': Codex 패널의 「' + name + '」이 ' + hits.length + '개 (segs/lab-common.mjs codexEl)');
+  return {x: hits[0].x + hits[0].width / 2, y: hits[0].y + hits[0].height / 2, w: hits[0].width, h: hits[0].height};
+ });
+ const a = await c.codexArea();
+ return {...aimed(ctx, 'Codex ' + name, {x: q.x, y: q.y, box: {left: a.x, top: a.y, right: a.x + a.w, bottom: a.y + a.h}}), w: q.w, h: q.h};
+}
+// 요청 입력칸을 눌러 초점을 준다. 한 번 눌러 초점이 오지 않으면 세 번까지 누르고, 그래도 초점이 Codex에 없으면 멈춘다.
+export async function codexFocus(c, ctx) {
+ const q = await codexEl(c, ctx, {input: true});
+ for (let k = 0; k < 3; k++) { await c.clickAt(q.x, q.y); await ctx.sleep(300); if (await c.serial(() => ctx.p.evaluate(zoneInPage)) === 'codex') return q; }
+ throw Error((ctx.cueId ?? '(큐 밖)') + ': Codex 입력칸이 초점을 받지 않음 — 보내지 않고 멈춤 (segs/lab-common.mjs codexFocus)');
+}
+// 초점이 있는 입력칸에 부탁 글을 넣는다(긴 글이라 붙여넣듯 빠르게 — 영상 V-14). 초점이 Codex에 없으면 넣지 않고 멈춘다.
+export async function codexType(c, ctx, text) {
+ if (await c.serial(() => ctx.p.evaluate(zoneInPage)) !== 'codex') throw Error((ctx.cueId ?? '(큐 밖)') + ': 입력 초점이 Codex가 아님 — 글을 보내지 않고 멈춤 (segs/lab-common.mjs codexType)');
+ const t0 = Date.now(); await c.typeFast(text); ctx.report?.push({cue: ctx.cueId, op: 'type', target: 'Codex 입력칸', text, ms: Date.now() - t0, fail: false});
+}
+// Enter로 보낸다(실제 요청이 나간다 — 리허설도 같다). 돌려주는 값 = 보낸 시각(codexWait의 since).
+export async function codexSubmit(c, ctx) {
+ await c.gate();
+ if (await c.serial(() => ctx.p.evaluate(zoneInPage)) !== 'codex') throw Error((ctx.cueId ?? '(큐 밖)') + ': 입력 초점이 Codex가 아님 — Enter를 보내지 않고 멈춤 (segs/lab-common.mjs codexSubmit)');
+ const since = Date.now(); await c.serial(() => ctx.p.keyboard.press('Enter')); ctx.report?.push({cue: ctx.cueId, op: 'key', target: 'Enter', zone: 'codex', fail: false});
+ return since;
+}
+// 응답이 끝나기를 기다린다(촬영준비 길 9): 화면이 아니라 <CODEX_HOME>/sessions의 rollout 기록에서 since 뒤의 task_complete를 찾는다.
+// CODEX_HOME은 웹 VS Code 서버를 켠 값(촬영준비 길 1)을 실행할 때 환경변수로 준다(CODEX_HOME=… ./run.sh rec …).
+// 돌려주는 값 = {message: 끝난 답, used: 계정 한도 사용률 %, ms: 보낸 뒤 걸린 시간, file}. 기록에 오류 사건이 있으면 그 글로 멈춘다(한도 · 로그인).
+export async function codexWait(ctx, since, timeout = 180000) {
+ const home = process.env.CODEX_HOME;
+ if (!home) throw Error('CODEX_HOME 없음 — 웹 VS Code 서버를 켠 값(촬영준비 길 1)을 CODEX_HOME=… ./run.sh 앞에 준다 (segs/lab-common.mjs codexWait)');
+ const root = home.replace(/\\/g, '/') + '/sessions';
+ let seen = [];
+ for (;;) {
+  for (const rel of await fs.readdir(root, {recursive: true})) {
+   const file = root + '/' + rel.replace(/\\/g, '/');
+   if (!/rollout-[^/]*\.jsonl$/.test(file) || (await fs.stat(file)).mtimeMs < since) continue;
+   let used = null; seen = [];
+   for (const line of (await fs.readFile(file, 'utf8')).split('\n')) {
+    if (!line.trim()) continue;
+    let o; try { o = JSON.parse(line); } catch { continue; }   // 쓰는 중인 마지막 줄
+    if (Date.parse(o.timestamp) < since - 2000) continue;
+    const p = o.payload ?? {}; seen.push(p.type ?? o.type);
+    if (p.rate_limits?.primary) used = p.rate_limits.primary.used_percent;
+    if (o.type === 'event_msg' && /error/.test(p.type ?? '')) throw Error('Codex 오류 사건 ' + p.type + ': ' + String(p.message ?? JSON.stringify(p)).slice(0, 400) + ' (' + file + ')');
+    if (o.type === 'event_msg' && p.type === 'task_complete') return {message: p.last_agent_message, used, ms: Date.parse(o.timestamp) - since, file};
+   }
+  }
+  if (Date.now() - since > timeout) throw Error('Codex 응답이 ' + Math.round(timeout / 1000) + '초 안에 끝나지 않음 — 마지막 사건: ' + seen.slice(-5).join(' · ') + ' (segs/lab-common.mjs codexWait)');
+  await ctx.sleep(1000);
+ }
+}
+// 그림 한 장을 화면 가득 띄운다(녹화 전) — 웹 VS Code 밖의 화면(06-1 여는 장의 사용자 녹화 첫 프레임) 위에 펜 그림 · 글상자를 그릴 때 쓴다. file = 그림의 절대 경로.
+// 16:9가 아니면 찌그러지므로 멈춘다. 둘째 페이지에서 쓴다(PAGE=1 — 첫 페이지의 웹 VS Code를 떠나지 않게).
+export async function imageView(c, ctx, file) {
+ if (ctx.p.url().startsWith('http')) throw Error('그림은 웹 VS Code 페이지가 아닌 둘째 페이지에 띄운다 — PAGE=1 ./run.sh … (segs/lab-common.mjs imageView)');
+ await c.serial(() => ctx.p.goto('file:///' + file.replace(/\\/g, '/')));
+ const v = await c.serial(() => ctx.p.evaluate(() => {
+  const img = document.images[0]; if (!img || !img.naturalWidth) return null;
+  document.documentElement.style.cssText = 'margin:0;background:#000;overflow:hidden'; document.body.style.cssText = 'margin:0;overflow:hidden';
+  img.style.cssText = 'display:block;width:100vw;height:100vh;margin:0;cursor:default';
+  return {nw: img.naturalWidth, nh: img.naturalHeight, w: innerWidth, h: innerHeight, dpr: devicePixelRatio};
+ }));
+ if (!v) throw Error('그림을 열지 못함: ' + file + ' (segs/lab-common.mjs imageView)');
+ if (v.nw * 9 !== v.nh * 16) throw Error('그림이 16:9가 아님(' + v.nw + '×' + v.nh + ') — 화면 가득 띄우면 찌그러진다: ' + file);
+ if (v.w !== VIEW_W) throw Error('그림 화면 조건 불일치(화면 폭 기대 ' + VIEW_W + '): ' + JSON.stringify(v));
+ return v;
+}
 // 명령 뒤 결과 파일과 터미널 끝 줄을 기다린다
 export async function waitRun(ctx, lab, endText = '결과: output/result.html', timeout = 20000) {
  const t0 = Date.now();

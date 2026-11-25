@@ -65,12 +65,9 @@ export async function vscode(ctx){
  c.explorer=async name=>c.clickSel('.explorer-folders-view .monaco-list-row .label-name',name);
  // 열린 편집기 탭
  c.tab=async name=>c.clickSel('.tabs-container .tab .label-name',name);
- // Codex 웹뷰 영역(보조 사이드바) 안의 상대 위치. fx·fy는 0~1 비율, 아래쪽 입력칸은 fy≈0.855(새 대화의 빈 화면 기준).
+ // Codex 웹뷰 영역(보조 사이드바) 안의 상대 위치. fx·fy는 0~1 비율 — 이름도 글도 없는 자리(답의 빈 곳)를 짚을 때만 쓴다. 입력칸과 단추는 segs/lab-common.mjs의 codexEl · codexFocus가 잰다.
  c.codexArea=async()=>q1(()=>raw.evaluate(()=>{const b=document.querySelector('.part.auxiliarybar')?.getBoundingClientRect();if(!b||!b.width)throw Error('Codex 패널이 열려 있지 않음');return{x:b.x,y:b.y,w:b.width,h:b.height};}));
  c.codexPoint=async(fx,fy)=>{const a=await c.codexArea();return{x:a.x+a.w*fx,y:a.y+a.h*fy};};
- // 웹뷰는 첫 클릭에 패널만 활성화하고 입력칸 포커스는 둘째 클릭에서 받는다(한 번만 누르면 글이 편집기 쪽으로 가거나 버려졌다).
- // fy: 입력칸 글 줄의 높이 비율. 열린 파일이 없으면 입력칸 위의 파일 꼬리표 줄이 없어 입력칸이 낮아지므로(0.855는 그 테두리 위다) 그때는 0.882를 준다.
- c.codexInput=async(fy=0.855)=>{const q=await c.codexPoint(0.45,fy);await c.clickAt(q.x,q.y);await sleep(400);await c.clickAt(q.x,q.y);};
  // 입력: 완성형 글자 단위(IME 조합 시연 아님). 입력 중 포인터는 입력칸 위 여백으로 비킨다.
  c.type=async(text,aside)=>{if(aside)await c.move(aside.x,aside.y);await gate();await hlEnd('입력');let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([70,85,60,95,75][i++%5]);}};
  c.key=async k=>{await gate();await hlEnd('입력');await q1(()=>raw.keyboard.press(k));await sleep(200);};
