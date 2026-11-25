@@ -16,7 +16,7 @@
 | `README.md` · `compose*.yaml` · `.env.example` · `setup/`(설치 · 시작 · 끄기 · 점검) · `scripts/`(`setup/`의 파일이 부르는 것만) · `it/` `ot/` `dmz/` `common/` | 학생이 clone해 실행하는 것: 코드, 프롬프트, 설정, 수업 데이터(수업 문서 원문은 `it/portal/www/samples/`). 사람이 읽는 문서는 루트 README 하나뿐이다 | main |
 | `workspace/README.md` | 하려는 일 → 읽을 문서의 색인. 이런 진입 표는 이곳 한 곳에만 둔다 | workspace |
 | `workspace/강의제작/지침/` | `공통.md`, 일 문서 일곱(실라버스 · 덱 · 대본 · 영상 · 코딩랩 · 가이드 · 배포), 사실표, 설계서 | workspace |
-| `workspace/강의제작/산출물/` | 완성본의 최신 판만 둔다(과정별 이론 · 이론_오프라인 · 실습, 영상, 실라버스 엑셀) | workspace |
+| `workspace/강의제작/산출물/` | 완성본의 최신 판만 둔다(이론 덱 · 대본은 두 반이 같이 쓰는 한 벌이라 통합반 자리에만, 실습은 과정별로, 영상, 실라버스 엑셀) | workspace |
 | `workspace/강의제작/제작도구/` | 다시 만들 재료(원고, 구성, 큐, 촬영도구, 음성 캐시, 촬영준비, 검사기) | workspace |
 | `workspace/개발/` | 시스템 개발용 문서, 테스트, 생성기, 확인 도구. 목록은 `workspace/README.md`의 「폴더」 표에 있다 | workspace |
 | `workspace/동기화.py` · `secret_scan.py` · `requirements-dev.txt` | 두 브랜치 동기화와 작업 폴더 시작 · 정리(`동기화.py`), 키 검사(`secret_scan.py`), 개발 의존성(`requirements-dev.txt`) | workspace |

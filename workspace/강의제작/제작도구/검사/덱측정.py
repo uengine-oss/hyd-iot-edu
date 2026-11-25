@@ -1,6 +1,7 @@
-"""덱의 전체·이론 본문 장 수를 구분한다. 온라인은 장마다 유형 · 레이아웃 · 메시지 · 그림 · 대본 어림 낭독 시간을 JSON으로 내고, 행별 본문과 자리 장의 낭독 추정, 대본이 덮지 못한 장과 긴 장도 찍는다.
+"""덱의 전체·이론 본문 장 수를 구분한다. 장마다 유형 · 레이아웃 · 메시지 · 그림 · 대본 어림 낭독 시간을 JSON으로 내고, 행별 본문과 자리 장의 낭독 추정, 대본이 덮지 못한 장과 긴 장도 찍는다.
 언제: 덱 재편 전후, 장별 점검 · 시간 배분을 판단할 때. 읽기만 하고 음성을 부르지 않는다.
-명령: <py> workspace/강의제작/제작도구/검사/덱측정.py <출력.json> <덱키 …(통합3 실전4)> [--오프라인]
+명령: <py> workspace/강의제작/제작도구/검사/덱측정.py <출력.json> <덱키 …(통합3 통합4)>
+      이론 덱은 두 반 · 온라인 · 현장 수업이 같이 쓰는 한 벌이라 덱키는 「통합」에 회차를 붙인 꼴 하나다(공통 C-4).
 """
 import argparse, json, re, sys
 from pathlib import Path
@@ -10,9 +11,6 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(W / "제작도구/촬영"))
 from 장닫음 import script_text  # noqa: E402
 from 시간계산 import load_coef, script_slides, slide_seconds, spoken  # noqa: E402
-
-COURSE = {"통합": ("통합반", "integrated"), "실전": ("실전반", "practical")}
-
 
 def script_marks_review(folder, number, title):
     header = rf"^# \[마무리\][^\n]*\n\s*^## \[SLIDE 0*{number}\][ \t]+{re.escape(title)}[ \t]*$"
@@ -59,12 +57,12 @@ def slide_roles(slides, sections, rows, review_marked):
     return roles, misplaced, ""
 
 
-def theory_count(roles, misplaced, issue, online):
+def theory_count(roles, misplaced, issue):
     if issue:
         return f"이론 본문 미확인 ({issue})"
     known = sum(role == "본문" for role in roles.values())
     unknown = [n for n in roles if roles[n] == "미확인"]
-    review = " (정규 온라인 같은 편성의 D-1 재설계 검토)" if online and known + len(unknown) < 50 else ""
+    review = " (정규 온라인 같은 편성의 D-1 재설계 검토)" if known + len(unknown) < 50 else ""
     if unknown or misplaced:
         count = f"{known}~{known + len(unknown)}" if unknown else str(known)
         reason = []
@@ -120,20 +118,18 @@ def print_row_times(rows, roles, seconds, grouped, comments):
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", metavar="출력.json")
 parser.add_argument("keys", nargs="+", metavar="덱키")
-parser.add_argument("--오프라인", action="store_true", dest="offline")
 args = parser.parse_args()
-k = None if args.offline else load_coef()
+k = load_coef()
 out = {}
 for name in args.keys:
-    m = re.fullmatch(r"(통합|실전)(\d+)", name)
+    m = re.fullmatch(r"통합(\d+)", name)
     if not m:
-        sys.exit(f"{name}: 덱키는 통합3 · 실전10 꼴이다")
-    c, dk = COURSE[m[1]]; nn = f"{int(m[2]):02d}"
-    md = W / (f"제작도구/오프라인/decks/{dk}/off{nn}/{c}_오프라인_{nn}회차.md" if args.offline
-              else f"제작도구/온라인/decks/{dk}/day{nn}/{c}_{nn}일차.md")
-    sd = W / f"산출물/{c}/이론/{nn}회차/대본"
-    cfg = W / f"제작도구/구성/{c}/{nn}회차/구성.json"
-    rows = json.loads(cfg.read_text(encoding="utf-8")).get("rows", []) if not args.offline and cfg.is_file() else []
+        sys.exit(f"{name}: 덱키는 통합3 꼴이다 — 이론 덱은 한 벌이라 통합반 이름만 있다(공통 C-4)")
+    nn = f"{int(m[1]):02d}"
+    md = W / f"제작도구/온라인/decks/integrated/day{nn}/통합반_{nn}일차.md"
+    sd = W / f"산출물/통합반/이론/{nn}회차/대본"
+    cfg = W / f"제작도구/구성/통합반/{nn}회차/구성.json"
+    rows = json.loads(cfg.read_text(encoding="utf-8")).get("rows", []) if cfg.is_file() else []
     if not md.is_file():
         sys.exit(f"{md}: 덱 원고가 없다")
     parts = re.split(r"(?m)^## SLIDE (\d+) — (.*)$", md.read_text(encoding="utf-8"))
@@ -150,22 +146,11 @@ for name in args.keys:
             sections[n] = kind.group(1).strip() if kind else ""
         if n == review_number:
             review_marked = title.startswith("복습:") or bool(re.search(r"(?:^|[ /·])복습(?: 장| 자리| 한 장|[(:：])", body, re.M))
-            if not review_marked and not args.offline:
+            if not review_marked:
                 review_marked = script_marks_review(sd, n, title)
-            if not review_marked and args.offline:
-                plan = md.with_name("구성.json")
-                items = json.loads(plan.read_text(encoding="utf-8")).get("slides", []) if plan.is_file() else []
-                item = items[n - 1] if 0 < n <= len(items) else {}
-                src = re.fullmatch(r"(integrated|practical)/day(\d{2})", item.get("src", ""))
-                if src and "n" in item:
-                    source_course = "통합반" if src[1] == "integrated" else "실전반"
-                    source_scripts = W / f"산출물/{source_course}/이론/{src[2]}회차/대본"
-                    review_marked = script_marks_review(source_scripts, item["n"], title)
     out[name] = slides
     roles, misplaced, issue = slide_roles(slides, sections, rows, review_marked)
-    print(name, f"전체 {len(slides)}장 ·", theory_count(roles, misplaced, issue, not args.offline))
-    if args.offline:
-        continue
+    print(name, f"전체 {len(slides)}장 ·", theory_count(roles, misplaced, issue))
     cover, grouped, comments = set(), set(), set()
     narration = script_text(sd)  # 영상에서 읽는 범위. 표·제작 안내·대기 표시를 뺀다.
     seconds = {}  # 하한은 JSON 표시용 소수 반올림 전의 실제 추정 초로 비교한다.

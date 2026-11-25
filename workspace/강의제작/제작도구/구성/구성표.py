@@ -1,6 +1,6 @@
 """회차 구성표(구성표.md)를 구성.json에서 만든다(대본 S-13). 손으로 고치지 않는다.
 
-python workspace/강의제작/제작도구/구성/구성표.py workspace/강의제작/제작도구/구성/<과정>/<NN>회차/구성.json
+python workspace/강의제작/제작도구/구성/구성표.py workspace/강의제작/제작도구/구성/통합반/<NN>회차/구성.json
 
 - 낭독 추정은 실제 강사 복제 음성으로 맞춘 계수(workspace/강의제작/제작도구/촬영/시간계수.json)로 잰다(시간계산.py script_seconds — 대본시간.py와 같은 함수).
 - 학습 대기는 대본의 `> [대기 N초]`를 따로 센다. 실습 대본(kind practice)은 실습 큐로 재므로(시간계산.py estimate) 여기서 재지 않는다.
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / 'workspace/강의제작/제작도구/촬영'))
 from 시간계산 import load_coef, script_seconds  # noqa: E402
 
-COURSES = ('통합반', '실전반')
+COURSES = ('통합반',)   # 이론 교재는 두 반 · 온라인 · 현장 수업이 같이 쓰는 한 벌이라 구성은 통합반 자리에만 있다(공통 C-4)
 
 
 def heading(cfg_path: Path) -> str:

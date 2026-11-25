@@ -1,9 +1,10 @@
 """이론 덱의 닫힌 장 장부 — 검토자가 통과를 준 장을 내용 해시(화면 · 노트 · 그 장 대본 낭독)로 적고(명령 이름은 `닫음` — 사용자 확정이 아니다), 닫히지 않은 장만 뽑는다. 장 번호가 밀려도 내용이 같으면 닫힌 그대로. 대본이 모든 장을 덮어야 돈다.
 실라버스·사실표·지침은 해시에 들어가지 않는다. 개편이나 상위 자료가 바뀐 일은 hyd-task 0-5대로 영향받는 장을 더한다.
 언제: 고칠 장을 고를 때 · 영상 일 전 확인(상태)과 대본 단원 검토에서 통과한 장을 적을 때(닫음).
-명령: <py> workspace/강의제작/제작도구/검사/장닫음.py <통합반|실전반> <NN> 상태 [--오프라인]
-      <py> workspace/강의제작/제작도구/검사/장닫음.py <통합반|실전반> <NN> 닫음 --검토자 이름 (--전부 | --장 1-5,9) [--오프라인]
-장부: 제작도구/구성/<과정>/NN회차/장닫음.json(오프라인은 장닫음_오프라인.json).
+명령: <py> workspace/강의제작/제작도구/검사/장닫음.py 통합반 <NN> 상태
+      <py> workspace/강의제작/제작도구/검사/장닫음.py 통합반 <NN> 닫음 --검토자 이름 (--전부 | --장 1-5,9)
+      과정은 통합반 하나다 — 이론 교재는 두 반 · 온라인 · 현장 수업이 같이 쓰는 한 벌이라 통합반 자리에만 있다(공통 C-4).
+장부: 제작도구/구성/통합반/NN회차/장닫음.json.
 """
 import argparse, hashlib, json, posixpath, re, sys, zipfile
 from pathlib import Path
@@ -84,13 +85,8 @@ def read_deck(pptx, folder):
 
 
 def paths(a):
-    base = W / "산출물" / a.과정
-    if a.오프라인:
-        pptx = base / "이론_오프라인" / f"{a.회차}회차" / f"{a.과정}_오프라인_{a.회차}회차.pptx"
-        folder, name = None, "장닫음_오프라인.json"
-    else:
-        pptx = base / "이론" / f"{a.회차}회차" / f"{a.과정}_{a.회차}일차.pptx"
-        folder, name = base / "이론" / f"{a.회차}회차" / "대본", "장닫음.json"
+    base = W / "산출물" / a.과정 / "이론" / f"{a.회차}회차"
+    pptx, folder, name = base / f"{a.과정}_{a.회차}일차.pptx", base / "대본", "장닫음.json"
     return (Path(a.pptx) if a.pptx else pptx), (Path(a.대본) if a.대본 else folder), \
         (Path(a.장부) if a.장부 else W / "제작도구/구성" / a.과정 / f"{a.회차}회차" / name)
 
@@ -107,8 +103,8 @@ def pick(spec, deck):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("과정"); ap.add_argument("회차"); ap.add_argument("일", choices=["상태", "닫음"])
-    ap.add_argument("--오프라인", action="store_true"); ap.add_argument("--검토자"); ap.add_argument("--전부", action="store_true")
+    ap.add_argument("과정", choices=["통합반"]); ap.add_argument("회차"); ap.add_argument("일", choices=["상태", "닫음"])
+    ap.add_argument("--검토자"); ap.add_argument("--전부", action="store_true")
     ap.add_argument("--장"); ap.add_argument("--pptx"); ap.add_argument("--대본"); ap.add_argument("--장부")
     a = ap.parse_args()
     pptx, folder, book = paths(a)

@@ -1,9 +1,9 @@
-"""학생 배포용 드라이브 정리판을 만든다: 반/회차마다 1 이론 교재 · 2 실습 자료 · 3 오프라인 수업 자료(배포 B-4).
+"""학생 배포용 드라이브 정리판을 만든다: 반/회차마다 1 이론 교재 · 2 실습 자료(배포 B-4).
 언제: 회차의 교재 PPTX와 실습 ZIP을 클래스룸에 처음 올리거나 바꿀 때(배포 B-4). 만든 폴더를 사용자가 드라이브 「피지컬 AI 사관학교」에 통째로 올린다.
 명령: <py> workspace/강의제작/제작도구/배포/드라이브정리.py <원본 폴더> <출력 폴더> [--회차 01 02 …]
   원본 폴더 꼴: <원본>/<실전반|통합반>/<NN회차>/<파일> (파일 이름은 아래 분류표를 따른다)
-분류: 「이론 교재 (온라인|오프라인)」이 든 PPTX → 1 이론 교재(1 온라인 수업용, 2 오프라인 수업용)
-      「오프라인 」으로 시작 → 3 오프라인 수업 자료 / 「완성본」이 든 ZIP → 2 실습 자료의 「완성본 · …」
+분류: 「이론 교재 · NN회차.pptx」 → 1 이론 교재(두 반 · 온라인 · 현장 수업이 같이 쓰는 한 벌이라 반 이름과 수업 방식을 붙이지 않는다 — 공통 C-4)
+      「완성본」이 든 ZIP → 2 실습 자료의 「완성본 · …」
       「실습」으로 시작하는 ZIP(코딩 랩) · HTML(도구 실습의 한 파일 가이드) → 2 실습 자료
       앞에 붙은 「NN 」 번호는 뗀다. 분류되지 않는 파일이 하나라도 있으면 아무것도 만들지 않고 멈춘다.
 """
@@ -12,20 +12,14 @@ import shutil
 import sys
 from pathlib import Path
 
-GROUPS = ("1 이론 교재", "2 실습 자료", "3 오프라인 수업 자료")
+GROUPS = ("1 이론 교재", "2 실습 자료")
+THEORY = re.compile(r"이론 교재 · \d\d회차\.pptx")
 
 
 def classify(name):
     n = re.sub(r"^\d\d ", "", name)
-    if "이론 교재" in n and n.endswith(".pptx"):
-        n = n.replace("이론 교재 (온라인)", "이론 교재 · 온라인 수업용").replace("이론 교재 (오프라인)", "이론 교재 · 오프라인 수업용")
-        if "온라인 수업용" in n:
-            return GROUPS[0], "1 " + n
-        if "오프라인 수업용" in n:
-            return GROUPS[0], "2 " + n
-        return None
-    if n.startswith("오프라인 "):
-        return GROUPS[2], n
+    if THEORY.fullmatch(n):
+        return GROUPS[0], n
     if "완성본" in n and n.endswith(".zip"):
         return GROUPS[1], "완성본 · " + n.replace(" 완성본", "")
     if n.startswith("실습") and n.endswith((".zip", ".html")):
@@ -52,7 +46,7 @@ def plan(src, sessions):
 def build(src, dst, sessions):
     todo, bad = plan(src, sessions)
     if bad:
-        sys.exit("분류 못 한 파일(이름을 고치거나 분류표를 늘린다):\n" + "\n".join(f"  {p}" for p in bad))
+        sys.exit("분류 못 한 파일(이름을 고치거나 분류표를 늘린다 — 이론 교재는 「NN 이론 교재 · NN회차.pptx」 한 이름이다, 배포 B-4):\n" + "\n".join(f"  {p}" for p in bad))
     if not todo:
         sys.exit(f"{src}에 <반>/<NN회차>/ 폴더가 없다")
     for course, sess, items in todo:

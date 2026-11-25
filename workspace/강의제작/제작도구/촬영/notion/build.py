@@ -85,9 +85,10 @@ def main():
     assert args.student_backup.resolve().is_relative_to((ROOT / "작업").resolve())
     assert all(not (args.student_backup / course).exists() for course in ["통합반", "실전반"]), "기존 학생가이드 백업을 덮지 않습니다"
     preflight_targets(args.student_backup)
-    for course in ("통합반", "실전반"):
-        cfg = json.loads((ROOT / "workspace/강의제작/제작도구/구성" / course / "01회차/구성.json").read_text(encoding="utf-8-sig"))
-        assert any(u["file"].endswith("02_실습_학습노트.md") for u in cfg["units"]), "실습 구성 단위 누락"
+    # 구성은 통합반 자리 하나다 — 이론 교재가 두 반이 같이 쓰는 한 벌이라 실전반 구성은 없다(공통 C-4).
+    cfg_path = ROOT / "workspace/강의제작/제작도구/구성/통합반/01회차/구성.json"
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8-sig"))
+    assert any(u["file"].endswith("02_실습_학습노트.md") for u in cfg["units"]), f"{cfg_path}: 실습 구성 단위 누락"
     source = SOURCE.read_text(encoding='utf-8')
     prepare = re.search(r'^> 준비: .+$', source, re.M).group(0)
     titles = SEGMENTS
@@ -135,13 +136,11 @@ def main():
         text = script.replace('{{과정}}', course)
         script_path.write_text(text, encoding='utf-8', newline='\n')
         course_result = apply_course(args.student_draft, args.student_backup, course)
-        cfg_path = ROOT / 'workspace/강의제작/제작도구/구성' / course / '01회차/구성.json'
-        cfg = json.loads(cfg_path.read_text(encoding='utf-8-sig'))
-        for unit in cfg['units']:
-            if unit['file'].endswith('02_실습_학습노트.md'):
-                unit['status'] = f'{CONFIRMED} 촬영판 실제 발화 동기화 · 영상 {mmss(total)} · 큐 {len(rows)}개 · 사용자 재생 확정'
-        cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
         manifest['courses'].append({**course_result, 'script_sha256': hashlib.sha256(script_path.read_bytes()).hexdigest()})
+    for unit in cfg['units']:
+        if unit['file'].endswith('02_실습_학습노트.md'):
+            unit['status'] = f'{CONFIRMED} 촬영판 실제 발화 동기화 · 영상 {mmss(total)} · 큐 {len(rows)}개 · 사용자 재생 확정'
+    cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     (HERE / '정적검사.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 

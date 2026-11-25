@@ -1,12 +1,12 @@
 """되풀이 · 순서 점검 목록을 대본 · 덱 노트에 적용하고 고침 기록을 쓴다. 판단은 하지 않는다 — 찾지 못하면 좌표와 함께 실패한다.
 언제: 사용자가 시킨 회차 일괄 점검에서 점검자(`의뢰/의뢰_순서되풀이점검.md`)의 목록과 작업자(`의뢰/의뢰_고침.md`)의 판정이 나온 뒤. 시험으로 실패 0을 본 뒤 실행은 한 번.
-명령: <py> workspace/강의제작/제작도구/검사/점검적용.py <묶기|시험|실행|정리> <작업 폴더> <과정> <NN> [--목록 통합반_01] [--대본만] [--심각만] [--루트 폴더]
+명령: <py> workspace/강의제작/제작도구/검사/점검적용.py <묶기|시험|실행|정리> <작업 폴더> 통합반 <NN> [--심각만] [--루트 폴더]
+      과정은 통합반 하나다 — 이론 덱은 두 반 · 온라인 · 현장 수업이 같이 쓰는 한 벌이라 통합반 자리에만 있다(공통 C-4).
 
   묶기    작업자가 볼 입력(걸린 장 + 앞뒤 경계 문단)을 입력/작업_<덱>.md에 만든다. 입력/<덱>.md(장묶기.py 출력)가 있어야 한다
   시험    쓰지 않고 판정대로 적용되는지만 본다
   실행    적용하고 <작업 폴더>/고침기록/<과정>_<NN>.md를 쓴다
   정리    --기준 커밋과 견줘 고치며 생긴 겹공백 · 빈 표시만 지운다(<작업 폴더>는 안 쓴다)
-  --목록 통합반_01 --대본만   같은 판정을 다른 과정 대본에 적용(공통 회차)
   --심각만   목록의 심각도가 「심각」이 아닌 항목은 판정과 상관없이 보류한다(사용자가 고칠 범위를 「심각」으로 줄였을 때만)
   --루트   산출물 · 원고가 있는 저장소 루트(기본 이 저장소). 시험은 사본 폴더로
 
@@ -18,7 +18,7 @@
 import argparse, json, re, subprocess, sys
 from pathlib import Path
 
-DECK = {"통합반": "integrated", "실전반": "practical"}
+DECK = {"통합반": "integrated"}
 BLOCK = re.compile(r"^## \[SLIDE (\d+)(?:~(\d+))?\].*$", re.M)
 
 
@@ -113,20 +113,19 @@ def apply(a, W, name, src, script_dir, deck_md, write):
                 if it["파일"] not in files:
                     raise ValueError(f"{it['번호']}: 파일 {it['파일']} 없음")
                 files[it["파일"]] = replace_in_block(files[it["파일"]], it["장"], it["전"], after, it["번호"])
-            if it.get("노트전") and not a.script_only:
+            if it.get("노트전"):
                 deck = note_replace(deck, it["장"], it["노트전"], note_after, it["번호"])
         except ValueError as e:
             errs.append(str(e))
             continue
         cell = lambda s: (s or "").replace("|", "\\|").replace("\r", "").replace("\n", " / ")
         rec.append(f"| {it['번호']} | {it['파일'] if it.get('전') else '노트'} · {it['장']}장 | {it['어긋남']} | {it['근거']} | {cell(it.get('전'))} | {cell(after)} | {cell(v.get('까닭'))} |")
-    if not a.script_only:
-        for i, n in enumerate(jd.get("노트추가", [])):
-            try:
-                deck = note_replace(deck, n["장"], n["노트전"], n["노트후"], f"노트추가{i}")
-                rec.append(f"| 노트추가 | 노트 · {n['장']}장 | 대본을 고쳐 노트가 어긋남 | {n.get('까닭','')} | {n['노트전']} | {n['노트후']} |  |")
-            except ValueError as e:
-                errs.append(str(e))
+    for i, n in enumerate(jd.get("노트추가", [])):
+        try:
+            deck = note_replace(deck, n["장"], n["노트전"], n["노트후"], f"노트추가{i}")
+            rec.append(f"| 노트추가 | 노트 · {n['장']}장 | 대본을 고쳐 노트가 어긋남 | {n.get('까닭','')} | {n['노트전']} | {n['노트후']} |  |")
+        except ValueError as e:
+            errs.append(str(e))
     print(name, ct, "실패", len(errs))
     for e in errs:
         print(" ", e)
@@ -135,8 +134,7 @@ def apply(a, W, name, src, script_dir, deck_md, write):
     if write:
         for n, t in files.items():
             (script_dir / n).write_bytes(t.encode("utf8"))
-        if not a.script_only:
-            deck_md.write_bytes(deck.encode("utf8"))
+        deck_md.write_bytes(deck.encode("utf8"))
         out = W / "고침기록"
         out.mkdir(exist_ok=True)
         (out / f"{a.course}_{a.nn}.md").write_text(
@@ -174,8 +172,6 @@ def main():
     ap.add_argument("work")
     ap.add_argument("course", choices=sorted(DECK))
     ap.add_argument("nn")
-    ap.add_argument("--목록", dest="list")
-    ap.add_argument("--대본만", dest="script_only", action="store_true")
     ap.add_argument("--심각만", dest="serious", action="store_true")
     ap.add_argument("--기준", dest="base", help="정리가 견줄 고치기 전 커밋")
     ap.add_argument("--루트", dest="root", default=str(Path(__file__).resolve().parents[4]))
@@ -185,7 +181,7 @@ def main():
         if not a.base:
             ap.error("정리는 --기준이 필요하다")
         return tidy(root, a.course, a.nn, a.base)
-    name = a.list or f"{a.course}_{a.nn}"
+    name = f"{a.course}_{a.nn}"
     src = json.loads((W / "점검" / f"{name}.json").read_text("utf8"))
     script_dir = root / f"workspace/강의제작/산출물/{a.course}/이론/{a.nn}회차/대본"
     deck_md = root / f"workspace/강의제작/제작도구/온라인/decks/{DECK[a.course]}/day{a.nn}/{a.course}_{a.nn}일차.md"

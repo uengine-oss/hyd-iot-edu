@@ -48,7 +48,6 @@ def work_guides(rel, root):
     m = re.match(r"workspace/강의제작/산출물/(통합반|실전반)/([^/]+)/", rel)
     if m:
         if m[2] == "이론": return [GUIDE.format("대본") if "/대본/" in rel else DECK_OR_SCRIPT]
-        if m[2] == "이론_오프라인": return [GUIDE.format("덱")]
         if m[2] == "실습":
             if "/대본/" in rel: return [GUIDE.format("영상")]
             if rel.endswith((".zip", ".html", ".png", ".jpg", ".jpeg")): return [GUIDE.format("가이드")]
@@ -61,7 +60,7 @@ def work_guides(rel, root):
                 return [(GUIDE.format("가이드"), GUIDE.format("코딩랩"))]
     if re.match(r"workspace/강의제작/제작도구/구성/.*/강조_[^/]*\.json$", rel): return [GUIDE.format("영상")]
     if re.match(r"workspace/강의제작/제작도구/(구성|온라인/decks)/", rel): return [DECK_OR_SCRIPT]
-    if rel.startswith(("workspace/강의제작/제작도구/오프라인/decks/", ".claude/skills/hyd-course-deck/")): return [GUIDE.format("덱")]
+    if rel.startswith(".claude/skills/hyd-course-deck/"): return [GUIDE.format("덱")]
     if rel.startswith(("workspace/강의제작/제작도구/실습시작/", "workspace/강의제작/제작도구/온라인/labs/")): return [GUIDE.format("코딩랩")]
     if rel.startswith("workspace/강의제작/제작도구/배포/"): return [GUIDE.format("배포")]
     return []
@@ -273,7 +272,7 @@ def selftest():
         call("read", rd(SCRIPT, agent="a1"), 0, "a1 대본 읽기")
         call("read", rd(COMMON, agent="a1"), 0, "a1 공통 읽기")
         call("gate", ed(pptx, "a1"), 0, "PPTX 노트는 대본 + 공통으로도 통과")
-        call("gate", ed(S + "이론_오프라인/02회차/x.pptx", "a1"), 2, "오프라인 덱은 덱 문서")
+        call("gate", ed(".claude/skills/hyd-course-deck/scripts/x.py", "a1"), 2, "덱 스킬은 덱 문서")
         says(call("gate", ed("workspace/강의제작/제작도구/배포/클래스룸.js", "a1"), 2, "배포 도구"), ["배포.md"], [], "배포 도구는 배포 문서")
         call("read", rd(DLV, agent="a1"), 0, "a1 배포 읽기")
         call("gate", ed("workspace/강의제작/제작도구/배포/클래스룸.js", "a1"), 0, "배포 + 공통이면 배포 도구 통과")

@@ -1,13 +1,14 @@
 """온라인 덱 원고와 분할 대본을 장별로 묶어 되풀이 · 순서 점검의 입력을 만든다(원고는 고치지 않는다).
 언제: 사용자가 회차 일괄 순서 · 되풀이 점검을 시킬 때만, `의뢰/의뢰_순서되풀이점검.md`로 점검자를 띄우기 전(평소 검토는 hyd-task 3-3). 장 번호가 어긋나면 멈춘다.
-명령: <py> workspace/강의제작/제작도구/검사/장묶기.py <통합반|실전반> <NN> <출력.md>
+명령: <py> workspace/강의제작/제작도구/검사/장묶기.py 통합반 <NN> <출력.md>
+      과정은 통합반 하나다 — 이론 덱은 두 반 · 온라인 · 현장 수업이 같이 쓰는 한 벌이라 통합반 자리에만 있다(공통 C-4).
 
 장마다: 덱 제목 · 화면 내용(유형 · 메시지 · 머리 · 요소 등) · 노트 · 화면 구성 · 대본 낭독(파일:줄). 제작 기준은 뺀다. 대본의 > 줄 · 표 · 제목은 낭독이 아니라 뺀다(대기 표시는 남긴다).
 """
 import glob, os, re, sys
 
 G = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))   # workspace/강의제작
-DECK_DIR = {"통합반": "integrated", "실전반": "practical"}
+DECK_DIR = {"통합반": "integrated"}
 
 
 def read_deck(course, nn):
@@ -65,6 +66,8 @@ def main():
     if len(sys.argv) != 4:
         sys.exit(__doc__)
     course, nn, out = sys.argv[1:4]
+    if course not in DECK_DIR:
+        sys.exit(f"{course}: 과정은 통합반 하나다 — 이론 덱은 한 벌이라 통합반 자리에만 있다(공통 C-4)")
     deck_path, slides = read_deck(course, nn)
     blocks = read_scripts(course, nn)
     covered = sorted(n for b in blocks for n in range(b["a"], b["b"] + 1))
