@@ -2,6 +2,7 @@
 // 구간 사이에도 같은 페이지 · 스크롤 · 선택 상태가 유지된다(ego의 작업 공간 역할). 사용: node browser.mjs  (run.sh up · neo4j rec.sh up이 env.sh의 browser_up으로 띄움)
 // 클라우드(리눅스)와 이 PC(Windows)에서 같은 파일을 쓴다. Playwright 모듈 자리는 env.mjs가 환경 칸에서 읽고, 여기서 갈리는 것은 글꼴 준비뿐이다.
 import fs from 'node:fs';
+import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ENV,playwright} from './env.mjs';
 const {chromium}=playwright();
@@ -22,11 +23,15 @@ if(!WIN&&!MALGUN)console.log(JSON.stringify({warning:'맑은 고딕 없음 — �
 if(MALGUN){const {execFileSync}=await import('node:child_process');
  const got=execFileSync('fc-match',['sans-serif','family'],{env:{...process.env,FONTCONFIG_FILE:HERE+'fonts.conf'},encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  if(!/Malgun Gothic/.test(got))throw Error('fonts.conf가 맑은 고딕을 고르지 않음: '+got);}
-const ctx=await chromium.launchPersistentContext('',{headless:true,...(MALGUN?{env:{...process.env,FONTCONFIG_FILE:HERE+'fonts.conf'}}:{}),args:[`--remote-debugging-port=${CFG.cdp}`,`--force-device-scale-factor=${CFG.viewport.deviceScaleFactor}`,'--hide-scrollbars','--font-render-hinting=none'],
- viewport:{width:CFG.viewport.width,height:CFG.viewport.height},deviceScaleFactor:CFG.viewport.deviceScaleFactor,locale:'ko-KR',timezoneId:'Asia/Seoul'});
+// 고를 수 있는 값 둘(없으면 포털 · Neo4j처럼 임시 프로필 · ko-KR): profile = 브라우저를 다시 띄워도 남길 프로필 폴더(그 config 파일 기준 상대 경로 — 웹 VS Code는 사용자 설정을 브라우저 저장소에 둔다),
+// locale = 브라우저 언어(웹 VS Code는 브라우저 언어가 한국어면 판이 다른 한국어 팩을 불러 화면 글자가 틀어진다 — vscode 촬영준비 「함정」).
+const PROFILE=CFG.profile?path.resolve(path.dirname(process.env.HYD_BROWSER_CONFIG||HERE+'config.json'),CFG.profile):'';
+if(PROFILE)fs.mkdirSync(PROFILE,{recursive:true});
+const ctx=await chromium.launchPersistentContext(PROFILE,{headless:true,...(MALGUN?{env:{...process.env,FONTCONFIG_FILE:HERE+'fonts.conf'}}:{}),args:[`--remote-debugging-port=${CFG.cdp}`,`--force-device-scale-factor=${CFG.viewport.deviceScaleFactor}`,'--hide-scrollbars','--font-render-hinting=none'],
+ viewport:{width:CFG.viewport.width,height:CFG.viewport.height},deviceScaleFactor:CFG.viewport.deviceScaleFactor,locale:CFG.locale||'ko-KR',timezoneId:'Asia/Seoul'});
 const page=ctx.pages()[0]||await ctx.newPage();
 // 빈 페이지로 시작한다. 각 구간이 자기 화면(GitHub · 포털)을 연다 — 포털이 꺼진 채 README만 찍을 때 여기서 죽었다(2026-10-23).
 await page.goto('about:blank');
-console.log(JSON.stringify({ready:true,env:ENV,cdp:CFG.cdp,pid:process.pid,url:page.url(),fonts:WIN?'windows(시스템 맑은 고딕)':MALGUN?'windows(fonts.conf)':'system'}));
+console.log(JSON.stringify({ready:true,env:ENV,cdp:CFG.cdp,pid:process.pid,url:page.url(),fonts:WIN?'windows(시스템 맑은 고딕)':MALGUN?'windows(fonts.conf)':'system',...(PROFILE?{profile:PROFILE}:{})}));
 process.on('SIGTERM',async()=>{await ctx.close();process.exit(0);});
 await new Promise(()=>{});

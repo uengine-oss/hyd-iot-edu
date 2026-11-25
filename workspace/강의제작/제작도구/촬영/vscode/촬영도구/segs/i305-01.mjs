@@ -8,7 +8,7 @@ export default async ctx => {
  await c.installPointer({x: 365, y: 92});
  await ctx.begin();
  await ctx.say('i305-0101', async () => { const q = await lineAt(c, ctx, '# 작업 절차와'); await c.move(q.x, q.y); }, {at: '이번 시간에는'});
- await ctx.say('i305-0102', async () => { const q = await lineAt(c, ctx, '포털의 조치 방법'); await c.move(q.x, q.y); }, {at: '조치를 해도'});
+ await ctx.say('i305-0102', async () => { const q = await lineAt(c, ctx, '포털의 규칙 판단 화면과'); await c.move(q.x, q.y); }, {at: '조치를 해도'});
  await ctx.say('i305-0103', async () => { const q = await rootHeader(c, ctx); await c.move(q.x, q.y); }, {at: '안쪽의'});
  await ctx.say('i305-0104', async () => {
   const h = await rootHeader(c, ctx); await c.move(h.x, h.y); await atPhrase(ctx, '오른쪽 Codex');

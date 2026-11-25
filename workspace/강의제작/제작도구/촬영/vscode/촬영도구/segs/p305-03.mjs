@@ -1,4 +1,4 @@
-// 실전 3회차 05편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 경보마다 판정 요청 직전 원천 기록 표.
+// 실전 3회차 05편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 경보마다 판정 요청 직전 원천 기록 표.
 // 칸 차례: 경보 · 설비 · 판정 요청(UTC) · PLC 마지막 수신 · 카운터 마지막 기록 · 예측 행.
 import {labUi, atPhrase, resultView, heading, inView, tableCell, tableHead} from './lab-common.mjs';
 

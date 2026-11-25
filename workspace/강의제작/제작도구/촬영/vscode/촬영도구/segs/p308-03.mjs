@@ -1,4 +1,4 @@
-// 실전 3회차 08편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 검토 결과 · 랩 DB 적재 뒤 개수.
+// 실전 3회차 08편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 검토 결과 · 랩 DB 적재 뒤 개수.
 // 검토 결과 칸: 파일 · 문서 · 판 · 승인 · 보류 · 제외 · 조건 근거. 마지막 표는 랩 DB 적재 뒤 개수(항목 · 개수).
 import {labUi, atPhrase, resultView, heading, inView, scrollPageTo} from './lab-common.mjs';
 

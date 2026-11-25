@@ -1,4 +1,4 @@
-// 통합 2회차 07편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 원자료와 모델.
+// 통합 2회차 07편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 원자료와 모델.
 // 모델 개수 표는 첫 화면 아래로 이어지므로 Sensor 줄이 화면 안에 올 때까지 휠로 내린 뒤 짚는다.
 import {labUi, atPhrase, resultView, heading, cell, inView, scrollPageTo} from './lab-common.mjs';
 

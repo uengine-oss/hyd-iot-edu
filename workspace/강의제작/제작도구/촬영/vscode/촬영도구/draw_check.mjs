@@ -1,4 +1,4 @@
-// 화면 위 그림 층(draw.mjs)과 녹화 제어(ctrl.mjs)의 자가시험 — ego와 웹 VS Code 없이, 이 PC의 Playwright(포털 촬영도구 env.mjs가 찾는 자리)로 띄운 흉내 화면에서 돈다.
+// 화면 위 그림 층(draw.mjs)과 녹화 제어(ctrl.mjs)의 자가시험 — 녹화 브라우저(run.sh up)와 웹 VS Code 없이, 이 PC의 Playwright(포털 촬영도구 env.mjs가 찾는 자리)로 띄운 흉내 화면에서 돈다.
 //   node draw_check.mjs [출력 폴더]        기본 출력 = <work>/draw-check-<시각>/ (work = config.json)
 // 하는 일: ① ctrl.mjs의 run()으로 흉내 화면을 실제로 녹화한다(구간 = 이 파일의 default) — 강조 넷(띠 · 밑줄 · 테두리 · 함께 두기), Codex 패널 비율 상자,
 //   펜 그림(한 획씩 긋기 · 걷기 · 다시 띄우기 · 지금 여기 동그라미 · 덧긋기 · 덧쓰기), 글상자와 그 줄 강조. 조작마다 화면의 그림 층을 재어 어긋나면 멈춘다.
@@ -175,13 +175,9 @@ if(!new URL(import.meta.url).search){
  for(const [id,[text,duration_ms]] of Object.entries(CUES))await fs.writeFile(audio+'/'+id+'.json',JSON.stringify({text,duration_ms}));
  const browser=await playwright().chromium.launch();const VP={width:1920,height:1080,dsf:1};   // 헤드리스 Chromium의 screencast는 CSS 크기로 프레임을 준다 — 프레임 1920×1080을 받으려고 배율 1로 둔다(실제 녹화는 CSS 1843×1037)
  const page=await browser.newPage({viewport:{width:VP.width,height:VP.height},deviceScaleFactor:VP.dsf});await page.setContent(PAGE);
- const cdp=await page.context().newCDPSession(page);const evs=[];cdp.on('Page.screencastFrame',params=>evs.push({method:'Page.screencastFrame',params}));
- // ego의 page 꼴(ctrl.mjs · ui.mjs가 쓰는 것만)
- const ego={cdp:(m,a)=>cdp.send(m,a),events:async()=>evs.splice(0),evaluate:(f,a)=>page.evaluate(f,a),mouse:page.mouse,keyboard:page.keyboard,url:async()=>page.url(),snapshot:async()=>''};
- globalThis.taskSpace=async()=>({page:()=>ego});
  const {run}=await import(new URL('ctrl.mjs',SELF).href);
  const fail=[];const check=(ok,msg,got)=>{if(!ok){fail.push(msg+(got===undefined?'':' — '+JSON.stringify(got)).slice(0,600));console.log('  실패: '+fail.at(-1));}};
- const base={work:out,audio,viewport:VP,space:'draw-check'};
+ const base={work:out,audio,viewport:VP,page};   // 녹화 브라우저 대신 이 흉내 화면을 ctrl.mjs에 넘긴다(page.mjs wrap이 CDP 세션을 단다)
  try{
   // ① 녹화
   const r=await run({...base,name:'rec',moduleUrl:SELF,pointer:{x:700,y:400}});

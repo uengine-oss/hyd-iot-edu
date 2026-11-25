@@ -1,4 +1,4 @@
-// 실전 2회차 08편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 원자료와 모델 개수.
+// 실전 2회차 08편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 원자료와 모델 개수.
 // 모델 개수 표는 첫 화면 아래로 이어지므로 휠로 내린 뒤 짚는다.
 import {labUi, atPhrase, resultView, heading, inView, tableCell, scrollPageTo} from './lab-common.mjs';
 

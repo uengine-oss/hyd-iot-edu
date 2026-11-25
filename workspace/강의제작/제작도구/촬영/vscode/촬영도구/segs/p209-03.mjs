@@ -1,4 +1,4 @@
-// 실전 2회차 09편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 받은 자료 · 원문 문장 표.
+// 실전 2회차 09편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 받은 자료 · 원문 문장 표.
 import {labUi, atPhrase, resultView, heading, inView, tableCell, scrollPageTo} from './lab-common.mjs';
 
 const LAB = (await import('./lab-common.mjs')).LABS.p209.dir;   // 촬영 폴더는 lab-common.mjs LABS 한 곳에

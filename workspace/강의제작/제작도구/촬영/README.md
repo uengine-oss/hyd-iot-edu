@@ -2,7 +2,9 @@
 
 규칙은 [영상](../../지침/영상.md)에 있고, 도구마다 다른 길, 값, 함정은 그 도구의 `촬영준비.md`에 있다. 이 문서에는 둘 이상의 도구에 똑같이 해당하는 것만 둔다. 새로 뚫은 길, 새 함정, 바뀐 값은 그 자리의 문장을 고쳐 쓰고, 날짜나 경위는 적지 않는다.
 
-## 길 — ego로 찍는 도구(ARROWS · Notion · Neo4j · 웹 VS Code · 포털 지식 지도)
+## 길 — ego로 찍는 도구(ARROWS · Notion · Neo4j · 포털 지식 지도)
+
+웹 VS Code는 ego가 아니라 포털처럼 Playwright 헤드리스 녹화 브라우저로 찍는다(vscode 촬영준비). 아래에서 그 도구에도 해당하는 것은 2의 시작 화면과 녹화 시작 검사, 4의 화살표 · 대상 안정 · 조작 시점, 5, 8이다.
 
 1. 준비 — ego lite 설치와 로그인은 사용자가 한다. 설치된 `ego-browser skill`의 출력을 끝까지 읽는다(API는 설치된 버전의 설명을 따른다). 공간은 번호가 바뀌므로 이름으로 `taskSpace(<이름>)`처럼 부른다. 다른 세션과 같은 공간이나 같은 페이지를 함께 쓰지 않고, 다른 공간으로 옮겨 다니지 않는다. 앞에 있는 탭에서만 프레임이 오므로, ego 창을 최소화하지 않고 녹화 탭을 앞에 둔다.
 2. 시작 화면 — 시작값은 프레임 1920×1080, UI 배율 150%다(도구의 촬영준비가 다른 값을 정하면 그 값을 쓴다). 대표 화면을 실제 녹화 프레임으로 받아 글자가 읽히는지 본다. 작업자는 리허설을 모두 끝낸 뒤 리허설이 화면과 앱에 남긴 상태를 한 번 되돌리고, 녹화 시작 검사를 한 다음 녹화를 몰아서 한다(영상 길 14). 녹화하는 사이에 같은 계정에서 리허설을 다시 돌리지 않는다. 되돌리는 것은 화면에 남은 시연 흔적이고 DB 데이터를 지우는 것이 아니다. 녹화 시작 검사는 처음 하는 학생의 첫 화면과 다르게 보일 것을 본다. 앱이 기억하는 최근 상태(최근 사용 색 · 서식, 마지막 내보내기 형식, 이미 적용된 설정), 화면 언어, 목록에 남은 리허설 산출물(쪽 · 노드 · 인스턴스)과 제목 없는 새 항목, 브라우저 내려받기 목록, 업데이트 · 오류 막대, 그리고 포털이면 위 막대의 서비스 수다. 실패한 구간부터 이어 찍을 때도 그 구간을 찍기 전에 같은 항목을 보며, 그때의 기준은 처음 화면이 아니라 앞 구간의 끝 상태다. 도구가 스스로 재는 항목과 작업자가 녹화 전에 눈으로 확인하는 항목은 그 도구 촬영준비의 「길」에 둔다(Notion은 길 3의 표, 포털의 서비스 수는 첫 구간 모듈이 재고 다르면 멈춘다 — 포털 촬영준비 로컬 ego 길 1). 촬영준비에 그 표가 없는 도구는 작업자가 위 항목을 녹화 전에 눈으로 확인한다. 없앨 수 없는 차이는 대본이 짚는다(영상 V-2). 촬영 전용 문서나 페이지 하나에서 이어 쓰고, 다시 시도할 때마다 사본을 늘리거나 최종본을 덮어쓰지 않는다. 물리 마우스, 키보드, 전경 창은 쓰지 않는다.
@@ -21,9 +23,9 @@
 
 | 무엇 | 값 · 경로 |
 |---|---|
-| 도구 | 포털(클라우드 · 이 PC Playwright, 옛 길 로컬 ego) [포털/](포털/촬영준비.md), Neo4j Browser(클라우드 · 이 PC Playwright, 옛 길 로컬 ego) [neo4j/](neo4j/촬영준비.md), ARROWS(클라우드 Playwright, 로컬 ego) [arrows/](arrows/촬영준비.md), Notion [notion/](notion/촬영준비.md), 웹 VS Code [vscode/](vscode/촬영준비.md), 설치 구간(사용자 원본) [환경세팅/](환경세팅/촬영준비.md). bpmn.io는 처음 찍을 때 `bpmn/촬영준비.md`를 같은 꼴(길 · 자료 · 함정)로 만든다 |
+| 도구 | 포털(클라우드 · 이 PC Playwright, 옛 길 로컬 ego) [포털/](포털/촬영준비.md), Neo4j Browser(클라우드 · 이 PC Playwright, 옛 길 로컬 ego) [neo4j/](neo4j/촬영준비.md), ARROWS(클라우드 Playwright, 로컬 ego) [arrows/](arrows/촬영준비.md), Notion [notion/](notion/촬영준비.md), 웹 VS Code(이 PC Playwright) [vscode/](vscode/촬영준비.md), 설치 구간(사용자 원본) [환경세팅/](환경세팅/촬영준비.md). bpmn.io는 처음 찍을 때 `bpmn/촬영준비.md`를 같은 꼴(길 · 자료 · 함정)로 만든다 |
 | 음성 | 목소리 · 모델 · 설정 값은 영상 V-4이고, 형식은 `mp3_44100_128`이다. 캐시는 큐마다 `<큐 id>.mp3`와 `.json`(text, duration_ms)이고, 같은 문장은 다시 만들지 않는다 |
-| 음성 키 | 포털과 Neo4j, 클라우드의 ARROWS는 환경변수 `ELEVENLABS_API_KEY`를 쓴다. 이 PC의 ARROWS와 Notion, VS Code는 `HYD_ELEVENLABS_KEY_FILE`이 가리키는 파일을 쓴다(Git Bash에서 `export HYD_ELEVENLABS_KEY_FILE='<키 파일 경로>'`). 키 값을 출력하거나 남기지 않는다 |
+| 음성 키 | 포털과 Neo4j, 웹 VS Code(셋은 포털 촬영도구의 `voice.py` 하나를 쓴다), 클라우드의 ARROWS는 환경변수 `ELEVENLABS_API_KEY`를 쓴다(키 파일로 줄 때는 영상 「자료」의 `음성키.py 실행`으로 감싼다). 이 PC의 ARROWS와 Notion은 `HYD_ELEVENLABS_KEY_FILE`이 가리키는 파일을 쓴다(Git Bash에서 `export HYD_ELEVENLABS_KEY_FILE='<키 파일 경로>'`). 키 값을 출력하거나 남기지 않는다 |
 | 시간 | [시간계산.py](시간계산.py) `estimate <큐>`, 계수는 [시간계수.json](시간계수.json) |
 | 검사 · 잇기 | [포털/촬영도구/](포털/촬영도구/)의 `verify.py` · `scenes.py` · `listen.py` · `join.py` · `cut.py`는 어느 도구의 영상에나 쓴다 |
 | ffmpeg(이 PC) | PATH에 없다. `FFMPEG="$(python -c 'import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())')"`로 잡거나 `CLAUDE.md` 6절의 WinGet 경로를 쓴다 |

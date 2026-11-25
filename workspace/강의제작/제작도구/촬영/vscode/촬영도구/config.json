@@ -1,12 +1,20 @@
 {
- "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본·끝 상태(루트 작업/, 이 PC 전용 — 확정되면 지움). audio = 안치윤 음성 캐시(<큐id>.mp3·.json, workspace 브랜치). space = ego 작업 공간 이름(serve-web VS Code 탭). viewport = setDeviceMetricsOverride(2304x1296 dsf1, ego 150% → CSS 1536x864 → 프레임 1920x1080). serve-web 접속 토큰 파일은 환경변수 HYD_VSCODE_TOKEN_FILE, ElevenLabs 키 파일은 환경변수 HYD_ELEVENLABS_KEY_FILE(값 출력·커밋 금지). protect = 쓰지 않음.",
+ "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본 · 끝 상태(루트 작업/, 이 PC 전용 — 확정되면 지움). audio = 강사 복제 음성 캐시(<큐 id>.mp3 · .json, workspace 브랜치). cdp = 녹화 브라우저(포털 촬영도구 browser.mjs를 이 파일로 띄운 헤드리스 Chromium, run.sh up)의 원격 디버깅 포트. viewport = 그 브라우저의 CSS 크기 × 배율. 1843×1037 × 1.2497은 실제 픽셀 2304×1296이 되어 프레임 1920×1080이 온다(Chromium이 CSS 크기 × 배율을 올림해서, 배율 1.25는 2304×1297 → 프레임 1919×1080이 된다). 페이지가 읽는 값은 innerWidth 1844 · innerHeight 1037 · devicePixelRatio 1.2497이다. profile = 다시 띄워도 남는 브라우저 프로필 폴더(웹 VS Code의 사용자 설정 · 신뢰한 폴더 · 창 상태가 여기 있다, git 밖). locale = 브라우저 언어(한국어면 웹 VS Code가 판이 다른 한국어 팩을 불러 글자가 틀어진다). server = 웹 VS Code 서버 주소(촬영준비 길 1), token_file = 그 접속 토큰 파일(값 출력 · 커밋 금지). settings = 녹화 브라우저의 웹 VS Code 사용자 설정(prep.mjs가 넣고 견준다, chatgpt.cliExecutable의 {work}는 work의 절대 경로로 바뀐다). Playwright 모듈 자리는 포털 촬영도구 config.json의 환경 칸(env.mjs). ffmpeg는 환경변수 FFMPEG 또는 PATH.",
  "work": "../../../../../../작업/촬영/vscode",
  "audio": "../음성",
- "space": "vscode web 20261028",
- "page": "",
- "protect": "__none__",
- "viewport": {
-  "width": 2304,
-  "height": 1296
+ "cdp": 9336,
+ "viewport": {"width": 1843, "height": 1037, "deviceScaleFactor": 1.2497},
+ "profile": "../../../../../../작업/촬영/vscode/프로필",
+ "locale": "en-US",
+ "server": "http://127.0.0.1:8793/",
+ "token_file": "../../../../../../작업/촬영/vscode/v143/access.txt",
+ "settings": {
+  "chatgpt.cliExecutable": "{work}/v143/app-server-26.1021.22027/codex.exe",
+  "workbench.colorTheme": "Dark Modern",
+  "window.menuBarVisibility": "visible",
+  "workbench.startupEditor": "none",
+  "terminal.integrated.initialHint": false,
+  "terminal.integrated.gpuAcceleration": "off",
+  "chat.disableAIFeatures": true
  }
 }

@@ -2,7 +2,7 @@
 // - 표시 포인터: 페이지에 그린 흰 화살표를 컴포지터 애니메이션으로 움직이고, 실제 입력은 같은 경로 8단계(순간이동 없음).
 // - gate(): 큐가 정한 실행 시점(행동 문장 끝 약 250ms 전)까지 대기. 클릭·키·입력은 모두 gate를 거친다.
 // - Codex 채팅은 웹뷰 iframe이라 DOM으로 찾지 않는다. 바깥 문서의 웹뷰 영역 좌표로 누르고 키보드로 입력한다.
-// - 좌표는 CSS 픽셀(뷰포트 2304x1296 dsf1, ego 150% → CSS 1536x864, 캡처 2304x1296 → 1920x1080 프레임).
+// - 좌표는 CSS 픽셀이다(화면 값은 config.json viewport — CSS 1843×1037 × 배율 1.2497 → 실제 픽셀 2304×1296 → 프레임 1920×1080).
 // - 강조 · 펜 그림 · 글상자(draw.mjs, ctrl.mjs가 ctx.draw로 넘긴다): c.emph(대상, {shape, phrase, keep}) · c.clearEmph() · c.pen(정의) · c.note(줄 목록 | null).
 //   강조는 다음 강조가 시작할 때, 화살표가 다른 곳으로 떠날 때, 누르기 · 입력 · 굴리기가 시작할 때, 구간이 끝날 때 지워진다(포털 hl.mjs의 규칙).
 
@@ -69,7 +69,8 @@ export async function vscode(ctx){
  c.codexArea=async()=>q1(()=>raw.evaluate(()=>{const b=document.querySelector('.part.auxiliarybar')?.getBoundingClientRect();if(!b||!b.width)throw Error('Codex 패널이 열려 있지 않음');return{x:b.x,y:b.y,w:b.width,h:b.height};}));
  c.codexPoint=async(fx,fy)=>{const a=await c.codexArea();return{x:a.x+a.w*fx,y:a.y+a.h*fy};};
  // 웹뷰는 첫 클릭에 패널만 활성화하고 입력칸 포커스는 둘째 클릭에서 받는다(한 번만 누르면 글이 편집기 쪽으로 가거나 버려졌다).
- c.codexInput=async()=>{const q=await c.codexPoint(0.45,0.855);await c.clickAt(q.x,q.y);await sleep(400);await c.clickAt(q.x,q.y);};
+ // fy: 입력칸 글 줄의 높이 비율. 열린 파일이 없으면 입력칸 위의 파일 꼬리표 줄이 없어 입력칸이 낮아지므로(0.855는 그 테두리 위다) 그때는 0.882를 준다.
+ c.codexInput=async(fy=0.855)=>{const q=await c.codexPoint(0.45,fy);await c.clickAt(q.x,q.y);await sleep(400);await c.clickAt(q.x,q.y);};
  // 입력: 완성형 글자 단위(IME 조합 시연 아님). 입력 중 포인터는 입력칸 위 여백으로 비킨다.
  c.type=async(text,aside)=>{if(aside)await c.move(aside.x,aside.y);await gate();await hlEnd('입력');let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([70,85,60,95,75][i++%5]);}};
  c.key=async k=>{await gate();await hlEnd('입력');await q1(()=>raw.keyboard.press(k));await sleep(200);};

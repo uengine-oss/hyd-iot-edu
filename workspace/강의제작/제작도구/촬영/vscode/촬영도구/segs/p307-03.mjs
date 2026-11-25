@@ -1,4 +1,4 @@
-// 실전 3회차 07편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 사건 조치 후보 · 핀 세척 관계 · 문서 묶음 표.
+// 실전 3회차 07편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 사건 조치 후보 · 핀 세척 관계 · 문서 묶음 표.
 // 문서 묶음 표는 첫 화면 아래라 휠로 내린 뒤 짚는다. 칸 차례: 문서 · 판 · 상태 · 파일 · 글자 방식 · 줄 수 · 절 머리 수 · 첫 줄 또는 읽지 못한 까닭.
 import {labUi, atPhrase, resultView, heading, inView, tableCell, scrollPageTo} from './lab-common.mjs';
 

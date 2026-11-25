@@ -1,4 +1,4 @@
-// 통합 2회차 06편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}')에서 첫 결과 화면.
+// 통합 2회차 06편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로)에서 첫 결과 화면.
 // 시작: i206-02가 만든 output/result.html(원자료 표). 녹화 전에 그 파일로 이동해 둔다. AI 요청 없음.
 // i206-02 끝(0215)에서 「다른 탭에 열어 두었다 · 넘어가 본다」고 말한 뒤 이 공간으로 이어 붙인다.
 import {labUi, atPhrase, resultView, heading, cell, inView} from './lab-common.mjs';

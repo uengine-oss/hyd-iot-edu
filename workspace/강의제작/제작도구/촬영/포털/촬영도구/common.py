@@ -1,6 +1,6 @@
 """촬영도구 공통 설정: config.json의 근거 폴더 · 음성 폴더, ffmpeg 위치. 값이 없으면 어디가 비었는지 알리고 멈춘다.
-tool(<이름>)은 다른 도구(vscode · notion · arrows)의 config를 그 도구 촬영도구 폴더 기준으로 푼다 — 이 폴더의 합성기 · 실측이 --도구로 쓴다.
-음성(voice.py)과 옛 합성 · 실측 사본은 아직 도구마다 있다."""
+tool(<이름>)은 다른 도구(vscode · notion · arrows)의 config를 그 도구 촬영도구 폴더 기준으로 푼다 — 이 폴더의 합성기 · 실측 · 음성(voice.py)이 --도구로 쓴다.
+음성 사본(voice.py)은 notion · arrows에, 옛 합성 · 실측 사본은 vscode · notion · arrows에 아직 있다."""
 import json, os, shutil
 from pathlib import Path
 from types import SimpleNamespace

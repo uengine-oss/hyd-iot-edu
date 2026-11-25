@@ -1,5 +1,5 @@
 // 통합 2회차 07편(그래프 구현과 검증): 녹화 밖 상태 맞춤 — i207-01 시작 화면을 만든다(녹화하지 않는다).
-// 부르기: ego-browser nodejs -e "await import('file:///<이 파일>?<판>')" < /dev/null
+// 부르기: ./run.sh reset i207-reset.mjs (녹화 브라우저가 떠 있어야 한다 — ./run.sh up)
 // 하는 일은 lab-common.mjs의 resetLab(LABS의 촬영 폴더 열기 · 신뢰 · 터미널 닫기 · README.md 하나 · 폴더 접기 · output/ · 실행 캐시 지우기,
 // 그리고 이 폴더의 랩 DB 하나를 볼륨과 함께 지워 「처음 만든 DB」 장면을 다시 찍을 수 있게 한다).
 // 원자료 · app/features · AGENTS.md · README.md는 건드리지 않는다. 학생 파일을 바꾼 구간 뒤에는 쓰지 않는다(그때는 ZIP을 새로 푼다).

@@ -1,4 +1,4 @@
-// 통합 4회차 05편 구간 03: 결과 화면 공간(SPACE='통합02 결과화면 20261111', VP='{width:1843,height:1037,dsf:1.25}') — 검토 결과 · 기존 ID · 승인 후보 표.
+// 통합 4회차 05편 구간 03: 결과 화면 페이지(PAGE=1 ./run.sh rec — 녹화 브라우저의 둘째 페이지, 화면 값은 config.json viewport 그대로) — 검토 결과 · 기존 ID · 승인 후보 표.
 // 검토 결과 칸: 파일 · 문서 · 판 · 승인 · 보류 · 제외 · 조건 근거. 승인 후보 칸: 검토 파일 · 후보 · 절 · 절차 · 종류 · 줄 · 인용.
 import {labUi, atPhrase, resultView, heading, inView, tableCell, tableHead, scrollPageTo} from './lab-common.mjs';
 
