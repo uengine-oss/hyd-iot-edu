@@ -24,7 +24,12 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v51-lab', 'graph-lab': 'v54-lab'}
+VERSIONS = {'ontology-lab': 'v52-lab', 'graph-lab': 'v55-lab'}
+# v52-lab(설계) · v55-lab(그래프) — 2026-11-25, 사용자 「html이 진짜 이쁘고 좀 가독성좋고 재밌어야해 … 눈으로 보여주기 용을 htmㅣ이 담당 … 파트가없다고하더라도 쥐어짜내셈 neo4j를 그댈 보여줘도되기도하는데」:
+#   결과 화면을 밝은 바탕 · 맨 위 결론 한 줄 · 명령마다 그림 하나(표는 그 아래 근거)로 다시 만듦(코딩랩 K-3). 그리는 코드는 result_view.py(학생 app/ui/render.py), 그림 블록과 자료 → 그림 도우미는 result_figures.py(학생 app/utils/results.py 끝),
+#   명령마다 무엇을 그릴지는 session2_steps의 COMMON · DESIGN_INTEGRATED · GRAPH와 session2_graph_project.EXTRA_ACTIONS. 클래스마다 색 하나(두 랩 같은 색), 그래프 랩은 그 폴더 랩 DB의 Neo4j Browser를 여는 단추.
+#   같은 판에서 독립 검토(판정/검토_랩_v51_v54.md) 「나」 셋: 새 랩 DB 안내가 유일 제약부터(가이드 13 · db.py 두 줄), 멈춤 글의 학생 PC 절대 경로(run.py의 local), 06 힌트 「한 번 더 실행해도 오류가 나지 않게」.
+#   AGENTS.md · 빈 틀 · 자료 · 결정 지점은 앞 판과 같은 바이트.
 # v51-lab(설계) · v54-lab(그래프) — 2026-11-25, 사용자 「결함 근본을 수정하셈」: ① 출력 글자표 — 제공 run.py · check.py가 출력을 UTF-8로 쓰고(lab_frame.UTF8_OUT), 구조 검사는 UTF-8 모드로 띄운다.
 #   한국어 Windows에서 Codex가 `python run.py`를 대신 돌리면 파이썬이 cp949로 써서 한글이 모두 깨지고 「—」에서 UnicodeEncodeError로 멈췄다(실측: 코딩랩.md 「함정」).
 #   ② 그래프 랩에 유일 제약 걸음(가이드 06단계 · 빈 틀 constraints.cypher · `python run.py constraints`) — 이론 48 · 57 · 58장 「식별자에 유일 제약을 걸고 넣을 때는 MERGE」의 앞 절반이 랩에 없었다.
@@ -73,18 +78,13 @@ STRICT_NEW = """        if None in row:      # 넘친 칸을 끝 칸에 이어 �
 
 
 def result_sources(strict=False):
-    """제공 결과 화면 코드. 대조 표의 거르기 단추 글자를 표 머리로 읽히지 않는 말로 바꾼다(리허설 06 막힘 6).
+    """제공 결과 화면 코드(그리는 코드의 원본은 result_view.py, 그림 블록은 result_figures.py — 두 반 · 뒤 회차 새 구조 랩의 공용 자리).
     strict = 통합반 2회차 두 랩: 칸 수가 열 이름과 다른 CSV 줄을 파일:줄로 짚고 멈춘다(리허설 v32 — 코딩랩 「함정」의 틀 꼴 멈춤). 실전반 · 3회차 생성기는 기본값을 쓴다."""
     utilities, ui = P.result_sources()
     if strict:
         if utilities.count(STRICT_OLD) != 1:
             raise ValueError('결과 화면 코드의 CSV 읽기 꼴이 바뀌었습니다 — 칸 수 멈춤을 넣을 자리를 다시 봅니다.')
         utilities = utilities.replace(STRICT_OLD, STRICT_NEW)
-    for old, new in [('o.textContent=only?"모든 줄":"다른 줄만"', 'o.textContent=only?"모든 줄 보기":"같음 줄 숨기기"'),
-                     ('<button class="t only">다른 줄만</button>', '<button class="t only">같음 줄 숨기기</button>')]:
-        if ui.count(old) != 1:
-            raise ValueError(f'결과 화면 코드에서 바꿀 글을 찾지 못했습니다: {old}')
-        ui = ui.replace(old, new)
     return utilities, ui
 
 
@@ -224,7 +224,7 @@ def build_graph(folder):
     utilities, ui = result_sources(strict=True)
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
-    write(folder / 'app/utils/db.py', GP.db_source())
+    write(folder / 'app/utils/db.py', GP.db_source(constraints_first=True))
     write(folder / 'app/utils/cypher.py', GP.cypher_source(integrated=True))
     write(folder / 'app/utils/actions.py', GP.actions_source(L))
     write(folder / 'run.py', run_source())

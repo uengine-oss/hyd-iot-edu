@@ -15,6 +15,16 @@ for _stream in (sys.stdout, sys.stderr):
 ROOT = Path(__file__).resolve().parent
 
 
+def local(exc):
+    """멈춘 까닭의 글에서 이 폴더의 절대 경로를 뗀다 — 화면과 터미널에 학생 PC의 경로를 보이지 않고 app/features/… 꼴로 짚는다."""
+    text = str(exc)
+    for root in (str(ROOT), ROOT.as_posix()):
+        text = text.replace(root + os.sep, '').replace(root + '/', '').replace(root, '.')
+    for name in ('app', 'data', 'output'):
+        text = text.replace(name + os.sep, name + '/')
+    return text.replace('features' + os.sep, 'features/').replace('model' + os.sep, 'model/')
+
+
 def main():
     parser = argparse.ArgumentParser(description=actions.TITLE)
     parser.add_argument('action', nargs='?', default='sources', choices=actions.COMMANDS)
@@ -26,10 +36,9 @@ def main():
     except results.Blank as exc:
         blocks = [results.note('아직 비어 있습니다: ' + str(exc))]
     except results.Stop as exc:
-        blocks = [results.error('확인 필요', str(exc))]
+        blocks = [results.error('확인 필요', local(exc))]
     except Exception as exc:
-        message = str(exc).replace(str(ROOT) + os.sep, '').replace(str(ROOT), '.')   # 학생 PC의 절대 경로를 보이지 않는다
-        blocks = [results.error('실행 확인 필요 ' + results.where(exc), message)]
+        blocks = [results.error('실행 확인 필요 ' + results.where(exc), local(exc))]
     output = ROOT / 'output'
     output.mkdir(exist_ok=True)
     target = output / 'result.html'
@@ -46,6 +55,8 @@ def main():
     for block in blocks:
         if block['kind'] in ('note', 'error'):
             print(block.get('title', '') + ('\n' if block.get('title') else '') + block['text'])
+        elif block['kind'] == 'verdict':
+            print(block['text'] + (' — ' + block['detail'] if block.get('detail') else ''))
         elif block['kind'] == 'table':
             print(f"{block['title']}: {len(block['rows'])}행")
         elif block['kind'] == 'counts':

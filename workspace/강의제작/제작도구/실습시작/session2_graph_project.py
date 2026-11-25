@@ -2,9 +2,17 @@
 import session2_project as P
 
 
-def db_source():
-    return (P.HERE / 'lab_db.py').read_text(encoding='utf-8').replace(
+def db_source(constraints_first=False):
+    """constraints_first = 유일 제약 걸음이 넣기 앞에 있는 랩(통합반 그래프 랩): 새 랩 DB 안내가 그 차례를 말한다(검토 「나」 — 가이드 13단계 접힌 안내와 같은 첫 걸음)."""
+    text = (P.HERE / 'lab_db.py').read_text(encoding='utf-8').replace(
         'Path(__file__).resolve().parent', 'Path(__file__).resolve().parents[2]').replace('랩_연결.json', '.lab_connection.json')
+    return renamed(text, DB_FIRST) if constraints_first else text
+
+
+DB_FIRST = [
+    ('새 DB는 비어 있으니, 저장해 둔 적재 · 수정 파일을 같은 순서로 다시 실행하세요.', '새 DB는 비어 있으니, 저장해 둔 제약 · 적재 · 수정 쿼리 파일을 그 차례로 다시 실행하세요.'),
+    ('새로 만든 랩 DB라 비어 있습니다. 적재부터 다시 실행하세요.', '새로 만든 랩 DB라 비어 있습니다. python run.py constraints → load → update 차례로 다시 실행하세요.'),
+]
 
 
 def renamed(text, pairs):
@@ -92,44 +100,30 @@ def endpoint():
 def actions_source(L):
     """통합반 그래프 랩의 기능 코드(실전반 생성기는 P.actions_source와 EXTRA_ACTIONS를 따로 쓴다)."""
     text = P.actions_source(L)
-    # 수정 기능은 수정과 재실행 확인만 한다. 다른 조회를 암묵적으로 실행하지 않는다.
-    text = text.replace('] + ask_question(3)', ']')
     text = text.replace('처음 켠 랩 DB는 비어 있습니다(0). 적재한 뒤에는 두 칸이 같아야 합니다.',
                         '처음 만든 DB는 비어 있습니다(0). 첫 적재 뒤에는 모델과 개수를 대조합니다. 수정 뒤에는 수정본과 선택한 삭제 범위로 개수 차이를 확인합니다.')
     text = text.replace("    d = C.diff_graphs(before, after)",
                         "    save_json('before_update.json', before)\n    save_json('after_update.json', after)\n    d = C.diff_graphs(before, after)")
     text = text.replace("'수정 전 → 수정 뒤(적재 직후와 견줌)'", "'수정 전 → 수정 뒤'")
-    return renamed(text, ACTION_TERMS + COMPARE_TERMS) + EXTRA_ACTIONS
-
-
-# 비교 기능은 내 그래프 아래에 기준 지도(data/reference_map.json — build_labs.portal_reference)를 함께 띄운다. 영상은 가이드를 띄우지 않으므로
-# 견줄 표가 결과 화면에 있어야 한다(사용자 2026-11-20 「결과 화면에 띄워」). 실전반 랩은 이 바꿈을 거치지 않는다.
-COMPARE_TERMS = [
-    ("""                    note='가이드 이 단계의 포털 기준 지도 표와 나란히 놓고 식별자와 방향을 견줍니다.')]""",
-     """                    note='아래 기준 지도 표와 식별자 · 관계 방향을 견줍니다.'),
-            reference_map()]
-
-
-def reference_map():
-    ref = json.loads((HERE / 'data/reference_map.json').read_text(encoding='utf-8'))
-    name = {x['id']: f"{x['id']}({x['알아볼 값']})" for x in ref['대상']}
-    return R.table('기준 지도 — 포털 지식 지도의 같은 길(시작 → 끝)', ['시작 id', '관계', '끝 id'],
-                   [(name[r['시작']], f"{r['관계']}({r['화면 이름']})", name[r['끝']]) for r in ref['관계']], note=ref['설명'])"""),
-]
+    return renamed(text, ACTION_TERMS) + EXTRA_ACTIONS
 
 
 EXTRA_ACTIONS = '''
 def sources(previous):
     path, counts = graph_counts()
+    _, model = C.model_graph()
     files = [(p.name, len(R.read_table(p))) for p in sorted((HERE / 'data').glob('*.csv'))]
-    return [R.counts('원자료 파일마다 행 수', files),
-            R.counts('사용할 모델: ' + R.rel(path), sorted(counts.items()))]
+    return [R.verdict('info', f'사용할 모델에 노드 {counts["노드"]}개 · 관계 {counts["관계"]}개가 있습니다', f'{R.rel(path)} · 원자료 표 {len(files)}개'),
+            R.class_map('사용할 모델 — 종류마다 인스턴스 수와 관계', model, note='동그란 상자 하나가 종류(클래스)이고 오른쪽 위 수가 그 종류의 인스턴스 수입니다. 화살표의 글은 관계 이름과 그 관계의 수입니다.'),
+            R.counts('원자료 파일마다 행 수', files),
+            R.folded(R.counts('사용할 모델: ' + R.rel(path), sorted(counts.items())))]
 
 
 def prepare(previous):
     from app.utils import db as local_db
     local_db.prepare()
-    return [R.note('이 폴더의 랩 DB를 준비했습니다.')] + start(previous)
+    out = start(previous)
+    return out[:1] + [R.note('이 폴더의 랩 DB를 준비했습니다.')] + out[1:]
 
 
 def save_json(name, value):
@@ -143,7 +137,9 @@ def export(previous):
     graph = db(C.export_graph)
     save_json('graph.json', graph)
     save_json('schema.json', json.loads(path.with_name('schema.json').read_text(encoding='utf-8-sig')))
-    return [R.counts('저장한 그래프', [('노드', len(graph['nodes'])), ('관계', len(graph['rels']))]),
+    return [R.verdict('ok', f'랩 DB의 그래프를 저장했습니다 — 노드 {len(graph["nodes"])}개 · 관계 {len(graph["rels"])}개', 'output/schema.json(종류와 관계) · output/graph.json(노드와 관계)'),
+            R.class_map('저장한 그래프 — 종류마다 노드 수와 관계', graph),
+            R.counts('저장한 그래프', [('노드', len(graph['nodes'])), ('관계', len(graph['rels']))]),
             R.note('output/schema.json · output/graph.json에 저장했습니다.')]
 
 

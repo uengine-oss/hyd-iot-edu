@@ -72,27 +72,11 @@ def result_sources():
                      'Stop', 'Blank', 'rel', 'read_text', 'read_table', 'read_json', 'source_lines',
                      'table', 'counts', 'compare', 'before_after', 'note', 'error', 'where'}))
     utilities = utilities.replace('상태 「비어 있음」.', '해당 조회를 작성한 뒤 실행한다.').replace('정할 자리 파일', '`app/features/` 파일').replace('정할 자리', '`app/features/`의 빈 틀')
-    ui = 'import html\nFOLD = 30\n\n' + extract(source, {'JS', 'e', 'token', 'grid', 'render_block'})
-    start = ui.index("        key = 'counts:'")
-    end = ui.index("    if k == 'compare':", start)
-    ui = ui[:start] + "        return title + grid(['항목', '개수'], b['items']) + tail\n" + ui[end:]
-    ui = ui.replace("'짝(' + b['key'] + ')'", "('질문 · 입력 · 항목' if b['key'] == '짝' else b['key'])")
-    # 표의 실제 비교와 검색을 재사용하고 단계 띠·진척도 페이지는 포함하지 않는다.
-    ui += '\nCSS = ' + repr(DARK_CSS) + '\n' + RENDER
-    return utilities, ui
+    # 블록을 만드는 함수(그림 블록 포함 — result_figures.py)는 results.py에, 그리는 코드(result_view.py)는 render.py에 둔다.
+    # 화면은 방금 실행한 기능 하나의 결과만 보이고 단계 띠 · 진척도는 두지 않는다(코딩랩 K-3).
+    utilities += (HERE / 'result_figures.py').read_text(encoding='utf-8')
+    return utilities, (HERE / 'result_view.py').read_text(encoding='utf-8')
 
-
-DARK_CSS = '''*{box-sizing:border-box}body{margin:0;background:#181b20;color:#e6eaf0;font:16px/1.65 "Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 24px}h1{font-size:28px;margin:0}h2{font-size:22px}h3{font-size:17px;margin:0 0 14px}section{margin:18px 0;padding:20px;background:#232830;border:1px solid #3b424e;border-radius:10px;overflow:auto}.tbl{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px 12px;border-bottom:1px solid #3b424e;text-align:left;vertical-align:top}th{background:#303743;cursor:pointer}td{overflow-wrap:break-word}td.k{white-space:nowrap}tr.hide{display:none}.note,small{color:#b6c1d0}.note,.err{white-space:pre-wrap}.err{border-left:4px solid #ff8e88;padding:12px;background:#422b2d}.st-같음{color:#8cdbbc}.st-다름,.st-실제,.st-사라짐{color:#ffaaa4}.st-기대,.st-늘어남,.st-값{color:#eac77b}input.f,button.t{font:inherit;color:#e6eaf0;background:#303743;border:1px solid #687589;border-radius:6px;padding:5px 10px;margin:0 8px 12px 0}input.f{max-width:100%}.src{white-space:pre-wrap;font-family:Consolas,monospace}.src b{display:inline-block;width:4em;color:#a5b3c5}@media(max-width:600px){main{padding:18px 12px}section{padding:14px}h1{font-size:24px}}'''
-
-DARK_CSS += 'th{white-space:nowrap}td{word-break:keep-all}td[class^="st-"]{white-space:nowrap}.tbl:has(button.only) td:first-child{min-width:210px}'
-
-RENDER = '''
-def page(title, action, blocks):
-    body = ''.join('<section>' + render_block(b, {}, {}) + '</section>' for b in blocks)
-    return ('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>{e(action)} · {e(title)}</title><style>{CSS}</style><main><small>{e(title)}</small>'
-            f'<h1>{e(action)}</h1>{body}</main>{JS}</html>')
-'''
 
 RUN = '''"""한 기능을 실행하고 실제 결과를 output/result.html에 표시한다."""
 from pathlib import Path
@@ -108,6 +92,16 @@ from app.ui.render import page
 ROOT = Path(__file__).resolve().parent
 
 
+def local(exc):
+    """멈춘 까닭의 글에서 이 폴더의 절대 경로를 뗀다 — 화면과 터미널에 학생 PC의 경로를 보이지 않고 app/features/… 꼴로 짚는다."""
+    text = str(exc)
+    for root in (str(ROOT), ROOT.as_posix()):
+        text = text.replace(root + os.sep, '').replace(root + '/', '').replace(root, '.')
+    for name in ('app', 'data', 'output'):
+        text = text.replace(name + os.sep, name + '/')
+    return text.replace('features' + os.sep, 'features/').replace('model' + os.sep, 'model/')
+
+
 def main():
     parser = argparse.ArgumentParser(description=actions.TITLE)
     parser.add_argument('action', nargs='?', default='sources', choices=actions.COMMANDS)
@@ -119,10 +113,9 @@ def main():
     except results.Blank as exc:
         blocks = [results.note('아직 비어 있습니다: ' + str(exc))]
     except results.Stop as exc:
-        blocks = [results.error('확인 필요', str(exc))]
+        blocks = [results.error('확인 필요', local(exc))]
     except Exception as exc:
-        message = str(exc).replace(str(ROOT) + os.sep, '').replace(str(ROOT), '.')   # 학생 PC의 절대 경로를 보이지 않는다
-        blocks = [results.error('실행 확인 필요 ' + results.where(exc), message)]
+        blocks = [results.error('실행 확인 필요 ' + results.where(exc), local(exc))]
     output = ROOT / 'output'
     output.mkdir(exist_ok=True)
     target = output / 'result.html'
@@ -133,6 +126,8 @@ def main():
     for block in blocks:
         if block['kind'] in ('note', 'error'):
             print(block.get('title', '') + ('\\n' if block.get('title') else '') + block['text'])
+        elif block['kind'] == 'verdict':
+            print(block['text'] + (' — ' + block['detail'] if block.get('detail') else ''))
         elif block['kind'] == 'table':
             print(f"{block['title']}: {len(block['rows'])}행")
         elif block['kind'] == 'counts':
