@@ -4,7 +4,7 @@
 쓰는 법(저장소 루트에서):
   편 하나:  OPENAI_KEY_FILE=<키 파일> <py> workspace/강의제작/제작도구/검사/바깥검토.py \
                 --지시 <지시.md> --편 <대본.md> --덱 <덱 원고.md> --그림폴더 <장 렌더 폴더> [--공통 <공통.md>] \
-                --출력 <새 폴더> [--모델 gpt-6.2-astra]
+                [--까닭 <다시 보내는 까닭.md>] --출력 <새 폴더> [--모델 gpt-6.2-astra]
   글 한 장: OPENAI_KEY_FILE=<키 파일> <py> … 바깥검토.py --지시 <지시.md> --글 <글.md> --출력 <새 폴더>
   묶기만:   <py> … 바깥검토.py --지시 … --편 … --덱 … --그림폴더 … --출력 <새 폴더> --묶기만   (보내지 않고 보낸글.md만 쓴다)
   자가시험: <py> … 바깥검토.py --자가시험   (일부러 깨뜨린 입력이 모두 걸리는지 본다, 보내지 않는다)
@@ -13,6 +13,7 @@
   「장 그림 → 화면에 적힌 글 → 노트 → 대본」을 한 묶음으로 1장부터 차례대로 끼운다. 그림은 그 장 묶음 안에 들어간다.
   화면 글은 덱 원고의 「화면 내용」에서 화면에 실제로 보이는 글(제목 · 기관 · 과정 · 부제 · 메시지 · 표 머리 · 요소)만 뽑고,
   좌표 · 아이콘 · 그림 파일 이름 · 화면 구성 · 제작 기준(근거 문헌)은 보내지 않는다.
+- 돌아온 판에서 걸린 곳을 다시 보낼 때는 그 판을 --편으로 주고 --까닭에 걸린 곳과 까닭을 적는다. 까닭은 공통 자료 바로 뒤에 간다.
 - 대본의 장 · 덱 장 · 그림이 하나라도 맞지 않으면 보내기 전에 장 번호를 대며 멈춘다.
 - 돌아온 판의 `# [` 구간 줄과 `## [SLIDE` 장 줄이 보낸 대본과 같은 차례가 아니면, 결과는 저장하되 어긋난 줄을 찍고 종료 코드 3으로 멈춘다.
 - 키는 환경변수 OPENAI_API_KEY 또는 OPENAI_KEY_FILE(키 한 줄, 또는 `이름=값` 줄이 든 파일)로만 받는다.
@@ -160,7 +161,7 @@ def pictures(folder):
     return found
 
 
-def assemble(script, deck, folder, common=None):
+def assemble(script, deck, folder, common=None, reasons=None):
     """보낼 묶음을 만든다. 돌려주는 것: (MD 조각과 그림이 차례대로 든 목록, 보낸 장 줄 목록, 보낸 구간 줄 목록)."""
     items = script_body(script)
     slides = deck_slides(deck)
@@ -168,6 +169,8 @@ def assemble(script, deck, folder, common=None):
     parts, heads = [], []
     if common:
         parts.append(('글', '# 공통 자료\n\n' + read(common, '공통 자료')))
+    if reasons:
+        parts.append(('글', '# 다시 보내는 까닭\n\n' + read(reasons, '다시 보내는 까닭')))
     parts.append(('글', '# 대본 — 장마다 그림 · 화면에 적힌 글 · 노트 · 대본'))
     for kind, it, n in items:
         if kind == '구간':
@@ -287,6 +290,7 @@ def self_test():
             for i in pics:
                 (d / '그림' / f's-{i:02d}.png').write_bytes(png)
             (d / '공통.md').write_text('## 1회차에서 배운 이름\n\n- 노드', encoding='utf-8')
+            (d / '까닭.md').write_text('- 2장: 위치로 가리켰다', encoding='utf-8')
             return d
 
         def expect_stop(label, d, needle):
@@ -312,6 +316,10 @@ def self_test():
                 fails.append(f'좋은 입력: 보낸글에 군더더기 「{never}」가 들어갔다')
         if md.index('s-01.png') > md.index('첫 장 낭독.') or md.index('첫 장 낭독.') > md.index('s-02.png'):
             fails.append('좋은 입력: 그림이 제 장 묶음 안에 있지 않다')
+        rp, _ = assemble(d / '대본.md', d / '덱.md', d / '그림', d / '공통.md', d / '까닭.md')
+        rmd = md_view(rp)
+        if not (rmd.index('# 공통 자료') < rmd.index('# 다시 보내는 까닭') < rmd.index('# 대본')):
+            fails.append('까닭: 공통 자료 뒤 · 대본 앞에 있지 않다')
         if heads != ['# [도입] 표지', '## [SLIDE 01] 표지', '# [이론] 본문 · 10분', '## [SLIDE 02] 본문 장']:
             fails.append(f'좋은 입력: 구간 · 장 줄이 다르다 — {heads}')
 
@@ -330,7 +338,7 @@ def self_test():
     if fails:
         print('바깥검토 자가시험: 실패', *fails, sep='\n  ')
         sys.exit(1)
-    print('바깥검토 자가시험: 통과 — 좋은 입력 1 · 깨뜨린 입력 6 · 돌아온 판 줄 대조 2')
+    print('바깥검토 자가시험: 통과 — 좋은 입력 1 · 까닭 자리 1 · 깨뜨린 입력 6 · 돌아온 판 줄 대조 2')
 
 
 def main():
@@ -340,6 +348,7 @@ def main():
     ap.add_argument('--덱')
     ap.add_argument('--그림폴더')
     ap.add_argument('--공통')
+    ap.add_argument('--까닭')
     ap.add_argument('--글')
     ap.add_argument('--출력')
     ap.add_argument('--모델', default='gpt-6.2-astra')
@@ -361,10 +370,10 @@ def main():
         if a.편:
             if not a.덱 or not a.그림폴더:
                 raise 멈춤('--편에는 --덱과 --그림폴더가 함께 있어야 한다')
-            parts, heads = assemble(a.편, a.덱, a.그림폴더, a.공통)
+            parts, heads = assemble(a.편, a.덱, a.그림폴더, a.공통, a.까닭)
         else:
-            if a.덱 or a.그림폴더 or a.공통:
-                raise 멈춤('--글에는 --덱 · --그림폴더 · --공통을 주지 않는다(대본 한 편은 --편으로)')
+            if a.덱 or a.그림폴더 or a.공통 or a.까닭:
+                raise 멈춤('--글에는 --덱 · --그림폴더 · --공통 · --까닭을 주지 않는다(대본 한 편은 --편으로)')
             parts, heads = [('글', read(a.글, '글'))], []
     except 멈춤 as e:
         sys.exit(f'바깥검토: {e}')
