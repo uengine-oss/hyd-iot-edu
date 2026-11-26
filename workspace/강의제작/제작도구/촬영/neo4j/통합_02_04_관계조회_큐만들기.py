@@ -158,7 +158,7 @@ OPS = {
  'g1003': [U(ED('DELETE'), '지우는 절은 DELETE'), U(ED('DETACH'), '그 앞에 낱말이'), X(EDGE(PUMP, S_NEW), '센서로 가는 관계가'), X(NODE(PUMP), '펌프만 지우면')],
  'g1004': [U(ED('DETACH DELETE'), 'DETACH DELETE는'), RUN(summary='Deleted 1 node, deleted 1 relationship')],
  'g1005': [U(FOOT('Deleted 1 node, deleted 1 relationship')), *PUT('7-2', '그래서')],
- 'g1006': [U(WITH(ED('PracticeDevice'), ED('PracticeSensor')), '레이블을 둘'), U(ED('|'), '레이블 사이의 세로줄이'), RUN(graph=True, nodes=2, edges=0)],
+ 'g1006': [U(WITH(ED('PracticeDevice'), ED('PracticeSensor')), '레이블을 둘'), U(ED('|'), '레이블 사이의 세로줄은'), RUN(graph=True, nodes=2, edges=0)],
  'g1007': [X(NODE(FAN), '팬과'), X(NODE(S_NEW), '센서,')],
  'g1008': PUT('7-3', '남은 둘은'),
  'g1009': [U(ED('DELETE n'), 'DELETE를'), U(ED('PracticeDevice|PracticeSensor'), 'PracticeDevice나 PracticeSensor'), RUN(summary='Deleted 2 nodes')],
