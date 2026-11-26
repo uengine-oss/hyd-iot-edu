@@ -6,6 +6,11 @@
   `>`로 시작하는 줄(제작 표시), `---`, 표 줄, `**`는 낭독하지 않는다
 - 슬라이드: 대본 폴더 위의 <과정>_NN일차.pptx를 LibreOffice로 PDF, pdftoppm으로 그림으로 바꾼다. 장 번호가 PPTX 장 수를 넘으면 멈춘다
 - 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다. --voice는 기본값이 없어 --dry 밖에서는 꼭 준다(영상.md V-4)
+- 읽는 소리(said): 음성에는 대본 글을 그대로 보내지 않고 READ_AS의 낱말(앞뒤가 영문자가 아닌 자리)을 그 소리로, 밑줄로 이은 이름은 낱말마다 띄어 보낸다 —
+  eleven_v4가 「DB」를 영어 철자처럼 끊어 읽고(사용자 2026-11-26 「DB 발음이 … 저번에 어색하던데」, 실습 촬영도구/voice.py의 read_as와 같은 바꿈) 밑줄을 「underscore」로 소리 내기 때문이다
+  (HAS_COMPONENT → Has Component, 같은 voice.py 머리말). 바꾼 글은 글자 수가 같아야 하고(다르면 멈춘다), 받은 글자 정렬을 원래 글자로 되돌려 저장하므로
+  대본 · 자막 · 강조 · 쉼_저장은 화면 글자(DB)를 그대로 쓴다. 캐시 이름은 보낸 글로 낸다 — 그래서 이 바꿈이 든 구획은 2026-11-26 앞에 산 음성을 쓰지 않고 새로 산다
+  (그 앞에 낸 다른 편을 다시 구우면 「DB」 · 밑줄 이름이 든 구획이 새로 살 몫으로 잡힌다, 음성견적.py가 보인다)
 - 장 조각: 장마다 만든 영상 조각을 `조각_저장/합성/`에 보관하고(이름 = 쉼을 넣은 소리 · 장 그림 · 넘김 시각 · 인코딩 설정의 해시), 다시 돌리면 바뀐 장만 인코딩해 잇는다
 - 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. `SLIDE NN~MM`(실습 간지와 설명 장 두 장)은 첫 문장과 그 뒤 쉼까지 간지를, 둘째 문장부터 설명 장을 보여 준다.
   목표 초(--target)를 주지 않으면 쉼의 길이를 늘이거나 줄이지 않는다(영상.md 길 8)
@@ -82,19 +87,38 @@ def slides_text(script, study_waits=None):
     return out
 
 
+READ_AS = {"DB": "디비"}   # 음성에 보낼 때만 바꾸는 소리(머리말 「읽는 소리」). 글자 수가 같은 짝만 둔다
+if any(len(k) != len(v) for k, v in READ_AS.items()):
+    sys.exit(f"READ_AS의 짝은 글자 수가 같아야 한다(글자 정렬을 원래 글자로 되돌린다): {READ_AS}")
+
+
+def said(text):
+    """음성에 보내는 글(머리말 「읽는 소리」). 바꾼 뒤 글자 수가 다르면 멈춘다 — 받은 글자 시각을 원래 글자에 하나씩 되돌려 붙이기 때문이다."""
+    s = text
+    for k, v in READ_AS.items():
+        s = re.sub(rf"(?<![A-Za-z]){re.escape(k)}(?![A-Za-z])", v, s)
+    s = re.sub(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+", lambda m: " ".join(x.capitalize() for x in m.group(0).split("_")), s)
+    if len(s) != len(text):
+        sys.exit(f"음성에 보낼 글의 글자 수가 대본과 다르다({len(text)} → {len(s)}): {text[:60]}")
+    return s
+
+
 def cache_key(text, voice, model, speed):
-    """음성 캐시의 파일 이름. 글 · 목소리 · 모델 · 빠르기가 같으면 같은 음성이다."""
-    return hashlib.sha1(json.dumps([text, voice, model, speed], ensure_ascii=False).encode()).hexdigest()[:16]
+    """음성 캐시의 파일 이름. 음성에 보내는 글(said) · 목소리 · 모델 · 빠르기가 같으면 같은 음성이다."""
+    return hashlib.sha1(json.dumps([said(text), voice, model, speed], ensure_ascii=False).encode()).hexdigest()[:16]
 
 
 def tts(text, prev, nxt):
     h = cache_key(text, a.voice, a.model, a.speed)
     mp3, js = CACHE / f"{h}.mp3", CACHE / f"{h}.json"
     if mp3.exists() and js.exists(): return mp3, json.loads(js.read_text()), 0
-    body = {"text": text, "model_id": a.model, "previous_text": prev[-400:], "next_text": nxt[:400],
+    odd = CACHE / f"{h}.받은정렬.json"   # 전에 산 음성의 글자 정렬이 보낸 글과 달라 멈춘 자리. 확인하기 전에는 다시 사지 않는다
+    if odd.exists(): sys.exit(f"{odd.name}: 이 구획은 산 음성의 글자 정렬이 보낸 글과 달라 멈췄던 자리다. 그 파일과 {mp3.name}을 보고 정렬을 맞춘 뒤 {js.name}으로 옮긴다(다시 사지 않는다)")
+    send = said(text)
+    body = {"text": send, "model_id": a.model, "previous_text": said(prev[-400:]), "next_text": said(nxt[:400]),
             "voice_settings": {"speed": a.speed, "stability": 0.5, "similarity_boost": 0.75}}
     if re.match(r"eleven_v[34]", a.model):   # 이 모델들은 빠르기 설정과 앞뒤 글 참고를 받지 않는다
-        body = {"text": text, "model_id": a.model, "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}}
+        body = {"text": send, "model_id": a.model, "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}}
     req = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{a.voice}/with-timestamps?output_format=mp3_44100_128",
                                  data=json.dumps(body).encode(), headers={"xi-api-key": key(), "Content-Type": "application/json"})
     try:
@@ -102,8 +126,15 @@ def tts(text, prev, nxt):
             cost = int(r.headers.get("character-cost") or 0); d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         sys.exit(f"음성 생성 오류 {e.code}: {e.read().decode()[:300]}")
-    mp3.write_bytes(base64.b64decode(d["audio_base64"])); js.write_text(json.dumps(d.get("alignment") or {}, ensure_ascii=False))
-    return mp3, d.get("alignment") or {}, cost
+    al = d.get("alignment") or {}
+    mp3.write_bytes(base64.b64decode(d["audio_base64"]))
+    if send != text:   # 바꾼 소리로 샀다. 글자 정렬을 대본 글자로 되돌려야 자막 · 강조 · 쉼이 화면 글자(DB)를 찾는다
+        if "".join(al.get("characters") or []) != send:
+            odd.write_text(json.dumps(al, ensure_ascii=False))
+            sys.exit(f"{mp3.name}: 받은 글자 정렬이 보낸 글과 달라 대본 글자로 되돌리지 못했다 — 산 음성과 정렬을 {mp3.name} · {odd.name}에 두고 멈춘다(다시 사지 않는다)")
+        al = dict(al, characters=list(text))
+    js.write_text(json.dumps(al, ensure_ascii=False))
+    return mp3, al, cost
 
 
 def dur(p): return float(run("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)).strip())
