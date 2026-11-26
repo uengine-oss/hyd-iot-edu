@@ -70,7 +70,7 @@ COUNTS = {"표지": (0, 0), "목차": (2, 10), "간지": (0, 9),
           "그림": (0, 4), "삽화": (0, 17), "풀이": (2, 6), "구조": (2, 12), "파이프라인": (3, 7), "관계도": (2, 8),
           "코드": (0, 4), "문답": (2, 5)}
 KEYS = {"유형", "메시지", "노트", "요소", "아이콘", "그림", "문장", "기관", "과정", "부제", "번호", "구분",
-        "머리", "영역", "연결", "사이", "코드", "라벨", "단", "견줌", "층", "참고"}
+        "머리", "영역", "연결", "사이", "코드", "라벨", "단", "견줌", "층", "참고", "아랫줄"}
 LAYERS = 9                     # `층:` 눈금의 칸 수(기능 계층의 수)
 NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문장",), "그림": ("그림",), "삽화": ("그림",), "구조": ("영역",),
         "코드": ("코드",), "관계도": ("연결",)}
@@ -221,6 +221,8 @@ def validate(slides: list[Slide], md_path: Path) -> None:
         if "견줌" in sl.fields and (sl.kind != "표" or sl.fields["견줌"] != "같게" or "단" in sl.fields
                                    or sl.fields.get("머리", "").count("|") != 2):
             errs.append(f"{where} `견줌:`은 머리가 세 칸인 표에서 `같게`만 허용(`단:`과 함께 쓰지 않음)")
+        if "아랫줄" in sl.fields and (sl.kind != "표" or "단" in sl.fields or not sl.fields["아랫줄"].strip()):
+            errs.append(f"{where} `아랫줄:`은 `단:`을 쓰지 않는 표에서만 허용(표 바로 아래 본문 크기 한 줄)")
         if "단" in sl.fields:
             if sl.kind != "표" or sl.fields["단"] != "2":
                 errs.append(f"{where} `단:`은 표에서 `2`만 허용")
@@ -833,15 +835,22 @@ def render_compare(sl, s, page):
 
 
 def render_table(sl, s, page):
-    """`라벨 | 값 | 상태` 2~9줄. `머리: A | B | C`를 주면 머리줄을 그린다. 값은 줄 높이만큼 여러 줄."""
+    """`라벨 | 값 | 상태` 2~9줄. `머리: A | B | C`를 주면 머리줄을 그린다. 값은 줄 높이만큼 여러 줄.
+    `아랫줄: 글`을 주면 표 바로 아래에 본문 크기 한 줄을 그린다(`**굵게**`는 강조색). 표에 적는 항목이 아니라 표를 두고 하는 말처럼,
+    표의 줄에 넣으면 뜻이 달라지는 한 줄을 둔다. 주지 않으면 표는 이 칸이 없을 때와 똑같이 그려진다."""
     if s.fields.get("단") == "2":
         return render_table_columns(sl, s, page)
     top, end = frame(sl, s, page)
     head = [h.strip() for h in s.fields["머리"].split("|")] if s.fields.get("머리") else []
     n = len(s.items)
     hh = 0.44 if head else 0
-    rh = min(1.0, (end - top - hh) / n)
-    y0 = top + (end - top - hh - rh * n) / 2
+    foot = s.fields.get("아랫줄", "").strip()
+    fh = 0.5 if foot else 0
+    rh = min(1.0, (end - top - hh - fh) / n)
+    y0 = top + (end - top - hh - fh - rh * n) / 2
+    if foot:
+        add_text(sl, MX + 0.05, y0 + hh + rh * n + 0.08, CW - 0.1, fh - 0.08, foot, BODY_PT, INK, anchor=MSO_ANCHOR.MIDDLE,
+                 name="아랫줄", slide_no=s.no, max_lines=1)
     has_tag = any(it.tag for it in s.items)
     c1 = 3.3 if s.icons else 2.9
     c3 = 2.4 if has_tag else 0
