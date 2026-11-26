@@ -12,6 +12,9 @@
   지우기 <py> workspace/강의제작/제작도구/배포/유튜브.py 지우기 <영상 id> --제목 "…"
          새 판으로 바꾼 옛 영상을 완전삭제한다(되돌릴 수 없다 — 작업자는 그 영상 이름을 대고 사용자 승인을 받은 뒤에만 돌린다, 배포 길 11).
          지우기 전에 oEmbed 제목이 --제목과 같고 채널이 강의 채널인지 대조하고, 지운 뒤 그 주소가 404인지 확인하며, 주소표에서 그 id를 뺀다.
+  제목바꾸기 <py> workspace/강의제작/제작도구/배포/유튜브.py 제목바꾸기 <영상 id> --제목 "지금 제목" --새제목 "새 제목"
+         수업 차례가 바뀌어 이미 낸 영상의 번호(N-M)만 바뀔 때 쓴다. 지금 제목과 채널을 대조한 뒤 snippet의 제목만 바꾸고
+         (설명 · 분류 · 태그 · 언어는 받은 값을 그대로 다시 보낸다), oEmbed 제목이 새 제목이 될 때까지 대조하고 주소표의 제목을 고친다.
 비밀: 클라이언트 비밀값과 토큰은 화면에 찍지 않고 git 밖 작업/_로컬/배포/에만 둔다. 게시는 외부 공개이므로 작업자는 올리기 전에
   파일 · 제목 목록으로 사용자 승인을 받는다(배포 B-6).
 """
@@ -147,6 +150,42 @@ def cmd_delete(a):
     print(f"지움: {a.id} 「{a.제목}」 — 주소가 닫힌 것을 확인함")
 
 
+def api(method, path, tok, body=None):
+    c = http.client.HTTPSConnection("www.googleapis.com", timeout=120)
+    c.request(method, path, body=None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8"),
+              headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json; charset=UTF-8"})
+    r = c.getresponse(); txt = r.read().decode("utf-8", "replace"); c.close()
+    if r.status != 200:
+        fail(f"{method} {path.split('?')[0]} {r.status}: {txt[:300]}")
+    return json.loads(txt)
+
+
+def cmd_retitle(a):
+    cmd_check(a)  # 지금 제목 · 채널이 다르면 여기서 멈춘다
+    tok = access_token()
+    items = api("GET", "/youtube/v3/videos?" + urllib.parse.urlencode({"part": "snippet", "id": a.id}), tok).get("items", [])
+    if len(items) != 1:
+        fail(f"{a.id}: 영상 정보를 받지 못했다(받은 수 {len(items)})")
+    old = items[0]["snippet"]
+    # videos.update는 snippet에서 빠진 설명 · 태그 · 언어를 지우므로, 받은 값을 그대로 다시 보내고 제목만 바꾼다
+    snip = {k: old[k] for k in ("description", "categoryId", "tags", "defaultLanguage", "defaultAudioLanguage") if k in old}
+    snip["title"] = a.새제목
+    got = api("PUT", "/youtube/v3/videos?part=snippet", tok, {"id": a.id, "snippet": snip})
+    if got["snippet"]["title"] != a.새제목:
+        fail(f"{a.id}: 바꾼 응답의 제목이 「{got['snippet']['title']}」이다")
+    for _ in range(12):  # oEmbed는 잠시 옛 제목을 돌려줄 수 있다
+        if oembed(a.id)["title"] == a.새제목:
+            break
+        time.sleep(10)
+    else:
+        fail(f"{a.id}: 2분이 지나도 oEmbed 제목이 「{a.새제목}」이 아니다 — Studio에서 확인한다")
+    if TITLES.exists():
+        titles = json.loads(TITLES.read_text(encoding="utf-8"))
+        titles[a.id] = a.새제목
+        TITLES.write_text(json.dumps(titles, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"제목 바꿈: {a.id} 「{a.제목}」 → 「{a.새제목}」 — oEmbed 대조 일치")
+
+
 def put_chunk(loc, sess, data, start, size):
     end = start + len(data) - 1
     for attempt in range(5):
@@ -215,6 +254,8 @@ def main():
     u.add_argument("--설명"); u.add_argument("--dry", action="store_true"); u.set_defaults(fn=cmd_upload)
     k = s.add_parser("대조"); k.add_argument("id"); k.add_argument("--제목", required=True); k.set_defaults(fn=cmd_check)
     d = s.add_parser("지우기"); d.add_argument("id"); d.add_argument("--제목", required=True); d.set_defaults(fn=cmd_delete)
+    t = s.add_parser("제목바꾸기"); t.add_argument("id"); t.add_argument("--제목", required=True); t.add_argument("--새제목", required=True)
+    t.set_defaults(fn=cmd_retitle)
     a = p.parse_args(); a.fn(a)
 
 
