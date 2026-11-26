@@ -1,6 +1,7 @@
 """이론 대본의 음성만 먼저 산다(영상 · 쉼 · 강조 없음). 강의영상.py의 slides_text · cache_key · tts를 그대로 불러 쓴다. 유료다.
 언제: 음성견적.py로 견적을 알린 뒤, 굽기 전에 음성 캐시를 채울 때. 대표 1구획을 먼저 사서(--한도 1) 단가를 잰다.
-명령: ELEVENLABS_API_KEY=… <py> workspace/강의제작/제작도구/기존제작/tools/video/음성사기.py <기록.json> <대본 …> --voice <음성 ID> [--한도 N] [--상한 크레딧] [--동시 N]
+명령: ELEVENLABS_API_KEY=… <py> workspace/강의제작/제작도구/기존제작/tools/video/음성사기.py <기록.json> <대본 …> --voice <음성 ID> [--한도 N] [--장 53,57] [--상한 크레딧] [--동시 N]
+- --장: 그 장에서 시작하는 구획만 산다(영어 · 약어가 섞인 구획을 먼저 사서 소리를 듣는 V-4의 첫 구매). 대본에 그 장으로 시작하는 구획이 없으면 멈춘다.
 
 - 캐시(음성_저장/의 mp3 · json 둘 다)가 있는 구획은 사지 않는다(기록에 credits 0 · 기존). 살 구획이 없으면 키 없이도 끝난다.
 - 기록 JSON은 강의영상.py --audio-ledger 꼴({"voice", "completed": {캐시 이름: {"sha", "credits", …}}})이라 그대로 렌더에 넘긴다.
@@ -19,6 +20,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("ledger"); ap.add_argument("scripts", nargs="+")
 ap.add_argument("--voice", required=True)
 ap.add_argument("--한도", dest="limit", type=int, default=0, help="이번에 새로 살 구획 수(0 = 전부)")
+ap.add_argument("--장", dest="only", default="", help="이 장에서 시작하는 구획만 산다(쉼표로 여럿)")
 ap.add_argument("--상한", dest="cap", type=int, default=80000)
 ap.add_argument("--동시", dest="workers", type=int, default=1)
 a = ap.parse_args()
@@ -48,6 +50,11 @@ for f in a.scripts:
             continue
         jobs.append((name, sl, h, t, S[i - 1][2] if i else "", S[i + 1][2] if i + 1 < len(S) else ""))
 save()
+if a.only:
+    want = {int(x) for x in a.only.split(",")}
+    starts = {first for f in a.scripts for first, _, _ in tool.slides_text(f)}
+    if want - starts: sys.exit(f"--장 {sorted(want - starts)}: 그 장에서 시작하는 구획이 대본에 없다")
+    jobs = [j for j in jobs if int(j[1].split("~")[0]) in want]
 if a.limit: jobs = jobs[:a.limit]
 if jobs and not tool.key(): sys.exit(f"새로 살 구획이 {len(jobs)}개인데 ELEVENLABS_API_KEY가 없다")
 spent = sum(v["credits"] for v in led["completed"].values() if not v.get("기존"))
