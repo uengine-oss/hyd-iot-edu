@@ -1,11 +1,17 @@
-# 강의 중계(LiteLLM) 설정 — 시스템 안의 모든 AI(process 관문 → 워커 CLI)와 코딩 랩의 수업 모델 호출이 이 한 이름 `coding`으로 부른다
+# 강의 중계(LiteLLM) 설정 — 시스템 안의 모든 AI(process 관문 → 워커 CLI)와 코딩 랩의 수업 모델 호출은 이름 `coding` 하나로 부른다
 # (course_ledger.POLICY['model'], 랩 LLM_MODEL=coding). 뒤쪽 모델은 옛 중계와 같은 gpt-6-luna(저장된 AI 답의 응답 model 값).
-# 비밀값은 여기 두지 않는다 — OPENAI_API_KEY · LITELLM_MASTER_KEY · DATABASE_URL 은 Cloud Run 이 Secret Manager 에서 환경 변수로 넣는다(relay.py).
+# `haiku`(Claude Haiku 5.5)는 루나 옆에 세워 둔 두 번째 모델이다 — 시스템과 랩은 부르지 않고, 그 이름을 허락한 키(relay.py 키 --모델 haiku)로만 닿는다.
+# 비밀값은 여기 두지 않는다 — OPENAI_API_KEY · ANTHROPIC_API_KEY · LITELLM_MASTER_KEY · DATABASE_URL 은 Cloud Run 이 Secret Manager 에서 환경 변수로 넣는다(relay.py).
 model_list:
   - model_name: coding
     litellm_params:
       model: openai/gpt-6-luna
       api_key: os.environ/OPENAI_API_KEY
+  - model_name: haiku
+    litellm_params:
+      # 생각은 기본으로 켜진다(adaptive, effort medium) — 생각 토큰도 답 상한(max_tokens) 안에서 쓰고 출력 값으로 셈한다
+      model: anthropic/claude-haiku-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
 
 litellm_settings:
   # Claude Code CLI(Anthropic 방식)가 보내는 값 가운데 OpenAI 모델이 받지 않는 것은 버리고 보낸다 — 버리지 않으면 요청 전체가 400 이다
