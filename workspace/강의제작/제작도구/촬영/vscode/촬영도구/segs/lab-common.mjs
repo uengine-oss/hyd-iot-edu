@@ -38,7 +38,7 @@ export const LABS = {
  p209: {dir: 'D:/HYD-Practice/p209p-d3849a15/condition-table-lab', zip: OUT + '실전반/실습/02회차/랩/condition-table-lab.zip', features: 5, cues: '실전_02_09_조치조건표_큐.json'},
  p305: {dir: 'D:/HYD-Practice/p305p-a187ceba/action-review-lab', zip: OUT + '실전반/실습/03회차/랩/action-review-lab.zip', features: 5, cues: '실전_03_05_조치검토_큐.json'},
  p307: {dir: 'D:/HYD-Practice/p307p-e0076eb3/condition-extract-lab', zip: OUT + '실전반/실습/03회차/랩/condition-extract-lab.zip', features: 8, cues: '실전_03_07_지식추출_큐.json'},
- wv: {dir: 'D:/HYD-Practice/wvp-b2ffa6ac/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 6, cues: '통합_02_06-1_VSCode랩시작하기_큐.json', readme: false},
+ wv: {dir: 'D:/HYD-Practice/wvp-c9e8ebbb/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 6, cues: '통합_02_06-1_VSCode랩시작하기_큐.json', readme: false},
  p308: {dir: 'D:/HYD-Practice/p308p-f1a55b73/work-card-lab', zip: OUT + '실전반/실습/03회차/랩/work-card-lab.zip', features: 10, cues: '실전_03_08_작업카드_큐.json'},
 };
 // 쉼(영상 V-14). 큐 사이 쉼 cue는 ../ctrl.mjs의 기본 gap과 같은 값이고, labUi의 ctx.say가 큐마다 이 값을 gap으로 준다.
@@ -229,6 +229,8 @@ export async function resetLab(key, {restore = [], top = [], reload = false} = {
  await trustFolder(p);
  // 폴더를 연 직후 Codex 웹뷰는 늦게 떠서 뜨는 순간 초점을 가져간다(회귀 dry p308 되돌리기가 두 번 「F1 앞 초점 codex」로 멈춤, 2026-11-11).
  // 신뢰가 있는 폴더에서 새 대화 화면 글이 뜰 때까지 기다린 뒤에 명령을 보낸다(Restricted Mode에서는 Codex가 꺼져 있으므로 신뢰 뒤에 기다린다).
+ // 처음 여는 폴더는 오른쪽 칸에 Chat 탭이 앞에 있어 Codex 글이 뜨지 않는다 — Codex 탭을 먼저 앞에 둔 뒤 기다린다(wvp-c9e8ebbb 첫 되돌리기가 60초 뒤 멈춤, 2026-11-27).
+ await showCodex(p);
  for (let k = 0; ; k++) { const sn = await p.text(); if (sn.includes('Ask Codex anything') && sn.includes('Get Plus')) break; if (k >= 60) throw Error('되돌리기: Codex 새 대화 화면이 60초 안에 뜨지 않음'); await p.waitForTimeout(1000); }
  await p.waitForTimeout(1000);
  // 폴더를 바꾼 직후에는 Welcome 탭이 늦게 뜬다 — 다 뜬 뒤에 닫는다
@@ -310,6 +312,47 @@ export async function codexEl(c, ctx, want) {
  });
  const a = await c.codexArea();
  return {...aimed(ctx, 'Codex ' + name, {x: q.x, y: q.y, box: {left: a.x, top: a.y, right: a.x + a.w, bottom: a.y + a.h}}), w: q.w, h: q.h};
+}
+// Codex 답 안의 요소 상자들(바깥 문서 CSS px, 위에서 아래 차례). css = 웹뷰 안 CSS 선택자, has = 그 글이 든 것만. 웹뷰라 em.line처럼 바깥 문서에서 잴 수 없어 프레임을 따라 들어가 잰다.
+// 강조는 em.box(상자)로 준다. 상자는 패널 밖으로 굴러간 자리일 수 있으니, 짚기 전에 codexScrollInto로 보이는 칸에 들인다.
+// 가로로는 패널 안에 보이는 만큼만 돌려준다 — 패널보다 넓은 표는 오른쪽이 잘려 보이고, 잘린 데까지 그리면 강조가 화면 밖으로 나간다(wv06b-dry2, 2026-11-27). 강조 둘레 여백(8px)만큼 띄운다.
+export async function codexBoxes(c, ctx, css, has = null) {
+ const a = await c.codexArea(), right = a.x + a.w - 10;
+ return c.serial(async () => {
+  const out = [];
+  for (const f of ctx.p.frames()) {
+   if (f === ctx.p.mainFrame()) continue;
+   try {
+    const l = f.locator(css), n = await l.count();
+    for (let i = 0; i < n; i++) {
+     const e = l.nth(i); if (!(await e.isVisible())) continue;
+     const text = ((await e.textContent()) ?? '').trim(); if (has != null && !text.includes(has)) continue;
+     const b = await e.boundingBox(); if (b) out.push({x: b.x, y: b.y, w: Math.min(b.width, right - b.x), h: b.height, text});
+    }
+   } catch (e) { if (!/detached|destroyed|closed|navigat/i.test(String(e?.message ?? e))) throw e; }
+  }
+  return out.sort((a, b) => a.y - b.y);
+ });
+}
+// Codex 답의 보이는 칸: 패널 위 대화 제목 줄 아래부터 요청 입력칸 위까지(CSS px).
+export async function codexView(c, ctx) {
+ const a = await c.codexArea(), i = await codexEl(c, ctx, {input: true});
+ return {top: a.y + 70, bottom: i.y - i.h / 2 - 30, x: a.x + a.w / 2};
+}
+// get()이 돌려주는 상자가 보이는 칸 안(위에서 frac 높이쯤)에 올 때까지 패널 위에서 휠을 굴린다. 휠은 화살표가 있는 자리의 칸을 굴리므로 화살표를 패널 가운데로 먼저 옮긴다.
+// 답의 맨 위 · 맨 아래라 더 굴러가지 않으면 그 자리에서 멈추되, 대상이 보이는 칸 밖이면 멈춘다.
+export async function codexScrollInto(c, ctx, get, frac = 0.25) {
+ const v = await codexView(c, ctx), want = v.top + (v.bottom - v.top) * frac;
+ await c.move(v.x, (v.top + v.bottom) / 2);
+ let last = null;
+ for (let n = 0; n < 40; n++) {
+  const b = await get(), seen = b.y >= v.top && b.y + b.h <= v.bottom, stuck = last !== null && Math.abs(b.y - last) < 1;
+  if (seen && (Math.abs(b.y - want) < 160 || stuck)) return b;
+  if (stuck) break;
+  last = b.y;
+  await c.serial(() => ctx.p.mouse.wheel(0, Math.max(-480, Math.min(480, b.y - want)))); await ctx.sleep(450);
+ }
+ throw Error((ctx.cueId ?? '(큐 밖)') + ': Codex 답을 굴려도 대상이 보이는 칸에 오지 않음 (segs/lab-common.mjs codexScrollInto)');
 }
 // 요청 입력칸을 눌러 초점을 준다. 한 번 눌러 초점이 오지 않으면 세 번까지 누르고, 그래도 초점이 Codex에 없으면 멈춘다.
 export async function codexFocus(c, ctx) {
@@ -409,6 +452,7 @@ export const em = {
  term: text => ({sel: '.terminal-wrapper .xterm-rows > div', has: text, pick: 'last', tight: true}),
  row: (key, n = null) => ({sel: 'tbody tr', cell: [0, key], ...(n == null ? {} : {child: n})}),
  codex: (x0, y0, x1, y1) => ({codex: [x0, y0, x1, y1]}),
+ box: b => ({box: [b.x, b.y, b.w, b.h]}),   // codexBoxes가 잰 Codex 답 안 요소 상자
 };
 
 // ── 조작 층: ../ui.mjs의 vscode(ctx) + 조작 기록 · 화면 안 검사 · 입력 초점 검사 · 말 시점(맨 위 머리말 ①②③) ──
