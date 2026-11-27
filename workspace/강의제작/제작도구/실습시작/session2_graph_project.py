@@ -52,7 +52,7 @@ def cypher_source(integrated=False):
     names = {'WIPE', 'PARAM', 'TARGET', 'QUESTION', 'LabDbOff', 'model_graph', 'endpoint', 'cypher', 'rows_of',
              'statements', 'guard', 'read', 'run_file', 'constraints_file', 'constraints', 'duplicates', 'try_create_twice', 'CONSTRAINT', 'load_file',
              'TYPE_NAMES', 'ADDITIONS', 'schema_in_use', 'fits', 'against_schema', 'raw_rows', 'student_targets', 'provided_queries',
-             'CHANGE', 'LITERAL', 'load_plan', 'load_files', 'seek_plan', 'rolled_back', 'tried', 'change_rows', 'change_plan', 'EXPORT', 'exported', 'apply_changes_tried', 'clear', 'apply_changes', 'questions', 'CLAUSE', 'WRITES', 'top_level', 'path_query', 'walked', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
+             'CHANGE', 'LITERAL', 'load_plan', 'load_files', 'seek_plan', 'rolled_back', 'tried', 'change_rows', 'change_plan', 'EXPORT', 'exported', 'apply_changes_tried', 'clear', 'apply_changes', 'questions', 'CLAUSE', 'WRITES', 'top_level', 'path_query', 'walked', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs', 'relation_gap', 'date_gap'}
     text = ('from pathlib import Path\nimport csv, io, json, re, urllib.request, urllib.error\nfrom app.utils import db as local_db\n'
             "HERE = Path(__file__).resolve().parents[2]\nSTATE = HERE / '.lab_connection.json'\n_ENDPOINT = None\n\n" + P.extract(source, names))
     text = text.replace(P.extract(source, {'endpoint'}).strip(), ENDPOINT.strip())

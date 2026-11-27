@@ -353,7 +353,9 @@ def provided_queries(graph, schema, skip):
     types = sorted({r['type'] for r in graph['rels']} - set(skip))
     lines = ['// 제공 적재 쿼리 — ' + ' · '.join(labels + types) + '. python run.py load가 내 쿼리(app/features/load.cypher)와 함께 실행한 것입니다. 이 파일은 실행할 때마다 다시 쓰입니다.', '']
     for l in labels:
-        lines += [f'// 넣을 것: {l}', f'UNWIND $rows AS row MERGE (n:`{l}` {{id: row.id}}) ON CREATE SET n = row;', '']
+        spec = schema.get('classes', {}).get(l, {})
+        dates = sorted(k for k, v in {**spec.get('required', {}), **spec.get('optional', {})}.items() if v == 'date')      # 모델 파일의 날짜는 글자로 적혀 있다 — 스키마가 날짜라고 한 속성은 랩 DB에 날짜로 넣는다
+        lines += [f'// 넣을 것: {l}', f'UNWIND $rows AS row MERGE (n:`{l}` {{id: row.id}}) ON CREATE SET n = row' + ''.join(f', n.`{k}` = date(row.`{k}`)' for k in dates) + ';', '']
     for t in types:
         spec = schema.get('relations', {}).get(t, {})
         a, b = (':`' + spec['from'] + '`' if isinstance(spec.get('from'), str) else ''), (':`' + spec['to'] + '`' if isinstance(spec.get('to'), str) else '')
@@ -702,6 +704,35 @@ def diff_graphs(before, after):
             rel_changed += [(fmt(k), x, p.get(x), q.get(x)) for x in sorted(set(p) | set(q)) if p.get(x) != q.get(x)]
     return {'늘어난 노드': sorted(set(an) - set(bn), key=str), '사라진 노드': sorted(set(bn) - set(an), key=str), '속성 바뀐 노드': changed,
             '늘어난 관계': grew, '사라진 관계': gone, '속성 바뀐 관계': rel_changed}
+
+
+def relation_gap(model, inside):
+    """모델과 랩 DB의 관계를 (유형, 시작 노드, 끝 노드)로 견준다 — 유형별 개수가 같아도 화살표가 거꾸로 들어갔거나 다른 노드에 이어졌으면 다르다.
+    돌려주는 것: 어긋난 (유형 · 시작 레이블 · 끝 레이블)마다 {'유형', '시작', '끝', '모델'(모델에서 그 꼴의 관계 수), '거꾸로': [(시작, 끝)], '빠짐': [(시작, 끝)]}.
+    거꾸로 = 모델의 시작 → 끝이 랩 DB에는 끝 → 시작으로만 있는 관계, 빠짐 = 어느 쪽으로도 없는 관계."""
+    label = {n['props'].get('id'): n['labels'][0] for n in model['nodes']}
+    want = {(r['type'], r['a'], r['b']) for r in model['rels']}
+    have = {(r['type'], r['a'], r['b']) for r in inside['rels']}
+    out = {}
+    for t, a, b in sorted(want, key=str):
+        one = out.setdefault((t, label.get(a, '?'), label.get(b, '?')), {'모델': 0, '거꾸로': [], '빠짐': []})
+        one['모델'] += 1
+        if (t, a, b) not in have:
+            one['거꾸로' if (t, b, a) in have and (t, b, a) not in want else '빠짐'].append((a, b))
+    return [dict(유형=t, 시작=x, 끝=y, **v) for (t, x, y), v in out.items() if v['거꾸로'] or v['빠짐']]
+
+
+def date_gap():
+    """스키마에서 자료형이 날짜인 속성이 랩 DB에 날짜가 아닌 자료형으로 들어간 곳 — [(레이블, 속성, 식별자, 랩 DB의 자료형)].
+    내보낸 글(JSON)에서는 날짜와 글자가 같은 「2026-10-15」로 보여 가를 수 없으므로 랩 DB에 자료형을 직접 묻는다. 글자로 들어간 날짜는 날짜와 견주는 쿼리에서 오류 없이 빠진다."""
+    schema = schema_in_use()
+    asks = [(label, k) for label, spec in sorted(schema.get('classes', {}).items())
+            for k, v in sorted({**spec.get('required', {}), **spec.get('optional', {})}.items()) if v == 'date']
+    if not asks:
+        return []
+    res = cypher([(f'MATCH (n:`{label}`) WHERE n.`{k}` IS NOT NULL AND NOT n.`{k}` IS :: DATE RETURN n.id AS id, valueType(n.`{k}`) AS kind ORDER BY id', {}) for label, k in asks])
+    names = {'STRING': '글자', 'INTEGER': '수', 'FLOAT': '수', 'LOCAL DATETIME': '날짜와 시각', 'ZONED DATETIME': '날짜와 시각'}
+    return [(label, k, r['row'][0], names.get(r['row'][1].replace(' NOT NULL', ''), r['row'][1])) for (label, k), one in zip(asks, res) for r in one['data']]
 
 
 LATER = ['공급사-견적', '견적-부품']      # 구매팀 질문 단계에서 내 쿼리로 넣는 관계(두 클래스의 짝 — 관계 이름은 스키마의 links에서 읽는다)

@@ -147,6 +147,13 @@ def purchase_wrong(folder, schema):
         off = off_rows(result(folder, 'purchase'))
         assert len(off) == 3 and not any(XG.PURCHASE_ASK['missing'] in r['key'] for r in off), off
         out.append({'wrong': '공급사와 견적을 잇는 관계의 화살표를 거꾸로 적은 쿼리', 'result': f'공급사를 묻는 {len(off)}줄이 모두 같음이 아님 — 실제 「{off[0]["cells"][0][1]}」(없는 품번 줄만 같음)'})
+        as_text = body.replace("date('", "('")      # 유효기한은 랩 DB에 날짜로 들어 있다 — 기준일을 글자로 적어 견주면 오류 없이 모든 견적이 빠진다
+        assert as_text != body
+        put(folder, {'결과/query.cypher': queries(folder, purchase=(head, as_text))}, True)
+        off = off_rows(result(folder, 'purchase'))
+        assert len(off) == 3 and not any(XG.PURCHASE_ASK['missing'] in r['key'] for r in off), off
+        assert T.http(folder, "MATCH (q:Quote) WHERE NOT q.valid_until IS :: DATE OR NOT q.quote_date IS :: DATE RETURN count(q)")[0][0] == 0
+        out.append({'wrong': '기준일을 날짜가 아니라 글자로 적어 견준 쿼리', 'result': f'공급사를 묻는 {len(off)}줄이 모두 같음이 아님 — 실제 「{off[0]["cells"][0][1]}」(랩 DB의 유효기한은 날짜)'})
     finally:
         (folder / 'app/features/query.cypher').write_bytes(right)
     return out
@@ -175,6 +182,17 @@ def supply_wrong(folder, schema, graph, later):
     waiting = notes(result(folder, 'status'))
     assert offers in waiting and quotes not in waiting.split('(')[1].split(')')[0], waiting
     out.append({'wrong': '관계 둘 가운데 견적과 부품을 잇는 것만 씀', 'result': f'넣기 화면이 「// 넣을 것: {offers}」 쿼리가 아직 없다고 말하고, 개수 화면은 {offers}만 아직 넣지 않은 관계로 알림'})
+    back = two.replace(f'MERGE (a)-[r:{quotes}]->(b)', f'MERGE (b)-[r:{quotes}]->(a)')      # 견적과 부품을 잇는 관계만 화살표를 거꾸로 — 개수는 모델과 같다
+    assert back != two
+    load.write_text(T.P.convert(base + '\n' + back), encoding='utf-8', newline='\n')
+    blocks = result(folder, 'supply')
+    turned_cards = cards_of(blocks, '모델 파일과 다르게 이어진 관계')
+    m = sum(1 for r in graph['rels'] if r['type'] == quotes)
+    assert http(folder, f'MATCH ()-[r:{quotes}]->() RETURN count(r)')[0][0] == m
+    assert blocks[0]['state'] == 'bad' and '다르게 이어진 관계' in blocks[0]['text'] and '이어졌습니다' not in blocks[0]['text'], blocks[0]
+    assert [c['title'] for c in turned_cards] == [quotes] and f'거꾸로 {m}개' in json.dumps(turned_cards, ensure_ascii=False), turned_cards
+    out.append({'wrong': '견적과 부품을 잇는 관계의 화살표를 거꾸로 넣음', 'result': f'개수는 모델과 같지만({quotes} {m}개) 넣기 화면이 「{blocks[0]["text"]}」로 끝남 — 거꾸로 {m}개'})
+    http(folder, f'MATCH ()-[r:{quotes}|{offers}]->() DELETE r')      # 다음 경우를 위해 이번에 넣은 관계를 비운다
     spec = schema['relations'][offers]
     turned = two.replace(f"(a:{spec['from']} {{id: row.a}}), (b:{spec['to']} {{id: row.b}}) MERGE (a)-[r:{offers}]", f"(a:{spec['to']} {{id: row.a}}), (b:{spec['from']} {{id: row.b}}) MERGE (a)-[r:{offers}]")
     assert turned != two
@@ -202,8 +220,10 @@ def trials(starter, work):
     (renamed, new_name), (retired, status) = D.LAB_RENAMED, D.LAB_RETIRED
     provided = json.loads((starter / 'data/model/graph.json').read_text(encoding='utf-8'))
     schema = json.loads((starter / 'data/model/schema.json').read_text(encoding='utf-8'))
-    made_schema, made = S.design_model(BRANCH, course='실전반', supply=FA.PROVIDED_SUPPLY)
+    made_schema, made = (json.loads(T.P.convert(json.dumps(x, ensure_ascii=False))) for x in S.design_model(BRANCH, course='실전반', supply=FA.PROVIDED_SUPPLY))      # 설계 랩이 output/에 쓰는 글(이 폴더의 파일 이름)
     assert normalized(provided) == normalized(made) and schema == made_schema, '제공 모델이 설계 랩 강사 참조의 출력과 다름'
+    sources = sorted({v.rsplit(':', 1)[0] for n in provided['nodes'] for k, v in n['props'].items() if k.endswith('_source')})      # 모델 파일의 출처 줄은 이 폴더에 실제로 있는 파일을 가리킨다
+    assert sources and all((starter / s).is_file() for s in sources), ('모델 파일의 출처가 이 폴더에 없는 파일 이름', sources)
     count = lambda g, label: sum(1 for n in g['nodes'] if n['labels'] == [label])
     assert (count(provided, 'Asset'), count(provided, 'Supplier'), count(provided, 'Quote')) == (len(D.ASSETS), len(D.SUPPLIERS), len(D.QUOTES)), '설비 · 공급사 · 견적 수가 자료의 정의와 다름'
     later = [schema['links'][x] for x in XG.LATER]

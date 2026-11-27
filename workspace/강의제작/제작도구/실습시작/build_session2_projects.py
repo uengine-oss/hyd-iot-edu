@@ -24,10 +24,17 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 실전반 두 랩은 같은 생성 길에 공장 규모 자료와 끝의 구매팀 응용만 얹는다(코딩랩 K-10 — session2_factory*.py). 통합반 산출물은 과정 인자의 기본값으로 예전과 같은 바이트가 나온다.
 COURSES = {'통합반': dict(dest=DEST, prefix='integrated', versions=None),
-           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v29-practical', 'graph-lab': 'v29-practical'})}
+           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v30-practical', 'graph-lab': 'v30-practical'})}
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v61-lab', 'graph-lab': 'v61-lab'}
+VERSIONS = {'ontology-lab': 'v62-lab', 'graph-lab': 'v62-lab'}
+# v62-lab(통합반 두 랩) · v30-practical(실전반 두 랩) — 2026-11-27, 학생 역 리허설(실전 설계 v29 · 실전 그래프 v28) · 받기 시험(v61 · v29) · v61 Codex 재확인에서 나온 것을 한 판에(작업 폴더 판정/랩고침_실행기록_v62_v30.md):
+#   화면이 사실과 다르게 말하던 곳 — 넣기 화면이 관계를 이름별 개수로만 견줘 화살표를 거꾸로 넣어도 「맞음」(lab_cypher.relation_gap — 시작 · 끝 노드까지 견줘 거꾸로 들어간 관계를 짚는다, 실전 공급 관계 화면도),
+#   「TS1=65」처럼 짝지은 값이 같음인데 다른 값처럼 그려짐(result_view.aligned), 스키마는 날짜인데 랩 DB에는 글자로 들어가 날짜와 견주는 쿼리가 조용히 다 거름(제공 적재 쿼리가 날짜로 넣고, lab_cypher.date_gap이 랩 DB의 자료형을 물어 넣기 · 수정본 반영 화면이 짚는다),
+#   실전 그래프 모델 파일의 출처가 폴더에 없는 옛 파일 이름(build_graph가 새 구조 이름으로), 실전 그래프 첫 화면 · 개수 화면이 공급 관계를 뺀 수와 그 까닭을 말함, 넣은 뒤 그림은 나가는 관계가 있는 노드에서.
+#   설계 랩 — 기대 답 화면이 줄마다 꼴(무엇을 어느 칸에)을 원자료에 대어 파일:줄로 짚고 질문 대조도 같은 카드를 먼저 보인다(session2_steps expected_form, 실전반 질문 5는 session2_factory_lab), 속성 빈 틀 머리의 예에 「구성 요소의 구성요소」.
+#   가이드 — 설계 05(정할 것 넷을 한 번에) · 07 힌트(갈리는 센서를 한 번에 모아서), 그래프 04(질문 ① · ②를 물을 설비를 내가 고름) · 07(날짜인 속성은 날짜로 · 관계 방향 카드) · 12(수정본에 적힌 칸만 · 파일 하나마다 「이어서 해 줘」),
+#   실전 설계 11(기준일) · 12(공급사 이름 꼴) · 13(결정 뒤 표 셋을 함께 — 부탁 5 → 2, AGENTS.md 한 문장) · 실전 그래프 13 · 14.
 # v61-lab(그래프 랩) — 2026-11-27, 수정 쿼리가 멈추는 박아 넣기를 넓힘: 수정본 칸의 값에 더해 모델에 있는 대상의 식별자(설비 코드와 태그를 이어 붙인 HYD-01:VS1 같은)를 쿼리에 적어도 파일:줄로 멈춘다(lab_cypher.change_plan — 일부러 넣어 보니 앞 판은 이 꼴을 통과시켰다).
 # v61-lab(설계 랩) — 2026-11-27, 가이드 07의 규칙 코드 앞 물음을 「갈리는 센서 셋을 한 번에 모아서 물어봐 줘」로(학생 역 리허설 v59에서 「하나씩」을 받은 Codex가 다섯 번을 오갔다 — 06-2 대본 윤문 3차의 지적).
 # v60-lab(두 랩) — 2026-11-27, v59 학생 역 리허설 두 건과 실전반 공장 규모 자료에서 나온 구멍(작업 폴더 판정/랩고침_v60_대기.md):
@@ -371,6 +378,7 @@ def build_graph(folder, course='통합반'):
     L = XG.graph_lab() if practical else B.graph_lab('통합반')
     source_data(folder, practical)
     schema, graph = design_model(B.GRAPH_LAB_INPUT['통합반'], course=course, supply=FA.PROVIDED_SUPPLY if practical else None)
+    schema, graph = (json.loads(P.convert(json.dumps(x, ensure_ascii=False))) for x in (schema, graph))      # 출처 줄(자료/공급_조건.csv:2 꼴)을 이 폴더의 파일 이름으로 — 설계 랩이 output/에 쓰는 것과 같은 글
     for name, value in [('schema.json', schema), ('graph.json', graph)]:
         write(folder / 'data/model' / name, json.dumps(value, ensure_ascii=False, indent=2) + '\n')
     for name, text in L['files'].items():

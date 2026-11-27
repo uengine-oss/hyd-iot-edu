@@ -81,7 +81,13 @@ ACTION_MORE = '''
 def later_note():
     """아직 넣지 않은 뒤 단계 몫의 관계를 사실로 알린다."""
     wait = db(C.waiting)
-    return [R.note('공급사와 견적, 견적과 부품을 잇는 관계(' + ' · '.join(wait) + ')는 구매팀 질문 단계에서 내 쿼리로 넣습니다. 그때까지 이 화면의 개수 견줌에는 넣지 않습니다.')] if wait else []
+    if not wait:
+        return []
+    path, kept = C.model_graph()
+    whole = json.loads(path.read_text(encoding='utf-8-sig'))['rels']      # 모델 파일에 적힌 관계 전부(지금 쓰는 모델은 여기서 아직 넣지 않은 관계를 뺀 것)
+    each = ' · '.join(f"{n} {sum(1 for r in whole if r['type'] == n)}개" for n in wait)
+    return [R.note(f'모델 파일({R.rel(path)})에는 관계가 {len(whole)}개 적혀 있습니다. 그 가운데 공급사와 견적, 견적과 부품을 잇는 관계 {len(whole) - len(kept["rels"])}개({each})는 구매팀 질문 단계에서 내 쿼리로 넣습니다. '
+                   f'그때까지 화면의 관계 수와 개수 견줌은 이 둘을 뺀 {len(kept["rels"])}개로 셉니다.')]
 
 
 def raw_note():
@@ -127,12 +133,15 @@ def supply(previous):
     differ = [k for k, v, h in rows if v != h]
     grew = [k for k, _, _ in rows if second.get(k, 0) != first.get(k, 0)]
     inside = db(C.export_graph)
+    turned = [c for c in relation_cards(C.model_graph()[1], inside) if c['title'] in names]      # 개수가 같아도 화살표가 거꾸로 들어갔으면 이어진 것이 아니다
     label = {n['props'].get('id'): n['labels'][0] for n in inside['nodes']}
     starts = sorted({r['a'] for r in inside['rels'] if r['type'] in names} - {r['b'] for r in inside['rels'] if r['type'] in names}, key=str)
     return [R.verdict('bad', f'모델 파일과 랩 DB의 개수가 다른 관계 {len(differ)}개', ' · '.join(differ) + ' — 아래 막대에서 어느 쪽이 모자라는지 봅니다.') if differ else
+            R.verdict('bad', '개수는 같지만 모델 파일과 다르게 이어진 관계가 있습니다 — ' + ' · '.join(c['title'] for c in turned), '아래 카드에서 화살표가 어느 쪽으로 들어갔는지 보고, 내 관계 쿼리의 시작과 종료가 스키마와 같은지 봅니다.') if turned else
             R.verdict('bad', '같은 쿼리를 한 번 더 실행하니 관계가 늘었습니다 — ' + ' · '.join(grew), '이미 있는 관계를 찾지 못해 새로 만든 것입니다. 쿼리가 관계를 무엇으로 알아보는지 봅니다.') if grew else
             R.verdict('ok', '공급사 → 견적 → 부품이 이어졌습니다 — ' + ' · '.join(f'{k} {h}개' for k, _, h in rows), '모델 파일의 수와 같고, 같은 쿼리를 한 번 더 실행해도 늘지 않았습니다.'),
             R.bars('모델 파일 ↔ 랩 DB — 이번에 넣은 관계', ('모델 파일', '랩 DB'), rows)] + (
+            [R.cards('모델 파일과 다르게 이어진 관계', turned, wide=True, note=TURNED_NOTE.replace('python run.py reset으로 넣은 것을 비우고 다시 넣습니다.', '거꾸로 들어간 관계는 그대로 남으므로 python run.py reset으로 넣은 직후로 되돌린 뒤, 수정본 반영(python run.py update)과 이 명령을 다시 실행합니다.'))] if turned else []) + (
             [R.around_figure(f'랩 DB에서 {label.get(starts[0], "")} 「{starts[0]}」에서 두 걸음', inside, starts[0],
                              note='이번에 넣은 관계를 따라간 모습입니다. 화살표가 내가 읽은 문장(시작 → 읽는 말 → 종료)과 같은 쪽을 가리키는지 봅니다.')] if starts else []) + (
             [R.cards('모델보다 적게 들어간 관계', [dict(title=k, badge=f'모델 {v}개 → 랩 DB {h}개', state='bad', icon='warn') for k, v, h in rows if h < v],
@@ -164,7 +173,7 @@ def with_notes(fn, *notes):
 
 COMMANDS['supply'] = ('구매팀 질문: 공급사 · 견적 관계 넣기', supply)
 COMMANDS['purchase'] = ('구매팀 질문: 공급 조건', q4)
-for _name, _notes in (('db', [later_note]), ('status', [later_note]), ('load', [later_note, raw_note]), ('reset', [later_note])):
+for _name, _notes in (('sources', [later_note]), ('db', [later_note]), ('status', [later_note]), ('load', [later_note, raw_note]), ('reset', [later_note])):
     COMMANDS[_name] = (COMMANDS[_name][0], with_notes(COMMANDS[_name][1], *_notes))
 '''
 
@@ -253,10 +262,10 @@ def graph_guide(model):
             prompt='`load.cypher`에 쿼리 둘을 더해 줘. `data/model/schema.json`에서 공급사와 견적을 잇는 관계, 견적과 부품을 잇는 관계의 이름과 시작 · 종료를 찾아, 양 끝 노드를 레이블과 식별자로 찾아 MERGE로 이어 줘. '
                    '행은 $rows로 받고, 쿼리마다 바로 위에 `// 넣을 것: <관계 이름>`을 적어 줘. 앞의 쿼리 셋과 다른 파일은 바꾸지 마. 쓴 뒤 두 관계를 「시작 → 읽는 말 → 종료」로 읽어 줘.',
             cmd='python run.py supply', check=G.ok('맨 위에 「공급사 → 견적 → 부품이 이어졌습니다」가 나오고, 그림의 화살표가 내가 읽은 문장과 같은 쪽을 가리키면 됩니다. '
-                                                 '개수가 모델과 다르거나 한 번 더 실행해 늘었다고 나오면 그 카드를 Codex에게 보여 주고 까닭부터 묻습니다.'), ai=1),
+                                                 '개수가 모델과 다르거나, 화살표가 모델과 다르게 들어갔거나, 한 번 더 실행해 늘었다고 나오면 그 카드를 Codex에게 보여 주고 까닭부터 묻습니다.'), ai=1),
         G.section('구매팀 질문을 쿼리로 묻기: 기준일의 공급 조건', [G.plan(
             '질문 ④를 쿼리로 묻는다. 앞의 질문들과 같은 차례로, 기대 답을 먼저 정하고 쿼리를 돌려 견준다. 맞으면 이 화면이 구매팀에 건네는 조회 결과가 된다.',
-            ['공급사에서 견적을 지나 부품까지 이어졌다', '견적마다 유효기한이 있고, 기준일은 현장 메모에 적혀 있다', '같은 공급사가 같은 부품에 견적을 두 번 낸 곳이 있고, 이 모델은 그 둘을 따로 담았다'],
+            ['공급사에서 견적을 지나 부품까지 이어졌다', '견적마다 유효기한이 날짜로 들어 있고, 기준일은 현장 메모에 적혀 있다', '같은 공급사가 같은 부품에 견적을 두 번 낸 곳이 있고, 이 모델은 그 둘을 따로 담았다'],
             ['물어볼 부품 하나는 내가 고르자. 공급사가 둘 이상인 부품이면 견줄 것이 생긴다',
              '기대 답 후보를 원자료의 견적표와 승인 공급사 목록에서 근거 줄과 함께 받아 보자. 공급사와 승인 상태, 공급사와 단가처럼 줄마다 짝지어 견주게 둔다',
              '기준일에 유효기한이 지난 견적은 답에 넣을까, 뺄까? 승인 상태는 두 표 가운데 어느 쪽 것을 따를까? 구매 기준서의 줄로 물어보고 정하자',
@@ -297,7 +306,7 @@ def purchase_query(schema, as_of=True, aliases=True):
     found = f"p.{no} = $part" + (f" OR $part IN coalesce(p.{other}, [])" if aliases else '')
     return ('// 질문 4 — 품번이나 다른 표기로 부품을 찾고, 기준일에 유효기한이 남은 견적을 낸 공급사와 그 조건 · 근거 줄',
             f"OPTIONAL MATCH (p:Part) WHERE {found}\n"
-            f"OPTIONAL MATCH {chain}" + (f" WHERE q.{q['유효기한']} >= '{D.REF_DATE}'" if as_of else '') + "\n"
+            f"OPTIONAL MATCH {chain}" + (f" WHERE q.{q['유효기한']} >= date('{D.REF_DATE}')" if as_of else '') + "\n"
             f"RETURN p.{no} AS part, s.{sname} AS supplier, q.{q['승인상태']} AS approval, q.{q['단가(만원)']} AS price, q.{q['불량률']} AS defect_rate, q.{q['납기(일)']} AS lead_days,\n"
             f"       q.{q['견적일']} AS quote_date, q.{q['견적출처']} AS quote_source, q.{q['승인출처']} AS approval_source,\n"
             "       CASE WHEN p IS NULL THEN '원자료에 없는 품번' WHEN q IS NULL THEN '기준일에 유효한 견적 없음' END AS note\n"

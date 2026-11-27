@@ -63,11 +63,14 @@ def aligned(expected, actual):
     """기대 답과 실제 답의 조각을 같은 차례로 놓는다 — 같은 값이 같은 자리에 오고, 실제에 빠진 값은 그 자리에 빈 칸, 기대에 없던 값은 뒤에 눈에 띄게."""
     want = [x.strip() for x in str(expected).split('·') if x.strip()]
     have = [x.strip() for x in str(actual).split('·') if x.strip()]
-    def key(v):      # 35와 35.0은 같은 값으로 맞춘다(견줌과 같은 잣대)
+    def one(v):
         try:
-            return format(float(v), 'g')
+            return v if v.lower() in ('nan', 'inf', '-inf') else format(float(v), 'g')
         except ValueError:
             return v
+
+    def key(v):      # 35와 35.0은 같은 값으로 맞춘다(견줌과 같은 잣대) — 「TS1=65」처럼 두 열을 짝지은 조각은 짝의 왼쪽 · 오른쪽을 따로 맞춘다
+        return '='.join(one(x.strip()) for x in v.split('='))
     left, right, rest = '', '', list(have)
     for w in want:
         hit = next((x for x in rest if key(x) == key(w)), None)

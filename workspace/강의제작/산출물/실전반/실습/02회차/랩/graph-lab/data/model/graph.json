@@ -2535,8 +2535,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:2",
-        "approval_source": "자료/승인공급사_목록.csv:2"
+        "quote_source": "data/supply_terms.csv:2",
+        "approval_source": "data/approved_suppliers.csv:2"
       }
     },
     {
@@ -2560,8 +2560,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:3",
-        "approval_source": "자료/승인공급사_목록.csv:3"
+        "quote_source": "data/supply_terms.csv:3",
+        "approval_source": "data/approved_suppliers.csv:3"
       }
     },
     {
@@ -2585,8 +2585,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-11-30",
         "approval": "비승인",
-        "quote_source": "자료/공급_조건.csv:4",
-        "approval_source": "자료/승인공급사_목록.csv:4"
+        "quote_source": "data/supply_terms.csv:4",
+        "approval_source": "data/approved_suppliers.csv:4"
       }
     },
     {
@@ -2601,8 +2601,8 @@
         "quote_date": "2026-04-03",
         "valid_until": "2026-06-30",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:5",
-        "approval_source": "자료/승인공급사_목록.csv:3"
+        "quote_source": "data/supply_terms.csv:5",
+        "approval_source": "data/approved_suppliers.csv:3"
       }
     },
     {
@@ -2617,8 +2617,8 @@
         "quote_date": "2026-09-15",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:6",
-        "approval_source": "자료/승인공급사_목록.csv:6"
+        "quote_source": "data/supply_terms.csv:6",
+        "approval_source": "data/approved_suppliers.csv:6"
       }
     },
     {
@@ -2633,8 +2633,8 @@
         "quote_date": "2026-09-15",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:7",
-        "approval_source": "자료/승인공급사_목록.csv:5"
+        "quote_source": "data/supply_terms.csv:7",
+        "approval_source": "data/approved_suppliers.csv:5"
       }
     },
     {
@@ -2649,8 +2649,8 @@
         "quote_date": "2026-07-01",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:8",
-        "approval_source": "자료/승인공급사_목록.csv:7"
+        "quote_source": "data/supply_terms.csv:8",
+        "approval_source": "data/approved_suppliers.csv:7"
       }
     },
     {
@@ -2665,8 +2665,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:9",
-        "approval_source": "자료/승인공급사_목록.csv:7"
+        "quote_source": "data/supply_terms.csv:9",
+        "approval_source": "data/approved_suppliers.csv:7"
       }
     },
     {
@@ -2681,8 +2681,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:10",
-        "approval_source": "자료/승인공급사_목록.csv:8"
+        "quote_source": "data/supply_terms.csv:10",
+        "approval_source": "data/approved_suppliers.csv:8"
       }
     },
     {
@@ -2706,8 +2706,8 @@
         "quote_date": "2026-08-10",
         "valid_until": "2027-02-28",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:11",
-        "approval_source": "자료/승인공급사_목록.csv:9"
+        "quote_source": "data/supply_terms.csv:11",
+        "approval_source": "data/approved_suppliers.csv:9"
       }
     },
     {
@@ -2723,8 +2723,8 @@
         "valid_until": "2026-12-31",
         "approval": "조건부 승인",
         "approval_condition": "입고 전수 검사",
-        "quote_source": "자료/공급_조건.csv:12",
-        "approval_source": "자료/승인공급사_목록.csv:10"
+        "quote_source": "data/supply_terms.csv:12",
+        "approval_source": "data/approved_suppliers.csv:10"
       }
     },
     {
@@ -2739,8 +2739,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:13",
-        "approval_source": "자료/승인공급사_목록.csv:11"
+        "quote_source": "data/supply_terms.csv:13",
+        "approval_source": "data/approved_suppliers.csv:11"
       }
     },
     {
@@ -2755,8 +2755,8 @@
         "quote_date": "2026-10-05",
         "valid_until": "2026-11-30",
         "approval": "비승인",
-        "quote_source": "자료/공급_조건.csv:14",
-        "approval_source": "자료/승인공급사_목록.csv:12"
+        "quote_source": "data/supply_terms.csv:14",
+        "approval_source": "data/approved_suppliers.csv:12"
       }
     },
     {
@@ -2771,8 +2771,8 @@
         "quote_date": "2026-06-20",
         "valid_until": "2026-09-30",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:15",
-        "approval_source": "자료/승인공급사_목록.csv:13"
+        "quote_source": "data/supply_terms.csv:15",
+        "approval_source": "data/approved_suppliers.csv:13"
       }
     },
     {
@@ -2787,8 +2787,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:16",
-        "approval_source": "자료/승인공급사_목록.csv:14"
+        "quote_source": "data/supply_terms.csv:16",
+        "approval_source": "data/approved_suppliers.csv:14"
       }
     },
     {
@@ -2803,8 +2803,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:17",
-        "approval_source": "자료/승인공급사_목록.csv:15"
+        "quote_source": "data/supply_terms.csv:17",
+        "approval_source": "data/approved_suppliers.csv:15"
       }
     },
     {
@@ -2819,8 +2819,8 @@
         "quote_date": "2026-09-20",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:18",
-        "approval_source": "자료/승인공급사_목록.csv:16"
+        "quote_source": "data/supply_terms.csv:18",
+        "approval_source": "data/approved_suppliers.csv:16"
       }
     },
     {
@@ -2835,8 +2835,8 @@
         "quote_date": "2026-09-01",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:19",
-        "approval_source": "자료/승인공급사_목록.csv:18"
+        "quote_source": "data/supply_terms.csv:19",
+        "approval_source": "data/approved_suppliers.csv:18"
       }
     },
     {
@@ -2851,8 +2851,8 @@
         "quote_date": "2026-09-01",
         "valid_until": "2026-12-31",
         "approval": "유효기한 경과",
-        "quote_source": "자료/공급_조건.csv:20",
-        "approval_source": "자료/승인공급사_목록.csv:17"
+        "quote_source": "data/supply_terms.csv:20",
+        "approval_source": "data/approved_suppliers.csv:17"
       }
     },
     {
@@ -2876,8 +2876,8 @@
         "quote_date": "2026-08-25",
         "valid_until": "2027-02-24",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:21",
-        "approval_source": "자료/승인공급사_목록.csv:19"
+        "quote_source": "data/supply_terms.csv:21",
+        "approval_source": "data/approved_suppliers.csv:19"
       }
     },
     {
@@ -2892,8 +2892,8 @@
         "quote_date": "2026-08-25",
         "valid_until": "2027-02-24",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:22",
-        "approval_source": "자료/승인공급사_목록.csv:20"
+        "quote_source": "data/supply_terms.csv:22",
+        "approval_source": "data/approved_suppliers.csv:20"
       }
     },
     {
@@ -2908,8 +2908,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:23",
-        "approval_source": "자료/승인공급사_목록.csv:21"
+        "quote_source": "data/supply_terms.csv:23",
+        "approval_source": "data/approved_suppliers.csv:21"
       }
     },
     {
@@ -2924,8 +2924,8 @@
         "quote_date": "2026-10-02",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:24",
-        "approval_source": "자료/승인공급사_목록.csv:22"
+        "quote_source": "data/supply_terms.csv:24",
+        "approval_source": "data/approved_suppliers.csv:22"
       }
     },
     {
@@ -2949,8 +2949,8 @@
         "quote_date": "2026-09-28",
         "valid_until": "2026-12-31",
         "approval": "승인",
-        "quote_source": "자료/공급_조건.csv:25",
-        "approval_source": "자료/승인공급사_목록.csv:23"
+        "quote_source": "data/supply_terms.csv:25",
+        "approval_source": "data/approved_suppliers.csv:23"
       }
     }
   ],

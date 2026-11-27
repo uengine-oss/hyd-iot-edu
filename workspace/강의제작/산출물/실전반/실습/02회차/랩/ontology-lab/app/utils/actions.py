@@ -216,9 +216,73 @@ def sources(previous):
     return out
 
 
+FORM_MORE = {}      # 질문 번호 → 그 질문 줄의 꼴을 보는 함수(줄을 더 받는 랩이 얹는다)
+
+
+def expected_form(rows, lines):
+    """기대 답 표의 줄마다 꼴(빈 틀 첫 줄에 적힌 칸 뜻)을 원자료에 대어 본다 — [(파일:줄, 질문, 어긋난 곳, 무엇을 어느 칸에)].
+    값이 맞는지는 보지 않는다(그것은 모델을 만든 뒤 질문 대조가 본다). 꼴이 틀린 줄은 대조에서 까닭 없이 「실제 없음」이 되므로, 모델을 만들기 전에 여기서 짚는다."""
+    src = lambda name: R.read_table(HERE / 'data' / name)
+    assets = set(r['설비코드'] for r in src('equipment.csv'))
+    places = set(r['구성요소'] for r in src('components.csv')) | set(x for x in [getattr(M, 'ASSET_WIDE', '')] if x)
+    sensors = set(f"{r['설비코드']}:{r['태그']}" for r in src('sensors.csv'))
+    parts = set(r['품번'] for r in src('spare_parts.csv'))
+    try:
+        split = '실물' in M.read_classes()
+    except (M.Blank, M.Stop):
+        split = False
+    ask = re.compile(r'\s*(.+?)\.(\S+?)\s*(' + '|'.join(re.escape(f) for f in M.FILTERS) + r')\s*(.*?)\s*')
+    out = []
+    for line, r in zip(lines, rows):
+        q, asked, item, answer = (str(r.get(c) or '').strip() for c in ('질문', '물을_값', '항목', '기대_답'))
+        pieces = [x.strip() for x in answer.split('·') if x.strip()]
+        say = lambda what, fix: out.append((f'app/features/expected.csv:{line}', q, what, fix))
+        if q == '1':
+            base = item.removesuffix('실물').strip()
+            if asked not in assets:
+                say(f'물을_값 「{asked}」이 설비 대장에 적힌 설비 코드가 아닙니다', '물을_값 칸에는 설비 코드를 원자료에 적힌 그대로 적습니다')
+            elif not item or base not in places:
+                say(f'항목 「{item}」이 구성 요소 목록에 적힌 구성 요소 이름이 아닙니다', '항목 칸에는 그 설비의 구성 요소 이름을 원자료에 적힌 그대로 적습니다(그 자리에 달린 장치를 묻는 줄이면 「구성 요소 이름 실물」)')
+            elif split and item.endswith('실물') and answer != '없음' and not all(p.endswith(('(지금)', '(지난)')) for p in pieces):
+                say('실물을 클래스로 따로 둔 스키마인데 기대_답의 일련번호에 (지금) · (지난)이 붙지 않았습니다', '기대_답 칸에는 「일련번호(지금)」 · 「일련번호(지난)」 꼴로 적습니다')
+        elif q == '2':
+            if asked in sensors or asked in assets:
+                say(f'물을_값 「{asked}」에 물리량 이름이 아니라 센서나 설비가 적혀 있습니다', '물을_값 칸에는 물리량 이름을 적고, 센서 하나의 값을 보는 줄이면 그 센서를 항목 칸에 설비코드:태그로 적습니다')
+            elif item and item not in sensors:
+                say(f'항목 「{item}」이 센서 목록의 설비코드:태그가 아닙니다', '그 물리량을 재는 센서 목록을 보는 줄이면 항목 칸을 비우고, 센서 하나의 값을 보는 줄이면 항목 칸에 설비코드:태그를 적습니다')
+            elif item and len(pieces) != 4:
+                say(f'센서 값 줄인데 기대_답이 {len(pieces)}조각입니다', '기대_답 칸에는 「단위 · 정상값 · 한계 · 한계구분」 네 값을 이 차례로 적습니다(값이 없는 칸은 「없음」)')
+            elif not item and answer != '없음' and not all(p in sensors for p in pieces):
+                say('센서 목록 줄인데 기대_답에 설비코드:태그가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in sensors][:3]), '기대_답 칸에는 그 물리량을 재는 센서를 설비코드:태그로 「 · 」로 이어 적습니다')
+        elif q == '3':
+            if item and item not in parts:
+                say(f'항목 「{item}」이 예비품 목록에 적힌 사내 품번이 아닙니다', '항목 칸에는 물은 표기가 가리키는 사내 품번을 적습니다(원자료에 없는 품번으로 물은 줄이면 비웁니다)')
+            elif answer not in ('없음', '쓰는 설비 없음') and not all(p in assets for p in pieces):
+                say('기대_답에 설비 코드가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in assets][:3]), '기대_답 칸에는 그 부품을 쓰는 설비 코드들을 「 · 」로 이어 적습니다(원자료에 없는 품번은 「없음」)')
+        elif q == '4':
+            conds = [ask.fullmatch(x) for x in asked.split('&')]
+            if not all(m and m.group(1) in M.LABEL and (m.group(3) in ('=', '>', '<')) == bool(m.group(4)) for m in conds) or len(set(m.group(1) for m in conds)) != 1:
+                say(f'물을_값 「{asked}」이 「클래스.속성 조건」 꼴이 아닙니다', M.ASK_FORM)
+            elif not item:
+                say('항목이 비었습니다', '항목 칸에는 답으로 볼 그 클래스의 속성 이름 하나를 적습니다')
+        elif q in FORM_MORE:
+            FORM_MORE[q](asked, item, answer, pieces, say, assets, parts)
+        else:
+            say(f'질문 「{q}」은 이 표가 받는 질문 번호가 아닙니다', '질문 칸에는 ' + ' · '.join(['1', '2', '3', '4'] + sorted(FORM_MORE)) + ' 가운데 하나를 적습니다')
+    return out
+
+
+def form_cards(off):
+    return R.cards(f'꼴이 맞지 않는 기대 답 줄 {len(off)}곳', [dict(title=where, badge='질문 ' + q, state='bad', icon='warn', lines=[('어긋난 곳', what), ('이렇게 적습니다', fix)]) for where, q, what, fix in off[:24]], wide=True,
+                   note='값이 맞는지가 아니라 무엇을 어느 칸에 적었는지만 본 것입니다. 꼴이 틀린 줄은 모델이 내는 답과 짝이 맞지 않아 질문 대조에서 「실제 없음」이 됩니다. '
+                        '이 카드를 Codex에게 보여 주고, 기대 답의 값은 그대로 둔 채 칸만 맞게 고쳐 달라고 합니다. 칸마다의 뜻은 app/features/expected.csv 첫 줄에 있습니다.')
+
+
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답', '근거'], KEY)
-    return [R.verdict('info', f'기대 답 {len(rows)}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.'),
+    off = expected_form(rows, expected_lines())
+    return [R.verdict('bad', f'기대 답 {len(rows)}줄 가운데 꼴이 맞지 않는 줄 {len(off)}곳', '아래 카드에서 무엇을 어느 칸에 적어야 하는지 보고 그 줄을 고칩니다.') if off else
+            R.verdict('info', f'기대 답 {len(rows)}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.')] + ([form_cards(off)] if off else []) + [
             question_cards(rows, lambda r: r['물을_값'] + (' → ' + r['항목'] if r.get('항목') else '')),
             R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows))]
 
@@ -408,6 +472,7 @@ def parts(previous):
 
 def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
+    off = expected_form(rows, expected_lines())      # 꼴이 틀린 줄은 아래 대조에서 「실제 없음」이 된다 — 그 까닭을 먼저 짚는다
     more = {}
     for line, r in zip(expected_lines(), rows):      # 질문 4(내가 더한 질문)는 답으로 볼 속성(항목)과 그 줄 번호까지 넘긴다
         if str(r['질문']).strip() == '4':
@@ -444,7 +509,7 @@ def ask(previous):
         out.append(R.ordered(R.compare('질문 2 센서 값 — 단위 · 정상값 · 한계 · 한계구분 차례', '짝', [{'짝': key(r), '답': r['기대_답']} for r in rows if value(r)],
                              [{'짝': key(r), '답': r['답']} for r in keep if value(r)], ['답'], same=exact,
                              note='값은 차례까지 견줍니다. 값이 없는 칸 · 그 칸을 담은 속성이 없는 칸은 「없음」입니다. 속성 표에서 「기준 단위」로 정한 수는 바꾼 값이고, 「적힌 그대로」면 원자료에 적힌 값입니다.')))
-    return [tally(out)] + out
+    return [tally(out)] + ([form_cards(off)] if off else []) + out
 
 
 def check(previous):
@@ -497,7 +562,7 @@ def supply(previous):
                     note=f'기준일은 {M.AS_OF}입니다. 승인 상태는 승인 공급사 목록(SCM 등록)에서 그 공급사 · 부품을 찾은 값이고, 등록의 유효기한이 기준일에 지났으면 「유효기한 경과」, 등록이 없으면 「미등록」입니다. 견적표의 「승인공급사」 칸은 읽지 않습니다.'),
             shown_if(R.table('같은 공급사 · 같은 부품에 견적이 여럿인 곳', ['공급사', '사내 품번', '견적표 줄'], [(a, b, ' · '.join(map(str, lines))) for (a, b), lines in sorted(s['겹침'].items())],
                              note='식별자를 공급사와 부품으로만 지으면 이 줄들이 한 식별자가 됩니다. 어느 줄을 담을지는 app/features/row_rules.csv와 견적의 식별자가 정합니다.')),
-            R.folded(R.table('견적표를 읽으며 맞춘 값', ['원자료 행', '칸', '적힌 글', '읽은 값'], s['바꾼_값'],
+            shown_if(R.table('견적표를 읽으며 맞춘 값', ['원자료 행', '칸', '적힌 글', '읽은 값'], s['바꾼_값'],
                              note='공급사는 괄호 풀이를 뗀 이름(승인 공급사 목록의 이름), 품번은 품명으로 적힌 칸을 예비품 목록에서 찾은 사내 품번, 불량률은 0~1 비율, 납기는 일입니다.')),
             R.note('output/schema.json(스키마) · output/graph.json(인스턴스 데이터)을 새로 썼습니다.')]
 
@@ -531,6 +596,29 @@ def purchase(previous):
             R.table('부품마다 쓰는 설비와 공급 조건', ['물은 값', '사내 품번', '쓰는 설비', '공급사', '승인 상태 · 단가(만원) · 불량률 · 납기(일)', '근거 줄'], rows,
                     note='근거 줄은 견적표의 줄과 승인 공급사 목록의 줄입니다(견적의 출처 칸을 속성으로 담았을 때만 나옵니다). 한 공급사에 유효한 견적이 여럿이면 견적일 차례로 「 / 」로 잇습니다. '
                          '답 「없음」은 물은 품번 · 표기가 모델에 없다는 뜻입니다.')]
+
+
+def purchase_form(asked, item, answer, pieces, say, assets, parts):
+    """질문 5(구매팀) 줄의 꼴 — 항목은 찾을 사내 품번(쓰는 설비를 보는 줄) 또는 「사내 품번/공급사 이름」(공급 조건을 보는 줄), 원자료에 없는 품번으로 물은 줄만 항목을 비운다."""
+    names = set(M.supplier_name(r['공급사']) for r in R.read_table(HERE / 'data' / M.QUOTES))
+    part, slash, supplier = item.partition('/')
+    part, supplier = part.strip(), supplier.strip()
+    if not item:
+        if answer != '없음':
+            say('항목이 비었는데 기대_답이 「없음」이 아닙니다', '항목 칸에는 찾을 사내 품번(쓰는 설비를 보는 줄)이나 「사내 품번/공급사 이름」(공급 조건을 보는 줄)을 적습니다. 원자료에 없는 품번으로 물은 줄만 항목을 비우고 기대_답을 「없음」으로 적습니다')
+    elif part not in parts:
+        say(f'항목 「{item}」의 품번이 예비품 목록에 적힌 사내 품번이 아닙니다', '항목 칸의 품번 자리에는 물은 표기가 가리키는 사내 품번을 적습니다')
+    elif not slash:
+        if answer not in ('없음', '쓰는 설비 없음') and not all(p in assets for p in pieces):
+            say('쓰는 설비를 보는 줄인데 기대_답에 설비 코드가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in assets][:3]), '기대_답 칸에는 그 부품을 쓰는 설비 코드들을 「 · 」로 이어 적고, 공급 조건은 항목이 「사내 품번/공급사 이름」인 줄에 따로 적습니다')
+    elif supplier and supplier not in names:
+        near = sorted(n for n in names if supplier.startswith(n))
+        say(f'항목 「{item}」의 공급사 이름이 승인 공급사 목록에 적는 이름이 아닙니다', '공급사 이름은 견적표에서 이름 뒤에 붙은 괄호 풀이를 뗀 이름으로 적습니다' + (f'(「{supplier}」 → 「{near[0]}」)' if near else ''))
+    elif supplier and not all(len([x for x in one.split('·') if x.strip()]) == 4 for one in answer.split(' / ')):
+        say('공급 조건을 보는 줄인데 기대_답이 네 값이 아닙니다', '기대_답 칸에는 「승인상태 · 단가(만원) · 불량률(0~1) · 납기(일)」 네 값을 이 차례로 적습니다(한 공급사에 유효한 견적이 여럿이면 견적일 차례로 「 / 」로 이음)')
+
+
+FORM_MORE['5'] = purchase_form
 
 COMMANDS = {
     'sources': ('원자료', sources),

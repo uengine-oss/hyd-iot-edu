@@ -11,6 +11,7 @@ from pathlib import Path
 import argparse
 import copy
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -423,6 +424,52 @@ def wrong_choices_before_update(folder, graph):
         path.write_bytes(kept)
     equal_answers(result(folder, 'sensors'))
     out.append({'wrong_choice': 'query-arrow-reversed', 'answer': '0줄', 'rows_different': len(rows)})
+    # 짝지어 견준 값(「TS1=65」 ↔ 랩 DB의 65.0)은 판정이 같음이면 그림도 같은 값으로 그린다 — 다른 값은 여전히 다르게 그린다
+    import result_view as V
+    page = (folder / 'output/result.html').read_text(encoding='utf-8')
+    pairs = [r for b in result(folder, 'sensors') if b['kind'] == 'compare' for r in b['rows'] if '=' in r['cells'][0][0]]
+    floats = [r for r in pairs if re.search(r'=\d+\.0\b', r['cells'][0][1]) and not re.search(r'=\d+\.0\b', r['cells'][0][0])]
+    assert floats and all(r['state'] == '같음' for r in pairs), pairs      # 기대 답은 65, 랩 DB의 답은 65.0인 줄이 실제로 있다
+    assert 'class="chip off"' not in page and 'chip gap' not in page, '같음인 줄에 다른 값 표시가 그려짐'
+    left, right = V.aligned('TS1=65 · PS1=130', 'PS1=130.0 · TS1=65.0')
+    assert 'off' not in left and 'off' not in right and 'gap' not in right, (left, right)
+    left, right = V.aligned('TS1=65 · PS1=130', 'PS1=130.0 · TS1=66.0')
+    assert left.count('chip off') == 1 and right.count('chip gap') == 1 and right.count('chip off') == 1, (left, right)
+    out.append({'wrong_choice': 'paired-number-shown-as-different', 'rows_with_65_vs_65.0': len(floats), 'drawn_same': True, 'different_pair_still_marked': True})
+    # 설비와 구성 요소를 잇는 관계의 화살표를 거꾸로 넣으면: 이름별 개수는 같지만 넣기 화면이 「모델 파일과 다르게 이어진 관계」로 짚는다
+    n = sum(1 for r in graph['rels'] if r['type'] == 'HAS_COMPONENT')
+    path, kept = swapped(folder, 'load.cypher', 'MERGE (a)-[r:HAS_COMPONENT]->(b)', 'MERGE (b)-[r:HAS_COMPONENT]->(a)')
+    try:
+        result(folder, 'reset')
+        shown = result(folder, 'load')
+        turned = cards_of(shown, '모델 파일과 다르게 이어진 관계')
+        bars = next(b for b in shown if b['kind'] == 'bars')
+        assert all(a == c for _, a, c in bars['items']), '거꾸로 넣었는데 개수 막대가 달라짐 — 이 시험의 전제가 깨짐'
+        assert shown[0]['state'] == 'bad' and '다르게 이어진 관계' in shown[0]['text'] and [c['title'] for c in turned] == ['HAS_COMPONENT'], (shown[0], turned)
+        assert f'거꾸로 {n}개' in json.dumps(turned, ensure_ascii=False) and 'Asset → Component' in json.dumps(turned, ensure_ascii=False), turned
+    finally:
+        path.write_bytes(kept)
+    result(folder, 'reset')
+    shown = result(folder, 'load')
+    assert shown[0]['state'] == 'ok' and '관계의 방향도' in shown[0]['detail'] and not cards_of(shown, '모델 파일과 다르게 이어진 관계'), shown[0]
+    out.append({'wrong_choice': 'relation-arrow-reversed-on-load', 'counts_equal': True, 'reversed_relations_pointed': n})
+    # 스키마가 날짜라고 한 속성을 글자 그대로 넣으면: 내보낸 값은 모델 파일과 같아 보이지만, 넣기 화면이 랩 DB의 자료형을 물어 짚는다
+    assets = len([x for x in graph['nodes'] if x['labels'] == ['Asset']])
+    path, kept = swapped(folder, 'load.cypher', 'n.installed = date(row.설치일)', 'n.installed = row.설치일')
+    try:
+        result(folder, 'reset')
+        shown = result(folder, 'load')
+        dated = cards_of(shown, '스키마는 날짜인데 랩 DB에 글자로 들어간 값')
+        assert not cards_of(shown, '모델 파일과 값이 다른 노드'), '글자로 넣은 날짜가 값 견줌에서 이미 드러남 — 이 시험의 전제가 깨짐'
+        assert shown[0]['state'] == 'bad' and '글자로 들어간 값' in shown[0]['text'] and [(c['title'], c['badge']) for c in dated] == [('Asset.installed', f'{assets}곳')], (shown[0], dated)
+        assert http(folder, "MATCH (a:Asset) WHERE a.installed < date('2100-01-01') RETURN count(a)")[0][0] == 0      # 글자로 든 날짜는 날짜와 견주면 오류 없이 다 빠진다
+    finally:
+        path.write_bytes(kept)
+    result(folder, 'reset')
+    shown = result(folder, 'load')
+    assert shown[0]['state'] == 'ok' and not cards_of(shown, '스키마는 날짜인데'), shown[0]
+    assert http(folder, "MATCH (a:Asset) WHERE a.installed < date('2100-01-01') RETURN count(a)")[0][0] == assets
+    out.append({'wrong_choice': 'date-property-loaded-as-text', 'nodes_pointed': assets, 'date_comparison_rows_when_text': 0, 'when_date': assets})
     return out
 
 

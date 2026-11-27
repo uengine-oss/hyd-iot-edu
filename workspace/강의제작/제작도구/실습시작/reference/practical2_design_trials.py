@@ -290,6 +290,30 @@ def wrong_choices(starter, work):
     case('approval-from-quote-sheet', status_from_quote_sheet, supply='늦은 줄',
          properties=lambda rows: [[r[0], r[1], '승인공급사', *r[3:]] if r[:2] == ['견적', 'approval'] else r for r in rows])
 
+    def wrong_form(new):      # 기대 답 줄의 꼴이 틀림 — 질문 2의 항목에 「센서 목록」, 질문 5의 공급사 이름에 견적표의 괄호 풀이, 질문 5 공급 조건 줄에 값 셋 → 기대 답 화면이 그 줄과 무엇을 어느 칸에 적는지 짚는다
+        import csv, io
+        T.command(new, 'run.py', 'supply', '--no-open')
+        cards = lambda action: {c['title'].rsplit(':', 1)[1]: json.dumps(c['lines'], ensure_ascii=False) for b in T.blocks(new, action)
+                                if b['kind'] == 'cards' and b['title'].startswith('꼴이 맞지 않는') for c in b['items']}
+        assert T.blocks(new, 'expected')[0]['state'] == 'info' and not cards('expected'), '꼴이 맞는 참조 답이 걸림'
+        path = new / 'app/features/expected.csv'
+        text = path.read_text(encoding='utf-8')
+        rows = [r for r in csv.reader(io.StringIO(text)) if r and not r[0].startswith('#')]
+        qname = next(r[1] for r in rows if r[0] == '2')
+        asked, item = next((r[1], r[2]) for r in rows if r[0] == '5' and '/' in r[2])
+        part, supplier = item.split('/')
+        written = next(r['공급사'] for r in csv.DictReader(io.StringIO((new / 'data/supply_terms.csv').read_text(encoding='utf-8-sig'))) if '(' in r['공급사'])
+        other = next(r[2].split('/')[1] for r in rows if r[0] == '5' and '/' in r[2] and r[2] != item) if any(r[0] == '5' and '/' in r[2] and r[2] != item for r in rows) else None
+        base = len(text.splitlines())
+        path.write_text(text + f'2,{qname},센서 목록,x,x\n5,{asked},{part}/{written},승인 · 1 · 0.1 · 2,x\n5,{asked}-꼴,{item},승인 · 1 · 0.1,x\n', encoding='utf-8', newline='\n')
+        hit = cards('expected')
+        first = T.blocks(new, 'expected')[0]
+        assert first['state'] == 'bad' and set(hit) == {str(base + 1), str(base + 2), str(base + 3)}, (first, hit)
+        assert '설비코드:태그가 아닙니다' in hit[str(base + 1)] and '괄호 풀이를 뗀 이름' in hit[str(base + 2)] and '네 값이 아닙니다' in hit[str(base + 3)], hit
+        assert set(cards('query')) == set(hit)
+        return f'기대 답 화면이 틀린 꼴 3줄(expected.csv:{base + 1} · {base + 2} · {base + 3})을 짚음 — 공급사 이름 「{written}」에는 괄호 풀이를 뗀 이름으로 적으라고 말하고, 질문 대조도 같은 카드를 먼저 보임'
+    case('expected-rows-in-wrong-form', wrong_form, supply='늦은 줄')
+
     # 고의 손상(자료 사본만): 한계 칸의 단위 글이 그 행의 단위 칸과 다르면 수로 읽지 않는다 — 단위가 붙은 값을 아무 글이나 떼고 읽는 것이 아님을 본다
     def other_unit(new):
         path = new / 'data/sensors.csv'

@@ -226,9 +226,73 @@ def sources(previous):
     return out
 
 
+FORM_MORE = {{}}      # 질문 번호 → 그 질문 줄의 꼴을 보는 함수(줄을 더 받는 랩이 얹는다)
+
+
+def expected_form(rows, lines):
+    """기대 답 표의 줄마다 꼴(빈 틀 첫 줄에 적힌 칸 뜻)을 원자료에 대어 본다 — [(파일:줄, 질문, 어긋난 곳, 무엇을 어느 칸에)].
+    값이 맞는지는 보지 않는다(그것은 모델을 만든 뒤 질문 대조가 본다). 꼴이 틀린 줄은 대조에서 까닭 없이 「실제 없음」이 되므로, 모델을 만들기 전에 여기서 짚는다."""
+    src = lambda name: R.read_table(HERE / '자료' / name)
+    assets = set(r['설비코드'] for r in src('설비_대장.csv'))
+    places = set(r['구성요소'] for r in src('구성요소_목록.csv')) | set(x for x in [getattr(M, 'ASSET_WIDE', '')] if x)
+    sensors = set(f"{{r['설비코드']}}:{{r['태그']}}" for r in src('센서_목록.csv'))
+    parts = set(r['품번'] for r in src('예비품_목록.csv'))
+    try:
+        split = '실물' in M.read_classes()
+    except (M.Blank, M.Stop):
+        split = False
+    ask = re.compile(r'\\s*(.+?)\\.(\\S+?)\\s*(' + '|'.join(re.escape(f) for f in M.FILTERS) + r')\\s*(.*?)\\s*')
+    out = []
+    for line, r in zip(lines, rows):
+        q, asked, item, answer = (str(r.get(c) or '').strip() for c in ('질문', '물을_값', '항목', '기대_답'))
+        pieces = [x.strip() for x in answer.split('·') if x.strip()]
+        say = lambda what, fix: out.append((f'결과/기대_답.csv:{{line}}', q, what, fix))
+        if q == '1':
+            base = item.removesuffix('실물').strip()
+            if asked not in assets:
+                say(f'물을_값 「{{asked}}」이 설비 대장에 적힌 설비 코드가 아닙니다', '물을_값 칸에는 설비 코드를 원자료에 적힌 그대로 적습니다')
+            elif not item or base not in places:
+                say(f'항목 「{{item}}」이 구성 요소 목록에 적힌 구성 요소 이름이 아닙니다', '항목 칸에는 그 설비의 구성 요소 이름을 원자료에 적힌 그대로 적습니다(그 자리에 달린 장치를 묻는 줄이면 「구성 요소 이름 실물」)')
+            elif split and item.endswith('실물') and answer != '없음' and not all(p.endswith(('(지금)', '(지난)')) for p in pieces):
+                say('실물을 클래스로 따로 둔 스키마인데 기대_답의 일련번호에 (지금) · (지난)이 붙지 않았습니다', '기대_답 칸에는 「일련번호(지금)」 · 「일련번호(지난)」 꼴로 적습니다')
+        elif q == '2':
+            if asked in sensors or asked in assets:
+                say(f'물을_값 「{{asked}}」에 물리량 이름이 아니라 센서나 설비가 적혀 있습니다', '물을_값 칸에는 물리량 이름을 적고, 센서 하나의 값을 보는 줄이면 그 센서를 항목 칸에 설비코드:태그로 적습니다')
+            elif item and item not in sensors:
+                say(f'항목 「{{item}}」이 센서 목록의 설비코드:태그가 아닙니다', '그 물리량을 재는 센서 목록을 보는 줄이면 항목 칸을 비우고, 센서 하나의 값을 보는 줄이면 항목 칸에 설비코드:태그를 적습니다')
+            elif item and len(pieces) != 4:
+                say(f'센서 값 줄인데 기대_답이 {{len(pieces)}}조각입니다', '기대_답 칸에는 「단위 · 정상값 · 한계 · 한계구분」 네 값을 이 차례로 적습니다(값이 없는 칸은 「없음」)')
+            elif not item and answer != '없음' and not all(p in sensors for p in pieces):
+                say('센서 목록 줄인데 기대_답에 설비코드:태그가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in sensors][:3]), '기대_답 칸에는 그 물리량을 재는 센서를 설비코드:태그로 「 · 」로 이어 적습니다')
+        elif q == '3':
+            if item and item not in parts:
+                say(f'항목 「{{item}}」이 예비품 목록에 적힌 사내 품번이 아닙니다', '항목 칸에는 물은 표기가 가리키는 사내 품번을 적습니다(원자료에 없는 품번으로 물은 줄이면 비웁니다)')
+            elif answer not in ('없음', '쓰는 설비 없음') and not all(p in assets for p in pieces):
+                say('기대_답에 설비 코드가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in assets][:3]), '기대_답 칸에는 그 부품을 쓰는 설비 코드들을 「 · 」로 이어 적습니다(원자료에 없는 품번은 「없음」)')
+        elif q == '4':
+            conds = [ask.fullmatch(x) for x in asked.split('&')]
+            if not all(m and m.group(1) in M.LABEL and (m.group(3) in ('=', '>', '<')) == bool(m.group(4)) for m in conds) or len(set(m.group(1) for m in conds)) != 1:
+                say(f'물을_값 「{{asked}}」이 「클래스.속성 조건」 꼴이 아닙니다', M.ASK_FORM)
+            elif not item:
+                say('항목이 비었습니다', '항목 칸에는 답으로 볼 그 클래스의 속성 이름 하나를 적습니다')
+        elif q in FORM_MORE:
+            FORM_MORE[q](asked, item, answer, pieces, say, assets, parts)
+        else:
+            say(f'질문 「{{q}}」은 이 표가 받는 질문 번호가 아닙니다', '질문 칸에는 ' + ' · '.join(['1', '2', '3', '4'] + sorted(FORM_MORE)) + ' 가운데 하나를 적습니다')
+    return out
+
+
+def form_cards(off):
+    return R.cards(f'꼴이 맞지 않는 기대 답 줄 {{len(off)}}곳', [dict(title=where, badge='질문 ' + q, state='bad', icon='warn', lines=[('어긋난 곳', what), ('이렇게 적습니다', fix)]) for where, q, what, fix in off[:24]], wide=True,
+                   note='값이 맞는지가 아니라 무엇을 어느 칸에 적었는지만 본 것입니다. 꼴이 틀린 줄은 모델이 내는 답과 짝이 맞지 않아 질문 대조에서 「실제 없음」이 됩니다. '
+                        '이 카드를 Codex에게 보여 주고, 기대 답의 값은 그대로 둔 채 칸만 맞게 고쳐 달라고 합니다. 칸마다의 뜻은 결과/기대_답.csv 첫 줄에 있습니다.')
+
+
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답', '근거'], KEY)
-    return [R.verdict('info', f'기대 답 {{len(rows)}}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.'),
+    off = expected_form(rows, expected_lines())
+    return [R.verdict('bad', f'기대 답 {{len(rows)}}줄 가운데 꼴이 맞지 않는 줄 {{len(off)}}곳', '아래 카드에서 무엇을 어느 칸에 적어야 하는지 보고 그 줄을 고칩니다.') if off else
+            R.verdict('info', f'기대 답 {{len(rows)}}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.')] + ([form_cards(off)] if off else []) + [
             question_cards(rows, lambda r: r['물을_값'] + (' → ' + r['항목'] if r.get('항목') else '')),
             R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows))]
 
@@ -418,6 +482,7 @@ def parts(previous):
 
 def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
+    off = expected_form(rows, expected_lines())      # 꼴이 틀린 줄은 아래 대조에서 「실제 없음」이 된다 — 그 까닭을 먼저 짚는다
     more = {{}}
     for line, r in zip(expected_lines(), rows):      # 질문 4(내가 더한 질문)는 답으로 볼 속성(항목)과 그 줄 번호까지 넘긴다
         if str(r['질문']).strip() == '4':
@@ -454,7 +519,7 @@ def ask(previous):
         out.append(R.ordered(R.compare('질문 2 센서 값 — 단위 · 정상값 · 한계 · 한계구분 차례', '짝', [{{'짝': key(r), '답': r['기대_답']}} for r in rows if value(r)],
                              [{{'짝': key(r), '답': r['답']}} for r in keep if value(r)], ['답'], same=exact,
                              note='값은 차례까지 견줍니다. 값이 없는 칸 · 그 칸을 담은 속성이 없는 칸은 「없음」입니다. 속성 표에서 「기준 단위」로 정한 수는 바꾼 값이고, 「적힌 그대로」면 원자료에 적힌 값입니다.')))
-    return [tally(out)] + out
+    return [tally(out)] + ([form_cards(off)] if off else []) + out
 
 
 def check(previous):
@@ -651,6 +716,34 @@ def model_gap():
     return cards
 
 
+TURNED_NOTE = ('막대는 관계를 이름별로만 세므로, 화살표를 거꾸로 넣어도 개수는 같습니다. 방향은 DB가 봐 주지 않습니다 — 내 관계 쿼리의 MERGE (a)-[…]->(b)에서 a와 b가 스키마의 시작 · 종료와 같은 쪽인지 봅니다. '
+               '고친 뒤에는 python run.py reset으로 넣은 것을 비우고 다시 넣습니다.')
+DATED_NOTE = ('모델 파일은 날짜를 「2026-10-15」 꼴의 글자로 적어 두지만, 스키마에서 자료형이 날짜인 속성은 랩 DB에 날짜로 들어가야 날짜끼리 앞뒤를 견줄 수 있습니다. '
+              '원자료 표의 줄을 받는 내 쿼리는 그 열을 date(…)로 바꿔 넣습니다(빈 칸은 그대로 비워 둡니다). 고친 뒤에는 python run.py reset으로 넣은 것을 비우고 다시 넣습니다.')
+
+
+def relation_cards(model, inside):
+    """모델 파일과 다르게 이어진 관계 — 이름별 개수가 같아도 화살표가 거꾸로 들어갔거나 다른 노드에 이어진 것을 (관계 이름 · 시작 · 종료)마다 카드로 짚는다."""
+    cards = []
+    for g in C.relation_gap(model, inside):
+        lines = [('모델 파일', f"{{g['시작']}} → {{g['끝']}} {{g['모델']}}개")]
+        if g['거꾸로']:
+            lines.append((f"랩 DB에는 거꾸로 {{len(g['거꾸로'])}}개", ' · '.join(f'{{b}} → {{a}}' for a, b in g['거꾸로'][:3]) + (' …' if len(g['거꾸로']) > 3 else '')))
+        if g['빠짐']:
+            lines.append((f"랩 DB에 없는 것 {{len(g['빠짐'])}}개", ' · '.join(f'{{a}} → {{b}}' for a, b in g['빠짐'][:3]) + (' …' if len(g['빠짐']) > 3 else '')))
+        cards.append(dict(title=g['유형'], badge='화살표가 거꾸로' if g['거꾸로'] else '모델과 다른 노드에 이어짐', state='bad', icon='warn', lines=lines))
+    return cards
+
+
+def date_cards():
+    """스키마에서 자료형이 날짜인 속성이 랩 DB에 날짜가 아닌 값으로 들어간 곳 — 내보낸 글로는 날짜와 글자가 똑같이 보여, 랩 DB에 자료형을 직접 물어본다."""
+    by = {{}}
+    for label, name, i, kind in db(C.date_gap):
+        by.setdefault((label, name), []).append((i, kind))
+    return [dict(title=f'{{label}}.{{name}}', kind=label, badge=f'{{len(hit)}}곳', state='bad', icon='warn',
+                 lines=[('랩 DB에 들어간 자료형', ' · '.join(sorted({{k for _, k in hit}}))), ('그 노드', ' · '.join(str(i) for i, _ in hit[:5]) + (' …' if len(hit) > 5 else ''))]) for (label, name), hit in sorted(by.items())]
+
+
 def query_pairs():
     """내 쿼리와 제공 쿼리를 나란히 — 같은 곳과 다른 곳을 읽어 보는 재료."""
     given = HERE / 'output/load_provided.cypher'
@@ -673,12 +766,19 @@ def load(previous):
     differ = [r[0] for r in rows if r[3] == '다름']
     short = [r[0] for r in rows if r[0].startswith('관계 ') and r[2] < r[1]]
     inside = db(C.export_graph)
-    roots = sorted(set(n['props'].get('id') for n in inside['nodes']) - set(r['b'] for r in inside['rels']), key=str)
+    leaving = set(r['a'] for r in inside['rels'])      # 그림의 출발점은 나가는 관계가 있는 노드에서 고른다 — 아무것과도 이어지지 않은 노드에서 시작하면 그릴 것이 없다
+    roots = sorted(leaving - set(r['b'] for r in inside['rels']), key=str) or sorted(leaving, key=str)
     gap = model_gap() if STUDENT else []
+    turned = relation_cards(C.model_graph()[1], inside)
+    dated = date_cards()
     return [R.verdict('bad', f'모델 파일과 랩 DB의 개수가 다른 항목 {{len(differ)}}개', ' · '.join(differ[:6]) + (' — 쿼리가 없는 종류 · 관계: ' + ' · '.join(missing) if missing else '')) if differ else
+            R.verdict('bad', f'개수는 같지만 모델 파일과 다르게 이어진 관계가 있습니다 — {{" · ".join(c["title"] for c in turned)}}', '아래 카드에서 화살표가 어느 쪽으로 들어갔는지 보고, 내 관계 쿼리의 시작과 종료가 스키마와 같은지 봅니다.') if turned else
             R.verdict('bad', f'개수는 같지만 모델 파일과 값이 다른 노드가 있습니다 — {{len(gap)}}곳', '아래 카드에서 어느 속성이 다른지 보고, 내 쿼리가 원자료의 어느 열을 어느 속성에 넣었는지 봅니다.') if gap else
-            R.verdict('ok', f'모델 파일과 랩 DB의 개수가 같습니다 — 노드 {{have.get("노드", 0)}}개 · 관계 {{have.get("관계", 0)}}개', '모델의 종류는 레이블이, 인스턴스는 노드가 됐습니다.' + (' 값도 모델 파일과 같습니다.' if STUDENT else '')),
+            R.verdict('bad', f'스키마는 날짜인데 랩 DB에 글자로 들어간 값이 있습니다 — {{" · ".join(c["title"] for c in dated)}}', '글자로 들어간 날짜는 날짜와 앞뒤를 견주는 쿼리에서 조용히 빠집니다. 아래 카드의 속성을 넣는 쿼리를 봅니다.') if dated else
+            R.verdict('ok', f'모델 파일과 랩 DB의 개수가 같습니다 — 노드 {{have.get("노드", 0)}}개 · 관계 {{have.get("관계", 0)}}개', '모델의 종류는 레이블이, 인스턴스는 노드가 됐습니다.' + (' 값과 관계의 방향도 모델 파일과 같습니다.' if STUDENT else '')),
             R.count_bars('모델 파일 ↔ 랩 DB 개수', ('모델 파일', '랩 DB'), model, have)] + (
+            [R.cards('모델 파일과 다르게 이어진 관계', turned, wide=True, note=TURNED_NOTE)] if turned else []) + (
+            [R.cards('스키마는 날짜인데 랩 DB에 글자로 들어간 값', dated, wide=True, note=DATED_NOTE)] if dated else []) + (
             [R.cards('모델 파일과 값이 다른 노드', gap, wide=True,
                      note='모델 파일은 스키마대로 옮긴 인스턴스 데이터입니다. 원자료 표의 줄을 내 쿼리로 넣은 종류는 식별자로 쓴 열과 열 → 속성 짝이 스키마와 같아야 모델 파일과 같은 노드가 됩니다. 고친 뒤에는 python run.py reset으로 넣은 것을 비우고 다시 넣습니다.')] if gap else []) + (
             [R.cards('모델보다 적게 들어간 관계', [dict(title=k, badge=f'모델 {{v}}개 → 랩 DB {{h}}개', state='bad', icon='warn') for k, v, h, _ in rows if k in short],
@@ -858,6 +958,10 @@ def q3(previous):
     return ask_question(3)
 
 
+def after_value(graph, i, k):
+    return next((n['props'].get(k) for n in graph['nodes'] if n['props'].get('id') == i), None)
+
+
 def change(previous):
     """수정본 반영 — 내 수정 쿼리를 실행하고, 모델 파일대로 넣은 직후의 그래프와 견준다(몇 번째 실행이든 수정본의 줄이 다 보인다).
     같은 수정을 한 번 더 실행하면 또 바뀌는지는 되돌리는 트랜잭션에서 해 보고 랩 DB에 남기지 않는다. 반영한 뒤의 값은 스키마에 대어 본다."""
@@ -878,6 +982,7 @@ def change(previous):
     for i, k, was, now in d['속성 바뀐 노드']:
         moved.setdefault(i, []).append((k, f'{{shown(was)}} → {{shown(now)}}'))
     off = db(C.against_schema, after, schema)      # 반영한 뒤의 값을 스키마에 대어 본다(스키마에 없는 속성 · 자료형 · 목록에 겹친 값)
+    off += [(i, k, f'자료형이 다름(스키마 date — 랩 DB에는 {{kind}})', after_value(after, i, k)) for _, k, i, kind in db(C.date_gap)]      # 글자로 들어간 날짜는 내보낸 글로는 가를 수 없어 랩 DB에 묻는다
     cards = [dict(title=i, kind=new[i]['labels'][0], badge='값 바뀜', state='warn', lines=ks) for i, ks in moved.items()]
     cards += [dict(title=str(i), kind=old[i]['labels'][0], badge='사라짐', state='bad', text=str(old[i]['props'].get('name') or old[i]['props'].get('tag') or '')) for i in d['사라진 노드'][:24]]
     cards += [dict(title=str(i), kind=new[i]['labels'][0], badge='새로 생김', state='ok', text=str(new[i]['props'].get('name') or new[i]['props'].get('tag') or '')) for i in d['늘어난 노드'][:24]]
@@ -912,7 +1017,7 @@ def change(previous):
             R.cards('바뀐 노드 — 넣은 직후 → 지금', cards, note='모델 파일대로 넣은 직후와 지금 랩 DB를 견준 것입니다. 수정본의 줄과 하나씩 견줍니다.') if cards else R.note('모델 파일대로 넣은 직후와 견줘 노드의 값 · 개수에 바뀐 것이 없습니다.')] + (
             [R.cards('스키마와 맞지 않는 값', [dict(title=f'{{i}}의 {{k}}', badge=what, state='bad', icon='warn', lines=[('지금 값', shown(v))]) for i, k, what, v in off[:24]],
                      note='스키마에 없는 속성은 그 자리를 먼저 정한 뒤에 넣습니다(남길 값이면 결과/스키마_추가.csv에 그 속성을 적고, 아니면 쿼리에서 뺍니다). '
-                          '수정본의 값은 모두 글자로 넘어오므로 수로 담을 값은 쿼리에서 수로 바꿔 넣고, 목록에는 이미 있는 값을 다시 더하지 않습니다. '
+                          '수정본의 값은 모두 글자로 넘어오므로 수로 담을 값은 쿼리에서 수로, 날짜로 담을 값은 날짜로(date(…)) 바꿔 넣고, 목록에는 이미 있는 값을 다시 더하지 않습니다. '
                           '쿼리를 고친 뒤에도 앞서 들어간 값이 남아 있으면 python run.py reset으로 넣은 직후로 되돌리고 다시 반영합니다.')] if off else []) + (
             [R.cards('아직 쿼리가 없는 수정본 줄', [dict(title=f'{{name}} · {{how}}', badge=f'{{n}}줄', state='bad', icon='warn') for name, how, n in lost],
                      note='수정본의 이 줄들은 어느 쿼리도 받지 않아 그래프에 반영되지 않았습니다. 지우지 않고 남기기로 한 줄도, 남긴다는 것을 그래프에 적는 쿼리가 있어야 합니다.')] if lost else []) + (

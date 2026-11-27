@@ -526,6 +526,26 @@ def schema_choices(folder, branch):
         command(folder, 'run.py', 'check', '--no-open')
         return {'answer': want, 'all_rows_same': len(got), 'check': 'pass'}
     tried('second-lap-date', {'properties.csv': with_lap, 'expected.csv': text('expected.csv') + line}, as_date)
+
+    # 기대 답 줄의 꼴이 틀리면: 기대 답 화면이 그 줄(파일:줄)과 「무엇을 어느 칸에」를 짚고, 질문 대조도 같은 카드를 먼저 보인다. 꼴이 맞는 참조 답은 한 줄도 걸리지 않는다
+    form_cards = lambda action: {c['title'].rsplit(':', 1)[1]: json.dumps(c['lines'], ensure_ascii=False) for b in blocks(folder, action) if b['kind'] == 'cards' and b['title'].startswith('꼴이 맞지 않는') for c in b['items']}
+    clean = blocks(folder, 'expected')
+    assert clean[0]['state'] == 'info' and not form_cards('expected'), clean[0]
+    base = len(text('expected.csv').splitlines())
+    qname = next(r[1] for r in csv.reader(io.StringIO(text('expected.csv'))) if r and r[0] == '2')
+    sensor = f"{sensors[0]['설비코드']}:{sensors[0]['태그']}"
+
+    def bad_form():
+        hit = form_cards('expected')
+        first = blocks(folder, 'expected')[0]
+        assert first['state'] == 'bad' and '꼴이 맞지 않는 줄 3곳' in first['text'] and set(hit) == {str(base + 1), str(base + 2), str(base + 3)}, (first, hit)
+        assert '설비코드:태그가 아닙니다' in hit[str(base + 1)] and '항목 칸을 비우고' in hit[str(base + 1)], hit
+        assert '물리량 이름이 아니라' in hit[str(base + 2)] and '구성 요소 이름이 아닙니다' in hit[str(base + 3)], hit
+        assert set(form_cards('query')) == set(hit)
+        lost = [k for k, state, _ in states() if state == '실제 없음']
+        assert len(lost) >= 2, lost      # 꼴이 틀린 줄은 대조에서 「실제 없음」이 된다 — 그 까닭을 위 카드가 말한다
+        return {'lines_pointed': sorted(hit), 'query_shows_same_card': True, 'rows_not_found_in_model': len(lost)}
+    tried('expected-rows-in-wrong-form', {'expected.csv': text('expected.csv') + f'2,{qname},센서 목록,{sensor},x\n2,{sensor},{qname},℃ · 48 · 65 · 상한,x\n1,{assets[0]["설비코드"]},없는 구성 요소,TS1,x\n'}, bad_form)
     command(folder, 'run.py', 'check', '--no-open')
     return out
 

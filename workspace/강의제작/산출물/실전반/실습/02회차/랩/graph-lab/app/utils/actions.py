@@ -292,6 +292,34 @@ def model_gap():
     return cards
 
 
+TURNED_NOTE = ('막대는 관계를 이름별로만 세므로, 화살표를 거꾸로 넣어도 개수는 같습니다. 방향은 DB가 봐 주지 않습니다 — 내 관계 쿼리의 MERGE (a)-[…]->(b)에서 a와 b가 스키마의 시작 · 종료와 같은 쪽인지 봅니다. '
+               '고친 뒤에는 python run.py reset으로 넣은 것을 비우고 다시 넣습니다.')
+DATED_NOTE = ('모델 파일은 날짜를 「2026-10-15」 꼴의 글자로 적어 두지만, 스키마에서 자료형이 날짜인 속성은 랩 DB에 날짜로 들어가야 날짜끼리 앞뒤를 견줄 수 있습니다. '
+              '원자료 표의 줄을 받는 내 쿼리는 그 열을 date(…)로 바꿔 넣습니다(빈 칸은 그대로 비워 둡니다). 고친 뒤에는 python run.py reset으로 넣은 것을 비우고 다시 넣습니다.')
+
+
+def relation_cards(model, inside):
+    """모델 파일과 다르게 이어진 관계 — 이름별 개수가 같아도 화살표가 거꾸로 들어갔거나 다른 노드에 이어진 것을 (관계 이름 · 시작 · 종료)마다 카드로 짚는다."""
+    cards = []
+    for g in C.relation_gap(model, inside):
+        lines = [('모델 파일', f"{g['시작']} → {g['끝']} {g['모델']}개")]
+        if g['거꾸로']:
+            lines.append((f"랩 DB에는 거꾸로 {len(g['거꾸로'])}개", ' · '.join(f'{b} → {a}' for a, b in g['거꾸로'][:3]) + (' …' if len(g['거꾸로']) > 3 else '')))
+        if g['빠짐']:
+            lines.append((f"랩 DB에 없는 것 {len(g['빠짐'])}개", ' · '.join(f'{a} → {b}' for a, b in g['빠짐'][:3]) + (' …' if len(g['빠짐']) > 3 else '')))
+        cards.append(dict(title=g['유형'], badge='화살표가 거꾸로' if g['거꾸로'] else '모델과 다른 노드에 이어짐', state='bad', icon='warn', lines=lines))
+    return cards
+
+
+def date_cards():
+    """스키마에서 자료형이 날짜인 속성이 랩 DB에 날짜가 아닌 값으로 들어간 곳 — 내보낸 글로는 날짜와 글자가 똑같이 보여, 랩 DB에 자료형을 직접 물어본다."""
+    by = {}
+    for label, name, i, kind in db(C.date_gap):
+        by.setdefault((label, name), []).append((i, kind))
+    return [dict(title=f'{label}.{name}', kind=label, badge=f'{len(hit)}곳', state='bad', icon='warn',
+                 lines=[('랩 DB에 들어간 자료형', ' · '.join(sorted({k for _, k in hit}))), ('그 노드', ' · '.join(str(i) for i, _ in hit[:5]) + (' …' if len(hit) > 5 else ''))]) for (label, name), hit in sorted(by.items())]
+
+
 def query_pairs():
     """내 쿼리와 제공 쿼리를 나란히 — 같은 곳과 다른 곳을 읽어 보는 재료."""
     given = HERE / 'output/load_provided.cypher'
@@ -314,12 +342,19 @@ def load(previous):
     differ = [r[0] for r in rows if r[3] == '다름']
     short = [r[0] for r in rows if r[0].startswith('관계 ') and r[2] < r[1]]
     inside = db(C.export_graph)
-    roots = sorted(set(n['props'].get('id') for n in inside['nodes']) - set(r['b'] for r in inside['rels']), key=str)
+    leaving = set(r['a'] for r in inside['rels'])      # 그림의 출발점은 나가는 관계가 있는 노드에서 고른다 — 아무것과도 이어지지 않은 노드에서 시작하면 그릴 것이 없다
+    roots = sorted(leaving - set(r['b'] for r in inside['rels']), key=str) or sorted(leaving, key=str)
     gap = model_gap() if STUDENT else []
+    turned = relation_cards(C.model_graph()[1], inside)
+    dated = date_cards()
     return [R.verdict('bad', f'모델 파일과 랩 DB의 개수가 다른 항목 {len(differ)}개', ' · '.join(differ[:6]) + (' — 쿼리가 없는 종류 · 관계: ' + ' · '.join(missing) if missing else '')) if differ else
+            R.verdict('bad', f'개수는 같지만 모델 파일과 다르게 이어진 관계가 있습니다 — {" · ".join(c["title"] for c in turned)}', '아래 카드에서 화살표가 어느 쪽으로 들어갔는지 보고, 내 관계 쿼리의 시작과 종료가 스키마와 같은지 봅니다.') if turned else
             R.verdict('bad', f'개수는 같지만 모델 파일과 값이 다른 노드가 있습니다 — {len(gap)}곳', '아래 카드에서 어느 속성이 다른지 보고, 내 쿼리가 원자료의 어느 열을 어느 속성에 넣었는지 봅니다.') if gap else
-            R.verdict('ok', f'모델 파일과 랩 DB의 개수가 같습니다 — 노드 {have.get("노드", 0)}개 · 관계 {have.get("관계", 0)}개', '모델의 종류는 레이블이, 인스턴스는 노드가 됐습니다.' + (' 값도 모델 파일과 같습니다.' if STUDENT else '')),
+            R.verdict('bad', f'스키마는 날짜인데 랩 DB에 글자로 들어간 값이 있습니다 — {" · ".join(c["title"] for c in dated)}', '글자로 들어간 날짜는 날짜와 앞뒤를 견주는 쿼리에서 조용히 빠집니다. 아래 카드의 속성을 넣는 쿼리를 봅니다.') if dated else
+            R.verdict('ok', f'모델 파일과 랩 DB의 개수가 같습니다 — 노드 {have.get("노드", 0)}개 · 관계 {have.get("관계", 0)}개', '모델의 종류는 레이블이, 인스턴스는 노드가 됐습니다.' + (' 값과 관계의 방향도 모델 파일과 같습니다.' if STUDENT else '')),
             R.count_bars('모델 파일 ↔ 랩 DB 개수', ('모델 파일', '랩 DB'), model, have)] + (
+            [R.cards('모델 파일과 다르게 이어진 관계', turned, wide=True, note=TURNED_NOTE)] if turned else []) + (
+            [R.cards('스키마는 날짜인데 랩 DB에 글자로 들어간 값', dated, wide=True, note=DATED_NOTE)] if dated else []) + (
             [R.cards('모델 파일과 값이 다른 노드', gap, wide=True,
                      note='모델 파일은 스키마대로 옮긴 인스턴스 데이터입니다. 원자료 표의 줄을 내 쿼리로 넣은 종류는 식별자로 쓴 열과 열 → 속성 짝이 스키마와 같아야 모델 파일과 같은 노드가 됩니다. 고친 뒤에는 python run.py reset으로 넣은 것을 비우고 다시 넣습니다.')] if gap else []) + (
             [R.cards('모델보다 적게 들어간 관계', [dict(title=k, badge=f'모델 {v}개 → 랩 DB {h}개', state='bad', icon='warn') for k, v, h, _ in rows if k in short],
@@ -499,6 +534,10 @@ def q3(previous):
     return ask_question(3)
 
 
+def after_value(graph, i, k):
+    return next((n['props'].get(k) for n in graph['nodes'] if n['props'].get('id') == i), None)
+
+
 def change(previous):
     """수정본 반영 — 내 수정 쿼리를 실행하고, 모델 파일대로 넣은 직후의 그래프와 견준다(몇 번째 실행이든 수정본의 줄이 다 보인다).
     같은 수정을 한 번 더 실행하면 또 바뀌는지는 되돌리는 트랜잭션에서 해 보고 랩 DB에 남기지 않는다. 반영한 뒤의 값은 스키마에 대어 본다."""
@@ -521,6 +560,7 @@ def change(previous):
     for i, k, was, now in d['속성 바뀐 노드']:
         moved.setdefault(i, []).append((k, f'{shown(was)} → {shown(now)}'))
     off = db(C.against_schema, after, schema)      # 반영한 뒤의 값을 스키마에 대어 본다(스키마에 없는 속성 · 자료형 · 목록에 겹친 값)
+    off += [(i, k, f'자료형이 다름(스키마 date — 랩 DB에는 {kind})', after_value(after, i, k)) for _, k, i, kind in db(C.date_gap)]      # 글자로 들어간 날짜는 내보낸 글로는 가를 수 없어 랩 DB에 묻는다
     cards = [dict(title=i, kind=new[i]['labels'][0], badge='값 바뀜', state='warn', lines=ks) for i, ks in moved.items()]
     cards += [dict(title=str(i), kind=old[i]['labels'][0], badge='사라짐', state='bad', text=str(old[i]['props'].get('name') or old[i]['props'].get('tag') or '')) for i in d['사라진 노드'][:24]]
     cards += [dict(title=str(i), kind=new[i]['labels'][0], badge='새로 생김', state='ok', text=str(new[i]['props'].get('name') or new[i]['props'].get('tag') or '')) for i in d['늘어난 노드'][:24]]
@@ -555,7 +595,7 @@ def change(previous):
             R.cards('바뀐 노드 — 넣은 직후 → 지금', cards, note='모델 파일대로 넣은 직후와 지금 랩 DB를 견준 것입니다. 수정본의 줄과 하나씩 견줍니다.') if cards else R.note('모델 파일대로 넣은 직후와 견줘 노드의 값 · 개수에 바뀐 것이 없습니다.')] + (
             [R.cards('스키마와 맞지 않는 값', [dict(title=f'{i}의 {k}', badge=what, state='bad', icon='warn', lines=[('지금 값', shown(v))]) for i, k, what, v in off[:24]],
                      note='스키마에 없는 속성은 그 자리를 먼저 정한 뒤에 넣습니다(남길 값이면 app/features/schema_additions.csv에 그 속성을 적고, 아니면 쿼리에서 뺍니다). '
-                          '수정본의 값은 모두 글자로 넘어오므로 수로 담을 값은 쿼리에서 수로 바꿔 넣고, 목록에는 이미 있는 값을 다시 더하지 않습니다. '
+                          '수정본의 값은 모두 글자로 넘어오므로 수로 담을 값은 쿼리에서 수로, 날짜로 담을 값은 날짜로(date(…)) 바꿔 넣고, 목록에는 이미 있는 값을 다시 더하지 않습니다. '
                           '쿼리를 고친 뒤에도 앞서 들어간 값이 남아 있으면 python run.py reset으로 넣은 직후로 되돌리고 다시 반영합니다.')] if off else []) + (
             [R.cards('아직 쿼리가 없는 수정본 줄', [dict(title=f'{name} · {how}', badge=f'{n}줄', state='bad', icon='warn') for name, how, n in lost],
                      note='수정본의 이 줄들은 어느 쿼리도 받지 않아 그래프에 반영되지 않았습니다. 지우지 않고 남기기로 한 줄도, 남긴다는 것을 그래프에 적는 쿼리가 있어야 합니다.')] if lost else []) + (
@@ -667,7 +707,13 @@ COMMANDS = {
 def later_note():
     """아직 넣지 않은 뒤 단계 몫의 관계를 사실로 알린다."""
     wait = db(C.waiting)
-    return [R.note('공급사와 견적, 견적과 부품을 잇는 관계(' + ' · '.join(wait) + ')는 구매팀 질문 단계에서 내 쿼리로 넣습니다. 그때까지 이 화면의 개수 견줌에는 넣지 않습니다.')] if wait else []
+    if not wait:
+        return []
+    path, kept = C.model_graph()
+    whole = json.loads(path.read_text(encoding='utf-8-sig'))['rels']      # 모델 파일에 적힌 관계 전부(지금 쓰는 모델은 여기서 아직 넣지 않은 관계를 뺀 것)
+    each = ' · '.join(f"{n} {sum(1 for r in whole if r['type'] == n)}개" for n in wait)
+    return [R.note(f'모델 파일({R.rel(path)})에는 관계가 {len(whole)}개 적혀 있습니다. 그 가운데 공급사와 견적, 견적과 부품을 잇는 관계 {len(whole) - len(kept["rels"])}개({each})는 구매팀 질문 단계에서 내 쿼리로 넣습니다. '
+                   f'그때까지 화면의 관계 수와 개수 견줌은 이 둘을 뺀 {len(kept["rels"])}개로 셉니다.')]
 
 
 def raw_note():
@@ -713,12 +759,15 @@ def supply(previous):
     differ = [k for k, v, h in rows if v != h]
     grew = [k for k, _, _ in rows if second.get(k, 0) != first.get(k, 0)]
     inside = db(C.export_graph)
+    turned = [c for c in relation_cards(C.model_graph()[1], inside) if c['title'] in names]      # 개수가 같아도 화살표가 거꾸로 들어갔으면 이어진 것이 아니다
     label = {n['props'].get('id'): n['labels'][0] for n in inside['nodes']}
     starts = sorted({r['a'] for r in inside['rels'] if r['type'] in names} - {r['b'] for r in inside['rels'] if r['type'] in names}, key=str)
     return [R.verdict('bad', f'모델 파일과 랩 DB의 개수가 다른 관계 {len(differ)}개', ' · '.join(differ) + ' — 아래 막대에서 어느 쪽이 모자라는지 봅니다.') if differ else
+            R.verdict('bad', '개수는 같지만 모델 파일과 다르게 이어진 관계가 있습니다 — ' + ' · '.join(c['title'] for c in turned), '아래 카드에서 화살표가 어느 쪽으로 들어갔는지 보고, 내 관계 쿼리의 시작과 종료가 스키마와 같은지 봅니다.') if turned else
             R.verdict('bad', '같은 쿼리를 한 번 더 실행하니 관계가 늘었습니다 — ' + ' · '.join(grew), '이미 있는 관계를 찾지 못해 새로 만든 것입니다. 쿼리가 관계를 무엇으로 알아보는지 봅니다.') if grew else
             R.verdict('ok', '공급사 → 견적 → 부품이 이어졌습니다 — ' + ' · '.join(f'{k} {h}개' for k, _, h in rows), '모델 파일의 수와 같고, 같은 쿼리를 한 번 더 실행해도 늘지 않았습니다.'),
             R.bars('모델 파일 ↔ 랩 DB — 이번에 넣은 관계', ('모델 파일', '랩 DB'), rows)] + (
+            [R.cards('모델 파일과 다르게 이어진 관계', turned, wide=True, note=TURNED_NOTE.replace('python run.py reset으로 넣은 것을 비우고 다시 넣습니다.', '거꾸로 들어간 관계는 그대로 남으므로 python run.py reset으로 넣은 직후로 되돌린 뒤, 수정본 반영(python run.py update)과 이 명령을 다시 실행합니다.'))] if turned else []) + (
             [R.around_figure(f'랩 DB에서 {label.get(starts[0], "")} 「{starts[0]}」에서 두 걸음', inside, starts[0],
                              note='이번에 넣은 관계를 따라간 모습입니다. 화살표가 내가 읽은 문장(시작 → 읽는 말 → 종료)과 같은 쪽을 가리키는지 봅니다.')] if starts else []) + (
             [R.cards('모델보다 적게 들어간 관계', [dict(title=k, badge=f'모델 {v}개 → 랩 DB {h}개', state='bad', icon='warn') for k, v, h in rows if h < v],
@@ -750,5 +799,5 @@ def with_notes(fn, *notes):
 
 COMMANDS['supply'] = ('구매팀 질문: 공급사 · 견적 관계 넣기', supply)
 COMMANDS['purchase'] = ('구매팀 질문: 공급 조건', q4)
-for _name, _notes in (('db', [later_note]), ('status', [later_note]), ('load', [later_note, raw_note]), ('reset', [later_note])):
+for _name, _notes in (('sources', [later_note]), ('db', [later_note]), ('status', [later_note]), ('load', [later_note, raw_note]), ('reset', [later_note])):
     COMMANDS[_name] = (COMMANDS[_name][0], with_notes(COMMANDS[_name][1], *_notes))
