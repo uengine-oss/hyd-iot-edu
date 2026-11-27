@@ -41,10 +41,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v30-practical",
+      "version": "v31-practical",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "6b55ed2a0f0d52a9ea7e926b75954e2bf6c20e3f8311c654faa7b058b1420af6",
+      "sha256": "9133cfcf5cae5f21aa22c355cf435b25226f9da505bb9cdae21b3a45cce6b459",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -73,10 +73,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "설비 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v30-practical",
+      "version": "v31-practical",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "2ca5b4a5054f6be80e65993562c4099c6e971d002de86f8f7682ad1efa466399",
+      "sha256": "24f13471d8f7345f822c7d9f5243aaeacd11f5034ac91f31e5b427ff7342ad71",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 자료 파악하기",
@@ -97,7 +97,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "08c4aa428a75b851a134ac6036683a35ae2a90cff63a2cdbcaf019c56e71c80e"
+        "sha256": "d2ae6a153ba68d9c1a8ccf5db14982abb5e14c79e9c04954212d31123b4d5341"
       }
     },
     {
@@ -229,10 +229,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v62-lab",
+      "version": "v63-lab",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "5d5e7d4c52f81100e95eda97562628cb8a969cc5f090c27b3aa43363711efa72",
+      "sha256": "e62d6fc27f96877c5f8d072c9b85d10386ee48c7776889b99830c274d15937f5",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -259,10 +259,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설비 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v62-lab",
+      "version": "v63-lab",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "8d59e31c1e789fe2fa5e74e503f51b7f516cb8d5adfd947b2b5df69e0e8f6a2e",
+      "sha256": "1655f7e24323b52b0a7ac9eb1ba1f36561adffd4268544eb2480fe42cd314868",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex에게 물어 자료 파악하기",

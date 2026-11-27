@@ -305,14 +305,64 @@ def wrong_choices(starter, work):
         written = next(r['공급사'] for r in csv.DictReader(io.StringIO((new / 'data/supply_terms.csv').read_text(encoding='utf-8-sig'))) if '(' in r['공급사'])
         other = next(r[2].split('/')[1] for r in rows if r[0] == '5' and '/' in r[2] and r[2] != item) if any(r[0] == '5' and '/' in r[2] and r[2] != item for r in rows) else None
         base = len(text.splitlines())
-        path.write_text(text + f'2,{qname},센서 목록,x,x\n5,{asked},{part}/{written},승인 · 1 · 0.1 · 2,x\n5,{asked}-꼴,{item},승인 · 1 · 0.1,x\n', encoding='utf-8', newline='\n')
+        path.write_text(text + f'2,{qname},센서 목록,x,x\n5,{asked},{part}/{written},승인 · 1 · 0.1 · 2,x\n5,{asked}-꼴,{item},승인 · 1 · 0.1,x\n5,{asked}-없는곳,{part}/D상사,승인 · 1 · 0.1 · 2,x\n', encoding='utf-8', newline='\n')
         hit = cards('expected')
         first = T.blocks(new, 'expected')[0]
-        assert first['state'] == 'bad' and set(hit) == {str(base + 1), str(base + 2), str(base + 3)}, (first, hit)
+        assert first['state'] == 'bad' and set(hit) == {str(base + 1), str(base + 2), str(base + 3), str(base + 4)}, (first, hit)
+        # 괄호 풀이가 없는 이름(목록에 없는 공급사)에는 「괄호 풀이를 떼라」가 아니라 목록의 이름으로 적으라고 말한다(받기 시험 가10)
+        assert '승인 공급사 목록에 적힌 이름 가운데 하나로' in hit[str(base + 4)] and '괄호 풀이' not in hit[str(base + 4)] and not any('」이 ' in v for v in hit.values()), hit[str(base + 4)]
         assert '설비코드:태그가 아닙니다' in hit[str(base + 1)] and '괄호 풀이를 뗀 이름' in hit[str(base + 2)] and '네 값이 아닙니다' in hit[str(base + 3)], hit
         assert set(cards('query')) == set(hit)
-        return f'기대 답 화면이 틀린 꼴 3줄(expected.csv:{base + 1} · {base + 2} · {base + 3})을 짚음 — 공급사 이름 「{written}」에는 괄호 풀이를 뗀 이름으로 적으라고 말하고, 질문 대조도 같은 카드를 먼저 보임'
+        return f'기대 답 화면이 틀린 꼴 4줄(expected.csv:{base + 1} · {base + 2} · {base + 3} · {base + 4})을 짚음 — 공급사 이름 「{written}」에는 괄호 풀이를 뗀 이름으로, 목록에 없는 「D상사」에는 목록에 적힌 이름 가운데 하나로 적으라고 말하고, 질문 대조도 같은 카드를 먼저 보임'
     case('expected-rows-in-wrong-form', wrong_form, supply='늦은 줄')
+
+    def wrong_evidence(new):      # 기대 답의 근거 줄을 틀린 줄로 적음(리허설에서 Codex가 낸 줄 번호가 한 줄씩 밀렸다) → 답은 맞아 질문 대조는 같음, 기대 답 화면이 그 줄을 짚는다
+        T.command(new, 'run.py', 'supply', '--no-open')
+        got = T.evidence_trial(new)
+        return (f'기대 답 화면이 틀린 근거 줄 {got["wrong_evidence_lines_pointed"]}곳({" · ".join(got["cited"])})을 짚고, 맞는 줄을 한 줄씩 적은 {got["right_single_line_evidence_not_pointed"]}줄과 참조 기대 답은 걸지 않음 '
+                f'— 질문 대조 {got["query_rows_still_same"]}줄은 그대로 같음')
+    case('expected-evidence-lines-wrong', wrong_evidence, supply='늦은 줄')
+
+    def bundles(new):      # 한 공급사의 견적 둘을 「 / 」로 이은 답 — 값이 묶음을 넘어 섞이면 다르고, 칩은 묶음끼리 놓인다(받기 시험 가11)
+        import importlib.util
+        T.command(new, 'run.py', 'supply', '--no-open')
+        two = [r for r in compare_rows(new) if r['key'].startswith('5 |') and ' / ' in r['cells'][0][0]]
+        assert two and all(r['state'] == '같음' for r in two), two
+        want = two[0]['cells'][0][0]
+        a, b = (x.split(' · ') for x in want.split(' / '))
+        mixed = ' / '.join([' · '.join([a[0], b[1], *a[2:]]), ' · '.join([b[0], a[1], *b[2:]])])      # 두 견적의 단가만 서로 바꿈 — 값의 묶음 전체로는 같다
+        assert mixed != want and sorted(mixed.replace(' / ', ' · ').split(' · ')) == sorted(want.replace(' / ', ' · ').split(' · '))
+        path = new / 'app/features/expected.csv'
+        text = path.read_text(encoding='utf-8')
+        assert text.count(want) >= 1
+        path.write_text(text.replace(want, mixed), encoding='utf-8', newline='\n')
+        after = [r for r in compare_rows(new) if r['key'].startswith('5 |') and ' / ' in r['cells'][0][0]]
+        assert after and all(r['state'] == '다름' for r in after), ('값이 묶음을 넘어 섞였는데 같음', after)
+        spec = importlib.util.spec_from_file_location('lab_render_for_trial', new / 'app/ui/render.py')
+        render = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(render)
+        left, right = render.aligned(want, ' · '.join(b))      # 실제 답이 나중 견적 한 건뿐일 때(셋째 결정을 다르게 고른 학생의 화면)
+        assert ' / ' not in left + right and 'class="per"' in left, left
+        assert left.count('chip off') == len(a) and right.count('chip gap') == len(a) and right.count('chip off') == 0, (left, right)      # 빠진 것은 먼저 견적 한 묶음뿐, 있는 묶음의 값은 빠졌다고 칠하지 않는다
+        return f'묶음을 넘어 단가를 바꾼 기대 답 {len(after)}줄이 「다름」(값의 묶음 전체는 같음), 칩은 빠진 견적 한 묶음({len(a)}칸)만 빈칸으로 그림'
+    case('quote-bundles-compared-per-bundle', bundles, supply='줄마다')
+
+    def before_supply(new):      # 공급사 · 견적을 스키마 표에 적기 전에 실행 → 멈추지 않고 견적표를 읽은 값 · 겹친 줄 · 칸마다 빈 줄을 세어 보인다(모델 파일은 건드리지 않는다)
+        import csv, io
+        T.command(new, 'run.py', 'parts', '--no-open')
+        made = (new / 'output/graph.json').read_bytes()
+        shown = T.blocks(new, 'supply')
+        tables = {b['title']: b['rows'] for b in shown if b['kind'] == 'table'}
+        quotes = list(csv.DictReader(io.StringIO((new / 'data/supply_terms.csv').read_text(encoding='utf-8-sig'))))
+        late = sum(1 for q in quotes if q['유효기한'] < D.REF_DATE)
+        assert shown[0]['state'] == 'info' and f'견적표 {len(quotes)}줄' in shown[0]['text'] and f'유효기한이 지난 줄 {late}곳' in shown[0]['detail'], shown[0]
+        assert len(tables['견적표 줄마다 읽은 값']) == len(quotes) and sum(1 for r in tables['견적표 줄마다 읽은 값'] if r[5] == '유효기한 지남') == late
+        twice = tables['같은 공급사 · 같은 부품에 견적이 여럿인 곳']
+        pairs = [(q['공급사'].split('(')[0].strip(), q['품번']) for q in quotes]
+        assert len(twice) == len({x for x in pairs if pairs.count(x) > 1}) and sum(1 for r in twice if r[2].count(', 유효)') > 1) == len(f['several']), twice
+        assert (new / 'output/graph.json').read_bytes() == made
+        return f'견적표 {len(quotes)}줄을 읽은 값, 기준일에 유효기한이 지난 줄 {late}곳, 겹친 곳 {len(twice)}곳(둘 다 기준일에 유효한 곳 {len(f["several"])}곳), 칸마다 빈 줄을 보이고 모델 파일은 그대로'
+    case('supply-before-classes-written', before_supply)      # 공급 쪽을 아직 더하지 않은 참조 사본(설비 쪽 갈래만)
 
     # 고의 손상(자료 사본만): 한계 칸의 단위 글이 그 행의 단위 칸과 다르면 수로 읽지 않는다 — 단위가 붙은 값을 아무 글이나 떼고 읽는 것이 아님을 본다
     def other_unit(new):

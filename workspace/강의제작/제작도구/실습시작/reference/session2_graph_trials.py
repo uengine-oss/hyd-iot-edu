@@ -470,6 +470,39 @@ def wrong_choices_before_update(folder, graph):
     assert shown[0]['state'] == 'ok' and not cards_of(shown, '스키마는 날짜인데'), shown[0]
     assert http(folder, "MATCH (a:Asset) WHERE a.installed < date('2100-01-01') RETURN count(a)")[0][0] == assets
     out.append({'wrong_choice': 'date-property-loaded-as-text', 'nodes_pointed': assets, 'date_comparison_rows_when_text': 0, 'when_date': assets})
+    # 날짜로 들어 있는 속성을 따옴표로 적은 글자와 견주는 쿼리: 오류 없이 답만 비므로 질문 화면이 그 조건을 짚는다. 날짜로 바꿔 견준 쿼리 · 글자로 바꿔 견준 쿼리는 걸리지 않는다(받기 시험 가13)
+    query, kept = folder / 'app/features/query.cypher', (folder / 'app/features/query.cypher').read_bytes()
+    told = lambda: [(c['title'], c['lines']) for c in cards_of(result(folder, 'sensors'), '날짜 속성을 글자와 견준 조건')]
+    assert not told(), '참조 쿼리가 걸림'
+    try:
+        for tail, hit in ((" AND a.installed < '2100-01-01'", ["installed ↔ '2100-01-01'"]), (" AND a.installed < date('2100-01-01')", []), (" AND toString(a.installed) < '2100-01-01'", [])):
+            lines = kept.decode('utf-8').splitlines()
+            at = next(i for i, x in enumerate(lines) if x.lstrip().upper().startswith('MATCH') and '(a:Asset' in x)
+            assert 'WHERE' not in lines[at].upper(), lines[at]
+            query.write_text('\n'.join(lines[:at] + [lines[at] + ' WHERE true' + tail] + lines[at + 1:]) + '\n', encoding='utf-8', newline='\n')
+            assert [t for t, _ in told()] == hit, (tail, told())
+            if hit:      # 글자와 견준 조건은 참이 되지 않아 설비가 하나도 맞지 않는다 — 기대 답과 달라진다
+                assert any(r['state'] != '같음' for b in result(folder, 'sensors') if b['kind'] == 'compare' for r in b['rows'])
+            else:
+                equal_answers(result(folder, 'sensors'))
+    finally:
+        query.write_bytes(kept)
+    out.append({'wrong_choice': 'date-property-compared-with-text-in-query', 'pointed': "installed ↔ '2100-01-01'", 'not_pointed_when_compared_as_date_or_as_text': 2})
+    # 내보내기는 속성이 적히는 차례까지 고정한다 — 랩 DB가 속성을 돌려주는 차례를 일부러 바꿔도(속성을 뗐다가 다시 붙임) 내보낸 파일의 바이트가 같다(받기 시험 가12)
+    result(folder, 'export')
+    saved = (folder / 'output/graph.json').read_bytes()
+    order = lambda: http(folder, 'MATCH (n:Asset) RETURN keys(n) ORDER BY n.id LIMIT 1')[0][0]
+    first = order()
+    one, props = http(folder, 'MATCH (n:Asset) RETURN n.id, properties(n) ORDER BY n.id LIMIT 1')[0]
+    moved = sorted(k for k in first if k != 'id' and isinstance(props[k], str) and k != 'installed')      # 글자 속성들을 모두 뗐다가, 이름 차례로 하나씩 같은 값으로 다시 붙인다
+    http(folder, f'MATCH (n:Asset {{id: {json.dumps(one)}}}) REMOVE ' + ', '.join(f'n.`{k}`' for k in moved) + ' RETURN count(n)')
+    for k in moved:
+        http(folder, f'MATCH (n:Asset {{id: {json.dumps(one)}}}) SET n.`{k}` = {json.dumps(props[k], ensure_ascii=False)} RETURN count(n)')
+    assert order() != first and sorted(order()) == sorted(first), ('속성을 뗐다 붙여도 랩 DB가 돌려주는 속성 차례가 그대로 — 이 시험의 전제가 깨짐', first, order())
+    assert http(folder, 'MATCH (n:Asset) RETURN properties(n) ORDER BY n.id LIMIT 1')[0][0] == props
+    result(folder, 'export')
+    assert (folder / 'output/graph.json').read_bytes() == saved, '같은 그래프인데 내보낸 파일의 바이트가 달라짐'
+    out.append({'wrong_choice': 'export-bytes-with-other-property-order', 'db_key_order_before': first, 'db_key_order_after': order(), 'same_bytes': True})
     return out
 
 

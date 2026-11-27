@@ -71,6 +71,8 @@ PATCHES = [
      "                one['안맞음'] = [(line, r[p['칸']]) for line, r in data if r[p['칸']] and not typed(r[p['칸']], p['자료형'], r.get('단위', ''))[1]]\n"),
     ("                v, ok = typed(v, p['자료형'])\n",
      "                v, ok = typed(v, p['자료형'], values.get('적힌단위', ''))\n"),
+    ("                            수=sum(1 for _, r in data if r[col] and typed(r[col], '수')[1]),\n",
+     "                            수=sum(1 for _, r in data if r[col] and typed(r[col], '수', r.get('단위', ''))[1]),\n"),
     ("        node('센서', sid, f'자료/센서_목록.csv:{line}', {**r, '단위': out_unit}, factor)\n"
      "        rel_('구성 요소-센서', comps[(code, place_of(line, r)[0])][0], sid, f'센서_목록.csv:{line}')\n",
      "        node('센서', sid, f'자료/센서_목록.csv:{line}', {**r, '단위': out_unit, '적힌단위': unit_}, factor)\n"

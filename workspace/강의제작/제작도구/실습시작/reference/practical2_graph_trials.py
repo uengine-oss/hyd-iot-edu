@@ -150,10 +150,16 @@ def purchase_wrong(folder, schema):
         as_text = body.replace("date('", "('")      # 유효기한은 랩 DB에 날짜로 들어 있다 — 기준일을 글자로 적어 견주면 오류 없이 모든 견적이 빠진다
         assert as_text != body
         put(folder, {'결과/query.cypher': queries(folder, purchase=(head, as_text))}, True)
-        off = off_rows(result(folder, 'purchase'))
+        shown = result(folder, 'purchase')
+        off = off_rows(shown)
         assert len(off) == 3 and not any(XG.PURCHASE_ASK['missing'] in r['key'] for r in off), off
+        texted = T.cards_of(shown, '날짜 속성을 글자와 견준 조건')      # 까닭을 화면이 말한다(받기 시험 가13) — 날짜로 견준 참조 쿼리에는 이 카드가 없다
+        assert [c['title'] for c in texted] == [f"valid_until ↔ '{D.REF_DATE}'"], texted
+        put(folder, {'결과/query.cypher': queries(folder, purchase=(head, body))}, True)
+        assert not T.cards_of(result(folder, 'purchase'), '날짜 속성을 글자와 견준 조건')
+        put(folder, {'결과/query.cypher': queries(folder, purchase=(head, as_text))}, True)
         assert T.http(folder, "MATCH (q:Quote) WHERE NOT q.valid_until IS :: DATE OR NOT q.quote_date IS :: DATE RETURN count(q)")[0][0] == 0
-        out.append({'wrong': '기준일을 날짜가 아니라 글자로 적어 견준 쿼리', 'result': f'공급사를 묻는 {len(off)}줄이 모두 같음이 아님 — 실제 「{off[0]["cells"][0][1]}」(랩 DB의 유효기한은 날짜)'})
+        out.append({'wrong': '기준일을 날짜가 아니라 글자로 적어 견준 쿼리', 'result': f'공급사를 묻는 {len(off)}줄이 모두 같음이 아님 — 실제 「{off[0]["cells"][0][1]}」(랩 DB의 유효기한은 날짜), 화면이 「날짜 속성을 글자와 견준 조건 — {texted[0]["title"]}」을 짚음'})
     finally:
         (folder / 'app/features/query.cypher').write_bytes(right)
     return out

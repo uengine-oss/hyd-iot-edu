@@ -24,10 +24,18 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 실전반 두 랩은 같은 생성 길에 공장 규모 자료와 끝의 구매팀 응용만 얹는다(코딩랩 K-10 — session2_factory*.py). 통합반 산출물은 과정 인자의 기본값으로 예전과 같은 바이트가 나온다.
 COURSES = {'통합반': dict(dest=DEST, prefix='integrated', versions=None),
-           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v30-practical', 'graph-lab': 'v30-practical'})}
+           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v31-practical', 'graph-lab': 'v31-practical'})}
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v62-lab', 'graph-lab': 'v62-lab'}
+VERSIONS = {'ontology-lab': 'v63-lab', 'graph-lab': 'v63-lab'}
+# v63-lab(통합반 두 랩) · v31-practical(실전반 두 랩) — 2026-11-28, 실전 설계 v30 학생 역 리허설(65.9분 · Codex 기다림 50.7분) · 받기 시험(v62 · v30 가10 ~ 가13)에서 나온 것을 한 판에(작업 폴더 판정/랩고침_실행기록_v63_v31.md):
+#   누가 세어도 같은 개수는 제공 화면이 센다 — 설계 랩의 속성 · 관계 화면은 표를 적기 전에 실행하면 클래스마다 쓸 수 있는 칸의 빈 줄 수, 클래스 짝마다 지금 자료의 이어짐과 하나도 없는 대상을 보이고
+#   (session2_model_tool.columns_view · links_view, session2_steps properties_before · relations_before), 실전 설계의 공급 화면은 공급사 · 견적을 적기 전에 견적표를 읽은 값 · 겹친 줄 · 칸마다 빈 줄을 보인다(session2_factory_lab supply_before).
+#   실전 설계 가이드 05 · 13은 그 화면을 먼저 실행하고 Codex에게는 선택지 · 뜻 · 추천을 묻게 한다(공장 규모 자료에서 Codex가 개수를 세느라 한 번에 8.8분 · 7.1분을 기다렸다). 통합반 가이드는 그대로다.
+#   기대 답 화면이 근거 칸의 파일:줄을 원자료에 대어, 그 줄에 물은 대상이나 답의 값이 없으면 짚는다(session2_steps evidence_off, 실전 질문 5는 session2_factory_lab purchase_evidence — 리허설에서 Codex가 낸 근거 줄 번호가 여러 곳 틀렸는데 잡는 화면이 없었다).
+#   「 / 」로 이은 답(한 공급사의 견적 여럿)은 묶음끼리 견주고 칩도 묶음끼리 놓는다(session2_steps same · result_view.aligned), 꼴 카드의 조사를 받침에 맞게, 목록에 없는 공급사 이름의 안내,
+#   그래프 랩 내보내기는 속성이 적히는 차례까지 고정하고(lab_cypher.exported), 질문 화면은 날짜 속성을 따옴표 글자와 견준 쿼리를 짚는다(lab_cypher.text_against_date).
+#   실전 설계 13(견적의 출처도 속성으로) · 14(다른 표기 기대 답은 공급사마다 · 고친 뒤 다시 확인 묶음).
 # v62-lab(통합반 두 랩) · v30-practical(실전반 두 랩) — 2026-11-27, 학생 역 리허설(실전 설계 v29 · 실전 그래프 v28) · 받기 시험(v61 · v29) · v61 Codex 재확인에서 나온 것을 한 판에(작업 폴더 판정/랩고침_실행기록_v62_v30.md):
 #   화면이 사실과 다르게 말하던 곳 — 넣기 화면이 관계를 이름별 개수로만 견줘 화살표를 거꾸로 넣어도 「맞음」(lab_cypher.relation_gap — 시작 · 끝 노드까지 견줘 거꾸로 들어간 관계를 짚는다, 실전 공급 관계 화면도),
 #   「TS1=65」처럼 짝지은 값이 같음인데 다른 값처럼 그려짐(result_view.aligned), 스키마는 날짜인데 랩 DB에는 글자로 들어가 날짜와 견주는 쿼리가 조용히 다 거름(제공 적재 쿼리가 날짜로 넣고, lab_cypher.date_gap이 랩 DB의 자료형을 물어 넣기 · 수정본 반영 화면이 짚는다),

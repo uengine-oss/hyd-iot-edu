@@ -24,8 +24,10 @@ def numbers(text):
 
 
 def same(expected, actual):
-    """대조 화면은 적은 글을 그대로 보이고, 같음 여부는 조각의 순서와 숫자 표기(35 = 35.0)를 떼고 견준다 — 그 사실은 대조 표 아래 SAME_NOTE로 밝힌다."""
-    return norm(numbers(expected)) == norm(numbers(actual))
+    """대조 화면은 적은 글을 그대로 보이고, 같음 여부는 조각의 순서와 숫자 표기(35 = 35.0)를 떼고 견준다 — 그 사실은 대조 표 아래 SAME_NOTE로 밝힌다.
+    「 / 」로 이은 묶음(한 공급사의 견적 여럿처럼 값 한 벌이 여럿인 답)은 묶음끼리 견준다 — 묶음의 차례는 떼지만, 값이 묶음을 넘어 섞이면 다르다."""
+    bundles = lambda text: sorted(norm(numbers(b)) for b in str(text or '').split(' / '))
+    return bundles(expected) == bundles(actual)
 
 
 SAME_NOTE = '값은 「 · 」로 나눈 조각의 순서와 숫자 표기(35와 35.0, 0.30과 0.3)를 떼고 견줍니다. 줄 순서도 보지 않습니다.'
@@ -240,35 +242,35 @@ def expected_form(rows, lines):
         if q == '1':
             base = item.removesuffix('실물').strip()
             if asked not in assets:
-                say(f'물을_값 「{asked}」이 설비 대장에 적힌 설비 코드가 아닙니다', '물을_값 칸에는 설비 코드를 원자료에 적힌 그대로 적습니다')
+                say(M.josa(f'물을_값 「{asked}」', '은/는') + ' 설비 대장에 적힌 설비 코드가 아닙니다', '물을_값 칸에는 설비 코드를 원자료에 적힌 그대로 적습니다')
             elif not item or base not in places:
-                say(f'항목 「{item}」이 구성 요소 목록에 적힌 구성 요소 이름이 아닙니다', '항목 칸에는 그 설비의 구성 요소 이름을 원자료에 적힌 그대로 적습니다(그 자리에 달린 장치를 묻는 줄이면 「구성 요소 이름 실물」)')
+                say(M.josa(f'항목 「{item}」', '은/는') + ' 구성 요소 목록에 적힌 구성 요소 이름이 아닙니다', '항목 칸에는 그 설비의 구성 요소 이름을 원자료에 적힌 그대로 적습니다(그 자리에 달린 장치를 묻는 줄이면 「구성 요소 이름 실물」)')
             elif split and item.endswith('실물') and answer != '없음' and not all(p.endswith(('(지금)', '(지난)')) for p in pieces):
                 say('실물을 클래스로 따로 둔 스키마인데 기대_답의 일련번호에 (지금) · (지난)이 붙지 않았습니다', '기대_답 칸에는 「일련번호(지금)」 · 「일련번호(지난)」 꼴로 적습니다')
         elif q == '2':
             if asked in sensors or asked in assets:
                 say(f'물을_값 「{asked}」에 물리량 이름이 아니라 센서나 설비가 적혀 있습니다', '물을_값 칸에는 물리량 이름을 적고, 센서 하나의 값을 보는 줄이면 그 센서를 항목 칸에 설비코드:태그로 적습니다')
             elif item and item not in sensors:
-                say(f'항목 「{item}」이 센서 목록의 설비코드:태그가 아닙니다', '그 물리량을 재는 센서 목록을 보는 줄이면 항목 칸을 비우고, 센서 하나의 값을 보는 줄이면 항목 칸에 설비코드:태그를 적습니다')
+                say(M.josa(f'항목 「{item}」', '은/는') + ' 센서 목록의 설비코드:태그가 아닙니다', '그 물리량을 재는 센서 목록을 보는 줄이면 항목 칸을 비우고, 센서 하나의 값을 보는 줄이면 항목 칸에 설비코드:태그를 적습니다')
             elif item and len(pieces) != 4:
                 say(f'센서 값 줄인데 기대_답이 {len(pieces)}조각입니다', '기대_답 칸에는 「단위 · 정상값 · 한계 · 한계구분」 네 값을 이 차례로 적습니다(값이 없는 칸은 「없음」)')
             elif not item and answer != '없음' and not all(p in sensors for p in pieces):
                 say('센서 목록 줄인데 기대_답에 설비코드:태그가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in sensors][:3]), '기대_답 칸에는 그 물리량을 재는 센서를 설비코드:태그로 「 · 」로 이어 적습니다')
         elif q == '3':
             if item and item not in parts:
-                say(f'항목 「{item}」이 예비품 목록에 적힌 사내 품번이 아닙니다', '항목 칸에는 물은 표기가 가리키는 사내 품번을 적습니다(원자료에 없는 품번으로 물은 줄이면 비웁니다)')
+                say(M.josa(f'항목 「{item}」', '은/는') + ' 예비품 목록에 적힌 사내 품번이 아닙니다', '항목 칸에는 물은 표기가 가리키는 사내 품번을 적습니다(원자료에 없는 품번으로 물은 줄이면 비웁니다)')
             elif answer not in ('없음', '쓰는 설비 없음') and not all(p in assets for p in pieces):
                 say('기대_답에 설비 코드가 아닌 값이 있습니다 — ' + ' · '.join([p for p in pieces if p not in assets][:3]), '기대_답 칸에는 그 부품을 쓰는 설비 코드들을 「 · 」로 이어 적습니다(원자료에 없는 품번은 「없음」)')
         elif q == '4':
             conds = [ask.fullmatch(x) for x in asked.split('&')]
             if not all(m and m.group(1) in M.LABEL and (m.group(3) in ('=', '>', '<')) == bool(m.group(4)) for m in conds) or len(set(m.group(1) for m in conds)) != 1:
-                say(f'물을_값 「{asked}」이 「클래스.속성 조건」 꼴이 아닙니다', M.ASK_FORM)
+                say(M.josa(f'물을_값 「{asked}」', '은/는') + ' 「클래스.속성 조건」 꼴이 아닙니다', M.ASK_FORM)
             elif not item:
                 say('항목이 비었습니다', '항목 칸에는 답으로 볼 그 클래스의 속성 이름 하나를 적습니다')
         elif q in FORM_MORE:
             FORM_MORE[q](asked, item, answer, pieces, say, assets, parts)
         else:
-            say(f'질문 「{q}」은 이 표가 받는 질문 번호가 아닙니다', '질문 칸에는 ' + ' · '.join(['1', '2', '3', '4'] + sorted(FORM_MORE)) + ' 가운데 하나를 적습니다')
+            say(M.josa(f'질문 「{q}」', '은/는') + ' 이 표가 받는 질문 번호가 아닙니다', '질문 칸에는 ' + ' · '.join(['1', '2', '3', '4'] + sorted(FORM_MORE)) + ' 가운데 하나를 적습니다')
     return out
 
 
@@ -278,11 +280,102 @@ def form_cards(off):
                         '이 카드를 Codex에게 보여 주고, 기대 답의 값은 그대로 둔 채 칸만 맞게 고쳐 달라고 합니다. 칸마다의 뜻은 app/features/expected.csv 첫 줄에 있습니다.')
 
 
+EVIDENCE = re.compile(r'([^\s:·,「」()]+\.(?:csv|md))\s*:\s*(\d+(?:\s*[~∼-]\s*\d+)?(?:\s*[·,]\s*\d+(?:\s*[~∼-]\s*\d+)?)*)')      # 근거 칸의 「파일:줄」 — 줄은 「2」 · 「2 · 4」 · 「2~21」
+EVIDENCE_MORE = {}      # 질문 번호 → 그 질문의 근거 줄에 적혀 있어야 하는 것을 보는 함수를 만드는 함수(줄을 더 받는 랩이 얹는다)
+
+
+def part_words(part):
+    """그 사내 품번을 원자료가 적는 글들 — 사내 품번, 품번 교차표의 다른 표기, 예비품 목록의 품명."""
+    src = lambda name: R.read_table(HERE / 'data' / name)
+    return set([part] + [r['다른표기'] for r in src('part_aliases.csv') if r['사내품번'] == part] + [r['품명'] for r in src('spare_parts.csv') if r['품번'] == part]) - set([''])
+
+
+def evidence_off(rows, lines):
+    """기대 답 표의 근거 칸에 적은 파일:줄을 원자료에 대어 본다 — [(기대 답 파일:줄, 질문, 근거로 적은 줄, 어긋난 곳)].
+    보는 것은 그 줄이 있는지와, 그 줄에 물은 대상이나 답의 값이 적혀 있는지다(질문 1 = 그 설비의 줄이고 센서 표의 줄이면 답에 적은 태그의 줄, 질문 2 = 답에 적은 센서의 줄, 질문 3 = 그 부품을 적은 줄).
+    센서 하나의 값을 보는 질문 2 줄은 센서 표에서 댄 줄 가운데 그 센서의 줄이 하나라도 있으면 된다(기준 단위의 근거로 같은 물리량의 다른 센서 줄을 함께 대는 것은 맞는 근거다).
+    질문 3은 구성 요소 목록의 줄이면 그 부품이 적혀 있어야 하고, 다른 표의 줄은 답에 적은 설비의 줄이어도 된다.
+    줄을 범위(2~21)로 적은 근거는 그 범위에 그런 줄이 하나라도 있으면 된다. 줄 번호 없이 파일 이름만 적은 근거, 표가 아닌 글(md)의 내용, 질문 4의 값은 보지 않는다. 답의 값이 맞는지는 질문 대조가 본다."""
+    files = dict((p.name, p) for p in (HERE / 'data').iterdir() if p.is_file())
+    tables, lengths = {}, {}
+
+    def cells(name, n):      # 그 줄의 칸들(자료가 적힌 줄이 아니면 None)
+        if name not in tables:
+            tables[name] = dict((at, list(row.values())) for at, row in M.table(files[name]))
+        return tables[name].get(n)
+
+    def length(name):
+        if name not in lengths:
+            lengths[name] = len(R.read_text(files[name])[0].splitlines())
+        return lengths[name]
+    sensor_table, place_table = M.TABLE['센서'], M.TABLE['구성 요소']
+    out = []
+    for line, r in zip(lines, rows):
+        q, asked, item, answer = (str(r.get(c) or '').strip() for c in ('질문', '물을_값', '항목', '기대_답'))
+        pieces = [re.sub(r'\((지금|지난)\)$', '', x.strip()) for x in answer.split('·') if x.strip()]
+        if q == '1':
+            wrong = lambda name, c, asked=asked, pieces=pieces, none=answer == '없음': (
+                f'설비 「{asked}」의 줄이 아닙니다' if asked not in c else
+                '기대_답에 적은 값(' + ' · '.join(pieces[:6]) + ')이 적힌 줄이 아닙니다' if name == sensor_table and not none and not set(pieces) & set(c) else None)
+        elif q == '2':
+            want = [x.split(':', 1) for x in ([item] if item else pieces) if ':' in x]
+            wrong = lambda name, c, want=want, item=item: (
+                (f'센서 「{item}」의 줄이 아닙니다' if item else '기대_답에 적은 센서의 줄이 아닙니다') if name == sensor_table and want and not any(code in c and tag in c for code, tag in want) else None)
+        elif q == '3':
+            words = (part_words(item) | set([asked])) if item else set()
+            wrong = lambda name, c, words=words, asked=asked, pieces=pieces: (
+                f'물은 표기 「{asked}」나 그 부품의 사내 품번 · 다른 표기 · 품명이 적힌 줄이 아닙니다'
+                if words and not any(w in x for w in words for x in c) and (name == place_table or not set(pieces) & set(c)) else None)
+        elif q in EVIDENCE_MORE:
+            wrong = EVIDENCE_MORE[q](asked, item, answer, pieces)
+        else:
+            wrong = lambda name, c: None
+        together = q == '2' and bool(item)      # 센서 하나의 값을 보는 줄 — 댄 센서 줄 가운데 하나만 그 센서의 줄이면 된다
+        held = []
+        for m in EVIDENCE.finditer(str(r.get('근거') or '')):
+            name = m.group(1).replace('\\', '/').rsplit('/', 1)[-1]
+            say = lambda at, what, line=line, q=q: out.append((f'app/features/expected.csv:{line}', q, at, what))
+            if name not in files:
+                say(f'{m.group(1)}:{m.group(2)}', M.josa(f'「{name}」', '은/는') + ' data/ 폴더에 없는 파일입니다')
+                continue
+            for one in re.split(r'\s*[·,]\s*', m.group(2)):
+                ends = [int(x) for x in re.split(r'\s*[~∼-]\s*', one.strip())]
+                span = range(ends[0], ends[-1] + 1)
+                at = f'data/{name}:{one.strip()}'
+                if not span or span[0] < 1 or span[-1] > length(name):
+                    say(at, f'이 파일은 {length(name)}줄까지입니다')
+                    continue
+                if not name.endswith('.csv'):
+                    continue
+                found = [c for c in (cells(name, n) for n in span) if c is not None]
+                if not found:
+                    say(at, '자료가 적힌 줄이 아닙니다(열 이름 줄이거나 빈 줄)')
+                    continue
+                told = [wrong(name, c) for c in found]
+                if together and name == sensor_table:
+                    held.append((at, all(told) and told[0]))
+                elif all(told):
+                    written = ' · '.join(x for x in found[0] if x)
+                    say(at + (' — 적힌 것: ' + written[:80] + ('…' if len(written) > 80 else '') if len(found) == 1 else ''),
+                        told[0] if len(found) == 1 else '이 범위에는 그런 줄이 없습니다 — ' + told[0])
+        if held and all(said for _, said in held):
+            out.append((f'app/features/expected.csv:{line}', q, ' · '.join(at for at, _ in held), '센서 표에서 댄 줄 가운데 ' + held[0][1].replace('의 줄이 아닙니다', '의 줄이 없습니다')))
+    return out
+
+
+def evidence_cards(off):
+    return R.cards(f'근거로 적은 줄이 맞지 않는 기대 답 줄 {len(set(x[0] for x in off))}곳', [dict(title=where, badge='질문 ' + q, state='warn', icon='warn', lines=[('근거로 적은 줄', at), ('어긋난 곳', what)]) for where, q, at, what in off[:24]], wide=True,
+                   note='답의 값이 맞는지가 아니라, 근거 칸에 적은 파일:줄에 물은 대상이나 답의 값이 적혀 있는지만 본 것입니다. AI는 줄 번호를 틀리게 대곤 합니다. '
+                        '그 줄을 직접 열어 보고, Codex에게 맞는 줄을 다시 찾아 근거 칸만 고쳐 달라고 합니다. 줄 번호를 범위(2~21)로 적은 근거는 그 범위에 맞는 줄이 하나라도 있으면 걸지 않습니다.')
+
+
 def expected(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답', '근거'], KEY)
     off = expected_form(rows, expected_lines())
+    cited = evidence_off(rows, expected_lines())
     return [R.verdict('bad', f'기대 답 {len(rows)}줄 가운데 꼴이 맞지 않는 줄 {len(off)}곳', '아래 카드에서 무엇을 어느 칸에 적어야 하는지 보고 그 줄을 고칩니다.') if off else
-            R.verdict('info', f'기대 답 {len(rows)}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.')] + ([form_cards(off)] if off else []) + [
+            R.verdict('warn', f'기대 답 {len(rows)}줄 가운데 근거로 적은 줄이 맞지 않는 줄 {len(set(x[0] for x in cited))}곳', '아래 카드의 줄을 원자료에서 직접 열어 보고 근거 칸을 고칩니다.') if cited else
+            R.verdict('info', f'기대 답 {len(rows)}줄을 정했습니다', '모델을 만든 뒤 이 답과 견줍니다.')] + ([form_cards(off)] if off else []) + ([evidence_cards(cited)] if cited else []) + [
             question_cards(rows, lambda r: r['물을_값'] + (' → ' + r['항목'] if r.get('항목') else '')),
             R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows))]
 
@@ -322,8 +415,24 @@ def classes(previous):
     return out
 
 
+def properties_before():
+    """속성 표를 적기 전 — 클래스마다 쓸 수 있는 칸과 값이 빈 원자료 줄(제공 코드가 센다). 필수로 두면 걸리는 줄 수를 AI에게 다시 세게 하지 않는다."""
+    cls, cols = guarded(M.columns_view)
+    lines = lambda c: ', '.join(f"{c['파일']}:{n}" for n in c['빈칸'][:8]) + (f" … 외 {len(c['빈칸']) - 8}줄" if len(c['빈칸']) > 8 else '')
+    some = [c for c in cols if c['빈칸']]
+    return [R.verdict('info', '속성 표를 아직 적지 않았습니다 — 클래스마다 쓸 수 있는 칸과 값이 빈 줄을 먼저 봅니다',
+                      f'값이 빈 줄이 있는 칸 {len(some)}개. 어느 칸을 속성으로 담고 필수로 둘지는 내가 정합니다.'),
+            R.table('클래스마다 쓸 수 있는 칸 — 값이 빈 원자료 줄', ['클래스', '원자료 칸', '원자료 줄', '빈 줄', '빈 줄의 자리', '수로 읽히는 값', '날짜로 읽히는 값', '첫 값'],
+                    [(c['클래스'], c['칸'], '제공 코드가 채움' if c['행'] is None else c['행'], '' if c['행'] is None else len(c['빈칸']), lines(c),
+                      '' if c['행'] is None else c['수'], '' if c['행'] is None else c['날짜'], c['예']) for c in cols],
+                    note='원자료 줄을 그대로 센 수입니다. 어떤 칸을 필수로 두면 그 칸의 「빈 줄」이 넣기 전 검증에서 걸리고, 자료형을 수나 날짜로 두면 그렇게 읽히지 않는 값이 걸립니다. '
+                         '빈 줄이 왜 비었는지는 그 줄을 열어 보거나 Codex에게 원자료 줄로 물어봅니다. 속성 표를 적은 뒤 이 명령을 다시 실행하면 내가 정한 속성을 원자료에 대어 본 화면이 나옵니다.')]
+
+
 def properties(previous):
     cls, props, rows = guarded(M.properties_view)
+    if not rows:
+        return properties_before()
     lines = lambda r, ns: ', '.join(f"{r['파일']}:{n}" for n in ns[:6]) + (f' … 외 {len(ns) - 6}행' if len(ns) > 6 else '')
     bad = [r for r in rows if (r['필수'] and r['빈칸']) or r['안맞음']]
     cards = []
@@ -348,7 +457,24 @@ def properties(previous):
     return out
 
 
+def relations_before():
+    """관계 표를 적기 전 — 클래스 짝마다 원자료 줄이 지금 이어진 개수와, 반대쪽이 하나도 없는 대상(제공 코드가 센다)."""
+    facts = guarded(M.links_view)
+    listed = lambda xs, unit: f'{len(xs)}{unit}' + (' — ' + ', '.join(xs[:6]) + (f' … 외 {len(xs) - 6}{unit}' if len(xs) > 6 else '') if xs else '')
+    top = lambda pair: f'가장 많은 곳 {pair[0]}개' + (f' — {pair[1]}' if pair[1] and pair[0] else '')
+    items = [dict(title=f"{f['앞']} · {f['뒤']}", state='warn' if f['앞_없음'] or f['뒤_없음'] else '', lines=[
+        (f"{f['앞']} 하나에 이어진 {f['뒤']}", top(f['앞_최대'])), (f"{f['뒤']} 하나에 이어진 {f['앞']}", top(f['뒤_최대'])),
+        (f"{M.josa(f['뒤'], '이/가')} 하나도 없는 {f['앞']}", listed(f['앞_없음'], '곳')), (f"{M.josa(f['앞'], '이/가')} 하나도 없는 {f['뒤']}", listed(f['뒤_없음'], '곳'))]) for f in facts]
+    return [R.verdict('info', '관계 표를 아직 적지 않았습니다 — 원자료 줄이 지금 어떻게 이어져 있는지 먼저 봅니다',
+                      '카디널리티는 이어질 수 있는 개수라 지금 자료보다 넓게 정해도 됩니다. 화살표와 카디널리티, 적어도 하나는 내가 정합니다.'),
+            R.cards('클래스 짝마다 지금 자료의 이어짐', items, wide=True,
+                    note='원자료 줄을 그대로 센 수입니다(모델에 담지 않기로 app/features/row_rules.csv에 적은 줄은 뺌). 어느 쪽을 「적어도 하나」로 두면 그쪽의 「하나도 없는」 대상이 넣기 전 검증에서 걸립니다. '
+                         '센서와 물리량 사이는 내 규칙(app/features/quantity_rules.py)으로 센서를 묶은 뒤에 정해집니다. 관계 표를 적은 뒤 이 명령을 다시 실행하면 내가 정한 관계를 문장으로 읽은 화면이 나옵니다.')]
+
+
 def relations(previous):
+    if not guarded(M.need, M.OUT / 'relations.csv', ['관계_이름']):
+        return relations_before()
     cls, links, pairs = guarded(M.relations_view)
     many = lambda side: '많아야 하나' if side == '1' else '여럿'
     least_of = lambda start, end, least: ' · '.join(f'{start}마다 {end} 적어도 하나' if s == '시작' else f'{end}마다 {start} 적어도 하나' for s in least) or '없음(이 관계가 하나도 없는 인스턴스도 됨)'

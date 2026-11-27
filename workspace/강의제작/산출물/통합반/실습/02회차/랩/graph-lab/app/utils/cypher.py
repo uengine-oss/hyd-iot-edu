@@ -470,9 +470,10 @@ EXPORT = ['MATCH (n) RETURN labels(n) AS labels, properties(n) AS props', 'MATCH
 
 
 def exported(res):
-    """EXPORT 두 쿼리의 결과 → graph.json과 같은 꼴(차례를 고정한다)."""
-    nodes = sorted(({'labels': sorted(r['row'][0]), 'props': r['row'][1]} for r in res[0]['data']), key=lambda n: (n['labels'], str(n['props'].get('id'))))
-    rels = sorted(({'type': r['row'][0], 'a': r['row'][1], 'b': r['row'][2], 'props': r['row'][3]} for r in res[1]['data']),
+    """EXPORT 두 쿼리의 결과 → graph.json과 같은 꼴(차례를 고정한다 — 노드 · 관계의 차례와 속성이 적히는 차례까지. DB가 돌려주는 속성 차례는 랩 DB마다 달라, 그대로 쓰면 같은 그래프도 바이트가 달라진다)."""
+    ordered = lambda props: {k: props[k] for k in sorted(props, key=lambda k: (k != 'id', k))}      # id 먼저, 나머지는 이름 차례
+    nodes = sorted(({'labels': sorted(r['row'][0]), 'props': ordered(r['row'][1])} for r in res[0]['data']), key=lambda n: (n['labels'], str(n['props'].get('id'))))
+    rels = sorted(({'type': r['row'][0], 'a': r['row'][1], 'b': r['row'][2], 'props': ordered(r['row'][3])} for r in res[1]['data']),
                   key=lambda r: (r['type'], str(r['a']), str(r['b']), json.dumps(r['props'], ensure_ascii=False, sort_keys=True)))
     return {'nodes': nodes, 'rels': rels}
 
@@ -729,3 +730,20 @@ def date_gap():
     res = cypher([(f'MATCH (n:`{label}`) WHERE n.`{k}` IS NOT NULL AND NOT n.`{k}` IS :: DATE RETURN n.id AS id, valueType(n.`{k}`) AS kind ORDER BY id', {}) for label, k in asks])
     names = {'STRING': '글자', 'INTEGER': '수', 'FLOAT': '수', 'LOCAL DATETIME': '날짜와 시각', 'ZONED DATETIME': '날짜와 시각'}
     return [(label, k, r['row'][0], names.get(r['row'][1].replace(' NOT NULL', ''), r['row'][1])) for (label, k), one in zip(asks, res) for r in one['data']]
+
+
+def text_against_date(text):
+    """쿼리 글에서 스키마의 날짜 속성을 따옴표로 적은 글자와 바로 견준 곳 — [(속성, 견준 글)]. 랩 DB에 그 속성이 날짜로 들어 있을 때만 돌려준다.
+    날짜와 글자는 자료형이 달라 견준 조건이 참이 되지 않으므로, 그 조건에 걸린 줄은 오류 없이 모두 걸러진다. date('…')로 바꿔 견준 곳 · 글자로 바꿔(toString) 견준 곳은 해당 없다."""
+    schema = schema_in_use()
+    dates = sorted({k for spec in schema.get('classes', {}).values() for k, v in {**spec.get('required', {}), **spec.get('optional', {})}.items() if v == 'date'})
+    as_text = {k for _, k, _, _ in date_gap()} if dates else set()
+    literal, op = r"""('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""", r'(?:<=|>=|<>|=|<|>)'
+    out = []
+    for k in dates:
+        if k in as_text:
+            continue
+        prop = r'\.\s*`?' + re.escape(k) + r'`?'
+        out += [(k, m.group(1)) for m in re.finditer(prop + r'\s*' + op + r'[\s(]*' + literal, text)]
+        out += [(k, m.group(1)) for m in re.finditer(literal + r'[\s)]*' + op + r'\s*\w+' + prop + r'(?![\w`])', text)]
+    return out

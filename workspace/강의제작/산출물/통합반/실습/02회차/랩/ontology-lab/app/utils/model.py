@@ -506,6 +506,71 @@ def relations_view():
     return classes, read_relations(classes), relation_examples()
 
 
+def columns_view():
+    """속성 표를 적기 전에도 세는 것(일반 로직) — 클래스 표에 적은 클래스마다, 쓸 수 있는 칸에 값이 빈 원자료 줄과 수 · 날짜로 읽히는 값의 수, 첫 값.
+    어느 칸을 속성으로 담고 필수로 둘지는 정하지 않는다. 돌려주는 것: (클래스, [칸마다 dict(클래스, 칸, 파일, 행, 빈칸=[줄], 수, 날짜, 예)])."""
+    classes = read_classes()
+    src = raw()
+    out = []
+    for kind in classes:
+        data = instances(kind, src) if kind in TABLE else []
+        for col in columns(kind):
+            if col in DERIVED.get(kind, {}):
+                out.append(dict(클래스=kind, 칸=col, 파일='', 행=None, 빈칸=[], 수=0, 날짜=0, 예=DERIVED[kind][col]))
+                continue
+            out.append(dict(클래스=kind, 칸=col, 파일=TABLE[kind], 행=len(data), 빈칸=[line for line, r in data if not r[col]],
+                            수=sum(1 for _, r in data if r[col] and typed(r[col], '수')[1]),
+                            날짜=sum(1 for _, r in data if r[col] and typed(r[col], '날짜')[1]), 예=next((r[col] for _, r in data if r[col]), '')))
+    return classes, out
+
+
+def links_view():
+    """관계 표를 적기 전에도 세는 것(일반 로직) — 원자료 줄이 클래스 짝마다 지금 어떻게 이어져 있는지. 모델에 담지 않기로 적은 줄(app/features/row_rules.csv)은 세지 않고,
+    한 설비에서 맞춘 이름이 같은 구성 요소 줄은 한 자리로 센다. 화살표 · 카디널리티 · 적어도 하나를 어떻게 둘지는 정하지 않는다.
+    돌려주는 것: [dict(앞, 뒤, 앞_최대=(수, 예), 뒤_최대=(수, 예), 앞_없음=[뒤가 하나도 없는 앞 대상], 뒤_없음=[앞이 하나도 없는 뒤 대상])]."""
+    src = raw()
+    rows_done, _ = handling()
+    live = lambda name: [(line, r) for line, r in src[name] if not rows_done.get((name, line))]
+    model_of = {r['설비코드']: r['모델'] for _, r in live('equipment.csv')}
+    named, _ = name_map(src, rows_done, model_of)
+    seat = lambda code, name: (code, name_of(named, name, model_of.get(code, '')))
+    most = lambda counts: max(((len(v), k) for k, v in counts.items()), default=(0, ''))
+    said = lambda s: f'{s[0]} {s[1]}'
+    seats = {}
+    for line, r in live('components.csv'):
+        seats.setdefault(seat(r['설비코드'], r['구성요소']), []).append((line, r))
+    per_asset = {code: set() for code in model_of}
+    for s in seats:
+        per_asset.setdefault(s[0], set()).add(s)
+    out = [dict(앞='설비', 뒤='구성 요소', 앞_최대=most({k: v for k, v in per_asset.items() if k in model_of}), 뒤_최대=(1 if seats else 0, ''),
+                앞_없음=sorted(code for code, v in per_asset.items() if code in model_of and not v),
+                뒤_없음=sorted(f'{said(s)}(components.csv:{rows[0][0]})' for s, rows in seats.items() if s[0] not in model_of))]
+    per_seat, stray = {s: [] for s in seats}, []
+    for line, r in live('sensors.csv'):
+        s = seat(r['설비코드'], r['붙은곳'])
+        if s in seats:
+            per_seat[s].append(r['태그'])
+        else:
+            stray.append(f"{r['설비코드']}:{r['태그']}(sensors.csv:{line} 붙은곳 「{r['붙은곳']}」)")
+    n, s = most(per_seat)
+    out.append(dict(앞='구성 요소', 뒤='센서', 앞_최대=(n, said(s) if s else ''), 뒤_최대=(1 if any(per_seat.values()) else 0, ''),
+                    앞_없음=[f'{said(s)}(components.csv:{seats[s][0][0]})' for s, v in per_seat.items() if not v], 뒤_없음=stray))
+    parts = {r['품번']: line for line, r in src['spare_parts.csv']}
+    cross = [r for _, r in src['part_aliases.csv']]
+    of_seat, of_part = {s: set() for s in seats}, {p: set() for p in parts}
+    for s, rows in seats.items():
+        for _, r in rows:
+            pid = resolve_cell(r['교체부품'], parts, cross)[0]
+            if pid:
+                of_seat[s].add(pid)
+                of_part[pid].add(s)
+    n, s = most(of_seat)
+    out.append(dict(앞='구성 요소', 뒤='부품', 앞_최대=(n, said(s) if s else ''), 뒤_최대=most(of_part),
+                    앞_없음=[f'{said(s)}(components.csv:{seats[s][0][0]})' for s, v in of_seat.items() if not v],
+                    뒤_없음=[f'{p}(spare_parts.csv:{parts[p]})' for p, v in of_part.items() if not v]))
+    return out
+
+
 def check_cardinality(links, rels, where_of):
     """relations.csv에 적은 카디널리티를 지금까지 만든 연결과 견준다. 「1」 쪽에 둘 이상 이어진 대상이 있으면 그 relations.csv 줄과 원자료 줄을 짚고 멈춘다.
     카디널리티는 이어질 수 있는 개수를 정해 둔 것이라, 지금 자료의 연결이 그보다 적은 것은 어긋남이 아니다.

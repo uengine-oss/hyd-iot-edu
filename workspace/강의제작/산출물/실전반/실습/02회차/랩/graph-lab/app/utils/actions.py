@@ -24,8 +24,10 @@ def numbers(text):
 
 
 def same(expected, actual):
-    """대조 화면은 적은 글을 그대로 보이고, 같음 여부는 조각의 순서와 숫자 표기(35 = 35.0)를 떼고 견준다 — 그 사실은 대조 표 아래 SAME_NOTE로 밝힌다."""
-    return norm(numbers(expected)) == norm(numbers(actual))
+    """대조 화면은 적은 글을 그대로 보이고, 같음 여부는 조각의 순서와 숫자 표기(35 = 35.0)를 떼고 견준다 — 그 사실은 대조 표 아래 SAME_NOTE로 밝힌다.
+    「 / 」로 이은 묶음(한 공급사의 견적 여럿처럼 값 한 벌이 여럿인 답)은 묶음끼리 견준다 — 묶음의 차례는 떼지만, 값이 묶음을 넘어 섞이면 다르다."""
+    bundles = lambda text: sorted(norm(numbers(b)) for b in str(text or '').split(' / '))
+    return bundles(expected) == bundles(actual)
 
 
 SAME_NOTE = '값은 「 · 」로 나눈 조각의 순서와 숫자 표기(35와 35.0, 0.30과 0.3)를 떼고 견줍니다. 줄 순서도 보지 않습니다.'
@@ -516,6 +518,12 @@ def ask_question(number):
         blocks.insert(0, R.cards('기대 답의 볼_열이 쿼리 결과에 없습니다', [dict(title=where, badge=f'없는 열: {lost}', state='bad', icon='warn',
                                  lines=[('기대 답이 보려는 열', wanted), ('쿼리가 돌려준 열', had), ('쿼리', f'app/features/query.cypher:{line}')]) for where, wanted, lost, had in absent],
                                  note='쿼리가 그 열을 돌려주게 고치거나(RETURN … AS 열 이름), 기대 답의 볼_열을 쿼리가 돌려주는 열 이름으로 맞춥니다. 다른 줄은 아래에서 그대로 견줬습니다.'))
+    texted = db(C.text_against_date, text)
+    if texted:      # 오류 없이 답만 비는 쿼리 — 까닭을 화면이 말한다
+        blocks.insert(0, R.cards('날짜 속성을 글자와 견준 조건', [dict(title=f'{k} ↔ {lit}', badge='자료형이 다름', state='bad', icon='warn',
+                                 lines=[('쿼리', f'app/features/query.cypher:{line}'), ('견준 것', f'날짜 속성 {k}와 글자 {lit}')]) for k, lit in texted],
+                                 note='랩 DB에서 이 속성은 날짜이고, 따옴표로 적은 값은 글자입니다. 날짜와 글자는 자료형이 달라 견준 조건이 참이 되지 않으므로, 이 조건에 걸린 줄은 오류 없이 모두 걸러집니다. '
+                                      "글자를 date('2026-10-15')처럼 날짜로 바꿔 견줍니다."))
     if exp:
         blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 쿼리 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same_answer,
                                    note=SAME_NOTE + ' 볼_열을 「열+열」로 적은 줄은 결과 줄마다 두 열의 값을 「=」로 짝지어 견줍니다(값이 같아도 짝이 다르면 다름). ' + (f'볼_열에서 빈 글자 {blanks}칸을 값 없음(null)과 같은 「없음」으로 견줬습니다. 쿼리가 값이 없는 칸을 빈 글자로 바꾸고 있습니다 — 값 없음은 null로 돌려주는 편이 다른 쿼리와 섞이지 않습니다.' if blanks else '')))
