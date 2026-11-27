@@ -2,7 +2,8 @@
 
 근거: workspace/강의제작/제작도구/실습시작/근거/2026-10-28_현업데이터_현실성_조사.md §2·§4.1·§4.2.
 - 태그·정상값·표본 주기·수집 방식: ot/plant-sim/plantsim/plant.py tags(), thermal.py UnitState, hydcommon/daq_contract.py
-- 품번·공급·재고 기준값: it/enterprise-sim/entsim/data.py (_PART_QUOTES·_SUPPLIERS·SPARE_BASE), PR-07
+- 품번·공급·재고 기준값: 업무 DB(it/supabase/seed.sql · migrations/) — 부품 ent.parts, 공급사 ent.suppliers, 예비품 재고 ent.spare_stock,
+  부품별 견적 ent.part_quotes(20261009000045_c2_execution.sql), PR-07
 - 실라버스 고정 대상: P-PMP-SEAL → HYD-01·02·03, 유효 공급 조건 3행(A정밀 35/0.12/2, B-OEM 55/0.02/5, C트레이딩 비승인 20/0.30/1)
 
 규모는 둘이다(코딩랩 K-3 · K-10). 「공장 규모」는 이 파일의 기본값이고 실전반 2회차가 쓴다. 「실습 랩 규모」(아래 LAB — 공장 규모에서 고른 2라인 설비 5대)는 통합반 2회차가 쓴다.
@@ -648,7 +649,12 @@ def changes():
         renamed, retired = a[LAB_RENAMED[0]][:], a[LAB_RETIRED[0]][:]
         renamed[1], renamed[9] = LAB_RENAMED[1], f'설비명 표준화({CHANGE_DATE})'
         retired[8], retired[9] = LAB_RETIRED[1], f'{CHANGE_DATE} 불용 결정'
-        return {'설비_대장_변경.csv': [['수정', *renamed], ['수정', *retired]]}
+        sensor = {(r[0], r[1]): list(r) for r in lab_sensor_rows()}
+        limit, removed = sensor[LAB_SENSOR_LIMIT[:2]][:], sensor[LAB_SENSOR_REMOVED[:2]][:]
+        limit[7], limit[9] = LAB_SENSOR_LIMIT[2:]
+        removed[9] = LAB_SENSOR_REMOVED[2]
+        return {'설비_대장_변경.csv': [['수정', *renamed], ['수정', *retired]], '센서_변경.csv': [['수정', *limit], ['삭제', *removed]],
+                '품번_교차표_변경.csv': [['추가', *LAB_ALIAS_ADDED]]}
     hyd02 = a['HYD-02'][:]; hyd02[1] = 'HYD-02 2라인 2호 파워팩'; hyd02[9] = '설비명 표준화(2026-10-20)'
     hyd07 = a['HYD-07'][:]; hyd07[8] = '불용(매각 예정)'; hyd07[9] = '2026-10-20 불용 결정'
     out = {'설비_대장_변경.csv': [['수정', *hyd02], ['수정', *hyd07]],
@@ -666,7 +672,8 @@ def write_changes(dest):
         (dest/name).write_text(_csv(CHANGE_COLS[name], rows), encoding='utf-8', newline='')
     (dest/'README.md').write_text(f'''# {CHANGE_DATE} 수정본
 
-기준일({REF_DATE}) 뒤 담당자들이 고친 줄만 모은 것입니다. 각 파일은 원본과 같은 열에 맨 앞 「변경」 칸(추가·수정·삭제)이 붙어 있습니다. 「수정」 줄은 고친 뒤의 전체 값입니다.
+기준일({REF_DATE}) 뒤 담당자들이 자기 목록에서 바꾼 줄만 모아 보낸 것입니다. 각 파일은 원본과 같은 열에 맨 앞 「변경」 칸이 붙어 있습니다.
+「추가」는 그 담당의 목록에 새로 생긴 줄, 「수정」은 고친 뒤의 전체 값, 「삭제」는 그 담당의 목록에서 빠진 줄입니다.
 원본 자료(`../자료/`)는 그대로 두고, 이 수정본은 이미 적재한 그래프에 반영하는 데 씁니다.
 ''', encoding='utf-8', newline='\n')
 
@@ -756,6 +763,10 @@ LAB_PARTS = ('P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-PMP-SEAL-22', 'P-FAN-BRG', 'P-CLR
 LAB_SENSOR_QUIRKS = {('HYD-03', 'PS1'): ['MPa', '18.2', '13']}                                                      # 같은 값을 다른 단위로 적은 줄(182 bar · 130 bar)
 LAB_RENAMED = ('HYD-02', 'HYD-02 2라인 2호 파워팩')
 LAB_RETIRED = ('HYD-07', '불용(매각 예정)')
+# 통합반 그래프 랩 수정본에 더한 줄(2026-11-27 구성안): 값이 바뀐 센서 한 줄 · 담당 목록에서 빠진 센서 한 줄 · 새로 등록된 다른 표기 한 줄. 원자료(자료/)의 값은 그대로다.
+LAB_SENSOR_LIMIT = ('HYD-04', 'PS1', '145', '인터록 설정 변경(2026-10-18)')                       # 한계 140 → 145
+LAB_SENSOR_REMOVED = ('HYD-01', 'VS1', '2026-10-19 센서 고장으로 떼어 냄(교체품 입고 대기)')
+LAB_ALIAS_ADDED = ('P-FAN-BRG', 'FB-6205-2RS', '제조사 품번', '베어링 규격', '2026-10-17 구매팀 등록')
 LAB = dict(
     ASSETS=[(*a[:9], '') for a in ASSETS if a[0] in LAB_CODES], LEGACY_ASSET=None,
     MODEL_COMPONENTS={m: [c for c in MODEL_COMPONENTS[m] if c[0] in LAB_KEYS] for m in ('HPP-45A', 'HPP-45B', 'HPP-22M')},
@@ -790,7 +801,8 @@ LAB = dict(
     QUANTITY_KINDS={q: QUANTITY_KINDS[q] for q in LAB_QUANTITY_IDS},
     SENSOR_COLS=['설비코드', '태그', '센서명', '붙은곳', '재는것', '단위', '정상값', '한계', '한계구분', '비고'],
     QUOTES=[], AVL=[],
-    CHANGE_COLS={'설비_대장_변경.csv': ['변경', *ASSET_COLS]},
+    CHANGE_COLS={'설비_대장_변경.csv': ['변경', *ASSET_COLS], '센서_변경.csv': ['변경', '설비코드', '태그', '센서명', '붙은곳', '재는것', '단위', '정상값', '한계', '한계구분', '비고'],
+                 '품번_교차표_변경.csv': ['변경', *CROSS_COLS]},
 )
 FACTORY = {k: globals()[k] for k in LAB}
 SCALE = FACTORY_SCALE

@@ -12,12 +12,12 @@ NAMES = {
     '품번_교차표.csv': 'part_aliases.csv', '공급_조건.csv': 'supply_terms.csv',
     '승인공급사_목록.csv': 'approved_suppliers.csv', '입고_이력.csv': 'receipts.csv',
     '현장_메모.md': 'field_notes.md', '관계그림.json': 'relationships.json',
-    '설계.csv': 'design.csv', '관계.csv': 'relations.csv', '이름.csv': 'name_overrides.csv',
+    '설계.csv': 'design.csv', '클래스.csv': 'classes.csv', '속성.csv': 'properties.csv', '관계.csv': 'relations.csv', '이름.csv': 'name_overrides.csv',
     '물리량.csv': 'quantity_overrides.csv', '단위.csv': 'unit_overrides.csv',
     '행_처리.csv': 'row_rules.csv', '기대_답.csv': 'expected.csv',
     '정한_것.csv': 'decisions.csv', '요구사항.md': 'requirements.md', '검증_기록.md': 'review.md',
     '자료_검토.md': 'provenance.md', '센서_변경.csv': 'sensor_changes.csv',
-    '설비_대장_변경.csv': 'equipment_changes.csv', '구성요소_변경.csv': 'component_changes.csv',
+    '설비_대장_변경.csv': 'equipment_changes.csv', '구성요소_변경.csv': 'component_changes.csv', '품번_교차표_변경.csv': 'part_alias_changes.csv',
 }
 
 

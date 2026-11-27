@@ -7,8 +7,8 @@ for _stream in (sys.stdout, sys.stderr):
 import hashlib as _h
 _PROVIDED = {
  "app/ui/render.py": "f9170a056453a35cc5583eb052eefba6450e29eb6e6fcaf264a896b66cf7be58",
- "app/utils/actions.py": "c00dffe5cd83780c0c65999543f3637043a89afd7fd4769ff2841aa64eef4eee",
- "app/utils/model.py": "ee65f0ccbd4ae14eef4b2d3e3e8161c45ab3a0472034779c489daa191fc37d9f",
+ "app/utils/actions.py": "29faf578b01fd1f2129f158a92e2365da1bd71c8437bd4e06732ded5a814764e",
+ "app/utils/model.py": "70ed078edc3e128700b9f87cd37d471894724501cd3d257d6355d5d999317af8",
  "app/utils/results.py": "25458cd98ea82bbcc688cbba9bfd2e746bcd62d8121da1f33da764fbb06ece6a",
  "run.py": "719e59ea92ccad25b31355ef67fd096c0ff47751ae8cbb0944420d185f38d10f"
 }
@@ -67,7 +67,7 @@ def check_value(where,key,value,spec):
         if value not in spec:errors.append(f'{where} {key}={value!r}: 허용 값 {spec} 밖')
         return
     k=kind_of(value)
-    ok={'string':k=='string','number':k in('integer','number'),'integer':k=='integer','boolean':k=='boolean','list':k=='list'}.get(spec)
+    ok={'string':k=='string','number':k in('integer','number'),'integer':k=='integer','boolean':k=='boolean','list':k=='list','date':k=='string' and len(value)==10 and value[4]==value[7]=='-' and value.replace('-','').isdigit()}.get(spec)
     if ok is None:warnings.append(f'스키마의 자료형 이름을 모름: {spec} ({where} {key})');return
     if not ok:
         hint=''
@@ -141,6 +141,12 @@ try:
             if side not in ONE:continue
             over=sorted((x,len(v)) for (tt,x),v in count.items() if tt==t and len(v)>1)
             if over:errors.append(f'{t} 카디널리티 {card} 어긋남: {word} 많아야 하나인데 둘 이상인 대상 {len(over)}개 — '+', '.join(f'{x} {n}개' for x,n in over[:5])+(' …' if len(over)>5 else ''))
+    for t,spec in relations.items():
+        if not (isinstance(spec,dict) and spec.get('at_least_one') is True):continue
+        starts=spec.get('from');starts=starts if isinstance(starts,list) else [starts]
+        has={r.get('a') for r in rels if r.get('type')==t}
+        lone=sorted(i for i,labs in labels_by_id.items() if any(x in starts for x in labs) and i not in has)
+        if lone:errors.append(f'{t} 끝이 적어도 하나 어긋남: 이 관계가 하나도 없는 시작 쪽 인스턴스 {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:

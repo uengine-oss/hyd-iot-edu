@@ -1194,7 +1194,7 @@ WHY_G_PLAN = ('스키마의 종류(이론의 클래스) 이름은 그래프의 �
               '다시 넣을 때 값을 덮어쓰면 수정본으로 고친 값이 되돌아가고, 처음 만들 때만 넣으면 그대로 남습니다.')
 
 
-GRAPH_POINTS = {'통합반': ['불용 결정 설비'], '실전반': ['쓰는 사람에 따라 갈리는 답']}   # 그래프 랩 정한_것.csv의 지점 줄(graph_chosen의 지점)
+GRAPH_POINTS = {'통합반': ['불용 결정 설비', '목록에서 빠진 센서'], '실전반': ['쓰는 사람에 따라 갈리는 답']}   # 그래프 랩 정한_것.csv의 지점 줄(graph_chosen의 지점)
 
 
 def default_graph_branch(course):
@@ -1217,11 +1217,17 @@ def graph_chosen(course):
     kept = sorted(a for a, t in D.TRUTH['assets'].items() if a != retired and GRAPH_SHARED_PART in t['components'].values())
     if retired not in {a for a, t in D.TRUTH['assets'].items() if GRAPH_SHARED_PART in t['components'].values()}:
         raise ValueError(f'{GRAPH_SHARED_PART}를 불용 결정 설비 {retired}가 쓰지 않아 두 갈래의 바뀌는 답이 같습니다 — GRAPH_SHARED_PART를 다시 고릅니다.')
-    # 근거 칸 = 내 이유와, 그 결정을 좌우해 열어 본 원문 줄(lab_frame.CHOSEN_TEMPLATE)
-    return {'남김': ['불용 결정 설비', '상태로 남김', f'매각 전까지는 공장에 있는 설비라 기록을 지우지 않으려고 — {where}',
-                   f'{GRAPH_SHARED_PART} 사용 설비에 {retired}이 「{status}」 상태로 남음 — 보전팀은 매각 전까지 그 설비에 어떤 예비품이 들어갔는지 그래프에서 봄'],
-            '삭제': ['불용 결정 설비', '하위 대상과 지움', f'보전팀이 묻는 것은 지금 가동하는 설비의 예비품이라 쓰지 않을 설비는 답에서 빼려고 — {where}',
-                   f'{GRAPH_SHARED_PART} 사용 설비가 {" · ".join(kept)} — 보전팀은 남은 설비 몫만 예비품을 준비하고, {retired}의 지난 기록은 CMMS에서 찾음']}
+    code, tag, note = D.LAB_SENSOR_REMOVED
+    gone = f'입력/자료_변경분/{D.CHANGE_DATE}_수정본/센서_변경.csv:{next(i for i, r in enumerate(D.changes()["센서_변경.csv"], 2) if r[0] == "삭제")}'
+    # 근거 칸 = 내 이유와, 그 결정을 좌우해 열어 본 원문 줄(lab_frame.CHOSEN_TEMPLATE). 갈래마다 결정 지점 둘의 줄(GRAPH_POINTS['통합반']의 차례)
+    return {'남김': [['불용 결정 설비', '상태로 남김', f'매각 전까지는 공장에 있는 설비라 기록을 지우지 않으려고 — {where}',
+                    f'{GRAPH_SHARED_PART} 사용 설비에 {retired}이 「{status}」 상태로 남음 — 보전팀은 매각 전까지 그 설비에 어떤 예비품이 들어갔는지 그래프에서 봄'],
+                   ['목록에서 빠진 센서', '상태로 남김', f'교체품이 오면 같은 자리에 다시 붙을 센서라 자리와 이력을 남기려고 — {gone}',
+                    f'{code}의 센서 목록에 {tag}가 떼어 낸 상태로 남음 — 운전은 그 자리에 센서가 있었고 지금은 값이 오지 않는다는 것을 그래프에서 봄']],
+            '삭제': [['불용 결정 설비', '하위 대상과 지움', f'보전팀이 묻는 것은 지금 가동하는 설비의 예비품이라 쓰지 않을 설비는 답에서 빼려고 — {where}',
+                    f'{GRAPH_SHARED_PART} 사용 설비가 {" · ".join(kept)} — 보전팀은 남은 설비 몫만 예비품을 준비하고, {retired}의 지난 기록은 CMMS에서 찾음'],
+                   ['목록에서 빠진 센서', '지움', f'운전이 묻는 것은 지금 값이 오는 센서라 떼어 낸 센서는 답에서 빼려고 — {gone}',
+                    f'{code}의 센서 목록에서 {tag}가 빠짐 — 운전은 지금 붙어 있는 센서만 받고, 떼어 낸 이력은 정비 기록에서 찾음']]}
 
 
 GRAPH_SHARED_PART = 'P-CPL-ELM'           # 통합반 그래프 랩 기대 답과 결정 지점이 묻는 공용 부품(불용 결정 설비도 쓴다)

@@ -53,7 +53,7 @@ def expected_rows(columns, key):
             raise R.Stop(f'app/features/expected.csv:{line}: 빈 칸 ' + ', '.join(empty))
         k = tuple(r.get(c, '') for c in key)
         if k in seen:
-            raise R.Stop(f'app/features/expected.csv:{seen[k]} · {line}: 같은 ({" · ".join(key)}) 「{" · ".join(k)}」가 두 줄입니다 — 한 줄에서 견줄 열(볼_열)은 하나입니다. 같은 대상의 다른 열도 견주려면 그 대상을 다른 표기로 물은 줄을 더하고, 한 열의 여러 값은 한 칸에 「 · 」로 잇습니다.')
+            raise R.Stop(f'app/features/expected.csv:{seen[k]} · {line}: 같은 ({" · ".join(key)}) 「{" · ".join(k)}」가 두 줄입니다 — 같은 값을 같은 열로 두 번 견주는 줄입니다. 한 줄만 남기고, 한 열의 여러 값은 한 칸에 「 · 」로 잇습니다. 같은 결과의 다른 열을 견주려면 볼_열을 바꾼 줄을 씁니다.')
         seen[k] = line
     return rows
 
@@ -135,7 +135,7 @@ from app.utils import cypher as C
 
 TITLE = '설계한 온톨로지를 그래프 DB에 구현하고 검증하기'
 CHANGE = True
-DECIDE = {'update': ['불용 결정 설비']}   # 기능마다 쓰는 결정 지점(질문 번호 · update)
+DECIDE = {'update': ['불용 결정 설비', '목록에서 빠진 센서']}   # 기능마다 쓰는 결정 지점(질문 번호 · update)
 
 
 def db(fn, *a):
@@ -181,7 +181,7 @@ def start(previous):
 
 
 def expected(previous):
-    rows = expected_rows(['질문', '물을_값', '볼_열', '기대_답', '근거'], ['질문', '물을_값'])
+    rows = expected_rows(['질문', '물을_값', '볼_열', '기대_답', '근거'], ['질문', '물을_값', '볼_열'])
     return [R.verdict('info', f'기대 답 {len(rows)}줄을 정했습니다', '쿼리 결과를 이 답과 견줍니다.'),
             question_cards(rows, lambda r: r['물을_값'] + ' → ' + r['볼_열']),
             R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '볼_열', '기대_답', '근거'], rows))]
@@ -250,45 +250,136 @@ def changed(stats):
 
 
 def load_once():
-    out = db(C.load_file, HERE / 'app/features/load.cypher')
-    return [(R.rel(HERE / 'app/features/load.cypher') + f':{line}', target, n, changed(res.get('stats', {}))) for line, target, n, res in out]
+    """적재 실행 — 제공 적재 쿼리 파일이 있으면 그 쿼리와 내 쿼리를 함께(노드 먼저, 관계 나중), 없으면 내 쿼리 파일만. ([(파일:줄, 넣을 것, 넘긴 행, 바뀐 것)], 쿼리가 없는 종류 · 관계)."""
+    mine, given = HERE / 'app/features/load.cypher', HERE / 'app/utils/load_provided.cypher'
+    if given.is_file():
+        out, missing = db(C.load_files, mine, given)
+    else:
+        out, missing = [(mine, *x) for x in db(C.load_file, mine)], []
+    return [(R.rel(path) + f':{line}', target, n, changed(res.get('stats', {}))) for path, line, target, n, res in out], missing
+
+
+def seek_cards():
+    """내 적재 쿼리마다 DB가 노드를 어떻게 찾는지 — 실행 계획(EXPLAIN)의 찾기 연산자. 식별자의 유일 제약이 만든 색인으로 바로 찾는지, 노드를 훑는지."""
+    items = []
+    for line, target, s, rows, _ in db(C.load_plan, HERE / 'app/features/load.cypher'):
+        ops = db(C.seek_plan, s, rows)
+        scan = [o for o in ops if 'Scan' in o]
+        items.append(dict(title=target, badge='노드를 훑어서 찾음' if scan else '식별자로 바로 찾음', state='warn' if scan else 'ok', icon='warn' if scan else 'ok',
+                          lines=[('쿼리', R.rel(HERE / 'app/features/load.cypher') + f':{line}'), ('DB가 세운 찾는 법', ' · '.join(ops) or '찾기 없음')]))
+    return [R.cards('내 쿼리가 노드를 찾는 법 — DB의 실행 계획', items,
+                    note='이름에 Seek가 들어가면 유일 제약이 만든 색인으로 그 식별자를 바로 찾는 것이고, Scan이 들어가면 노드를 차례로 훑는 것입니다. '
+                         '레이블 없이 식별자만 적어 찾으면 모든 종류의 노드를 훑고(AllNodesScan), 다른 종류에 같은 식별자가 있으면 그 노드에도 이어집니다.')] if items else []
 
 
 def load(previous):
-    done = load_once()
+    done, missing = load_once()
     _, model = graph_counts()
     have = db(C.counts)
     rows = [(k, v, have.get(k, 0), '같음' if v == have.get(k, 0) else '다름') for k, v in sorted(model.items())]
     differ = [r[0] for r in rows if r[3] == '다름']
+    short = [r[0] for r in rows if r[0].startswith('관계 ') and r[2] < r[1]]
     inside = db(C.export_graph)
     roots = sorted(set(n['props'].get('id') for n in inside['nodes']) - set(r['b'] for r in inside['rels']), key=str)
-    return [R.verdict('bad', f'모델 파일과 랩 DB의 개수가 다른 항목 {len(differ)}개', ' · '.join(differ[:6])) if differ else
+    return [R.verdict('bad', f'모델 파일과 랩 DB의 개수가 다른 항목 {len(differ)}개', ' · '.join(differ[:6]) + (' — 쿼리가 없는 종류 · 관계: ' + ' · '.join(missing) if missing else '')) if differ else
             R.verdict('ok', f'모델 파일과 랩 DB의 개수가 같습니다 — 노드 {have.get("노드", 0)}개 · 관계 {have.get("관계", 0)}개', '모델의 종류는 레이블이, 인스턴스는 노드가 됐습니다.'),
             R.count_bars('모델 파일 ↔ 랩 DB 개수', ('모델 파일', '랩 DB'), model, have)] + (
+            [R.cards('모델보다 적게 들어간 관계', [dict(title=k, badge=f'모델 {v}개 → 랩 DB {h}개', state='bad', icon='warn') for k, v, h, _ in rows if k in short],
+                     note='관계는 양 끝 노드를 찾았을 때만 만들어집니다. 끝 노드를 찾지 못한 줄은 오류 없이 빠지므로, 넣은 뒤에는 개수를 모델과 견줍니다. 끝 노드를 넣는 쿼리가 있는지, 관계 쿼리가 끝 노드를 무엇으로 찾는지 봅니다.')] if short else []) + seek_cards() + (
             [R.around_figure(f'랩 DB에 들어간 그래프의 한 부분 — 「{roots[0]}」에서 두 걸음', inside, roots[0])] if roots else []) + [
             R.folded(R.table('적재 쿼리마다 넘긴 행과 바뀐 것', ['쿼리', '넣을 것', '넘긴 행', '바뀐 것'], done)),
             R.folded(R.table('모델 파일 ↔ 랩 DB 개수', ['항목', '모델 파일', '랩 DB', '견줌'], rows))] + browser()
 
 
 def again(previous):
-    before = db(C.counts)
+    first = db(C.export_graph)
     load_once()
-    after = db(C.counts)
-    grew = [k for k in sorted(set(before) | set(after)) if before.get(k, 0) != after.get(k, 0)]
-    return [R.verdict('bad', f'다시 넣으니 개수가 달라졌습니다 — {len(grew)}개 항목', ' · '.join(f'{k} {before.get(k, 0)} → {after.get(k, 0)}' for k in grew[:6])) if grew else
-            R.verdict('ok', f'다시 넣어도 그대로입니다 — 노드 {after.get("노드", 0)}개 · 관계 {after.get("관계", 0)}개', '같은 적재를 한 번 더 실행했지만 늘어난 것이 없습니다.'),
-            R.count_bars('같은 적재를 한 번 더 — 앞과 뒤의 개수', ('한 번 넣은 뒤', '한 번 더 넣은 뒤'), before, after),
-            ] + ([R.before_after('같은 적재를 한 번 더 — 개수 전후', before, after,
-                           note='늘어남이 있으면 MERGE의 패턴에 적은 것으로는 이미 있는 대상을 찾지 못해 다시 실행할 때 새로 만들고 있는 것입니다. 패턴에는 바뀌지 않는 식별자만 적습니다.')] if grew else [])
+    second = db(C.export_graph)
+    moved = C.diff_graphs(first, second)
+    n1, n2 = R.graph_counts(first), R.graph_counts(second)
+    back = {}
+    for i, k, was, now in moved['속성 바뀐 노드']:
+        back.setdefault(i, []).append((k, f'{shown(was)} → {shown(now)}'))
+    kinds = {n['props'].get('id'): n['labels'][0] for n in second['nodes']}
+    cards = [dict(title=str(i), kind=kinds.get(i, ''), badge='값이 바뀜', state='bad', lines=ks) for i, ks in back.items()]
+    cards += [dict(title=str(i), kind=kinds.get(i, ''), badge='다시 생김', state='bad') for i in moved['늘어난 노드'][:24]]
+    cards += [dict(title=str(x), badge='관계가 늘어남', state='bad') for x in moved['늘어난 관계'][:12]]
+    cards += [dict(title=f'{x[0]}', badge='관계의 값이 바뀜', state='bad', lines=[(x[1], f'{shown(x[2])} → {shown(x[3])}')]) for x in moved['속성 바뀐 관계'][:12]]
+    said = ' · '.join(f'{k} {len(v)}' for k, v in moved.items() if v)
+    return [R.verdict('bad', '다시 넣으니 달라졌습니다 — ' + said, '아래 카드에서 무엇이 달라졌는지 봅니다.') if cards else
+            R.verdict('ok', f'다시 넣어도 그대로입니다 — 노드 {n2.get("노드", 0)}개 · 관계 {n2.get("관계", 0)}개, 값도 그대로', '같은 적재를 한 번 더 실행했지만 늘어난 것도, 바뀐 값도 없습니다.'),
+            R.count_bars('같은 적재를 한 번 더 — 앞과 뒤의 개수', ('한 번 더 넣기 전', '한 번 더 넣은 뒤'), n1, n2)] + (
+            [R.cards('한 번 더 넣어서 달라진 것', cards, wide=True,
+                     note='노드나 관계가 늘었으면 MERGE의 패턴에 적은 것으로는 이미 있는 대상을 찾지 못해 새로 만든 것입니다 — 패턴에는 바뀌지 않는 식별자만 적습니다. '
+                          '값이 바뀌었으면 넣는 쿼리가 다시 실행될 때마다 값을 모델 파일의 값으로 덮어쓴 것입니다. '
+                          '지웠던 노드가 다시 생겼으면 모델 파일에는 그 줄이 그대로 있기 때문입니다.')] if cards else [])
 
 
 def load_and_again(previous):
     return load(previous) + again(previous)
 
 
+def probe(previous):
+    """넣기 전 실험 — 넣는 쿼리를 이렇게 쓰면 DB가 뭐라고 하는지, 실험용 식별자로 랩 DB에 실제로 해 보고 모두 되돌린다."""
+    path, graph = C.model_graph()
+    schema = json.loads(path.with_name('schema.json').read_text(encoding='utf-8-sig'))
+    label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
+    props = {n['props']['id']: n['props'] for n in graph['nodes']}
+    one = next((r for r in graph['rels'] if r['type'] in schema['relations'] and props[r['a']].get('name')), None)
+    if one is None:
+        raise R.Stop(f'{R.rel(path)}: 실험에 쓸 관계(이름 속성이 있는 시작 노드)가 모델에 없습니다.')
+    A, B, T = label[one['a']], label[one['b']], one['type']
+    name = str(props[one['a']]['name'])
+    v = dict(a=f'{one["a"]} (실험)', b=f'{one["b"]} (실험)', name=name, other=name + ' ', none='없는 식별자 (실험)')
+    before = db(C.counts)
+
+    def run(queries):
+        done, refused = db(C.tried, [(q, v) for q in queries])
+        return done, refused
+
+    def count(done, i):
+        return done[i]['rows'][0][0] if len(done) > i and done[i]['rows'] else None
+
+    cards = []
+
+    def card(title, queries, answer, quiet):
+        cards.append(dict(title=title, icon='open' if quiet else 'lock', state='warn' if quiet else 'ok', badge='오류 없이 받아 줌' if quiet else 'DB가 거절', text=answer,
+                          lines=[(f'해 본 쿼리 {i}', q) for i, q in enumerate(queries, 1)]))
+
+    q = [f'CREATE (n:{A} {{id: $a, name: $name}})', f'CREATE (n:{A} {{id: $a, name: $name}})', f'MATCH (n:{A} {{id: $a}}) RETURN count(n)']
+    done, refused = run(q)
+    card('CREATE로 같은 줄을 두 번 넣으면', q[:2], f'두 번째 CREATE에서 DB가 거절했습니다 — {refused}' if refused else f'두 번 다 받아 줬습니다. 같은 식별자의 노드가 {count(done, 2)}개입니다.', not refused)
+    q = [f'MERGE (n:{A} {{id: $a, name: $name}})', f'MERGE (n:{A} {{id: $a, name: $other}})', f'MATCH (n:{A} {{id: $a}}) RETURN count(n)']
+    done, refused = run(q)
+    card('MERGE 패턴에 이름까지 적고, 이름 끝에 빈칸 하나가 붙은 줄을 넣으면', q[:2],
+         f'패턴 전체(식별자와 이름)가 같은 노드를 찾지 못해 새로 만들려다 DB가 거절했습니다 — {refused}' if refused else f'패턴 전체가 같은 노드를 찾지 못해 새로 만들었습니다. 같은 식별자의 노드가 {count(done, 2)}개입니다.', not refused)
+    q = [f'MERGE (n:{A} {{id: $a}})', f'MERGE (n:{A} {{ID: $a}})', f'MATCH (n:{A}) WHERE n.id = $a OR n.ID = $a RETURN count(n)']
+    done, refused = run(q)
+    card('MERGE 패턴의 속성 이름을 id가 아니라 ID로 적으면', q[:2],
+         f'DB가 거절했습니다 — {refused}' if refused else f'오류 없이 받아 줬습니다. 같은 값을 식별자로 가진 노드가 {count(done, 2)}개입니다 — 속성 이름은 대소문자가 다르면 다른 속성이라, id에 건 유일 제약이 ID는 지키지 못합니다.', not refused)
+    q = [f'MERGE (a:{A} {{id: $a}})', f'MERGE (b:{B} {{id: $b}})', f'MATCH (a:{A} {{id: $a}}), (b:{B} {{id: $b}}) MERGE (b)-[:{T}]->(a)',
+         f'MATCH (a:{A} {{id: $a}})-[:{T}]->(b:{B}) RETURN count(*)', f'MATCH (a:{A} {{id: $a}})<-[:{T}]-(b:{B}) RETURN count(*)']
+    done, refused = run(q)
+    made = done[2]['stats'].get('relationships_created', 0) if len(done) > 2 else 0
+    card(f'관계 {T}의 화살표를 거꾸로({B} → {A}) 넣으면', q[2:],
+         f'DB가 거절했습니다 — {refused}' if refused else f'DB는 거꾸로 그은 관계도 받았습니다(만든 관계 {made}개). 모델의 방향({A} → {B})으로 물으면 {count(done, 3)}행, 거꾸로 물으면 {count(done, 4)}행입니다 — 방향이 맞는지는 DB가 봐 주지 않습니다.', not refused)
+    q = [f'MERGE (a:{A} {{id: $a}})', f'MATCH (a:{A} {{id: $a}}), (b:{B} {{id: $none}}) MERGE (a)-[:{T}]->(b)']
+    done, refused = run(q)
+    made = done[1]['stats'].get('relationships_created', 0) if len(done) > 1 else 0
+    card('끝 노드가 아직 없는 관계를 넣으면', q[1:], f'DB가 거절했습니다 — {refused}' if refused else f'오류 없이 끝났고 만든 관계는 {made}개입니다 — 끝 노드를 찾지 못한 줄은 아무 말 없이 빠집니다.', not refused)
+    after = db(C.counts)
+    if after != before:
+        raise RuntimeError(f'넣기 전 실험이 랩 DB의 개수를 바꿨습니다: {before} → {after}')
+    quiet = sum(1 for c in cards if c['state'] == 'warn')
+    return [R.verdict('info', f'다섯 가지를 랩 DB에 해 봤습니다 — DB가 거절 {len(cards) - quiet}가지 · 오류 없이 받아 줌 {quiet}가지', '내 예측과 견줍니다. 실험한 노드와 관계는 모두 되돌렸습니다.'),
+            R.cards('넣는 쿼리를 이렇게 쓰면 DB는 뭐라고 할까 — 실제 답', cards, wide=True,
+                    note=f'실험용 식별자 「{v["a"]}」 · 「{v["b"]}」로 실제 실행한 결과입니다. DB가 거절하는 것은 유일 제약이 지키는 것뿐이고, 오류 없이 받아 준 것은 넣는 사람이 쿼리와 개수로 확인해야 합니다. '
+                         f'랩 DB의 개수는 실험 앞뒤로 같습니다(노드 {before.get("노드", 0)}개).')] + browser()
+
+
 def ask_question(number):
     need_decided(DECIDE.get(str(number), []))
-    rows = [r for r in expected_rows(['질문', '물을_값', '볼_열', '기대_답'], ['질문', '물을_값']) if r['질문'] == str(number)]
+    rows = [r for r in expected_rows(['질문', '물을_값', '볼_열', '기대_답'], ['질문', '물을_값', '볼_열']) if r['질문'] == str(number)]
     path = HERE / 'app/features/query.cypher'
     try:
         qs = C.questions(path)
@@ -301,11 +392,11 @@ def ask_question(number):
     if len(names) > 1:
         raise R.Stop(f'app/features/query.cypher:{line}: 질문 {number}의 $ 자리가 {len(names)}개({", ".join(names)}) — 물을 값 하나를 $ 자리 하나로 받습니다.')
     blocks, exp, act, blanks = [], [], [], 0
-    for r in rows or [{'물을_값': '', '볼_열': ''}]:
-        params = {names[0]: r['물을_값']} if names else {}
+    for asked in list(dict.fromkeys(r['물을_값'] for r in rows)) or ['']:      # 같은 값은 한 번만 묻고, 그 결과의 열마다 기대 답과 견준다
+        params = {names[0]: asked} if names else {}
         (_, _, cols, data), = db(C.query, path, str(number), params)
-        if r['물을_값']:
-            head = f'쿼리가 따라간 길 — 물은 값 「{r["물을_값"]}」'
+        if asked:
+            head = f'쿼리가 따라간 길 — 물은 값 「{asked}」'
             try:
                 walk = C.walked(path, str(number), params)
             except C.LabDbOff as e:
@@ -314,16 +405,18 @@ def ask_question(number):
                 walk = None
                 blocks.append(R.cards(head, [dict(title='이 쿼리에서 길을 읽지 못했습니다', icon='warn', state='warn', text=str(e) + ' 그림만 없고, 아래 쿼리 결과와 기대 답 대조는 그대로입니다.')]))
             if walk is not None:
-                blocks.append(R.walk_figure(head, walk, r['물을_값'], note='쿼리의 MATCH 패턴이 랩 DB에서 실제로 지난 노드와 관계입니다. 굵은 테두리 = 물은 값.')
-                              or R.cards(head, [dict(title=r['물을_값'], icon='warn', state='warn', badge='맞는 노드 없음',
+                blocks.append(R.walk_figure(head, walk, asked, note='쿼리의 MATCH 패턴이 랩 DB에서 실제로 지난 노드와 관계입니다. 굵은 테두리 = 물은 값.')
+                              or R.cards(head, [dict(title=asked, icon='warn', state='warn', badge='맞는 노드 없음',
                                                      text='이 값으로 물으니 쿼리의 MATCH 패턴에 맞는 노드가 랩 DB에 하나도 없습니다. 그래서 따라간 길이 없습니다.')]))
-        blocks.append(R.folded(R.table(f'질문 {number} — 물은 값 「{r["물을_값"]}」 쿼리 결과', cols, [[shown(v) for v in row] for row in data])))
-        if r.get('볼_열'):
+        blocks.append(R.folded(R.table(f'질문 {number} — 물은 값 「{asked}」 쿼리 결과', cols, [[shown(v) for v in row] for row in data])))
+        for r in rows:
+            if r['물을_값'] != asked or not r.get('볼_열'):
+                continue
             if r['볼_열'] not in cols:
                 raise R.Stop(f'app/features/expected.csv: 볼_열 「{r["볼_열"]}」이 질문 {number} 결과의 열({", ".join(cols)})에 없습니다.')
             i = cols.index(r['볼_열'])
-            exp.append({'짝': r['물을_값'], '답': r['기대_답']})
-            act.append({'짝': r['물을_값'], '답': ' · '.join('없음' if row[i] in (None, '') else str(row[i]) for row in data) or '0줄'})
+            exp.append({'짝': asked + ' → ' + r['볼_열'], '답': r['기대_답']})
+            act.append({'짝': asked + ' → ' + r['볼_열'], '답': ' · '.join('없음' if row[i] in (None, '') else shown(row[i]) for row in data) or '0줄'})
             blanks += sum(1 for row in data if row[i] == '')
     if exp:
         blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 쿼리 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same,
@@ -345,10 +438,11 @@ def q3(previous):
 
 def change(previous):
     need_decided(DECIDE.get('update', []))
+    path = HERE / 'app/features/update.cypher'
     before = db(C.export_graph)
-    first = db(C.run_file, HERE / 'app/features/update.cypher')
+    first, missing = db(C.apply_changes, path)
     after = db(C.export_graph)
-    db(C.run_file, HERE / 'app/features/update.cypher')
+    db(C.apply_changes, path)
     again = db(C.export_graph)
     save_json('before_update.json', before)
     save_json('after_update.json', after)
@@ -358,13 +452,25 @@ def change(previous):
     same = all(not v for v in d2.values())
     old = {n['props'].get('id'): n for n in before['nodes']}
     new = {n['props'].get('id'): n for n in after['nodes']}
-    moved = {}
+    kind = lambda x: '없음' if x is None else '글자' if isinstance(x, str) else '참거짓' if isinstance(x, bool) else '수' if isinstance(x, (int, float)) else '목록' if isinstance(x, list) else type(x).__name__
+    moved, retyped = {}, []
     for i, k, was, now in d['속성 바뀐 노드']:
-        moved.setdefault(i, []).append((k, f'{shown(was)} → {shown(now)}'))
+        turned = was is not None and now is not None and kind(was) != kind(now)
+        moved.setdefault(i, []).append((k, f'{shown(was)} → {shown(now)}' + (f' (자료형이 {kind(was)}에서 {kind(now)}로 바뀜)' if turned else '')))
+        if turned:
+            retyped.append(f'{i}의 {k}')
     cards = [dict(title=i, kind=new[i]['labels'][0], badge='값 바뀜', state='warn', lines=ks) for i, ks in moved.items()]
     cards += [dict(title=str(i), kind=old[i]['labels'][0], badge='사라짐', state='bad', text=str(old[i]['props'].get('name') or old[i]['props'].get('tag') or '')) for i in d['사라진 노드'][:24]]
     cards += [dict(title=str(i), kind=new[i]['labels'][0], badge='새로 생김', state='ok', text=str(new[i]['props'].get('name') or new[i]['props'].get('tag') or '')) for i in d['늘어난 노드'][:24]]
     touched = set(moved) | set(d['사라진 노드']) | set(d['늘어난 노드'])
+    applied, per_line = [], {}
+    for line, name, how, done in first:      # 수정본 줄마다, 그 줄을 받은 쿼리들이 DB에서 바꾼 것
+        for n, row, stats in done:
+            applied.append((f'{name}:{n}', how, R.rel(path) + f':{line}', changed(stats)))
+            per_line.setdefault((name, n, how), []).append(stats)
+    idle = [(f'{name}:{n}', how) for (name, n, how), stats in per_line.items() if not any(stats)]
+    rows_all = db(C.change_rows)
+    lost = [(name, how, len(rows_all[(name, how)])) for name, how in missing]
 
     def side(title, data, gone, born):
         nodes = []
@@ -380,54 +486,21 @@ def change(previous):
 
     left, right = side('수정 전', before, set(d['사라진 노드']), set()), side('수정 뒤', after, set(), set(d['늘어난 노드']))
     counted = f'값이 바뀐 노드 {len(moved)}개 · 사라진 노드 {len(d["사라진 노드"])}개 · 늘어난 노드 {len(d["늘어난 노드"])}개'
-    return [R.verdict('ok' if same else 'warn', '수정본 반영 — ' + counted, '같은 수정을 한 번 더 실행해도 더 바뀐 것이 없습니다.' if same else '같은 수정을 한 번 더 실행하니 또 바뀌었습니다 — 아래 안내를 봅니다.'),
-            R.cards('바뀐 노드 — 전 → 뒤', cards, note='수정본의 줄과 하나씩 견줍니다.') if cards else R.note('노드의 값 · 개수에 바뀐 것이 없습니다.')] + (
+    good = same and not lost and not retyped
+    detail = ' '.join(x for x in ['같은 수정을 한 번 더 실행해도 더 바뀐 것이 없습니다.' if same else '같은 수정을 한 번 더 실행하니 또 바뀌었습니다 — 값을 덧붙이거나 새로 만드는 쿼리가 있는지 봅니다.',
+                                  f'아직 쿼리가 없는 수정본 줄 {sum(n for _, _, n in lost)}개.' if lost else '', f'자료형이 바뀐 값 {len(retyped)}개.' if retyped else ''] if x)
+    return [R.verdict('ok' if good else 'warn', '수정본 반영 — ' + counted, detail),
+            R.cards('바뀐 노드 — 전 → 뒤', cards, note='수정본의 줄과 하나씩 견줍니다. 수정본의 값은 모두 글자로 넘어오므로, 수였던 값이 글자로 바뀌었으면 쿼리에서 수로 바꿔 넣습니다.') if cards else R.note('노드의 값 · 개수에 바뀐 것이 없습니다.')] + (
+            [R.cards('아직 쿼리가 없는 수정본 줄', [dict(title=f'{name} · {how}', badge=f'{n}줄', state='bad', icon='warn') for name, how, n in lost],
+                     note='수정본의 이 줄들은 어느 쿼리도 받지 않아 그래프에 반영되지 않았습니다. 지우지 않고 남기기로 한 줄도, 남긴다는 것을 그래프에 적는 쿼리가 있어야 합니다.')] if lost else []) + (
+            [R.cards('DB에서 아무것도 바꾸지 않은 수정본 줄', [dict(title=where, badge=how, state='warn', icon='warn') for where, how in idle],
+                     note='이 줄을 받은 쿼리가 맞는 노드를 찾지 못했거나, 이미 반영돼 있어 바꿀 것이 없었습니다. 처음 반영인데 여기 나오면 쿼리가 그 줄의 대상을 무엇으로 찾는지 봅니다.')] if idle else []) + (
             [R.pair('바뀐 노드를 수정 전과 뒤로 나란히', left, right, note='굵은 테두리 = 값이 바뀐 노드(아래 글 = 그때의 값), 점선 = 수정 뒤 사라지는 노드. 16개까지만 그립니다.')] if d['사라진 노드'] or d['늘어난 노드'] else []) + ([R.count_bars('수정 전 ↔ 수정 뒤 개수', ('수정 전', '수정 뒤'), R.graph_counts(before), R.graph_counts(after))]
                                       if len(before['nodes']) != len(after['nodes']) or len(before['rels']) != len(after['rels']) else []) + [
+            R.folded(R.table('수정본 줄마다 받은 쿼리와 DB가 바꾼 것', ['수정본 줄', '변경', '쿼리', '바뀐 것'], applied)),
             R.folded(R.table('수정 전 → 수정 뒤', ['바뀜', '개수', '대상'], rows)),
             R.folded(R.counts('수정 뒤 개수', [('노드', len(after['nodes'])), ('관계', len(after['rels']))])),
             R.raw('같은 수정을 한 번 더 실행한 결과', '같은 수정을 한 번 더 실행: ' + ('더 바뀐 것 없음' if same else '또 바뀜 — ' + '; '.join(f'{k} {len(v)}' for k, v in d2.items() if v)))] + browser()
-
-
-def portal(previous):
-    """내 그래프와 기준 지도(자료의 reference_map.json — 포털 지식 지도의 한 길)를 나란히 그린다. 내 그래프는 기준 지도의 설비에서 기준 지도에 있는 관계 이름만 따라가 그린다."""
-    graph = db(C.export_graph)
-    ref = json.loads((HERE / 'data/reference_map.json').read_text(encoding='utf-8'))
-    by = {n['props'].get('id'): n for n in graph['nodes']}
-    holds = lambda n, value: any(v == value or (isinstance(v, list) and value in v) for v in n['props'].values())
-    wanted = set(r['관계'] for r in ref['관계'])
-    codes = [x['알아볼 값'] for x in ref['대상'] if not any(r['끝'] == x['id'] for r in ref['관계'])]      # 기준 지도의 출발 대상(들어오는 관계가 없는 것)
-    first = set(r['시작'] for r in ref['관계']) - set(r['끝'] for r in ref['관계'])
-    second = [x['알아볼 값'] for x in ref['대상'] if any(r['끝'] == x['id'] and r['시작'] in first for r in ref['관계'])]   # 출발 대상 바로 다음 대상
-    starts = [i for i, n in by.items() if any(i == c or holds(n, c) for c in codes)]
-    if not starts:
-        raise R.Stop('랩 DB에서 기준 지도의 출발 대상(' + ' · '.join(codes) + ')을 찾지 못했습니다 — 적재부터 다시 실행합니다.')
-
-    def step(frontier, only):
-        return [(r['a'], r['type'], r['b']) for r in graph['rels'] if r['a'] in frontier and r['type'] in wanted and r['b'] in by
-                and (not only or any(holds(by[r['b']], s) for s in only))]
-
-    found = step(starts, second) or step(starts, None)      # 첫 걸음은 기준 지도의 둘째 대상과 같은 이름의 것(없으면 전부)
-    links, keep = list(found), set(starts)
-    for _ in range(3):
-        frontier = set(b for _, _, b in found) - keep
-        keep |= frontier
-        found = step(frontier, None)
-        links += found
-    keep |= set(b for _, _, b in links)
-    links = sorted(set(links))
-    mine = R.graph('내 그래프(랩 DB)', [R.graph_node(n) for i, n in by.items() if i in keep], [R.edge(a, b, t) for a, t, b in links])
-    name = {x['id']: f"{x['id']}({x['알아볼 값']})" for x in ref['대상']}
-    theirs = R.graph('기준 지도(포털 지식 지도의 같은 길)', [R.node(x['id'], x['종류'], sub=x['알아볼 값'], props=dict(알아볼_값=x['알아볼 값'])) for x in ref['대상']],
-                     [R.edge(r['시작'], r['끝'], r['관계']) for r in ref['관계']])
-    return [R.verdict('info', '내 그래프와 기준 지도를 나란히 놓았습니다', f'내 그래프 노드 {len(keep)}개 · 기준 지도 노드 {len(ref["대상"])}개 — 같은 대상을 몇 개로 셌는지 견줍니다.'),
-            R.pair('같은 길을 두 그래프가 어떻게 그렸나', mine, theirs, note='설비 여럿이 구성 요소 하나를 함께 가리키는지, 설비마다 따로 두었는지 식별자와 화살표로 견줍니다.'),
-            R.folded(R.table('내 그래프 — 기준 지도의 설비에서 시작하는 관계(시작 → 끝)', ['시작 id', '관계', '끝 id'], links,
-                    note='기준 지도 표와 식별자 · 관계 방향을 견줍니다.')),
-            R.folded(R.table('기준 지도 — 포털 지식 지도의 같은 길(시작 → 끝)', ['시작 id', '관계', '끝 id'],
-                    [(name[r['시작']], f"{r['관계']}({r['화면 이름']})", name[r['끝']]) for r in ref['관계']], note=ref['설명']))] + browser()
-
-
 
 def sources(previous):
     path, counts = graph_counts()
@@ -466,8 +539,8 @@ def check(previous):
 
 COMMANDS = {
     'sources': ('원자료와 모델', sources), 'db': ('랩 DB 준비', prepare), 'status': ('모델과 DB 개수', start),
-    'expected': ('기대 답', expected), 'constraints': ('유일 제약 걸기', constraints), 'load': ('모델 적재', load), 'repeat': ('같은 적재 다시 실행', again),
+    'expected': ('기대 답', expected), 'constraints': ('유일 제약 걸기', constraints), 'probe': ('넣기 전 실험', probe), 'load': ('모델 적재', load), 'repeat': ('같은 적재 다시 실행', again),
     'sensors': ('설비별 센서', q1), 'parts': ('설비별 교체 부품', q2), 'usage': ('부품의 사용 설비', q3),
-    'update': ('수정본 반영', change), 'compare': ('기준 지도와 비교', portal),
+    'update': ('수정본 반영', change),
     'export': ('그래프 저장', export), 'check': ('구조 검사', check),
 }

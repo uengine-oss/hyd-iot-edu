@@ -130,10 +130,12 @@ def run_check():
     last = lines[-1] if lines else ''
     return [R.verdict('ok', '구조 검사 통과', last.split(':', 1)[1].strip() if last.startswith('구조 검사 통과') and ':' in last else '')] + cards + figure + [R.raw('터미널 출력 원문', 'python run.py check\n' + text)]
 
+import json
 from app.utils import model as M
 
 TITLE = '현장 정보를 체계화하는 온톨로지 직접 설계하기'
 KEY = ['질문', '물을_값', '항목']   # 기대 답 한 줄을 가리키는 열
+CHECKS = CHECKS[:9] + [('「끝이 적어도 하나」로 정한 관계가 빠진 인스턴스가 없다', '적어도 하나')] + CHECKS[9:]
 
 
 def guarded(fn, *a):
@@ -195,26 +197,80 @@ def expected(previous):
             R.folded(R.table('내가 정한 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows))]
 
 
-def design(previous):
-    ids, links, prev = guarded(M.preview_ids)
-    clash = [(k, i, ', '.join(f"{v['파일']}:{n}" for n in lines)) for k, v in prev.items() for i, lines in v['겹침'].items()]
-    twice = set(k for k, _, _ in clash)
-    nodes = [R.node(k, k, sub='식별자 ' + v, badge=f"{prev[k]['개수']}개" if k in prev else '', mark='bad' if k in twice else '', props=dict(식별자_만드는_법=v)) for k, v in ids.items()]
-    out = [R.verdict('warn', f'식별자가 겹치는 원자료 행 {len(clash)}곳', '겹친 식별자 하나는 대상 하나가 됩니다 — 같은 대상인지 그 원자료 줄로 봅니다.') if clash else
-           R.verdict('ok', '식별자가 겹치는 원자료 행이 없습니다', f'클래스 {len(ids)}개 · 관계 {len(links)}개'),
-           R.graph('내가 설계한 클래스와 관계', nodes, [R.edge(v[1], v[2], f'{v[0]} · {v[3]}') for v in links.values()],
-                   note='상자 = 클래스, 아래 글 = 식별자 만드는 법, 오른쪽 수 = 서로 다른 식별자 수. 화살표의 글 = 관계 이름 · 카디널리티.' + (' 빨간 테두리 = 식별자가 겹친 클래스.' if clash else ''))]
+def finding_cards(findings):
+    """원자료 행을 내 스키마 표에 대어 보아 어긋난 곳 — 정한 줄(스키마 표의 파일:줄)마다 카드 하나, 걸린 원자료 줄을 함께."""
+    by = {}
+    for f in findings:
+        by.setdefault((f['종류'], f['표']), []).append(f)
+    return R.cards('원자료가 내 스키마 표와 어긋나는 곳', [dict(title=kind, badge=f'{len(fs)}곳', state='bad', icon='warn', text=fs[0]['글'],
+                   lines=[('정한 곳', at), ('걸린 원자료 줄', ' · '.join(f['원자료'].replace('data/', '') for f in fs[:8]) + (f' … 외 {len(fs) - 8}곳' if len(fs) > 8 else ''))]) for (kind, at), fs in by.items()],
+                   note='원자료가 틀린 것이 아니면 스키마 표의 그 줄(필수 · 자료형 · 끝이 적어도 하나)을 원자료에 맞게 고칩니다. 근거는 걸린 원자료 줄과 현장 메모에서 찾습니다.', wide=True)
+
+
+def classes(previous):
+    cls, prev, written = guarded(M.classes_view)
+    where = lambda v, lines: ', '.join(f"{v['파일']}:{n}" for n in lines[:6]) + (f' … 외 {len(lines) - 6}행' if len(lines) > 6 else '')
+    clash = [(k, i, where(v, lines)) for k, v in prev.items() for i, lines in v['겹침'].items()]
+    blank = [(k, len(v['빈칸']), where(v, v['빈칸'])) for k, v in prev.items() if v['빈칸']]
+    wrong = set(k for k, _, _ in clash) | set(k for k, _, _ in blank)
+    items = [dict(title=k, kind=k, state='bad' if k in wrong else '', badge=f"{prev[k]['행']}행 → 식별자 {prev[k]['개수']}개" if k in prev else '센서 행을 내 규칙으로 묶어 만듦',
+                  lines=[('의미', c['의미']), ('식별자 만드는 법', c['id'])]) for k, c in cls.items()]
+    out = [R.verdict('bad', f'식별자 틀에 쓴 칸이 빈 원자료 행이 있습니다 — {sum(n for _, n, _ in blank)}행', '그 칸이 모든 행에 적혀 있는지 원자료에서 봅니다.') if blank else
+           R.verdict('warn', f'식별자가 겹치는 원자료 행 {len(clash)}곳', '겹친 식별자 하나는 인스턴스 하나가 됩니다 — 같은 대상인지 그 원자료 줄로 봅니다.') if clash else
+           R.verdict('ok', '식별자가 겹치는 원자료 행이 없습니다', f'클래스 {len(cls)}개'),
+           R.cards('내가 정한 클래스 — 의미와 식별자', items, note='오른쪽 수 = 그 클래스의 원자료 행 수와, 내 식별자 틀로 지었을 때 서로 다른 식별자 수. 두 수가 다르면 식별자가 겹친 행이 있습니다.', wide=True)]
+    if blank:
+        out.append(R.cards('식별자 틀에 쓴 칸이 빈 행', [dict(title=k, kind=k, badge=f'{n}행', state='bad', icon='warn', lines=[('빈 원자료 행', rows)]) for k, n, rows in blank],
+                           note='빈 값으로 지은 식별자는 서로 겹칩니다. 그 클래스의 모든 행에 값이 있는 칸으로 짓습니다.'))
     if clash:
         out.append(R.cards('식별자가 겹친 곳', [dict(title=i, badge=k, state='bad', icon='warn', kind=k, lines=[('겹친 원자료 행', rows)]) for k, i, rows in clash]))
-    out += [R.folded(R.table('종류와 식별자 만드는 법(app/features/design.csv)', ['대상', 'ID_만드는_법'], [(k, v) for k, v in ids.items()],
-                    note=('실물 행이 있어 구성 요소(자리)와 일련번호가 붙은 실물을 따로 둡니다.' if '실물' in ids else
-                          '실물 행이 없어 일련번호는 구성 요소의 속성으로 둡니다.'))),
-            R.folded(R.table('관계와 방향 · 카디널리티(app/features/relations.csv)', ['연결', '관계 이름', '시작 → 끝', '카디널리티'], [(k, v[0], f'{v[1]} → {v[2]}', v[3]) for k, v in links.items()],
-                    note='카디널리티는 시작 쪽 수:끝 쪽 수이고 1은 많아야 하나입니다. 만든 연결이 적은 수를 넘으면 그 단계에서 멈추고 relations.csv 줄과 원자료 줄을 짚습니다.'))]
-    out.append(R.folded(R.counts('원자료 행마다 내 식별자를 지으면 — 서로 다른 식별자 수', [(k, v['개수']) for k, v in prev.items()])))
-    out.append(R.folded(R.table('식별자가 겹치는 원자료 행(이름을 맞추기 전)', ['대상', '식별자', '행'], clash,
-                       note='겹친 식별자 하나는 대상 하나가 됩니다. 같은 대상의 겹침인지, 다른 대상을 한 식별자로 짓는 것인지는 그 원자료 줄로 봅니다.')))
+    out.append(R.cards('센서 목록의 「재는것」 칸에 적힌 이름', [dict(title=f'{len(written)}가지', kind='물리량', text=' · '.join(written))],
+                       note='원자료에 적힌 이름을 그대로 쓰면 물리량이 이만큼으로 갈립니다. 어느 이름을 같은 물리량으로 볼지는 뒤에서 내 규칙으로 정합니다.', wide=True))
+    out.append(R.folded(R.table('클래스와 식별자(app/features/classes.csv)', ['클래스', '의미', 'ID_만드는_법', '원자료 행', '서로 다른 식별자'],
+                                [(k, c['의미'], c['id'], prev[k]['행'] if k in prev else '', prev[k]['개수'] if k in prev else '') for k, c in cls.items()])))
     return out
+
+
+def properties(previous):
+    cls, props, rows = guarded(M.properties_view)
+    lines = lambda r, ns: ', '.join(f"{r['파일']}:{n}" for n in ns[:6]) + (f' … 외 {len(ns) - 6}행' if len(ns) > 6 else '')
+    bad = [r for r in rows if (r['필수'] and r['빈칸']) or r['안맞음']]
+    cards = []
+    for k in cls:
+        mine = [r for r in rows if r['클래스'] == k]
+        cards.append(dict(title=k, kind=k, badge=f'속성 {len(mine)}개', state='bad' if any(r in bad for r in mine) else '',
+                          lines=[(r['속성'] + (' (필수)' if r['필수'] else ''), f"{r['칸']} 칸 · {r['자료형']}" + (f" · {r['단위']}" if r['단위'] else '') + (f" — {r['예']}" if r['예'] else '')) for r in mine]))
+    out = [R.verdict('warn', f'원자료와 어긋나는 속성 {len(bad)}개', '필수로 정했는데 비어 있는 행이 있거나, 정한 자료형으로 읽을 수 없는 값이 있습니다.') if bad else
+           R.verdict('ok', f'속성 {len(rows)}개가 원자료 행과 모두 맞습니다', '필수로 정한 속성은 모든 행에 값이 있고, 값은 정한 자료형으로 읽힙니다.'),
+           R.cards('내가 정한 스키마 — 클래스마다 속성(왼쪽)과 그 속성에 들어갈 원자료의 첫 값(오른쪽 끝)', cards,
+                   note='속성 이름 · 원자료 칸 · 자료형 · 필수는 스키마이고, 줄 끝의 값은 그 스키마대로 옮겨질 인스턴스 데이터의 한 예입니다.', wide=True)]
+    if bad:
+        out.append(R.cards('원자료와 어긋나는 속성', [dict(title=f"{r['클래스']}의 {r['속성']}", kind=r['클래스'], state='bad', icon='warn',
+                           badge=' · '.join(x for x in [f"필수인데 빈 행 {len(r['빈칸'])}" if r['필수'] and r['빈칸'] else '', f"{r['자료형']}로 읽을 수 없는 값 {len(r['안맞음'])}" if r['안맞음'] else ''] if x),
+                           lines=[('정한 곳', f"app/features/properties.csv:{r['줄']} — {r['칸']} 칸 · {r['자료형']} · 필수 {'예' if r['필수'] else '아니오'}")]
+                           + ([('빈 원자료 행', lines(r, r['빈칸']))] if r['필수'] and r['빈칸'] else [])
+                           + ([('읽을 수 없는 값', ', '.join(f"{r['파일']}:{n} 「{v}」" for n, v in r['안맞음'][:4]))] if r['안맞음'] else [])) for r in bad],
+                           note='원자료가 틀린 것이 아니면 속성 표의 그 줄을 원자료에 맞게 고칩니다(비어도 되는 값이면 필수를 아니오로).', wide=True))
+    out.append(R.folded(R.table('속성마다 원자료에 채워진 행(app/features/properties.csv)', ['클래스', '속성', '원자료 칸', '자료형', '필수', '단위', '원자료 행', '빈 행', '읽을 수 없는 값'],
+                                [(r['클래스'], r['속성'], r['칸'], r['자료형'], '예' if r['필수'] else '아니오', r['단위'], '제공 코드가 채움' if r['행'] is None else r['행'],
+                                  len(r['빈칸']), len(r['안맞음'])) for r in rows])))
+    return out
+
+
+def relations(previous):
+    cls, links = guarded(M.relations_view)
+    many = lambda side: '많아야 하나' if side == '1' else '여럿'
+    items = []
+    for name, start, end, card, line, least in links.values():
+        a, b = card.split(':')
+        items.append(dict(title=f'{start} → {end}', badge=name, lines=[
+            ('카디널리티 ' + card, f'{start} 하나에 {end} {many(b)}, {end} 하나에 {start} {many(a)}'),
+            ('끝이 적어도 하나', f'예 — {start}마다 {end}가 하나는 있어야 함' if least else f'아니오 — {end}가 하나도 없는 {start}도 됨')]))
+    return [R.verdict('info', f'관계 {len(links)}개를 정했습니다', '화살표 방향 · 카디널리티 · 끝이 적어도 하나는 모델을 만들 때 원자료의 실제 연결과 견줍니다.'),
+            R.graph('내가 설계한 클래스와 관계', [R.node(k, k, sub='식별자 ' + c['id']) for k, c in cls.items()], [R.edge(v[1], v[2], f'{v[0]} · {v[3]}') for v in links.values()],
+                    note='상자 = 클래스, 화살표 = 관계(시작 → 끝), 화살표의 글 = 관계 이름 · 카디널리티.'),
+            R.cards('관계마다 내가 정한 것', items, note='화살표를 「시작이 끝을 ~한다」로 소리 내어 읽어 봅니다. 질문은 이 화살표 방향으로 관계를 따라가 답을 찾습니다.', wide=True),
+            R.folded(R.table('관계(app/features/relations.csv)', ['관계 이름', '시작 → 끝', '카디널리티', '끝이 적어도 하나'], [(v[0], f'{v[1]} → {v[2]}', v[3], '예' if v[5] else '아니오') for v in links.values()]))]
 
 
 def names(previous):
@@ -238,21 +294,21 @@ def names(previous):
                         note='왼쪽 = 구성 요소 자리, 오른쪽 = 그 자리에 달린 실물. 점선 = 지난 실물(교체되어 떼어 낸 것).',
                         marks=dict(ask='실물이 둘 이상 달렸던 자리', gone='지난 실물'))]
     else:
-        out.append(R.verdict('info', '실물을 따로 두지 않았습니다', '일련번호는 구성 요소의 속성(지금 달린 것 하나)입니다.'))
-    out += [R.gather('사람마다 다르게 적은 구성 요소 이름을 하나로', ('원자료 이름(설비)', '맞춘 이름 · 모델'),
-                     [dict(left=[x.strip() for x in str(r[3]).split(' · ')], mid=dict(text=r[0], kind='구성 요소', sub=str(r[1]))) for r in n['묶음']],
+        out.append(R.verdict('info', '실물을 따로 두지 않았습니다', '일련번호는 속성 표에 적었다면 구성 요소의 속성(지금 달린 것 하나)으로 담깁니다.'))
+    out += [R.gather('사람마다 다르게 적은 구성 요소 이름을 하나로', ('원자료 이름(설비)', '맞춘 이름 · 같은 자리로 본 까닭'),
+                     [dict(left=[x.strip() for x in str(r[3]).split(' · ')], mid=dict(text=r[0], kind='구성 요소', sub=str(r[4]))) for r in n['묶음']],
                      note='같은 모델의 설비끼리만 맞춥니다. 이름을 맞춰도 설비마다 구성 요소는 따로 하나씩입니다.'),
-            R.folded(R.table('같은 모델의 설비끼리 하나로 맞춘 구성 요소 이름(제공 코드)', ['맞춘 이름', '모델', '설비 수', '원자료 이름(설비)'], n['묶음'],
-                             note='같은 모델의 설비에서 사람마다 다르게 적은 구성 요소 이름을 구성 요소 목록에 먼저 나온 이름 하나로 맞췄습니다. 맞추기 전 원자료 이름은 그 구성 요소의 다른 이름으로 남습니다. '
-                                  '이름을 맞춰도 설비마다 구성 요소는 따로 하나씩입니다.')),
+            R.folded(R.table('같은 모델의 설비끼리 하나로 맞춘 구성 요소 이름(제공 코드)', ['맞춘 이름', '모델', '설비 수', '원자료 이름(설비)', '같은 자리로 본 까닭'], n['묶음'],
+                             note='같은 모델의 설비에서 사람마다 다르게 적은 구성 요소 이름을 구성 요소 목록에 먼저 나온 이름 하나로 맞췄습니다. 까닭 칸은 그 행들을 같은 자리로 본 근거(같은 태그의 센서 · 같은 부품)입니다. '
+                                  '맞추기 전 원자료 이름은 「다른이름」 칸으로 주므로, 속성 표에 그 칸을 담으면 다른 이름으로 남습니다.')),
             R.folded(R.table('원자료 이름 그대로 둔 구성 요소(그 모델의 설비가 하나)', ['원자료 행', '설비', '모델', '계통', '원자료 이름'], n['그대로'],
                              note='모델이 다른 설비의 구성 요소는 이름이 비슷해도 맞추지 않습니다.')),
-            R.folded(R.table('설비별 구성 요소 — 원자료 행 수와 만든 대상 수', ['설비', '원자료 행', '만든 구성 요소'], rows))]
+            R.folded(R.table('설비별 구성 요소 — 원자료 행 수와 만든 인스턴스 수', ['설비', '원자료 행', '만든 구성 요소'], rows))]
     if info['실물'] is not None:
         out.append(R.folded(R.table('구성 요소 자리마다 실물(일련번호)', ['구성 요소 식별자', '일련번호', '지금 · 지난', '원자료 행'], info['실물'],
                            note='일련번호가 적힌 구성 요소 행마다 실물 하나입니다. 지난 실물은 app/features/row_rules.csv의 「지난 실물」 행이고, 이 모델에서 그 실물의 자리와 이력을 물을 수 있습니다.')))
     else:
-        out.append(R.note('실물을 따로 두지 않았습니다. 일련번호는 구성 요소의 속성(지금 달린 것 하나)이고, app/features/row_rules.csv에서 뺀 행의 실물(철거된 장치)은 이 모델에서 물을 수 없습니다.'))
+        out.append(R.note('실물을 따로 두지 않았습니다. app/features/row_rules.csv에서 뺀 행의 실물(철거된 장치)은 이 모델에서 물을 수 없습니다.'))
     if info['unused']:
         out.append(R.table('app/features/row_rules.csv에 적었지만 쓰이지 않은 행', ['파일', '행'], info['unused']))
     return out
@@ -260,19 +316,29 @@ def names(previous):
 
 def sensors(previous):
     info, _ = guarded(M.build, '센서')
-    groups = {}
-    for sid, code, tag, q in info['센서']:
+    groups, at = {}, {}
+    for sid, code, tag, q, line, what in info['센서']:
         groups.setdefault(q, []).append(f'{code}:{tag}')
+        at[f'{code}:{tag}'] = (line, what)
     base = {q: unit for q, _, unit in info['단위']}
-    out = [R.verdict('info', f'센서 {len(info["센서"])}개가 물리량 {len(groups)}개로 묶였습니다', '한 묶음이 물리량 하나입니다 — 내가 정한 범위대로 묶였는지 봅니다.'),
+    alone = [(v[0], k, *at[v[0]]) for k, v in sorted(groups.items()) if len(v) == 1]
+    keep = info['단위_담는_법'] == '적힌 그대로'
+    mixed = [r for r in info['단위'] if ' · ' in r[1]]
+    out = [R.verdict('info', f'센서 {len(info["센서"])}개가 물리량 {len(groups)}개로 묶였습니다', f'내 규칙이 다른 센서와 묶지 않은 센서 {len(alone)}개 — 정말 혼자 재는 것인지 봅니다.' if alone else '한 묶음이 물리량 하나입니다 — 내가 정한 범위대로 묶였는지 봅니다.'),
            R.gather('센서가 물리량으로 묶인 모습', ('센서(설비:태그)', '물리량 · 기준 단위'),
                     [dict(left=sorted(v), mid=dict(text=k, kind='물리량', sub=base[k])) for k, v in sorted(groups.items())],
                     note='왼쪽 센서들이 오른쪽 물리량 하나를 잽니다. 같은 물리량이라고 본 센서끼리만 한 줄에 모입니다.')]
+    if alone:
+        out.append(R.cards('내 규칙이 다른 센서와 묶지 않은 센서', [dict(title=s, kind='센서', badge='혼자인 묶음', state='warn', lines=[('붙인 물리량 이름', q), ('원자료의 재는것', what), ('원자료 행', line)]) for s, q, line, what in alone],
+                           note='규칙이 이 센서를 어떤 센서와도 같은 물리량으로 보지 않았습니다. 혼자 재는 것이 맞는지, 규칙이 놓친 것인지는 그 원자료 줄과 같은 태그 · 같은 재는것의 다른 줄로 봅니다.'))
     if info['변환']:
         out.append(R.cards('단위를 기준 단위로 바꾼 센서', [dict(title=r[1], badge=f'{r[3]} → {r[4]}', kind='센서', lines=[('물리량', r[2]), ('원래 정상값 / 한계', r[5]), ('바꾼 정상값 / 한계', r[6]), ('원자료 행', r[0])]) for r in info['변환']]))
+    if keep and mixed:
+        out.append(R.cards('한 물리량에 단위가 섞여 담겼습니다', [dict(title=r[0], kind='물리량', state='warn', icon='warn', lines=[('원자료에 적힌 단위', r[1])]) for r in mixed],
+                           note='속성 표에서 센서의 수 속성을 「적힌 그대로」로 정해 단위를 바꾸지 않았습니다. 이 물리량의 센서 값은 단위가 달라 그대로는 견줄 수 없습니다.'))
     return out + [R.folded(R.table('물리량마다 묶인 센서(same_quantity · quantity_name)', ['물리량', '센서 수', '설비:태그', '기준 단위'], [(k, len(v), ' · '.join(sorted(v)), base[k]) for k, v in sorted(groups.items())])),
                   R.folded(R.table('물리량마다 원자료에 적힌 단위와 기준 단위(제공 코드)', ['물리량', '원자료에 적힌 단위', '기준 단위'], info['단위'],
-                                   note='기준 단위는 그 물리량의 센서 행이 가장 많이 쓴 단위입니다. 단위가 다른 값을 그대로 견주면 어긋나므로 제공 코드가 기준 단위로 바꿉니다.')),
+                                   note='기준 단위는 그 물리량의 센서 행이 가장 많이 쓴 단위입니다. 센서의 수 속성을 속성 표에서 「기준 단위」로 정하면 제공 코드가 이 단위로 바꿔 담습니다(지금: ' + info['단위_담는_법'] + ').')),
                   R.folded(R.table('단위를 기준 단위로 바꾼 센서 행(제공 코드)', ['원자료 행', '센서 식별자', '물리량', '원래 단위', '모델의 단위', '원래 정상값 / 한계', '바꾼 정상값 / 한계'], info['변환'],
                           note='원래 값과 바꾼 값을 그 원자료 줄로 견줍니다. 값이 없는 칸은 0이 아니라 「없음」입니다.'))]
 
@@ -282,16 +348,19 @@ def parts(previous):
     usage = {}
     for _, code, cname, cell, pid, how in info['이은_부품']:
         usage.setdefault(pid, set()).add(code)
-    lost = info['못_찾은_칸']
+    lost, off = info['못_찾은_칸'], info['어긋남']
     wrong = [r for r in info['카디널리티'] if r[5] != '맞음']
     return [R.verdict('warn', f'사내 품번을 찾지 못한 교체부품 칸 {len(lost)}개', '그 칸의 글을 품번 교차표와 견줍니다.') if lost else
-            R.verdict('ok', f'교체부품 칸 {len(info["이은_부품"])}개를 부품 {len(usage)}개에 이었습니다', '여러 표기가 사내 품번 하나로 모였고, 모델 파일을 새로 썼습니다.' + ('' if wrong else ' 적은 카디널리티와 만든 연결도 모두 맞습니다.')),
-            R.gather('여러 가지로 적힌 품번이 사내 품번 하나로 모이는 모습', ('다른 표기(다른 이름으로 남김)', '부품 · 사내 품번', '쓰는 설비'),
+            R.verdict('warn', f'모델 파일을 썼습니다 — 원자료가 내 스키마 표와 어긋나는 곳 {len(off)}곳', '아래 카드에서 정한 줄과 걸린 원자료 줄을 봅니다. 이대로면 넣기 전 검증에서 걸립니다.') if off else
+            R.verdict('warn', f'모델 파일을 썼습니다 — 카디널리티를 원자료의 실제 연결보다 넓게 적은 관계 {len(wrong)}개', '아래 표에서 적은 것과 실제 연결을 견줍니다. 여럿이라고 적은 쪽이 원자료에서는 모두 하나뿐입니다.') if wrong else
+            R.verdict('ok', f'교체부품 칸 {len(info["이은_부품"])}개를 부품 {len(usage)}개에 이었습니다', '여러 표기가 사내 품번 하나로 모였고, 모델 파일을 새로 썼습니다. 적은 카디널리티와 만든 연결도 모두 맞습니다.')] + (
+            [finding_cards(off)] if off else []) + [
+            R.gather('여러 가지로 적힌 품번이 사내 품번 하나로 모이는 모습', ('다른 표기', '부품 · 사내 품번', '쓰는 설비'),
                      [dict(left=[x.strip() for x in str(r[3]).split(' · ') if x.strip()], mid=dict(text=r[1], kind='부품', sub=r[2]),
                            right=[dict(text=c, kind='설비') for c in sorted(usage.get(r[0], []))]) for r in info['다른_표기']],
-                     note='가운데가 부품 하나(사내 품번)입니다. 왼쪽은 그 부품을 찾는 다른 이름, 오른쪽은 그 부품을 쓰는 설비입니다.'),
+                     note='가운데가 부품 하나(사내 품번)입니다. 왼쪽은 품번 교차표에서 그 부품을 가리키는 다른 표기, 오른쪽은 그 부품을 쓰는 설비입니다.'),
             R.folded(R.table('부품의 식별자와 사내 품번 · 다른 표기', ['식별자', '사내 품번', '품명', '다른 표기'], info['다른_표기'],
-                             note='사내 품번 하나에 부품 하나이고, 예전 품번 · 줄여 쓴 표기 · 제조사 품번은 그 부품을 찾는 다른 이름으로 남깁니다.')),
+                             note='사내 품번 하나에 부품 하나입니다. 다른 표기는 「다른표기」 칸으로 주므로, 속성 표에 그 칸을 담으면 그 부품을 찾는 다른 이름으로 남습니다.')),
             R.folded(R.table('교체부품 칸마다 찾은 사내 품번', ['원자료 행', '설비', '구성 요소', '교체부품 칸', '사내 품번', '찾은 법'], info['이은_부품'])),
             shown_if(R.table('사내 품번을 찾지 못한 교체부품 칸(잇지 않음)', ['원자료 행', '설비', '구성 요소', '교체부품 칸'], info['못_찾은_칸'],
                     note='품번 교차표에 없는 표기는 짐작해 잇지 않습니다. 여기 줄이 있으면 그 칸의 글을 품번 교차표와 견줍니다.')),
@@ -299,12 +368,16 @@ def parts(previous):
                     note='빈 칸은 부품으로 잇지 않습니다. 교체 부품이 따로 없는 구성 요소인지, 아직 확인하지 못한 칸인지는 현장 메모와 그 원자료 줄로 봅니다.'),
             R.folded(R.table('부품마다 쓰는 설비', ['사내 품번', '설비 수', '설비'], [(p, len(v), ' · '.join(sorted(v))) for p, v in sorted(usage.items())])),
             (lambda block: block if wrong else R.folded(block))(R.table('관계마다 적은 카디널리티와 만든 연결', ['연결', '관계', '적은 것', '시작 하나에 이어진 끝(최대)', '끝 하나에 이어진 시작(최대)', '견줌'], info['카디널리티'])),
-            R.note('output/schema.json · output/graph.json을 새로 썼습니다.')]
+            R.note('output/schema.json(스키마) · output/graph.json(인스턴스 데이터)을 새로 썼습니다.')]
 
 
 def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
-    got = guarded(M.answers, list(dict.fromkeys((r['질문'], r['물을_값']) for r in rows)))   # 같은 설비를 여러 줄에 적어도 한 번만 묻는다
+    more = {}
+    for r in rows:      # 질문 4(내가 더한 질문)는 답으로 볼 속성(항목)까지 넘긴다
+        if str(r['질문']).strip() == '4':
+            more.setdefault(('4', r['물을_값']), []).append(r.get('항목', ''))
+    got = guarded(M.answers, list(dict.fromkeys((str(r['질문']).strip(), r['물을_값']) for r in rows)), more)   # 같은 설비를 여러 줄에 적어도 한 번만 묻는다
     other = {(str(g['질문']), g['물을_값'], a): g['항목'] for g in got for a in g.get('다른_이름', [])}
     have = {(str(g['질문']), g['물을_값'], g['항목']) for g in got}
     for r in rows:      # 질문 1의 항목을 원자료 이름으로 적었으면 그 구성 요소의 다른 이름으로 찾아 모델의 이름으로 견준다(모델에 그 이름의 항목이 있으면 그대로)
@@ -315,32 +388,50 @@ def ask(previous):
     for r in rows:
         if str(r['질문']).strip() in ('1', '2'):
             picked.setdefault((str(r['질문']).strip(), r['물을_값']), set()).add(r.get('항목', ''))
-    keep = [r for r in got if (str(r['질문']), r['물을_값']) not in picked or r['항목'] in picked[(str(r['질문']), r['물을_값'])]]
+    stuck = lambda g: str(g['답']).startswith(('답할 수 없음', '찾지 못함', '견줄 수 없음'))      # 스키마에 없어서 · 방향이 달라서 답하지 못한 줄은 그 까닭을 그대로 보인다
+    keep = [r for r in got if (str(r['질문']), r['물을_값']) not in picked or r['항목'] in picked[(str(r['질문']), r['물을_값'])] or stuck(r)]
     value = lambda r: str(r['질문']).strip() == '2' and bool(r.get('항목'))   # 질문 2 센서 값은 차례까지 같아야 한다
     exact = lambda e, a: [x.strip() for x in str(e).split('·')] == [x.strip() for x in str(a).split('·')]
     note = (f'기대 답에 적은 항목만 견줍니다(모델이 더 돌려준 {len(got) - len(keep)}줄은 표에 넣지 않음). '
-            '물을 값과 답은 설비 코드 · 사내 품번처럼 현장이 쓰는 값이라 식별자를 어떻게 지었든 같은 값으로 묻습니다. 질문 1의 항목은 원자료 이름으로 적어도 그 구성 요소의 다른 이름으로 찾습니다. '
-            '「실제 없음」은 기대 답의 항목이 모델에 없는 것입니다(이름을 다르게 적었거나 모델이 그 대상을 만들지 않음). 「기대 밖」은 모델이 더 돌려준 항목입니다. '
+            '물을 값과 답은 설비 코드 · 사내 품번처럼 현장이 쓰는 값이라 식별자와 속성 이름을 어떻게 지었든 같은 값으로 묻습니다. 질문 1의 항목은 원자료 이름으로 적어도 그 구성 요소의 다른 이름으로 찾습니다. '
+            '「실제 없음」은 기대 답의 항목이 모델에 없는 것입니다(이름을 다르게 적었거나 모델이 그 인스턴스를 만들지 않음). 「기대 밖」은 모델이 더 돌려준 항목입니다. '
+            '「답할 수 없음」은 그 답에 필요한 원자료 칸을 담은 속성이 내 스키마에 없다는 뜻이고, 「찾지 못함」은 질문이 따라가는 방향과 관계가 저장된 방향이 반대라는 뜻이며, 「견줄 수 없음」은 그 속성의 자료형으로는 크기나 앞뒤를 견줄 수 없다는 뜻입니다. '
             '모델의 답 「없음」은 물은 품번 · 표기 · 설비 · 물리량이 모델에 없다는 뜻이고, 「쓰는 설비 없음」은 부품은 모델에 있지만 그 부품에 이은 구성 요소가 없다는 뜻입니다. ' + SAME_NOTE)
     out = [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', [{'짝': key(r), '답': r['기대_답']} for r in rows if not value(r)],
                      [{'짝': key(r), '답': r['답']} for r in keep if not value(r)], ['답'], same=same, note=note)]
     if any(value(r) for r in rows):
         out.append(R.ordered(R.compare('질문 2 센서 값 — 단위 · 정상값 · 한계 · 한계구분 차례', '짝', [{'짝': key(r), '답': r['기대_답']} for r in rows if value(r)],
                              [{'짝': key(r), '답': r['답']} for r in keep if value(r)], ['답'], same=exact,
-                             note='값은 차례까지 견줍니다. 단위를 바꾼 센서는 바꾼 단위의 값, 값이 없는 칸은 「없음」, 단위를 정하지 못했으면 「미확인」입니다.')))
+                             note='값은 차례까지 견줍니다. 값이 없는 칸 · 그 칸을 담은 속성이 없는 칸은 「없음」입니다. 속성 표에서 「기준 단위」로 정한 수는 바꾼 값이고, 「적힌 그대로」면 원자료에 적힌 값입니다.')))
     return [tally(out)] + out
 
 
 def check(previous):
-    return run_check()
+    """넣기 전 검증 — 만든 모델의 구조 검사에 더해, 원자료 행을 지금의 내 스키마 표에 다시 대어 본다(모델 파일은 고치지 않는다)."""
+    out = run_check()
+    try:
+        info, model = M.build('부품', write=False)
+    except M.Stop as e:
+        return out + [R.note('원자료를 내 스키마 표에 대어 보지 못했습니다 — ' + str(e))]
+    made = [HERE / 'output/schema.json', HERE / 'output/graph.json']
+    stale = all(p.is_file() for p in made) and [R.read_json(p) for p in made] != [json.loads(json.dumps(x, ensure_ascii=False)) for x in model]
+    if info['어긋남']:
+        out.insert(1 if out and out[0]['kind'] in ('verdict', 'error') else 0, finding_cards(info['어긋남']))
+        if out[0]['kind'] == 'verdict':
+            out[0] = R.verdict('bad', f'원자료가 내 스키마 표와 어긋나는 곳 {len(info["어긋남"])}곳', '아래 카드의 정한 줄과 걸린 원자료 줄을 보고 스키마 표를 고친 뒤 모델을 다시 만듭니다.')
+    if stale:
+        out.append(R.note('스키마 표나 규칙을 고친 뒤 모델 파일을 다시 만들지 않았습니다 — python run.py parts를 실행한 뒤 다시 검증합니다.'))
+    return out
 
 COMMANDS = {
     'sources': ('원자료', sources),
     'expected': ('기대 답', expected),
-    'design': ('식별자와 관계', design),
+    'classes': ('클래스와 식별자', classes),
+    'properties': ('속성과 자료형', properties),
+    'relations': ('관계와 카디널리티', relations),
     'names': ('구성 요소 이름과 실물', names),
     'quantities': ('물리량과 센서', sensors),
     'parts': ('부품과 모델', parts),
     'query': ('질문별 대조', ask),
-    'check': ('구조 검사', check),
+    'check': ('넣기 전 검증', check),
 }

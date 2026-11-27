@@ -7,9 +7,10 @@ for _stream in (sys.stdout, sys.stderr):
 import hashlib as _h
 _PROVIDED = {
  "app/ui/render.py": "f9170a056453a35cc5583eb052eefba6450e29eb6e6fcaf264a896b66cf7be58",
- "app/utils/actions.py": "bfdb8fd2bebeb1aa52ded65877f9fcb070dcd4b7f3e24e168f4095ef49f245d0",
- "app/utils/cypher.py": "6edc3bc097ca1958a4724d6798c0ab7459453e01a957ba2375d729ca42b40f9e",
+ "app/utils/actions.py": "a8bac29ba394336eef87ed7008ea91706f2e795fe3bc61550c29edc341cd1105",
+ "app/utils/cypher.py": "5e8a5609c1e78cba2e5d2965cdb2738c2bb4bc7562f9f228336fd30f63c878a1",
  "app/utils/db.py": "c5c30d996a68370af862ac30f2f573579cc3641aacf96887f2903992fe04b708",
+ "app/utils/load_provided.cypher": "2a6e6e1f87e11a5388279e0806346b5772e33ab991d89404dc4ab862aa64af23",
  "app/utils/results.py": "25458cd98ea82bbcc688cbba9bfd2e746bcd62d8121da1f33da764fbb06ece6a",
  "run.py": "719e59ea92ccad25b31355ef67fd096c0ff47751ae8cbb0944420d185f38d10f"
 }
@@ -68,7 +69,7 @@ def check_value(where,key,value,spec):
         if value not in spec:errors.append(f'{where} {key}={value!r}: 허용 값 {spec} 밖')
         return
     k=kind_of(value)
-    ok={'string':k=='string','number':k in('integer','number'),'integer':k=='integer','boolean':k=='boolean','list':k=='list'}.get(spec)
+    ok={'string':k=='string','number':k in('integer','number'),'integer':k=='integer','boolean':k=='boolean','list':k=='list','date':k=='string' and len(value)==10 and value[4]==value[7]=='-' and value.replace('-','').isdigit()}.get(spec)
     if ok is None:warnings.append(f'스키마의 자료형 이름을 모름: {spec} ({where} {key})');return
     if not ok:
         hint=''
@@ -142,6 +143,12 @@ try:
             if side not in ONE:continue
             over=sorted((x,len(v)) for (tt,x),v in count.items() if tt==t and len(v)>1)
             if over:errors.append(f'{t} 카디널리티 {card} 어긋남: {word} 많아야 하나인데 둘 이상인 대상 {len(over)}개 — '+', '.join(f'{x} {n}개' for x,n in over[:5])+(' …' if len(over)>5 else ''))
+    for t,spec in relations.items():
+        if not (isinstance(spec,dict) and spec.get('at_least_one') is True):continue
+        starts=spec.get('from');starts=starts if isinstance(starts,list) else [starts]
+        has={r.get('a') for r in rels if r.get('type')==t}
+        lone=sorted(i for i,labs in labels_by_id.items() if any(x in starts for x in labs) and i not in has)
+        if lone:errors.append(f'{t} 끝이 적어도 하나 어긋남: 이 관계가 하나도 없는 시작 쪽 인스턴스 {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:

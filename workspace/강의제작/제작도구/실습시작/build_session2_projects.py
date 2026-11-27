@@ -24,7 +24,13 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v54-lab', 'graph-lab': 'v57-lab'}
+VERSIONS = {'ontology-lab': 'v58-lab', 'graph-lab': 'v58-lab'}
+# v58-lab(두 랩) — 2026-11-27, 사용자 「랩이 이 수업의 메인 … 장난감이면 안 되고 … 난이도를 내리지 말고 쉽게 이끈다」 · 확정 구성안(작업 폴더 판정/구성안_랩고침.md, 근거 판정/랩검토_설계.md · 랩검토_그래프.md):
+#   설계 랩 — 스키마를 학생이 만든다: 제공 코드에 박혀 있던 클래스의 의미 · 속성 · 자료형 · 필수를 빈 틀 classes.csv · properties.csv로 꺼내고 relations.csv에 「끝이 적어도 하나」를 더했다(design.csv는 없앰).
+#   제공 코드(session2_model_tool)는 그 표대로 원자료를 옮기고, 원자료 행을 표에 대어 본다(필수인데 빈 행 · 자료형에 맞지 않는 값 · 적어도 하나인데 관계가 없는 인스턴스 — 걸릴 수 있는 검증).
+#   질문은 관계를 정한 방향대로만 따라가고(반대로 저장하면 찾지 못함), 답에 필요한 원자료 칸을 담은 속성이 없으면 「답할 수 없음」이다. 내가 더하는 질문 4(클래스의 속성으로 거르기 · 견주기)로 둘째 바퀴를 돈다.
+#   구조 검사(check.py)는 날짜 자료형과 「끝이 적어도 하나」를 본다(checker의 통합반 덧댐). 가이드는 열 단계(04 스키마 표 세 장 · 09 새 질문).
+#   그래프 랩 — 아래 build_graph와 session2_graph_project의 v58 주석.
 # v54-lab(설계) · v57-lab(그래프) — 2026-11-25, 사용자 「너무 유치하고 그럼.. 세련되고 트렌디하게」 → 「가독성을 위주로 … css를 신경써 레이아웃이랑 / 필요한것만 보여준다던지」 → 견본을 보고 「이 모양으로 전부」:
 #   결과 화면을 읽기 쉬움 위주로 다시 — 화면마다 결론 한 줄 → 주인공 그림이나 표 하나 → 볼 곳, 그림과 겹치는 표 · 원문은 화면 끝 「자세히 보기」 하나에 모으고 설명은 한 줄로.
 #   큰 글자(본문 18px · 결론 38px · 표 17px · 노드 식별자 18px 고정폭)와 진한 대비, 흰 카드 + 얇은 선, 상태는 작은 점 + 글, 클래스 색은 노드 왼쪽 띠와 범례에만(result_view.py). 대조 표는 기대 · 실제 조각을 같은 차례로 놓는다.
@@ -110,10 +116,11 @@ NOT_DECIDED = ('- 「권장안대로」 · 「알아서」 · 「다 해 줘」�
 
 # 통합반 설계 랩의 랩별 경계 — 이 랩에는 랩 DB가 없고, 판단 함수 파일은 하나다. 표는 가이드가 한 요청에 둘셋을 맞추게 하므로 「요청받은 것만」으로 적는다(검토 지적, 코딩랩 K-6).
 DESIGN_RULE = (DECISION_RULE.split('\n')[0] + '\n'
-               '- 판단 함수 파일은 `app/features/quantity_rules.py` 하나다. 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. '
-               '표(`design.csv` · `relations.csv` · `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.\n'
+               '- 스키마는 `app/features/`의 표 세 장(`classes.csv` · `properties.csv` · `relations.csv`)이고, 판단 함수 파일은 `quantity_rules.py` 하나다. 판단 함수는 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. '
+               '표(스키마 표 세 장과 `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.\n'
+               '- `expected.csv`의 기대 답은 원자료에서 찾아 적고, 모델이나 결과 화면이 낸 답을 옮겨 적지 않는다. 결과가 기대 답과 다르면 기대 답을 고치기 전에 원인을 원자료 줄로 먼저 설명한다.\n'
                '- 모델은 `python run.py parts`가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.\n'
-               + NOT_DECIDED.format(files='`quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `design.csv` · `relations.csv`의 실물 행'))
+               + NOT_DECIDED.format(files='`quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `classes.csv` · `properties.csv` · `relations.csv`의 실물 줄'))
 
 
 # 리허설 07 막힘: Codex 샌드박스는 랩 DB(Docker)에 닿지 못해 AI가 실행을 시도하다 실패했다. 그래프 랩은 랩 DB 명령을 학생 터미널에 둔다.
@@ -124,10 +131,12 @@ GRAPH_DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거�
 
 # 통합반 그래프 랩의 랩별 경계 — 위 둘에 장난감 시험(v32-lab two_turn)에서 뚫린 두 틈을 막는 줄을 더한다(코딩랩 K-6 · 길 6).
 GRAPH_RULE = (GRAPH_DECISION_RULE + '\n'
-              '- `app/features/update.cypher`의 불용 설비 처리는 `decisions.csv` 「불용 결정 설비」 줄을 학생이 정한 뒤에만 쓴다. '
+              '- `app/features/update.cypher`에서 불용 설비와 수정본의 「삭제」 줄(목록에서 빠진 센서)을 어떻게 할지는 `decisions.csv`의 「불용 결정 설비」 · 「목록에서 빠진 센서」 줄을 학생이 정한 뒤에만 쓴다. '
               '정하기 전에는 수정본의 다른 줄만 반영하고 그 처리는 쓰지 않으며, 무엇을 정해야 하는지 선택지와 결과로 묻는다.\n'
               '- 「다 해 줘」처럼 여러 기능을 한꺼번에 부탁받아도 기능 파일 하나를 고친 뒤 멈추고, 다음 기능을 할지 묻는다.\n'
-              + NOT_DECIDED.format(files='`update.cypher`의 불용 설비 처리'))
+              '- `app/features/load.cypher`에는 그 파일 첫머리에 적힌 종류 · 관계의 쿼리만 쓴다. `app/utils/load_provided.cypher`는 제공 파일이라 고치지 않는다.\n'
+              '- `expected.csv`의 기대 답은 원자료와 모델 파일에서 찾아 적고, 쿼리 결과를 옮겨 적지 않는다. 결과가 기대 답과 다르면 기대 답을 고치기 전에 원인을 먼저 설명한다.\n'
+              + NOT_DECIDED.format(files='`update.cypher`의 불용 설비 처리와 「삭제」 줄 처리'))
 
 
 def run_source():
@@ -160,6 +169,19 @@ def source_data(folder):
             write(folder / 'data' / P.NAMES[path.name], P.convert(path.read_text(encoding='utf-8-sig')))
 
 
+CHECK_MORE = [
+    ("'list':k=='list'}.get(spec)",
+     "'list':k=='list','date':k=='string' and len(value)==10 and value[4]==value[7]=='-' and value.replace('-','').isdigit()}.get(spec)"),
+    (B.CHECK_ANCHOR,
+     "    for t,spec in relations.items():\n"
+     "        if not (isinstance(spec,dict) and spec.get('at_least_one') is True):continue\n"
+     "        starts=spec.get('from');starts=starts if isinstance(starts,list) else [starts]\n"
+     "        has={r.get('a') for r in rels if r.get('type')==t}\n"
+     "        lone=sorted(i for i,labs in labels_by_id.items() if any(x in starts for x in labs) and i not in has)\n"
+     "        if lone:errors.append(f'{t} 끝이 적어도 하나 어긋남: 이 관계가 하나도 없는 시작 쪽 인스턴스 {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))\n"
+     + B.CHECK_ANCHOR)]
+
+
 def checker(folder, L):
     provided = [p.relative_to(folder).as_posix() for p in student_files(folder)
                 if p.relative_to(folder).as_posix().startswith(('app/ui/', 'app/utils/')) or p.name == 'run.py']
@@ -172,6 +194,10 @@ def checker(folder, L):
     body = body.replace('가이드 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요.', 'python run.py parts로 모델을 생성한 뒤 다시 실행하세요.')
     body = body.replace('(가이드 결과 형식 참고)', '')
     body = body.replace('if errors:\n', 'errors = _pre + errors\nif errors:\n')
+    for old, new in CHECK_MORE:      # 통합반 2회차 두 랩: 날짜 자료형과 「끝이 적어도 하나」(설계 랩의 스키마가 이 둘을 적는다)
+        if body.count(old) != 1:
+            raise ValueError('구조 검사기 원본이 바뀌었습니다 — 덧댈 자리를 다시 봅니다: ' + old[:40])
+        body = body.replace(old, new)
     if L['kind'].startswith('graph'):
         body = body.replace('python run.py parts로 모델을 생성', 'python run.py export로 그래프를 저장')
     return head + body
@@ -192,9 +218,10 @@ def build_ontology(folder):
     write(folder / 'app/utils/model.py', P.model_source())
     actions = P.actions_source(L)
     commands = {'sources': ('원자료', 'sources'), 'expected': ('기대 답', 'expected'),
-                'design': ('식별자와 관계', 'design'), 'names': ('구성 요소 이름과 실물', 'names'),
+                'classes': ('클래스와 식별자', 'classes'), 'properties': ('속성과 자료형', 'properties'), 'relations': ('관계와 카디널리티', 'relations'),
+                'names': ('구성 요소 이름과 실물', 'names'),
                 'quantities': ('물리량과 센서', 'sensors'),
-                'parts': ('부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('구조 검사', 'check')}
+                'parts': ('부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('넣기 전 검증', 'check')}
     actions += '\nCOMMANDS = {\n' + ''.join(f'    {cmd!r}: ({label!r}, {fn}),\n' for cmd, (label, fn) in commands.items()) + '}\n'
     write(folder / 'app/utils/actions.py', actions)
     write(folder / 'run.py', run_source())
@@ -212,7 +239,8 @@ def build_graph(folder):
     schema, graph = B.reference_model(False, B.GRAPH_LAB_INPUT['통합반'])
     for name, value in [('schema.json', B.student_schema(schema)), ('graph.json', graph)]:
         write(folder / 'data/model' / name, P.convert(json.dumps(value, ensure_ascii=False, indent=2) + '\n'))
-    write(folder / 'data/reference_map.json', json.dumps(B.portal_reference(), ensure_ascii=False, indent=2) + '\n')   # 비교 기능(compare)이 내 그래프 아래에 띄우는 기준 지도
+    import session2_answers as A
+    write(folder / 'app/utils/load_provided.cypher', A.load_answer(graph, schema, skip=A.STUDENT_LOAD))   # 학생 몫 셋(A.STUDENT_LOAD)을 뺀 적재 쿼리 — load 기능이 내 쿼리와 함께 실행한다
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
             if name == '결과/기대_답.csv':
@@ -290,7 +318,7 @@ def completed(starter, destination, work):
         head = (starter / 'app/features/expected.csv').read_text(encoding='utf-8').split('\n', 1)[0]
         target.write_text(head + '\n' + target.read_text(encoding='utf-8').split('\n', 1)[1], encoding='utf-8', newline='')
         title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py constraints\npython run.py load\npython run.py update\npython run.py usage'
-        context, actions, rules = instance(folder), ('constraints', 'load', 'repeat', 'sensors', 'parts', 'update', 'usage', 'compare', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
+        context, actions, rules = instance(folder), ('constraints', 'probe', 'load', 'repeat', 'sensors', 'parts', 'update', 'repeat', 'usage', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial, extra_rules=rules, readme_file=False)   # 완성본을 Codex로 열어도 같은 랩별 경계

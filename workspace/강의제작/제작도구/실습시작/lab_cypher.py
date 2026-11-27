@@ -262,6 +262,138 @@ def load_file(path, graph=None):
     return out
 
 
+CHANGE = re.compile(r'^\s*//\s*반영할 것:\s*(\S+)\s+(\S+)\s*$')
+
+
+def load_plan(path, graph=None):
+    """적재 파일 → [(줄, 대상, 쿼리, 넘길 행)]. 쿼리마다 머리 주석 `// 넣을 것: <종류 또는 관계>`가 있어야 하고, 그 종류의 노드 props(또는 그 관계의 {a, b, props})를 $rows로 넘긴다."""
+    if graph is None:
+        _, graph = model_graph()
+    nodes, rels = {}, {}
+    for n in graph['nodes']:
+        nodes.setdefault(n['labels'][0], []).append(n['props'])
+    for r in graph['rels']:
+        rels.setdefault(r['type'], []).append({'a': r['a'], 'b': r['b'], 'props': r.get('props', {})})
+    parts = statements(read(path))
+    guard(path, parts)
+    plan = []
+    for line, s, notes in parts:
+        heads = [m.group(1) for m in (TARGET.match(x) for x in notes) if m]
+        if len(heads) != 1:
+            raise RuntimeError(f'{path}:{line}: 쿼리 바로 위에 `// 넣을 것: <종류 또는 관계>` 주석이 한 줄 있어야 합니다(있는 종류: {", ".join(sorted(nodes))} / 관계: {", ".join(sorted(rels))}).')
+        target = heads[0]
+        if target not in nodes and target not in rels:
+            raise RuntimeError(f'{path}:{line}: 「{target}」는 graph.json에 없는 종류 · 관계입니다.')
+        if '$rows' not in s:
+            raise RuntimeError(f'{path}:{line}: 행은 $rows로 받습니다(UNWIND $rows AS row …).')
+        plan.append((line, target, s, nodes.get(target) or rels.get(target), target in nodes))
+    return plan
+
+
+def load_files(mine, provided):
+    """제공 적재 쿼리(provided)와 내 적재 쿼리(mine)를 함께 실행한다 — 제공 쿼리의 노드 → 내 쿼리(적힌 차례) → 제공 쿼리의 관계. 관계는 양 끝 노드가 먼저 있어야 이어진다.
+    돌려주는 것: ([(파일, 줄, 대상, 넘긴 행 수, 결과)], 어느 쿼리도 넣지 않은 종류 · 관계)."""
+    _, graph = model_graph()
+    own = load_plan(mine, graph)
+    given = load_plan(provided, graph)
+    order = [(provided, x) for x in given if x[4]] + [(mine, x) for x in own] + [(provided, x) for x in given if not x[4]]
+    out = []
+    for path, (line, target, s, rows, _) in order:
+        try:
+            out.append((path, line, target, len(rows), cypher([(s, {'rows': rows})])[0]))
+        except LabDbOff:
+            raise
+        except RuntimeError as e:
+            raise RuntimeError(f'{path}:{line}: 실행 실패 — {e}')
+    every = {n['labels'][0] for n in graph['nodes']} | {r['type'] for r in graph['rels']}
+    return out, sorted(every - {target for _, _, target, _, _ in out})
+
+
+def seek_plan(statement, rows):
+    """쿼리를 실행하지 않고 DB가 세운 실행 계획(EXPLAIN)에서 노드를 찾는 연산자 이름만 뽑는다 — 식별자로 바로 찾는지(…IndexSeek), 훑는지(…Scan)."""
+    body = json.dumps({'statements': [{'statement': 'EXPLAIN ' + statement, 'parameters': {'rows': rows[:1]}}]}).encode()
+    req = urllib.request.Request(endpoint(), body, {'Content-Type': 'application/json', 'Accept': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read())
+    except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+        raise LabDbOff(f'랩 DB 꺼짐 — 연결하지 못했습니다({e}). python lab_db.py 로 DB를 다시 준비하세요.')
+    if data.get('errors'):
+        raise RuntimeError('; '.join(e.get('message', '').split('\n')[0] for e in data['errors']))
+    found = []
+
+    def walk(node):
+        name = str(node.get('operatorType', '')).split('@')[0]
+        if 'Scan' in name or 'Seek' in name:
+            found.append(name)
+        for child in node.get('children', []):
+            walk(child)
+    plan = data['results'][0].get('plan') or {}
+    walk(plan.get('root', plan))
+    return found
+
+
+def tried(queries):
+    """쿼리들([(쿼리, 넣을 값)])을 한 트랜잭션에서 차례로 실행해 보고, 받아 주든 거절하든 모두 되돌려 랩 DB에 남기지 않는다.
+    돌려주는 것: ([쿼리마다 {'stats', 'columns', 'rows'}] — 거절된 쿼리 앞까지, DB가 거절하며 한 말 또는 None)."""
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    body = json.dumps({'statements': [{'statement': s, 'parameters': p, 'includeStats': True} for s, p in queries]}).encode()
+    try:
+        with urllib.request.urlopen(urllib.request.Request(endpoint().removesuffix('/commit'), body, headers), timeout=60) as r:
+            data = json.loads(r.read())
+        if not data.get('errors'):      # 오류가 난 트랜잭션은 DB가 되돌린다
+            with urllib.request.urlopen(urllib.request.Request(data['commit'].removesuffix('/commit'), headers=headers, method='DELETE'), timeout=60) as r:
+                if json.loads(r.read()).get('errors'):
+                    raise RuntimeError('실험한 트랜잭션을 되돌리지 못했습니다.')
+    except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+        raise LabDbOff(f'랩 DB 꺼짐 — 연결하지 못했습니다({e}). python lab_db.py 로 DB를 다시 준비하세요.')
+    done = [{'stats': {k: v for k, v in x.get('stats', {}).items() if isinstance(v, int) and not isinstance(v, bool) and v},
+             'columns': x['columns'], 'rows': [d['row'] for d in x['data']]} for x in data['results']]
+    return done, ('; '.join(e.get('message', '').split('\n')[0] for e in data['errors']) or None) if data.get('errors') else None
+
+
+def change_rows():
+    """수정본 폴더의 표 → {(파일, 변경): [(편집기 줄, {열 이름: 값})]}. 열 이름과 값은 수정본에 적힌 글자 그대로다(숫자도 글자로 온다)."""
+    out = {}
+    for p in sorted((HERE / '입력/자료_변경분/').glob('*/*.csv')):
+        text = p.read_text(encoding='utf-8-sig')
+        for n, row in enumerate(csv.DictReader(io.StringIO(text)), 2):
+            out.setdefault((p.name, (row.get('변경') or '').strip()), []).append((n, {k: (v or '').strip() for k, v in row.items()}))
+    return out
+
+
+def apply_changes(path):
+    """수정 쿼리 파일 실행. 쿼리마다 머리 주석 `// 반영할 것: <수정본 파일 이름> <변경>`이 있어야 하고, 그 파일에서 「변경」 칸이 그 값인 줄을 $rows로 넘긴다.
+    줄마다 따로 넘겨 DB가 그 줄로 바꾼 것을 받는다. 돌려주는 것: ([(쿼리 줄, 파일, 변경, [(수정본 줄, 행, 바뀐 수)])], 쿼리가 하나도 없는 (파일, 변경))."""
+    rows = change_rows()
+    have = ' / '.join(f'{name} {kind}' for name, kind in sorted(rows))
+    parts = statements(read(path))
+    guard(path, parts)
+    plan = []
+    for line, s, notes in parts:
+        heads = [m.groups() for m in (CHANGE.match(x) for x in notes) if m]
+        if len(heads) != 1:
+            raise RuntimeError(f'{path}:{line}: 쿼리 바로 위에 `// 반영할 것: <수정본 파일 이름> <변경>` 주석이 한 줄 있어야 합니다(수정본에 있는 것: {have}).')
+        if heads[0] not in rows:
+            raise RuntimeError(f'{path}:{line}: 「{heads[0][0]} {heads[0][1]}」에 해당하는 수정본 줄이 없습니다(수정본에 있는 것: {have}).')
+        if '$rows' not in s:
+            raise RuntimeError(f'{path}:{line}: 수정본의 줄은 $rows로 받습니다(UNWIND $rows AS row …). 값을 쿼리에 직접 적지 않습니다.')
+        plan.append((line, heads[0][0], heads[0][1], s))
+    out = []
+    for line, name, kind, s in plan:
+        done = []
+        for n, row in rows[(name, kind)]:
+            try:
+                stats = cypher([(s, {'rows': [row]})])[0].get('stats', {})
+            except LabDbOff:
+                raise
+            except RuntimeError as e:
+                raise RuntimeError(f'{path}:{line}: 실행 실패({name}:{n} 줄을 넘겼을 때) — {e}')
+            done.append((n, row, {k: v for k, v in stats.items() if isinstance(v, int) and not isinstance(v, bool) and v}))
+        out.append((line, name, kind, done))
+    return out, sorted(k for k in rows if k not in {(name, kind) for _, name, kind, _ in out})
+
+
 def questions(path):
     """조회 파일 → {번호: (줄, 문장)}. 문장 앞 주석 `// 질문 <번호>`로 질문마다 나눈다."""
     out = {}

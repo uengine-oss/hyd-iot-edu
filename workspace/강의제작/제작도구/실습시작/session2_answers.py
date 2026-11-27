@@ -22,22 +22,26 @@ def csv_text(explain, columns, rows):
 
 
 # ───────────── 통합 02-3(실습 랩 규모) ─────────────
-DESIGN_REASON = ' · 근거 = 그 줄을 그렇게 정한 내 이유(정할 때 열어 본 원문 줄이 있으면 파일:줄을 함께)'   # 세 틀의 근거 칸 뜻(코딩랩 함정 「칸 뜻」)
+DESIGN_REASON = ' · 근거 = 그 줄을 그렇게 정한 내 이유(정할 때 열어 본 원문 줄이 있으면 파일:줄을 함께)'   # 스키마 표의 근거 칸 뜻(코딩랩 함정 「칸 뜻」)
+# 스키마는 학생이 정한 표 세 장이다(클래스 · 속성 · 관계). 칸마다 뜻만 적고 값은 넣지 않는다(K-4).
 DESIGN_EXPLAIN = {
-    '설계.csv': '대상(설비 · 구성 요소 · 센서 · 물리량 · 부품, 구성 요소 자리와 그 실물을 나눌 때만 실물)마다 식별자를 무엇으로 지을지 — {열 이름}과 글자를 이은 꼴. 쓸 수 있는 열: 설비 = 설비코드 · 모델 · 기능위치 · 일련번호 / 구성 요소 = 설비코드 · 구성요소(같은 모델의 설비끼리 하나로 맞춘 이름) · 계통 / 센서 = 설비코드 · 태그 / 물리량 = 물리량(같은 물리량끼리 묶어 정한 이름) / 부품 = 품번 / 실물 = 설비코드 · 구성요소 · 일련번호' + DESIGN_REASON,
-    '관계.csv': '연결(설비-구성 요소 · 구성 요소-센서 · 센서-물리량 · 구성 요소-부품, 구성 요소 자리와 그 실물을 나눌 때만 구성 요소-실물)마다 관계 이름(영어 대문자) · 시작(그 연결의 두 대상 가운데 하나) · 카디널리티(1:1 · 1:N · N:1 · N:M — 시작 쪽 수:끝 쪽 수, 1은 많아야 하나)' + DESIGN_REASON,
+    '클래스.csv': '클래스마다 한 줄. 클래스 = 설비 · 구성 요소 · 센서 · 물리량 · 부품(구성 요소 자리와 그 실물을 나눌 때만 실물도) · 의미 = 무엇을 이 클래스의 인스턴스 하나로 세는지 한 문장 · ID_만드는_법 = 식별자를 무엇으로 지을지 — {칸 이름}과 글자를 이은 꼴이고, 칸 이름은 그 클래스의 원자료 표에 있는 칸(구성 요소의 구성요소 칸은 같은 모델의 설비끼리 하나로 맞춘 이름, 물리량은 내가 묶어 정한 이름 「물리량」, 실물은 구성 요소 목록의 칸)' + DESIGN_REASON,
+    '속성.csv': '속성마다 한 줄(식별자 id는 클래스 표가 정하므로 적지 않음). 클래스 = 클래스 표의 이름 · 속성 = 모델에 담을 이름(영어 소문자와 밑줄) · 원자료_칸 = 그 값이 오는 원자료 표의 칸 이름(제공 코드가 채워 주는 칸: 구성 요소의 「다른이름」, 부품의 「다른표기」, 물리량의 「물리량」 · 「기준단위」) · 자료형 = 글자 · 수 · 날짜 · 목록(목록은 「다른이름」 · 「다른표기」 칸만) · 필수 = 예(모든 인스턴스에 값이 있어야 함) 또는 아니오(비어도 됨) · 단위 = 센서의 수 속성에만 「기준 단위」(그 센서가 재는 물리량의 기준 단위로 바꿔 담음) 또는 「적힌 그대로」, 그 밖의 줄은 비움' + DESIGN_REASON,
+    '관계.csv': '관계마다 한 줄. 관계_이름 = 영어 대문자와 밑줄 · 시작 · 끝 = 클래스 표의 이름(화살표는 시작에서 끝으로) · 카디널리티 = 1:1 · 1:N · N:1 · N:M(시작 쪽 수:끝 쪽 수, 1은 많아야 하나) · 끝이_적어도_하나 = 예(시작 쪽 인스턴스마다 이 관계가 하나는 있어야 함) 또는 아니오(없어도 됨)' + DESIGN_REASON,
     '행_처리.csv': '기준일에 달려 있지 않거나 겹친 원자료 행을 어떻게 할지 — 파일(구성요소_목록.csv · 센서_목록.csv · 설비_대장.csv) · 행(편집기 줄 번호) · 처리(빼기 · 지난 실물:<지금 실물 행> — 지난 실물은 구성 요소 자리와 그 실물을 나눌 때 구성요소_목록.csv만)' + DESIGN_REASON,
 }
-DESIGN_COLUMNS = {'설계.csv': ['대상', 'ID_만드는_법', '근거'], '관계.csv': ['연결', '관계_이름', '시작', '카디널리티', '근거'], '행_처리.csv': ['파일', '행', '처리', '근거']}
+DESIGN_COLUMNS = {'클래스.csv': ['클래스', '의미', 'ID_만드는_법', '근거'], '속성.csv': ['클래스', '속성', '원자료_칸', '자료형', '필수', '단위', '근거'],
+                  '관계.csv': ['관계_이름', '시작', '끝', '카디널리티', '끝이_적어도_하나', '근거'], '행_처리.csv': ['파일', '행', '처리', '근거']}
 EXPECT_COLUMNS_DESIGN = ['질문', '물을_값', '항목', '기대_답', '근거']
 EXPECT_FORMAT = '여러 값은 「 · 」로 잇고, 값이 없으면(원자료에 없는 품번 · 빈 값) 「없음」'   # 2회차 네 랩 기대 답 표의 같은 꼴(결과 화면이 이 꼴로 견줌)
 # 기대 답 표의 칸 뜻 — 빈 틀 첫 줄에 싣는다(값은 넣지 않고 꼴과 뜻만 — K-4)
-EXPECT_EXPLAIN_DESIGN = ('한 줄 = (질문 · 물을_값 · 항목) 하나. 질문 = 1 · 2 · 3. 물을_값 = 질문 1은 설비 코드, 질문 2는 물리량 이름(내가 묶어 정한 이름), 질문 3은 품번이나 표기 — '
+EXPECT_EXPLAIN_DESIGN = ('한 줄 = (질문 · 물을_값 · 항목) 하나. 질문 = 1 · 2 · 3(와 내가 더하는 4). 물을_값 = 질문 1은 설비 코드, 질문 2는 물리량 이름(내가 묶어 정한 이름), 질문 3은 품번이나 표기 — '
                          '설비 코드와 품번은 식별자를 어떻게 지었든 원자료에 적힌 그대로 적음. '
                          '항목 = 질문 1은 구성 요소 이름(그 설비의 원자료에 적힌 이름) 또는 「구성 요소 이름 실물」(그 자리에 달린 장치), 질문 2는 비우거나(그 물리량을 재는 센서 목록) 설비코드:태그(그 센서의 값), '
                          '질문 3은 찾을 사내 품번(물은 표기를 그대로 옮기지 않고 그 표기가 가리키는 사내 품번을 적음. 원자료에 없는 품번이면 비움). '
-                         '기대_답 = 질문 1은 센서 태그들 또는 일련번호(실물을 따로 두는 모델이면 「일련번호(지금)」 · 「일련번호(지난)」 꼴), 질문 2는 설비코드:태그들 또는 「단위 · 정상값 · 한계 · 한계구분」 차례의 값(물리량의 기준 단위로 맞춘 값 — 기준 단위는 그 물리량에 묶인 센서 줄이 가장 많이 쓴 단위이고, 다른 단위로 적힌 줄은 그 단위로 바꾼 값을 적음), '
-                         '질문 3은 쓰는 설비 코드들(원자료에 없는 품번은 「없음」). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만 「data/파일.csv · data/파일.csv에 없음」). ' + EXPECT_FORMAT)
+                         '기대_답 = 질문 1은 센서 태그들 또는 일련번호(실물을 따로 두는 모델이면 「일련번호(지금)」 · 「일련번호(지난)」 꼴), 질문 2는 설비코드:태그들 또는 「단위 · 정상값 · 한계 · 한계구분」 차례의 값(속성 표에서 센서의 수 속성을 「기준 단위」로 정했으면 그 물리량의 기준 단위로 바꾼 값 — 기준 단위는 그 물리량에 묶인 센서 줄이 가장 많이 쓴 단위 — 이고, 「적힌 그대로」면 원자료에 적힌 값), '
+                         '질문 3은 쓰는 설비 코드들(원자료에 없는 품번은 「없음」). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만 「data/파일.csv · data/파일.csv에 없음」). '
+                         '질문 4 = 세 질문 뒤에 내가 더하는 질문: 물을_값은 「클래스.속성 조건」 꼴(조건 = 「= 값」 · 「> 값」 · 「< 값」 · 없음 · 있음 · 가장 큰 · 가장 작은 · 가장 이른 · 가장 늦은, 여럿이면 「 & 」로 이음), 항목은 답으로 볼 그 클래스의 속성 이름, 기대_답은 그 속성의 값들. ' + EXPECT_FORMAT)
 
 QUANTITY_RULES_BLANK = f"""# {F.MARK} — 같은 물리량을 가르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
@@ -131,9 +135,33 @@ def removed_rows():
 OTHER_IDS = {'설비': 'EQ-{설비코드}', '구성 요소': 'EQ-{설비코드}/{구성요소}', '센서': '{태그}@{설비코드}', '물리량': 'Q-{물리량}', '부품': 'PART-{품번}', '실물': 'SN-{일련번호}'}
 
 
-def integrated_design(branch='A', ids=None):
+MEANING = {'설비': '설비 대장에 올려 한 대씩 관리하는 기계', '구성 요소': '설비를 이루는 기계 하나하나', '센서': '구성 요소에 붙어 값을 재는 계기',
+           '물리량': '센서가 재는 것. 같은 것을 재는 센서를 여기에 모은다', '부품': '구성 요소 안에서 닳으면 갈아 끼우는 것. 사내 품번마다 하나이고 다른 표기는 다른 이름으로 남긴다',
+           '실물': '구성 요소 자리에 달리는 일련번호가 붙은 기계 한 대'}   # 이론의 클래스 정의(이름과 의미 한 문장)
+# 속성 표의 강사 참조 줄: (클래스, 속성, 원자료 칸, 자료형, 필수, 단위, 근거). 한계는 인터록이 없는 센서가 많아 선택이고, 센서의 수는 물리량의 기준 단위로 맞춘다.
+PROPERTY_ROWS = [
+    ('설비', 'code', '설비코드', '글자', '예', '', '자료/설비_대장.csv:1 — 질문 1 · 3이 설비 코드로 묻고 답함'), ('설비', 'name', '설비명', '글자', '예', '', '자료/설비_대장.csv:1'),
+    ('설비', 'model', '모델', '글자', '예', '', '자료/설비_대장.csv:1 — 같은 모델끼리 견줌'), ('설비', 'status', '상태', '글자', '예', '', '자료/설비_대장.csv:1'),
+    ('설비', 'maker', '제조사', '글자', '아니오', '', '자료/설비_대장.csv:1'), ('설비', 'serial', '일련번호', '글자', '아니오', '', '자료/설비_대장.csv:1'),
+    ('설비', 'functional_location', '기능위치', '글자', '아니오', '', '자료/설비_대장.csv:1'), ('설비', 'installed', '설치일', '날짜', '아니오', '', '자료/설비_대장.csv:1 — 앞뒤를 견줄 값이라 날짜'),
+    ('구성 요소', 'name', '구성요소', '글자', '예', '', '자료/구성요소_목록.csv:1 — 질문 1의 항목'), ('구성 요소', 'group', '계통', '글자', '예', '', '자료/구성요소_목록.csv:1'),
+    ('구성 요소', 'aliases', '다른이름', '목록', '아니오', '', '현장이 섞어 쓰는 이름으로도 찾으려고'),
+    ('센서', 'tag', '태그', '글자', '예', '', '자료/센서_목록.csv:1 — 질문 1 · 2의 답'), ('센서', 'name', '센서명', '글자', '아니오', '', '자료/센서_목록.csv:1'),
+    ('센서', 'unit', '단위', '글자', '예', '', '자료/센서_목록.csv:1 — 단위 없는 값은 견줄 수 없음'), ('센서', 'normal', '정상값', '수', '아니오', '기준 단위', '자료/센서_목록.csv:1 — 설비끼리 견주려고 기준 단위로'),
+    ('센서', 'limit', '한계', '수', '아니오', '기준 단위', '자료/센서_목록.csv:3 — 인터록이 없는 센서는 한계 칸이 비어 있어 필수로 두지 않음'),
+    ('센서', 'limit_direction', '한계구분', '글자', '아니오', '', '자료/센서_목록.csv:3 — 한계가 없으면 함께 비어 있음'),
+    ('물리량', 'name', '물리량', '글자', '예', '', '질문 2가 이 이름으로 물음'), ('물리량', 'unit', '기준단위', '글자', '아니오', '', '센서 값을 견줄 단위'),
+    ('부품', 'part_no', '품번', '글자', '예', '', '자료/예비품_목록.csv:1 — 질문 3의 답'), ('부품', 'name', '품명', '글자', '예', '', '자료/예비품_목록.csv:1'),
+    ('부품', 'other_codes', '다른표기', '목록', '아니오', '', '자료/품번_교차표.csv:1 — 예전 품번 · 다른 표기로 물어도 찾으려고')]
+UNIT_PROPERTY_ROWS = [('실물', 'serial', '일련번호', '글자', '예', '', '자료/구성요소_목록.csv:1 — 실물 한 대를 가리키는 번호'),
+                      ('실물', 'note', '비고', '글자', '아니오', '', '자료/구성요소_목록.csv:1 — 달고 뗀 날짜가 비고에 적혀 있음')]
+SEAT_SERIAL_ROW = ('구성 요소', 'serial', '일련번호', '글자', '아니오', '', '자료/구성요소_목록.csv:1 — 지금 달린 장치의 번호. 펌프 줄에만 적혀 있음')
+
+
+def integrated_design(branch='A', ids=None, properties=None, relations=None):
     """통합 02-3 빈 틀의 정답 내용 {경로: 글}. 갈래는 build_labs.POLICY(A · B · C · E).
-    ids = 대상마다 식별자 틀을 달리 지은 사본({대상: 틀}, 예 OTHER_IDS) — 식별자를 어떻게 지어도 질문별 대조가 서는지 강사 참조 시험이 본다."""
+    ids = 대상마다 식별자 틀을 달리 지은 사본({대상: 틀}, 예 OTHER_IDS) — 식별자를 어떻게 지어도 질문별 대조가 서는지 강사 참조 시험이 본다.
+    properties · relations = 속성 표 · 관계 표의 줄을 바꾸는 함수(강사 참조 시험이 다른 선택의 결과를 볼 때)."""
     D.require('통합반')
     made = lambda kind, default: (ids or {}).get(kind, default)
     _, _, unit, scope = B.policy(branch)
@@ -141,19 +169,22 @@ def integrated_design(branch='A', ids=None):
     memo = lambda text: f'자료/현장_메모.md:{memo_line(text)}'
     (gone, now, removed), = removed_rows()
     files = {}
-    files['결과/설계.csv'] = csv_text(DESIGN_EXPLAIN['설계.csv'], DESIGN_COLUMNS['설계.csv'], [
-        ['설비', made('설비', '{설비코드}'), '자료/설비_대장.csv:1 설비코드 칸 — 설비마다 하나'],
-        ['구성 요소', made('구성 요소', '{설비코드}:{구성요소}'), f'{memo("같은 모델(HPP-45A)")} — 같은 모델의 같은 품목이 설비마다 있으므로 설비코드를 붙임'],
-        ['센서', made('센서', '{설비코드}:{태그}'), f'{memo("태그 이름(TS1")} — 태그 이름은 HPP-45A · 45B 네 대가 모두 같아 설비코드를 붙임'],
-        ['물리량', made('물리량', '{물리량}'), f'{memo("재는 값의 이름도")} — 재는 값의 이름이 사람마다 달라 묶어 정한 이름 하나를 씀'],
-        ['부품', made('부품', '{품번}'), '자료/예비품_목록.csv:1 품번 칸(사내 품번) — 다른 표기는 식별자가 아니라 부품의 다른 이름'],
-        *([['실물', made('실물', '{일련번호}'), f'{memo("구성 요소 목록의 일련번호")} — 일련번호는 그 자리에 달린 장치 한 대']] if split else [])])
-    files['결과/관계.csv'] = csv_text(DESIGN_EXPLAIN['관계.csv'], DESIGN_COLUMNS['관계.csv'], [
-        ['설비-구성 요소', 'HAS_COMPONENT', '설비', '1:N', '자료/구성요소_목록.csv:1 — 설비마다 구성 요소 여러 줄, 한 줄은 설비 하나'],
-        ['구성 요소-센서', 'MONITORED_BY', '구성 요소', '1:N', '자료/센서_목록.csv:1 붙은곳 칸 — 한 구성 요소에 센서 여럿, 센서 하나는 한 구성 요소'],
-        ['센서-물리량', 'OBSERVES', '센서', 'N:1', '자료/센서_목록.csv:1 재는것 칸 — 센서 하나는 물리량 하나를 잰다'],
-        ['구성 요소-부품', 'USES_PART', '구성 요소', 'N:1', '자료/구성요소_목록.csv:1 교체부품 칸 — 한 구성 요소에 칸 하나, 한 부품을 여러 구성 요소가 씀'],
-        *([['구성 요소-실물', 'INSTALLED_UNIT', '구성 요소', '1:N', f'자료/구성요소_목록.csv:{gone} · {now} — 한 구성 요소 자리에 지금 실물과 지난 실물']] if split else [])])
+    files['결과/클래스.csv'] = csv_text(DESIGN_EXPLAIN['클래스.csv'], DESIGN_COLUMNS['클래스.csv'], [
+        ['설비', MEANING['설비'], made('설비', '{설비코드}'), '자료/설비_대장.csv:1 설비코드 칸 — 설비마다 하나'],
+        ['구성 요소', MEANING['구성 요소'] + ('가 놓이는 자리' if split else ''), made('구성 요소', '{설비코드}:{구성요소}'), f'{memo("같은 모델(HPP-45A)")} — 같은 모델의 같은 품목이 설비마다 있으므로 설비코드를 붙임'],
+        ['센서', MEANING['센서'], made('센서', '{설비코드}:{태그}'), f'{memo("태그 이름(TS1")} — 태그 이름은 HPP-45A · 45B 네 대가 모두 같아 설비코드를 붙임'],
+        ['물리량', MEANING['물리량'], made('물리량', '{물리량}'), f'{memo("재는 값의 이름도")} — 재는 값의 이름이 사람마다 달라 묶어 정한 이름 하나를 씀'],
+        ['부품', MEANING['부품'], made('부품', '{품번}'), '자료/예비품_목록.csv:1 품번 칸(사내 품번) — 다른 표기는 식별자가 아니라 부품의 다른 이름'],
+        *([['실물', MEANING['실물'], made('실물', '{일련번호}'), f'{memo("구성 요소 목록의 일련번호")} — 일련번호는 그 자리에 달린 장치 한 대']] if split else [])])
+    rows = [list(r) for r in PROPERTY_ROWS + (UNIT_PROPERTY_ROWS if split else [SEAT_SERIAL_ROW])]
+    files['결과/속성.csv'] = csv_text(DESIGN_EXPLAIN['속성.csv'], DESIGN_COLUMNS['속성.csv'], properties(rows) if properties else rows)
+    rows = [
+        ['HAS_COMPONENT', '설비', '구성 요소', '1:N', '예', '자료/구성요소_목록.csv:1 — 설비마다 구성 요소 여러 줄, 한 줄은 설비 하나'],
+        ['MONITORED_BY', '구성 요소', '센서', '1:N', '아니오', '자료/센서_목록.csv:1 붙은곳 칸 — 한 구성 요소에 센서 여럿, 센서가 없는 구성 요소도 있음'],
+        ['OBSERVES', '센서', '물리량', 'N:1', '예', '자료/센서_목록.csv:1 재는것 칸 — 센서 하나는 물리량 하나를 잰다'],
+        ['USES_PART', '구성 요소', '부품', 'N:1', '아니오', f'{memo("구동 모터는 교체 부품을 따로 두지 않아")} — 교체 부품이 없는 구성 요소가 있음'],
+        *([['INSTALLED_UNIT', '구성 요소', '실물', '1:N', '아니오', f'자료/구성요소_목록.csv:{gone} · {now} — 한 자리에 지금 실물과 지난 실물, 일련번호가 없는 자리도 있음']] if split else [])]
+    files['결과/관계.csv'] = csv_text(DESIGN_EXPLAIN['관계.csv'], DESIGN_COLUMNS['관계.csv'], relations(rows) if relations else rows)
     files['결과/행_처리.csv'] = csv_text(DESIGN_EXPLAIN['행_처리.csv'], DESIGN_COLUMNS['행_처리.csv'], [
         ['구성요소_목록.csv', gone, f'지난 실물:{now}' if split else '빼기',
          f'자료/구성요소_목록.csv:{gone} 비고 「{removed["비고"]}」 · {now}행 「교체 설치」' + (' — 그 자리의 지난 실물' if split else ' — 기준일에 달려 있지 않은 실물')]])
@@ -312,7 +343,7 @@ GRAPH_EXPECT_EXPLAIN = {course: ('(질문 · 물을_값) 짝마다 한 줄만 �
                                   f'물을_값 = $ 자리에 넣을 값 하나({ask}). 볼_열 = 그 조회 결과에서 견줄 열 이름 하나. '
                                   '기대_답 = 그 열의 값들(결과 줄마다 하나, 줄 순서는 보지 않음). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만). ' + EXPECT_FORMAT)
                         for course, ask in [('통합반', '질문 1 · 2는 설비 코드, 질문 3은 품번이나 표기'), ('실전반', '질문 1 · 2 모두 품번이나 표기')]}
-GRAPH_EXPECT_EXPLAIN['통합반'] = ('한 줄 = (질문 · 물을_값) 하나이고, 그 줄에서 견줄 열(볼_열)은 하나. 같은 대상의 다른 열도 견주려면 그 대상을 다른 표기로 물은 줄을 더함. '
+GRAPH_EXPECT_EXPLAIN['통합반'] = ('한 줄 = (질문 · 물을_값 · 볼_열) 하나이고, 그 줄에서 견줄 열(볼_열)은 하나. 같은 값으로 물은 결과의 다른 열도 견주려면 볼_열만 바꾼 줄을 더함. '
                                  '질문 = query.cypher의 「// 질문 N」 번호(역량 질문의 번호). 물을_값 = $ 자리에 넣을 값 하나(질문 1 · 2는 설비 코드, 질문 3은 품번이나 표기). '
                                  '볼_열 = 그 쿼리 결과에서 견줄 열 이름 하나. 기대_답 = 그 열의 값들(결과 줄마다 하나, 줄 순서는 보지 않음). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만). ' + EXPECT_FORMAT)
 LOAD_BLANK = F.blank_text('적재 파일 — 문장마다 바로 위에 「// 넣을 것: <종류 또는 관계>」 한 줄, 행은 $rows로 받음(python show_result.py가 실행).\n'
@@ -324,12 +355,14 @@ CONSTRAINT_FILE = '결과/constraints.cypher'
 CONSTRAINT_BLANK = F.blank_text('제약 쿼리 파일 — 종류마다 식별자에 유일 제약을 거는 쿼리들(쿼리 끝 ;). 데이터를 넣는 쿼리는 여기에 쓰지 않습니다(python run.py constraints가 실행).\n'
                                 '종류와 그 식별자는 입력/schema.json에 있습니다.', '//')
 # 통합반 그래프 랩의 빈 틀 — 이론이 세운 이름 「쿼리」 하나로 부른다(과정 용어 장부). 위 셋은 실전반 랩이 쓴다.
+STUDENT_LOAD = ('Asset', 'USES_PART', 'INSTALLED_UNIT')   # 통합반 그래프 랩에서 학생이 쓰는 적재 쿼리(첫 노드 · 속성이 붙는 관계 · 지금/지난이 붙는 관계). 나머지는 제공(load_provided.cypher)
 BLANKS_INTEGRATED = {
     CONSTRAINT_FILE: CONSTRAINT_BLANK,
     '결과/load.cypher': F.blank_text('적재 쿼리 파일 — 쿼리마다 바로 위에 「// 넣을 것: <종류 또는 관계>」 한 줄, 행은 $rows로 받음(python show_result.py가 실행).\n'
-                                   '넣을 수 있는 종류 · 관계는 입력/schema.json에 있습니다.', '//'),
+                                   '여기에 쓰는 것은 ' + ' · '.join(STUDENT_LOAD) + ' 셋입니다. 나머지 종류 · 관계의 쿼리는 app/utils/load_provided.cypher에 있고, 두 파일이 함께 실행됩니다.', '//'),
     '결과/query.cypher': F.blank_text('조회 쿼리 파일 — 쿼리마다 바로 위에 「// 질문 <번호>」 한 줄(역량 질문의 번호), 물을 값은 $ 자리 하나로 받고, 쿼리 끝에 ;를 붙임(빠지면 다음 질문이 앞 쿼리에 묻힘).', '//'),
-    '결과/update.cypher': F.blank_text('수정 쿼리 파일 — 수정본의 줄을 이미 넣은 그래프에 반영하는 쿼리들(쿼리 끝 ;). 전체를 지우는 쿼리는 실행되지 않습니다.', '//')}
+    '결과/update.cypher': F.blank_text('수정 쿼리 파일 — 쿼리마다 바로 위에 「// 반영할 것: <수정본 파일 이름> <변경>」 한 줄(변경 = 그 파일 「변경」 칸의 값). 그 파일에서 변경 칸이 그 값인 줄이 $rows로 넘어옴(쿼리 끝 ;).\n'
+                                     '줄의 열 이름과 값은 수정본에 적힌 그대로이고 값은 모두 글자입니다. 전체를 지우는 쿼리는 실행되지 않습니다.', '//')}
 
 
 def constraint_answer(schema):
@@ -339,14 +372,21 @@ def constraint_answer(schema):
     return '\n'.join(lines) + '\n'
 
 
-def load_answer(graph):
+def load_answer(graph, schema=None, only=None, skip=None):
+    """적재 쿼리. schema를 주면 관계의 양 끝을 그 종류의 레이블과 함께 식별자로 찾는다(유일 제약이 만든 색인으로 바로 찾고, 다른 종류의 같은 식별자에 잇지 않는다).
+    only · skip = 이 종류 · 관계만 / 이것은 빼고(통합반 그래프 랩: 학생 몫 STUDENT_LOAD와 제공 쿼리로 나눈다)."""
     labels = sorted({n['labels'][0] for n in graph['nodes']})
     types = sorted({r['type'] for r in graph['rels']})
+    want = lambda x: (only is None or x in only) and x not in (skip or ())
     lines = ['// 적재 — 노드는 id로 같은 대상을 알아보고(MERGE), 값은 처음 만들 때만 넣는다(ON CREATE SET — 다시 적재해도 수정본이 고친 값을 되돌리지 않음). 관계는 양 끝 id와 관계 이름으로 알아본다.']
     for l in labels:
-        lines += [f'// 넣을 것: {l}', f'UNWIND $rows AS row MERGE (n:{l} {{id: row.id}}) ON CREATE SET n = row;', '']
+        if want(l):
+            lines += [f'// 넣을 것: {l}', f'UNWIND $rows AS row MERGE (n:{l} {{id: row.id}}) ON CREATE SET n = row;', '']
     for t in types:
-        lines += [f'// 넣을 것: {t}', f'UNWIND $rows AS row MATCH (a {{id: row.a}}), (b {{id: row.b}}) MERGE (a)-[r:{t}]->(b) ON CREATE SET r = row.props;', '']
+        if want(t):
+            spec = (schema or {}).get('relations', {}).get(t, {})
+            a, b = (':' + spec['from'] if isinstance(spec.get('from'), str) else ''), (':' + spec['to'] if isinstance(spec.get('to'), str) else '')
+            lines += [f'// 넣을 것: {t}', f'UNWIND $rows AS row MATCH (a{a} {{id: row.a}}), (b{b} {{id: row.b}}) MERGE (a)-[r:{t}]->(b) ON CREATE SET r = row.props;', '']
     return '\n'.join(lines).rstrip() + '\n'
 
 
@@ -401,15 +441,26 @@ def query_text(blocks):
 
 
 def update_integrated(change):
-    """통합반 수정본(D.changes — 이름이 바뀐 설비 하나 · 불용이 된 설비 하나)을 반영하는 수정 쿼리. change = 남김(불용 설비를 상태로 남김) · 삭제(그 설비에만 딸린 대상과 함께 지움)."""
+    """통합반 수정본(D.changes — 추가 · 수정 · 삭제가 섞여 온다)을 반영하는 수정 쿼리. 줄은 수정본의 열 이름 그대로 $rows로 받는다.
+    change = 남김(불용 설비와 목록에서 빠진 센서를 상태로 남김) · 삭제(불용 설비는 그 설비에만 딸린 대상과 함께, 빠진 센서는 그 노드를 지움)."""
     D.require('통합반')
-    (renamed, name), (retired, status) = D.LAB_RENAMED, D.LAB_RETIRED
-    head = f"MATCH (a:Asset {{id: '{renamed}'}}) SET a.name = '{name}';\n"
-    if change == '남김':
-        return ('// 수정본 반영 — 이름이 바뀐 설비는 같은 식별자의 이름만 고치고, 불용 결정 설비는 그래프에 남겨 상태로 구별한다.\n' + head +
-                f"MATCH (a:Asset {{id: '{retired}'}}) SET a.status = '{status}';\n")
+    if change not in ('남김', '삭제'):
+        raise ValueError(f'수정본 갈래 {change!r} — 남김 · 삭제 가운데 하나입니다.')
+    asset = ('// 반영할 것: 설비_대장_변경.csv 수정\n'
+             'UNWIND $rows AS row MATCH (a:Asset {id: row.설비코드}) SET a.name = row.설비명, a.status = row.상태;\n')
     if change == '삭제':
-        return ('// 수정본 반영 — 이름이 바뀐 설비는 같은 식별자의 이름만 고치고, 불용 결정 설비는 그 설비에만 딸린 구성 요소 · 실물 · 센서와 함께 지운다(공용 부품 · 물리량은 남김).\n' + head +
-                f"MATCH (a:Asset {{id: '{retired}'}}) OPTIONAL MATCH (a)-[:HAS_COMPONENT]->(c:Component) OPTIONAL MATCH (c)-[:MONITORED_BY]->(s:Sensor) OPTIONAL MATCH (c)-[:INSTALLED_UNIT]->(u:Unit)\n"
-                'WITH a, collect(DISTINCT c) + collect(DISTINCT s) + collect(DISTINCT u) AS sub FOREACH (x IN sub | DETACH DELETE x) DETACH DELETE a;\n')
-    raise ValueError(f'수정본 갈래 {change!r} — 남김 · 삭제 가운데 하나입니다.')
+        asset += ('\n// 반영할 것: 설비_대장_변경.csv 수정\n'
+                  "UNWIND $rows AS row MATCH (a:Asset {id: row.설비코드}) WHERE row.상태 STARTS WITH '불용'\n"
+                  'OPTIONAL MATCH (a)-[:HAS_COMPONENT]->(c:Component) OPTIONAL MATCH (c)-[:MONITORED_BY]->(s:Sensor) OPTIONAL MATCH (c)-[:INSTALLED_UNIT]->(u:Unit)\n'
+                  'WITH a, collect(DISTINCT c) + collect(DISTINCT s) + collect(DISTINCT u) AS sub FOREACH (x IN sub | DETACH DELETE x) DETACH DELETE a;\n')
+    sensor = ('\n// 반영할 것: 센서_변경.csv 수정\n'
+              "UNWIND $rows AS row MATCH (s:Sensor {id: row.설비코드 + ':' + row.태그}) SET s.normal = toFloat(row.정상값), s.limit = toFloat(row.한계);\n"
+              '\n// 반영할 것: 센서_변경.csv 삭제\n'
+              "UNWIND $rows AS row MATCH (s:Sensor {id: row.설비코드 + ':' + row.태그}) "
+              + ("SET s.status = '떼어 냄', s.status_note = row.비고;\n" if change == '남김' else 'DETACH DELETE s;\n'))
+    alias = ('\n// 반영할 것: 품번_교차표_변경.csv 추가\n'
+             'UNWIND $rows AS row MATCH (p:Part {id: row.사내품번}) WHERE NOT row.다른표기 IN coalesce(p.other_codes, [])\n'
+             'SET p.other_codes = coalesce(p.other_codes, []) + row.다른표기;\n')
+    head = ('// 수정본 반영 — 줄은 수정본의 열 이름 그대로 받아 식별자로 찾고, 바뀐 값만 고친다. 불용 설비와 목록에서 빠진 센서는 '
+            + ('그래프에 남겨 상태로 구별한다.\n' if change == '남김' else '지운다(불용 설비는 그 설비에만 딸린 구성 요소 · 실물 · 센서와 함께, 공용 부품 · 물리량은 남김).\n'))
+    return head + asset + sensor + alias

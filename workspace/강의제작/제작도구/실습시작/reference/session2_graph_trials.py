@@ -30,17 +30,27 @@ from reference.session2_project_trials import command, put, student_condition_se
 def fill(folder, change='남김'):
     graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
     schema = json.loads((folder / 'data/model/schema.json').read_text(encoding='utf-8'))
-    put(folder, {A.CONSTRAINT_FILE: A.constraint_answer(schema), '결과/load.cypher': A.load_answer(graph),
+    put(folder, {A.CONSTRAINT_FILE: A.constraint_answer(schema), '결과/load.cypher': A.load_answer(graph, schema, only=A.STUDENT_LOAD),
                  '결과/update.cypher': A.update_integrated(change),
                  '결과/query.cypher': A.query_text([A.QUERY_INTEGRATED[n] for n in (1, 2, 3)]),
-                 '결과/정한_것.csv': B.chosen_text([B.graph_chosen('통합반')[change]])}, True)
+                 '결과/정한_것.csv': B.chosen_text(B.graph_chosen('통합반')[change])}, True)
     expectation(folder)
 
 
 def expectation(folder, after=None):
-    """기대 답 표. after = 수정본을 반영한 갈래(남김 · 삭제)면 불용 설비가 걸린 줄을 수정본 줄에서 다시 정한다(제공 모델이 아니라 D.changes에서)."""
+    """기대 답 표. 질문 1에는 태그 줄에 더해 한계 줄(한계가 없는 센서는 「없음」)을 원자료 센서 목록에서 따로 센다.
+    after = 수정본을 반영한 갈래(남김 · 삭제)면 불용 설비 · 목록에서 빠진 센서가 걸린 줄을 수정본 줄에서 다시 정하고(제공 모델이 아니라 D.changes에서), 새로 등록된 표기로 물은 줄을 더한다."""
+    import csv, io
     graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
     rows = B.graph_expect_rows('통합반', graph)
+    asked = B.GRAPH_ASK['sensors']
+    raw = [r for r in csv.DictReader(io.StringIO((folder / 'data/sensors.csv').read_text(encoding='utf-8-sig'))) if r['설비코드'] == asked]
+    code, tag, _ = D.LAB_SENSOR_REMOVED
+    if after == '삭제' and code == asked:
+        raw = [r for r in raw if r['태그'] != tag]
+        tags = next(r for r in rows if r[0] == '1' and r[2] == 'tag')
+        tags[3] = ' · '.join(sorted(r['태그'] for r in raw))
+    rows.insert(1, ['1', asked, 'limit', ' · '.join(r['한계'] or '없음' for r in raw), '입력/자료/센서_목록.csv 한계 칸'])
     if after:
         retired, status = D.LAB_RETIRED
         where = B.retired_change_line()
@@ -54,6 +64,9 @@ def expectation(folder, after=None):
             kept = [a for a in assets if not (after == '삭제' and a == retired)]
             row[3] = (' · '.join((status if a == retired else '가동') for a in kept) if row[2] == 'status' else ' · '.join(kept)) or '없음'   # 쓰던 설비가 모두 지워진 부품은 조회 한 줄의 빈 칸
             row[4] += ' · ' + where
+        part, alias = D.LAB_ALIAS_ADDED[:2]            # 새로 등록된 표기로 물어도 같은 부품의 사용 설비가 나온다
+        users = sorted(a for a, t in D.TRUTH['assets'].items() if part in t['components'].values() and not (after == '삭제' and a == retired))
+        rows.append(['3', alias, 'asset', ' · '.join(users), '입력/자료_변경분 품번_교차표_변경.csv:2 · 입력/자료/구성요소_목록.csv 교체부품 칸'])
     put(folder, {'결과/기대_답.csv': B.graph_expect_text(rows, '통합반')}, True)
 
 
@@ -213,7 +226,7 @@ def constraint_trials(folder, graph, empty='실행할 쿼리가 없습니다', c
     load = folder / 'app/features/load.cypher'
     merge = load.read_text(encoding='utf-8')
     create = merge.replace('MERGE (n:', 'CREATE (n:').replace(' ON CREATE SET n = row;', ' SET n = row;')
-    assert create.count('CREATE (n:') == len(labels)
+    assert create.count('CREATE (n:') == merge.count('MERGE (n:') >= 1      # 학생이 쓴 노드 쿼리(통합반은 설비 하나, 실전반은 종류마다)
     load.write_text(create, encoding='utf-8', newline='\n')
     try:
         result(folder, 'load')
@@ -244,8 +257,131 @@ def legacy_db_trials(folder, graph):
     return [{'constraints': 'on-db-loaded-without-constraints', 'duplicate_named_and_stopped': f'Asset {first}', 'after_cleanup_all_constrained': len(labels), 'nodes_unchanged': True}]
 
 
+def swapped(folder, name, old, new, count=1):
+    """빈 틀 파일의 한 곳을 바꾼 사본을 쓰고 원래 바이트를 돌려준다."""
+    path = folder / 'app/features' / name
+    kept = path.read_bytes()
+    text = kept.decode('utf-8')
+    assert text.count(old) == count, (name, old, text.count(old))
+    path.write_text(text.replace(old, new), encoding='utf-8', newline='\n')
+    return path, kept
+
+
+def cards_of(blocks, title):
+    return [c for b in blocks if b['kind'] == 'cards' and b['title'].startswith(title) for c in b['items']]
+
+
+def wrong_choices_before_update(folder, graph):
+    """그럴듯하지만 틀린 선택을 실제로 넣어 돌린다(수정본 반영 전) — 결과(화면 · 답)가 달라지는가. 걸리는 것은 DB의 실제 답뿐이다."""
+    out = []
+    nodes = lambda: http(folder, 'MATCH (n) RETURN count(n)')[0][0]
+    # 넣기 전 실험: 유일 제약이 지키는 둘은 거절, 지키지 못하는 셋은 오류 없이 받아 준다. 실험은 랩 DB에 아무것도 남기지 않는다
+    start = nodes()
+    cards = cards_of(result(folder, 'probe'), '넣는 쿼리를 이렇게 쓰면')
+    said = [c['badge'] for c in cards]
+    assert said == ['DB가 거절', 'DB가 거절', '오류 없이 받아 줌', '오류 없이 받아 줌', '오류 없이 받아 줌'], said
+    assert 'already exists' in cards[0]['text'] and 'already exists' in cards[1]['text'] and '2개' in cards[2]['text'], [c['text'] for c in cards[:3]]
+    assert '만든 관계 1개' in cards[3]['text'] and '물으면 0행, 거꾸로 물으면 1행' in cards[3]['text'] and '만든 관계는 0개' in cards[4]['text'], [c['text'] for c in cards[3:]]
+    assert nodes() == start
+    out.append({'wrong_choice': 'probe', 'db_answers': said, 'nodes_left_by_probe': 0})
+    # 관계 쿼리가 끝 노드를 레이블 없이 식별자만으로 찾으면: 개수는 같지만 DB의 실행 계획이 모든 노드를 훑는다
+    path, kept = swapped(folder, 'load.cypher', 'MATCH (a:Component {id: row.a}), (b:Part {id: row.b})', 'MATCH (a {id: row.a}), (b {id: row.b})')
+    try:
+        seek = {c['title']: c for c in cards_of(result(folder, 'load'), '내 쿼리가 노드를 찾는 법')}
+        assert seek['USES_PART']['state'] == 'warn' and 'AllNodesScan' in seek['USES_PART']['lines'][1][1], seek['USES_PART']
+        assert seek['Asset']['state'] == 'ok' and seek['INSTALLED_UNIT']['state'] == 'ok', seek
+    finally:
+        path.write_bytes(kept)
+    seek = cards_of(result(folder, 'load'), '내 쿼리가 노드를 찾는 법')
+    assert len(seek) == 3 and all(c['state'] == 'ok' and 'Seek' in c['lines'][1][1] for c in seek), seek
+    out.append({'wrong_choice': 'relation-endpoints-without-labels', 'plan_scans_all_nodes': True, 'with_labels_all_seek': 3})
+    # 질문 3을 사내 품번으로만 찾으면: 다른 표기 · 없는 품번으로 물은 줄이 기대 답과 달라진다
+    path, kept = swapped(folder, 'query.cypher', ' OR $part IN coalesce(p.other_codes, [])', '')
+    try:
+        rows = [r for b in result(folder, 'usage') if b['kind'] == 'compare' for r in b['rows']]
+        off = [r['key'] for r in rows if r['state'] != '같음']
+        assert len(off) == len(B.GRAPH_ASK['aliases']) and all(any(a in k for a in B.GRAPH_ASK['aliases']) for k in off), off
+    finally:
+        path.write_bytes(kept)
+    equal_answers(result(folder, 'usage'))
+    out.append({'wrong_choice': 'usage-by-part-number-only', 'rows_different': len(off), 'of_rows': len(rows)})
+    # 질문 1에서 없는 한계를 0으로 채우면: 한계 줄이 기대 답(없음)과 달라진다
+    path, kept = swapped(folder, 'query.cypher', 's.limit AS limit', 'coalesce(s.limit, 0) AS limit')
+    try:
+        rows = [r for b in result(folder, 'sensors') if b['kind'] == 'compare' for r in b['rows']]
+        off = [r['key'] for r in rows if r['state'] != '같음']
+        assert len(off) == 1 and 'limit' in off[0], off
+    finally:
+        path.write_bytes(kept)
+    equal_answers(result(folder, 'sensors'))
+    out.append({'wrong_choice': 'missing-limit-filled-with-zero', 'rows_different': 1, 'of_rows': len(rows)})
+    # 질문 1의 화살표를 거꾸로 적으면: 0줄
+    path, kept = swapped(folder, 'query.cypher', '-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->', '<-[:HAS_COMPONENT]-(c:Component)-[:MONITORED_BY]->')
+    try:
+        rows = [r for b in result(folder, 'sensors') if b['kind'] == 'compare' for r in b['rows']]
+        assert rows and all(r['state'] != '같음' and r['cells'][0][1] == '0줄' for r in rows), rows
+    finally:
+        path.write_bytes(kept)
+    equal_answers(result(folder, 'sensors'))
+    out.append({'wrong_choice': 'query-arrow-reversed', 'answer': '0줄', 'rows_different': len(rows)})
+    return out
+
+
+def wrong_choices_after_update(folder, renamed, new_name):
+    """수정본을 반영한 뒤에야 드러나는 틀린 선택 — 값을 매번 덮어쓰는 적재 쿼리, 패턴에 이름을 적은 MERGE. 끝나면 정답 쿼리와 수정본 반영으로 되돌린다."""
+    out = []
+    name = lambda: http(folder, f"MATCH (a:Asset {{id: '{renamed}'}}) RETURN a.name")[0][0]
+    assert name() == new_name
+    path, kept = swapped(folder, 'load.cypher', 'MERGE (n:Asset {id: row.id}) ON CREATE SET n = row;', 'MERGE (n:Asset {id: row.id}) SET n = row;')
+    try:
+        again = result(folder, 'repeat')
+        back = [c for c in cards_of(again, '한 번 더 넣어서 달라진 것') if c.get('badge') == '값이 바뀜']
+        assert again[0]['state'] == 'bad' and renamed in [c['title'] for c in back] and name() != new_name, (again[0], back)
+    finally:
+        path.write_bytes(kept)
+    result(folder, 'update')
+    assert name() == new_name and result(folder, 'repeat')[0]['state'] == 'ok'
+    out.append({'wrong_choice': 'set-without-on-create', 'reload_reverts_updated_values': len(back), 'on_create_set_keeps_them': True})
+    path, kept = swapped(folder, 'load.cypher', 'MERGE (n:Asset {id: row.id}) ON CREATE SET n = row;', 'MERGE (n:Asset {id: row.id, name: row.name}) ON CREATE SET n = row;')
+    try:
+        refused = command(folder, 'run.py', 'repeat', '--no-open', ok=False)
+        assert 'load.cypher:' in refused and 'already exists' in refused, refused[-500:]
+    finally:
+        path.write_bytes(kept)
+    assert name() == new_name and result(folder, 'repeat')[0]['state'] == 'ok'
+    out.append({'wrong_choice': 'merge-pattern-with-name', 'reload_after_rename_rejected_by_db': True})
+    return out
+
+
+def wrong_update(folder):
+    """수정 쿼리의 틀린 선택(랩 DB를 실제로 바꾸므로 이 갈래의 맨 끝에서) — 삭제 줄을 받는 쿼리가 없음, 새 표기를 매번 덧붙임, 글자로 온 수를 그대로 넣음."""
+    out = []
+    update = folder / 'app/features/update.cypher'
+    kept = update.read_bytes()
+    text = kept.decode('utf-8')
+    head = '// 반영할 것: sensor_changes.csv 삭제\n'
+    assert text.count(head) == 1
+    a = text.index(head)
+    update.write_text(text[:a] + text[text.index('\n// 반영할 것:', a):], encoding='utf-8', newline='\n')
+    blocks = result(folder, 'update')
+    lost = cards_of(blocks, '아직 쿼리가 없는 수정본 줄')
+    assert blocks[0]['state'] == 'warn' and len(lost) == 1 and 'sensor_changes.csv' in lost[0]['title'] and '삭제' in lost[0]['title'], (blocks[0], lost)
+    out.append({'wrong_choice': 'no-query-for-deleted-rows', 'rows_not_applied': lost[0]['badge']})
+    bad = text.replace(' WHERE NOT row.다른표기 IN coalesce(p.other_codes, [])\n', '\n').replace('toFloat(row.한계)', 'row.한계')
+    assert bad != text and bad.count('toFloat(row.정상값)') == 1
+    update.write_text(bad, encoding='utf-8', newline='\n')
+    blocks = result(folder, 'update')
+    assert blocks[0]['state'] == 'warn' and '또 바뀌었습니다' in blocks[0]['detail'] and '자료형이 바뀐 값 1개' in blocks[0]['detail'], blocks[0]
+    result(folder, 'export')
+    failed = command(folder, 'run.py', 'check', '--no-open', ok=False)
+    assert 'number 이어야 함' in failed and '숫자 자리에 글자' in failed, failed[-500:]
+    update.write_bytes(kept)
+    out.append({'wrong_choice': 'alias-appended-every-run-and-number-kept-as-text', 'second_run_changes_again': True, 'type_change_shown': 1, 'check_fails': True})
+    return out
+
+
 def trials(starter, work):
-    records, usage = student_condition_selftest(starter, work, 'sources'), {}
+    records, usage, sensors = student_condition_selftest(starter, work, 'sources'), {}, {}
     (renamed, new_name), (retired, status) = D.LAB_RENAMED, D.LAB_RETIRED
     truth = D.TRUTH['assets']
     counted = {a: {'Component': len(t['components']), 'Sensor': len(t['sensors']), 'Unit': sum(1 for (x, _) in D.SERIALS if x == a) + (D.REMOVED_PUMP[0] == a)}
@@ -268,7 +404,7 @@ def trials(starter, work):
         last = kept.decode('utf-8').rstrip('\n').split('\n')[-2]       # 사용 설비를 묻는 줄 하나를 그대로 한 번 더
         expected_file.write_bytes(kept + (last + '\n').encode('utf-8'))
         twice = command(folder, 'run.py', 'expected', '--no-open', ok=False)
-        assert '두 줄입니다' in twice and '다른 표기로 물은 줄' in twice, twice[-400:]
+        assert '두 줄입니다' in twice and '볼_열을 바꾼 줄' in twice, twice[-400:]
         expected_file.write_bytes(kept)
         records.append({'same_pair_twice': 'expected', 'stopped_with_way_out': True})
         with instance(folder) as state:
@@ -285,37 +421,58 @@ def trials(starter, work):
             before = equal_answers(result(folder, 'usage'))
             if change == '남김':
                 records += walk_trials(folder, graph)
+                records += wrong_choices_before_update(folder, graph)
             # 빈 결정이면 멈춤: 정한_것.csv 지점 줄이 비어 있으면 그 결정을 쓰는 기능(수정본 반영)이 그 줄을 짚고 멈춘다
             decisions = folder / 'app/features/decisions.csv'
             filled = decisions.read_bytes()
-            decisions.write_text(P.convert(B.decision_template(B.GRAPH_POINTS['통합반'])), encoding='utf-8', newline='\n')
-            out = command(folder, 'run.py', 'update', '--no-open', ok=False)
-            assert 'decisions.csv:' in out and '불용 결정 설비' in out, out[-500:]
-            records.append({'empty_decision': 'update', 'stopped_on': '불용 결정 설비'})
+            for i, point in enumerate(B.GRAPH_POINTS['통합반']):
+                lines = filled.decode('utf-8').rstrip('\n').split('\n')
+                at = next(k for k, x in enumerate(lines) if x.startswith(point + ','))
+                decisions.write_text('\n'.join(lines[:at] + [point + ',,,'] + lines[at + 1:]) + '\n', encoding='utf-8', newline='\n')
+                out = command(folder, 'run.py', 'update', '--no-open', ok=False)
+                assert 'decisions.csv:' in out and point in out, out[-500:]
+                records.append({'empty_decision': 'update', 'stopped_on': point})
             decisions.write_bytes(filled)
             update = result(folder, 'update')
             assert any(b['kind'] == 'note' and '더 바뀐 것 없음' in b['text'] for b in update)
+            assert update[0]['kind'] == 'verdict' and update[0]['state'] == 'ok', update[0]
+            assert not [b for b in update if b['kind'] == 'cards' and b['title'].startswith(('아직 쿼리가 없는', 'DB에서 아무것도'))], '처음 반영에서 받지 못했거나 아무것도 바꾸지 않은 수정본 줄이 있음'
             after = json.loads((folder / 'output/after_update.json').read_text(encoding='utf-8'))
             props = {n['props']['id']: n['props'] for n in after['nodes']}
             assert props[renamed]['name'] == new_name                      # 이름이 바뀐 설비는 같은 식별자로 남는다
             kinds = lambda g, label: sorted(n['props']['id'] for n in g['nodes'] if n['labels'] == [label])
             assert kinds(after, 'Part') == kinds(graph, 'Part') and kinds(after, 'Quantity') == kinds(graph, 'Quantity')   # 공용 대상은 어느 갈래에서도 남는다
+            (lc, lt, limit, _), (rc, rt, _), (part, alias, *_) = D.LAB_SENSOR_LIMIT, D.LAB_SENSOR_REMOVED, D.LAB_ALIAS_ADDED
+            assert props[f'{lc}:{lt}']['limit'] == float(limit) and isinstance(props[f'{lc}:{lt}']['limit'], float)      # 글자로 온 값을 수로 넣었다
+            assert props[part]['other_codes'].count(alias) == 1                                                        # 새 표기는 한 번만 더해진다(두 번 반영해도)
+            gone = f'{rc}:{rt}'
             if change == '남김':
-                assert props[retired]['status'] == status
+                assert props[retired]['status'] == status and props[gone]['status'] == '떼어 냄'
                 assert per_asset(after) == counted
                 assert len(after['nodes']) == len(graph['nodes']) and len(after['rels']) == len(graph['rels'])
             else:
-                assert retired not in props
-                assert per_asset(after) == {a: c for a, c in counted.items() if a != retired}      # 남은 설비의 대상은 하나도 사라지지 않는다
-                assert len(graph['nodes']) - len(after['nodes']) == 1 + sum(counted[retired].values())
+                assert retired not in props and gone not in props
+                left = {a: dict(c, Sensor=c['Sensor'] - (a == rc)) for a, c in counted.items() if a != retired}
+                assert per_asset(after) == left, (per_asset(after), left)      # 남은 설비의 대상은 떼어 낸 센서 하나 말고는 사라지지 않는다
+                assert len(graph['nodes']) - len(after['nodes']) == 1 + sum(counted[retired].values()) + 1
             expectation(folder, after=change)
             usage[change] = equal_answers(result(folder, 'usage'))
+            sensors[change] = equal_answers(result(folder, 'sensors'))
             assert usage[change] != before, (change, '수정본을 반영해도 사용 설비 조회의 답이 그대로')
             records.append({'change': change, 'initial_nodes': len(initial['nodes']), 'after_nodes': len(after['nodes']), 'after_rels': len(after['rels']),
-                            'per_asset_after': per_asset(after), 'usage_before': before, 'usage_after': usage[change]})
-            reference = json.loads((folder / 'data/reference_map.json').read_text(encoding='utf-8'))['관계']
-            shown = [b for b in result(folder, 'compare') if b['kind'] == 'table' and b['title'].startswith('기준 지도')]
-            assert len(shown) == 1 and len(shown[0]['rows']) == len(reference), '비교 화면에 기준 지도 표가 관계 수만큼 보여야 한다'
+                            'per_asset_after': per_asset(after), 'usage_before': before, 'usage_after': usage[change], 'sensors_after': sensors[change]})
+            # 수정본 반영 뒤 모델을 한 번 더 넣으면: 남김은 그대로이고, 삭제는 지운 노드가 모델 파일에서 다시 생긴다(수정본을 다시 반영하면 다시 지워진다)
+            again = result(folder, 'repeat')
+            if change == '남김':
+                assert again[0]['state'] == 'ok', again[0]
+                records += wrong_choices_after_update(folder, renamed, new_name)
+            else:
+                back = [c['title'] for b in again if b['kind'] == 'cards' for c in b['items'] if c.get('badge') == '다시 생김']
+                assert again[0]['state'] == 'bad' and retired in back and gone in back, (again[0], back)
+                result(folder, 'update')
+                result(folder, 'export')
+                assert normalized(json.loads((folder / 'output/graph.json').read_text(encoding='utf-8'))) == normalized(after)
+                records.append({'reload_after_delete': 'deleted nodes come back from the model file', 'came_back': len(back), 'update_again_restores': True})
             result(folder, 'export')
             result(folder, 'check')
             if change == '남김':
@@ -345,8 +502,11 @@ def trials(starter, work):
                 finally:
                     state_path.write_bytes(original)
                 records.append({'restart_preserves_graph': True, 'wrong_owner_rejected': True, 'empty_feature_rejected': True})
+                records += wrong_update(folder)
         print(change + ' 실행·정리 통과', flush=True)
     assert usage['남김'] != usage['삭제'], '불용 결정 설비의 두 갈래가 같은 답을 냄'
+    assert sensors['남김'] != sensors['삭제'], '목록에서 빠진 센서의 두 갈래가 같은 답을 냄'
+    records.append({'decision': '목록에서 빠진 센서', 'changed_answers': {k: [sensors['남김'].get(k), sensors['삭제'].get(k)] for k in sensors['남김'] if sensors['남김'][k] != sensors['삭제'].get(k)}})
     records.append({'decision': '불용 결정 설비', 'changed_answers': {k: [usage['남김'].get(k), usage['삭제'].get(k)] for k in usage['남김'] if usage['남김'][k] != usage['삭제'].get(k)}})
     return records
 

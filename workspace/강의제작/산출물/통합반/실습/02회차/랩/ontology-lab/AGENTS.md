@@ -10,6 +10,7 @@
 - 키와 비밀번호를 코드·결과·기록에 적지 않는다. 열어 둔 프로젝트 폴더 밖의 파일은 읽지 않는다.
 
 - `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). 학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.
-- 판단 함수 파일은 `app/features/quantity_rules.py` 하나다. 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 표(`design.csv` · `relations.csv` · `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.
+- 스키마는 `app/features/`의 표 세 장(`classes.csv` · `properties.csv` · `relations.csv`)이고, 판단 함수 파일은 `quantity_rules.py` 하나다. 판단 함수는 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 표(스키마 표 세 장과 `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.
+- `expected.csv`의 기대 답은 원자료에서 찾아 적고, 모델이나 결과 화면이 낸 답을 옮겨 적지 않는다. 결과가 기대 답과 다르면 기대 답을 고치기 전에 원인을 원자료 줄로 먼저 설명한다.
 - 모델은 `python run.py parts`가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.
-- 「권장안대로」 · 「알아서」 · 「다 해 줘」처럼 갈래를 고르지 않거나 이유를 말하지 않은 부탁은 결정이 아니다. 학생이 고를 갈래와 그렇게 고른 자기 이유를 말하기 전에는 `decisions.csv`의 그 줄을 쓰지 않고, 그 결정이 걸린 `quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `design.csv` · `relations.csv`의 실물 행도 만들거나 고치지 않는다. 추천안을 냈더라도 학생이 그 추천을 받아들인다고 말하고 이유를 대야 결정이고, `decisions.csv`의 근거 칸에는 그 이유를 학생의 말로 적는다. 그때까지는 무엇을 정해야 하는지와 선택지 · 각 선택의 결과를 쉬운 말로 다시 묻는다.
+- 「권장안대로」 · 「알아서」 · 「다 해 줘」처럼 갈래를 고르지 않거나 이유를 말하지 않은 부탁은 결정이 아니다. 학생이 고를 갈래와 그렇게 고른 자기 이유를 말하기 전에는 `decisions.csv`의 그 줄을 쓰지 않고, 그 결정이 걸린 `quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `classes.csv` · `properties.csv` · `relations.csv`의 실물 줄도 만들거나 고치지 않는다. 추천안을 냈더라도 학생이 그 추천을 받아들인다고 말하고 이유를 대야 결정이고, `decisions.csv`의 근거 칸에는 그 이유를 학생의 말로 적는다. 그때까지는 무엇을 정해야 하는지와 선택지 · 각 선택의 결과를 쉬운 말로 다시 묻는다.
