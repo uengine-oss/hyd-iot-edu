@@ -329,7 +329,8 @@ def wrong_choices_before_update(folder, graph):
     # 설비 표의 열을 다른 속성에 넣으면: 개수는 같지만 「모델 파일과 값이 다른 노드」로 드러난다(넣은 것을 비우고 다시 넣어 본다)
     path, kept = swapped(folder, 'load.cypher', 'n.name = row.설비명', 'n.name = row.구분')
     try:
-        result(folder, 'reset')
+        back = result(folder, 'reset')      # 틀린 쿼리로 되돌리면 틀린 그대로 다시 들어간다 — 되돌리기 화면도 넣기 화면과 같은 잣대로 본다(받기 시험 v63 나4)
+        assert back[0]['state'] == 'bad' and '값이 다른 노드' in back[0]['text'] and '돌아왔습니다' not in json.dumps(back[0], ensure_ascii=False) and cards_of(back, '모델 파일과 값이 다른 노드'), back[0]
         shown = result(folder, 'load')
         gap = cards_of(shown, '모델 파일과 값이 다른 노드')
         assert shown[0]['state'] == 'bad' and '값이 다른 노드' in shown[0]['text'] and len(gap) == len([n for n in graph['nodes'] if n['labels'] == ['Asset']]), (shown[0], gap)
@@ -440,7 +441,9 @@ def wrong_choices_before_update(folder, graph):
     n = sum(1 for r in graph['rels'] if r['type'] == 'HAS_COMPONENT')
     path, kept = swapped(folder, 'load.cypher', 'MERGE (a)-[r:HAS_COMPONENT]->(b)', 'MERGE (b)-[r:HAS_COMPONENT]->(a)')
     try:
-        result(folder, 'reset')
+        back = result(folder, 'reset')      # 개수는 모델 파일과 같다(아래 넣기 화면의 막대가 확인) — 개수만 보던 앞 판은 여기서 「모델 파일대로 돌아왔습니다」라고 했다
+        assert back[0]['state'] == 'bad' and '다르게 이어진 관계' in back[0]['text'] and '돌아왔습니다' not in json.dumps(back[0], ensure_ascii=False), back[0]
+        assert [c['title'] for c in cards_of(back, '모델 파일과 다르게 이어진 관계')] == ['HAS_COMPONENT'], back
         shown = result(folder, 'load')
         turned = cards_of(shown, '모델 파일과 다르게 이어진 관계')
         bars = next(b for b in shown if b['kind'] == 'bars')
@@ -449,15 +452,18 @@ def wrong_choices_before_update(folder, graph):
         assert f'거꾸로 {n}개' in json.dumps(turned, ensure_ascii=False) and 'Asset → Component' in json.dumps(turned, ensure_ascii=False), turned
     finally:
         path.write_bytes(kept)
-    result(folder, 'reset')
+    back = result(folder, 'reset')
+    assert back[0]['state'] == 'ok' and '모델 파일대로 돌아왔습니다' in back[0]['detail'] and not cards_of(back, '모델 파일과'), back[0]      # 맞는 쿼리로 되돌리면 그때만 「돌아왔습니다」
     shown = result(folder, 'load')
     assert shown[0]['state'] == 'ok' and '관계의 방향도' in shown[0]['detail'] and not cards_of(shown, '모델 파일과 다르게 이어진 관계'), shown[0]
-    out.append({'wrong_choice': 'relation-arrow-reversed-on-load', 'counts_equal': True, 'reversed_relations_pointed': n})
+    out.append({'wrong_choice': 'relation-arrow-reversed-on-load', 'counts_equal': True, 'reversed_relations_pointed': n, 'reset_with_wrong_query_says_restored': False, 'reset_with_right_query_says_restored': True})
     # 스키마가 날짜라고 한 속성을 글자 그대로 넣으면: 내보낸 값은 모델 파일과 같아 보이지만, 넣기 화면이 랩 DB의 자료형을 물어 짚는다
     assets = len([x for x in graph['nodes'] if x['labels'] == ['Asset']])
     path, kept = swapped(folder, 'load.cypher', 'n.installed = date(row.설치일)', 'n.installed = row.설치일')
     try:
-        result(folder, 'reset')
+        back = result(folder, 'reset')
+        assert back[0]['state'] == 'bad' and '글자로 들어간 값' in back[0]['text'] and '돌아왔습니다' not in json.dumps(back[0], ensure_ascii=False), back[0]
+        assert [c['title'] for c in cards_of(back, '스키마는 날짜인데 랩 DB에 글자로 들어간 값')] == ['Asset.installed'], back
         shown = result(folder, 'load')
         dated = cards_of(shown, '스키마는 날짜인데 랩 DB에 글자로 들어간 값')
         assert not cards_of(shown, '모델 파일과 값이 다른 노드'), '글자로 넣은 날짜가 값 견줌에서 이미 드러남 — 이 시험의 전제가 깨짐'
@@ -482,7 +488,11 @@ def wrong_choices_before_update(folder, graph):
             query.write_text('\n'.join(lines[:at] + [lines[at] + ' WHERE true' + tail] + lines[at + 1:]) + '\n', encoding='utf-8', newline='\n')
             assert [t for t, _ in told()] == hit, (tail, told())
             if hit:      # 글자와 견준 조건은 참이 되지 않아 설비가 하나도 맞지 않는다 — 기대 답과 달라진다
-                assert any(r['state'] != '같음' for b in result(folder, 'sensors') if b['kind'] == 'compare' for r in b['rows'])
+                shown = result(folder, 'sensors')
+                assert any(r['state'] != '같음' for b in shown if b['kind'] == 'compare' for r in b['rows'])
+                kinds = [b['kind'] for b in shown]      # 카드는 결론 줄 바로 아래(긴 대조 표보다 먼저) — 첫 화면에 보인다(받기 시험 v63 가16 ③)
+                assert shown[1]['kind'] == 'cards' and shown[1]['title'] == '날짜 속성을 글자와 견준 조건' and kinds.index('compare') > 1, kinds
+                assert 'installed(날짜 속성) ↔' in json.dumps(shown[1], ensure_ascii=False) and 'installed와' not in json.dumps(shown[1], ensure_ascii=False)
             else:
                 equal_answers(result(folder, 'sensors'))
     finally:

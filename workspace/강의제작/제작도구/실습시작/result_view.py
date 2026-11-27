@@ -329,7 +329,9 @@ def render_block(b, previous=None, current=None):
     if k == 'cards':
         out = ''
         for c in b['items']:
-            lines = ''.join(f'<li><span>{e(x[0])}</span>{chips(x[1]) if x[1] != "" else ""}</li>' if isinstance(x, (list, tuple)) else f'<li>{e(x)}</li>' for x in c.get('lines', []))
+            # 줄 = (이름, 값) — 값은 「 · 」로 이은 조각마다 배지로. (이름, 글, '글')은 문장이라 쪼개지 않고 그대로 쓴다(문장 속 「 · 」에서 배지가 갈리지 않게)
+            lines = ''.join((f'<li><span>{e(x[0])}</span>{e(x[1])}</li>' if len(x) > 2 and x[2] == '글' else
+                             f'<li><span>{e(x[0])}</span>{chips(x[1]) if x[1] != "" else ""}</li>') if isinstance(x, (list, tuple)) else f'<li>{e(x)}</li>' for x in c.get('lines', []))
             style = ''
             icon = {'ok': '<i class="dot ok"></i>', 'bad': '<i class="dot bad"></i>', 'warn': '<i class="dot warn"></i>', 'lock': LOCK, 'open': UNLOCK}.get(c.get('icon'), '')
             if c.get('kind'):

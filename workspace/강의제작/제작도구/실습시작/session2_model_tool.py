@@ -460,6 +460,14 @@ def instances(kind, src):
     return [(line, r) for line, r in src[TABLE[kind]] if not (kind == '실물' and not r['일련번호'])]
 
 
+def kept(kind, src):
+    """instances 가운데 모델에 담는 줄만 — 결과/행_처리.csv에 「빼기」로 적은 줄과, 구성 요소 줄 가운데 「지난 실물」로 적은 줄(그 줄은 구성 요소가 아니라 실물로만 담긴다)을 뺀다.
+    모델을 만들 때(build)와 같은 줄을 보므로, 여기서 센 빈 줄이 넣기 전 검증에서 걸리는 줄과 같다. 클래스 화면(classes_view)은 겹친 줄을 보이려고 원자료 줄을 그대로 센다."""
+    rows_done, _ = handling()
+    how = lambda line: rows_done.get((TABLE[kind], line), ('', ''))[0]
+    return [(line, r) for line, r in instances(kind, src) if how(line) != '빼기' and not (how(line) == '지난 실물' and kind != '실물')]
+
+
 def classes_view():
     """내 식별자 틀로 원자료 행마다 식별자를 지었을 때 — 서로 다른 식별자 수, 겹치는 행, 틀에 쓴 칸이 빈 행(이름은 아직 원자료 그대로).
     돌려주는 것: (클래스, {클래스: {'행', '개수', '겹침', '빈칸', '파일'}}, 센서 목록의 재는것 칸에 적힌 이름마다 [(이름, 그 이름으로 적힌 센서 행 수)])."""
@@ -481,13 +489,14 @@ def classes_view():
 
 
 def properties_view():
-    """내 속성 표를 원자료 행에 대어 본다 — 속성마다 그 칸이 채워진 행 · 빈 행 · 자료형에 맞지 않는 행. 돌려주는 것: (클래스, 속성, [속성마다 dict])."""
+    """내 속성 표를 원자료 행에 대어 본다 — 속성마다 그 칸이 채워진 행 · 빈 행 · 자료형에 맞지 않는 행. 모델에 담지 않기로 적은 줄(결과/행_처리.csv)은 세지 않는다(kept).
+    돌려주는 것: (클래스, 속성, [속성마다 dict])."""
     classes = read_classes()
     props = read_properties(classes)
     src = raw()
     rows = []
     for kind, plist in props.items():
-        data = instances(kind, src) if kind in TABLE else []
+        data = kept(kind, src) if kind in TABLE else []
         for p in plist:
             one = dict(클래스=kind, 속성=p['이름'], 칸=p['칸'], 자료형=p['자료형'], 필수=p['필수'], 단위=p['단위'], 줄=p['줄'], 파일=TABLE.get(kind, ''), 행=len(data), 빈칸=[], 안맞음=[], 예='')
             if p['칸'] in DERIVED.get(kind, {}):
@@ -507,12 +516,12 @@ def relations_view():
 
 def columns_view():
     """속성 표를 적기 전에도 세는 것(일반 로직) — 클래스 표에 적은 클래스마다, 쓸 수 있는 칸에 값이 빈 원자료 줄과 수 · 날짜로 읽히는 값의 수, 첫 값.
-    어느 칸을 속성으로 담고 필수로 둘지는 정하지 않는다. 돌려주는 것: (클래스, [칸마다 dict(클래스, 칸, 파일, 행, 빈칸=[줄], 수, 날짜, 예)])."""
+    모델에 담지 않기로 적은 줄(결과/행_처리.csv)은 세지 않는다(kept). 어느 칸을 속성으로 담고 필수로 둘지는 정하지 않는다. 돌려주는 것: (클래스, [칸마다 dict(클래스, 칸, 파일, 행, 빈칸=[줄], 수, 날짜, 예)])."""
     classes = read_classes()
     src = raw()
     out = []
     for kind in classes:
-        data = instances(kind, src) if kind in TABLE else []
+        data = kept(kind, src) if kind in TABLE else []
         for col in columns(kind):
             if col in DERIVED.get(kind, {}):
                 out.append(dict(클래스=kind, 칸=col, 파일='', 행=None, 빈칸=[], 수=0, 날짜=0, 예=DERIVED[kind][col]))
@@ -526,22 +535,25 @@ def columns_view():
 def links_view():
     """관계 표를 적기 전에도 세는 것(일반 로직) — 원자료 줄이 클래스 짝마다 지금 어떻게 이어져 있는지. 모델에 담지 않기로 적은 줄(결과/행_처리.csv)은 세지 않고,
     한 설비에서 맞춘 이름이 같은 구성 요소 줄은 한 자리로 센다. 화살표 · 카디널리티 · 적어도 하나를 어떻게 둘지는 정하지 않는다.
-    돌려주는 것: [dict(앞, 뒤, 앞_최대=(수, 예), 뒤_최대=(수, 예), 앞_없음=[뒤가 하나도 없는 앞 대상], 뒤_없음=[앞이 하나도 없는 뒤 대상])]."""
+    돌려주는 것: [dict(앞, 뒤, 앞_최대=(수, [그 수인 곳 모두]), 뒤_최대=(수, [그 수인 곳 모두]), 앞_없음=[뒤가 하나도 없는 앞 대상], 뒤_없음=[앞이 하나도 없는 뒤 대상])]."""
     src = raw()
     rows_done, _ = handling()
     live = lambda name: [(line, r) for line, r in src[name] if not rows_done.get((name, line))]
     model_of = {r['설비코드']: r['모델'] for _, r in live('설비_대장.csv')}
     named, _ = name_map(src, rows_done, model_of)
     seat = lambda code, name: (code, name_of(named, name, model_of.get(code, '')))
-    most = lambda counts: max(((len(v), k) for k, v in counts.items()), default=(0, ''))
-    said = lambda s: f'{s[0]} {s[1]}'
+    said = lambda s: f'{s[0]} {s[1]}' if isinstance(s, tuple) else s
+
+    def most(counts):      # 가장 많이 이어진 수와, 그 수인 곳 모두(같은 수인 곳이 여럿이면 하나만 대지 않는다)
+        top = max((len(v) for v in counts.values()), default=0)
+        return top, sorted(said(k) for k, v in counts.items() if len(v) == top) if top else []
     seats = {}
     for line, r in live('구성요소_목록.csv'):
         seats.setdefault(seat(r['설비코드'], r['구성요소']), []).append((line, r))
     per_asset = {code: set() for code in model_of}
     for s in seats:
         per_asset.setdefault(s[0], set()).add(s)
-    out = [dict(앞='설비', 뒤='구성 요소', 앞_최대=most({k: v for k, v in per_asset.items() if k in model_of}), 뒤_최대=(1 if seats else 0, ''),
+    out = [dict(앞='설비', 뒤='구성 요소', 앞_최대=most({k: v for k, v in per_asset.items() if k in model_of}), 뒤_최대=(1 if seats else 0, []),
                 앞_없음=sorted(code for code, v in per_asset.items() if code in model_of and not v),
                 뒤_없음=sorted(f'{said(s)}(구성요소_목록.csv:{rows[0][0]})' for s, rows in seats.items() if s[0] not in model_of))]
     per_seat, stray = {s: [] for s in seats}, []
@@ -551,8 +563,7 @@ def links_view():
             per_seat[s].append(r['태그'])
         else:
             stray.append(f"{r['설비코드']}:{r['태그']}(센서_목록.csv:{line} 붙은곳 「{r['붙은곳']}」)")
-    n, s = most(per_seat)
-    out.append(dict(앞='구성 요소', 뒤='센서', 앞_최대=(n, said(s) if s else ''), 뒤_최대=(1 if any(per_seat.values()) else 0, ''),
+    out.append(dict(앞='구성 요소', 뒤='센서', 앞_최대=most(per_seat), 뒤_최대=(1 if any(per_seat.values()) else 0, []),
                     앞_없음=[f'{said(s)}(구성요소_목록.csv:{seats[s][0][0]})' for s, v in per_seat.items() if not v], 뒤_없음=stray))
     parts = {r['품번']: line for line, r in src['예비품_목록.csv']}
     cross = [r for _, r in src['품번_교차표.csv']]
@@ -563,8 +574,7 @@ def links_view():
             if pid:
                 of_seat[s].add(pid)
                 of_part[pid].add(s)
-    n, s = most(of_seat)
-    out.append(dict(앞='구성 요소', 뒤='부품', 앞_최대=(n, said(s) if s else ''), 뒤_최대=most(of_part),
+    out.append(dict(앞='구성 요소', 뒤='부품', 앞_최대=most(of_seat), 뒤_최대=most(of_part),
                     앞_없음=[f'{said(s)}(구성요소_목록.csv:{seats[s][0][0]})' for s, v in of_seat.items() if not v],
                     뒤_없음=[f'{p}(예비품_목록.csv:{parts[p]})' for p, v in of_part.items() if not v]))
     return out

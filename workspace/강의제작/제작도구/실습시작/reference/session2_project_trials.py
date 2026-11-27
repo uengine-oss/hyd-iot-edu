@@ -91,8 +91,9 @@ def student_condition_selftest(starter, work, action=None):
 
 
 def evidence_trial(folder):
-    """기대 답 표의 근거 칸을 일부러 틀린 줄로 바꿔 넣으면 기대 답 화면이 그 줄(파일:줄)을 짚는가 — 두 반 설계 랩이 같이 쓴다. 채운 랩 폴더(모델까지 만든 사본)에서 돌리고 기대 답 표는 되돌린다.
-    답 값은 그대로 두므로 질문 대조는 여전히 모두 같음이다(대조만으로는 잡히지 않는 결함이라는 뜻). 맞는 줄을 한 줄씩 적은 근거는 하나도 걸리지 않아야 한다."""
+    """기대 답 표의 근거 칸을 일부러 틀린 줄로 바꿔 넣으면 기대 답 화면과 질문 대조 화면이 그 줄(파일:줄)을 짚는가 — 두 반 설계 랩이 같이 쓴다. 채운 랩 폴더(모델까지 만든 사본)에서 돌리고 기대 답 표는 되돌린다.
+    답 값은 그대로 두므로 질문 대조의 줄은 여전히 모두 같음이다(값 대조만으로는 잡히지 않는 결함이라는 뜻). 맞는 줄을 한 줄씩 적은 근거는 하나도 걸리지 않아야 한다.
+    가이드는 기대 답 화면(expected)을 앞 단계에서만 실행하게 하므로, 뒤 단계에서 더한 줄은 질문 대조 화면(query)이 같은 카드로 짚어야 한다(받기 시험 v63 가14)."""
     import csv, io
     path = folder / 'app/features/expected.csv'
     kept = path.read_bytes()
@@ -102,10 +103,12 @@ def evidence_trial(folder):
     at = lambda i: str(head + 2 + i)      # 그 줄의 편집기 줄 번호
     table = lambda n: list(enumerate(csv.DictReader(io.StringIO((folder / 'data' / n).read_text(encoding='utf-8-sig'))), 2))
     sensors, comps, alias, spare = table('sensors.csv'), table('components.csv'), table('part_aliases.csv'), table('spare_parts.csv')
-    cards = lambda: {c['title'].rsplit(':', 1)[1]: json.dumps(c['lines'], ensure_ascii=False) for b in blocks(folder, 'expected')
-                     if b['kind'] == 'cards' and b['title'].startswith('근거로 적은 줄이 맞지 않는') for c in b['items']}
+    cards = lambda action='expected': {c['title'].rsplit(':', 1)[1]: json.dumps(c['lines'], ensure_ascii=False) for b in blocks(folder, action)
+                                       if b['kind'] == 'cards' and b['title'].startswith('근거로 적은 줄이 맞지 않는') for c in b['items']}
     first = blocks(folder, 'expected')[0]
     assert first['state'] == 'info' and not cards(), ('맞게 쓴 참조 기대 답의 근거가 걸림', first, cards())
+    asked = blocks(folder, 'query')
+    assert asked[0]['state'] == 'ok' and '근거로 적은 줄' not in asked[0]['detail'] and not cards('query'), ('맞게 쓴 참조 기대 답의 근거가 질문 대조에서 걸림', asked[0])
     words = lambda part: {part} | {r['다른표기'] for _, r in alias if r['사내품번'] == part} | {r['품명'] for _, r in spare if r['품번'] == part}
     wrong, right, used = {}, {}, set()
 
@@ -159,13 +162,26 @@ def evidence_trial(folder):
         assert set(hit) == {at(i) for i in wrong}, (sorted(hit), sorted(at(i) for i in wrong), '걸려야 할 줄만 걸려야 함 — 맞는 줄을 적은 줄: ' + ' · '.join(at(i) for i in right))
         for i, (cited, said) in wrong.items():
             assert said in hit[at(i)] and cited.split('/')[-1] in hit[at(i)], (cited, said, hit[at(i)])
-        answers = [r['state'] for b in blocks(folder, 'query') if b['kind'] == 'compare' for r in b['rows']]
+        asked = blocks(folder, 'query')
+        answers = [r['state'] for b in asked if b['kind'] == 'compare' for r in b['rows']]
         assert answers and all(s == '같음' for s in answers), '근거 칸만 바꿨는데 질문 대조가 달라짐'
+        # 질문 대조 화면도 같은 줄을 같은 글로 짚고(대조 표보다 먼저), 답이 모두 같아도 결론 줄이 초록 「맞음」으로 끝나지 않는다
+        again = cards('query')
+        assert again == hit, (sorted(again), sorted(hit), '질문 대조 화면의 근거 카드가 기대 답 화면과 다름')
+        assert asked[0]['state'] == 'warn' and f'근거로 적은 줄이 맞지 않는 기대 답 줄 {len(wrong)}곳' in asked[0]['detail'], asked[0]
+        kinds = [(b['kind'], b.get('title', '')[:8]) for b in asked]
+        assert kinds.index(('cards', '근거로 적은 줄')) < next(i for i, k in enumerate(kinds) if k[0] == 'compare'), kinds
+        # 카드의 문장은 「 · 」에서 배지로 갈리지 않고 한 문장으로 그려진다(받기 시험 v63 가16 ①). 영문 · 숫자로 끝난 표기 뒤의 조사는 「이나(나)」
+        page = (folder / 'output/result.html').read_text(encoding='utf-8')
+        whole = '그 부품의 사내 품번 · 다른 표기 · 품명이 적힌 줄이 아닙니다'
+        assert whole in page and page.count(whole) == sum(v.count(whole) for v in hit.values()), '근거 카드의 문장이 화면에서 조각으로 갈림'
+        import re
+        assert not re.search(r'[A-Za-z0-9]」나 그 부품', page) and ('」이나(나) 그 부품' in page or '」나 그 부품' in page or '」이나 그 부품' in page), '물은 표기 뒤의 조사'
     finally:
         path.write_bytes(kept)
-    assert not cards()
+    assert not cards() and not cards('query')
     return {'wrong_evidence_lines_pointed': len(wrong), 'right_single_line_evidence_not_pointed': len(right), 'query_rows_still_same': len(answers),
-            'cited': [v[0] for v in wrong.values()]}
+            'query_screen_points_same_lines': len(again), 'query_verdict': asked[0]['state'], 'cited': [v[0] for v in wrong.values()]}
 
 
 def put(folder, files, convert=False):
@@ -418,7 +434,7 @@ def schema_choices(folder, branch):
     import csv, io
     out = []
     features = folder / 'app/features'
-    kept = {n: (features / n).read_bytes() for n in ('classes.csv', 'properties.csv', 'relations.csv', 'expected.csv', 'quantity_rules.py')}
+    kept = {n: (features / n).read_bytes() for n in ('classes.csv', 'properties.csv', 'relations.csv', 'expected.csv', 'quantity_rules.py', 'row_rules.csv')}
     text = lambda n: kept[n].decode('utf-8')
     raw = lambda n: list(csv.DictReader(io.StringIO((folder / 'data' / n).read_text(encoding='utf-8-sig'))))
     sensors, comps, assets = raw('sensors.csv'), raw('components.csv'), raw('equipment.csv')
@@ -637,12 +653,42 @@ def schema_choices(folder, branch):
         assert shown[0]['state'] == 'info' and '아직 적지 않았습니다' in shown[0]['text'], shown[0]
         for (kind, col), name in ((('센서', '한계'), 'sensors.csv'), (('구성 요소', '교체부품'), 'components.csv')):      # 화면의 빈 줄 수 = 원자료에서 따로 센 수
             assert blank[(kind, col)] == sum(1 for r in raw(name) if not r[col].strip()), (kind, col, blank[(kind, col)])
-        links = {c['title']: dict(map(tuple, c['lines'])) for b in blocks(folder, 'relations') if b['kind'] == 'cards' for c in b['items']}
+        links = {c['title']: {x[0]: x[1] for x in c['lines']} for b in blocks(folder, 'relations') if b['kind'] == 'cards' for c in b['items']}
         no_part = sum(1 for r in comps if not r['교체부품'].strip())
         assert links['구성 요소 · 부품']['부품이 하나도 없는 구성 요소'].startswith(f'{no_part}곳'), links['구성 요소 · 부품']
         assert links['설비 · 구성 요소']['구성 요소 하나에 이어진 설비'] == '가장 많은 곳 1개', links
-        return {'blank_limit_rows': blank[('센서', '한계')], 'components_without_part': no_part, 'pairs_shown': sorted(links)}
+        # 같은 수인 곳이 여럿이면 하나만 대지 않고 모두 댄다(받기 시험 v63 가15) — 설비마다 구성 요소 자리 수를 원자료에서 따로 센다
+        seats = {}
+        for r in comps:
+            seats.setdefault(r['설비코드'], set()).add(r['구성요소'])
+        top = max(len(v) for v in seats.values())
+        tied = sorted(a for a, v in seats.items() if len(v) == top)
+        assert len(tied) > 1, ('구성 요소가 가장 많은 설비가 하나뿐 — 이 시험의 전제가 깨짐', tied)
+        assert links['설비 · 구성 요소']['설비 하나에 이어진 구성 요소'] == f'가장 많은 곳 {top}개 — ' + ', '.join(tied), links['설비 · 구성 요소']
+        return {'blank_limit_rows': blank[('센서', '한계')], 'components_without_part': no_part, 'pairs_shown': sorted(links), 'assets_with_most_components': tied}
     tried('tables-not-written-yet', {'properties.csv': '\n'.join(text('properties.csv').splitlines()[:2]) + '\n', 'relations.csv': '\n'.join(text('relations.csv').splitlines()[:2]) + '\n'}, before_tables)
+
+    # 모델에 담지 않기로 한 줄(행 처리의 「빼기」)은 속성 화면의 빈 줄에도 세지 않는다 — 속성 화면(표를 적기 전 · 뒤)과 넣기 전 검증이 같은 줄을 본다(받기 시험 v63 나6)
+    gone = next(n for n, r in enumerate(sensors, 2) if not r['한계'])      # 한계 칸이 빈 센서 줄 하나를 빼기로 적는다
+    empty = sum(1 for r in sensors if not r['한계'])
+    rule = text('row_rules.csv').rstrip('\n') + f'\nsensors.csv,{gone},빼기,시험\n'
+
+    def dropped_after():      # 표를 적은 뒤: 한계를 필수로 → 속성 화면의 빈 행 수 = 넣기 전 검증에서 걸리는 줄 수(뺀 줄은 둘 다 세지 않음)
+        hit = cards('properties', '원자료와 어긋나는 속성')
+        assert len(hit) == 1 and f'필수인데 빈 행 {empty - 1}' in hit[0]['badge'] and f'sensors.csv:{gone},' not in dict(map(tuple, hit[0]['lines']))['빈 원자료 행'] + ',', hit
+        command(folder, 'run.py', 'parts', '--no-open')
+        found = cards('parts', '원자료가 내 스키마 표와 어긋나는 곳')
+        assert found and found[0]['badge'] == f'{empty - 1}곳', found
+        return {'dropped_row': f'sensors.csv:{gone}', 'blank_rows_on_properties_screen': empty - 1, 'rows_caught_before_load': empty - 1}
+    tried('dropped-row-not-counted-as-blank', {'row_rules.csv': rule, 'properties.csv': text('properties.csv').replace('센서,limit,한계,수,아니오,', '센서,limit,한계,수,예,')}, dropped_after)
+
+    def dropped_before():      # 표를 적기 전: 센서 줄 수와 한계 칸의 빈 줄 수에서 뺀 줄이 빠진다
+        cols = next(b for b in blocks(folder, 'properties') if b['kind'] == 'table')
+        row = next(r for r in cols['rows'] if (r[0], r[1]) == ('센서', '한계'))
+        assert (row[2], row[3]) == (len(sensors) - 1, empty - 1) and f'sensors.csv:{gone},' not in row[4] + ',', row
+        assert '적은 줄은 뺌' in cols['note'], cols['note']
+        return {'sensor_rows_counted': row[2], 'blank_limit_rows': row[3]}
+    tried('dropped-row-not-counted-before-tables', {'row_rules.csv': rule, 'properties.csv': '\n'.join(text('properties.csv').splitlines()[:2]) + '\n'}, dropped_before)
     command(folder, 'run.py', 'check', '--no-open')
     return out
 

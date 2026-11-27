@@ -130,8 +130,8 @@ def purchase_evidence(asked, item, answer, pieces):
 
     def wrong(name, c):
         if words and not any(w in x for w in words for x in c) and (name in (M.TABLE['구성 요소'], M.QUOTES, M.AVL) or not set(pieces) & set(c)):
-            return f'물은 표기 「{asked}」나 그 부품의 사내 품번 · 다른 표기 · 품명이 적힌 줄이 아닙니다'
-        if supplier and name in (M.QUOTES, M.AVL) and not any(M.supplier_name(x) == supplier for x in c):
+            return M.josa(f'물은 표기 「{asked}」', '이나/나') + ' 그 부품의 사내 품번 · 다른 표기 · 품명이 적힌 줄이 아닙니다'
+        if supplier and name in (M.QUOTES, M.AVL) and not any(M.supplier_name(x) == M.supplier_name(supplier) for x in c):      # 항목에 괄호 풀이를 붙여 적은 이름도 원자료 칸과 같은 잣대(괄호 앞 이름)로 견준다 — 그 꼴은 꼴 카드가 짚는다
             return f'공급사 「{supplier}」의 줄이 아닙니다'
     return wrong
 
@@ -222,7 +222,7 @@ def ontology_guide():
         ('관계 카드의 「문장으로 읽기」가 줄마다 말이 되고', '표를 적기 전에는 클래스 짝마다 지금 자료의 이어짐이 보입니다. 적은 뒤에는 관계 카드의 「문장으로 읽기」가 줄마다 말이 되고'),
     ]
     swaps.update({
-        6: [(li('HYD-07에는 현장 지시계 두 줄이 있다'), li('HYD-07에는 현장 지시계 두 줄이 있고, 3라인 설비(HYD-05 · 06)는 제조사가 달라 태그 이름도 다르다'))],
+        6: [(li('HYD-07에는 현장 지시계 두 줄이 있다'), li('HYD-07에는 현장 지시계 두 줄이 있고(유온계 TI-1 · 압력계 PI-1 — 하나는 온도가 아니라 압력을 잰다), 3라인 설비(HYD-05 · 06)는 제조사가 달라 태그 이름도 다르다'))],
         7: [('교체부품 칸에 예전 품번, 줄여 쓴 품번, 제조사 품번이 섞여 있다', '교체부품 칸에 예전 품번, 줄여 쓴 품번, 제조사 품번이 섞여 있고, 품명만 적은 칸과 빈 칸도 있다'),
             ('결과 화면 「교체부품 칸이 빈 구성 요소」 표에 나온 줄들이 왜 부품에 이어지지 않았는지 원자료와 현장 메모의 줄(파일:줄)로 설명해 줘.',
              '결과 화면 「사내 품번을 찾지 못한 교체부품 칸」 · 「교체부품 칸이 빈 구성 요소」 표에 나온 줄들이 왜 부품에 이어지지 않았는지 원자료와 현장 메모의 줄(파일:줄)로 설명해 줘.'),
@@ -246,7 +246,7 @@ def ontology_guide():
             ['보전팀의 질문에 답하는 모델이 있다',
              '`data/`의 `supply_terms.csv`(공급사가 낸 견적) · `approved_suppliers.csv`(승인 공급사 등록) · `purchasing_standard_pr07.md`(구매 기준서 발췌)는 아직 쓰지 않았다. `receipts.csv`(입고 이력)는 이 질문에 쓰지 않는다',
              ('구매팀이 묻는 **역량 질문** ⑤', [Q])],
-            ['Codex에게 두 표에 무엇이 들어 있고 몇 줄인지, 예비품 표와 어떤 칸으로 이어지는지 물어보자', '같은 공급사나 같은 값을 서로 다르게 적은 곳을 실제 줄(파일:줄)과 개수로 받아 보자',
+            ['Codex에게 두 표에 무엇이 들어 있고 몇 줄인지, 예비품 표와 어떤 칸으로 이어지는지 물어보자', '같은 공급사나 같은 값을 서로 다르게 적은 곳을 실제 줄(파일:줄)과 개수로 받아 보자. 이 개수는 13단계의 공급 화면이 센 수와 다시 맞춰 본다',
              '두 표에 승인 여부가 다르게 적힌 줄이 있는지, 그럴 때 어느 쪽을 따르는지 구매 기준서의 줄로 물어보자', '기준일은 언제일까? 어디에 적혀 있는지 줄로 받아 두자', '기준일에 유효기한이 지난 줄과, 같은 공급사 · 같은 부품에 견적이 두 줄인 곳도 물어보자',
              '알려 준 줄을 한두 곳 직접 열어서 맞는지 확인하자'])],
             prompt=('파일은 바꾸지 말고 `data/supply_terms.csv` · `data/approved_suppliers.csv` · `data/purchasing_standard_pr07.md`를 살펴봐 줘. 표마다 무엇이 들어 있고 몇 줄인지, 예비품 표와 어떤 칸으로 이어지는지, '

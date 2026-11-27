@@ -24,10 +24,17 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 실전반 두 랩은 같은 생성 길에 공장 규모 자료와 끝의 구매팀 응용만 얹는다(코딩랩 K-10 — session2_factory*.py). 통합반 산출물은 과정 인자의 기본값으로 예전과 같은 바이트가 나온다.
 COURSES = {'통합반': dict(dest=DEST, prefix='integrated', versions=None),
-           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v31-practical', 'graph-lab': 'v31-practical'})}
+           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v32-practical', 'graph-lab': 'v32-practical'})}
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v63-lab', 'graph-lab': 'v63-lab'}
+VERSIONS = {'ontology-lab': 'v64-lab', 'graph-lab': 'v64-lab'}
+# v64-lab(통합반 두 랩) · v32-practical(실전반 두 랩) — 2026-11-28, 받기 시험 v63 · v31(작업 폴더 판정/받기시험_v63_v31.md 9절 나4 ~ 나6 · 가14 ~ 가16)에서 나온 것을 한 판에(판정/랩고침_실행기록_v64_v32.md):
+#   설계 랩 — 질문 대조 화면(query)도 근거 칸의 파일:줄을 원자료에 대어 꼴 카드처럼 먼저 짚는다(가이드는 기대 답 화면을 앞 단계에서만 실행하게 해, 뒤 단계에서 더한 줄이 끝까지 검사받지 않았다 — session2_steps ask),
+#   속성 화면(표를 적기 전 · 뒤)은 모델에 담지 않기로 행 처리 표에 적은 줄을 세지 않아 넣기 전 검증과 같은 줄을 본다(session2_model_tool.kept), 관계 화면의 「가장 많은 곳」은 같은 수인 곳을 모두 댄다(links_view),
+#   카드의 문장은 「 · 」에서 배지로 갈리지 않는다(result_view — 줄 (이름, 글, '글')), 실전 질문 5의 근거 검사는 공급사 이름을 원자료와 같은 잣대(괄호 앞 이름)로 견준다(session2_factory_lab purchase_evidence).
+#   그래프 랩 — 되돌리기 화면(reset)이 개수만 보지 않고 넣기 화면과 같은 잣대(관계의 시작과 끝 · 노드의 값 · 날짜 속성의 자료형)로 본다(session2_graph_project reset — 틀린 적재 쿼리로 되돌려도 「모델 파일대로 돌아왔습니다」였다),
+#   날짜 속성을 글자와 견준 조건 카드는 결론 줄 바로 아래(대조 표보다 먼저)에 둔다(session2_steps ask_question). AGENTS.md · 빈 틀 · 자료는 앞 판과 같은 바이트다.
+# 실전반 설계 v32-practical — 2026-11-28, 학생 역 리허설 v31(47분)의 두 자리: 가이드 07이 HYD-07 지시계 두 줄이 유온계 · 압력계임을 밝히고, 11은 다르게 적은 곳의 개수를 13단계 공급 화면이 센 수와 다시 맞춰 보게 한다.
 # v63-lab(통합반 두 랩) · v31-practical(실전반 두 랩) — 2026-11-28, 실전 설계 v30 학생 역 리허설(65.9분 · Codex 기다림 50.7분) · 받기 시험(v62 · v30 가10 ~ 가13)에서 나온 것을 한 판에(작업 폴더 판정/랩고침_실행기록_v63_v31.md):
 #   누가 세어도 같은 개수는 제공 화면이 센다 — 설계 랩의 속성 · 관계 화면은 표를 적기 전에 실행하면 클래스마다 쓸 수 있는 칸의 빈 줄 수, 클래스 짝마다 지금 자료의 이어짐과 하나도 없는 대상을 보이고
 #   (session2_model_tool.columns_view · links_view, session2_steps properties_before · relations_before), 실전 설계의 공급 화면은 공급사 · 견적을 적기 전에 견적표를 읽은 값 · 겹친 줄 · 칸마다 빈 줄을 보인다(session2_factory_lab supply_before).

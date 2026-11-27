@@ -518,15 +518,15 @@ def ask_question(number):
         blocks.insert(0, R.cards('기대 답의 볼_열이 쿼리 결과에 없습니다', [dict(title=where, badge=f'없는 열: {lost}', state='bad', icon='warn',
                                  lines=[('기대 답이 보려는 열', wanted), ('쿼리가 돌려준 열', had), ('쿼리', f'app/features/query.cypher:{line}')]) for where, wanted, lost, had in absent],
                                  note='쿼리가 그 열을 돌려주게 고치거나(RETURN … AS 열 이름), 기대 답의 볼_열을 쿼리가 돌려주는 열 이름으로 맞춥니다. 다른 줄은 아래에서 그대로 견줬습니다.'))
-    texted = db(C.text_against_date, text)
-    if texted:      # 오류 없이 답만 비는 쿼리 — 까닭을 화면이 말한다
-        blocks.insert(0, R.cards('날짜 속성을 글자와 견준 조건', [dict(title=f'{k} ↔ {lit}', badge='자료형이 다름', state='bad', icon='warn',
-                                 lines=[('쿼리', f'app/features/query.cypher:{line}'), ('견준 것', f'날짜 속성 {k}와 글자 {lit}')]) for k, lit in texted],
-                                 note='랩 DB에서 이 속성은 날짜이고, 따옴표로 적은 값은 글자입니다. 날짜와 글자는 자료형이 달라 견준 조건이 참이 되지 않으므로, 이 조건에 걸린 줄은 오류 없이 모두 걸러집니다. '
-                                      "글자를 date('2026-10-15')처럼 날짜로 바꿔 견줍니다."))
     if exp:
         blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 쿼리 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same_answer,
                                    note=SAME_NOTE + ' 볼_열을 「열+열」로 적은 줄은 결과 줄마다 두 열의 값을 「=」로 짝지어 견줍니다(값이 같아도 짝이 다르면 다름). ' + (f'볼_열에서 빈 글자 {blanks}칸을 값 없음(null)과 같은 「없음」으로 견줬습니다. 쿼리가 값이 없는 칸을 빈 글자로 바꾸고 있습니다 — 값 없음은 null로 돌려주는 편이 다른 쿼리와 섞이지 않습니다.' if blanks else '')))
+    texted = db(C.text_against_date, text)
+    if texted:      # 오류 없이 답만 비는 쿼리 — 까닭을 화면이 말한다. 대조 표가 길어도 첫 화면에 보이게 결론 줄 바로 아래에 둔다
+        blocks.insert(0, R.cards('날짜 속성을 글자와 견준 조건', [dict(title=f'{k} ↔ {lit}', badge='자료형이 다름', state='bad', icon='warn',
+                                 lines=[('쿼리', f'app/features/query.cypher:{line}'), ('견준 것', f'{k}(날짜 속성) ↔ {lit}(글자)', '글')]) for k, lit in texted],
+                                 note='랩 DB에서 이 속성은 날짜이고, 따옴표로 적은 값은 글자입니다. 날짜와 글자는 자료형이 달라 견준 조건이 참이 되지 않으므로, 이 조건에 걸린 줄은 오류 없이 모두 걸러집니다. '
+                                      "글자를 date('2026-10-15')처럼 날짜로 바꿔 견줍니다."))
     return [tally(blocks)] + blocks + browser()
 
 
@@ -681,16 +681,29 @@ def changes(previous):
 
 
 def reset(previous):
-    """넣은 직후로 되돌리기 — 이 폴더 랩 DB의 노드와 관계를 모두 지우고(유일 제약은 그대로) 모델을 다시 넣는다. 수정본으로 바뀐 것과 잘못 들어간 값이 모두 사라진다."""
+    """넣은 직후로 되돌리기 — 이 폴더 랩 DB의 노드와 관계를 모두 지우고(유일 제약은 그대로) 지금의 적재 쿼리로 모델을 다시 넣는다. 수정본으로 바뀐 것과 앞서 잘못 들어간 값이 사라진다.
+    다시 넣은 것이 모델 파일과 같은지는 넣기 화면(load)과 같은 잣대로 본다 — 개수, 관계의 시작과 끝, 노드의 값, 날짜 속성의 자료형. 내 적재 쿼리가 틀린 채로 되돌리면 틀린 그대로 다시 들어가기 때문이다."""
     before = db(C.counts)
     db(C.clear)
     done, missing = load_once()
     _, model = graph_counts()
     have = db(C.counts)
     differ = [k for k, v in sorted(model.items()) if v != have.get(k, 0)]
+    turned = relation_cards(C.model_graph()[1], db(C.export_graph))
+    gap = model_gap() if STUDENT else []
+    dated = date_cards()
+    again = '지금의 내 적재 쿼리(app/features/load.cypher)로 다시 넣은 결과입니다. 아래 카드를 보고 쿼리를 고친 뒤 이 명령을 다시 실행합니다.'
     return [R.verdict('bad', f'되돌렸지만 모델 파일과 개수가 다른 항목 {len(differ)}개', ' · '.join(differ[:6]) + ' — python run.py load의 화면에서 내 적재 쿼리를 봅니다.') if differ else
-            R.verdict('ok', f'랩 DB를 넣은 직후로 되돌렸습니다 — 노드 {have.get("노드", 0)}개 · 관계 {have.get("관계", 0)}개', '수정본으로 바뀐 값과 지운 것이 모두 모델 파일대로 돌아왔습니다. 유일 제약은 그대로 걸려 있습니다.'),
-            R.count_bars('되돌리기 전 ↔ 되돌린 뒤 개수', ('되돌리기 전', '되돌린 뒤'), before, have),
+            R.verdict('bad', '비우고 다시 넣었지만 모델 파일과 다르게 이어진 관계가 있습니다 — ' + ' · '.join(c['title'] for c in turned), again) if turned else
+            R.verdict('bad', f'비우고 다시 넣었지만 모델 파일과 값이 다른 노드가 있습니다 — {len(gap)}곳', again) if gap else
+            R.verdict('bad', '비우고 다시 넣었지만 스키마는 날짜인데 랩 DB에 글자로 들어간 값이 있습니다 — ' + ' · '.join(c['title'] for c in dated), again) if dated else
+            R.verdict('ok', f'랩 DB를 넣은 직후로 되돌렸습니다 — 노드 {have.get("노드", 0)}개 · 관계 {have.get("관계", 0)}개',
+                      '수정본으로 바뀐 값과 지운 것이 모두 모델 파일대로 돌아왔습니다' + (' — 개수와 값, 관계의 방향, 날짜 속성의 자료형을 모델 파일에 대어 봤습니다' if STUDENT else '') + '. 유일 제약은 그대로 걸려 있습니다.'),
+            R.count_bars('되돌리기 전 ↔ 되돌린 뒤 개수', ('되돌리기 전', '되돌린 뒤'), before, have)] + (
+            [R.cards('모델 파일과 다르게 이어진 관계', turned, wide=True, note=TURNED_NOTE)] if turned else []) + (
+            [R.cards('스키마는 날짜인데 랩 DB에 글자로 들어간 값', dated, wide=True, note=DATED_NOTE)] if dated else []) + (
+            [R.cards('모델 파일과 값이 다른 노드', gap, wide=True,
+                     note='모델 파일은 스키마대로 옮긴 인스턴스 데이터입니다. 원자료 표의 줄을 내 쿼리로 넣은 종류는 식별자로 쓴 열과 열 → 속성 짝이 스키마와 같아야 모델 파일과 같은 노드가 됩니다.')] if gap else []) + [
             R.folded(R.table('다시 넣은 쿼리마다 넘긴 행과 바뀐 것', ['쿼리', '넣을 것', '넘긴 행', '바뀐 것'], done))] + browser()
 
 

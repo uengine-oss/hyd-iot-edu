@@ -305,15 +305,30 @@ def wrong_choices(starter, work):
         written = next(r['공급사'] for r in csv.DictReader(io.StringIO((new / 'data/supply_terms.csv').read_text(encoding='utf-8-sig'))) if '(' in r['공급사'])
         other = next(r[2].split('/')[1] for r in rows if r[0] == '5' and '/' in r[2] and r[2] != item) if any(r[0] == '5' and '/' in r[2] and r[2] != item for r in rows) else None
         base = len(text.splitlines())
-        path.write_text(text + f'2,{qname},센서 목록,x,x\n5,{asked},{part}/{written},승인 · 1 · 0.1 · 2,x\n5,{asked}-꼴,{item},승인 · 1 · 0.1,x\n5,{asked}-없는곳,{part}/D상사,승인 · 1 · 0.1 · 2,x\n', encoding='utf-8', newline='\n')
+        # 견적표에 괄호 풀이가 붙어 적힌 공급사를 항목에 그대로 적은 줄 둘 — 근거는 한 줄은 그 공급사의 견적 줄(맞는 줄), 한 줄은 같은 부품의 다른 공급사 견줄 줄(틀린 줄)
+        quotes = list(enumerate(csv.DictReader(io.StringIO((new / 'data/supply_terms.csv').read_text(encoding='utf-8-sig'))), 2))
+        spare = {r['품번'] for r in csv.DictReader(io.StringIO((new / 'data/spare_parts.csv').read_text(encoding='utf-8-sig')))}
+        short = lambda s: s.split('(')[0].strip()
+        own, q = next((n, q) for n, q in quotes if '(' in q['공급사'] and q['품번'] in spare and any(o['품번'] == q['품번'] and short(o['공급사']) != short(q['공급사']) for _, o in quotes))
+        others = next(n for n, o in quotes if o['품번'] == q['품번'] and short(o['공급사']) != short(q['공급사']))
+        path.write_text(text + f'2,{qname},센서 목록,x,x\n5,{asked},{part}/{written},승인 · 1 · 0.1 · 2,x\n5,{asked}-꼴,{item},승인 · 1 · 0.1,x\n5,{asked}-없는곳,{part}/D상사,승인 · 1 · 0.1 · 2,x\n'
+                        f'5,{q["품번"]}-괄호,{q["품번"]}/{q["공급사"]},승인 · 1 · 0.1 · 2,data/supply_terms.csv:{own}\n5,{q["품번"]}-괄호다른줄,{q["품번"]}/{q["공급사"]},승인 · 1 · 0.1 · 2,data/supply_terms.csv:{others}\n', encoding='utf-8', newline='\n')
         hit = cards('expected')
         first = T.blocks(new, 'expected')[0]
-        assert first['state'] == 'bad' and set(hit) == {str(base + 1), str(base + 2), str(base + 3), str(base + 4)}, (first, hit)
+        assert first['state'] == 'bad' and set(hit) == {str(base + n) for n in range(1, 7)}, (first, hit)
+        # 괄호 풀이 이름으로 적은 줄: 꼴 카드가 짚고, 근거 카드는 그 공급사의 줄을 「그 공급사의 줄이 아니다」라고 하지 않는다(받기 시험 v63 나5). 다른 공급사의 줄을 댄 줄만 근거 카드가 짚는다
+        cited = lambda action: {c['title'].rsplit(':', 1)[1]: json.dumps(c['lines'], ensure_ascii=False) for b in T.blocks(new, action)
+                                if b['kind'] == 'cards' and b['title'].startswith('근거로 적은 줄이 맞지 않는') for c in b['items']}
+        for action in ('expected', 'query'):
+            off = cited(action)
+            assert set(off) == {str(base + 6)} and f'공급사 「{q["공급사"]}」의 줄이 아닙니다' in off[str(base + 6)] and f'supply_terms.csv:{others}' in off[str(base + 6)], (action, off)
+        assert '괄호 풀이를 뗀 이름' in hit[str(base + 5)] and '괄호 풀이를 뗀 이름' in hit[str(base + 6)], hit
         # 괄호 풀이가 없는 이름(목록에 없는 공급사)에는 「괄호 풀이를 떼라」가 아니라 목록의 이름으로 적으라고 말한다(받기 시험 가10)
         assert '승인 공급사 목록에 적힌 이름 가운데 하나로' in hit[str(base + 4)] and '괄호 풀이' not in hit[str(base + 4)] and not any('」이 ' in v for v in hit.values()), hit[str(base + 4)]
         assert '설비코드:태그가 아닙니다' in hit[str(base + 1)] and '괄호 풀이를 뗀 이름' in hit[str(base + 2)] and '네 값이 아닙니다' in hit[str(base + 3)], hit
         assert set(cards('query')) == set(hit)
-        return f'기대 답 화면이 틀린 꼴 4줄(expected.csv:{base + 1} · {base + 2} · {base + 3} · {base + 4})을 짚음 — 공급사 이름 「{written}」에는 괄호 풀이를 뗀 이름으로, 목록에 없는 「D상사」에는 목록에 적힌 이름 가운데 하나로 적으라고 말하고, 질문 대조도 같은 카드를 먼저 보임'
+        return (f'기대 답 화면이 틀린 꼴 6줄(expected.csv:{base + 1} ~ {base + 6})을 짚음 — 공급사 이름 「{written}」에는 괄호 풀이를 뗀 이름으로, 목록에 없는 「D상사」에는 목록에 적힌 이름 가운데 하나로 적으라고 말하고, 질문 대조도 같은 카드를 먼저 보임. '
+                f'괄호 풀이 이름 「{q["공급사"]}」로 적고 그 공급사의 견적 줄(supply_terms.csv:{own})을 근거로 댄 줄에는 근거 카드가 없고, 다른 공급사의 줄(:{others})을 댄 줄만 근거 카드가 짚음(두 화면 모두)')
     case('expected-rows-in-wrong-form', wrong_form, supply='늦은 줄')
 
     def wrong_evidence(new):      # 기대 답의 근거 줄을 틀린 줄로 적음(리허설에서 Codex가 낸 줄 번호가 한 줄씩 밀렸다) → 답은 맞아 질문 대조는 같음, 기대 답 화면이 그 줄을 짚는다
@@ -363,6 +378,32 @@ def wrong_choices(starter, work):
         assert (new / 'output/graph.json').read_bytes() == made
         return f'견적표 {len(quotes)}줄을 읽은 값, 기준일에 유효기한이 지난 줄 {late}곳, 겹친 곳 {len(twice)}곳(둘 다 기준일에 유효한 곳 {len(f["several"])}곳), 칸마다 빈 줄을 보이고 모델 파일은 그대로'
     case('supply-before-classes-written', before_supply)      # 공급 쪽을 아직 더하지 않은 참조 사본(설비 쪽 갈래만)
+
+    def dropped_rows(new):      # 모델에 담지 않기로 한 줄(행 처리의 「빼기」)은 속성 화면의 빈 줄에도 세지 않는다 — 넣기 전 검증과 같은 잣대(받기 시험 v63 나6)
+        import csv, io
+        feature = new / 'app/features'
+        rules = [r for r in csv.reader(io.StringIO((feature / 'row_rules.csv').read_text(encoding='utf-8'))) if r and not r[0].startswith('#')][1:]
+        out = {int(r[1]) for r in rules if r[0].endswith('sensors.csv') and r[2] == '빼기'}
+        sensors = list(enumerate(csv.DictReader(io.StringIO((new / 'data/sensors.csv').read_text(encoding='utf-8-sig'))), 2))
+        col = next(c for c in sensors[0][1] if all(s[c] for n, s in sensors if n not in out) and any(not s[c] for n, s in sensors if n in out))      # 뺀 줄에서만 빈 칸
+        assert out, '참조 갈래가 빼는 센서 줄이 없음 — 이 시험의 전제가 깨짐'
+        props = feature / 'properties.csv'
+        filled = props.read_text(encoding='utf-8')
+        props.write_text(filled + f'센서,trial_only,{col},글자,예,,시험\n', encoding='utf-8', newline='\n')      # 그 칸을 필수 속성으로
+        shown = T.blocks(new, 'properties')
+        bad = [c['title'] for b in shown if b['kind'] == 'cards' and b['title'].startswith('원자료와 어긋나는 속성') for c in b['items']]
+        assert shown[0]['state'] == 'ok' and not bad, ('뺀 줄에서만 빈 칸을 필수로 두었는데 속성 화면이 빈 행이라고 함', shown[0], bad)
+        T.command(new, 'run.py', 'parts', '--no-open')
+        T.command(new, 'run.py', 'check', '--no-open')      # 넣기 전 검증도 통과 — 두 화면이 같은 말을 한다
+        props.write_text('\n'.join(filled.splitlines()[:2]) + '\n', encoding='utf-8', newline='\n')      # 표를 적기 전 화면
+        table = next(b for b in T.blocks(new, 'properties') if b['kind'] == 'table')
+        mine = [r for r in table['rows'] if r[0] == '센서' and r[1] in sensors[0][1]]
+        assert mine and all(r[2] == len(sensors) - len(out) for r in mine), [r[:4] for r in mine]
+        for r in mine:
+            assert r[3] == sum(1 for n, s in sensors if n not in out and not s[r[1]]), (r[:5], '화면의 빈 줄 수가 뺀 줄을 빼고 원자료에서 따로 센 수와 다름')
+        return (f'센서 표 {len(sensors)}줄 가운데 빼기로 적은 {len(out)}줄(sensors.csv:{" · ".join(map(str, sorted(out)))})에서만 빈 「{col}」 칸을 필수로 두어도 속성 화면이 걸지 않고 넣기 전 검증도 통과, '
+                f'표를 적기 전 화면은 센서 {len(sensors) - len(out)}줄 · 「{col}」 빈 줄 0으로 셈(칸 {len(mine)}개의 빈 줄 수가 원자료에서 따로 센 수와 같음)')
+    case('dropped-row-not-counted-as-blank', dropped_rows)
 
     # 고의 손상(자료 사본만): 한계 칸의 단위 글이 그 행의 단위 칸과 다르면 수로 읽지 않는다 — 단위가 붙은 값을 아무 글이나 떼고 읽는 것이 아님을 본다
     def other_unit(new):

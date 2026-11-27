@@ -275,7 +275,7 @@ def expected_form(rows, lines):
 
 
 def form_cards(off):
-    return R.cards(f'꼴이 맞지 않는 기대 답 줄 {len(off)}곳', [dict(title=where, badge='질문 ' + q, state='bad', icon='warn', lines=[('어긋난 곳', what), ('이렇게 적습니다', fix)]) for where, q, what, fix in off[:24]], wide=True,
+    return R.cards(f'꼴이 맞지 않는 기대 답 줄 {len(off)}곳', [dict(title=where, badge='질문 ' + q, state='bad', icon='warn', lines=[('어긋난 곳', what, '글'), ('이렇게 적습니다', fix, '글')]) for where, q, what, fix in off[:24]], wide=True,
                    note='값이 맞는지가 아니라 무엇을 어느 칸에 적었는지만 본 것입니다. 꼴이 틀린 줄은 모델이 내는 답과 짝이 맞지 않아 질문 대조에서 「실제 없음」이 됩니다. '
                         '이 카드를 Codex에게 보여 주고, 기대 답의 값은 그대로 둔 채 칸만 맞게 고쳐 달라고 합니다. 칸마다의 뜻은 app/features/expected.csv 첫 줄에 있습니다.')
 
@@ -324,7 +324,7 @@ def evidence_off(rows, lines):
         elif q == '3':
             words = (part_words(item) | set([asked])) if item else set()
             wrong = lambda name, c, words=words, asked=asked, pieces=pieces: (
-                f'물은 표기 「{asked}」나 그 부품의 사내 품번 · 다른 표기 · 품명이 적힌 줄이 아닙니다'
+                M.josa(f'물은 표기 「{asked}」', '이나/나') + ' 그 부품의 사내 품번 · 다른 표기 · 품명이 적힌 줄이 아닙니다'
                 if words and not any(w in x for w in words for x in c) and (name == place_table or not set(pieces) & set(c)) else None)
         elif q in EVIDENCE_MORE:
             wrong = EVIDENCE_MORE[q](asked, item, answer, pieces)
@@ -364,7 +364,7 @@ def evidence_off(rows, lines):
 
 
 def evidence_cards(off):
-    return R.cards(f'근거로 적은 줄이 맞지 않는 기대 답 줄 {len(set(x[0] for x in off))}곳', [dict(title=where, badge='질문 ' + q, state='warn', icon='warn', lines=[('근거로 적은 줄', at), ('어긋난 곳', what)]) for where, q, at, what in off[:24]], wide=True,
+    return R.cards(f'근거로 적은 줄이 맞지 않는 기대 답 줄 {len(set(x[0] for x in off))}곳', [dict(title=where, badge='질문 ' + q, state='warn', icon='warn', lines=[('근거로 적은 줄', at, '글'), ('어긋난 곳', what, '글')]) for where, q, at, what in off[:24]], wide=True,
                    note='답의 값이 맞는지가 아니라, 근거 칸에 적은 파일:줄에 물은 대상이나 답의 값이 적혀 있는지만 본 것입니다. AI는 줄 번호를 틀리게 대곤 합니다. '
                         '그 줄을 직접 열어 보고, Codex에게 맞는 줄을 다시 찾아 근거 칸만 고쳐 달라고 합니다. 줄 번호를 범위(2~21)로 적은 근거는 그 범위에 맞는 줄이 하나라도 있으면 걸지 않습니다.')
 
@@ -425,7 +425,7 @@ def properties_before():
             R.table('클래스마다 쓸 수 있는 칸 — 값이 빈 원자료 줄', ['클래스', '원자료 칸', '원자료 줄', '빈 줄', '빈 줄의 자리', '수로 읽히는 값', '날짜로 읽히는 값', '첫 값'],
                     [(c['클래스'], c['칸'], '제공 코드가 채움' if c['행'] is None else c['행'], '' if c['행'] is None else len(c['빈칸']), lines(c),
                       '' if c['행'] is None else c['수'], '' if c['행'] is None else c['날짜'], c['예']) for c in cols],
-                    note='원자료 줄을 그대로 센 수입니다. 어떤 칸을 필수로 두면 그 칸의 「빈 줄」이 넣기 전 검증에서 걸리고, 자료형을 수나 날짜로 두면 그렇게 읽히지 않는 값이 걸립니다. '
+                    note='원자료 줄을 센 수입니다(모델에 담지 않기로 app/features/row_rules.csv에 적은 줄은 뺌). 어떤 칸을 필수로 두면 그 칸의 「빈 줄」이 넣기 전 검증에서 걸리고, 자료형을 수나 날짜로 두면 그렇게 읽히지 않는 값이 걸립니다. '
                          '빈 줄이 왜 비었는지는 그 줄을 열어 보거나 Codex에게 원자료 줄로 물어봅니다. 속성 표를 적은 뒤 이 명령을 다시 실행하면 내가 정한 속성을 원자료에 대어 본 화면이 나옵니다.')]
 
 
@@ -453,7 +453,8 @@ def properties(previous):
                            note='원자료가 틀린 것이 아니면 속성 표의 그 줄을 원자료에 맞게 고칩니다(비어도 되는 값이면 필수를 아니오로).', wide=True))
     out.append(R.folded(R.table('속성마다 원자료에 채워진 행(app/features/properties.csv)', ['클래스', '속성', '원자료 칸', '자료형', '필수', '단위', '원자료 행', '빈 행', '읽을 수 없는 값'],
                                 [(r['클래스'], r['속성'], r['칸'], r['자료형'], '예' if r['필수'] else '아니오', r['단위'], '제공 코드가 채움' if r['행'] is None else r['행'],
-                                  len(r['빈칸']), len(r['안맞음'])) for r in rows])))
+                                  len(r['빈칸']), len(r['안맞음'])) for r in rows],
+                                note='모델에 담지 않기로 app/features/row_rules.csv에 적은 줄은 세지 않습니다 — 넣기 전 검증이 보는 줄과 같습니다.')))
     return out
 
 
@@ -461,9 +462,9 @@ def relations_before():
     """관계 표를 적기 전 — 클래스 짝마다 원자료 줄이 지금 이어진 개수와, 반대쪽이 하나도 없는 대상(제공 코드가 센다)."""
     facts = guarded(M.links_view)
     listed = lambda xs, unit: f'{len(xs)}{unit}' + (' — ' + ', '.join(xs[:6]) + (f' … 외 {len(xs) - 6}{unit}' if len(xs) > 6 else '') if xs else '')
-    top = lambda pair: f'가장 많은 곳 {pair[0]}개' + (f' — {pair[1]}' if pair[1] and pair[0] else '')
+    top = lambda pair: f'가장 많은 곳 {pair[0]}개' + (' — ' + ', '.join(pair[1][:6]) + (f' … 외 {len(pair[1]) - 6}곳도 같은 수' if len(pair[1]) > 6 else '') if pair[1] and pair[0] else '')
     items = [dict(title=f"{f['앞']} · {f['뒤']}", state='warn' if f['앞_없음'] or f['뒤_없음'] else '', lines=[
-        (f"{f['앞']} 하나에 이어진 {f['뒤']}", top(f['앞_최대'])), (f"{f['뒤']} 하나에 이어진 {f['앞']}", top(f['뒤_최대'])),
+        (f"{f['앞']} 하나에 이어진 {f['뒤']}", top(f['앞_최대']), '글'), (f"{f['뒤']} 하나에 이어진 {f['앞']}", top(f['뒤_최대']), '글'),
         (f"{M.josa(f['뒤'], '이/가')} 하나도 없는 {f['앞']}", listed(f['앞_없음'], '곳')), (f"{M.josa(f['앞'], '이/가')} 하나도 없는 {f['뒤']}", listed(f['뒤_없음'], '곳'))]) for f in facts]
     return [R.verdict('info', '관계 표를 아직 적지 않았습니다 — 원자료 줄이 지금 어떻게 이어져 있는지 먼저 봅니다',
                       '카디널리티는 이어질 수 있는 개수라 지금 자료보다 넓게 정해도 됩니다. 화살표와 카디널리티, 적어도 하나는 내가 정합니다.'),
@@ -599,6 +600,7 @@ def parts(previous):
 def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
     off = expected_form(rows, expected_lines())      # 꼴이 틀린 줄은 아래 대조에서 「실제 없음」이 된다 — 그 까닭을 먼저 짚는다
+    cited = evidence_off(rows, expected_lines())     # 근거로 적은 줄은 답이 같아도 틀릴 수 있다 — 기대 답 화면을 다시 실행하지 않는 뒤 단계에서 더한 줄도 여기서 본다
     more = {}
     for line, r in zip(expected_lines(), rows):      # 질문 4(내가 더한 질문)는 답으로 볼 속성(항목)과 그 줄 번호까지 넘긴다
         if str(r['질문']).strip() == '4':
@@ -635,7 +637,11 @@ def ask(previous):
         out.append(R.ordered(R.compare('질문 2 센서 값 — 단위 · 정상값 · 한계 · 한계구분 차례', '짝', [{'짝': key(r), '답': r['기대_답']} for r in rows if value(r)],
                              [{'짝': key(r), '답': r['답']} for r in keep if value(r)], ['답'], same=exact,
                              note='값은 차례까지 견줍니다. 값이 없는 칸 · 그 칸을 담은 속성이 없는 칸은 「없음」입니다. 속성 표에서 「기준 단위」로 정한 수는 바꾼 값이고, 「적힌 그대로」면 원자료에 적힌 값입니다.')))
-    return [tally(out)] + ([form_cards(off)] if off else []) + out
+    head = tally(out)
+    if cited:      # 답이 모두 같아도 근거 줄이 틀린 것은 결론 줄이 말한다
+        head = dict(head, state='warn' if head['state'] == 'ok' else head['state'],
+                    detail=(head['detail'] + ' ' if head['detail'] else '') + f'근거로 적은 줄이 맞지 않는 기대 답 줄 {len(set(x[0] for x in cited))}곳 — 아래 카드의 줄을 원자료에서 직접 열어 봅니다.')
+    return [head] + ([form_cards(off)] if off else []) + ([evidence_cards(cited)] if cited else []) + out
 
 
 def check(previous):

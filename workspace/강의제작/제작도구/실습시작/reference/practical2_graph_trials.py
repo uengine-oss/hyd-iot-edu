@@ -197,7 +197,10 @@ def supply_wrong(folder, schema, graph, later):
     assert http(folder, f'MATCH ()-[r:{quotes}]->() RETURN count(r)')[0][0] == m
     assert blocks[0]['state'] == 'bad' and '다르게 이어진 관계' in blocks[0]['text'] and '이어졌습니다' not in blocks[0]['text'], blocks[0]
     assert [c['title'] for c in turned_cards] == [quotes] and f'거꾸로 {m}개' in json.dumps(turned_cards, ensure_ascii=False), turned_cards
-    out.append({'wrong': '견적과 부품을 잇는 관계의 화살표를 거꾸로 넣음', 'result': f'개수는 모델과 같지만({quotes} {m}개) 넣기 화면이 「{blocks[0]["text"]}」로 끝남 — 거꾸로 {m}개'})
+    back = result(folder, 'reset')      # 그 쿼리 그대로 되돌리면 거꾸로 그대로 다시 들어간다 — 되돌리기 화면이 「모델 파일대로 돌아왔습니다」라고 하지 않는다(받기 시험 v63 나4)
+    assert back[0]['state'] == 'bad' and '다르게 이어진 관계' in back[0]['text'] and '돌아왔습니다' not in json.dumps(back[0], ensure_ascii=False), back[0]
+    assert [c['title'] for c in cards_of(back, '모델 파일과 다르게 이어진 관계')] == [quotes], back
+    out.append({'wrong': '견적과 부품을 잇는 관계의 화살표를 거꾸로 넣음', 'result': f'개수는 모델과 같지만({quotes} {m}개) 넣기 화면이 「{blocks[0]["text"]}」로 끝남 — 거꾸로 {m}개. 그 쿼리 그대로 되돌리면 되돌리기 화면도 「{back[0]["text"]}」'})
     http(folder, f'MATCH ()-[r:{quotes}|{offers}]->() DELETE r')      # 다음 경우를 위해 이번에 넣은 관계를 비운다
     spec = schema['relations'][offers]
     turned = two.replace(f"(a:{spec['from']} {{id: row.a}}), (b:{spec['to']} {{id: row.b}}) MERGE (a)-[r:{offers}]", f"(a:{spec['to']} {{id: row.a}}), (b:{spec['from']} {{id: row.b}}) MERGE (a)-[r:{offers}]")
@@ -260,7 +263,8 @@ def trials(starter, work):
                 records.append({'wrong': '질문 1의 기대 답에 붙은곳이 「설비 전체」인 센서까지 넣음', 'result': f'질문 1 대조 3줄이 모두 다름 — 쿼리는 설비 → 구성 요소 → 센서 길만 따라가 그 센서를 돌려주지 않는다(기대 「…{off[0]["cells"][0][0][-28:]}」)'})
                 expectation(folder, purchase=False)
                 records += supply_wrong(folder, T.schema_in_use(folder), provided, later)
-                result(folder, 'reset')      # CREATE로 겹쳐 넣은 관계를 비우고 참조 쿼리로 다시 넣는다
+                back = result(folder, 'reset')      # CREATE로 겹쳐 넣은 관계를 비우고 참조 쿼리로 다시 넣는다
+                assert back[0]['state'] == 'ok' and '모델 파일대로 돌아왔습니다' in back[0]['detail'], back[0]
             # 수정본 반영
             decisions = folder / 'app/features/decisions.csv'
             filled = decisions.read_bytes()
