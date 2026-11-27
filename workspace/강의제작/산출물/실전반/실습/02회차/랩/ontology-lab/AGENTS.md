@@ -9,7 +9,11 @@
 - 실제 실행한 명령·결과·변경 파일을 보고한다. 실행하지 않은 것을 성공했다고 말하지 않는다.
 - 키와 비밀번호를 코드·결과·기록에 적지 않는다. 열어 둔 프로젝트 폴더 밖의 파일은 읽지 않는다.
 
-- 이 실습에서 구현하는 파일은 `app/features/quote_rule.py`와 `app/features/approval_rule.py`이고, 학생 기록은 `app/features/requirements.md`·`expected.csv`·`decisions.csv`다.
-- 모델은 `python run.py approval`이 `output/schema.json`·`output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.
 - `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). 학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.
-- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.
+- 스키마는 `app/features/`의 표 세 장(`classes.csv` · `properties.csv` · `relations.csv`)이고, 판단 함수 파일은 `quantity_rules.py` 하나다. 판단 함수는 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 표(스키마 표 세 장과 `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.
+- 스키마 표 세 장의 줄은 학생이 고른 뒤에 적는다. 표를 채워 달라는 부탁을 받으면 먼저 그 표에서 정할 것(`classes.csv`: 무엇을 클래스로 둘지 · 식별자를 무엇으로 지을지, `properties.csv`: 자료형 · 필수 여부 · 센서 값의 단위를 담는 법, `relations.csv`: 시작과 종료 · 카디널리티 · 적어도 하나)마다 선택지와 각 선택의 결과(그렇게 정하면 걸리는 원자료 줄과 개수), 추천을 보이고, 학생이 고른 것과 이유를 말한 줄만 적는다(학생이 보고 받아들인다고 말한 줄도 된다). 근거 칸에는 학생이 말한 이유를 적는다. 「알아서 채워 줘」 · 「추천대로 다 해 줘」에는 표를 쓰지 않고 정할 것을 다시 묻는다.
+- 스키마 표에 줄을 처음 채울 때는 한 번에 한 장만 쓰고 멈춘다. 학생이 이미 정한 것에 맞춰 여러 표의 줄을 함께 고쳐 달라는 부탁은 그대로 한다.
+- `expected.csv`의 기대 답은 원자료에서 찾아 적고, 모델이나 결과 화면이 낸 답을 옮겨 적지 않는다. 결과가 기대 답과 다르면 기대 답을 고치기 전에 원인을 원자료 줄로 먼저 설명한다.
+- 모델은 `python run.py parts`(공급사와 견적을 더한 뒤에는 `python run.py supply`도)가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.
+- 「권장안대로」 · 「알아서」 · 「다 해 줘」처럼 갈래를 고르지 않거나 이유를 말하지 않은 부탁은 결정이 아니다. 학생이 고를 갈래와 그렇게 고른 자기 이유를 말하기 전에는 `decisions.csv`의 그 줄을 쓰지 않고, 그 결정이 걸린 `quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `classes.csv` · `properties.csv` · `relations.csv`의 실물 줄, `row_rules.csv`의 견적 줄과 스키마 표 세 장의 공급사 · 견적 줄도 만들거나 고치지 않는다. 추천안을 냈더라도 학생이 그 추천을 받아들인다고 말하고 이유를 대야 결정이고, `decisions.csv`의 근거 칸에는 그 이유를 학생의 말로 적는다. 그때까지는 무엇을 정해야 하는지와 선택지 · 각 선택의 결과를 쉬운 말로 다시 묻는다.
+- 파일은 모두 UTF-8(BOM 없음)이다. 읽고 쓸 때 글자표를 UTF-8로 밝힌다 — PowerShell로 읽을 때는 `Get-Content -Encoding utf8 <파일>`, 한글이 든 파일을 `>` · `Out-File` · `Set-Content`로 쓰지 않는다. 읽은 글의 한글이 깨져 보이면 그 내용으로 답하지 말고 UTF-8로 다시 읽는다.

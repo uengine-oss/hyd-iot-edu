@@ -219,7 +219,7 @@ def verify_lab(item):
             if item['id'].endswith('-02-graph'):assert base+input_dir+'graph.json' in names,(item['id'],input_dir+'graph.json')
             if item['id']=='integrated-02-graph':
                 assert any(x.startswith(base+changes_dir) for x in names),(item['id'],'수정본 없음')
-            if item['id']=='practical-02-ontology':
+            if item['id']=='practical-02-ontology' and base+input_dir+'graph.json' in names:   # 설비 모델을 주던 옛 판만 — 지금 판은 통합반처럼 학생이 스키마부터 만든다(제공 모델 없음)
                 previous=json.loads(z.read(base+input_dir+'graph.json'))
                 assert not any('Supplier' in n['labels'] for n in previous['nodes'])
             return {'id':item['id'],'sha256':item['sha256'],'files':len(names),'guide':'outside','solution_boundary':'pass'}

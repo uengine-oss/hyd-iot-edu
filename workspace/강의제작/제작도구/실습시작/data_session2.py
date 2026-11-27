@@ -639,7 +639,7 @@ def write_sources(dest, practical=False):
 
 
 # ───────────── 변경분(통합반 실습4: 재적재·부분 수정 — 실전반 실습4 행에는 수정본 반영이 없다) ─────────────
-CHANGE_COLS = {'설비_대장_변경.csv': ['변경', *ASSET_COLS], '구성요소_변경.csv': ['변경', *COMP_COLS], '센서_변경.csv': ['변경', *SENSOR_COLS]}
+CHANGE_COLS = {'설비_대장_변경.csv': ['변경', *ASSET_COLS], '센서_변경.csv': ['변경', *SENSOR_COLS], '품번_교차표_변경.csv': ['변경', *CROSS_COLS]}
 
 
 def changes():
@@ -655,15 +655,19 @@ def changes():
         removed[9] = LAB_SENSOR_REMOVED[2]
         return {'설비_대장_변경.csv': [['수정', *renamed], ['수정', *retired]], '센서_변경.csv': [['수정', *limit], ['삭제', *removed]],
                 '품번_교차표_변경.csv': [['추가', *LAB_ALIAS_ADDED]]}
-    hyd02 = a['HYD-02'][:]; hyd02[1] = 'HYD-02 2라인 2호 파워팩'; hyd02[9] = '설비명 표준화(2026-10-20)'
-    hyd07 = a['HYD-07'][:]; hyd07[8] = '불용(매각 예정)'; hyd07[9] = '2026-10-20 불용 결정'
-    out = {'설비_대장_변경.csv': [['수정', *hyd02], ['수정', *hyd07]],
-           '구성요소_변경.csv': [['수정', 'HYD-03', '동력', '주 펌프 A', 'P-PMP-SEAL', SERIALS[('HYD-03', 'pump-a')], '전기계장 담당', '교체부품 확인(2026-10-18)'],
-                                ['수정', 'HYD-03', '저장·여과', '리턴 필터', 'P-RTN-FLT-25', '', '전기계장 담당', '필터 등급 변경 적용(2026-10-19)']],   # 관계가 바뀌는 수정(잇는 부품이 바뀜) — 리허설 07 관찰
-           '센서_변경.csv': [['수정', 'HYD-03', 'VS1', 'VT-231', '팬 진동 센서', '송풍기', '팬 진동', 'mm/s', '1 Hz', '매초 전송', '0.6', '2.0', '상한', '단위 보완'],
-                            ['수정', 'HYD-06', 'I_MOTOR', dpu_instrument('HYD-06', 'I_MOTOR'), '모터 전류', '구동 모터', '모터 전류', 'A', '', '5초 주기(3라인 게이트웨이)', '18.5', '25', '상한', '시운전 기록 확인'],
-                            ['삭제', 'HYD-01', 'TS1', 'TT-211', 'TS1 오일 온도', '쿨러', '작동유 온도', '℃', '', '', '48', '65', '', '중복 행 정리']]}
-    return out
+    # 공장 규모 — 실습 랩 규모와 같은 다섯 줄이다(같은 결정 둘이 선다: 불용 결정 설비 · 목록에서 빠진 센서). 표의 열만 공장 규모 것이다.
+    renamed, retired = a[LAB_RENAMED[0]][:], a[LAB_RETIRED[0]][:]
+    renamed[1], renamed[9] = LAB_RENAMED[1], f'설비명 표준화({CHANGE_DATE})'
+    retired[8], retired[9] = LAB_RETIRED[1], f'{CHANGE_DATE} 불용 결정'
+    sensor = {}
+    for r in sensor_rows():
+        sensor.setdefault((r[0], r[1]), list(r))      # 점검표에 다시 적힌 줄은 먼저 적힌 줄을 쓴다
+    at = SENSOR_COLS.index
+    limit, removed = sensor[LAB_SENSOR_LIMIT[:2]][:], sensor[LAB_SENSOR_REMOVED[:2]][:]
+    limit[at('한계')], limit[at('비고')] = LAB_SENSOR_LIMIT[2:]
+    removed[at('비고')] = LAB_SENSOR_REMOVED[2]
+    return {'설비_대장_변경.csv': [['수정', *renamed], ['수정', *retired]], '센서_변경.csv': [['수정', *limit], ['삭제', *removed]],
+            '품번_교차표_변경.csv': [['추가', *LAB_ALIAS_ADDED]]}
 
 
 def write_changes(dest):
@@ -674,7 +678,7 @@ def write_changes(dest):
 
 기준일({REF_DATE}) 뒤 담당자들이 자기 목록에서 바꾼 줄만 모아 보낸 것입니다. 각 파일은 원본과 같은 열에 맨 앞 「변경」 칸이 붙어 있습니다.
 「추가」는 그 담당의 목록에 새로 생긴 줄, 「수정」은 고친 뒤의 전체 값, 「삭제」는 그 담당의 목록에서 빠진 줄입니다.
-''' + ('먼저 보낸 원본 목록은 기준일의 것 그대로이고, 바뀐 줄은 이 폴더에만 있습니다.\n' if SCALE == LAB_SCALE else '원본 자료(`../자료/`)는 그대로 두고, 이 수정본은 이미 적재한 그래프에 반영하는 데 씁니다.\n'),
+''' + '먼저 보낸 원본 목록은 기준일의 것 그대로이고, 바뀐 줄은 이 폴더에만 있습니다.\n',
                                     encoding='utf-8', newline='\n')
 
 

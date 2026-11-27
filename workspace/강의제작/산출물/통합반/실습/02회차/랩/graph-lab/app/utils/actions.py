@@ -363,7 +363,7 @@ def probe(previous):
     schema = json.loads(path.with_name('schema.json').read_text(encoding='utf-8-sig'))
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
     props = {n['props']['id']: n['props'] for n in graph['nodes']}
-    text_key = lambda p: next((k for k, x in p.items() if k != 'id' and isinstance(x, str) and x), None)      # 식별자 말고 글자로 적힌 속성 하나(이름 같은 것)
+    text_key = lambda p: 'name' if isinstance(p.get('name'), str) and p['name'] else next((k for k, x in p.items() if k != 'id' and isinstance(x, str) and x and x != p['id']), None)      # 식별자 말고 글자로 적힌 이름 — name이 있으면 name(가이드 06의 물음), 없으면 값이 식별자와 다른 첫 글자 속성
     one = next((r for r in graph['rels'] if r['type'] in schema['relations'] and text_key(props[r['a']])), None)
     if one is None:
         raise R.Stop(f'{R.rel(path)}: 실험에 쓸 관계(식별자 말고 글자 속성이 있는 시작 노드)가 모델에 없습니다.')

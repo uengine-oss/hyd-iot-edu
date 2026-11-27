@@ -22,9 +22,17 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
+# 실전반 두 랩은 같은 생성 길에 공장 규모 자료와 끝의 구매팀 응용만 얹는다(코딩랩 K-10 — session2_factory*.py). 통합반 산출물은 과정 인자의 기본값으로 예전과 같은 바이트가 나온다.
+COURSES = {'통합반': dict(dest=DEST, prefix='integrated', versions=None),
+           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v28-practical', 'graph-lab': 'v28-practical'})}
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v59-lab', 'graph-lab': 'v59-lab'}
+VERSIONS = {'ontology-lab': 'v60-lab', 'graph-lab': 'v60-lab'}
+# v60-lab(두 랩) — 2026-11-27, v59 학생 역 리허설 두 건과 실전반 공장 규모 자료에서 나온 구멍(작업 폴더 판정/랩고침_v60_대기.md):
+#   설계 랩 — 넣기 전 검증이 관계가 하나도 이어지지 않은 인스턴스를 경고 카드로 보인다(판단은 사람이 원자료로). 속성 빈 틀 머리를 「id 줄만 적지 않고 질문이 묻는 칸은 속성으로 담는다」로,
+#   질문 1 대조는 센서가 없는 구성 요소도 「없음」 줄로 낸다.
+#   그래프 랩 — 수정 쿼리가 수정본 줄의 값을 쿼리에 적으면 파일:줄로 멈춘다(lab_cypher.change_plan — 리허설에서 'HYD-02'를 박아도 「맞음」이었음), 넣기 전 실험 둘째 카드는 name으로,
+#   가이드 03 · 04 · 12의 힌트와 정답 글(근거 줄 열어 보기 · 질문 ②는 사내 품번 · 결정이 보이는 설비로 물은 질문 ① 줄 · 값은 row의 칸으로).
 # v59-lab(두 랩) — 2026-11-27, v58 독립 검토 두 건(작업 폴더 판정/검토_랩_설계_v58.json · 검토_랩_그래프_v58.json)의 지적 고침(실행 기록 판정/랩고침_실행기록_v59.md):
 #   설계 랩 — 스키마 표 세 장도 학생이 고른다(가이드 04 · 05단계, AGENTS.md 랩별 경계가 표 이름으로 짚음). 관계는 그은 방향 그대로든 거꾸로든 따라가 찾고(1회차 「찾을 때는 거꾸로 따라가도 된다」),
 #   방향은 관계 표의 「읽는_말」로 원자료 한 쌍을 문장으로 읽어 본다. 칸 이름을 이론대로 「시작 · 종료」, 「적어도_하나」는 어느 쪽인지(시작마다 · 종료마다) 적는다.
@@ -138,7 +146,7 @@ def result_sources(strict=False):
 # 장난감 시험(2026-11-12) — AI가 결정 · 기대 답을 스스로 채우고, 기능 파일 여럿을 한꺼번에 짰다. 작업 경계만 둔다(형식은 강제하지 않음, 코딩랩 K-6).
 DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). '
                  '학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.\n'
-                 '- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.')   # 실전반 설계 랩이 쓴다(build_practical2_projects)
+                 '- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.')   # 첫 줄을 두 과정 설계 랩의 경계(DESIGN_RULE)가 쓴다
 
 # 장난감 시험(v34-lab two_turn, 2026-11-18): 「권장안대로 다 해 줘」에 AI가 decisions.csv 두 줄을 근거 칸에 학생 이유 없이 스스로 채우고 끝까지 실행했다.
 # 코딩랩 K-3 「이유 없이 판단을 넘기는 부탁은 결정이 아니다」를 이 랩들의 파일 이름으로 적는다(통합반 두 랩만 — 실전반 바이트는 그대로).
@@ -169,7 +177,7 @@ DESIGN_RULE = (DECISION_RULE.split('\n')[0] + '\n'
 GRAPH_DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 정한 것만 적는다(학생이 보고 받아들인 근거 줄과 기대 답 후보도 된다). '
                        '학생이 정하지 않았으면 적지 않고, 정할 것을 선택지와 그 결과로 보여 묻는다.\n'
                        '- 한 번에 요청받은 기능 파일 하나만 고친 뒤 멈춘다. 랩 DB를 쓰는 명령(`python run.py` 기능)은 학생이 자기 터미널에서 실행하고, '
-                       'AI는 학생이 붙여 준 터미널 출력과 결과 화면으로 확인한다. AI가 그 명령을 직접 실행하지 않는다.')   # 실전반 그래프 랩이 쓴다(build_practical2_projects)
+                       'AI는 학생이 붙여 준 터미널 출력과 결과 화면으로 확인한다. AI가 그 명령을 직접 실행하지 않는다.')   # 두 과정 그래프 랩의 경계(GRAPH_RULE)가 쓴다
 
 # 통합반 그래프 랩의 랩별 경계 — 위 둘에 장난감 시험(v32-lab two_turn)에서 뚫린 두 틈을 막는 줄을 더한다(코딩랩 K-6 · 길 6).
 GRAPH_RULE = (GRAPH_DECISION_RULE + '\n'
@@ -201,13 +209,13 @@ def run_source():
     return text.replace(old, new)
 
 
-def source_data(folder):
+def source_data(folder, practical=False):
     work = (ROOT / '작업/검사/session2-projects').resolve()
     work.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=work, prefix='data-') as temp:
         raw = Path(temp).resolve()
         assert raw.is_relative_to(work) and raw != work
-        D.write_sources(raw)
+        D.write_sources(raw, practical)
         for path in raw.iterdir():
             write(folder / 'data' / P.NAMES[path.name], P.convert(path.read_text(encoding='utf-8-sig')))
 
@@ -235,13 +243,22 @@ CHECK_MORE = [
      "            elif k!='id':errors.append(f'{t} {a}→{b}: 스키마에 정의되지 않은 속성 {k}')\n")]
 
 
-def checker(folder, L):
-    provided = [p.relative_to(folder).as_posix() for p in student_files(folder)
+LATER_POINT = '''_table = _root / 'app/features/classes.csv'
+if not (_table.is_file() and any(x.startswith({kind!r}) for x in _table.read_text(encoding='utf-8-sig', errors='replace').splitlines())):
+    _pre = [e for e in _pre if {mark!r} not in e]      # 아직 쓰지 않는 결정 지점의 빈 줄은 그 클래스를 클래스 표에 적은 뒤부터 본다
+'''
+
+
+def checker(folder, L, later=None):
+    """later = (지점 이름, 클래스 이름) — 그 클래스를 클래스 표에 적기 전에는 그 지점 줄이 비어 있어도 걸지 않는다(실전반 설계 랩: 끝의 응용에서 정하는 결정)."""
+    provided =[p.relative_to(folder).as_posix() for p in student_files(folder)
                 if p.relative_to(folder).as_posix().startswith(('app/ui/', 'app/utils/')) or p.name == 'run.py']
     guard = F.provided_guard(folder, provided)
     chosen = P.convert(F.CHOSEN_CHECK)
     head = ('from pathlib import Path\nimport sys\n\n' + F.UTF8_OUT + guard + chosen +
             '_root = Path(__file__).resolve().parents[2]\n_pre = provided_errors(_root) + chosen_errors(_root)\n')
+    if later:
+        head += LATER_POINT.format(kind=later[1] + ',', mark=f'(지점 「{later[0]}」)')
     body = P.convert(B.CHECKER).replace('Path(__file__).resolve().parent', 'Path(__file__).resolve().parents[2]')
     body = body.replace("root/'app/features'", "root/'output'")
     body = body.replace('가이드 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요.', 'python run.py parts로 모델을 생성한 뒤 다시 실행하세요.')
@@ -256,10 +273,14 @@ def checker(folder, L):
     return head + body
 
 
-def build_ontology(folder):
-    D.require('통합반')
-    L = B.design_integrated()
-    source_data(folder)
+def build_ontology(folder, course='통합반'):
+    D.require(course)
+    practical = course == '실전반'
+    if practical:
+        import session2_factory as X
+        import session2_factory_lab as XL
+    L = XL.design_lab() if practical else B.design_integrated()
+    source_data(folder, practical)
     write(folder / 'data/relationships.json', trunk_drawing())
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
@@ -267,20 +288,21 @@ def build_ontology(folder):
     utilities, ui = result_sources(strict=True)
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
-    write(folder / 'app/utils/model.py', P.model_source())
-    actions = P.actions_source(L)
+    write(folder / 'app/utils/model.py', P.model_source(X.tool_source() if practical else None))
+    actions = P.actions_source(L) + (P.convert(XL.SUPPLY_ACTIONS) if practical else '')
     commands = {'sources': ('원자료', 'sources'), 'expected': ('기대 답', 'expected'),
                 'classes': ('클래스와 식별자', 'classes'), 'properties': ('속성과 자료형', 'properties'), 'relations': ('관계와 카디널리티', 'relations'),
                 'names': ('구성 요소 이름과 실물', 'names'),
                 'quantities': ('물리량과 센서', 'sensors'),
-                'parts': ('부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('넣기 전 검증', 'check')}
+                'parts': ('부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('넣기 전 검증', 'check'), **(XL.SUPPLY_COMMANDS if practical else {})}
     actions += '\nCOMMANDS = {\n' + ''.join(f'    {cmd!r}: ({label!r}, {fn}),\n' for cmd, (label, fn) in commands.items()) + '}\n'
     write(folder / 'app/utils/actions.py', actions)
     write(folder / 'run.py', run_source())
-    write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.ONTOLOGY_PURPOSE, extra_rules=DESIGN_RULE, readme_file=False)
-    steps = G.ontology()
-    F.write_guide(folder, G.render(L['title'], G.ONTOLOGY_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
+    write(folder / 'app/utils/check.py', checker(folder, L, (X.SUPPLY_POINT, '견적') if practical else None))
+    purpose = XL.PURPOSE if practical else G.ONTOLOGY_PURPOSE
+    write_metadata(folder, L['title'], purpose, extra_rules=XL.design_rule(DESIGN_RULE) if practical else DESIGN_RULE, readme_file=False)
+    steps = XL.ontology_guide() if practical else G.ontology()
+    F.write_guide(folder, G.render(L['title'], purpose, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
 
 
@@ -296,11 +318,29 @@ def trunk_drawing():
     return json.dumps(whole, ensure_ascii=False, indent=2) + '\n'
 
 
-def design_model(branch, ids=None):
+def design_model(branch, ids=None, course='통합반', supply=None):
     """설계 랩 강사 참조 그 갈래(둘째 바퀴까지 마친 판)를 설계 랩 제공 코드(session2_model_tool)로 돌려 얻은 (스키마, 인스턴스 데이터).
-    그래프 랩의 제공 모델(data/model)이 이것이다 — 설계 랩의 output/과 꼴 · 식별자가 같아, 내 모델을 가져다 써도 같은 길로 돈다(코딩랩 K-9)."""
+    그래프 랩의 제공 모델(data/model)이 이것이다 — 설계 랩의 output/과 꼴 · 식별자가 같아, 내 모델을 가져다 써도 같은 길로 돈다(코딩랩 K-9).
+    course='실전반'이면 공장 규모 자료와 공장 규모 판 제공 코드(session2_factory)로 만들고, supply = 구매팀 응용의 셋째 결정 갈래(공급사 · 견적까지 담은 모델)."""
     import importlib.util
     import session2_answers as A
+    D.require(course)
+    if course == '실전반':
+        import session2_factory as X
+        import session2_factory_answers as FA
+        with tempfile.TemporaryDirectory(dir=WORK, prefix='model-') as temp:
+            root = Path(temp).resolve()
+            assert root.is_relative_to(WORK.resolve()) and root != WORK.resolve()
+            D.write_sources(root / '자료', True)
+            files = FA.design(branch, supply, lap=True)
+            files['결과/정한_것.csv'] = B.chosen_text(FA.chosen(branch, supply))
+            for name, text in files.items():
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text(text, encoding='utf-8', newline='\n')
+            info, model = X.tool_module(root).build('부품', write=False)
+            if info['어긋남']:
+                raise ValueError(f'제공 모델을 만들 참조 갈래 {branch} · {supply}가 원자료와 어긋납니다: ' + str(info['어긋남'][:3]))
+            return json.loads(json.dumps(model, ensure_ascii=False))
     with tempfile.TemporaryDirectory(dir=WORK, prefix='model-') as temp:
         root = Path(temp).resolve()
         assert root.is_relative_to(WORK.resolve()) and root != WORK.resolve()
@@ -320,11 +360,15 @@ def design_model(branch, ids=None):
         return json.loads(json.dumps(model, ensure_ascii=False))
 
 
-def build_graph(folder):
-    D.require('통합반')
-    L = B.graph_lab('통합반')
-    source_data(folder)
-    schema, graph = design_model(B.GRAPH_LAB_INPUT['통합반'])
+def build_graph(folder, course='통합반'):
+    D.require(course)
+    practical = course == '실전반'
+    if practical:
+        import session2_factory_answers as FA
+        import session2_factory_graph as XG
+    L = XG.graph_lab() if practical else B.graph_lab('통합반')
+    source_data(folder, practical)
+    schema, graph = design_model(B.GRAPH_LAB_INPUT['통합반'], course=course, supply=FA.PROVIDED_SUPPLY if practical else None)
     for name, value in [('schema.json', schema), ('graph.json', graph)]:
         write(folder / 'data/model' / name, json.dumps(value, ensure_ascii=False, indent=2) + '\n')
     for name, text in L['files'].items():
@@ -347,22 +391,24 @@ def build_graph(folder):
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/db.py', GP.db_source(constraints_first=True))
-    write(folder / 'app/utils/cypher.py', GP.cypher_source(integrated=True))
-    write(folder / 'app/utils/actions.py', GP.actions_source(L))
+    cypher, actions = GP.cypher_source(integrated=True), GP.actions_source(L)
+    write(folder / 'app/utils/cypher.py', XG.cypher_source(cypher) if practical else cypher)
+    write(folder / 'app/utils/actions.py', XG.actions_source(actions) if practical else actions)
     write(folder / 'run.py', run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=GRAPH_RULE + '\n' + DB_RULE, readme_file=False)
-    steps = G.graph()
-    F.write_guide(folder, G.render(L['title'], G.GRAPH_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
+    purpose = XG.purpose() if practical else G.GRAPH_PURPOSE
+    write_metadata(folder, L['title'], purpose, extra_rules=(XG.graph_rule(GRAPH_RULE) if practical else GRAPH_RULE) + '\n' + DB_RULE, readme_file=False)
+    steps = XG.graph_guide(graph) if practical else G.graph()
+    F.write_guide(folder, G.render(L['title'], purpose, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
 
 
-def validate(folder, L, steps):
+def validate(folder, L, steps, course='통합반'):
     issues = errors({p.relative_to(folder).as_posix(): p.read_bytes() for p in student_files(folder)}, folder.name)
     if issues:
         raise ValueError(issues)
     pack(folder)
-    item = entry('integrated-02-' + folder.name.removesuffix('-lab'), '통합반', '온라인 02회차', L['title'], VERSIONS[folder.name], folder,
+    item = entry(COURSES[course]['prefix'] + '-02-' + folder.name.removesuffix('-lab'), course, '온라인 02회차', L['title'], (COURSES[course]['versions'] or VERSIONS)[folder.name], folder,
                  guide_steps=[s['name'] for s in steps])
     from verify_packages import check_zip, verify_lab
     assert not check_zip(folder.with_suffix('.zip'), folder)[0]
@@ -370,10 +416,10 @@ def validate(folder, L, steps):
     return item
 
 
-def replace_generated(source, target):
+def replace_generated(source, target, dest=DEST):
     """검사가 끝난 이 생성기의 프로젝트 하나만 정본에 반영한다."""
     target = target.resolve()
-    if target.parent != DEST.resolve() or target.name != source.name or target.name not in ('ontology-lab', 'graph-lab'):
+    if target.parent != dest.resolve() or target.name != source.name or target.name not in ('ontology-lab', 'graph-lab'):
         raise ValueError('지정한 통합02 프로젝트 밖에는 반영하지 않습니다.')
     if target.exists():
         shutil.rmtree(target)
@@ -396,12 +442,23 @@ def completed_expected(branch):
     return text.replace(',' + canon + ',', ',' + removed['구성요소'] + ' 실물,') + buf.getvalue()
 
 
-def completed(starter, destination, work):
+def completed(starter, destination, work, course='통합반'):
     """학생용 완성본은 별도 묶음이며 시작 ZIP에 넣지 않는다. 유료 AI 호출 없음."""
     import session2_answers as A
     folder = work / 'completed' / starter.name
     shutil.copytree(starter, folder)
-    if starter.name == 'ontology-lab':
+    if starter.name == 'ontology-lab' and course == '실전반':      # 완성본은 가이드의 끝 상태 — 둘째 바퀴와 구매팀 응용까지
+        import session2_factory_answers as FA
+        import session2_factory_lab as XL
+        branch, supply = B.GRAPH_LAB_INPUT['통합반'], FA.PROVIDED_SUPPLY      # 완성본은 다음 랩(그래프)의 제공 모델과 같은 판단
+        files = FA.design(branch, supply)
+        files['결과/정한_것.csv'] = B.chosen_text(FA.chosen(branch, supply))
+        files['결과/기대_답.csv'] = FA.expect_text(branch, supply)
+        for name, text in files.items():
+            write(folder / P.convert(name), P.convert(text))
+        title, initial = '온톨로지 설계', 'python run.py supply\npython run.py query\npython run.py purchase'
+        context, actions, rules = nullcontext(), ('supply', 'check', 'query', 'purchase'), XL.design_rule(DESIGN_RULE)
+    elif starter.name == 'ontology-lab':
         branch = B.GRAPH_LAB_INPUT['통합반']    # 완성본은 다음 랩(그래프)의 제공 모델과 같은 판단
         files = A.integrated_design(branch, lap=True)      # 완성본은 가이드의 끝 상태 — 둘째 바퀴(질문 4)까지
         files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen(branch))
@@ -411,7 +468,11 @@ def completed(starter, destination, work):
         title, initial = '온톨로지 설계', 'python run.py parts\npython run.py query'
         context, actions, rules = nullcontext(), ('parts', 'check', 'query'), DESIGN_RULE
     else:
-        from reference.session2_graph_trials import fill, finish, instance
+        if course == '실전반':
+            import session2_factory_graph as XG
+            from reference.practical2_graph_trials import fill, finish, instance
+        else:
+            from reference.session2_graph_trials import fill, finish, instance
         fill(folder)
         finish(folder, '남김')     # 완성본은 수정본까지 반영한 상태라 기대 답과 질문 1 쿼리도 그 뒤의 것이다
         target = folder / 'app/features/expected.csv'   # 칸 뜻 머리는 학생 빈 틀과 같은 줄을 쓴다(v36 검토 — 강사 참조의 머리는 「0줄」 꼴을 모른다)
@@ -419,6 +480,9 @@ def completed(starter, destination, work):
         target.write_text(head + '\n' + target.read_text(encoding='utf-8').split('\n', 1)[1], encoding='utf-8', newline='')
         title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py constraints\npython run.py load\npython run.py update\npython run.py usage'
         context, actions, rules = instance(folder), ('constraints', 'probe', 'load', 'repeat', 'changes', 'update', 'repeat', 'sensors', 'parts', 'usage', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
+        if course == '실전반':      # 완성본은 가이드의 끝 상태 — 구매팀 응용(관계 넣기 · 질문 4)까지
+            initial += '\npython run.py purchase'
+            actions, rules = (*actions[:-2], 'supply', 'purchase', 'export', 'check'), XG.graph_rule(GRAPH_RULE) + '\n' + DB_RULE
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial, extra_rules=rules, readme_file=False)   # 완성본을 Codex로 열어도 같은 랩별 경계
@@ -444,10 +508,11 @@ def main():
     dest.add_argument('--dest', type=Path, help='작업/ 아래 새 검증용 부모 폴더; 목록은 등록하지 않음')
     dest.add_argument('--apply', action='store_true', help='검증 사본을 만든 뒤 지정한 통합02 랩만 교체')
     parser.add_argument('--completed', action='store_true', help='별도 학생용 완성본도 실제 실행해 생성')
+    parser.add_argument('--course', choices=list(COURSES), default='통합반', help='실전반 = 같은 랩에 공장 규모 자료와 끝의 구매팀 응용')
     args = parser.parse_args()
-    build = build_ontology if args.lab == 'ontology' else build_graph
+    build = (lambda folder: build_ontology(folder, args.course)) if args.lab == 'ontology' else (lambda folder: build_graph(folder, args.course))
     WORK.mkdir(parents=True, exist_ok=True)
-    with D.for_course('통합반'):
+    with D.for_course(args.course):
         generate(parser, args, build)
 
 
@@ -460,25 +525,26 @@ def generate(parser, args, build):
         if folder.exists():
             parser.error('검증 폴더가 있습니다. 다른 --dest를 사용합니다.')
         L, steps = build(folder)
-        validate(folder, L, steps)
+        validate(folder, L, steps, args.course)
         if args.completed:
-            completed(folder, parent, parent)
+            completed(folder, parent, parent, args.course)
     else:
         with tempfile.TemporaryDirectory(dir=WORK, prefix='publish-') as temp:
             work = Path(temp).resolve()
             assert work.is_relative_to(WORK.resolve()) and work != WORK.resolve()
             source = work / (args.lab + '-lab')
+            dest = COURSES[args.course]['dest']
             L, steps = build(source)
-            validate(source, L, steps)
-            archive = completed(source, work, work) if args.completed else None
-            folder = DEST / source.name
-            replace_generated(source, folder)
-            register([validate(folder, L, steps)])
+            validate(source, L, steps, args.course)
+            archive = completed(source, work, work, args.course) if args.completed else None
+            folder = dest / source.name
+            replace_generated(source, folder, dest)
+            register([validate(folder, L, steps, args.course)])
             if archive:
-                target = DEST.parent / '완성본' / archive.name
+                target = dest.parent / '완성본' / archive.name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(archive, target)
-                shutil.copyfile(work / 'completed-execution.json', WORK / (args.lab + '-completed-execution.json'))
+                shutil.copyfile(work / 'completed-execution.json', WORK / (('practical-' if args.course == '실전반' else '') + args.lab + '-completed-execution.json'))
     print(folder)
 
 

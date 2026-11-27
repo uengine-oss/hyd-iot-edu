@@ -467,6 +467,12 @@ def check(previous):
         if out[0]['kind'] == 'verdict':
             out[0] = R.verdict('bad', f'원자료가 내 스키마 표와 어긋나는 원자료 줄 {len(info["어긋남"])}곳', '아래 카드의 정한 줄과 걸린 원자료 줄을 보고 스키마 표를 고친 뒤 모델을 다시 만듭니다.')
         out.append(R.note('카드의 수는 걸린 원자료 줄 수이고, 구조 검사의 「구조 확인 필요 N건」은 만들어 둔 모델 파일에서 어긋난 조건을 센 수입니다(「적어도 하나」는 관계마다 한 건으로 셉니다).'))
+    linked = {r[k] for r in model[1]['rels'] for k in ('a', 'b')}
+    alone = [n for n in model[1]['nodes'] if n['props']['id'] not in linked]
+    if alone:      # 검사 조건은 지켰어도 아무것과도 이어지지 않은 인스턴스는 사실로 보인다 — 담을 대상인지, 다른 줄과 같은 대상인지는 사람이 원자료로 가린다
+        out.append(R.cards(f'관계가 하나도 이어지지 않은 인스턴스 {len(alone)}개', [dict(title=in_my_words(f"{n['labels'][0]} 「{n['props']['id']}」"), icon='open', state='warn', badge='이어진 관계 0',
+                                                                       lines=[f'{k} — {v}' for k, v in n['props'].items() if k != 'id' and v not in ('', None)][:4]) for n in alone[:8]],
+                           note='검사 조건은 지켰지만 다른 인스턴스와 이어진 관계가 하나도 없습니다. 원래 따로 있는 대상인지, 다른 줄과 같은 대상을 한 번 더 적은 것인지, 이을 관계가 빠졌는지를 원자료 줄로 확인합니다.'))
     if stale:
         out.append(R.note('스키마 표나 규칙을 고친 뒤 모델 파일을 다시 만들지 않았습니다 — python run.py parts를 실행한 뒤 다시 검증합니다.'))
     return out

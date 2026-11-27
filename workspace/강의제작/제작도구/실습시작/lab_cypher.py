@@ -340,6 +340,7 @@ def load_file(path, graph=None):
 
 
 CHANGE = re.compile(r'^\s*//\s*반영할 것:\s*(\S+)\s+(\S+)\s*$')
+LITERAL = re.compile(r"'((?:[^'\\]|\\.)*)'|\"((?:[^\"\\]|\\.)*)\"")      # 쿼리 안의 글자 값(작은따옴표 · 큰따옴표)
 
 
 def raw_rows(name):
@@ -502,6 +503,10 @@ def change_plan(path):
             raise RuntimeError(f'{path}:{line}: 「{heads[0][0]} {heads[0][1]}」에 해당하는 수정본 줄이 없습니다(수정본에 있는 것: {have}).')
         if '$rows' not in s:
             raise RuntimeError(f'{path}:{line}: 수정본의 줄은 $rows로 받습니다(UNWIND $rows AS row …). 값을 쿼리에 직접 적지 않습니다.')
+        cells = {v for _, row in rows[heads[0]] for k, v in row.items() if k != '변경' and v}
+        fixed = sorted({a or b for a, b in LITERAL.findall(re.sub(r'//[^\n]*', '', s))} & cells)
+        if fixed:      # $rows를 받으면서도 수정본 줄의 값을 쿼리에 적어 두면, 이번 수정본에서만 맞고 다음 수정본의 다른 줄은 조용히 놓친다
+            raise RuntimeError(f'{path}:{line}: 수정본 줄의 값 {" · ".join(f"「{v}」" for v in fixed)}을 쿼리에 직접 적었습니다 — 이 쿼리는 그 값이 적힌 줄에만 맞고, 다음 수정본에 다른 줄이 오면 놓칩니다. 줄마다 다른 값은 row.<칸 이름>으로 받습니다.')
         plan.append((line, heads[0][0], heads[0][1], s))
     return plan, rows
 
@@ -535,20 +540,7 @@ def clear():
 def apply_changes(path):
     """수정 쿼리 파일 실행. 쿼리마다 머리 주석 `// 반영할 것: <수정본 파일 이름> <변경>`이 있어야 하고, 그 파일에서 「변경」 칸이 그 값인 줄을 $rows로 넘긴다.
     줄마다 따로 넘겨 DB가 그 줄로 바꾼 것을 받는다. 돌려주는 것: ([(쿼리 줄, 파일, 변경, [(수정본 줄, 행, 바뀐 수)])], 쿼리가 하나도 없는 (파일, 변경))."""
-    rows = change_rows()
-    have = ' / '.join(f'{name} {kind}' for name, kind in sorted(rows))
-    parts = statements(read(path))
-    guard(path, parts)
-    plan = []
-    for line, s, notes in parts:
-        heads = [m.groups() for m in (CHANGE.match(x) for x in notes) if m]
-        if len(heads) != 1:
-            raise RuntimeError(f'{path}:{line}: 쿼리 바로 위에 `// 반영할 것: <수정본 파일 이름> <변경>` 주석이 한 줄 있어야 합니다(수정본에 있는 것: {have}).')
-        if heads[0] not in rows:
-            raise RuntimeError(f'{path}:{line}: 「{heads[0][0]} {heads[0][1]}」에 해당하는 수정본 줄이 없습니다(수정본에 있는 것: {have}).')
-        if '$rows' not in s:
-            raise RuntimeError(f'{path}:{line}: 수정본의 줄은 $rows로 받습니다(UNWIND $rows AS row …). 값을 쿼리에 직접 적지 않습니다.')
-        plan.append((line, heads[0][0], heads[0][1], s))
+    plan, rows = change_plan(path)
     out = []
     for line, name, kind, s in plan:
         done = []

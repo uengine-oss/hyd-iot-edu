@@ -1,8 +1,8 @@
 """온라인 2회차 실습3 · 4(두 과정)의 랩 정의 · 원자료 해석 · 정답과 강사 참조 모델(reference/)을 둔다.
 
 2회차 실습3 · 4 원자료는 data_session2.py가 만든다(가상 사례, 고정 시드). 통합반은 실습 랩 규모, 실전반은 공장 규모이고(코딩랩 K-3),
-통합반 것은 `with data_session2.for_course('통합반'):` 안에서 부른다. 랩 정의(design_integrated · design_practical · graph_lab)는
-새 프로젝트 생성기(build_session2_projects.py · build_practical2_projects.py)가 입력으로 쓰고, 학생 폴더 · ZIP · package-index는 그 생성기가 쓴다.
+통합반 것은 `with data_session2.for_course('통합반'):` 안에서 부른다. 랩 정의(design_integrated · graph_lab)는
+새 프로젝트 생성기(build_session2_projects.py — 실전반 몫은 session2_factory*.py)가 입력으로 쓰고, 학생 폴더 · ZIP · package-index는 그 생성기가 쓴다.
 이 파일을 직접 돌리면(`--reference`) 강사 참조 모델만 쓰고, 그 밖에는 새 생성기 이름을 대며 멈춘다.
 reference_model()의 반환 형식(schema dict, {'nodes':[{labels,props}], 'rels':[{type,a,b,props}]})은
 3회차 랩(build_judgement_labs · build_session3_documents)이 import하므로 유지한다.
@@ -554,32 +554,9 @@ if errors:
 print(f'구조 검사 통과: 노드 {len(nodes)}개, 관계 {len(rels)}개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요.')
 '''
 
-SUPPLY_CHECK='''    NEED={'approved':'boolean','price_manwon':'number','defect_rate':'number','lead_days':'integer','quote_date':'string'}
-    sspec=relations.get('SUPPLIES')
-    if not isinstance(sspec,dict):errors.append('schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 「공급 조건 형식」).')
-    else:
-        declared=sspec.get('properties',{}) or {}
-        for k,t in NEED.items():
-            if declared.get(k)!=t:errors.append(f'schema.json SUPPLIES.properties.{k}는 {t!r}이어야 합니다(현재 {declared.get(k)!r}).')
-    pairs={}
-    for r in rels:
-        if r.get('type')!='SUPPLIES':continue
-        a,b=r.get('a'),r.get('b');p=r.get('props') or {};pairs.setdefault((a,b),[]).append(p)
-        for k in NEED:
-            if p.get(k) is None:errors.append(f'SUPPLIES {a}→{b}: {k} 없음')
-        d=p.get('defect_rate')
-        if isinstance(d,(int,float)) and not isinstance(d,bool) and not 0<=d<=1:errors.append(f'SUPPLIES {a}→{b}: defect_rate={d}는 0~1 범위 밖입니다.')
-    for (a,b),ps in sorted(pairs.items(),key=str):
-        if len(ps)>1:errors.append(f'SUPPLIES {a}→{b}가 {len(ps)}개: 공급사 · 부품 쌍마다 하나만 둡니다(START.md 「공급 조건 형식」).')
-    if not pairs:errors.append('graph.json에 SUPPLIES 관계가 없습니다.')
-    else:
-        yes=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is True);no=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is False)
-        print(f'참고: SUPPLIES 쌍 {len(pairs)}개(approved=true {yes}개, false {no}개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.')
-'''
 
 CHECK_ANCHOR='except (OSError,ValueError,TypeError,AttributeError) as e:'
 assert CHECKER.count(CHECK_ANCHOR)==1
-CHECKER_SUPPLY=CHECKER.replace(CHECK_ANCHOR,SUPPLY_CHECK+CHECK_ANCHOR)
 
 
 FORMAT='''## 결과 형식
@@ -847,152 +824,6 @@ def decision_template(points):
     return F.CHOSEN_TEMPLATE + ''.join(f'{p},,,\n' for p in points)
 
 
-# ───────────── 실전반 02-3 ─────────────
-def design_practical():
-    import session2_answers as ANS
-    course = '실전반'
-    title = '설비·부품·공급 정보를 연결하는 온톨로지 설계하기'
-    save = (f'`결과/`의 정할 자리 · `schema.json` · `graph.json` · `정한_것.csv` · `요구사항.md`를 함께 보관합니다. '
-            f'다음 실습 「{NEXT_LAB[course]}」은 이 판본이나 제공 모델로 시작합니다. ' + F.USB)
-    steps = [
-        S('폴더와 출발점 확인', '시작',
-          '탐색기에서 `입력/` · `자료/` · `결과/` · START.md를 열고 `python show_result.py`로 결과 화면을 엽니다. 다음 실습 폴더도 받아 그 폴더에서 `python lab_db.py`를 먼저 켜 둡니다.',
-          '질문 셋과 이 답을 쓰는 사람(구매 담당)을 확인합니다.',
-          '1단계 칸에 제공 모델의 종류별 개수(공급사 종류는 아직 없음)와 원자료 행 수가 보이고, 3단계부터 「비어 있음」입니다.',
-          cmd=SHOW, why='제공 모델에 무엇이 없는지 알아야 공급 정보를 더할 자리를 정합니다. 다음 실습의 랩 DB는 처음 켜는 데 오래 걸립니다.',
-          differ=F.DIFFER_START),
-        S('파일을 바꾸지 않고 자료 파악', '① 파악',
-          'AI에게 파일을 바꾸지 말고 펌프 축 씰 키트에 관한 줄을 자료마다 파일 · 줄로 짚게 하고, 그 줄을 직접 엽니다.',
-          '공급 조건 · 승인 · 비교 기준이 어느 자료에 있는지, 자료끼리 다르게 말하는 곳, 구매 기준서 7.4가 더 보게 하는 것을 묻습니다.',
-          F.EVIDENCE_LOOK + ' 질문 1 · 2에 쓸 자료를 내 말로 댈 수 있습니다.',
-          H('펌프 축 씰 키트의 근거 줄을 자료마다 모은다', '`자료/` 전체, `입력/graph.json`, START.md 질문',
-            '파일을 바꾸지 않는다. 해석보다 파일 · 줄을 먼저.', '「파일:줄 · 말하는 것」 목록, 자료끼리 다른 곳 목록', '짚은 줄 몇 개를 직접 연다'),
-          why='공급 조건이 견적표 · 승인 목록 · 기준서에 흩어져 있어, 한 자료만 보면 어긋난 곳을 놓칩니다.', differ=F.DIFFER_LOOK),
-        S('요구와 기대 답 정하기', '② 요구',
-          ('`결과/요구사항.md`에 질문 · 쓰는 사람 · 기준일 · 지킬 조건을, `결과/기대_답.csv`에 질문 1(사용 설비) · 질문 2(기준일의 세 공급 조건) · 질문 3(다른 표기 · 없는 품번)의 기대 답을 '
-           '원자료에서 찾아 적고, 결정 지점 셋을 `결과/정한_것.csv`에 적습니다.' + F.REQ_AFTER),
-          F.ASK_DECIDE, F.REQ_EVIDENCE + ' 3단계 칸에 내 표가 보입니다.',
-          expect_hint(ANS.EXPECT_COLUMNS_SUPPLY, '질문 1 ~ 3', ANS.EXPECT_EXPLAIN_SUPPLY), cmd=SHOW, why=F.WHY_REQ, differ=F.DIFFER_REQ.format(rec='결과/기대_답.csv'),
-          answer=A('질문 2의 답은 「승인 · 단가 · 불량률 · 납기」 꼴로 적습니다. 결정 지점은 갈래마다 바뀌는 답이 다르니 근거 줄을 열어 고릅니다.',
-                   paste('결과/기대_답.csv', expect_supply_text()),
-                   paste('결과/정한_것.csv — 갈래: 승인 · 조건 없음 · 7.4 함께', chosen_text(ANS.practical_chosen('ㄴ'))),
-                   paste('결과/정한_것.csv — 갈래: 승인 · 조건 없음 · 네 값만', chosen_text(ANS.practical_chosen('A'))),
-                   paste('결과/정한_것.csv — 갈래: 조건부 승인은 비승인', chosen_text(ANS.practical_chosen('B'))),
-                   paste('결과/정한_것.csv — 갈래: 빈 조건은 미결', chosen_text(ANS.practical_chosen('ㄷ'))),
-                   apply={'결과/기대_답.csv': expect_supply_text(), '결과/정한_것.csv': chosen_text(ANS.practical_chosen('ㄴ'))})),
-        S('판단① 기준일에 쓸 견적 정하기', '④ ~ ⑥ 판단 · 대조 · 고침',
-          '`결과/quote_rule.py`의 `use_quote`를 AI와 채우고 `python show_result.py`를 실행합니다. 공급사 이름 · 품번 · 단위 맞추기와 출처는 제공 코드가 합니다.',
-          '같은 쌍에 견적이 여럿이거나 기한이 걸린 줄을 어떻게 할지와 근거 줄을 정합니다. 가장 싼 줄 고르기는 범위 밖입니다.' + CHOSEN_ROW,
-          '4단계 칸에서 「씀 · 기준일에 안 씀」의 합이 견적 줄 수와 같고, 펌프 축 씰 키트 세 쌍이 기대 답과 같으며, 「8%」 · 「2주」는 원래 표기와 함께 보입니다.',
-          H('쌍마다 기준일에 쓸 견적 줄을 고르는 판단을 함수로 쓴다', '`결과/quote_rule.py` 설명, `자료/공급_조건.csv`(견적일 · 유효기한), 현장 메모 6절',
-            '함수 머리는 그대로. 쌍마다 줄 하나 또는 None. 점수 · 순위로 고르지 않는다.', '본문을 채운 `use_quote`', '「견적 줄마다 간 곳」을 견적일 · 유효기한과 견준다'),
-          cmd=SHOW, why=('같은 공급사 · 부품에 견적이 여러 번 있으면 기준일에 쓸 것은 하나여야 고르는 사람이 같은 조건을 봅니다. 어느 줄을 왜 골랐는지 남겨야 나중에 그 선택을 다시 볼 수 있습니다. '
-                         '기한 지난 줄을 빼느냐, 가장 늦은 줄을 쓰느냐에 따라 4단계 표의 단가 · 납기 · 견적일이 쌍마다 달라집니다.'), differ=F.FIX_LOOP,
-          answer=A('기준일에 유효기한이 지난 견적은 빼고, 남은 줄 가운데 견적일이 가장 늦은 줄을 씁니다.', paste('결과/quote_rule.py', ANS.quote_rule_answer('ㄴ')))),
-        S('판단② 승인과 함께 볼 것 정하기', '④ ~ ⑥ 판단 · 대조 · 고침',
-          '`결과/approval_rule.py`의 `approval` · `buyer_info`를 `결과/정한_것.csv`의 세 결정대로 AI와 채우고 `python show_result.py`를 실행합니다.',
-          ('출처마다 다른 승인 정보와 기한 지난 등록은 어느 자료를 따랐는지, 조건부 승인 · 빈 조건 · 함께 볼 정보가 내 결정대로 처리됐는지 쌍마다 근거 줄로 묻습니다. '
-           'AI가 결정을 대신하면 돌려보냅니다.'),
-          '5단계 칸에서 펌프 축 씰 키트의 승인 표시마다 결정과 근거 줄을 짚을 수 있고, 같은 결정이 다른 쌍에도 같게 적용됐습니다.',
-          H('쌍마다 승인 여부와 고르는 사람이 함께 볼 정보를 붙이는 판단을 함수로 쓴다',
-            '`결과/approval_rule.py` 설명, `자료/승인공급사_목록.csv`, 공급_조건의 승인공급사 칸, 구매 기준서 발췌, `결과/정한_것.csv`',
-            '결정은 `결과/정한_것.csv`대로. 미결은 미결로 두고 값을 지어내지 않는다. 고르기 · 점수는 넣지 않는다.',
-            '본문을 채운 `approval` · `buyer_info`', '5단계 표에서 펌프 축 씰 키트 · 쿨러 코어 · 어큐뮬레이터 블래더의 승인 칸을 원자료 줄과 견준다'),
-          cmd=SHOW, why=('승인 여부는 그 부품을 그 공급사에서 사도 되는지를 정하는 값이라, 출처마다 다르게 적혀 있으면 어느 것을 따랐는지가 결과의 뜻을 바꿉니다. 3단계에서 정한 결정은 모든 쌍에 같은 방식으로 적용합니다. '
-                         '조건부 승인을 승인으로 담느냐 비승인으로 담느냐에 따라 5단계 표의 approved가 바뀌고, 함께 볼 정보를 남기면 그 쌍에 속성 칸이 더 생깁니다.'), differ=F.FIX_LOOP,
-          answer=A('승인 여부는 SCM 등록(기준서 7.3)과 기준일의 유효기한으로 정합니다. 세 결정 지점의 갈래마다 함수가 다르니 내가 고른 갈래를 씁니다.',
-                   paste('결과/approval_rule.py — 갈래: 승인 · 조건 없음 · 7.4 함께', ANS.approval_rule_answer('ㄴ')),
-                   paste('결과/approval_rule.py — 갈래: 승인 · 조건 없음 · 네 값만', ANS.approval_rule_answer('A')),
-                   paste('결과/approval_rule.py — 갈래: 조건부 승인은 비승인', ANS.approval_rule_answer('B')),
-                   paste('결과/approval_rule.py — 갈래: 빈 조건은 미결', ANS.approval_rule_answer('ㄷ')),
-                   apply={'결과/approval_rule.py': ANS.approval_rule_answer('ㄴ')})),
-        S('물어보고 대조 · 구조 검사', '⑤ ⑥ 대조 · 고침',
-          '`python show_result.py`로 6단계 칸의 기대 답 ↔ 모델의 답과 구조 검사 출력을 봅니다.',
-          '「다름」 줄마다 기대 답과 4 · 5단계 판단 가운데 무엇이 틀렸는지 원문 줄로 가립니다.',
-          '6단계 줄이 모두 「같음」이거나 다른 까닭을 `요구사항.md`에 적었고, 「구조 검사 통과」가 있습니다.',
-          H('모델만으로 답이 나오는지 견주고 구조를 검사한다', '6단계 칸, `결과/기대_답.csv`, `python check.py` 출력',
-            '기대 답을 결과에 맞춰 고치지 않는다. 검사 기준 · 제공 파일을 바꾸지 않는다.', '「다름」 줄마다 까닭과 고친 곳', '고친 뒤 다시 실행한다'),
-          cmd=SHOW, why=('모델이 질문에 답하는지는 모델만 읽어 확인해야 빠진 연결이 드러납니다. 비슷한 이름의 다른 품번 · 예전 품번 · 없는 품번이 서로 구별돼야 구매 담당이 엉뚱한 부품의 조건을 보지 않습니다.'), differ=F.FIX_LOOP,
-          answer=A('항목은 질문 1이 사내 품번, 질문 2가 「사내 품번/공급사」입니다. 다른 줄은 그 쌍의 견적 · 승인 줄을 함께 엽니다.',
-                   ask_ai('결과 화면 6단계에서 「다름」인 줄마다 내 기대 답의 근거 줄과 그 쌍의 견적 · 승인 원자료 줄을 나란히 짚어 줘. 파일은 바꾸지 마.'))),
-        S('저장하고 다시 열기', '⑦ 저장 · 다시 열기',
-          '모두 저장하고 폴더를 닫았다 다시 연 뒤 `python show_result.py`를 다시 실행하고, `요구사항.md` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적은 뒤 다음 실습 폴더로 갑니다.',
-          '확인하지 못한 점을 정합니다.', '다시 연 뒤에도 단계 띠와 6단계 표가 같습니다.',
-          cmd=SHOW, why=F.WHY_SAVE, differ=F.DIFFER_SAVE),
-    ]
-    return dict(
-        title=title, course=course, rec='결과/요구사항.md', readonly='`입력/` · `자료/` · 제공 파일(`show_result.py` · `lab_steps.py` · `supply_tool.py` · `check.py`)이', decide_step=2,
-        goal=['포털 지식 지도에서 부품을 쓰는 설비를 찾을 때, 연결이 있다는 것과 살 수 있는 조건이 확보됐다는 것은 달랐습니다. 이번에는 제공된 설비 · 부품 모델에 견적 · 승인 · 품번 자료를 이어, '
-              '부품마다 쓰는 설비와 공급사별 조건을 답하게 합니다. 단위 · 출처 · 계약 꼴은 제공 코드가 하고, 나는 어느 견적을 쓰고 승인을 어떻게 담고 무엇을 함께 남길지 정합니다. 공급사를 고르는 것은 구매 담당입니다.',
-              F.STAGE_LINE.format(what='설계')],
-        make='만들 것: `결과/`의 판단 함수 두 파일과 그것으로 제공 코드가 확장하는 모델(`결과/schema.json` · `결과/graph.json`), `결과/기대_답.csv` · `결과/정한_것.csv` · `결과/요구사항.md`.',
-        start=['`입력/schema.json` · `입력/graph.json` — 제공된 설비 · 부품 모델. 설비 7대 · 구성 요소 · 센서 · 부품과 그 연결이 들어 있고, 공급 정보는 아직 없습니다.',
-               '`자료/` — ' + SOURCES.format(', 구매 기준서 발췌'),
-               '`결과/` — 정할 자리(첫 줄에 「제공 빈 틀」이 있는 함수 · 표 파일)와 기록.',
-               '`supply_tool.py` — 공급 정보를 모델에 더하고 물어보는 제공 코드(바꾸지 않습니다). `check.py` — 구조 검사.', SHOW_LINE, RULES_LINE],
-        user='아래 질문의 답은 구매 담당이 다음 발주에서 공급사를 비교할 때 씁니다. 고르는 것은 구매 담당입니다.',
-        questions=['펌프 축 씰 키트를 쓰는 설비는 어디인가?',
-                   f'기준일({D.REF_DATE})에 펌프 축 씰 키트를 어느 공급사에서 어떤 조건(승인 여부 · 단가 · 불량률 · 납기)으로 살 수 있고, 각 값은 어느 파일 · 어느 줄에서 왔는가?',
-                   '이름이 비슷한 다른 품번, 예전 품번이나 다른 표기, 원자료에 없는 품번으로 물으면 결과가 서로 구별되는가?'],
-        decide=[(ANS.QUOTE_POINT, '같은 공급사 · 부품에 기준일에 유효한 견적이 둘 이상이면 어느 줄을 쓸지(늦게 받은 줄 · 먼저 받은 줄 · 확인 전까지 쓰지 않음)'),
-                ('조건이 붙은 승인', '승인 목록에 조건을 달아 등록된 쌍을 승인 여부(참 · 거짓)에 어떻게 담고, 그 조건을 구매 담당에게 어떻게 보여 줄지'),
-                ('빈 값의 뜻', '비어 있는 칸을 「없음」으로 읽을지 「적지 않음」으로 읽을지'),
-                ('쓰는 사람에 따라 갈리는 답', '구매 담당이 공급사를 비교할 때 함께 봐야 할 것이 자료에 있으면, 그것을 모델에 어떻게 남길지')],
-        outside=['공급사를 고르거나 점수 · 순위를 매기는 일', '입고 이력으로 실측 납기를 계산하는 일', '그래프 DB에 적재하고 조회하는 일(다음 실습)',
-                 '제공된 설비 · 부품 모델의 설비 · 구성 요소 · 센서 · 부품 부분을 고치는 일(이상한 곳은 `결과/요구사항.md`에 적습니다)'],
-        formats=[FORMAT, SUPPLY_FORMAT], steps=steps,
-        cases=['같은 공급사 · 부품의 견적이 여러 줄인 경우', '기준일에 기한이 지난 기록(견적 · 승인 등록)', '같은 공급사를 다르게 적은 이름',
-               '출처마다 다른 승인 정보', '기준서에 나오는 기준값과 같거나 가까운 값', '단위 · 표기가 줄마다 다른 값', '품번 칸의 표기가 줄마다 다른 경우',
-               '이름이 비슷한 다른 품번 · 예전 품번 · 다른 표기 · 원자료에 없는 품번', '같은 정할 자리로 다시 실행한 결과'],
-        commands='python show_result.py\npython check.py',
-        done=('형식 검사나 실행 성공만으로 완료하지 않습니다. 결과 화면 6단계에서 질문마다 원자료에서 먼저 적은 기대 답과 모델의 답이 맞고, `결과/정한_것.csv`의 지점마다 근거 줄과 그 선택으로 바뀌는 답을 설명할 수 있으면 완료입니다. '
-              '고친 점과 확인하지 못한 점은 `결과/요구사항.md`에 짧게 남깁니다.'),
-        save=save, reopen='결과 화면의 단계 띠와 6단계 대조 표, `요구사항.md`의 기준일 · 저장 시점 · 확인하지 못한 점',
-        tree=F.tree(LAB3, [('.github/', '작업 규칙'), ('결과/', '정할 자리 · 기록'), ('입력/', '제공 모델(읽기만)'),
-                           ('자료/', '원자료(읽기만)'), ('AGENTS.md', '작업 규칙'), ('check.py', '구조 검사'), ('CLAUDE.md', '작업 규칙'),
-                           ('lab_steps.py', '결과 화면 단계(제공)'), ('show_result.py', '결과 화면(제공)'), ('START.md', '과제와 진행 단계'), ('supply_tool.py', '제공 코드'), ('준비_안내.md', '처음 볼 곳')]),
-        lead='제공 모델에 공급 조건을 더하되, 어느 견적을 쓰고 승인을 어떻게 담을지만 내가 정하고 결과 화면에서 원자료와 대조합니다.',
-        need='VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 다음 실습의 랩 DB를 켤 Docker Desktop.',
-        terms=('**승인 공급사**는 구매팀이 사도 된다고 등록한 공급사, **불량률**은 입고 물량 가운데 불량 비율, **납기**는 주문부터 받기까지 날수, **기준일**은 자료를 뽑은 날, '
-               '**정할 자리**는 `결과/`에서 첫 줄에 「제공 빈 틀」이 있는 파일입니다.'),
-        guide_extra={0: ['terminal', 'result'], 1: ['ai', 'review']}, guide_after={5: ['check_stop']},
-        provided=['supply_tool.py'], kind='design_practical', ai_wait=(5.9, '리허설 50L 실측 — 2026-11-05'),
-        files={'결과/요구사항.md': F.req_template('요구사항'), '결과/정한_것.csv': decision_template([r[0] for r in ANS.practical_chosen('ㄴ')]),
-               '결과/기대_답.csv': F.blank_csv(ANS.EXPECT_COLUMNS_SUPPLY, ANS.EXPECT_EXPLAIN_SUPPLY),
-               '결과/quote_rule.py': ANS.QUOTE_RULE_BLANK, '결과/approval_rule.py': ANS.APPROVAL_RULE_BLANK,
-               '결과/README.md': '정할 자리(첫 줄에 「제공 빈 틀」이 있는 파일)를 채우고 `python show_result.py`를 실행하면 제공 코드가 이 폴더에 schema.json · graph.json과 결과 화면 보기.html을 씁니다.\n다시 열 때는 `python show_result.py`를 다시 실행해 결과 화면의 단계 띠와 6단계 대조 표를 봅니다.\n',
-               '입력/README.md': '제공된 설비 · 부품 모델입니다(schema.json · graph.json). 설비 7대 · 구성 요소 · 센서 · 부품과 그 연결이 있고, 공급 정보는 없습니다. 이 폴더는 읽기만 합니다.\n'})
-
-
-def expect_supply_text():
-    """실전 02-3 기대 답 예 — 강사 참조 ㄴ 모델(실습4 입력과 같은 결정)에서."""
-    import session2_answers as ANS
-    _, graph = reference_model(True, 'ㄴ')
-    label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
-    props = {n['props']['id']: n['props'] for n in graph['nodes']}
-    owner = {r['b']: r['a'] for r in graph['rels'] if r['type'] == 'HAS_COMPONENT'}
-    rows = []
-    for code, q in [('P-PMP-SEAL', '1'), ('P-PMP-SEAL', '2'), ('PS-4510', '1'), ('P-PMP-SEAL-HT', '1'), ('P-PMP-SEAL-X', '1')]:
-        hits = [i for i, p in props.items() if label[i] == 'Part' and (i == code or code in p.get('other_codes', []))]
-        if not hits:
-            rows.append([q, code, '', '없음', '원자료에 없음'])
-        for pid in hits:
-            if q == '1':
-                assets = sorted({owner[r['a']] for r in graph['rels'] if r['type'] == 'USES_PART' and r['b'] == pid})
-                rows.append([q, code, pid, ' · '.join(assets), '자료/구성요소_목록.csv 교체부품 칸 · 자료/품번_교차표.csv'])
-            else:
-                for r in sorted((r for r in graph['rels'] if r['type'] == 'SUPPLIES' and r['b'] == pid), key=lambda r: r['a']):
-                    p = r['props']
-                    rows.append([q, code, f'{pid}/{props[r["a"]]["name"]}', f'{"승인" if p["approved"] else "비승인"} · {p["price_manwon"]:g} · {p["defect_rate"]:g} · {p["lead_days"]}',
-                                 f'자료/{p["quote_source"].replace(" ", ":").replace("행", "")} · 자료/{(p.get("approval_source") or "").replace(" ", ":").replace("행", "")}'])
-    buf = io.StringIO()
-    w = csv.writer(buf, lineterminator='\n')
-    w.writerow(ANS.EXPECT_COLUMNS_SUPPLY)
-    for r in rows:
-        w.writerow(r)
-    return f'# {F.MARK} — {ANS.EXPECT_EXPLAIN_SUPPLY}\n' + buf.getvalue()
-
-
 # ───────────── 실습4(그래프 구현과 검증) — 두 과정 ─────────────
 def graph_integrated():
     """통합반 그래프 랩 정의 — 빈 틀과 결정 지점. 단계와 가이드 문장은 session2_project_guides.graph가 갖는다."""
@@ -1006,187 +837,10 @@ def graph_integrated():
 
 
 def graph_lab(course):
-    import session2_answers as ANS
-    if course == '통합반':
-        return graph_integrated()
-    practical = course == '실전반'
-    change = not practical
-    title = '부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기' if practical else '설계한 온톨로지를 그래프 DB에 구현하고 검증하기'
-    model = '설비 · 부품 · 공급 모델' if practical else '설비 · 센서 · 부품 모델'
-    change_dir = f'입력/자료_변경분/{D.CHANGE_DATE}_수정본/'
-    input_graph = reference_model(practical, GRAPH_LAB_INPUT[course])[1]
-    load_text = ANS.load_answer(input_graph)
-    q_rules = (' 물을 값(품번)은 $ 자리 하나로 받는다.' if practical else ' 물을 값(설비 코드 · 품번)은 $ 자리 하나로 받는다.')
-    s_tree = S('폴더와 출발점 · 랩 DB 켜기', '시작',
-               ('탐색기에서 `입력/` · `결과/` · START.md를 열고 `python lab_db.py`로 이 폴더 전용 랩 DB를 켠 뒤 `python show_result.py`로 결과 화면을 엽니다.'
-                + (' 「설비·부품·공급 정보를 연결하는 온톨로지 설계하기」 1단계에서 이미 켰으면 `python show_result.py`부터 합니다.' if practical else '')),
-               '주소가 `127.0.0.1`의 이 폴더 전용인지 보고, 내 모델과 제공 모델 가운데 무엇을 쓸지 정합니다.',
-               '「랩 DB 준비 완료」가 나오고, 1단계 칸에 모델 파일 개수와 랩 DB 개수(처음 0)가 나란히 보입니다.',
-               cmd='python lab_db.py\npython show_result.py',
-               why='처음에 비어 있어야 뒤에서 센 개수가 모두 이번에 넣은 것입니다.',
-               differ='「랩 DB 꺼짐」이면 `python lab_db.py`를 다시 실행합니다(이전 작업이면 전에 넣은 개수가 맞음).')
-    s_look = S('파일을 바꾸지 않고 자료 파악', '① 파악',
-               'AI에게 파일을 바꾸지 말고 `입력/graph.json`의 종류별 대상 · 관계 수와 '
-               + ('수정본 줄마다 가리키는 대상과 원자료(`입력/자료/`)의 같은 행을' if change else '펌프 축 씰 키트에 닿는 관계와 그 값의 원자료 줄을')
-               + ' 파일 · 줄로 짚게 하고, 그 줄을 직접 엽니다.',
-               ('수정본이 무엇을 바꾸는지(이름 · 상태 · 값 · 줄 삭제)와 제공 모델의 ID가 무엇으로 지어졌는지 묻습니다.' if change else
-                '제공 모델의 ID와 공급 조건 관계에 붙은 속성(값과 출처)을 묻습니다.'),
-               F.EVIDENCE_LOOK + (' 종류별 대상 수와 수정본 줄 수를 내 말로 댈 수 있습니다.' if change else ' 펌프 축 씰 키트에 닿는 관계를 내 말로 댈 수 있습니다.'),
-               H('적재할 모델' + ('과 수정본을' if change else '을') + ' 파악한다', '`입력/schema.json` · `graph.json` · `자료_검토.md`, ' + (f'`{change_dir}`' if change else '`입력/자료/`'),
-                 '파일을 바꾸지 않는다. 파일 · 줄과 개수를 먼저.', '종류별 개수 표, ' + ('수정본 줄마다 「대상 · 바뀌는 것 · 원자료 행」' if change else '관계와 값의 원자료 줄 목록'),
-                 '개수를 1단계 표와 견주고 ' + ('수정본 줄 몇 개를 연다' if change else '출처 줄 몇 개를 연다')),
-               why='적재가 맞았는지는 모델 파일에 무엇이 몇 개 있는지 먼저 알아야 셀 수 있습니다.', differ=F.DIFFER_LOOK)
-    expect_rows = graph_expect_rows(course, input_graph)
-    s_req = S('요구와 기대 답 정하기', '② 요구',
-              ('`결과/검증_기록.md`에 질문 · 쓰는 사람 · 지킬 조건을, `결과/기대_답.csv`에 질문마다 물을 값 · 볼 열 · 원자료에서 찾은 기대 답('
-               + ('펌프 축 씰 키트의 사용 설비와 세 공급 조건, 다른 표기 · 없는 품번' if practical else '설비 하나의 센서 · 교체 부품, 공용 부품 하나의 사용 설비')
-               + ')을 적고, 결정 지점을 `결과/정한_것.csv`에 적습니다.' + F.REQ_AFTER),
-              F.ASK_DECIDE, F.REQ_EVIDENCE + ' 3단계 칸에 내 표가 보입니다.',
-              expect_hint(ANS.GRAPH_EXPECT_COLUMNS, '질문', ANS.GRAPH_EXPECT_EXPLAIN[course]), cmd=SHOW, why=F.WHY_REQ, differ=F.DIFFER_REQ.format(rec='결과/기대_답.csv'),
-              answer=A('볼_열은 내 조회가 돌려줄 열 이름입니다(정답 보기의 쿼리를 쓰면 아래 이름). 결정 지점은 갈래마다 바뀌는 답을 보고 고릅니다.',
-                       paste('결과/기대_답.csv', graph_expect_text(expect_rows, course)),
-                       *[paste(f'결과/정한_것.csv — 갈래: {g}', chosen_text([row])) for g, row in graph_chosen(course).items()],
-                       apply={'결과/기대_답.csv': graph_expect_text(expect_rows, course), '결과/정한_것.csv': chosen_text([graph_chosen(course)[k] for k in default_graph_branch(course)])}))
-    s_load = S('판단① 적재 쿼리 쓰기', '③ 계획 · ④ 구현',
-               ('`결과/load.cypher`에 종류 · 관계마다 문장 하나(위에 `// 넣을 것: <종류 또는 관계>`, 행은 `$rows`)를 AI와 쓰고 `python show_result.py`를 실행합니다. '
-                '행을 넘겨 실행하고 개수를 세는 것은 제공 코드가 합니다.' + ('' if change else ' 같은 적재를 한 번 더 해 늘지 않는지도 봅니다.')),
-               (('같은 대상을 무엇으로 알아볼지(MERGE의 열쇠)와, 다시 적재할 때 이미 있는 대상의 값을 어떻게 할지 고릅니다 — 수정본으로 바뀐 값을 지킬지, 모델 파일(원자료) 값으로 통째로 되돌릴지. '
-                 '고른 것을 내 말로 AI에게 말하면 AI가 문장으로 옮깁니다. ' if change else '같은 대상을 무엇으로 알아볼지(MERGE의 열쇠)를 정합니다. ')
-                + 'ID와 관계의 시작 · 끝이 그래프의 무엇이 되는지도 내 말로 설명합니다.'),
-               '4단계 칸의 「모델 파일 ↔ 랩 DB 개수」가 모두 「같음」이고' + ('' if change else ' 한 번 더 적재해도 늘지 않으며') + ', 문장마다 넘긴 행 수가 보입니다.',
-               H('모델의 대상과 관계를 랩 DB에 옮기는 적재 문장을 종류 · 관계마다 쓴다', '`입력/schema.json`(종류 · 관계 · 방향), `결과/load.cypher` 첫 줄, 2단계 개수 표',
-                 '이 랩 DB에만. 전체 삭제문 금지. 행은 $rows(노드는 속성 묶음, 관계는 a · b · props). 다시 실행해도 늘지 않게.'
-                 + (' 다시 적재 때 값: 수정본 값을 지키면 {change_no}단계에서 고친 값이 그대로 남고, 원자료 값으로 통째로 되돌리면 결과 화면이 매번 적재 → 수정 순서로 돌아 {change_no}단계에서 다시 고쳐진다 — '
-                    '어느 쪽이든 다시 열어도({save_no}단계) {change_no}단계 바뀐 노드 · 관계 수가 같아야 하고, 일부만 덮어써 수정본이 더한 값이 남으면 그 수가 줄어든다.' if change else ''),
-                 '`결과/load.cypher`의 문장들', '4단계 개수 견줌과 한 번 더 실행한 뒤의 개수'),
-               cmd=SHOW, why=WHY_G_PLAN, differ='개수가 다르거나 늘면 그 문장이 같은 대상을 무엇으로 알아보는지 AI에게 짚게 해 고칩니다.',
-               answer=A('노드는 id로 MERGE하고 값은 처음 만들 때만 넣습니다(ON CREATE SET — 다시 적재해도 수정본이 고친 값을 되돌리지 않게). 관계는 양 끝 id로 찾은 뒤 같은 방식으로 MERGE합니다.',
-                        paste('결과/load.cypher', load_text)))
-    queries = graph_queries(course)
-    if practical:
-        q_steps = [
-            S('판단② 사용 설비와 공급 조건 조회', '④ ~ ⑥ 구현 · 대조 · 고침',
-              '`결과/query.cypher`에 `// 질문 1` 조회(품번 하나 → 사용 설비 · 구성 요소와 공급사별 공급 조건, 승인 상태 · 출처 포함)를 AI와 쓰고 `python show_result.py`를 실행합니다.',
-              '비승인 공급사를 어떻게 구별해 보일지와, `결과/정한_것.csv`의 결정대로 네 값 말고 무엇을 함께 돌려줄지 AI에게 말합니다. AI가 결정을 대신하면 돌려보냅니다.',
-              '5단계 대조 표가 「같음」이고, 사용 설비 세 대와 세 공급 조건이 출처 줄과 함께 보이며, 비승인 공급사가 구별됩니다.',
-              H('부품 하나의 사용 설비와 공급 조건을 한 번에 돌려주는 조회를 쓴다', '랩 DB 그래프, `입력/schema.json`의 방향, `결과/정한_것.csv` · `기대_답.csv`',
-                '조회만. 출처는 그래프의 값을. 고르기 · 순위 금지. 결정대로.' + q_rules, '`// 질문 1` 조회와 결과 화면 표', '5단계 대조 표와 출처 몇 개의 원자료 줄'),
-              cmd=SHOW,
-              why=('공급 조건은 공급사와 부품 사이 관계의 값이라, 부품에서 설비 쪽과 공급사 쪽 두 길을 따라가야 한 번에 나옵니다. 무엇을 함께 돌려줄지는 이 결과를 쓰는 사람이 공급사를 무엇으로 견주는지에 따라 정하고, '
-                   '7.4 정보를 함께 돌려주면 5단계 표에 입고 검사 · 비교 가산 비용 열이 더 생깁니다. ' + F.WHY_TABLE),
-              differ=F.FIX_LOOP,
-              answer=A('두 갈래 가운데 내 결정에 맞는 조회를 씁니다. 결과는 Neo4j Browser에 같은 조회를 붙여 넣어 표(Table)로도 볼 수 있습니다.',
-                       paste('결과/query.cypher — 갈래: 네 값만', ANS.query_text([queries[1]['ㄱ']])), paste('결과/query.cypher — 갈래: 7.4 정보 함께', ANS.query_text([queries[1]['ㄴ']])),
-                       apply={'결과/query.cypher': ANS.query_text([queries[1]['ㄴ']])})),
-            S('판단③ 다른 표기와 없는 품번 구별', '④ ~ ⑥ 구현 · 대조 · 고침',
-              '`결과/query.cypher`에 `// 질문 2` 조회(정식 · 예전 품번 · 다른 표기로 같은 부품을 찾고, 비슷한 다른 품번 · 없는 품번을 구별)를 더하고 `python show_result.py`를 실행합니다.',
-              '원자료에 없는 품번에 무엇을 돌려줄지(0줄 또는 「없는 품번」 한 줄) 정합니다.',
-              '6단계 대조 표가 「같음」이고, 예전 품번 · 다른 표기로 물어도 정식 품번과 같으며, 비슷한 다른 품번과 없는 품번이 구별됩니다.',
-              H('어떻게 적어 물어도 같은 부품을 찾고 없는 것은 없다고 돌려주는 조회를 쓴다', '5단계 조회, 부품 속성, `결과/기대_답.csv`',
-                '없는 품번에 값을 지어내지 않는다. 비슷한 다른 품번을 합치지 않는다.' + q_rules, '`// 질문 2` 조회와 결과 화면 표', '6단계 대조 표'),
-              cmd=SHOW,
-              why=('같은 부품을 예전 품번이나 다른 표기로 적은 자료가 있어, 정식 품번으로만 찾으면 다른 표기로 물은 사람은 「없음」을 받습니다. MATCH가 찾지 못하면 결과 줄이 0개로 나오므로, 없는 품번을 어떻게 보일지 함께 정해야 합니다.'),
-              differ=F.FIX_LOOP,
-              answer=A('부품의 다른 표기 목록(other_codes)으로도 찾고, OPTIONAL MATCH로 없는 품번도 한 줄을 돌려줍니다.',
-                       paste('결과/query.cypher', ANS.query_text([queries[1]['ㄴ'], queries[2]]))))]
-    reopen_step = 6 if practical else 8
-    files_kept = '적재 · 수정 · 조회' if change else '적재 · 조회'
-    dates = '기준일 · 수정본 날짜' if change else '기준일'
-    s_save = S('저장하고 다시 열기', '⑦ 저장 · 다시 열기',
-               f'{files_kept} 파일과 기록을 저장하고 폴더를 닫았다 다시 연 뒤 `python lab_db.py` · `python show_result.py`를 실행하고, 기록 끝에 {dates} · 저장 시점 · 확인하지 못한 점을 적습니다.',
-               '확인하지 못한 점을 정합니다.',
-               f'다시 연 뒤에도 단계 띠와 {reopen_step}단계 대조 표' + (', 9단계 표(바뀐 노드 · 관계 수)' if change else '') + '가 같고, `검증_기록.md`의 개수 표 · 「기대 답과 실제 결과」가 실제 값으로 채워져 있습니다.',
-               cmd='python lab_db.py\npython show_result.py',
-               why=F.WHY_SAVE,
-               differ=('포트가 바뀔 수 있으니 열어 둔 Neo4j Browser 탭은 닫고 새 창을 씁니다. 「이 PC의 Docker에 없습니다」면 새 빈 DB라 적재부터 다시 됩니다.'))
-    steps = [s_tree, s_look, s_req, s_load, *q_steps, s_save]
-    user = ('아래 질문의 답은 보전 · 구매 담당이 예비품을 쓰는 설비와 공급사별 조건을 함께 볼 때 씁니다. 고르는 것은 구매 담당입니다.' if practical else
-            '아래 질문의 답은 보전팀이 지금 가동하는 설비의 예비품 준비를 정할 때 씁니다.')
-    questions = (['세 설비가 함께 쓰는 펌프 축 씰 키트를 어느 설비 · 구성 요소에서 쓰고, 기준일의 세 공급 조건(승인 여부 · 단가 · 불량률 · 납기)은 무엇이며 각 값은 어느 파일 · 어느 줄에서 왔는가?',
-                  '이름이 비슷한 다른 품번, 예전 품번이나 다른 표기, 원자료에 없는 품번으로 물으면 결과가 서로 구별되는가? 비승인 공급사는 승인 상태와 함께 구별되는가?',
-                  '같은 적재를 다시 실행해도 대상과 관계가 늘지 않는가?'] if practical else
-                 ['설비별로 어떤 구성 요소에 어떤 센서 · 계산값 · 설정값이 붙어 있고, 각 센서의 물리량 · 단위 · 한계는 무엇인가?',
-                  '설비별로 구성 요소마다 어떤 교체 부품이 들어가고, 여러 설비가 함께 쓰는 부품은 어느 설비 · 구성 요소에서 쓰는가? 다른 표기로 적힌 품번이나 원자료에 없는 품번으로 물으면 결과가 어떻게 구별되는가?',
-                  '수정본을 반영한 뒤에도 같은 ID가 유지되고, 같은 적재를 다시 실행해도 대상과 관계가 늘지 않는가?',
-                  '포털 실습에서 본 기준 지도와 견주면 내 그래프의 식별자 · 관계 방향이 어디서 같고 어디서 다른가?'])
-    decide = ([('쓰는 사람에 따라 갈리는 답', '구매 담당이 공급사를 비교할 때 승인 여부 · 단가 · 불량률 · 납기 말고도 함께 봐야 할 것이 모델에 있으면, 그것을 조회 결과에 함께 돌려줄지와 어떻게 보일지')] if practical else
-              [('시점과 상태', '설비 대장의 상태와 수정본에서 바뀐 상태를 그래프에 어떻게 반영하고, 「지금 가동하는 설비」를 묻는 부품의 사용 설비 조회에 어떻게 드러낼지(답에서 빠지는지, 상태와 함께 보이는지)'),
-               ('불용 결정 설비', '수정본이 불용으로 바꾼 설비를 상태만 바꿔 남길지, 그 설비에만 딸린 구성 요소 · 센서와 함께 그래프에서 지울지')])
-    outside = (['공급사를 고르거나 점수 · 순위를 매기는 일', '입고 이력으로 실측 납기를 세는 일'] if practical else ['공급 조건 · 입고 이력의 적재와 조회']) + \
-              ['모델의 종류 · 속성 · 관계 정의를 새로 바꾸는 일(이상한 곳은 `결과/검증_기록.md`에 적습니다)', '포털 DB에 접속하거나 포털 자료를 랩 DB에 넣는 일']
-    cases = (['세 설비가 함께 쓰는 부품', '비슷한 이름의 다른 품번', '예전 품번 · 다른 표기', '원자료에 없는 품번', '비승인 · 조건이 붙은 공급사', '공급사 이름 표기(견적표 · 승인 목록)',
-              '같은 적재 두 번'] if practical else
-             ['설비별 구성 요소 · 센서 개수', '한계 방향과 한계 없음', '설비에 바로 붙은 센서', '설비별 교체 부품과 교체 부품이 없는 구성 요소', '공용 부품과 전용 부품',
-              '상태가 가동이 아닌 설비도 쓰는 공용 부품', '다른 표기 · 없는 품번',
-              '수정본의 이름 변경 · 상태 변경 · 값 보완 · 줄 삭제가 바꾸는 그래프의 대상 · 관계', '반영 뒤 원자료와 다시 센 개수 · 값(「삭제」 줄이 걸린 설비 포함)',
-              '같은 적재 두 번 · 같은 수정 두 번'])
-    my_model = ('내 모델은 고를 때만 `결과/내_모델/`에 복사해 씁니다(형식 · ID가 맞는지 먼저 보고, 다르면 내 정의로 조회). 없어도 제공 모델로 끝까지 합니다.')
-    after = AFTER_LAB[course]
-    save = ((f'{files_kept} 파일과 `검증_기록.md` · `정한_것.csv` · `기대_답.csv`를 함께 보관합니다. 기록에는 반영한 자료의 기준일을 적습니다. '
-             f'다음 실습 「{after}」는 제공된 자료로 시작하므로 이 결과는 참고로 보관합니다. ' + F.USB) if practical else
-            '`결과/`와 제공 파일을 포함한 실습 폴더 전체를 보관합니다. 이어서 할 때는 이 폴더를 다시 열고 랩 DB를 켭니다. ' + F.USB)
-    record = F.req_template('실습 확인 기록', graph_counts(change) + (
-        '' if practical else
-        '## 포털 기준 지도와 비교\n\n| 대상 | 포털의 식별자 · 관계 방향 | 내 그래프의 식별자 · 관계 방향 | 같음 · 다름 | 다른 까닭 |\n|---|---|---|---|---|\n| | | | | |\n\n'))
-    record = record.replace('## 사용할 자료와 기준일\n\n', f'## 사용한 입력과 랩 DB\n\n- 사용한 모델(제공된 모델 · 내 모델):\n- 랩 DB 주소(인증값 제외):\n- {dates}:\n\n')
-    record = record.replace('- 기준일:\n', f'- {dates}:\n')
-    design = design_practical()
-    files = {'결과/검증_기록.md': record, '결과/정한_것.csv': decision_template(GRAPH_POINTS[course]),
-             '결과/기대_답.csv': F.blank_csv(ANS.GRAPH_EXPECT_COLUMNS, ANS.GRAPH_EXPECT_EXPLAIN[course]),
-             '결과/load.cypher': ANS.LOAD_BLANK, '결과/query.cypher': ANS.QUERY_BLANK,
-             '결과/README.md': (f'정할 자리(적재 쿼리 · 조회 쿼리{" · 수정 쿼리" if change else ""} · 기대 답 표)를 채우고 `python show_result.py`를 실행하면 제공 코드가 랩 DB에 실행하고 결과 화면 보기.html을 씁니다. 내 모델을 쓰면 결과/내_모델/에 복사해 둡니다.\n'
-                                f'다시 열 때는 `python lab_db.py`로 랩 DB를 다시 켜고 `python show_result.py`를 실행합니다.\n'),
-             '입력/README.md': f'제공된 {model}(schema.json · graph.json), 그 원자료(자료/), ' + ('기준일 뒤 수정본(자료_변경분/), ' if change else '') + '제공된 모델의 질문(요구사항.md)과 자료 처리 근거(자료_검토.md)입니다. 이 폴더는 읽기만 합니다.\n',
-             '입력/요구사항.md': '# 제공된 모델이 답하는 질문\n\n' + '\n'.join('- ' + q for q in design['questions']) + '\n',
-             '입력/자료_검토.md': provided_basis(practical)}
-    if change:
-        files['결과/update.cypher'] = ANS.UPDATE_BLANK
-    return dict(
-        title=title, course=course, rec='결과/검증_기록.md', readonly='`입력/`(원자료' + (' · 수정본' if change else '') + ' 포함) · 제공 파일(`show_result.py` · `lab_steps.py` · `lab_cypher.py` · `lab_db.py` · `check.py`)이', decide_step=2,
-        goal=[('「설비·부품·공급 정보를 연결하는 온톨로지 설계하기」에서는 부품마다 쓰는 설비와 공급사별 조건을 모델에 넣었습니다. ' if practical else
-               f'「설비 정보를 체계화하는 온톨로지 직접 설계하기」에서는 설비 · 센서 · 부품을 {CLASS_LINK} · 속성 · 관계로 정의해 모델을 만들었습니다. ')
-              + f'이번에는 제공된 {model}(또는 내 모델)을 이 폴더 전용 랩 DB(그래프 DB)에 적재하고, 질문마다 Cypher 쿼리를 만들어 원자료와 대조합니다. '
-              + '파일 읽기 · 실행 · 개수 세기 · 전후 비교는 제공 코드가 하고, 나는 같은 대상을 알아보는 열쇠와 조회가 돌려줄 것' + (', 수정본 반영' if change else '') + '을 정해 문장으로 씁니다.',
-              F.STAGE_LINE.format(what='구현과 검증')] if practical else
-             ['설계한 온톨로지의 모델을 그래프 DB에 적재하고, 설비별 센서 · 교체 부품과 부품의 사용 설비를 조회합니다. 제공 모델로 시작하며 내 모델을 가져오는 것은 선택입니다. '
-              '파일 읽기 · 쿼리 실행 · 개수 세기 · 전후 비교는 제공 코드가 합니다. 학생은 같은 대상을 알아보는 기준과 조회할 조건, 수정본을 반영할 방법을 정하고 AI와 Cypher 쿼리를 작성합니다.'],
-        make='만들 것: 적재 쿼리(`결과/load.cypher`), 질문별 조회 쿼리(`결과/query.cypher`), ' + ('수정본을 반영하는 수정 쿼리(`결과/update.cypher`), ' if change else '') + '`결과/기대_답.csv` · `결과/정한_것.csv` · `결과/검증_기록.md`.',
-        start=[f'`입력/schema.json` · `입력/graph.json` — 제공된 {model}. ' + (
-                   '설비 7대 · 구성 요소 · 센서 · 부품 · 공급사와 그 연결이 들어 있고, 공급 조건마다 승인 여부 · 단가 · 불량률 · 납기와 값마다 출처가 붙어 있습니다. 그 밖에 붙은 속성은 `입력/schema.json`에서 봅니다.' if practical else
-                   '설비 7대 · 구성 요소 · 센서 · 물리량 · 부품과 그 연결이 들어 있습니다.'),
-               f'`입력/자료/` — 그 모델의 원자료(기준일 {D.REF_DATE}).' + (f' `{change_dir}` — 기준일 뒤 담당자들이 고친 줄만 모은 수정본.' if change else ''),
-               '`입력/요구사항.md` · `입력/자료_검토.md` — 제공된 모델이 답하는 질문과 자료 처리 근거.',
-               '`lab_db.py` — 이 폴더 전용 랩 DB를 켜는 도구. `lab_cypher.py` — 적재 · 조회 문장을 랩 DB에 실행하고 세는 제공 도구. `check.py` — 제공 파일 · 기록 검사.',
-               SHOW_LINE, '`결과/` — 정할 자리(첫 줄에 「제공 빈 틀」이 있는 문장 · 표 파일)와 기록.', RULES_LINE, my_model] if practical else
-              [f'`입력/schema.json` · `입력/graph.json` — 제공된 {model}.',
-               f'`입력/자료/` — 원자료(기준일 {D.REF_DATE}). `{change_dir}` — 이후에 고친 줄을 모은 수정본.',
-               '`입력/요구사항.md` · `입력/자료_검토.md` — 제공 모델의 질문과 자료 처리 근거.',
-               '`결과/` — 적재 · 조회 · 수정 쿼리와 기록을 작성할 빈 틀.',
-               '`lab_db.py` · `lab_cypher.py` · `show_result.py` · `lab_steps.py` · `check.py` — 랩 DB 준비 · 실행 · 결과 화면 · 검사를 맡는 제공 코드. 고치지 않습니다.', my_model],
-        tools=[], user=user, questions=questions, decide=decide, outside=outside,
-        formats=[graph_format(change)] if practical else [], steps=steps, cases=cases,
-        start_notes=[F.SEVEN, F.BACKTICK] if practical else [],
-        commands='python lab_db.py\npython show_result.py\npython check.py',
-        done=('형식 검사나 실행 성공만으로 완료하지 않습니다. 결과 화면에서 질문마다 원자료에서 먼저 적은 기대 답과 실제 조회 결과가 맞고, '
-              + ('같은 적재 · 같은 수정을' if change else '같은 적재를') + ' 다시 해도 개수가 같으며, '
-              '`결과/정한_것.csv`의 지점마다 근거 줄과 그 선택으로 바뀌는 답을 설명할 수 있으면 완료입니다. 고친 점과 확인하지 못한 점은 `결과/검증_기록.md`에 짧게 남깁니다.'),
-        save=save, reopen=f'결과 화면의 단계 띠와 {reopen_step}단계 대조 표, `검증_기록.md`의 {dates} · 저장 시점 · 확인하지 못한 점',
-        tree=F.tree(LAB4, [('.github/', '작업 규칙'), ('결과/', '정할 자리 · 기록'),
-                           ('입력/', '제공 모델 · 원자료' + (' · 수정본' if change else '') + '(읽기만)'),
-                           ('AGENTS.md', '작업 규칙'), ('check.py', '검사'), ('CLAUDE.md', '작업 규칙'), ('lab_cypher.py', '적재 · 조회 실행(제공)'),
-                           ('lab_db.py', '랩 DB 켜기'), ('lab_steps.py', '결과 화면 단계(제공)'), ('show_result.py', '결과 화면(제공)'), ('START.md', '과제와 진행 단계'), ('준비_안내.md', '처음 볼 곳')]),
-        lead=(f'{model}을 이 폴더 전용 그래프 DB에 적재하고 ' + ('부품의 사용 설비와 공급 조건을 돌려주는 쿼리를 원자료와 대조합니다.' if practical else
-              '질문마다 쿼리 결과를 원자료와 대조하며, 수정본 반영 뒤 ID와 개수를 확인하고 포털 기준 지도와 견줍니다.')),
-        need='VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 랩 DB를 켤 Docker Desktop.',
-        terms=('**적재**는 모델 파일의 대상과 관계를 그래프 DB에 넣는 일' + (', **수정본**은 기준일 뒤 고친 줄만 모은 자료' if change else '')
-               + ', **정할 자리**는 `결과/`에서 첫 줄에 「제공 빈 틀」이 있는 파일입니다.'),
-        first_more=[my_model],
-        guide_extra={0: ['docker'], 1: ['run_approve']},
-        tools_from=design_practical()['title'] if practical else None,   # 실전 한 칸의 둘째 랩 — 도구 사용법은 앞 랩 가이드
-        guide_after={0: ['db', '<p><b>그래프 모양</b> 적재 뒤 Neo4j Browser에 <code>MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50</code>을 붙여 넣고 <b>Run</b>을 누릅니다.</p>', 'db_stuck']},
-        provided=['lab_cypher.py', 'lab_db.py'], kind='graph_practical' if practical else 'graph_integrated', change=change,
-        ai_wait=(8.55, '리허설 50L 실측 — 2026-11-05') if practical else (7.1, '리허설 50L 실측 — 2026-11-05'),
-        files=files)
+    """통합반 그래프 랩 정의. 실전반은 같은 정의에 얹는다(session2_factory_graph.graph_lab)."""
+    if course != '통합반':
+        raise ValueError('실전반 그래프 랩 정의는 session2_factory_graph.graph_lab()입니다.')
+    return graph_integrated()
 
 
 WHY_G_PLAN = ('스키마의 종류(이론의 클래스) 이름은 그래프의 레이블이 되고, 대상 하나(이론의 인스턴스)를 저장한 것이 노드입니다. ID는 노드의 속성, 관계 정의의 시작 · 끝은 관계의 방향이 됩니다. '
@@ -1194,12 +848,7 @@ WHY_G_PLAN = ('스키마의 종류(이론의 클래스) 이름은 그래프의 �
               '다시 넣을 때 값을 덮어쓰면 수정본으로 고친 값이 되돌아가고, 처음 만들 때만 넣으면 그대로 남습니다.')
 
 
-GRAPH_POINTS = {'통합반': ['불용 결정 설비', '목록에서 빠진 센서'], '실전반': ['쓰는 사람에 따라 갈리는 답']}   # 그래프 랩 정한_것.csv의 지점 줄(graph_chosen의 지점)
-
-
-def default_graph_branch(course):
-    """정답 보기의 apply에 쓰는 강사 참조 기본 갈래(정한_것.csv 행들)."""
-    return ['ㄴ'] if course == '실전반' else ['남김']
+GRAPH_POINTS = {'통합반': ['불용 결정 설비', '목록에서 빠진 센서']}   # 그래프 랩 정한_것.csv의 지점 줄(graph_chosen의 지점)
 
 
 def retired_change_line():
@@ -1209,9 +858,8 @@ def retired_change_line():
 
 
 def graph_chosen(course):
-    if course == '실전반':
-        return {'ㄴ': ['쓰는 사람에 따라 갈리는 답', '7.4 정보를 함께 돌려줌', '입력/자료/구매기준서_PR-07_발췌.md:30', 'A정밀 줄에 입고 전수 검사 · +20만 원 칸이 붙음'],
-                'ㄱ': ['쓰는 사람에 따라 갈리는 답', '승인 여부 · 단가 · 불량률 · 납기만', '입력/자료/구매기준서_PR-07_발췌.md:27', 'A정밀 줄은 35만 원 · 0.12만 보임']}
+    if course != '통합반':
+        raise ValueError('실전반 그래프 랩의 결정 기록 참조 답은 session2_factory_graph.chosen()입니다.')
     retired, status = D.LAB_RETIRED
     where = retired_change_line()
     kept = sorted(a for a, t in D.TRUTH['assets'].items() if a != retired and GRAPH_SHARED_PART in t['components'].values())
@@ -1235,24 +883,11 @@ GRAPH_SHARED_PART = 'P-CPL-ELM'           # 통합반 그래프 랩 기대 답�
 GRAPH_ASK = {'sensors': 'HYD-01', 'parts': 'HYD-02', 'aliases': ('RF-10', 'PS-4510', 'HI-GS-22'), 'missing': 'P-PMP-SEAL-X'}
 
 
-def graph_queries(course):
-    import session2_answers as ANS
-    if course != '실전반':
-        raise ValueError('통합반 그래프 랩의 조회 참조 답은 스키마에서 만든다 — session2_answers.query_integrated(schema).')
-    return ANS.QUERY_PRACTICAL
-
-
 def graph_expect_rows(course, graph):
     """실습4 기대 답 예 — 입력 모델(강사 참조)에서. 볼_열은 정답 보기 쿼리가 돌려주는 열."""
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
     props = {n['props']['id']: n['props'] for n in graph['nodes']}
     rows = []
-    if course == '실전반':
-        sup = sorted(props[r['a']]['name'] for r in graph['rels'] if r['type'] == 'SUPPLIES' and r['b'] == 'P-PMP-SEAL')
-        rows.append(['1', 'P-PMP-SEAL', 'supplier', ' · '.join(sup), '입력/자료/공급_조건.csv:2 · 3 · 4'])
-        rows.append(['2', 'PS-4510', 'found_by', ' · '.join(['다른 표기'] * len(sup)), '입력/자료/품번_교차표.csv'])
-        rows.append(['2', 'P-PMP-SEAL-X', 'found_by', '원자료에 없는 품번', '원자료에 없음'])
-        return rows
     D.require('통합반')
     owner = {r['b']: r['a'] for r in graph['rels'] if r['type'] == 'HAS_COMPONENT'}
     comp_lines = {a: [i for i, c in numbered('구성요소_목록.csv') if c['설비코드'] == a] for a in D.TRUTH['assets']}
@@ -1286,14 +921,11 @@ def graph_expect_text(rows, course):
     return f'# {F.MARK} — {ANS.GRAPH_EXPECT_EXPLAIN[course]}\n' + buf.getvalue()
 
 
-LABS = {3: lambda course: design_practical() if course == '실전반' else design_integrated(), 4: graph_lab}
-
-
 MIGRATED = {   # 2회차 네 랩은 새 프로젝트 구조로 바뀌었다 — 이 생성기는 학생 폴더 · ZIP · package-index를 쓰지 않는다
     'integrated-02-ontology': 'build_session2_projects.py ontology --apply [--completed]',
     'integrated-02-graph': 'build_session2_projects.py graph --apply [--completed]',
-    'practical-02-ontology': 'build_practical2_projects.py ontology --apply [--completed]',
-    'practical-02-graph': 'build_practical2_projects.py graph --apply [--completed]',
+    'practical-02-ontology': 'build_session2_projects.py ontology --course 실전반 --apply [--completed]',
+    'practical-02-graph': 'build_session2_projects.py graph --course 실전반 --apply [--completed]',
 }
 
 

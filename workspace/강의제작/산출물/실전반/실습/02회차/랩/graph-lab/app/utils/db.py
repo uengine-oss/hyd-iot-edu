@@ -26,7 +26,7 @@ def prepare():
         # 폴더를 USB 등으로 다른 PC에 옮기면 .lab_connection.json만 오고 컨테이너는 오지 않는다. 그때는 새 DB를 만들되, 그 사실을 알린다.
         if not docker('ps','-a','-q','--filter','name=^/'+state['container']+'$'):
             print(f'이 폴더의 랩 DB({state["container"]})가 이 PC의 Docker에 없습니다. 폴더를 다른 PC에서 옮겨 왔거나 그 DB가 지워진 경우입니다.\n'
-                  '이 폴더 전용 랩 DB를 새로 만듭니다. 새 DB는 비어 있으니, 저장해 둔 적재 파일부터 다시 실행하세요.')
+                  '이 폴더 전용 랩 DB를 새로 만듭니다. 새 DB는 비어 있으니, 저장해 둔 제약 · 적재 · 수정 쿼리 파일을 그 차례로 다시 실행하세요.')
             state=None;renewed=True
         else:
             info=json.loads(docker('inspect',state['container']))[0]
@@ -52,7 +52,7 @@ def prepare():
         if time.monotonic()>deadline:raise RuntimeError('DB 시작 대기 시간을 넘었습니다. 같은 명령으로 다시 확인하세요.')
         time.sleep(1)
     print('랩 DB 준비 완료\nBrowser: '+state['browser']+'\nConnect URL: '+state['bolt']+'\nUsername: neo4j / Password: 비워 둠')
-    if renewed:print('새로 만든 랩 DB라 비어 있습니다. 적재부터 다시 실행하세요.')
+    if renewed:print('새로 만든 랩 DB라 비어 있습니다. python run.py constraints → load → update 차례로 다시 실행하세요.')
     return state
 
 if __name__=='__main__':

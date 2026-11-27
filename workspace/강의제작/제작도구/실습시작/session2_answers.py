@@ -1,7 +1,7 @@
 """2회차 네 랩의 빈 틀과 강사 참조 답 — 강사 참조(build_labs.reference_model 갈래 · data_session2 원자료)에서 만든다. 답은 학생 폴더에 들어가지 않는다.
 
 빈 틀(학생 폴더의 `app/features/`)과 그 갈래별 정답 내용 · 기대 답 표를 돌려준다. 강사 참조 시험(reference/session2_project_trials.py ·
-session2_graph_trials.py · practical2_project_trials.py)이 이 내용을 새 랩 사본에 써 넣고 실행해 갈래마다 답을 확인한다.
+session2_graph_trials.py · practical2_design_trials.py · practical2_graph_trials.py)이 이 내용을 새 랩 사본에 써 넣고 실행해 갈래마다 답을 확인한다.
 """
 import csv
 import io
@@ -26,7 +26,7 @@ DESIGN_REASON = ' · 근거 = 그 줄을 그렇게 정한 내 이유(정할 때 
 # 스키마는 학생이 정한 표 세 장이다(클래스 · 속성 · 관계). 칸마다 뜻만 적고 값은 넣지 않는다(K-4).
 DESIGN_EXPLAIN = {
     '클래스.csv': '클래스마다 한 줄. 클래스 = 설비 · 구성 요소 · 센서 · 물리량 · 부품(구성 요소 자리와 그 실물을 나눌 때만 실물도) · 의미 = 무엇을 이 클래스의 인스턴스 하나로 세는지 한 문장 · ID_만드는_법 = 식별자를 무엇으로 지을지 — {칸 이름}과 글자를 이은 꼴이고, 칸 이름은 그 클래스의 원자료 표에 있는 칸(구성 요소의 구성요소 칸은 같은 모델의 설비끼리 하나로 맞춘 이름, 물리량은 내가 묶어 정한 이름 「물리량」, 실물은 구성 요소 목록의 칸)' + DESIGN_REASON,
-    '속성.csv': '속성마다 한 줄(식별자 id는 클래스 표가 정하므로 적지 않음). 클래스 = 클래스 표의 이름 · 속성 = 모델에 담을 이름(영어 소문자와 밑줄) · 원자료_칸 = 그 값이 오는 원자료 표의 칸 이름(제공 코드가 채워 주는 칸: 구성 요소의 「다른이름」, 부품의 「다른표기」, 물리량의 「물리량」 · 「기준단위」) · 자료형 = 글자 · 수 · 날짜 · 목록(목록은 「다른이름」 · 「다른표기」 칸만) · 필수 = 예(모든 인스턴스에 값이 있어야 함) 또는 아니오(비어도 됨) · 단위 = 센서의 수 속성에만 「기준 단위」(그 센서가 재는 물리량의 기준 단위로 바꿔 담음) 또는 「적힌 그대로」, 그 밖의 줄은 비움' + DESIGN_REASON,
+    '속성.csv': '속성마다 한 줄(모델의 id 칸은 클래스 표의 식별자 틀이 지으므로 「id」 줄은 적지 않음 — 식별자 틀에 쓴 원자료 칸도 질문이 묻거나 답으로 보일 값이면 속성으로 따로 담음: 예 설비의 설비코드 · 센서의 태그 · 부품의 품번). 클래스 = 클래스 표의 이름 · 속성 = 모델에 담을 이름(영어 소문자와 밑줄) · 원자료_칸 = 그 값이 오는 원자료 표의 칸 이름(제공 코드가 채워 주는 칸: 구성 요소의 「다른이름」, 부품의 「다른표기」, 물리량의 「물리량」 · 「기준단위」) · 자료형 = 글자 · 수 · 날짜 · 목록(목록은 「다른이름」 · 「다른표기」 칸만) · 필수 = 예(모든 인스턴스에 값이 있어야 함) 또는 아니오(비어도 됨) · 단위 = 센서의 수 속성에만 「기준 단위」(그 센서가 재는 물리량의 기준 단위로 바꿔 담음) 또는 「적힌 그대로」, 그 밖의 줄은 비움' + DESIGN_REASON,
     '관계.csv': '관계마다 한 줄. 관계_이름 = 영어 대문자와 밑줄 · 읽는_말 = 화살표를 「시작 → (읽는 말) → 종료」로 읽을 때의 우리말 · 시작 · 종료 = 클래스 표의 이름(시작 클래스에서 종료 클래스로 화살표를 긋는다) · 카디널리티 = 1:1 · 1:N · N:1 · N:M(시작 쪽 수:종료 쪽 수 — 이어질 수 있는 개수이고, 1은 많아야 하나) · 적어도_하나 = 없음 · 시작마다(시작 클래스의 인스턴스마다 이 관계가 하나는 있어야 함) · 종료마다(종료 클래스의 인스턴스마다) · 양쪽' + DESIGN_REASON,
     '행_처리.csv': '기준일에 달려 있지 않거나 겹친 원자료 행을 어떻게 할지 — 파일(구성요소_목록.csv · 센서_목록.csv · 설비_대장.csv) · 행(편집기 줄 번호) · 처리(빼기 · 지난 실물:<지금 실물 행> — 지난 실물은 구성 요소 자리와 그 실물을 나눌 때 구성요소_목록.csv만)' + DESIGN_REASON,
 }
@@ -241,127 +241,13 @@ COMPETENCY_QUESTIONS = ('설비의 구성 요소마다 어떤 센서가 붙고, 
                         '부품을 어느 설비가 함께 쓰며, 예전 품번이나 다른 표기로 물어도 찾을 수 있는가?')   # 가이드 03단계와 같은 문장(session2_project_guides)
 
 
-
-
-# ───────────── 실전 02-3 ─────────────
-QUOTE_POINT = '기준일에 유효한 견적이 여럿인 쌍'   # 정한_것.csv 지점 줄 — 견적 단계(lab_steps quotes)가 이 줄이 비었으면 멈춘다
-QUOTE_RULE_BLANK = f'''# {F.MARK} — 기준일에 쓸 견적을 고르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def use_quote(quotes, as_of):
-    """같은 공급사 · 같은 부품의 견적 줄들(공급_조건.csv 행 dict — 원자료 칸 그대로와 '줄' = 편집기 줄 번호)을 받는다. as_of = 자료 기준일('YYYY-MM-DD').
-    돌려줄 것: 기준일 조건으로 쓸 줄 하나(받은 dict 그대로) 또는 None(이 쌍은 기준일에 쓸 조건이 없음).
-    기준일에 유효한 줄이 둘 이상이면 정한_것.csv 「{QUOTE_POINT}」 줄에 내가 고른 대로 한다(그 줄이 비어 있으면 견적 단계가 멈춘다)."""
-    raise NotImplementedError
-'''
-
-APPROVAL_RULE_BLANK = f'''# {F.MARK} — 승인과 구매 담당이 함께 볼 것을 담는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def approval(entry, as_of):
-    """SCM 승인 목록(승인공급사_목록.csv)의 그 공급사 · 부품 등록(dict — 원자료 칸 그대로와 '줄') 또는 None(등록 없음)을 받는다.
-    돌려줄 것: {{'approved': True 또는 False, ...}} — approved 말고 남길 속성(이름은 영어 snake_case)도 이 dict에 함께."""
-    raise NotImplementedError
-
-
-def buyer_info(pair):
-    """쌍 하나(공급사 · 부품 · 단가 · 불량률 · 납기 · 승인 결과 등 지금까지 붙은 값의 dict)를 받는다.
-    돌려줄 것: 구매 담당이 공급사를 비교할 때 함께 봐야 해서 이 쌍에 더 남길 속성 dict(남길 것이 없으면 {{}}). 이미 있는 속성은 덮어쓰지 않는다.
-    pair에 값이 없으면(키가 없거나 None) 0 같은 값으로 채우지 않고, 판단할 수 없는 값으로 다룬다(미확인 · 값 없음 · 0은 서로 다르다)."""
-    raise NotImplementedError
-'''
-
-def quote_rule_answer(branch='ㄴ'):
-    """견적 갈래(build_labs.supply_branch → D.QUOTE_MODES)마다의 use_quote — 기한 지난 줄은 모든 갈래에서 쓰지 않는다."""
-    mode = B.supply_branch(branch)[1]
-    many = {D.QUOTE_MODES[0]: ('견적일이 가장 늦은 줄(새 견적이 앞 견적을 대신함)', "    return max(live, key=lambda q: q['견적일'])\n"),
-            D.QUOTE_MODES[1]: ('견적일이 가장 이른 줄(공급사가 유효기한까지 약속한 조건)', "    return min(live, key=lambda q: q['견적일'])\n"),
-            D.QUOTE_MODES[2]: ('쓰지 않음 — 공급사에 어느 견적이 유효한지 확인할 때까지 그 쌍을 비교에서 뺌', '    return None\n')}[mode]
-    return f'''# {F.MARK} — 기준일에 쓸 견적을 고르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def use_quote(quotes, as_of):
-    """근거: 공급_조건.csv 유효기한 칸 — 기준일에 기한이 지난 견적은 쓰지 않는다. 유효한 줄이 둘 이상이면 정한_것.csv 「{QUOTE_POINT}」대로 {many[0]}."""
-    live = [q for q in quotes if q['유효기한'] >= as_of]
-    if len(live) <= 1:
-        return live[0] if live else None
-{many[1]}'''
-
-
-def approval_rule_answer(branch):
-    """A = 조건부 승인도 승인 · 빈 조건은 조건 없음 · 7.4 정보 안 남김(ㄱ), B = 조건부 승인은 비승인, ㄴ = A + 7.4 정보, ㄷ = A + 빈 조건이 7.4에 걸리면 확인 필요. ㄹ · ㅁ은 승인이 ㄴ(견적 갈래만 다름)."""
-    branch = B.supply_branch(branch)[0]
-    ok = "('승인', '조건부 승인')" if branch != 'B' else "('승인',)"
-    if branch == 'ㄴ':
-        info = (f"    if pair['approved'] and round(pair['defect_rate'] * 100, 6) > {D.PR74_RATE_PCT}:\n"
-                f"        return {{'inspection': '입고 전수 검사', 'compare_extra_manwon': {float(D.PR74_EXTRA_MANWON)}, 'rule_source': {B.PR74_SOURCE!r}}}\n"
-                "    return {}\n")
-        why = f'근거: {B.PR74_SOURCE} — 불량률이 {D.PR74_RATE_PCT} %를 넘는 승인 공급사는 입고 전수 검사, 비교 때 {D.PR74_EXTRA_MANWON}만 원을 더함'
-    elif branch == 'ㄷ':
-        info = (f"    if pair['approved'] and round(pair['defect_rate'] * 100, 6) > {D.PR74_RATE_PCT} and not pair.get('condition'):\n"
-                f"        return {{'pending_check': 'SCM 등록에는 조건이 없고 {B.PR74_SOURCE}는 입고 전수 검사 · 비교 비용 +{D.PR74_EXTRA_MANWON}만 원 — 등록 확인 필요'}}\n"
-                "    return {}\n")
-        why = f'근거: {B.PR74_SOURCE}와 SCM 등록의 빈 조건 칸이 맞지 않는 쌍은 확인 필요로 표시'
-    else:
-        info = '    return {}\n'
-        why = '근거: 구매기준서 7.3 — 승인 여부는 SCM 등록을 따른다. 그 밖에 더 남길 것 없음'
-    return f'''# {F.MARK} — 승인과 구매 담당이 함께 볼 것을 담는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
-
-
-def approval(entry, as_of):
-    """근거: 자료/구매기준서_PR-07_발췌.md 7.3(승인 여부는 SCM 등록을 따른다), 승인공급사_목록.csv 유효기한 칸."""
-    if entry is None:
-        return {{'approved': False, 'approval_status': '미등록'}}
-    status = entry['승인상태']
-    if entry['유효기한'] and entry['유효기한'] < as_of:
-        status = '유효기한 경과'
-    out = {{'approved': status in {ok}, 'approval_status': status}}
-    if entry['조건']:
-        out['condition'] = entry['조건']
-    return out
-
-
-def buyer_info(pair):
-    """{why}"""
-{info}'''
-
-
-def practical_chosen(branch='ㄴ'):
-    branch, mode = B.supply_branch(branch)
-    a = 'B' if branch == 'B' else 'A'
-    if len(D.TRUTH['several_live']) != 1:
-        raise ValueError(f"「{QUOTE_POINT}」 예시 줄은 갈리는 쌍 하나를 짚는다 — 지금 {sorted(D.TRUTH['several_live'])}")
-    (sup, pid), lines = next(iter(D.TRUTH['several_live'].items()))
-    where = ' · '.join(f'자료/{D.QUOTE_FILE}:{n}' for n in lines)
-    v = D.TRUTH['supply_modes'][mode].get((sup, pid))
-    quote = [QUOTE_POINT, mode, where, f'{sup} · {pid} ' + (f"{v['quote_date']} 견적(단가 {v['price_manwon']:g} · 납기 {v['lead_days']}일)" if v else '쌍이 빠짐(확인 전까지 비교 제외)')]
-    return [quote, ['조건이 붙은 승인', '승인으로 담고 조건을 함께' if a == 'A' else '비승인으로', '자료/승인공급사_목록.csv:10 · 자료/구매기준서_PR-07_발췌.md:24',
-             'A정밀 · 쿨러 코어의 approved ' + ('참' if a == 'A' else '거짓')],
-            ['빈 값의 뜻', '조건 없음' if branch != 'ㄷ' else '미결(등록 확인 필요)', '자료/승인공급사_목록.csv:2', 'A정밀 · 펌프 축 씰 키트 ' + ('표시 없음' if branch != 'ㄷ' else 'pending_check 붙음')],
-            ['쓰는 사람에 따라 갈리는 답', '7.4 정보를 함께 남김' if branch == 'ㄴ' else '승인 여부 · 단가 · 불량률 · 납기만', '자료/구매기준서_PR-07_발췌.md:30',
-             'A정밀 · 펌프 축 씰 키트 ' + ('입고 전수 검사 · +20만 원' if branch == 'ㄴ' else '추가 칸 없음')]]
-
-
-EXPECT_COLUMNS_SUPPLY = ['질문', '물을_값', '항목', '기대_답', '근거']
-EXPECT_EXPLAIN_SUPPLY = ('한 줄 = (질문 · 물을_값 · 항목) 하나. 질문 = 1(사용 설비) · 2(공급 조건) — 질문 3은 질문 1 · 2 줄에 다른 표기 · 없는 품번을 물을_값으로 씀. '
-                         '물을_값 = 모델에 물을 품번이나 표기 하나. 항목 = 질문 1은 찾을 사내 품번, 질문 2는 사내 품번/공급사. '
-                         '기대_답 = 질문 1은 쓰는 설비 코드들, 질문 2는 「승인 여부 · 단가(만원) · 불량률(0~1) · 납기(일)」를 한 칸에. 근거 = 파일:줄. ' + EXPECT_FORMAT)
-
-
 # ───────────── 실습4(그래프) ─────────────
 GRAPH_EXPECT_COLUMNS = ['질문', '물을_값', '볼_열', '기대_답', '근거']
-GRAPH_EXPECT_EXPLAIN = {course: ('(질문 · 물을_값) 짝마다 한 줄만 쓰고, 그 줄에서 견줄 열(볼_열)은 하나. 같은 짝의 다른 열을 견주려면 같은 대상의 다른 표기를 물을_값으로 쓴 줄을 더함. 질문 = query.cypher의 「// 질문 N」 번호. '
-                                  f'물을_값 = $ 자리에 넣을 값 하나({ask}). 볼_열 = 그 조회 결과에서 견줄 열 이름 하나. '
-                                  '기대_답 = 그 열의 값들(결과 줄마다 하나, 줄 순서는 보지 않음). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만). ' + EXPECT_FORMAT)
-                        for course, ask in [('통합반', '질문 1 · 2는 설비 코드, 질문 3은 품번이나 표기'), ('실전반', '질문 1 · 2 모두 품번이나 표기')]}
+GRAPH_EXPECT_EXPLAIN = {}
 GRAPH_EXPECT_EXPLAIN['통합반'] = ('한 줄 = (질문 · 물을_값 · 볼_열) 하나. 같은 값으로 물은 결과의 다른 열도 견주려면 볼_열만 바꾼 줄을 더함. '
                                  '질문 = query.cypher의 「// 질문 N」 번호(역량 질문의 번호). 물을_값 = $ 자리에 넣을 값 하나(질문 1 · 2는 설비 코드, 질문 3은 품번이나 표기). '
                                  '볼_열 = 그 쿼리 결과에서 견줄 열 이름 하나, 또는 결과 줄마다 두 열을 짝지어 견줄 때 「열+열」. 기대_답 = 그 열의 값들(결과 줄마다 하나, 줄 순서는 보지 않음) — 「열+열」 줄은 줄마다 「값=값」. '
                                  '근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만). ' + EXPECT_FORMAT)
-LOAD_BLANK = F.blank_text('적재 파일 — 문장마다 바로 위에 「// 넣을 것: <종류 또는 관계>」 한 줄, 행은 $rows로 받음(python show_result.py가 실행).\n'
-                          '넣을 수 있는 종류 · 관계는 입력/schema.json에 있습니다.', '//')
-QUERY_BLANK = F.blank_text('조회 파일 — 조회마다 바로 위에 「// 질문 <번호>」 한 줄, 물을 값은 $ 자리 하나로 받고, 조회 끝에 ;를 붙임(빠지면 다음 질문이 앞 조회에 묻힘).', '//')
-UPDATE_BLANK = F.blank_text('수정 파일 — 수정본의 줄을 이미 넣은 그래프에 반영하는 문장들(문장 끝 ;). 전체를 지우는 문장은 실행되지 않습니다.', '//')
 # 유일 제약 걸음의 빈 틀(두 반 공용 — 실전반 그래프 랩을 다시 만들 때 그 랩의 빈 틀 목록에 이 줄을 더한다). 식별자 속성 이름과 쿼리 꼴은 적지 않는다(코딩랩 K-4).
 CONSTRAINT_FILE = '결과/constraints.cypher'
 CONSTRAINT_BLANK = F.blank_text('제약 쿼리 파일 — 종류마다 식별자에 유일 제약을 거는 쿼리들(쿼리 끝 ;). 데이터를 넣는 쿼리는 여기에 쓰지 않습니다(python run.py constraints가 실행).\n'
@@ -391,24 +277,6 @@ def constraint_answer(schema):
     lines = ['// 유일 제약 — 종류(레이블)마다 식별자 id가 겹치는 노드를 저장할 때 DB가 막는다. 이미 걸려 있으면 그대로 둔다(IF NOT EXISTS).']
     lines += [f'CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS FOR (n:{label}) REQUIRE n.id IS UNIQUE;' for label in sorted(schema['classes'])]
     return '\n'.join(lines) + '\n'
-
-
-def load_answer(graph, schema=None, only=None, skip=None):
-    """적재 쿼리. schema를 주면 관계의 양 끝을 그 종류의 레이블과 함께 식별자로 찾는다(유일 제약이 만든 색인으로 바로 찾고, 다른 종류의 같은 식별자에 잇지 않는다).
-    only · skip = 이 종류 · 관계만 / 이것은 빼고(통합반 그래프 랩: 학생 몫 STUDENT_LOAD와 제공 쿼리로 나눈다)."""
-    labels = sorted({n['labels'][0] for n in graph['nodes']})
-    types = sorted({r['type'] for r in graph['rels']})
-    want = lambda x: (only is None or x in only) and x not in (skip or ())
-    lines = ['// 적재 — 노드는 id로 같은 대상을 알아보고(MERGE), 값은 처음 만들 때만 넣는다(ON CREATE SET — 다시 적재해도 수정본이 고친 값을 되돌리지 않음). 관계는 양 끝 id와 관계 이름으로 알아본다.']
-    for l in labels:
-        if want(l):
-            lines += [f'// 넣을 것: {l}', f'UNWIND $rows AS row MERGE (n:{l} {{id: row.id}}) ON CREATE SET n = row;', '']
-    for t in types:
-        if want(t):
-            spec = (schema or {}).get('relations', {}).get(t, {})
-            a, b = (':' + spec['from'] if isinstance(spec.get('from'), str) else ''), (':' + spec['to'] if isinstance(spec.get('to'), str) else '')
-            lines += [f'// 넣을 것: {t}', f'UNWIND $rows AS row MATCH (a{a} {{id: row.a}}), (b{b} {{id: row.b}}) MERGE (a)-[r:{t}]->(b) ON CREATE SET r = row.props;', '']
-    return '\n'.join(lines).rstrip() + '\n'
 
 
 def schema_names(schema):
@@ -477,34 +345,6 @@ def query_integrated(schema, status=False):
     }
 
 
-QUERY_PRACTICAL = {
-    1: {'ㄱ': ('// 질문 1 — 부품 하나의 사용 설비 · 구성 요소와 공급사마다 공급 조건(승인 상태 · 출처 포함)',
-               "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
-               "OPTIONAL MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p)\n"
-               "WITH p, collect(DISTINCT a.id) AS assets, collect(DISTINCT c.id) AS components\n"
-               "OPTIONAL MATCH (s:Supplier)-[r:SUPPLIES]->(p)\n"
-               "RETURN p.id AS part, assets, components, s.name AS supplier, r.approved AS approved, r.approval_status AS approval_status, r.condition AS condition,\n"
-               "       r.price_manwon AS price_manwon, r.defect_rate AS defect_rate, r.lead_days AS lead_days,\n"
-               "       r.quote_source AS quote_source, r.quote_date AS quote_date, r.approval_source AS approval_source, r.as_of AS as_of\n"
-               "ORDER BY supplier;"),
-        'ㄴ': ('// 질문 1 — 부품 하나의 사용 설비 · 구성 요소와 공급사마다 공급 조건(승인 상태 · 출처, 구매 기준서 7.4 정보 포함)',
-               "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
-               "OPTIONAL MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component)-[:USES_PART]->(p)\n"
-               "WITH p, collect(DISTINCT a.id) AS assets, collect(DISTINCT c.id) AS components\n"
-               "OPTIONAL MATCH (s:Supplier)-[r:SUPPLIES]->(p)\n"
-               "RETURN p.id AS part, assets, components, s.name AS supplier, r.approved AS approved, r.approval_status AS approval_status, r.condition AS condition,\n"
-               "       r.price_manwon AS price_manwon, r.defect_rate AS defect_rate, r.lead_days AS lead_days,\n"
-               "       r.inspection AS inspection, r.compare_extra_manwon AS compare_extra_manwon, r.rule_source AS rule_source,\n"
-               "       r.quote_source AS quote_source, r.quote_date AS quote_date, r.approval_source AS approval_source, r.as_of AS as_of\n"
-               "ORDER BY supplier;")},
-    2: ('// 질문 2 — 정식 품번 · 예전 품번 · 다른 표기로 같은 부품을 찾고, 없는 품번은 한 줄로 알림(비슷한 이름은 합치지 않음)',
-        "OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])\n"
-        "OPTIONAL MATCH (s:Supplier)-[r:SUPPLIES]->(p)\n"
-        "RETURN p.id AS part, CASE WHEN p IS NULL THEN '원자료에 없는 품번' WHEN p.id = $part THEN '정식 품번' ELSE '다른 표기' END AS found_by,\n"
-        "       s.name AS supplier, r.approved AS approved, r.approval_status AS approval_status\n"
-        "ORDER BY part, supplier;")}
-
-
 def query_text(blocks):
     return '\n\n'.join(f'{head}\n{body}' for head, body in blocks) + '\n'
 
@@ -518,10 +358,10 @@ def addition_answer(change):
     return csv_text(BLANKS_INTEGRATED['결과/스키마_추가.csv'].split('\n', 1)[0].removeprefix(f'# {F.MARK} — '), ADDITION_COLUMNS, rows)
 
 
-def update_integrated(change, schema):
+def update_integrated(change, schema, course='통합반'):
     """통합반 수정본(D.changes — 추가 · 수정 · 삭제가 섞여 온다)을 반영하는 수정 쿼리. 줄은 수정본의 열 이름 그대로 $rows로 받고, 대상은 스키마의 식별자 틀대로 지은 식별자로 찾는다.
     change = 남김(불용 설비와 목록에서 빠진 센서를 상태로 남김) · 삭제(불용 설비는 그 설비에만 딸린 대상과 함께, 빠진 센서는 그 노드를 지움)."""
-    D.require('통합반')
+    D.require(course)      # 수정본은 두 과정이 같은 다섯 줄이다(data_session2.changes) — 표의 열만 그 과정 규모의 것
     if change not in ('남김', '삭제'):
         raise ValueError(f'수정본 갈래 {change!r} — 남김 · 삭제 가운데 하나입니다.')
     rel, prop, arrow = schema_names(schema)

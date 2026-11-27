@@ -819,8 +819,7 @@ def answers(asks, items=None):
             for c in ends(hit[0], '설비-구성 요소'):
                 other = list(props[c].get(key('구성 요소', '다른이름') or '', []))
                 tags = sorted(props[s].get(tag, '?') for s in ends(c, '구성 요소-센서'))
-                if tags:      # 센서가 없는 구성 요소는 센서 줄을 내지 않는다
-                    row(props[c].get(cname, c), ' · '.join(tags), 다른_이름=other)
+                row(props[c].get(cname, c), ' · '.join(tags) or '없음', 다른_이름=other)      # 센서가 없는 구성 요소도 빼지 않고 「없음」으로(기대 답 표의 「값이 없으면 없음」과 같은 꼴)
                 serial = key('실물' if split else '구성 요소', '일련번호')
                 if split:
                     held = sorted((not r['props'].get('current'), props[u].get(serial or '', '?')) for u, r in across(c, '구성 요소-실물', '실물'))

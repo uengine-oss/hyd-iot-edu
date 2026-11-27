@@ -6,7 +6,7 @@
 
 NEW_GENERATOR = {
     '통합반 설계 · 그래프': 'build_session2_projects.py <ontology|graph> --apply --completed',
-    '실전반 설계 · 그래프': 'build_practical2_projects.py <ontology|graph> --apply --completed',
+    '실전반 설계 · 그래프': 'build_session2_projects.py <ontology|graph> --course 실전반 --apply --completed',
 }
 
 

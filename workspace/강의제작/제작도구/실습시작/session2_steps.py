@@ -477,104 +477,17 @@ def check(previous):
         if out[0]['kind'] == 'verdict':
             out[0] = R.verdict('bad', f'원자료가 내 스키마 표와 어긋나는 원자료 줄 {{len(info["어긋남"])}}곳', '아래 카드의 정한 줄과 걸린 원자료 줄을 보고 스키마 표를 고친 뒤 모델을 다시 만듭니다.')
         out.append(R.note('카드의 수는 걸린 원자료 줄 수이고, 구조 검사의 「구조 확인 필요 N건」은 만들어 둔 모델 파일에서 어긋난 조건을 센 수입니다(「적어도 하나」는 관계마다 한 건으로 셉니다).'))
+    linked = {{r[k] for r in model[1]['rels'] for k in ('a', 'b')}}
+    alone = [n for n in model[1]['nodes'] if n['props']['id'] not in linked]
+    if alone:      # 검사 조건은 지켰어도 아무것과도 이어지지 않은 인스턴스는 사실로 보인다 — 담을 대상인지, 다른 줄과 같은 대상인지는 사람이 원자료로 가린다
+        out.append(R.cards(f'관계가 하나도 이어지지 않은 인스턴스 {{len(alone)}}개', [dict(title=in_my_words(f"{{n['labels'][0]}} 「{{n['props']['id']}}」"), icon='open', state='warn', badge='이어진 관계 0',
+                                                                       lines=[f'{{k}} — {{v}}' for k, v in n['props'].items() if k != 'id' and v not in ('', None)][:4]) for n in alone[:8]],
+                           note='검사 조건은 지켰지만 다른 인스턴스와 이어진 관계가 하나도 없습니다. 원래 따로 있는 대상인지, 다른 줄과 같은 대상을 한 번 더 적은 것인지, 이을 관계가 빠졌는지를 원자료 줄로 확인합니다.'))
     if stale:
         out.append(R.note('스키마 표나 규칙을 고친 뒤 모델 파일을 다시 만들지 않았습니다 — python run.py parts를 실행한 뒤 다시 검증합니다.'))
     return out
 '''
 
-DESIGN_PRACTICAL = '''"""{title} — 결과 화면의 단계(START.md 「진행 단계」와 같은 번호 · 이름). 제공 파일 — 바꾸지 않는다."""
-''' + COMMON + '''
-import supply_tool as M
-
-TITLE = {title!r}
-KEY = ['질문', '물을_값', '항목']   # 기대 답 한 줄을 가리키는 열
-
-
-def guarded(fn, *a):
-    try:
-        return fn(*a)
-    except M.Stop as e:
-        raise R.Stop(str(e))
-
-
-def sources(previous):
-    _, graph = M.base_model()
-    labels = {{}}
-    for n in graph['nodes']:
-        labels[n['labels'][0]] = labels.get(n['labels'][0], 0) + 1
-    rows = [(p.name, len(R.read_table(p))) for p in sorted((HERE / '자료').glob('*.csv'))]
-    return [R.counts('제공된 설비 · 부품 모델(입력/graph.json)', sorted(labels.items()) + [('관계', len(graph['rels']))]),
-            R.counts('원자료 파일마다 행 수(머리줄 뺌)', rows)]
-
-
-def expected(previous):
-    rows = expected_rows(['질문', '물을_값', '기대_답', '근거'], KEY)
-    return [R.table('내가 원자료에서 먼저 적은 기대 답', ['질문', '물을_값', '항목', '기대_답', '근거'], rows)]
-
-
-def quotes(previous):
-    try:
-        need_decided([{quote_point!r}])
-    except R.Stop as e:   # 그 결정이 갈리는 원자료 줄을 함께 짚는다(어느 줄을 쓸지는 정하지 않는다)
-        where = ' / '.join(f"{{s}} · {{p}}: 자료/{{M.QUOTES}}:{{' · '.join(map(str, lines))}}" for s, p, lines in guarded(M.several_live))
-        raise R.Stop(f'{{e}} 기준일({{M.AS_OF}})에 유효기한이 남은 견적이 둘 이상인 쌍 — {{where}}')
-    pairs, used, found = guarded(M.pairs, '견적')
-    split = {{}}
-    for v in used.values():
-        split[v] = split.get(v, 0) + 1
-    return [R.counts('견적 줄 — 씀 · 기준일에 안 씀', sorted(split.items()) + [('공급사 · 부품 쌍', len(pairs))]),
-            R.table('공급사 · 부품 쌍마다 쓴 견적(단위를 맞춘 값과 원래 표기)', ['공급사', '사내 품번', '단가(만원)', '불량률', '불량률 원래', '납기(일)', '납기 원래', '견적일', '출처'],
-                    [(p['supplier'], p['part'], p['price_manwon'], p['defect_rate'], p['defect_rate_original'] or '', p['lead_days'], p['lead_days_original'] or '', p['quote_date'], p['quote_source']) for p in pairs]),
-            R.table('견적 줄마다 간 곳', ['자료/공급_조건.csv 행', '간 곳'], sorted(used.items())),
-            R.table('품번 칸이 사내 품번이 아니어서 찾은 줄', ['행', '원래 글', '사내 품번', '찾은 법'], found)]
-
-
-def approval(previous):
-    need_decided(['조건이 붙은 승인', '빈 값의 뜻', '쓰는 사람에 따라 갈리는 답'])
-    pairs, used, found = guarded(M.pairs, '승인')
-    extra = sorted({{k for p in pairs for k in p}} - {{'supplier', 'part', 'price_manwon', 'defect_rate', 'defect_rate_original', 'lead_days', 'lead_days_original',
-                                                     'min_order_qty', 'supplier_part_no', 'quote_date', 'valid_until', 'quote_source', 'as_of', 'approved', 'approval_source'}})
-    guarded(M.write_model, pairs)
-    cols = ['공급사', '사내 품번', 'approved', '승인 출처'] + extra
-    return [R.counts('승인(approved)', [('참', sum(p['approved'] for p in pairs)), ('거짓', sum(not p['approved'] for p in pairs))]),
-            R.table('쌍마다 승인과 내가 남긴 속성', cols, [[p['supplier'], p['part'], p['approved'], p.get('approval_source') or ''] + [p.get(k, '') for k in extra] for p in pairs]),
-            R.note('결과/schema.json · 결과/graph.json을 새로 썼습니다.')]
-
-
-def ask(previous):
-    rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
-    got = guarded(M.answers, list(dict.fromkeys((r['질문'], r['물을_값']) for r in rows)))   # 같은 품번을 여러 줄에 적어도 한 번만 묻는다
-    key = lambda r: f"{{r['질문']}} | {{r['물을_값']}} | {{r.get('항목', '')}}"
-    exp = [{{'짝': key(r), '답': r['기대_답']}} for r in rows]
-    act = [{{'짝': key(r), '답': r['답']}} for r in got]
-    return [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', exp, act, ['답'], same=same,
-                      note='「다름」은 같은 짝의 값이 다른 것, 「실제 없음」은 기대 답의 짝이 모델 답에 없는 것, 「기대 밖」은 모델이 기대 답에 없는 짝을 더 돌려준 것입니다. ' + SAME_NOTE),
-            decision_view()] + run_check()
-
-
-def decision_view():
-    """세 결정이 닿은 곳 — 질문 대조 표의 답(승인 여부 · 단가 · 불량률 · 납기)에 드러나지 않는 선택을 공급 쌍마다 보인다."""
-    import json
-    g = json.loads((HERE / '결과/graph.json').read_text(encoding='utf-8'))
-    base = {{'approved', 'approval_status', 'price_manwon', 'defect_rate', 'lead_days', 'quote_date', 'quote_source', 'approval_source', 'as_of',
-            'valid_until', 'min_order_qty', 'supplier_part_no', 'defect_rate_original', 'lead_days_original'}}
-    rows = [(r['b'], r['a'], '참' if r['props'].get('approved') else '거짓', r['props'].get('approval_status', ''),
-             ' · '.join(f'{{k}}={{v}}' for k, v in sorted(r['props'].items()) if k not in base) or '없음')
-            for r in g['rels'] if r['type'] == 'SUPPLIES']
-    return R.table('세 결정이 닿은 곳 — 공급 쌍마다 승인 여부와 내가 남긴 속성', ['사내 품번', '공급사', '승인 여부', '승인 상태', '조건 · 함께 볼 정보'], sorted(rows),
-                   note='질문 대조 표에는 승인 여부 · 단가 · 불량률 · 납기만 나옵니다. 조건이 붙은 승인 · 빈 값의 뜻 · 쓰는 사람에 따라 갈리는 답의 선택은 이 표의 승인 여부와 마지막 칸으로 봅니다.')
-
-
-STEPS = [
-    dict(no=1, name={s1!r}, slots=[], run=sources),
-    dict(no=2, name={s2!r}, slots=[], run=None),
-    dict(no=3, name={s3!r}, slots=['결과/기대_답.csv'], run=expected),
-    dict(no=4, name={s4!r}, slots=['결과/quote_rule.py'], run=quotes),
-    dict(no=5, name={s5!r}, slots=['결과/approval_rule.py'], run=approval),
-    dict(no=6, name={s6!r}, slots=[], run=ask),
-    dict(no=7, name={s7!r}, slots=[], run=None),
-]
-'''
 
 GRAPH = '''"""{title} — 결과 화면의 단계(START.md 「진행 단계」와 같은 번호 · 이름). 제공 파일 — 바꾸지 않는다."""
 ''' + COMMON + '''
@@ -809,7 +722,7 @@ def probe(previous):
     schema = json.loads(path.with_name('schema.json').read_text(encoding='utf-8-sig'))
     label = {{n['props']['id']: n['labels'][0] for n in graph['nodes']}}
     props = {{n['props']['id']: n['props'] for n in graph['nodes']}}
-    text_key = lambda p: next((k for k, x in p.items() if k != 'id' and isinstance(x, str) and x), None)      # 식별자 말고 글자로 적힌 속성 하나(이름 같은 것)
+    text_key = lambda p: 'name' if isinstance(p.get('name'), str) and p['name'] else next((k for k, x in p.items() if k != 'id' and isinstance(x, str) and x and x != p['id']), None)      # 식별자 말고 글자로 적힌 이름 — name이 있으면 name(가이드 06의 물음), 없으면 값이 식별자와 다른 첫 글자 속성
     one = next((r for r in graph['rels'] if r['type'] in schema['relations'] and text_key(props[r['a']])), None)
     if one is None:
         raise R.Stop(f'{{R.rel(path)}}: 실험에 쓸 관계(식별자 말고 글자 속성이 있는 시작 노드)가 모델에 없습니다.')
@@ -1055,28 +968,14 @@ def portal(previous):
 STEPS = {steps}
 '''
 
-GRAPH_STEPS_PRACTICAL = '''[
-    dict(no=1, name={s1!r}, slots=[], run=start),
-    dict(no=2, name={s2!r}, slots=[], run=None),
-    dict(no=3, name={s3!r}, slots=['결과/기대_답.csv'], run=expected),
-    dict(no=4, name={s4!r}, slots=['결과/load.cypher'], run=load_and_again),
-    dict(no=5, name={s5!r}, slots=['결과/query.cypher'], run=q1),
-    dict(no=6, name={s6!r}, slots=['결과/query.cypher'], run=q2),
-    dict(no=7, name={s7!r}, slots=[], run=None),
-]'''
-
 
 def render(kind, title, names, change=False):
-    """kind = design_integrated · design_practical · graph_integrated · graph_practical. names = 실전반 랩의 옛 단계 이름(STEPS 표를 채운다 — 새 프로젝트 구조는
-    STEPS 앞까지만 쓴다, session2_project.actions_source). 통합반 랩은 단계 표를 두지 않는다 — 단계는 가이드 원고(session2_project_guides)가 갖는다."""
-    s = {f's{i}': n for i, n in enumerate(names, 1)}
+    """kind = design_integrated · graph_integrated(두 과정이 같은 화면 코드를 쓴다 — 실전반은 session2_factory*.py가 이 글 뒤에 덧댄다). names는 쓰지 않는다 —
+    단계는 가이드 원고(session2_project_guides)가 갖고, 새 프로젝트 구조는 STEPS 앞까지만 쓴다(session2_project.actions_source)."""
     if kind == 'design_integrated':
         return DESIGN_INTEGRATED.format(title=title)
-    if kind == 'design_practical':
-        import session2_answers as ANS
-        return DESIGN_PRACTICAL.format(title=title, quote_point=ANS.QUOTE_POINT, **s)
     if kind == 'graph_integrated':
         import build_labs as B
         import session2_answers as ANS
         return GRAPH.format(title=title, change=change, steps='[]', decide={'update': B.GRAPH_POINTS['통합반']}, student=list(ANS.STUDENT_LOAD), raw=dict(ANS.RAW_LOAD))
-    return GRAPH.format(title=title, change=change, steps=GRAPH_STEPS_PRACTICAL.format(**s), decide={'1': ['쓰는 사람에 따라 갈리는 답']}, student=[], raw={})
+    raise ValueError(f'2회차 랩의 화면 코드는 design_integrated · graph_integrated 둘입니다: {kind}')

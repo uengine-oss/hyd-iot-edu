@@ -6,12 +6,12 @@ for _stream in (sys.stdout, sys.stderr):
     _stream.reconfigure(encoding='utf-8')
 import hashlib as _h
 _PROVIDED = {
- "app/ui/render.py": "f2a80ab6f2d359d26b9610dadab032638decd2496da7a9aac143a1a704320c64",
- "app/utils/actions.py": "878fe71d2dee0e511c344212934efefefb9c1494a0b9874b79f4c6854a97329a",
- "app/utils/cypher.py": "b1fa5985e36c077ac2f21f26a7484e409af7c2c73709492b52d1e622109339af",
- "app/utils/db.py": "8808a395399e47ed893ca114ccd1a4e20b6687012c21a03e2ce64b0ac55f384f",
- "app/utils/results.py": "1c5b0596745e9ac1e9b7f06d84c7463d99720597edcf46801d32a51e640ae86b",
- "run.py": "76fae2ddf709854f57e5d08effeee4ffd7896264a38d3564a4a206c9bed0313e"
+ "app/ui/render.py": "f9170a056453a35cc5583eb052eefba6450e29eb6e6fcaf264a896b66cf7be58",
+ "app/utils/actions.py": "2dbd505a8a696f77a6206f25f689ad2be5ea399f302814f859d200efad8e33ca",
+ "app/utils/cypher.py": "2a695e1218adf14318b3d49e53e9887bf2827c4984f47f6162b68eb73fb11160",
+ "app/utils/db.py": "c5c30d996a68370af862ac30f2f573579cc3641aacf96887f2903992fe04b708",
+ "app/utils/results.py": "3637e4ec424d1b2eac77f77fce80fe1b9b3be4e0a90268548e3b7a70c54102f7",
+ "run.py": "719e59ea92ccad25b31355ef67fd096c0ff47751ae8cbb0944420d185f38d10f"
 }
 def provided_errors(root):
     out = []
@@ -28,23 +28,26 @@ def chosen_errors(root):
     p = root / 'app/features' / 'decisions.csv'
     if not p.is_file():
         return ['app/features/decisions.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
-    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    kept = [(no, x) for no, x in enumerate(p.read_text(encoding='utf-8-sig').splitlines(), 1) if x.strip() and not x.lstrip().startswith('#')]
+    lines = [x for _, x in kept]      # kept = (편집기 줄 번호, 글) — 오류는 편집기에서 보이는 줄로 짚는다
     rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
     need = ['지점', '고른_것', '근거', '바뀌는_답']
     if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
         return ['app/features/decisions.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
     out = []
-    for n, r in enumerate(rows, 1):
+    for (no, _), r in zip(kept[1:], rows):
+        where = f'app/features/decisions.csv:{no}(지점 「' + ((r.get('지점') or '').strip() or '이름 없음') + '」)'
         empty = [c for c in need if not (r.get(c) or '').strip()]
         if empty:
-            out.append(f'app/features/decisions.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+            out.append(where + ': 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
         elif not re.search(r'[^\s:]+:\d+', r['근거']):
-            out.append(f'app/features/decisions.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+            out.append(where + ': 근거에 파일:줄이 없습니다(예: data/field_notes.md:12).')
     return out
 _root = Path(__file__).resolve().parents[2]
 _pre = provided_errors(_root) + chosen_errors(_root)
 """학생 결과의 구조·자료형 검사. 생성·수정·DB 접속을 하지 않는다.
-사용: python run.py check   (output/schema.json·graph.json)
+사용: python check.py            (output/schema.json·graph.json)
+      python check.py 폴더        (다른 폴더의 schema.json·graph.json)
 """
 from pathlib import Path
 import json,sys
@@ -65,7 +68,7 @@ def check_value(where,key,value,spec):
         if value not in spec:errors.append(f'{where} {key}={value!r}: 허용 값 {spec} 밖')
         return
     k=kind_of(value)
-    ok={'string':k=='string','number':k in('integer','number'),'integer':k=='integer','boolean':k=='boolean','list':k=='list'}.get(spec)
+    ok={'string':k=='string','number':k in('integer','number'),'integer':k=='integer','boolean':k=='boolean','list':k=='list','date':k=='string' and len(value)==10 and value[4]==value[7]=='-' and value.replace('-','').isdigit()}.get(spec)
     if ok is None:warnings.append(f'스키마의 자료형 이름을 모름: {spec} ({where} {key})');return
     if not ok:
         hint=''
@@ -103,7 +106,9 @@ try:
             for key,v in props.items():
                 if key in req:continue
                 if key in opt:check_value(f'{lab} {id}',key,v,opt[key])
-                else:warnings.append(f'{lab}에 정의되지 않은 속성 {key} ({id})')
+                else:errors.append(f'{lab} {id}: 스키마에 정의되지 않은 속성 {key}')
+            for key,v in props.items():
+                if isinstance(v,list) and len(set(map(str,v)))!=len(v):errors.append(f'{lab} {id}: 목록 속성 {key}에 같은 값이 두 번 — '+' · '.join(map(str,v)))
     seen=set()
     for r in rels:
         t=r.get('type');a=r.get('a');b=r.get('b');props=r.get('props',{}) or {}
@@ -121,7 +126,7 @@ try:
             if k not in props:errors.append(f'{t} {a}→{b}: 필수 속성 {k} 없음')
         for k,v in props.items():
             if k in pspec:check_value(f'{t} {a}→{b}',k,v,pspec[k])
-            elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
+            elif k!='id':errors.append(f'{t} {a}→{b}: 스키마에 정의되지 않은 속성 {k}')
     # 카디널리티(시작 쪽 수:끝 쪽 수) — 「1」 쪽은 많아야 하나. 그래프의 실제 연결 수가 적은 수를 넘으면 그 대상을 짚는다.
     ONE={'1','0..1'};MANY={'N','M','0..N','1..N','*'}
     out_n={};in_n={}
@@ -139,6 +144,13 @@ try:
             if side not in ONE:continue
             over=sorted((x,len(v)) for (tt,x),v in count.items() if tt==t and len(v)>1)
             if over:errors.append(f'{t} 카디널리티 {card} 어긋남: {word} 많아야 하나인데 둘 이상인 대상 {len(over)}개 — '+', '.join(f'{x} {n}개' for x,n in over[:5])+(' …' if len(over)>5 else ''))
+    for t,spec in relations.items():
+        least=spec.get('at_least_one') if isinstance(spec,dict) else None
+        for side in (least if isinstance(least,list) else []):
+            mine=spec.get(side);mine=mine if isinstance(mine,list) else [mine]
+            has={r.get('a' if side=='from' else 'b') for r in rels if r.get('type')==t}
+            lone=sorted(i for i,labs in labels_by_id.items() if any(x in mine for x in labs) and i not in has)
+            if lone:errors.append(f'{t} 적어도 하나 어긋남: 이 관계가 하나도 없는 {"/".join(map(str,mine))} {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:

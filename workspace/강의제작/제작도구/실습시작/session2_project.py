@@ -11,7 +11,7 @@ NAMES = {
     '센서_목록.csv': 'sensors.csv', '예비품_목록.csv': 'spare_parts.csv',
     '품번_교차표.csv': 'part_aliases.csv', '공급_조건.csv': 'supply_terms.csv',
     '승인공급사_목록.csv': 'approved_suppliers.csv', '입고_이력.csv': 'receipts.csv',
-    '현장_메모.md': 'field_notes.md', '관계그림.json': 'relationships.json',
+    '현장_메모.md': 'field_notes.md', '관계그림.json': 'relationships.json', '구매기준서_PR-07_발췌.md': 'purchasing_standard_pr07.md',
     '설계.csv': 'design.csv', '클래스.csv': 'classes.csv', '속성.csv': 'properties.csv', '관계.csv': 'relations.csv', '이름.csv': 'name_overrides.csv',
     '물리량.csv': 'quantity_overrides.csv', '단위.csv': 'unit_overrides.csv',
     '행_처리.csv': 'row_rules.csv', '기대_답.csv': 'expected.csv',
@@ -143,8 +143,9 @@ if __name__ == '__main__':
 '''
 
 
-def model_source():
-    text = convert((HERE / 'session2_model_tool.py').read_text(encoding='utf-8'))
+def model_source(source=None):
+    """source = 제공 코드의 글(주지 않으면 통합반 원본 그대로 — 실전반은 session2_factory.tool_source()를 준다)."""
+    text = convert(source if source is not None else (HERE / 'session2_model_tool.py').read_text(encoding='utf-8'))
     text = text.replace('Path(__file__).resolve().parent', 'Path(__file__).resolve().parents[2]')
     text = text.replace("OUT = HERE / 'app/features'", "OUT = HERE / 'app/features'\nOUTPUT = HERE / 'output'")
     for name in ('schema.json', 'graph.json'):
