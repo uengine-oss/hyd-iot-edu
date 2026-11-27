@@ -495,6 +495,7 @@ def change_plan(path):
     parts = statements(read(path))
     guard(path, parts)
     plan = []
+    ids = {n['props'].get('id') for n in model_graph()[1]['nodes']} - {None}      # 모델에 있는 대상의 식별자 — 수정본 칸을 이어 붙인 식별자(HYD-01:VS1)를 쿼리에 적어도 같은 결함이다
     for line, s, notes in parts:
         heads = [m.groups() for m in (CHANGE.match(x) for x in notes) if m]
         if len(heads) != 1:
@@ -503,10 +504,10 @@ def change_plan(path):
             raise RuntimeError(f'{path}:{line}: 「{heads[0][0]} {heads[0][1]}」에 해당하는 수정본 줄이 없습니다(수정본에 있는 것: {have}).')
         if '$rows' not in s:
             raise RuntimeError(f'{path}:{line}: 수정본의 줄은 $rows로 받습니다(UNWIND $rows AS row …). 값을 쿼리에 직접 적지 않습니다.')
-        cells = {v for _, row in rows[heads[0]] for k, v in row.items() if k != '변경' and v}
+        cells = {v for _, row in rows[heads[0]] for k, v in row.items() if k != '변경' and v} | ids
         fixed = sorted({a or b for a, b in LITERAL.findall(re.sub(r'//[^\n]*', '', s))} & cells)
         if fixed:      # $rows를 받으면서도 수정본 줄의 값을 쿼리에 적어 두면, 이번 수정본에서만 맞고 다음 수정본의 다른 줄은 조용히 놓친다
-            raise RuntimeError(f'{path}:{line}: 수정본 줄의 값 {" · ".join(f"「{v}」" for v in fixed)}을 쿼리에 직접 적었습니다 — 이 쿼리는 그 값이 적힌 줄에만 맞고, 다음 수정본에 다른 줄이 오면 놓칩니다. 줄마다 다른 값은 row.<칸 이름>으로 받습니다.')
+            raise RuntimeError(f'{path}:{line}: 수정본 줄의 값이나 대상의 식별자 {" · ".join(f"「{v}」" for v in fixed)}을 쿼리에 직접 적었습니다 — 이 쿼리는 그 값이 적힌 줄에만 맞고, 다음 수정본에 다른 줄이 오면 놓칩니다. 줄마다 다른 값은 row.<칸 이름>으로 받습니다.')
         plan.append((line, heads[0][0], heads[0][1], s))
     return plan, rows
 

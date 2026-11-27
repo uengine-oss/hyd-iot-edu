@@ -24,10 +24,11 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 실전반 두 랩은 같은 생성 길에 공장 규모 자료와 끝의 구매팀 응용만 얹는다(코딩랩 K-10 — session2_factory*.py). 통합반 산출물은 과정 인자의 기본값으로 예전과 같은 바이트가 나온다.
 COURSES = {'통합반': dict(dest=DEST, prefix='integrated', versions=None),
-           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v29-practical', 'graph-lab': 'v28-practical'})}
+           '실전반': dict(dest=ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩', prefix='practical', versions={'ontology-lab': 'v29-practical', 'graph-lab': 'v29-practical'})}
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v61-lab', 'graph-lab': 'v60-lab'}
+VERSIONS = {'ontology-lab': 'v61-lab', 'graph-lab': 'v61-lab'}
+# v61-lab(그래프 랩) — 2026-11-27, 수정 쿼리가 멈추는 박아 넣기를 넓힘: 수정본 칸의 값에 더해 모델에 있는 대상의 식별자(설비 코드와 태그를 이어 붙인 HYD-01:VS1 같은)를 쿼리에 적어도 파일:줄로 멈춘다(lab_cypher.change_plan — 일부러 넣어 보니 앞 판은 이 꼴을 통과시켰다).
 # v61-lab(설계 랩) — 2026-11-27, 가이드 07의 규칙 코드 앞 물음을 「갈리는 센서 셋을 한 번에 모아서 물어봐 줘」로(학생 역 리허설 v59에서 「하나씩」을 받은 Codex가 다섯 번을 오갔다 — 06-2 대본 윤문 3차의 지적).
 # v60-lab(두 랩) — 2026-11-27, v59 학생 역 리허설 두 건과 실전반 공장 규모 자료에서 나온 구멍(작업 폴더 판정/랩고침_v60_대기.md):
 #   설계 랩 — 넣기 전 검증이 관계가 하나도 이어지지 않은 인스턴스를 경고 카드로 보인다(판단은 사람이 원자료로). 속성 빈 틀 머리를 「id 줄만 적지 않고 질문이 묻는 칸은 속성으로 담는다」로,
