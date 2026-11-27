@@ -1,5 +1,5 @@
 {
- "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본 · 끝 상태(루트 작업/, 이 PC 전용 — 확정되면 지움). audio = 강사 복제 음성 캐시(<큐 id>.mp3 · .json, workspace 브랜치). cdp = 녹화 브라우저(포털 촬영도구 browser.mjs를 이 파일로 띄운 헤드리스 Chromium, run.sh up)의 원격 디버깅 포트. viewport = 그 브라우저의 CSS 크기 × 배율. 1843×1037 × 1.2497은 실제 픽셀 2304×1296이 되어 프레임 1920×1080이 온다(Chromium이 CSS 크기 × 배율을 올림해서, 배율 1.25는 2304×1297 → 프레임 1919×1080이 된다). 페이지가 읽는 값은 innerWidth 1844 · innerHeight 1037 · devicePixelRatio 1.2497이다. profile = 다시 띄워도 남는 브라우저 프로필 폴더(웹 VS Code의 사용자 설정 · 신뢰한 폴더 · 창 상태가 여기 있다, git 밖). locale = 브라우저 언어(한국어면 웹 VS Code가 판이 다른 한국어 팩을 불러 글자가 틀어진다). server = 웹 VS Code 서버 주소(촬영준비 길 1), token_file = 그 접속 토큰 파일(값 출력 · 커밋 금지). settings = 녹화 브라우저의 웹 VS Code 사용자 설정(prep.mjs가 넣고 견준다, chatgpt.cliExecutable의 {work}는 work의 절대 경로로 바뀐다). chat.disableAIFeatures는 기본값 false를 적어 둔다 — 옛 프로필에 남은 true를 덮어 학생처럼 오른쪽 칸에 Chat 탭이 보이게 한다. layout = 탐색기 칸 · 오른쪽 칸의 폭(CSS px, prep.mjs가 칸 사이 경계를 끌어 맞춘다) — 1회차 실습2 가이드 사진 codex-response.png의 비율(1920 가운데 탐색기 377 · 오른쪽 칸 578)을 이 화면 폭 1844로 옮긴 값이다. Playwright 모듈 자리는 포털 촬영도구 config.json의 환경 칸(env.mjs). ffmpeg는 환경변수 FFMPEG 또는 PATH.",
+ "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본 · 끝 상태(루트 작업/, 이 PC 전용 — 확정되면 지움). audio = 강사 복제 음성 캐시(<큐 id>.mp3 · .json, workspace 브랜치). cdp = 녹화 브라우저(포털 촬영도구 browser.mjs를 이 파일로 띄운 헤드리스 Chromium, run.sh up)의 원격 디버깅 포트. viewport = 그 브라우저의 CSS 크기 × 배율. 1843×1037 × 1.2497은 실제 픽셀 2304×1296이 되어 프레임 1920×1080이 온다(Chromium이 CSS 크기 × 배율을 올림해서, 배율 1.25는 2304×1297 → 프레임 1919×1080이 된다). 페이지가 읽는 값은 innerWidth 1844 · innerHeight 1037 · devicePixelRatio 1.2497이다. profile = 다시 띄워도 남는 브라우저 프로필 폴더(웹 VS Code의 사용자 설정 · 신뢰한 폴더 · 창 상태가 여기 있다, git 밖). locale = 브라우저 언어(한국어면 웹 VS Code가 판이 다른 한국어 팩을 불러 글자가 틀어진다). server = 웹 VS Code 서버 주소(촬영준비 길 1), token_file = 그 접속 토큰 파일(값 출력 · 커밋 금지). settings = 녹화 브라우저의 웹 VS Code 사용자 설정(prep.mjs가 넣고 견준다, chatgpt.cliExecutable의 {work}는 work의 절대 경로로 바뀐다). extensions.ignoreRecommendations는 CSV 파일을 열 때 오른쪽 아래에 뜨는 확장 추천 알림(「Rainbow CSV」)을 끈다 — 알림이 Codex 입력칸을 가렸다(ws01c-r1, 2026-11-27). chat.disableAIFeatures는 기본값 false를 적어 둔다 — 옛 프로필에 남은 true를 덮어 학생처럼 오른쪽 칸에 Chat 탭이 보이게 한다. layout = 탐색기 칸 · 오른쪽 칸의 폭(CSS px, prep.mjs가 칸 사이 경계를 끌어 맞춘다) — 1회차 실습2 가이드 사진 codex-response.png의 비율(1920 가운데 탐색기 377 · 오른쪽 칸 578)을 이 화면 폭 1844로 옮긴 값이다. Playwright 모듈 자리는 포털 촬영도구 config.json의 환경 칸(env.mjs). ffmpeg는 환경변수 FFMPEG 또는 PATH.",
  "work": "../../../../../../작업/촬영/vscode",
  "audio": "../음성",
  "cdp": 9336,
@@ -15,7 +15,8 @@
   "workbench.startupEditor": "none",
   "terminal.integrated.initialHint": false,
   "terminal.integrated.gpuAcceleration": "off",
-  "chat.disableAIFeatures": false
+  "chat.disableAIFeatures": false,
+  "extensions.ignoreRecommendations": true
  },
  "layout": {"sidebar": 362, "auxiliarybar": 555}
 }

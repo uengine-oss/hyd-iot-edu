@@ -39,6 +39,9 @@ export const LABS = {
  p305: {dir: 'D:/HYD-Practice/p305p-a187ceba/action-review-lab', zip: OUT + '실전반/실습/03회차/랩/action-review-lab.zip', features: 5, cues: '실전_03_05_조치검토_큐.json'},
  p307: {dir: 'D:/HYD-Practice/p307p-e0076eb3/condition-extract-lab', zip: OUT + '실전반/실습/03회차/랩/condition-extract-lab.zip', features: 8, cues: '실전_03_07_지식추출_큐.json'},
  wv: {dir: 'D:/HYD-Practice/wvp-c9e8ebbb/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 6, cues: '통합_02_06-1_VSCode랩시작하기_큐.json', readme: false},
+ // ws = 06-2 4장을 랩 한 바퀴 5분으로 줄인 예시(판정/샘플5분_대본.md). 폴더는 06-2 2 · 3장을 학생 역 Codex로 마친 상태로 만든 뒤 쓰고(app/features의 표를 Codex가 채웠다), 그 상태의 사본을 옆 폴더 _3장끝/에 둔다.
+ // resetLab은 output/을 지우므로 첫 구간(결과 화면) 전에 녹화 밖에서 python run.py design을 다시 돌린다. 요청 구간을 다시 찍으려면 _3장끝/의 features를 되돌려 놓는다.
+ ws: {dir: 'D:/HYD-Practice/wsp-c9e8ebbb/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 6, cues: '통합_02_샘플5분_큐.json', readme: false},
  p308: {dir: 'D:/HYD-Practice/p308p-f1a55b73/work-card-lab', zip: OUT + '실전반/실습/03회차/랩/work-card-lab.zip', features: 10, cues: '실전_03_08_작업카드_큐.json'},
 };
 // 쉼(영상 V-14). 큐 사이 쉼 cue는 ../ctrl.mjs의 기본 gap과 같은 값이고, labUi의 ctx.say가 큐마다 이 값을 gap으로 준다.
@@ -383,7 +386,10 @@ export async function codexDone(since) {
  let seen = [];
  for (const rel of await fs.readdir(root, {recursive: true})) {
   const file = root + '/' + rel.replace(/\\/g, '/');
-  if (!/rollout-[^/]*\.jsonl$/.test(file) || (await fs.stat(file)).mtimeMs < since) continue;
+  // 같은 대화에 이어 보낸 부탁은 그 대화의 기록 파일 끝에 덧붙는데, Windows는 Codex가 열어 둔 채 쓰는 파일의 수정 시각을 바로 갱신하지 않는다
+  // (ws01e-r1: 마지막 기록 15:58:37인데 파일 시각은 15:54:12 — 「보낸 뒤 바뀐 파일」만 읽어 답이 끝난 것을 3분 동안 못 찾고 멈췄다, 2026-11-27).
+  // 그래서 파일은 여섯 시간 안에 바뀐 것을 넓게 읽고, 보낸 뒤의 기록인지는 아래 줄마다의 시각으로만 가린다.
+  if (!/rollout-[^/]*\.jsonl$/.test(file) || (await fs.stat(file)).mtimeMs < since - 6 * 3600e3) continue;
   let used = null; seen = [];
   for (const line of (await fs.readFile(file, 'utf8')).split('\n')) {
    if (!line.trim()) continue;
