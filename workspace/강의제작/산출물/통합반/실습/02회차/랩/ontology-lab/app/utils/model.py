@@ -1,6 +1,6 @@
 """스키마와 지식 그래프를 만드는 제공 코드 — 원자료와 `app/features/`의 빈 틀(내가 정한 표 · 함수)을 읽어 `output/schema.json` · `output/graph.json`을 쓴다.
 
-스키마는 내가 정한 표 세 장이다: classes.csv(클래스 · 의미 · 식별자 짓는 법), properties.csv(클래스마다 속성 · 원자료의 어느 칸 · 자료형 · 필수 · 단위), relations.csv(관계 이름 · 시작 · 끝 · 카디널리티 · 끝이 적어도 하나).
+스키마는 내가 정한 표 세 장이다: classes.csv(클래스 · 의미 · 식별자 짓는 법), properties.csv(클래스마다 속성 · 원자료의 어느 칸 · 자료형 · 필수 · 단위), relations.csv(관계 이름 · 읽는 말 · 시작 · 종료 클래스 · 카디널리티 · 적어도 하나).
 이 파일은 누가 해도 같은 일만 한다: 파일 읽기, 칸 공백 정리, 숫자 · 날짜 읽기, 같은 모델의 설비끼리 다르게 적힌 구성 요소 이름 하나로 맞추기, 단위 환산,
 교체부품 칸의 품번 찾기(괄호 속 품번 · 사내 품번 · 품번 교차표에 하나로 적힌 표기), 원자료 행을 내 스키마 표에 대어 보기, 계약 꼴로 쓰기, 모델에 물어보기.
 무엇을 클래스 · 속성 · 관계로 두고 어떤 자료형 · 필수 · 방향으로 둘지, 무엇을 하나로 보고 무엇을 따로 둘지는 `app/features/`의 빈 틀이 정한다. 빈 틀에 없는 것은 짐작하지 않고 파일 · 행과 함께 멈춘다.
@@ -28,16 +28,17 @@ DERIVED = {'구성 요소': {'다른이름': '같은 모델의 설비끼리 이�
            '부품': {'다른표기': '품번 교차표에서 이 사내 품번을 가리키는 다른 표기(목록)'},
            '물리량': {'물리량': '내 규칙이 묶음에 붙인 이름', '기준단위': '그 묶음의 센서 행이 가장 많이 쓴 단위'}}
 LIST_COLUMNS = ('다른이름', '다른표기')
-# 질문이 관계를 따라가는 방향(시작 → 끝). 모델의 관계가 이 방향과 반대로 저장돼 있으면 그 질문은 아무것도 찾지 못한다.
+# 이 자료로 이을 수 있는 클래스의 짝. 화살표를 어느 쪽에서 긋는지(시작 · 종료 클래스)는 relations.csv가 정하고, 질문은 그은 방향 그대로든 거꾸로든 따라가 찾는다.
 LINKS = {'설비-구성 요소': ('설비', '구성 요소'), '구성 요소-센서': ('구성 요소', '센서'), '센서-물리량': ('센서', '물리량'),
          '구성 요소-부품': ('구성 요소', '부품'), '구성 요소-실물': ('구성 요소', '실물')}
 OPTIONAL_LINKS = ('구성 요소-실물',)   # 구성 요소 자리와 그 실물을 나눌 때만 적는 관계
-CARDINALITY = ('1:1', '1:N', 'N:1', 'N:M')   # 시작 쪽 수:끝 쪽 수 — 「1」 쪽은 많아야 하나
+CARDINALITY = ('1:1', '1:N', 'N:1', 'N:M')   # 시작 쪽 수:종료 쪽 수 — 「1」 쪽은 많아야 하나
+LEAST = {'없음': (), '시작마다': ('시작',), '종료마다': ('종료',), '양쪽': ('시작', '종료')}   # 적어도 하나: 어느 쪽 인스턴스마다 이 관계가 하나는 있어야 하는가
 TYPES = {'글자': 'string', '수': 'number', '날짜': 'date', '목록': 'list'}
 YES_NO = {'예': True, '아니오': False}
 UNIT_MODES = ('기준 단위', '적힌 그대로')   # 센서의 수 속성: 그 센서가 재는 물리량의 기준 단위로 바꿔 담을지, 원자료에 적힌 단위 그대로 담을지
 # 결정 지점(app/features/decisions.csv에 지점 이름이 미리 있는 줄)과 그것을 쓰는 단계. 그 단계를 실행할 때 고른_것 · 근거가 비었거나 미결이면 그 줄을 짚고 멈춘다.
-DECISIONS = {'이름': ['구성 요소 자리와 그 실물'], '센서': ['같은 물리량의 범위'], '부품': []}
+DECISIONS = {'이름': ['구성 요소 자리와 그 실물'], '센서': ['같은 물리량의 범위'], '부품': ['구성 요소 자리와 그 실물', '같은 물리량의 범위']}
 # 단위 환산(일반 지식): (원래 단위, 기준 단위) → 곱할 값
 FACTOR = {('W', 'kW'): 0.001, ('kW', 'W'): 1000, ('kPa', 'bar'): 0.01, ('bar', 'kPa'): 100, ('MPa', 'bar'): 10, ('bar', 'MPa'): 0.1,
           ('l/min', 'L/min'): 1, ('L/min', 'l/min'): 1, ('lpm', 'L/min'): 1, ('°C', '℃'): 1, ('℃', '°C'): 1}
@@ -48,10 +49,46 @@ class Stop(Exception):
     """빈 틀에 없는 것 · 계약 어긋남. 글에 파일 · 행이 있다."""
 
 
+class Blank(Stop):
+    """빈 틀이 아직 채워지지 않음."""
+
+
+def josa(word, pair):
+    """받침에 맞는 조사. pair = '이/가' · '을/를' · '은/는' · '과/와' — 앞이 받침 있는 말 뒤에 붙는 꼴."""
+    with_final, without = pair.split('/')
+    last = str(word).rstrip(')」 ')[-1:]
+    if not ('가' <= last <= '힣'):
+        return f'{word}{with_final}({without})'
+    return f'{word}{with_final if (ord(last) - 0xAC00) % 28 else without}'
+
+
+def text_of(path):
+    """UTF-8로 저장된 글만 읽는다. 다른 글자표로 저장됐거나 한글이 물음표로 깨진 채 저장된 파일은 조용히 바꿔 읽지 않고 그 줄을 짚고 멈춘다."""
+    data = Path(path).read_bytes()
+    try:
+        text = data.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        bad = next(n for n, x in enumerate(data.split(b'\n'), 1) if not _utf8(x))
+        raise Stop(f'{rel(path)}:{bad}: UTF-8로 저장되지 않은 글자가 있습니다 — Codex에게 「이 파일을 UTF-8로 다시 저장해 줘」라고 부탁합니다(한글이 다른 글자표로 저장됐습니다).')
+    mine = OUT in Path(path).resolve().parents
+    for n, x in enumerate(text.splitlines(), 1):
+        if '\ufffd' in x or (mine and re.search(r'\?{2,}', x)):
+            raise Stop(f'{rel(path)}:{n}: 한글이 「?」로 깨진 채 저장됐습니다 — Codex에게 「이 줄을 UTF-8로 다시 써 줘」라고 부탁합니다.')
+    return text
+
+
+def _utf8(data):
+    try:
+        data.decode('utf-8')
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
 # ───────────── 읽기 ─────────────
 def table(path):
     """CSV → [(편집기 줄 번호, dict)]. 첫머리 # 줄은 건너뛰고(줄 번호는 그대로 센다) 칸 앞뒤 공백을 정리한다."""
-    lines = Path(path).read_text(encoding='utf-8-sig').splitlines()
+    lines = text_of(path).splitlines()
     head = next((i for i, x in enumerate(lines) if x.strip() and not x.lstrip().startswith('#')), None)
     if head is None:
         raise Stop(f'{rel(path)}: 열 이름 줄이 없습니다.')
@@ -61,7 +98,7 @@ def table(path):
     for offset, cells in enumerate(reader, head + 2):
         if not any(c.strip() for c in cells):
             continue
-        # 칸 수가 열 이름과 다른 줄은 받지 않는다 — 넘친 칸을 끝 칸에 이어 붙이면, 앞 칸에 쉼표가 든 줄은 값이 한 칸씩 밀린 채 조용히 지나간다(리허설 v32)
+        # 칸 수가 열 이름과 다른 줄은 받지 않는다 — 넘친 칸을 끝 칸에 이어 붙이면, 앞 칸에 쉼표가 든 줄은 값이 한 칸씩 밀린 채 조용히 지나간다
         if len(cells) > len(cols):
             raise Stop(f'{rel(path)}:{offset}: 칸 수({len(cells)})가 열 이름({len(cols)}칸)보다 많습니다 — 값 안에 쉼표가 있으면 그 값을 큰따옴표로 감싸거나 쉼표를 「 · 」로 바꿉니다.')
         if len(cells) < len(cols):
@@ -73,7 +110,7 @@ def table(path):
 def need(path, columns):
     rows = table(path)
     have = list(rows[0][1]) if rows else [c.strip() for c in next(csv.reader(io.StringIO(
-        next(x for x in Path(path).read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')))))]
+        next(x for x in text_of(path).splitlines() if x.strip() and not x.lstrip().startswith('#')))))]
     miss = [c for c in columns if c not in have]
     if miss:
         raise Stop(f'{rel(path)}: 열 {", ".join(miss)}이 없습니다(받은 빈 틀의 열 이름을 바꾸지 않습니다).')
@@ -95,15 +132,22 @@ def number(text):
 def rules(name):
     """app/features/<name>.py(내가 쓴 판단 함수)를 불러온다."""
     path = OUT / f'{name}.py'
+    text_of(path)
     spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    try:
+        spec.loader.exec_module(mod)
+    except SyntaxError as e:
+        raise Stop(f'{rel(path)}:{e.lineno}: 파이썬 문법에 맞지 않는 줄입니다 — {e.msg}. 그 줄을 Codex에게 보여 주고 까닭을 묻습니다.')
     return mod
 
 
 def ask(mod, fn, want, *args):
     """판단 함수 하나를 부르고 돌려준 값의 꼴을 본다(want = bool · str). 꼴이 다르면 함수 이름과 받은 값으로 멈춘다."""
-    value = getattr(mod, fn)(*args)
+    try:
+        value = getattr(mod, fn)(*args)
+    except NotImplementedError:
+        raise Blank(f'app/features/{mod.__name__}.py의 {fn} 함수 — 같은 물리량을 가르는 규칙을 채운 뒤 다시 실행합니다.')
     if want is bool and value not in (True, False):
         raise Stop(f'app/features/{mod.__name__}.py {fn}: True 또는 False를 돌려줘야 합니다(돌려준 값 {value!r}).')
     if want is str and not (isinstance(value, str) and value.strip()):
@@ -145,9 +189,8 @@ def resolve_cell(cell, parts, cross):
 
 # ───────────── 빈 틀(내 스키마 표 세 장과 결정) ─────────────
 def decided(stage):
-    """이 단계(와 그 앞 단계)가 쓰는 결정이 app/features/decisions.csv에 정해졌는가 — 고른 것이 맞는지는 보지 않는다(그것은 학생의 판단)."""
-    order = list(DECISIONS)
-    need_ = [p for s in order[:order.index(stage) + 1] for p in DECISIONS[s]]
+    """이 단계가 쓰는 결정이 app/features/decisions.csv에 정해졌는가 — 고른 것이 맞는지는 보지 않는다(그것은 학생의 판단). 모델 파일을 쓰는 단계(부품)는 두 결정을 다 본다."""
+    need_ = DECISIONS[stage]
     rows = {r['지점']: (line, r) for line, r in need(OUT / 'decisions.csv', ['지점', '고른_것', '근거', '바뀌는_답'])}
     for point in need_:
         if point not in rows:
@@ -156,11 +199,13 @@ def decided(stage):
         if not r['고른_것'] or r['고른_것'] == '미결' or not r['근거']:
             raise Stop(f'app/features/decisions.csv:{line}: 「{point}」의 고른_것 · 근거가 아직 비어 있습니다(미결 포함). 이 단계는 이 결정대로 모델을 만듭니다 — '
                        '선택지와 그 결과를 따져 보고 내가 고른 것과 근거를 적은 뒤 다시 실행합니다.')
+        if not re.search(r'[^\s:]+:\d+', r['근거']):
+            raise Stop(f'app/features/decisions.csv:{line}: 「{point}」의 근거에 파일:줄이 없습니다 — 그렇게 고른 내 이유 뒤에, 정할 때 열어 본 원문 줄을 파일:줄 꼴로 함께 적습니다.')
 
 
 def header(name):
     """원자료 표의 열 이름."""
-    text = (DATA / name).read_text(encoding='utf-8-sig')
+    text = text_of(DATA / name)
     return [c.strip() for c in next(csv.reader(io.StringIO(text.splitlines()[0])))]
 
 
@@ -177,7 +222,7 @@ def read_classes():
         if k not in KINDS + OPTIONAL_KINDS:
             raise Stop(f'app/features/classes.csv:{line}: 클래스 「{k}」 — 이 자료로 만들 수 있는 클래스는 {" · ".join(KINDS + OPTIONAL_KINDS)}입니다(실물은 구성 요소 자리와 그 실물을 나눌 때만).')
         if k in out:
-            raise Stop(f'app/features/classes.csv:{out[k]["줄"]} · {line}: 클래스 「{k}」가 두 줄입니다 — 클래스마다 한 줄만 씁니다.')
+            raise Stop(f'app/features/classes.csv:{out[k]["줄"]} · {line}: 클래스 「{k}」의 줄이 둘입니다 — 클래스마다 한 줄만 씁니다.')
         if not r['의미']:
             raise Stop(f'app/features/classes.csv:{line}: {k}의 의미 칸이 비었습니다 — 무엇을 이 클래스의 인스턴스 하나로 세는지 한 문장으로 적습니다.')
         can = [c for c in columns(k) if c not in LIST_COLUMNS and c != '기준단위']
@@ -223,24 +268,26 @@ def read_properties(classes):
 
 
 def read_relations(classes):
-    """relations.csv → {연결: (관계 이름, 시작 클래스, 끝 클래스, 카디널리티, 줄, 끝이 적어도 하나)}. 연결 = 두 클래스의 짝(LINKS의 이름)."""
+    """relations.csv → {연결: (관계 이름, 시작 클래스, 종료 클래스, 카디널리티, 줄, 적어도 하나인 쪽들, 읽는 말)}. 연결 = 두 클래스의 짝(LINKS의 이름)."""
     pair = {frozenset(v): k for k, v in LINKS.items()}
     links = {}
-    for line, r in need(OUT / 'relations.csv', ['관계_이름', '시작', '끝', '카디널리티', '끝이_적어도_하나', '근거']):
+    for line, r in need(OUT / 'relations.csv', ['관계_이름', '읽는_말', '시작', '종료', '카디널리티', '적어도_하나', '근거']):
         where = f'app/features/relations.csv:{line}'
         if not re.fullmatch(r'[A-Z][A-Z0-9_]*', r['관계_이름']):
             raise Stop(f'{where}: 관계_이름 「{r["관계_이름"]}」 — 영어 대문자와 밑줄로 씁니다.')
-        k = pair.get(frozenset((r['시작'], r['끝'])))
-        if k is None or r['시작'] == r['끝']:
-            raise Stop(f'{where}: 시작 「{r["시작"]}」 · 끝 「{r["끝"]}」 — 이 자료로 이을 수 있는 짝은 {" / ".join(" · ".join(v) for v in LINKS.values())}입니다.')
+        if not r['읽는_말']:
+            raise Stop(f'{where}: 읽는_말 칸이 비었습니다 — 화살표를 「시작 → (읽는 말) → 종료」로 읽을 때의 우리말을 적습니다.')
+        k = pair.get(frozenset((r['시작'], r['종료'])))
+        if k is None or r['시작'] == r['종료']:
+            raise Stop(f'{where}: 시작 「{r["시작"]}」 · 종료 「{r["종료"]}」 — 이 자료로 이을 수 있는 짝은 {" / ".join(" · ".join(v) for v in LINKS.values())}입니다.')
         if k in links:
-            raise Stop(f'app/features/relations.csv:{links[k][4]} · {line}: {r["시작"]}와 {r["끝"]} 사이의 관계가 두 줄입니다 — 한 짝에 관계 하나를 씁니다.')
+            raise Stop(f'app/features/relations.csv:{links[k][4]} · {line}: {josa(r["시작"], "과/와")} {r["종료"]} 사이의 관계가 두 줄입니다 — 한 짝에 관계 하나를 씁니다.')
         card = r['카디널리티'].replace(' ', '').upper()
         if card not in CARDINALITY:
-            raise Stop(f'{where}: 카디널리티 「{r["카디널리티"]}」 — {" · ".join(CARDINALITY)} 가운데 하나입니다(시작 쪽 수:끝 쪽 수).')
-        if r['끝이_적어도_하나'] not in YES_NO:
-            raise Stop(f'{where}: 끝이_적어도_하나 「{r["끝이_적어도_하나"]}」 — 예 · 아니오 가운데 하나입니다(예 = 시작 쪽 인스턴스마다 이 관계가 하나는 있어야 함).')
-        links[k] = (r['관계_이름'], r['시작'], r['끝'], card, line, YES_NO[r['끝이_적어도_하나']])
+            raise Stop(f'{where}: 카디널리티 「{r["카디널리티"]}」 — {" · ".join(CARDINALITY)} 가운데 하나입니다(시작 쪽 수:종료 쪽 수).')
+        if r['적어도_하나'] not in LEAST:
+            raise Stop(f'{where}: 적어도_하나 「{r["적어도_하나"]}」 — {" · ".join(LEAST)} 가운데 하나입니다(시작마다 = 시작 클래스의 인스턴스마다 이 관계가 하나는 있어야 함, 종료마다 = 종료 클래스의 인스턴스마다).')
+        links[k] = (r['관계_이름'], r['시작'], r['종료'], card, line, LEAST[r['적어도_하나']], r['읽는_말'])
     miss = [k for k in LINKS if k not in links and k not in OPTIONAL_LINKS]
     if miss:
         raise Stop('app/features/relations.csv: 아직 적지 않은 관계 — ' + ', '.join(' · '.join(LINKS[k]) for k in miss))
@@ -253,6 +300,23 @@ def read_relations(classes):
         if len(lines) > 1:
             raise Stop(f'app/features/relations.csv:{" · ".join(map(str, lines))}: 관계 이름 「{name}」을 두 줄에 썼습니다 — 관계마다 다른 이름을 씁니다.')
     return links
+
+
+def relation_examples():
+    """관계마다 문장으로 읽어 볼 실제 한 쌍을 원자료에서 고른다(그 표의 첫 줄) — {연결: (LINKS의 앞 클래스 쪽 글, 뒤 클래스 쪽 글)}."""
+    src = raw()
+    comp = src['components.csv']
+    sensor = src['sensors.csv'][0][1]
+    part = next((r for _, r in comp if r['교체부품']), None)
+    unit = next((r for _, r in comp if r['일련번호']), None)
+    out = {'설비-구성 요소': (comp[0][1]['설비코드'], comp[0][1]['구성요소']),
+           '구성 요소-센서': (f"{sensor['설비코드']} {sensor['붙은곳']}", f"{sensor['센서명']}({sensor['태그']})"),
+           '센서-물리량': (f"{sensor['센서명']}({sensor['태그']})", sensor['재는것'])}
+    if part:
+        out['구성 요소-부품'] = (f"{part['설비코드']} {part['구성요소']}", part['교체부품'])
+    if unit:
+        out['구성 요소-실물'] = (f"{unit['설비코드']} {unit['구성요소']}", unit['일련번호'])
+    return out
 
 
 def design():
@@ -399,7 +463,7 @@ def instances(kind, src):
 
 def classes_view():
     """내 식별자 틀로 원자료 행마다 식별자를 지었을 때 — 서로 다른 식별자 수, 겹치는 행, 틀에 쓴 칸이 빈 행(이름은 아직 원자료 그대로).
-    돌려주는 것: (클래스, {클래스: {'행', '개수', '겹침', '빈칸', '파일'}}, 센서 목록의 재는것 칸에 적힌 서로 다른 이름들)."""
+    돌려주는 것: (클래스, {클래스: {'행', '개수', '겹침', '빈칸', '파일'}}, 센서 목록의 재는것 칸에 적힌 이름마다 [(이름, 그 이름으로 적힌 센서 행 수)])."""
     classes = read_classes()
     src = raw()
     out = {}
@@ -413,7 +477,8 @@ def classes_view():
             except Stop:
                 blank.append(line)
         out[kind] = {'행': len(rows), '개수': len(seen), '겹침': {k: v for k, v in seen.items() if len(v) > 1}, '빈칸': blank, '파일': TABLE[kind]}
-    return classes, out, list(dict.fromkeys(r['재는것'] for _, r in src['sensors.csv']))
+    written = [r['재는것'] for _, r in src['sensors.csv']]
+    return classes, out, [(name, written.count(name)) for name in dict.fromkeys(written)]
 
 
 def properties_view():
@@ -438,14 +503,15 @@ def properties_view():
 
 def relations_view():
     classes = read_classes()
-    return classes, read_relations(classes)
+    return classes, read_relations(classes), relation_examples()
 
 
 def check_cardinality(links, rels, where_of):
     """relations.csv에 적은 카디널리티를 지금까지 만든 연결과 견준다. 「1」 쪽에 둘 이상 이어진 대상이 있으면 그 relations.csv 줄과 원자료 줄을 짚고 멈춘다.
-    돌려주는 것: 화면용 [(연결, 관계, 적은 것, 시작 하나에 이어진 끝 최대 수, 끝 하나에 이어진 시작 최대 수, 견줌)]."""
+    카디널리티는 이어질 수 있는 개수를 정해 둔 것이라, 지금 자료의 연결이 그보다 적은 것은 어긋남이 아니다.
+    돌려주는 것: 화면용 [(연결, 관계, 적은 것, 시작 하나에 이어진 종료 최대 수, 종료 하나에 이어진 시작 최대 수, 견줌)]."""
     shown = []
-    for link, (name, _, _, card, line, _) in links.items():
+    for link, (name, _, _, card, line, *_) in links.items():
         out_n, in_n = {}, {}
         for i, r in enumerate(rels):
             if r['type'] == name:
@@ -455,7 +521,7 @@ def check_cardinality(links, rels, where_of):
             continue
         most_out, most_in = max(len(v) for v in out_n.values()), max(len(v) for v in in_n.values())
         start_side, end_side = card.split(':')
-        for side, count, word in [(end_side, out_n, '시작 하나에 끝이'), (start_side, in_n, '끝 하나에 시작이')]:
+        for side, count, word in [(end_side, out_n, '시작 하나에 종료가'), (start_side, in_n, '종료 하나에 시작이')]:
             if side == '1':
                 over = [(x, v) for x, v in count.items() if len(v) > 1]
                 if over:
@@ -463,8 +529,7 @@ def check_cardinality(links, rels, where_of):
                     raise Stop(f'app/features/relations.csv:{line}: {name} 카디널리티 {card} — {word} 많아야 하나인데, {x}에 {len(v)}개가 이어집니다'
                                f'({" · ".join(where_of[i] for i in v[:4])}). 원자료가 맞으면 카디널리티를, 연결이 잘못이면 그 판단을 고칩니다'
                                f'(이렇게 걸린 대상 {len(over)}개).')
-        loose = (start_side != '1' and most_in == 1) or (end_side != '1' and most_out == 1)
-        shown.append((link, name, card, most_out, most_in, '적은 것보다 실제 연결이 좁음(N 쪽에 하나뿐)' if loose else '맞음'))
+        shown.append((link, name, card, most_out, most_in, '정한 범위 안'))
     return shown
 
 
@@ -508,6 +573,7 @@ def build(stage, write=True):
         nodes.append({'labels': [LABEL[kind]], 'props': out})
 
     def rel_(link, a, b, where, **more):
+        """a = LINKS의 앞 클래스 쪽 대상, b = 뒤 클래스 쪽 대상. 화살표는 relations.csv가 정한 시작 쪽에서 긋는다."""
         name, start, *_ = links[link]
         x, y = (a, b) if start == LINKS[link][0] else (b, a)
         rels.append({'type': name, 'a': x, 'b': y, 'props': {k: v for k, v in more.items() if v not in (None, '')}})
@@ -635,11 +701,12 @@ def build(stage, write=True):
         rel_('구성 요소-부품', cid, part_id[pid], f'components.csv:{line}', source_text=cell)
         linked.append((f'components.csv:{line}', code, cname, cell, pid, how))
     info['카디널리티'] = check_cardinality(links, rels, where_of)
-    for link, (name, start, end, _, line, least) in links.items():      # 「끝이 적어도 하나」로 정한 관계가 하나도 없는 시작 쪽 대상
-        if least:
-            has = {r['a'] for r in rels if r['type'] == name}
+    for link, (name, start, end, _, line, least, _) in links.items():      # 「적어도 하나」로 정한 쪽에서 이 관계가 하나도 없는 대상
+        for side in least:
+            mine, other, key = (start, end, 'a') if side == '시작' else (end, start, 'b')
+            has = {r[key] for r in rels if r['type'] == name}
             findings += [{'종류': '「적어도 하나」인데 관계가 없는 대상', '표': f'app/features/relations.csv:{line}', '원자료': node_at[i], '대상': i,
-                          '글': f'{name}: {start}마다 {end}가 적어도 하나라고 정했는데 이 {start}에는 하나도 이어지지 않았습니다'} for i, l in index.items() if l == LABEL[start] and i not in has]
+                          '글': f'{name}: {mine}마다 {josa(other, "이/가")} 적어도 하나라고 정했는데 이 {mine}에는 하나도 이어지지 않았습니다'} for i, l in index.items() if l == LABEL[mine] and i not in has]
     info.update(이은_부품=linked, 못_찾은_칸=lost, 빈_칸=blank, 다른_표기=codes, unused=[k for k in rows_done if k not in used_rows])
     model = make_model(classes, props, links, nodes, rels)
     if write:
@@ -659,8 +726,8 @@ def make_model(classes, props, links, nodes, rels):
             spec['source'][p['이름']] = p['칸']
         schema_classes[LABEL[kind]] = spec
     relations, names = {}, {}
-    for link, (name, start, end, card, _, least) in links.items():
-        relations[name] = {'from': LABEL[start], 'to': LABEL[end], 'cardinality': card, 'at_least_one': least}
+    for link, (name, start, end, card, _, least, reads) in links.items():
+        relations[name] = {'from': LABEL[start], 'to': LABEL[end], 'reads': reads, 'cardinality': card, 'at_least_one': [{'시작': 'from', '종료': 'to'}[s] for s in least]}
         if link == '구성 요소-부품':
             relations[name]['properties'] = {'source_text': 'string'}
         if link == '구성 요소-실물':
@@ -687,12 +754,12 @@ ASK_FORM = ('질문 4의 물을_값은 「클래스.속성 조건」 꼴입니�
 def answers(asks, items=None):
     """asks = [(질문, 물을 값)] → [{'질문','물을_값','항목','답'}]. 물을 값과 답은 현장이 쓰는 값(설비 코드 · 사내 품번 · 다른 표기)이다 —
     식별자와 속성 이름을 어떻게 지었든, 그 원자료 칸을 담은 속성(스키마의 source)으로 찾고 그 속성으로 답한다. 그 칸을 담은 속성이 스키마에 없으면 「답할 수 없음」이다.
-    관계는 질문이 읽는 방향(LINKS의 시작 → 끝)으로만 따라간다. 모델의 관계가 반대 방향으로 저장돼 있으면 그 걸음에서 아무것도 찾지 못한다.
+    관계는 화살표를 어느 쪽에서 그었든 따라간다(그은 방향 그대로, 또는 거꾸로) — 찾을 때는 거꾸로 따라가도 같은 연결이다.
     질문 1 = 설비 코드 → 구성 요소마다 붙은 센서 태그(항목 = 구성 요소 이름)와 그 자리에 달린 실물의 일련번호(항목 = 「구성 요소 이름 실물」 —
     실물을 따로 둔 모델이면 「일련번호(지금)」 · 「일련번호(지난)」, 아니면 구성 요소의 일련번호 속성 하나). 질문 1 줄에는 그 구성 요소의 다른 이름(원자료 이름)도 함께 돌려준다.
     질문 2 = 물리량 이름 → 그 물리량을 재는 센서(설비코드:태그, 항목 빈칸)와 센서마다 값(항목 = 설비코드:태그, 답 = 단위 · 정상값 · 한계 · 한계구분).
     질문 3 = 품번 · 표기 → 찾은 사내 품번(항목)과 그 부품을 쓰는 설비 코드. 없으면 답 「없음」.
-    질문 4 = 내가 더한 질문 — 클래스의 속성으로 거르거나 견준다(ASK_FORM). items = {(질문, 물을 값): [답으로 볼 속성 이름]}."""
+    질문 4 = 내가 더한 질문 — 클래스의 속성으로 거르거나 견준다(ASK_FORM). items = {(질문, 물을 값): [(답으로 볼 속성 이름, 기대 답 표의 줄)]}."""
     schema, graph = load_model()
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
     props = {n['props']['id']: n['props'] for n in graph['nodes']}
@@ -700,27 +767,21 @@ def answers(asks, items=None):
     for r in graph['rels']:
         by_out.setdefault((r['type'], r['a']), []).append(r)
         by_in.setdefault((r['type'], r['b']), []).append(r)
-    def direction(link):
-        """(그 연결의 관계 이름 — 모델의 방향이 질문이 읽는 방향과 같을 때만, 반대로 저장됐는가)."""
+    def across(i, link, toward):
+        """대상 i에서 그 연결을 따라 toward 클래스 쪽으로 이어진 [(대상, 관계)]. 화살표를 toward 쪽으로 그었으면 그대로, 반대로 그었으면 거꾸로 따라간다."""
         name = schema.get('links', {}).get(link)
         spec = schema['relations'].get(name) if name else None
         if not spec:
-            return None, False
-        same = (spec.get('from'), spec.get('to')) == tuple(LABEL[x] for x in LINKS[link])
-        return (name if same else None), not same
-
-    def named(link):
-        return direction(link)[0]
-
-    def turned(path):
-        """질문이 지나는 연결 가운데 모델에 반대 방향으로 저장된 첫 연결."""
-        return next((link for link in path if direction(link)[1]), None)
+            return []
+        if spec.get('to') == LABEL[toward]:
+            return sorted(((r['b'], r) for r in by_out.get((name, i), [])), key=lambda x: x[0])
+        return sorted(((r['a'], r) for r in by_in.get((name, i), [])), key=lambda x: x[0])
 
     def ends(i, link):
-        return sorted(r['b'] for r in by_out.get((named(link), i), []))
+        return [x for x, _ in across(i, link, LINKS[link][1])]
 
     def starts(i, link):
-        return sorted(r['a'] for r in by_in.get((named(link), i), []))
+        return [x for x, _ in across(i, link, LINKS[link][0])]
 
     def key(kind, column):
         """그 클래스에서 그 원자료 칸을 담은 속성 이름. 없으면 None."""
@@ -729,10 +790,6 @@ def answers(asks, items=None):
 
     def lack(kind, column):
         return f'답할 수 없음({kind} 클래스에 「{column}」 칸을 담은 속성이 없음)'
-
-    def blocked(link):
-        a, b = LINKS[link]
-        return f'찾지 못함(질문은 {a} → {b} 방향으로 따라가는데, 모델의 관계 {schema["links"][link]}은 {b} → {a}로 저장됨)'
 
     def of(kind):
         return [i for i, l in label.items() if l == LABEL[kind]]
@@ -758,10 +815,6 @@ def answers(asks, items=None):
             if not hit:
                 row('', '없음')
                 continue
-            bad = turned(('설비-구성 요소', '구성 요소-센서', '구성 요소-실물'))
-            if bad:
-                row('', blocked(bad))
-                continue
             split = '구성 요소-실물' in schema.get('links', {})
             for c in ends(hit[0], '설비-구성 요소'):
                 other = list(props[c].get(key('구성 요소', '다른이름') or '', []))
@@ -770,7 +823,7 @@ def answers(asks, items=None):
                     row(props[c].get(cname, c), ' · '.join(tags), 다른_이름=other)
                 serial = key('실물' if split else '구성 요소', '일련번호')
                 if split:
-                    held = sorted((not r['props'].get('current'), props[r['b']].get(serial or '', '?')) for r in by_out.get((named('구성 요소-실물'), c), []))
+                    held = sorted((not r['props'].get('current'), props[u].get(serial or '', '?')) for u, r in across(c, '구성 요소-실물', '실물'))
                     serials = ' · '.join(f'{s}({"지난" if past else "지금"})' for past, s in held) if serial else (lack('실물', '일련번호') if held else '')
                 else:
                     serials = props[c].get(serial, '') if serial else ''
@@ -785,10 +838,6 @@ def answers(asks, items=None):
             hit = [i for i in of('물리량') if props[i].get(qname) == value]
             if not hit:
                 row('', '없음')
-                continue
-            bad = turned(('센서-물리량', '구성 요소-센서', '설비-구성 요소'))
-            if bad:
-                row('', blocked(bad))
                 continue
             found = []
             for s in starts(hit[0], '센서-물리량'):
@@ -808,31 +857,28 @@ def answers(asks, items=None):
                 row('', '없음' if other or any(props[i].get(no) == value for i in of('부품')) else '없음(부품 클래스에 「다른표기」 칸을 담은 속성이 없어 사내 품번으로만 찾음)')
                 continue
             for pid in ids:
-                bad = turned(('구성 요소-부품', '설비-구성 요소'))
-                if bad:
-                    row(props[pid].get(no, pid), blocked(bad))
-                    continue
                 assets = sorted({props[a].get(code, a) for c in starts(pid, '구성 요소-부품') for a in starts(c, '설비-구성 요소')})
                 row(props[pid].get(no, pid), ' · '.join(assets) or '쓰는 설비 없음')
         elif q == '4':
-            for item in (items or {}).get((q, value)) or ['']:
-                row(item, filtered(schema, graph, value, item))
+            for item, line in (items or {}).get((q, value)) or [('', '')]:
+                row(item, filtered(schema, graph, value, item, f'app/features/expected.csv:{line}' if line else 'app/features/expected.csv'))
         else:
             raise Stop(f'app/features/expected.csv: 질문 「{q}」 — 질문은 1 · 2 · 3과 내가 더한 4입니다.')
     return out
 
 
-def filtered(schema, graph, asked, item):
-    """질문 4 — 「클래스.속성 조건」들로 그 클래스의 인스턴스를 거르고, 남은 인스턴스의 item 속성 값을 돌려준다. 스키마에 없는 속성 · 견줄 수 없는 자료형은 그 까닭을 답으로 돌려준다."""
+def filtered(schema, graph, asked, item, where='app/features/expected.csv'):
+    """질문 4 — 「클래스.속성 조건」들로 그 클래스의 인스턴스를 거르고, 남은 인스턴스의 item 속성 값을 돌려준다. 스키마에 없는 속성 · 견줄 수 없는 자료형은 그 까닭을 답으로 돌려준다.
+    where = 기대 답 표의 그 줄(파일:줄) — 꼴을 읽지 못하면 그 줄을 짚고 멈춘다."""
     conds, kinds = [], set()
     for piece in asked.split('&'):
-        m = re.fullmatch(r'\s*(.+?)\.([a-z][a-z0-9_]*)\s*(' + '|'.join(re.escape(f) for f in FILTERS) + r')\s*(.*?)\s*', piece)
+        m = re.fullmatch(r'\s*(.+?)\.(\S+?)\s*(' + '|'.join(re.escape(f) for f in FILTERS) + r')\s*(.*?)\s*', piece)
         if not m or m.group(1) not in LABEL or (m.group(3) in ('=', '>', '<')) != bool(m.group(4)):
-            raise Stop(f'app/features/expected.csv: 질문 4의 물을_값 「{asked}」을 읽지 못했습니다 — {ASK_FORM}')
+            raise Stop(f'{where}: 질문 4의 물을_값 「{asked}」을 읽지 못했습니다 — {ASK_FORM}')
         conds.append(m.groups())
         kinds.add(m.group(1))
-    if len(kinds) != 1 or not re.fullmatch(r'[a-z][a-z0-9_]*', item or ''):
-        raise Stop(f'app/features/expected.csv: 질문 4 「{asked}」 · 항목 「{item}」을 읽지 못했습니다 — {ASK_FORM}')
+    if len(kinds) != 1 or not (item or '').strip():
+        raise Stop(f'{where}: 질문 4 「{asked}」 · 항목 「{item}」을 읽지 못했습니다 — {ASK_FORM}')
     kind = kinds.pop()
     spec = schema['classes'].get(LABEL[kind])
     if spec is None:
@@ -840,7 +886,8 @@ def filtered(schema, graph, asked, item):
     types = {'id': 'string', **spec.get('required', {}), **spec.get('optional', {})}
     for name in [c[1] for c in conds] + [item]:
         if name not in types:
-            return f'답할 수 없음({kind} 클래스에 속성 「{name}」이 없음)'
+            column = name in spec.get('source', {}).values() or not re.fullmatch(r'[a-z][a-z0-9_]*', name)      # 속성 이름 자리에 원자료 칸 이름을 적은 줄
+            return f'답할 수 없음({kind} 클래스에 속성 「{name}」이 없음' + (' — 물을_값과 항목에는 원자료 칸 이름이 아니라 속성 표에 적은 속성 이름을 씁니다' if column else '') + ')'
     left = [n['props'] for n in graph['nodes'] if n['labels'][0] == LABEL[kind]]
     for _, name, how, want in conds:
         ordered = types[name] in ('number', 'date')
@@ -856,7 +903,7 @@ def filtered(schema, graph, asked, item):
         elif how in ('>', '<'):
             limit = number(want) if types[name] == 'number' else want
             if limit is None:
-                raise Stop(f'app/features/expected.csv: 질문 4 「{asked}」 — 수 속성 「{name}」과 견줄 값 「{want}」이 숫자가 아닙니다.')
+                raise Stop(f'{where}: 질문 4 「{asked}」 — 수 속성 「{name}」과 견줄 값 「{want}」이 숫자가 아닙니다.')
             left = [p for p in have if (p[name] > limit if how == '>' else p[name] < limit)]
         else:
             if have:

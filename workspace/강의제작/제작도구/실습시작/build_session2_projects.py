@@ -24,7 +24,14 @@ import session2_graph_project as GP
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
 # 그래프 랩 v33-lab(2026-11-18): 장난감 시험 two_turn에서 AI가 「다 해 줘」에 기능 파일 둘을 한 번에 고치고 update.cypher에 불용 설비 처리(정할 지점)를 학생 선택 없이 써 넣어, 랩별 경계 두 줄을 더함(GRAPH_RULE). 설계 랩은 v32-lab 그대로다.
 # v34-lab(2026-11-18): 학생 역 리허설(판정/리허설_i2v32_ontology.md · 리허설_i2v33_graph.md)의 막힐 자리 — 기대 답 틀의 칸 뜻(기준 단위 · 질문 3 항목), 가이드 문장 여덟 곳, 칸 수가 다른 CSV 줄을 파일:줄로 짚고 멈춤.
-VERSIONS = {'ontology-lab': 'v58-lab', 'graph-lab': 'v58-lab'}
+VERSIONS = {'ontology-lab': 'v59-lab', 'graph-lab': 'v59-lab'}
+# v59-lab(두 랩) — 2026-11-27, v58 독립 검토 두 건(작업 폴더 판정/검토_랩_설계_v58.json · 검토_랩_그래프_v58.json)의 지적 고침(실행 기록 판정/랩고침_실행기록_v59.md):
+#   설계 랩 — 스키마 표 세 장도 학생이 고른다(가이드 04 · 05단계, AGENTS.md 랩별 경계가 표 이름으로 짚음). 관계는 그은 방향 그대로든 거꾸로든 따라가 찾고(1회차 「찾을 때는 거꾸로 따라가도 된다」),
+#   방향은 관계 표의 「읽는_말」로 원자료 한 쌍을 문장으로 읽어 본다. 칸 이름을 이론대로 「시작 · 종료」, 「적어도_하나」는 어느 쪽인지(시작마다 · 종료마다) 적는다.
+#   카디널리티는 이어질 수 있는 개수라 지금 자료보다 넓게 적어도 어긋남이 아니다(참조 답 「쓴다」 = N:M). UTF-8이 아닌 표 · 한글이 깨진 표는 파일:줄로 짚고 멈춘다. 완성본은 둘째 바퀴(질문 4)까지.
+#   그래프 랩 — 제공 모델을 설계 랩 참조 갈래의 출력으로 바꿈(design_model — 두 랩의 모델 꼴 · 식별자가 같다). 수정본 반영은 넣은 직후와 견주고 둘째 실행은 되돌리는 트랜잭션에서, 스키마에 없는 속성 ·
+#   목록에 겹친 값은 멈춤(스키마에 더할 속성은 빈 틀 schema_additions.csv), `python run.py reset` · `changes`, 질문 대조는 「열+열」 짝, 볼_열이 결과에 없으면 그 줄만 견주지 못함,
+#   학생 몫 적재 쿼리 셋은 설비 노드(원자료 표의 줄) · 설비-구성 요소 관계 · 구성 요소-부품 관계, 제공 쿼리는 코드가 모델에서 만들어 output/에 남긴다. 결정은 수정본 반영 바로 앞 단계로.
 # v58-lab(두 랩) — 2026-11-27, 사용자 「랩이 이 수업의 메인 … 장난감이면 안 되고 … 난이도를 내리지 말고 쉽게 이끈다」 · 확정 구성안(작업 폴더 판정/구성안_랩고침.md, 근거 판정/랩검토_설계.md · 랩검토_그래프.md):
 #   설계 랩 — 스키마를 학생이 만든다: 제공 코드에 박혀 있던 클래스의 의미 · 속성 · 자료형 · 필수를 빈 틀 classes.csv · properties.csv로 꺼내고 relations.csv에 「끝이 적어도 하나」를 더했다(design.csv는 없앰).
 #   제공 코드(session2_model_tool)는 그 표대로 원자료를 옮기고, 원자료 행을 표에 대어 본다(필수인데 빈 행 · 자료형에 맞지 않는 값 · 적어도 하나인데 관계가 없는 인스턴스 — 걸릴 수 있는 검증).
@@ -91,6 +98,25 @@ STRICT_NEW = """        if None in row:      # 넘친 칸을 끝 칸에 이어 �
 """
 
 
+READ_OLD = """    data = Path(path).read_bytes()
+    try:
+        return data.decode('utf-8-sig'), 'UTF-8'
+    except UnicodeDecodeError:
+        return data.decode('cp949'), 'CP949'
+"""
+READ_NEW = """    data = Path(path).read_bytes()
+    try:
+        return data.decode('utf-8-sig'), 'UTF-8'
+    except UnicodeDecodeError:      # 다른 글자표로 조용히 바꿔 읽지 않는다 — 그 줄을 짚고 멈춘다
+        for n, line in enumerate(data.split(b'\\n'), 1):
+            try:
+                line.decode('utf-8')
+            except UnicodeDecodeError:
+                raise Stop(f'{rel(path)}:{n}: UTF-8로 저장되지 않은 글자가 있습니다 — Codex에게 「이 파일을 UTF-8로 다시 저장해 줘」라고 부탁합니다(한글이 다른 글자표로 저장됐습니다).')
+        raise
+"""
+
+
 def result_sources(strict=False):
     """제공 결과 화면 코드(그리는 코드의 원본은 result_view.py, 그림 블록은 result_figures.py — 두 반 · 뒤 회차 새 구조 랩의 공용 자리).
     strict = 통합반 2회차 두 랩: 칸 수가 열 이름과 다른 CSV 줄을 파일:줄로 짚고 멈춘다(리허설 v32 — 코딩랩 「함정」의 틀 꼴 멈춤). 실전반 · 3회차 생성기는 기본값을 쓴다."""
@@ -99,6 +125,13 @@ def result_sources(strict=False):
         if utilities.count(STRICT_OLD) != 1:
             raise ValueError('결과 화면 코드의 CSV 읽기 꼴이 바뀌었습니다 — 칸 수 멈춤을 넣을 자리를 다시 봅니다.')
         utilities = utilities.replace(STRICT_OLD, STRICT_NEW)
+        if utilities.count(READ_OLD) != 1:
+            raise ValueError('결과 화면 코드의 파일 읽기 꼴이 바뀌었습니다 — UTF-8 멈춤을 넣을 자리를 다시 봅니다.')
+        utilities = utilities.replace(READ_OLD, READ_NEW)
+        said = '"""(글, 글자 방식). UTF-8(BOM 포함)로 읽고, 안 되면 CP949로 읽는다 — 어느 쪽으로 읽었는지 함께 돌려준다."""'
+        if utilities.count(said) != 1:
+            raise ValueError('결과 화면 코드의 read_text 설명이 바뀌었습니다.')
+        utilities = utilities.replace(said, '"""(글, 글자 방식). UTF-8(BOM 포함)로만 읽는다 — 다른 글자표로 저장된 파일은 그 줄을 짚고 멈춘다."""')
     return utilities, ui
 
 
@@ -114,13 +147,22 @@ NOT_DECIDED = ('- 「권장안대로」 · 「알아서」 · 「다 해 줘」�
                '추천안을 냈더라도 학생이 그 추천을 받아들인다고 말하고 이유를 대야 결정이고, `decisions.csv`의 근거 칸에는 그 이유를 학생의 말로 적는다. '
                '그때까지는 무엇을 정해야 하는지와 선택지 · 각 선택의 결과를 쉬운 말로 다시 묻는다.')
 
+# 한글 파일의 글자표(남은일 「코딩 랩 학생 역 리허설」 ② — Codex가 PowerShell로 읽고 쓰다 한글이 깨졌다). 제공 코드는 UTF-8이 아닌 파일을 파일:줄로 짚고 멈춘다.
+UTF8_RULE = ('- 파일은 모두 UTF-8(BOM 없음)이다. 읽고 쓸 때 글자표를 UTF-8로 밝힌다 — PowerShell로 읽을 때는 `Get-Content -Encoding utf8 <파일>`, '
+             '한글이 든 파일을 `>` · `Out-File` · `Set-Content`로 쓰지 않는다. 읽은 글의 한글이 깨져 보이면 그 내용으로 답하지 말고 UTF-8로 다시 읽는다.')
+
 # 통합반 설계 랩의 랩별 경계 — 이 랩에는 랩 DB가 없고, 판단 함수 파일은 하나다. 표는 가이드가 한 요청에 둘셋을 맞추게 하므로 「요청받은 것만」으로 적는다(검토 지적, 코딩랩 K-6).
+# 스키마 표 세 장도 학생이 고르기 전에는 쓰지 않는다(v58 검토 — 「표 다 채워 줘」에 식별자 · 필수 · 방향 · 카디널리티를 AI가 정했다).
 DESIGN_RULE = (DECISION_RULE.split('\n')[0] + '\n'
                '- 스키마는 `app/features/`의 표 세 장(`classes.csv` · `properties.csv` · `relations.csv`)이고, 판단 함수 파일은 `quantity_rules.py` 하나다. 판단 함수는 요청받았을 때만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. '
                '표(스키마 표 세 장과 `row_rules.csv` · `expected.csv` · `decisions.csv`)는 요청받은 것만 고친다.\n'
+               '- 스키마 표 세 장의 줄은 학생이 고른 뒤에 적는다. 표를 채워 달라는 부탁을 받으면 먼저 그 표에서 정할 것(`classes.csv`: 무엇을 클래스로 둘지 · 식별자를 무엇으로 지을지, '
+               '`properties.csv`: 자료형 · 필수 여부 · 센서 값의 단위를 담는 법, `relations.csv`: 시작과 종료 · 카디널리티 · 적어도 하나)마다 선택지와 각 선택의 결과(그렇게 정하면 걸리는 원자료 줄과 개수), 추천을 보이고, '
+               '학생이 고른 것과 이유를 말한 줄만 적는다(학생이 보고 받아들인다고 말한 줄도 된다). 근거 칸에는 학생이 말한 이유를 적는다. 「알아서 채워 줘」 · 「추천대로 다 해 줘」에는 표를 쓰지 않고 정할 것을 다시 묻는다.\n'
+               '- 스키마 표에 줄을 처음 채울 때는 한 번에 한 장만 쓰고 멈춘다. 학생이 이미 정한 것에 맞춰 여러 표의 줄을 함께 고쳐 달라는 부탁은 그대로 한다.\n'
                '- `expected.csv`의 기대 답은 원자료에서 찾아 적고, 모델이나 결과 화면이 낸 답을 옮겨 적지 않는다. 결과가 기대 답과 다르면 기대 답을 고치기 전에 원인을 원자료 줄로 먼저 설명한다.\n'
                '- 모델은 `python run.py parts`가 `output/schema.json` · `output/graph.json`에 쓴다. 이 두 파일을 손으로 고치지 않는다.\n'
-               + NOT_DECIDED.format(files='`quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `classes.csv` · `properties.csv` · `relations.csv`의 실물 줄'))
+               + NOT_DECIDED.format(files='`quantity_rules.py`, `row_rules.csv`의 떼어 낸 펌프 줄, `classes.csv` · `properties.csv` · `relations.csv`의 실물 줄') + '\n' + UTF8_RULE)
 
 
 # 리허설 07 막힘: Codex 샌드박스는 랩 DB(Docker)에 닿지 못해 AI가 실행을 시도하다 실패했다. 그래프 랩은 랩 DB 명령을 학생 터미널에 둔다.
@@ -134,9 +176,10 @@ GRAPH_RULE = (GRAPH_DECISION_RULE + '\n'
               '- `app/features/update.cypher`에서 불용 설비와 수정본의 「삭제」 줄(목록에서 빠진 센서)을 어떻게 할지는 `decisions.csv`의 「불용 결정 설비」 · 「목록에서 빠진 센서」 줄을 학생이 정한 뒤에만 쓴다. '
               '정하기 전에는 수정본의 다른 줄만 반영하고 그 처리는 쓰지 않으며, 무엇을 정해야 하는지 선택지와 결과로 묻는다.\n'
               '- 「다 해 줘」처럼 여러 기능을 한꺼번에 부탁받아도 기능 파일 하나를 고친 뒤 멈추고, 다음 기능을 할지 묻는다.\n'
-              '- `app/features/load.cypher`에는 그 파일 첫머리에 적힌 종류 · 관계의 쿼리만 쓴다. `app/utils/load_provided.cypher`는 제공 파일이라 고치지 않는다.\n'
+              '- `app/features/load.cypher`에는 그 파일 첫머리에 적힌 쿼리 셋만 쓴다. 나머지 종류 · 관계는 제공 코드가 넣는다(`output/load_provided.cypher`는 실행할 때마다 다시 쓰이는 기록이라 고치지 않는다).\n'
+              '- `app/features/schema_additions.csv`에는 스키마에 없던 속성을 그래프에 남기기로 학생이 정했을 때, 학생과 정한 속성만 적는다. `data/model/`의 모델 파일은 고치지 않는다.\n'
               '- `expected.csv`의 기대 답은 원자료와 모델 파일에서 찾아 적고, 쿼리 결과를 옮겨 적지 않는다. 결과가 기대 답과 다르면 기대 답을 고치기 전에 원인을 먼저 설명한다.\n'
-              + NOT_DECIDED.format(files='`update.cypher`의 불용 설비 처리와 「삭제」 줄 처리'))
+              + NOT_DECIDED.format(files='`update.cypher`의 불용 설비 처리와 「삭제」 줄 처리, `schema_additions.csv`') + '\n' + UTF8_RULE)
 
 
 def run_source():
@@ -172,14 +215,24 @@ def source_data(folder):
 CHECK_MORE = [
     ("'list':k=='list'}.get(spec)",
      "'list':k=='list','date':k=='string' and len(value)==10 and value[4]==value[7]=='-' and value.replace('-','').isdigit()}.get(spec)"),
-    (B.CHECK_ANCHOR,
+    (B.CHECK_ANCHOR,      # 「적어도 하나」 — 스키마가 적은 쪽(from · to)의 인스턴스마다 이 관계가 하나는 있어야 한다
      "    for t,spec in relations.items():\n"
-     "        if not (isinstance(spec,dict) and spec.get('at_least_one') is True):continue\n"
-     "        starts=spec.get('from');starts=starts if isinstance(starts,list) else [starts]\n"
-     "        has={r.get('a') for r in rels if r.get('type')==t}\n"
-     "        lone=sorted(i for i,labs in labels_by_id.items() if any(x in starts for x in labs) and i not in has)\n"
-     "        if lone:errors.append(f'{t} 끝이 적어도 하나 어긋남: 이 관계가 하나도 없는 시작 쪽 인스턴스 {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))\n"
-     + B.CHECK_ANCHOR)]
+     "        least=spec.get('at_least_one') if isinstance(spec,dict) else None\n"
+     "        for side in (least if isinstance(least,list) else []):\n"
+     "            mine=spec.get(side);mine=mine if isinstance(mine,list) else [mine]\n"
+     "            has={r.get('a' if side=='from' else 'b') for r in rels if r.get('type')==t}\n"
+     "            lone=sorted(i for i,labs in labels_by_id.items() if any(x in mine for x in labs) and i not in has)\n"
+     "            if lone:errors.append(f'{t} 적어도 하나 어긋남: 이 관계가 하나도 없는 {\"/\".join(map(str,mine))} {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))\n"
+     + B.CHECK_ANCHOR),
+    # 스키마에 없는 속성은 참고가 아니라 어긋남이다 — 스키마에 자리를 먼저 정한 뒤에 넣는다. 목록 속성에 같은 값이 두 번 든 것도 어긋남이다
+    ("                if key in opt:check_value(f'{lab} {id}',key,v,opt[key])\n"
+     "                else:warnings.append(f'{lab}에 정의되지 않은 속성 {key} ({id})')\n",
+     "                if key in opt:check_value(f'{lab} {id}',key,v,opt[key])\n"
+     "                else:errors.append(f'{lab} {id}: 스키마에 정의되지 않은 속성 {key}')\n"
+     "            for key,v in props.items():\n"
+     "                if isinstance(v,list) and len(set(map(str,v)))!=len(v):errors.append(f'{lab} {id}: 목록 속성 {key}에 같은 값이 두 번 — '+' · '.join(map(str,v)))\n"),
+    ("            elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')\n",
+     "            elif k!='id':errors.append(f'{t} {a}→{b}: 스키마에 정의되지 않은 속성 {k}')\n")]
 
 
 def checker(folder, L):
@@ -207,8 +260,7 @@ def build_ontology(folder):
     D.require('통합반')
     L = B.design_integrated()
     source_data(folder)
-    drawing = Path(__file__).with_name('session2_relationships.json')
-    write(folder / 'data/relationships.json', drawing.read_text(encoding='utf-8-sig'))
+    write(folder / 'data/relationships.json', trunk_drawing())
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
             write(folder / P.convert(name), P.convert(text))
@@ -232,15 +284,49 @@ def build_ontology(folder):
     return L, steps
 
 
+def trunk_drawing():
+    """출발 그림 — 1회차 관계 그림 실습의 끝 그림(session2_relationships.json)에서 설비 · 구성 요소 · 센서 줄기만 남긴다.
+    증상 · 고장 유형 · 원인 · 조치 방법 · 매뉴얼 절은 이 랩이 다루지 않는 대상이라 랩 자료에 넣지 않는다(코딩랩 K-3 — 그 회차 원리와 상관없는 덩어리)."""
+    whole = json.loads(Path(__file__).with_name('session2_relationships.json').read_text(encoding='utf-8-sig'))
+    keep = {n['id'] for n in whole['nodes'] if set(n.get('labels', [])) & {'Asset', 'Component', 'Sensor'}}
+    if len(keep) != 3:
+        raise ValueError(f'출발 그림의 설비 · 구성 요소 · 센서 노드가 {len(keep)}개 — 줄기를 다시 봅니다.')
+    whole['nodes'] = [n for n in whole['nodes'] if n['id'] in keep]
+    whole['relationships'] = [r for r in whole['relationships'] if r['fromId'] in keep and r['toId'] in keep]
+    return json.dumps(whole, ensure_ascii=False, indent=2) + '\n'
+
+
+def design_model(branch, ids=None):
+    """설계 랩 강사 참조 그 갈래(둘째 바퀴까지 마친 판)를 설계 랩 제공 코드(session2_model_tool)로 돌려 얻은 (스키마, 인스턴스 데이터).
+    그래프 랩의 제공 모델(data/model)이 이것이다 — 설계 랩의 output/과 꼴 · 식별자가 같아, 내 모델을 가져다 써도 같은 길로 돈다(코딩랩 K-9)."""
+    import importlib.util
+    import session2_answers as A
+    with tempfile.TemporaryDirectory(dir=WORK, prefix='model-') as temp:
+        root = Path(temp).resolve()
+        assert root.is_relative_to(WORK.resolve()) and root != WORK.resolve()
+        D.write_sources(root / '자료')
+        files = A.integrated_design(branch, ids=ids, lap=True)
+        files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen(branch))
+        for name, text in files.items():
+            (root / name).parent.mkdir(parents=True, exist_ok=True)
+            (root / name).write_text(text, encoding='utf-8', newline='\n')
+        spec = importlib.util.spec_from_file_location('design_tool_for_provided_model', Path(__file__).with_name('session2_model_tool.py'))
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        tool.HERE, tool.DATA, tool.OUT = root, root / '자료', root / '결과'
+        info, model = tool.build('부품', write=False)
+        if info['어긋남'] or info['못_찾은_칸']:
+            raise ValueError(f'제공 모델을 만들 참조 갈래 {branch}가 원자료와 어긋납니다: ' + str((info['어긋남'] or info['못_찾은_칸'])[:3]))
+        return json.loads(json.dumps(model, ensure_ascii=False))
+
+
 def build_graph(folder):
     D.require('통합반')
     L = B.graph_lab('통합반')
     source_data(folder)
-    schema, graph = B.reference_model(False, B.GRAPH_LAB_INPUT['통합반'])
-    for name, value in [('schema.json', B.student_schema(schema)), ('graph.json', graph)]:
-        write(folder / 'data/model' / name, P.convert(json.dumps(value, ensure_ascii=False, indent=2) + '\n'))
-    import session2_answers as A
-    write(folder / 'app/utils/load_provided.cypher', A.load_answer(graph, schema, skip=A.STUDENT_LOAD))   # 학생 몫 셋(A.STUDENT_LOAD)을 뺀 적재 쿼리 — load 기능이 내 쿼리와 함께 실행한다
+    schema, graph = design_model(B.GRAPH_LAB_INPUT['통합반'])
+    for name, value in [('schema.json', schema), ('graph.json', graph)]:
+        write(folder / 'data/model' / name, json.dumps(value, ensure_ascii=False, indent=2) + '\n')
     for name, text in L['files'].items():
         if name.startswith('결과/') and not name.endswith('README.md'):
             if name == '결과/기대_답.csv':
@@ -296,6 +382,20 @@ def replace_generated(source, target):
         shutil.copyfile(source.parent / (source.name + suffix), target.parent / (target.name + suffix))
 
 
+def completed_expected(branch):
+    """설계 랩 완성본의 기대 답 — 그 갈래의 기대 답에서 구성 요소 이름을 빈 틀 머리대로 그 설비의 원자료에 적힌 이름으로 적고, 둘째 바퀴의 질문 4 한 줄을 더한다."""
+    import csv, io
+    import session2_answers as A
+    (_, _, removed), = A.removed_rows()
+    canon = B.CANON_NAME[D.REMOVED_PUMP[1]] + ' 실물'
+    text = B.expect_design_text(branch)
+    if text.count(',' + canon + ',') != 1:
+        raise ValueError(f'기대 답에서 「{canon}」 줄을 하나로 찾지 못했습니다.')
+    buf = io.StringIO()
+    csv.writer(buf, lineterminator='\n').writerow(A.lap_question())
+    return text.replace(',' + canon + ',', ',' + removed['구성요소'] + ' 실물,') + buf.getvalue()
+
+
 def completed(starter, destination, work):
     """학생용 완성본은 별도 묶음이며 시작 ZIP에 넣지 않는다. 유료 AI 호출 없음."""
     import session2_answers as A
@@ -303,22 +403,22 @@ def completed(starter, destination, work):
     shutil.copytree(starter, folder)
     if starter.name == 'ontology-lab':
         branch = B.GRAPH_LAB_INPUT['통합반']    # 완성본은 다음 랩(그래프)의 제공 모델과 같은 판단
-        files = A.integrated_design(branch)
+        files = A.integrated_design(branch, lap=True)      # 완성본은 가이드의 끝 상태 — 둘째 바퀴(질문 4)까지
         files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen(branch))
-        files['결과/기대_답.csv'] = B.expect_design_text(branch)
+        files['결과/기대_답.csv'] = completed_expected(branch)
         for name, text in files.items():
             write(folder / P.convert(name), P.convert(text))
         title, initial = '온톨로지 설계', 'python run.py parts\npython run.py query'
         context, actions, rules = nullcontext(), ('parts', 'check', 'query'), DESIGN_RULE
     else:
-        from reference.session2_graph_trials import expectation, fill, instance
+        from reference.session2_graph_trials import fill, finish, instance
         fill(folder)
-        expectation(folder, after='남김')     # 완성본은 수정본까지 반영한 상태라 기대 답도 그 뒤의 답이다
+        finish(folder, '남김')     # 완성본은 수정본까지 반영한 상태라 기대 답과 질문 1 쿼리도 그 뒤의 것이다
         target = folder / 'app/features/expected.csv'   # 칸 뜻 머리는 학생 빈 틀과 같은 줄을 쓴다(v36 검토 — 강사 참조의 머리는 「0줄」 꼴을 모른다)
         head = (starter / 'app/features/expected.csv').read_text(encoding='utf-8').split('\n', 1)[0]
         target.write_text(head + '\n' + target.read_text(encoding='utf-8').split('\n', 1)[1], encoding='utf-8', newline='')
         title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py constraints\npython run.py load\npython run.py update\npython run.py usage'
-        context, actions, rules = instance(folder), ('constraints', 'probe', 'load', 'repeat', 'sensors', 'parts', 'update', 'repeat', 'usage', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
+        context, actions, rules = instance(folder), ('constraints', 'probe', 'load', 'repeat', 'changes', 'update', 'repeat', 'sensors', 'parts', 'usage', 'export', 'check'), GRAPH_RULE + '\n' + DB_RULE
     write_metadata(folder, title + ' · 완성본',
                    'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial, extra_rules=rules, readme_file=False)   # 완성본을 Codex로 열어도 같은 랩별 경계

@@ -777,7 +777,7 @@ def design_integrated():
     """통합반 설계 랩 정의 — 빈 틀과 결정 지점. 단계와 가이드 문장은 session2_project_guides.ontology가 갖는다."""
     import session2_answers as ANS
     D.require('통합반')
-    return dict(title='현장 정보를 체계화하는 온톨로지 직접 설계하기', course='통합반', kind='design_integrated', steps=[],
+    return dict(title='설비 정보를 체계화하는 온톨로지 직접 설계하기', course='통합반', kind='design_integrated', steps=[],
                 files={'결과/정한_것.csv': decision_template(ANS.DECISION_POINTS),
                        '결과/기대_답.csv': F.blank_csv(ANS.EXPECT_COLUMNS_DESIGN, ANS.EXPECT_EXPLAIN_DESIGN),
                        **{f'결과/{n}': F.blank_csv(ANS.DESIGN_COLUMNS[n], ANS.DESIGN_EXPLAIN[n]) for n in ANS.DESIGN_COLUMNS},
@@ -1144,7 +1144,7 @@ def graph_lab(course):
     return dict(
         title=title, course=course, rec='결과/검증_기록.md', readonly='`입력/`(원자료' + (' · 수정본' if change else '') + ' 포함) · 제공 파일(`show_result.py` · `lab_steps.py` · `lab_cypher.py` · `lab_db.py` · `check.py`)이', decide_step=2,
         goal=[('「설비·부품·공급 정보를 연결하는 온톨로지 설계하기」에서는 부품마다 쓰는 설비와 공급사별 조건을 모델에 넣었습니다. ' if practical else
-               f'「현장 정보를 체계화하는 온톨로지 직접 설계하기」에서는 설비 · 센서 · 부품을 {CLASS_LINK} · 속성 · 관계로 정의해 모델을 만들었습니다. ')
+               f'「설비 정보를 체계화하는 온톨로지 직접 설계하기」에서는 설비 · 센서 · 부품을 {CLASS_LINK} · 속성 · 관계로 정의해 모델을 만들었습니다. ')
               + f'이번에는 제공된 {model}(또는 내 모델)을 이 폴더 전용 랩 DB(그래프 DB)에 적재하고, 질문마다 Cypher 쿼리를 만들어 원자료와 대조합니다. '
               + '파일 읽기 · 실행 · 개수 세기 · 전후 비교는 제공 코드가 하고, 나는 같은 대상을 알아보는 열쇠와 조회가 돌려줄 것' + (', 수정본 반영' if change else '') + '을 정해 문장으로 씁니다.',
               F.STAGE_LINE.format(what='구현과 검증')] if practical else
@@ -1222,12 +1222,12 @@ def graph_chosen(course):
     # 근거 칸 = 내 이유와, 그 결정을 좌우해 열어 본 원문 줄(lab_frame.CHOSEN_TEMPLATE). 갈래마다 결정 지점 둘의 줄(GRAPH_POINTS['통합반']의 차례)
     return {'남김': [['불용 결정 설비', '상태로 남김', f'매각 전까지는 공장에 있는 설비라 기록을 지우지 않으려고 — {where}',
                     f'{GRAPH_SHARED_PART} 사용 설비에 {retired}이 「{status}」 상태로 남음 — 보전팀은 매각 전까지 그 설비에 어떤 예비품이 들어갔는지 그래프에서 봄'],
-                   ['목록에서 빠진 센서', '상태로 남김', f'교체품이 오면 같은 자리에 다시 붙을 센서라 자리와 이력을 남기려고 — {gone}',
-                    f'{code}의 센서 목록에 {tag}가 떼어 낸 상태로 남음 — 운전은 그 자리에 센서가 있었고 지금은 값이 오지 않는다는 것을 그래프에서 봄']],
+                   ['목록에서 빠진 센서', '상태로 남김', f'그 자리에 센서가 있었다는 것과 지금은 떼어 냈다는 것을 그래프에서 바로 보려고 — {gone}',
+                    f'질문 1에서 {code}의 {tag} 줄이 「떼어 냄」 상태로 나옴(센서의 상태 속성을 스키마에 더함) — 운전은 그 자리의 값이 지금은 오지 않는다는 것을 그래프에서 봄']],
             '삭제': [['불용 결정 설비', '하위 대상과 지움', f'보전팀이 묻는 것은 지금 가동하는 설비의 예비품이라 쓰지 않을 설비는 답에서 빼려고 — {where}',
                     f'{GRAPH_SHARED_PART} 사용 설비가 {" · ".join(kept)} — 보전팀은 남은 설비 몫만 예비품을 준비하고, {retired}의 지난 기록은 CMMS에서 찾음'],
                    ['목록에서 빠진 센서', '지움', f'운전이 묻는 것은 지금 값이 오는 센서라 떼어 낸 센서는 답에서 빼려고 — {gone}',
-                    f'{code}의 센서 목록에서 {tag}가 빠짐 — 운전은 지금 붙어 있는 센서만 받고, 떼어 낸 이력은 정비 기록에서 찾음']]}
+                    f'질문 1에서 {code}의 {tag} 줄이 나오지 않음 — 운전은 지금 붙어 있는 센서만 받고, 떼어 낸 이력은 정비 기록에서 찾음']]}
 
 
 GRAPH_SHARED_PART = 'P-CPL-ELM'           # 통합반 그래프 랩 기대 답과 결정 지점이 묻는 공용 부품(불용 결정 설비도 쓴다)
@@ -1237,7 +1237,9 @@ GRAPH_ASK = {'sensors': 'HYD-01', 'parts': 'HYD-02', 'aliases': ('RF-10', 'PS-45
 
 def graph_queries(course):
     import session2_answers as ANS
-    return ANS.QUERY_PRACTICAL if course == '실전반' else ANS.QUERY_INTEGRATED
+    if course != '실전반':
+        raise ValueError('통합반 그래프 랩의 조회 참조 답은 스키마에서 만든다 — session2_answers.query_integrated(schema).')
+    return ANS.QUERY_PRACTICAL
 
 
 def graph_expect_rows(course, graph):

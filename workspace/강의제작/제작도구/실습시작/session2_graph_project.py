@@ -51,7 +51,8 @@ def cypher_source(integrated=False):
     source = (P.HERE / 'lab_cypher.py').read_text(encoding='utf-8')
     names = {'WIPE', 'PARAM', 'TARGET', 'QUESTION', 'LabDbOff', 'model_graph', 'endpoint', 'cypher', 'rows_of',
              'statements', 'guard', 'read', 'run_file', 'constraints_file', 'constraints', 'duplicates', 'try_create_twice', 'CONSTRAINT', 'load_file',
-             'CHANGE', 'load_plan', 'load_files', 'seek_plan', 'tried', 'change_rows', 'apply_changes', 'questions', 'CLAUSE', 'WRITES', 'top_level', 'path_query', 'walked', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
+             'TYPE_NAMES', 'ADDITIONS', 'schema_in_use', 'fits', 'against_schema', 'raw_rows', 'student_targets', 'provided_queries',
+             'CHANGE', 'load_plan', 'load_files', 'seek_plan', 'rolled_back', 'tried', 'change_rows', 'change_plan', 'EXPORT', 'exported', 'apply_changes_tried', 'clear', 'apply_changes', 'questions', 'CLAUSE', 'WRITES', 'top_level', 'path_query', 'walked', 'query', 'counts', 'export_graph', 'keyed', 'diff_graphs'}
     text = ('from pathlib import Path\nimport csv, io, json, re, urllib.request, urllib.error\nfrom app.utils import db as local_db\n'
             "HERE = Path(__file__).resolve().parents[2]\nSTATE = HERE / '.lab_connection.json'\n_ENDPOINT = None\n\n" + P.extract(source, names))
     text = text.replace(P.extract(source, {'endpoint'}).strip(), ENDPOINT.strip())
@@ -83,7 +84,10 @@ def endpoint():
     if not STATE.is_file():
         raise LabDbOff('랩 DB 연결이 없습니다. python run.py db로 준비합니다.')
     state = json.loads(STATE.read_text(encoding='utf-8'))
-    info = json.loads(local_db.docker('inspect', state['container']))[0]
+    try:
+        info = json.loads(local_db.docker('inspect', state['container']))[0]
+    except RuntimeError:      # 컨테이너가 없다(폴더를 옮겨 왔거나 그 DB가 지워짐) — Docker의 영어 오류 대신 할 일을 말한다
+        raise LabDbOff('이 폴더의 랩 DB가 이 PC의 Docker에 없습니다. Docker Desktop이 켜져 있는지 보고 python run.py db로 다시 준비합니다.')
     if info['Config']['Labels'].get('hyd.practice.id') != state['id']:
         raise RuntimeError('이 폴더의 랩 DB가 아닙니다.')
     if not info['State']['Running']:
@@ -99,9 +103,10 @@ def endpoint():
 def actions_source(L):
     """통합반 그래프 랩의 기능 코드(실전반 생성기는 P.actions_source와 EXTRA_ACTIONS를 따로 쓴다)."""
     text = P.actions_source(L)
-    text = text.replace("    d = C.diff_graphs(before, after)",
-                        "    save_json('before_update.json', before)\n    save_json('after_update.json', after)\n    d = C.diff_graphs(before, after)")
-    text = text.replace("'수정 전 → 수정 뒤(적재 직후와 견줌)'", "'수정 전 → 수정 뒤'")
+    old = "    d = C.diff_graphs(model, after)"
+    if text.count(old) != 1:
+        raise ValueError('수정본 반영 기능의 견줌 줄이 바뀌었습니다 — 전후 그래프를 저장할 자리를 다시 봅니다.')
+    text = text.replace(old, "    save_json('before_update.json', model)\n    save_json('after_update.json', after)\n" + old)
     text = text[:text.index('def portal(previous):')].rstrip() + '\n'      # 포털 기준 지도와 견주는 기능은 이 랩에서 뺐다(v58 — 그래프 구현 역량과 무관)
     return renamed(text, ACTION_TERMS) + EXTRA_ACTIONS
 
@@ -130,12 +135,64 @@ def save_json(name, value):
 
 
 def export(previous):
-    path, _ = C.model_graph()
     graph = db(C.export_graph)
     save_json('graph.json', graph)
-    save_json('schema.json', json.loads(path.with_name('schema.json').read_text(encoding='utf-8-sig')))
+    save_json('schema.json', db(C.schema_in_use))      # 모델의 스키마에 내가 더한 속성(app/features/schema_additions.csv)을 얹은 것
     return [R.verdict('ok', f'랩 DB의 그래프를 저장했습니다 — 노드 {len(graph["nodes"])}개 · 관계 {len(graph["rels"])}개', 'output/schema.json(종류와 관계) · output/graph.json(노드와 관계)'),
             R.class_map('저장한 그래프 — 종류마다 노드 수와 관계', graph)]
+
+
+# 수정본 파일마다 견줄 원본 표와, 같은 줄을 알아보는 열
+CHANGE_BASE = {'equipment_changes.csv': ('equipment.csv', ['설비코드']), 'sensor_changes.csv': ('sensors.csv', ['설비코드', '태그']),
+               'part_alias_changes.csv': ('part_aliases.csv', ['사내품번', '다른표기'])}
+
+
+def changes(previous):
+    """수정본 살펴보기 — 수정본의 줄마다 원본의 같은 줄과 견줘 무엇이 바뀌는지 보이고, 내가 정할 지점이 정해졌는지 보인다. 랩 DB는 건드리지 않는다."""
+    paths = {p.name: p for p in sorted((HERE / 'data/changes').glob('*/*.csv'))}
+    cards, kinds = [], {}
+    for (name, how), items in sorted(C.change_rows().items()):
+        base_name, keys = CHANGE_BASE.get(name, (None, []))
+        base = list(enumerate(R.read_table(HERE / 'data' / base_name), 2)) if base_name else []
+        for n, row in items:
+            kinds[how] = kinds.get(how, 0) + 1
+            old = next(((i, b) for i, b in base if keys and all(b.get(k) == row.get(k) for k in keys)), None)
+            lines = [('수정본 줄', f'{R.rel(paths[name])}:{n}'), ('원본의 같은 줄', f'data/{base_name}:{old[0]}' if old else '원본에 없는 줄')]
+            if how == '수정' and old:
+                lines += [(k, f'{old[1].get(k) or "없음"} → {v or "없음"}') for k, v in row.items() if k not in ('변경', '비고') and old[1].get(k, '') != v]
+            elif not old:
+                lines += [(k, v) for k, v in row.items() if k not in ('변경', '비고', *keys) and v]
+            if row.get('비고'):
+                lines.append(('비고', row['비고']))
+            cards.append(dict(title=' · '.join(row.get(k, '') for k in keys) or name, badge=how, state={'추가': 'ok', '삭제': 'bad'}.get(how, 'warn'), lines=lines))
+    path = HERE / 'app/features/decisions.csv'
+    chosen = {(r.get('지점') or '').strip(): r for r in R.read_table(path)}
+    points = DECIDE.get('update', [])
+    done = [p for p in points if (chosen.get(p, {}).get('고른_것') or '').strip() not in ('', '미결')]
+    decide = [dict(title=p, badge='정함' if p in done else '아직 정하지 않음', state='ok' if p in done else 'warn', icon='ok' if p in done else 'warn',
+                   lines=[('고른 것', chosen[p]['고른_것']), ('근거', chosen[p].get('근거', '')), ('바뀌는 답', chosen[p].get('바뀌는_답', ''))] if p in done else []) for p in points]
+    return [R.verdict('info', f'수정본 {sum(kinds.values())}줄 — ' + ' · '.join(f'{k} {v}줄' for k, v in sorted(kinds.items())), f'내가 정할 것 {len(points)}곳 가운데 {len(done)}곳을 정했습니다.'),
+            R.cards('수정본의 줄마다 — 원본과 견준 것', cards, wide=True, note='「수정」은 원본의 같은 줄에서 값이 달라진 열만 「전 → 뒤」로 보입니다. 「삭제」는 그 담당의 목록에서 빠진 줄이고, 그래프에서 어떻게 할지는 내가 정합니다.'),
+            R.cards('내가 정할 것', decide, wide=True, note='정한 것은 app/features/decisions.csv에 있습니다. 수정본 반영(python run.py update)은 이 결정이 다 찬 뒤에 실행됩니다.')]
+
+
+def reset(previous):
+    """넣은 직후로 되돌리기 — 이 폴더 랩 DB의 노드와 관계를 모두 지우고(유일 제약은 그대로) 모델을 다시 넣는다. 수정본으로 바뀐 것과 잘못 들어간 값이 모두 사라진다."""
+    before = db(C.counts)
+    db(C.clear)
+    done, missing = load_once()
+    _, model = graph_counts()
+    have = db(C.counts)
+    differ = [k for k, v in sorted(model.items()) if v != have.get(k, 0)]
+    return [R.verdict('bad', f'되돌렸지만 모델 파일과 개수가 다른 항목 {len(differ)}개', ' · '.join(differ[:6]) + ' — python run.py load의 화면에서 내 적재 쿼리를 봅니다.') if differ else
+            R.verdict('ok', f'랩 DB를 넣은 직후로 되돌렸습니다 — 노드 {have.get("노드", 0)}개 · 관계 {have.get("관계", 0)}개', '수정본으로 바뀐 값과 지운 것이 모두 모델 파일대로 돌아왔습니다. 유일 제약은 그대로 걸려 있습니다.'),
+            R.count_bars('되돌리기 전 ↔ 되돌린 뒤 개수', ('되돌리기 전', '되돌린 뒤'), before, have),
+            R.folded(R.table('다시 넣은 쿼리마다 넘긴 행과 바뀐 것', ['쿼리', '넣을 것', '넘긴 행', '바뀐 것'], done))] + browser()
+
+
+# 이 랩의 구조 검사는 스키마에 없는 속성 · 목록에 겹친 값 · 「적어도 하나」도 본다(build_session2_projects.CHECK_MORE)
+CHECKS = CHECKS[:5] + [('스키마에 없는 속성이 들어가지 않았다', '정의되지 않은 속성'), ('목록 속성에 같은 값이 두 번 들어가지 않았다', '같은 값이 두 번')] + CHECKS[5:9] + [
+    ('「적어도 하나」로 정한 관계가 빠진 노드가 없다', '적어도 하나')] + CHECKS[9:]
 
 
 def check(previous):
@@ -146,7 +203,7 @@ COMMANDS = {
     'sources': ('원자료와 모델', sources), 'db': ('랩 DB 준비', prepare), 'status': ('모델과 DB 개수', start),
     'expected': ('기대 답', expected), 'constraints': ('유일 제약 걸기', constraints), 'probe': ('넣기 전 실험', probe), 'load': ('모델 적재', load), 'repeat': ('같은 적재 다시 실행', again),
     'sensors': ('설비별 센서', q1), 'parts': ('설비별 교체 부품', q2), 'usage': ('부품의 사용 설비', q3),
-    'update': ('수정본 반영', change),
+    'changes': ('수정본 살펴보기', changes), 'update': ('수정본 반영', change), 'reset': ('넣은 직후로 되돌리기', reset),
     'export': ('그래프 저장', export), 'check': ('구조 검사', check),
 }
 '''

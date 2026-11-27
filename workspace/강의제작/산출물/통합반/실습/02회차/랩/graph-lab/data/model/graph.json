@@ -2,10 +2,1210 @@
   "nodes": [
     {
       "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-01",
+        "code": "HYD-01",
+        "name": "HYD-01 유압 파워팩",
+        "model": "HPP-45A",
+        "status": "가동",
+        "maker": "한일유압",
+        "serial": "HP45A-19-0112",
+        "functional_location": "CW1-L2-HPU-01",
+        "installed": "2019-04-22"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-02",
+        "code": "HYD-02",
+        "name": "HYD-02 유압 파워팩",
+        "model": "HPP-45A",
+        "status": "가동",
+        "maker": "한일유압",
+        "serial": "HP45A-19-0113",
+        "functional_location": "CW1-L2-HPU-02",
+        "installed": "2019-04-22"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-03",
+        "code": "HYD-03",
+        "name": "HYD-03 유압 파워팩",
+        "model": "HPP-45A",
+        "status": "가동",
+        "maker": "한일유압",
+        "serial": "HP45A-20-0207",
+        "functional_location": "CW1-L2-HPU-03",
+        "installed": "2020-02-17"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-04",
+        "code": "HYD-04",
+        "name": "HYD-04 유압 파워팩",
+        "model": "HPP-45B",
+        "status": "가동",
+        "maker": "한일유압",
+        "serial": "HP45B-24-0031",
+        "functional_location": "CW1-L2-HPU-04",
+        "installed": "2024-07-08"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-07",
+        "code": "HYD-07",
+        "name": "이동식 예비 파워팩",
+        "model": "HPP-22M",
+        "status": "예비(보관)",
+        "maker": "한일유압",
+        "serial": "HP22M-17-0009",
+        "functional_location": "CW1-MNT-SPARE-01",
+        "installed": "2017-09-11"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:오일 쿨러",
+        "name": "오일 쿨러",
+        "group": "냉각"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:쿨러 팬",
+        "name": "쿨러 팬",
+        "group": "냉각"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:주 펌프 (A)",
+        "name": "주 펌프 (A)",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "KP-1904-221",
+        "serial": "KP-1904-221"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:구동 모터",
+        "name": "구동 모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:커플링",
+        "name": "커플링",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:작동유 탱크",
+        "name": "작동유 탱크",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:리턴 필터",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:흡입 스트레이너",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:전환 밸브",
+        "name": "전환 밸브",
+        "group": "제어"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:오일 쿨러",
+        "name": "오일 쿨러",
+        "group": "냉각",
+        "aliases": [
+          "쿨러"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:쿨러 팬",
+        "name": "쿨러 팬",
+        "group": "냉각",
+        "aliases": [
+          "팬"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:주 펌프 (A)",
+        "name": "주 펌프 (A)",
+        "group": "동력",
+        "aliases": [
+          "유압 펌프"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "KP-2603-114",
+        "serial": "KP-2603-114",
+        "note": "2026-03-11 교체 설치"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:구동 모터",
+        "name": "구동 모터",
+        "group": "동력",
+        "aliases": [
+          "모터"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:커플링",
+        "name": "커플링",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:작동유 탱크",
+        "name": "작동유 탱크",
+        "group": "저장·여과",
+        "aliases": [
+          "탱크"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:리턴 필터",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:흡입 스트레이너",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과",
+        "aliases": [
+          "석션 스트레이너"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:전환 밸브",
+        "name": "전환 밸브",
+        "group": "제어",
+        "aliases": [
+          "방향 전환 밸브"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:오일 쿨러",
+        "name": "오일 쿨러",
+        "group": "냉각",
+        "aliases": [
+          "열교환기"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:쿨러 팬",
+        "name": "쿨러 팬",
+        "group": "냉각",
+        "aliases": [
+          "송풍기"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:주 펌프 (A)",
+        "name": "주 펌프 (A)",
+        "group": "동력",
+        "aliases": [
+          "주 펌프 A"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "KP-2002-087",
+        "serial": "KP-2002-087"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:구동 모터",
+        "name": "구동 모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:커플링",
+        "name": "커플링",
+        "group": "동력",
+        "aliases": [
+          "축 커플링"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:작동유 탱크",
+        "name": "작동유 탱크",
+        "group": "저장·여과",
+        "aliases": [
+          "리저버"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:리턴 필터",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:흡입 스트레이너",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:전환 밸브",
+        "name": "전환 밸브",
+        "group": "제어",
+        "aliases": [
+          "솔레노이드 밸브"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:수냉 열교환기",
+        "name": "수냉 열교환기",
+        "group": "냉각"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:주 펌프 (A)",
+        "name": "주 펌프 (A)",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "KP-2407-310",
+        "serial": "KP-2407-310"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:구동 모터",
+        "name": "구동 모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:커플링",
+        "name": "커플링",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:작동유 탱크",
+        "name": "작동유 탱크",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:리턴 필터",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:흡입 스트레이너",
+        "name": "흡입 스트레이너",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-04:전환 밸브",
+        "name": "전환 밸브",
+        "group": "제어"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:펌프",
+        "name": "펌프",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "GP-1709-004",
+        "serial": "GP-1709-004"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:모터",
+        "name": "모터",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:커플링",
+        "name": "커플링",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:탱크",
+        "name": "탱크",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-07:리턴 필터",
+        "name": "리턴 필터",
+        "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "KP-1902-551",
+        "serial": "KP-1902-551",
+        "note": "2026-03-11 펌프 교체로 철거(구 일련번호)"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:TS1",
+        "tag": "TS1",
+        "name": "유온 센서",
+        "unit": "℃",
+        "normal": 48.0,
+        "limit": 65.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:TS2",
+        "tag": "TS2",
+        "name": "쿨러 출구 온도 센서",
+        "unit": "℃",
+        "normal": 44.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:TS3",
+        "tag": "TS3",
+        "name": "탱크 유온 센서",
+        "unit": "℃",
+        "normal": 40.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:PS1",
+        "tag": "PS1",
+        "name": "토출 압력 센서",
+        "unit": "bar",
+        "normal": 182.0,
+        "limit": 130.0,
+        "limit_direction": "하한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:PS2",
+        "tag": "PS2",
+        "name": "시스템 압력 센서",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:PS4",
+        "tag": "PS4",
+        "name": "리턴 필터 차압 센서",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:EPS1",
+        "tag": "EPS1",
+        "name": "모터 출력 계측",
+        "unit": "kW",
+        "normal": 2.8
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:FS1",
+        "tag": "FS1",
+        "name": "유량 센서",
+        "unit": "L/min",
+        "normal": 9.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:FS2",
+        "tag": "FS2",
+        "name": "냉각 회로 유량 센서",
+        "unit": "L/min",
+        "normal": 10.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:VS1",
+        "tag": "VS1",
+        "name": "팬 진동 센서",
+        "unit": "mm/s",
+        "normal": 0.6,
+        "limit": 2.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:TS1",
+        "tag": "TS1",
+        "name": "유온 센서",
+        "unit": "℃",
+        "normal": 48.0,
+        "limit": 65.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:TS2",
+        "tag": "TS2",
+        "name": "쿨러 출구 온도 센서",
+        "unit": "℃",
+        "normal": 44.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:TS3",
+        "tag": "TS3",
+        "name": "탱크 유온 센서",
+        "unit": "℃",
+        "normal": 40.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:PS1",
+        "tag": "PS1",
+        "name": "토출 압력 센서",
+        "unit": "bar",
+        "normal": 182.0,
+        "limit": 130.0,
+        "limit_direction": "하한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:PS2",
+        "tag": "PS2",
+        "name": "시스템 압력 센서",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:PS4",
+        "tag": "PS4",
+        "name": "리턴 필터 차압 센서",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:EPS1",
+        "tag": "EPS1",
+        "name": "모터 출력 계측",
+        "unit": "kW",
+        "normal": 2.8
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:FS1",
+        "tag": "FS1",
+        "name": "유량 센서",
+        "unit": "L/min",
+        "normal": 9.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:FS2",
+        "tag": "FS2",
+        "name": "냉각 회로 유량 센서",
+        "unit": "L/min",
+        "normal": 10.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:VS1",
+        "tag": "VS1",
+        "name": "팬 진동 센서",
+        "unit": "mm/s",
+        "normal": 0.6,
+        "limit": 2.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:TS1",
+        "tag": "TS1",
+        "name": "유온 센서",
+        "unit": "℃",
+        "normal": 48.0,
+        "limit": 65.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:TS2",
+        "tag": "TS2",
+        "name": "쿨러 출구 온도 센서",
+        "unit": "℃",
+        "normal": 44.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:TS3",
+        "tag": "TS3",
+        "name": "탱크 유온 센서",
+        "unit": "℃",
+        "normal": 40.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:PS1",
+        "tag": "PS1",
+        "name": "토출 압력 센서",
+        "unit": "bar",
+        "normal": 182.0,
+        "limit": 130.0,
+        "limit_direction": "하한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:PS2",
+        "tag": "PS2",
+        "name": "시스템 압력 센서",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:PS4",
+        "tag": "PS4",
+        "name": "리턴 필터 차압 센서",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:EPS1",
+        "tag": "EPS1",
+        "name": "모터 출력 계측",
+        "unit": "kW",
+        "normal": 2.8
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:FS1",
+        "tag": "FS1",
+        "name": "유량 센서",
+        "unit": "L/min",
+        "normal": 9.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:FS2",
+        "tag": "FS2",
+        "name": "냉각 회로 유량 센서",
+        "unit": "L/min",
+        "normal": 10.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:VS1",
+        "tag": "VS1",
+        "name": "팬 진동 센서",
+        "unit": "mm/s",
+        "normal": 0.6,
+        "limit": 2.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:TS1",
+        "tag": "TS1",
+        "name": "유온 센서",
+        "unit": "℃",
+        "normal": 46.0,
+        "limit": 65.0,
+        "limit_direction": "상한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:TS2",
+        "tag": "TS2",
+        "name": "쿨러 출구 온도 센서",
+        "unit": "℃",
+        "normal": 44.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:TS3",
+        "tag": "TS3",
+        "name": "탱크 유온 센서",
+        "unit": "℃",
+        "normal": 40.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:PS1",
+        "tag": "PS1",
+        "name": "토출 압력 센서",
+        "unit": "bar",
+        "normal": 190.0,
+        "limit": 140.0,
+        "limit_direction": "하한"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:PS2",
+        "tag": "PS2",
+        "name": "시스템 압력 센서",
+        "unit": "bar",
+        "normal": 150.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:PS4",
+        "tag": "PS4",
+        "name": "리턴 필터 차압 센서",
+        "unit": "bar",
+        "normal": 1.5
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:EPS1",
+        "tag": "EPS1",
+        "name": "모터 출력 계측",
+        "unit": "kW",
+        "normal": 3.1
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:FS1",
+        "tag": "FS1",
+        "name": "유량 센서",
+        "unit": "L/min",
+        "normal": 11.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-04:FS2",
+        "tag": "FS2",
+        "name": "냉각수 유량 센서",
+        "unit": "L/min",
+        "normal": 18.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-07:TI-1",
+        "tag": "TI-1",
+        "name": "유온계(현장 지시)",
+        "unit": "℃",
+        "normal": 45.0
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-07:PI-1",
+        "tag": "PI-1",
+        "name": "압력계(현장 지시)",
+        "unit": "bar",
+        "normal": 140.0
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "유온",
+        "name": "유온",
+        "unit": "℃"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "쿨러 출구 유온",
+        "name": "쿨러 출구 유온",
+        "unit": "℃"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "탱크 유온",
+        "name": "탱크 유온",
+        "unit": "℃"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "토출 압력",
+        "name": "토출 압력",
+        "unit": "bar"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "시스템 압력",
+        "name": "시스템 압력",
+        "unit": "bar"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "필터 차압",
+        "name": "필터 차압",
+        "unit": "bar"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "모터 출력",
+        "name": "모터 출력",
+        "unit": "kW"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "유량",
+        "name": "유량",
+        "unit": "L/min"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "냉각 회로 유량",
+        "name": "냉각 회로 유량",
+        "unit": "L/min"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "팬 진동",
+        "name": "팬 진동",
+        "unit": "mm/s"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "냉각수 유량",
+        "name": "냉각수 유량",
+        "unit": "L/min"
+      }
+    },
+    {
+      "labels": [
         "Part"
       ],
       "props": {
         "id": "P-PMP-SEAL",
+        "part_no": "P-PMP-SEAL",
         "name": "펌프 축 씰 키트",
         "other_codes": [
           "HI-SK-45A",
@@ -21,6 +1221,7 @@
       ],
       "props": {
         "id": "P-PMP-SEAL-HT",
+        "part_no": "P-PMP-SEAL-HT",
         "name": "펌프 축 씰 키트(고온형 FKM)",
         "other_codes": [
           "HI-SK-45B"
@@ -33,6 +1234,7 @@
       ],
       "props": {
         "id": "P-PMP-SEAL-22",
+        "part_no": "P-PMP-SEAL-22",
         "name": "기어 펌프 씰 키트",
         "other_codes": [
           "HI-GS-22"
@@ -45,6 +1247,7 @@
       ],
       "props": {
         "id": "P-FAN-BRG",
+        "part_no": "P-FAN-BRG",
         "name": "팬 베어링",
         "other_codes": [
           "6205-2RS",
@@ -58,6 +1261,7 @@
       ],
       "props": {
         "id": "P-CLR-CORE",
+        "part_no": "P-CLR-CORE",
         "name": "쿨러 코어",
         "other_codes": [
           "HI-CC-45A"
@@ -70,6 +1274,7 @@
       ],
       "props": {
         "id": "P-CLR-PLT",
+        "part_no": "P-CLR-PLT",
         "name": "수냉 열교환기 플레이트 팩",
         "other_codes": [
           "HI-PHE-45B"
@@ -82,6 +1287,7 @@
       ],
       "props": {
         "id": "P-RTN-FLT",
+        "part_no": "P-RTN-FLT",
         "name": "리턴 필터 엘리먼트 10µm",
         "other_codes": [
           "HI-RF-10",
@@ -95,6 +1301,7 @@
       ],
       "props": {
         "id": "P-SUC-STR",
+        "part_no": "P-SUC-STR",
         "name": "흡입 스트레이너",
         "other_codes": [
           "HI-SS-45"
@@ -107,6 +1314,7 @@
       ],
       "props": {
         "id": "P-CPL-ELM",
+        "part_no": "P-CPL-ELM",
         "name": "커플링 탄성체",
         "other_codes": [
           "ROTEX-24-98A"
@@ -119,6 +1327,7 @@
       ],
       "props": {
         "id": "P-VLV-COIL",
+        "part_no": "P-VLV-COIL",
         "name": "솔레노이드 코일 24VDC",
         "other_codes": [
           "D03-24VDC"
@@ -131,1170 +1340,8 @@
       ],
       "props": {
         "id": "P-HYD-OIL",
-        "name": "작동유 ISO VG46 (20 L)",
-        "other_codes": []
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:TS1",
-        "name": "유온",
-        "unit": "℃"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:TS2",
-        "name": "쿨러 출구 유온",
-        "unit": "℃"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:TS3",
-        "name": "탱크 유온",
-        "unit": "℃"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS1",
-        "name": "토출 압력",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS2",
-        "name": "시스템 압력",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS4",
-        "name": "필터 차압",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:EPS1",
-        "name": "모터 출력",
-        "unit": "kW"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:FS1",
-        "name": "유량",
-        "unit": "L/min"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:FS2",
-        "name": "냉각 회로 유량",
-        "unit": "L/min"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:VS1",
-        "name": "팬 진동",
-        "unit": "mm/s"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:CW-FLOW",
-        "name": "냉각수 유량",
-        "unit": "L/min"
-      }
-    },
-    {
-      "labels": [
-        "Asset"
-      ],
-      "props": {
-        "id": "HYD-01",
-        "name": "HYD-01 유압 파워팩",
-        "model": "HPP-45A",
-        "maker": "한일유압",
-        "serial": "HP45A-19-0112",
-        "functional_location": "CW1-L2-HPU-01",
-        "installed": "2019-04-22",
-        "status": "가동"
-      }
-    },
-    {
-      "labels": [
-        "Asset"
-      ],
-      "props": {
-        "id": "HYD-02",
-        "name": "HYD-02 유압 파워팩",
-        "model": "HPP-45A",
-        "maker": "한일유압",
-        "serial": "HP45A-19-0113",
-        "functional_location": "CW1-L2-HPU-02",
-        "installed": "2019-04-22",
-        "status": "가동"
-      }
-    },
-    {
-      "labels": [
-        "Asset"
-      ],
-      "props": {
-        "id": "HYD-03",
-        "name": "HYD-03 유압 파워팩",
-        "model": "HPP-45A",
-        "maker": "한일유압",
-        "serial": "HP45A-20-0207",
-        "functional_location": "CW1-L2-HPU-03",
-        "installed": "2020-02-17",
-        "status": "가동"
-      }
-    },
-    {
-      "labels": [
-        "Asset"
-      ],
-      "props": {
-        "id": "HYD-04",
-        "name": "HYD-04 유압 파워팩",
-        "model": "HPP-45B",
-        "maker": "한일유압",
-        "serial": "HP45B-24-0031",
-        "functional_location": "CW1-L2-HPU-04",
-        "installed": "2024-07-08",
-        "status": "가동"
-      }
-    },
-    {
-      "labels": [
-        "Asset"
-      ],
-      "props": {
-        "id": "HYD-07",
-        "name": "이동식 예비 파워팩",
-        "model": "HPP-22M",
-        "maker": "한일유압",
-        "serial": "HP22M-17-0009",
-        "functional_location": "CW1-MNT-SPARE-01",
-        "installed": "2017-09-11",
-        "status": "예비(보관)"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:cooler",
-        "name": "오일 쿨러",
-        "group": "냉각"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:fan",
-        "name": "쿨러 팬",
-        "group": "냉각"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:pump-a",
-        "name": "주 펌프 (A)",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Unit"
-      ],
-      "props": {
-        "id": "unit:KP-1904-221",
-        "serial": "KP-1904-221"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:motor",
-        "name": "구동 모터",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:coupling",
-        "name": "커플링",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:tank",
-        "name": "작동유 탱크",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:rtn-filter",
-        "name": "리턴 필터",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:strainer",
-        "name": "흡입 스트레이너",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-01:valve",
-        "name": "전환 밸브",
-        "group": "제어"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:cooler",
-        "name": "오일 쿨러",
-        "group": "냉각",
-        "aliases": [
-          "쿨러"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:fan",
-        "name": "쿨러 팬",
-        "group": "냉각",
-        "aliases": [
-          "팬"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:pump-a",
-        "name": "주 펌프 (A)",
-        "group": "동력",
-        "aliases": [
-          "유압 펌프"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Unit"
-      ],
-      "props": {
-        "id": "unit:KP-2603-114",
-        "serial": "KP-2603-114"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:motor",
-        "name": "구동 모터",
-        "group": "동력",
-        "aliases": [
-          "모터"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:coupling",
-        "name": "커플링",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:tank",
-        "name": "작동유 탱크",
-        "group": "저장·여과",
-        "aliases": [
-          "탱크"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:rtn-filter",
-        "name": "리턴 필터",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:strainer",
-        "name": "흡입 스트레이너",
-        "group": "저장·여과",
-        "aliases": [
-          "석션 스트레이너"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-02:valve",
-        "name": "전환 밸브",
-        "group": "제어",
-        "aliases": [
-          "방향 전환 밸브"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:cooler",
-        "name": "오일 쿨러",
-        "group": "냉각",
-        "aliases": [
-          "열교환기"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:fan",
-        "name": "쿨러 팬",
-        "group": "냉각",
-        "aliases": [
-          "송풍기"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:pump-a",
-        "name": "주 펌프 (A)",
-        "group": "동력",
-        "aliases": [
-          "주 펌프 A"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Unit"
-      ],
-      "props": {
-        "id": "unit:KP-2002-087",
-        "serial": "KP-2002-087"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:motor",
-        "name": "구동 모터",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:coupling",
-        "name": "커플링",
-        "group": "동력",
-        "aliases": [
-          "축 커플링"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:tank",
-        "name": "작동유 탱크",
-        "group": "저장·여과",
-        "aliases": [
-          "리저버"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:rtn-filter",
-        "name": "리턴 필터",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:strainer",
-        "name": "흡입 스트레이너",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-03:valve",
-        "name": "전환 밸브",
-        "group": "제어",
-        "aliases": [
-          "솔레노이드 밸브"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:cooler",
-        "name": "수냉 열교환기",
-        "group": "냉각"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:pump-a",
-        "name": "주 펌프 (A)",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Unit"
-      ],
-      "props": {
-        "id": "unit:KP-2407-310",
-        "serial": "KP-2407-310"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:motor",
-        "name": "구동 모터",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:coupling",
-        "name": "커플링",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:tank",
-        "name": "작동유 탱크",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:rtn-filter",
-        "name": "리턴 필터",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:strainer",
-        "name": "흡입 스트레이너",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-04:valve",
-        "name": "전환 밸브",
-        "group": "제어"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-07:pump",
-        "name": "메인 펌프",
-        "group": "동력",
-        "aliases": [
-          "펌프"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Unit"
-      ],
-      "props": {
-        "id": "unit:GP-1709-004",
-        "serial": "GP-1709-004"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-07:motor",
-        "name": "구동 모터",
-        "group": "동력",
-        "aliases": [
-          "모터"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-07:coupling",
-        "name": "커플링",
-        "group": "동력"
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-07:tank",
-        "name": "작동유 탱크",
-        "group": "저장·여과",
-        "aliases": [
-          "탱크"
-        ]
-      }
-    },
-    {
-      "labels": [
-        "Component"
-      ],
-      "props": {
-        "id": "HYD-07:rtn-filter",
-        "name": "리턴 필터",
-        "group": "저장·여과"
-      }
-    },
-    {
-      "labels": [
-        "Unit"
-      ],
-      "props": {
-        "id": "unit:KP-1902-551",
-        "serial": "KP-1902-551"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:TS1",
-        "tag": "TS1",
-        "unit": "℃",
-        "normal": 48.0,
-        "limit": 65.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:TS2",
-        "tag": "TS2",
-        "unit": "℃",
-        "normal": 44.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:TS3",
-        "tag": "TS3",
-        "unit": "℃",
-        "normal": 40.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:PS1",
-        "tag": "PS1",
-        "unit": "bar",
-        "normal": 182.0,
-        "limit": 130.0,
-        "limit_direction": "lower"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:PS2",
-        "tag": "PS2",
-        "unit": "bar",
-        "normal": 150.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:PS4",
-        "tag": "PS4",
-        "unit": "bar",
-        "normal": 1.5
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:EPS1",
-        "tag": "EPS1",
-        "unit": "kW",
-        "normal": 2.8
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:FS1",
-        "tag": "FS1",
-        "unit": "L/min",
-        "normal": 9.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:FS2",
-        "tag": "FS2",
-        "unit": "L/min",
-        "normal": 10.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-01:VS1",
-        "tag": "VS1",
-        "unit": "mm/s",
-        "normal": 0.6,
-        "limit": 2.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:TS1",
-        "tag": "TS1",
-        "unit": "℃",
-        "normal": 48.0,
-        "limit": 65.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:TS2",
-        "tag": "TS2",
-        "unit": "℃",
-        "normal": 44.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:TS3",
-        "tag": "TS3",
-        "unit": "℃",
-        "normal": 40.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:PS1",
-        "tag": "PS1",
-        "unit": "bar",
-        "normal": 182.0,
-        "limit": 130.0,
-        "limit_direction": "lower"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:PS2",
-        "tag": "PS2",
-        "unit": "bar",
-        "normal": 150.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:PS4",
-        "tag": "PS4",
-        "unit": "bar",
-        "normal": 1.5
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:EPS1",
-        "tag": "EPS1",
-        "unit": "kW",
-        "normal": 2.8
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:FS1",
-        "tag": "FS1",
-        "unit": "L/min",
-        "normal": 9.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:FS2",
-        "tag": "FS2",
-        "unit": "L/min",
-        "normal": 10.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-02:VS1",
-        "tag": "VS1",
-        "unit": "mm/s",
-        "normal": 0.6,
-        "limit": 2.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:TS1",
-        "tag": "TS1",
-        "unit": "℃",
-        "normal": 48.0,
-        "limit": 65.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:TS2",
-        "tag": "TS2",
-        "unit": "℃",
-        "normal": 44.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:TS3",
-        "tag": "TS3",
-        "unit": "℃",
-        "normal": 40.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:PS1",
-        "tag": "PS1",
-        "unit": "bar",
-        "normal": 182.0,
-        "limit": 130.0,
-        "limit_direction": "lower",
-        "source_unit": "MPa"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:PS2",
-        "tag": "PS2",
-        "unit": "bar",
-        "normal": 150.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:PS4",
-        "tag": "PS4",
-        "unit": "bar",
-        "normal": 1.5
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:EPS1",
-        "tag": "EPS1",
-        "unit": "kW",
-        "normal": 2.8
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:FS1",
-        "tag": "FS1",
-        "unit": "L/min",
-        "normal": 9.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:FS2",
-        "tag": "FS2",
-        "unit": "L/min",
-        "normal": 10.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-03:VS1",
-        "tag": "VS1",
-        "unit": "mm/s",
-        "normal": 0.6,
-        "limit": 2.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:TS1",
-        "tag": "TS1",
-        "unit": "℃",
-        "normal": 46.0,
-        "limit": 65.0,
-        "limit_direction": "upper"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:TS2",
-        "tag": "TS2",
-        "unit": "℃",
-        "normal": 44.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:TS3",
-        "tag": "TS3",
-        "unit": "℃",
-        "normal": 40.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:PS1",
-        "tag": "PS1",
-        "unit": "bar",
-        "normal": 190.0,
-        "limit": 140.0,
-        "limit_direction": "lower"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:PS2",
-        "tag": "PS2",
-        "unit": "bar",
-        "normal": 150.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:PS4",
-        "tag": "PS4",
-        "unit": "bar",
-        "normal": 1.5
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:EPS1",
-        "tag": "EPS1",
-        "unit": "kW",
-        "normal": 3.1,
-        "source_unit": "W"
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:FS1",
-        "tag": "FS1",
-        "unit": "L/min",
-        "normal": 11.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-04:FS2",
-        "tag": "FS2",
-        "unit": "L/min",
-        "normal": 18.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-07:TI-1",
-        "tag": "TI-1",
-        "unit": "℃",
-        "normal": 45.0
-      }
-    },
-    {
-      "labels": [
-        "Sensor"
-      ],
-      "props": {
-        "id": "HYD-07:PI-1",
-        "tag": "PI-1",
-        "unit": "bar",
-        "normal": 140.0
+        "part_no": "P-HYD-OIL",
+        "name": "작동유 ISO VG46 (20 L)"
       }
     }
   ],
@@ -1302,1062 +1349,1062 @@
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:cooler",
+      "b": "HYD-01:오일 쿨러",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:cooler",
-      "b": "P-CLR-CORE",
-      "props": {
-        "source_text": "쿨러 코어 (P-CLR-CORE)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:fan",
+      "b": "HYD-01:쿨러 팬",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:fan",
-      "b": "P-FAN-BRG",
-      "props": {
-        "source_text": "팬 베어링 (P-FAN-BRG)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:pump-a",
+      "b": "HYD-01:주 펌프 (A)",
       "props": {}
     },
     {
       "type": "INSTALLED_UNIT",
-      "a": "HYD-01:pump-a",
-      "b": "unit:KP-1904-221",
+      "a": "HYD-01:주 펌프 (A)",
+      "b": "KP-1904-221",
       "props": {
         "current": true
       }
     },
     {
-      "type": "USES_PART",
-      "a": "HYD-01:pump-a",
-      "b": "P-PMP-SEAL",
-      "props": {
-        "source_text": "펌프 축 씰 키트 (P-PMP-SEAL)"
-      }
-    },
-    {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:motor",
+      "b": "HYD-01:구동 모터",
       "props": {}
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:coupling",
+      "b": "HYD-01:커플링",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:coupling",
-      "b": "P-CPL-ELM",
-      "props": {
-        "source_text": "커플링 탄성체 (P-CPL-ELM)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:tank",
+      "b": "HYD-01:작동유 탱크",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:tank",
-      "b": "P-HYD-OIL",
-      "props": {
-        "source_text": "작동유 VG46 (P-HYD-OIL)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:rtn-filter",
+      "b": "HYD-01:리턴 필터",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:rtn-filter",
-      "b": "P-RTN-FLT",
-      "props": {
-        "source_text": "리턴 필터 엘리먼트 (P-RTN-FLT)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:strainer",
+      "b": "HYD-01:흡입 스트레이너",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:strainer",
-      "b": "P-SUC-STR",
-      "props": {
-        "source_text": "흡입 스트레이너 (P-SUC-STR)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-01",
-      "b": "HYD-01:valve",
+      "b": "HYD-01:전환 밸브",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-01:valve",
-      "b": "P-VLV-COIL",
-      "props": {
-        "source_text": "솔레노이드 코일 (P-VLV-COIL)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:cooler",
+      "b": "HYD-02:오일 쿨러",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:cooler",
-      "b": "P-CLR-CORE",
-      "props": {
-        "source_text": "P-CLR-CORE"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:fan",
+      "b": "HYD-02:쿨러 팬",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:fan",
-      "b": "P-FAN-BRG",
-      "props": {
-        "source_text": "FB-6205"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:pump-a",
+      "b": "HYD-02:주 펌프 (A)",
       "props": {}
     },
     {
       "type": "INSTALLED_UNIT",
-      "a": "HYD-02:pump-a",
-      "b": "unit:KP-2603-114",
+      "a": "HYD-02:주 펌프 (A)",
+      "b": "KP-2603-114",
       "props": {
         "current": true
       }
     },
     {
-      "type": "USES_PART",
-      "a": "HYD-02:pump-a",
-      "b": "P-PMP-SEAL",
-      "props": {
-        "source_text": "P-PMP-SEAL"
-      }
-    },
-    {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:motor",
+      "b": "HYD-02:구동 모터",
       "props": {}
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:coupling",
+      "b": "HYD-02:커플링",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:coupling",
-      "b": "P-CPL-ELM",
-      "props": {
-        "source_text": "P-CPL-ELM"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:tank",
+      "b": "HYD-02:작동유 탱크",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:tank",
-      "b": "P-HYD-OIL",
-      "props": {
-        "source_text": "P-HYD-OIL"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:rtn-filter",
+      "b": "HYD-02:리턴 필터",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:rtn-filter",
-      "b": "P-RTN-FLT",
-      "props": {
-        "source_text": "RF-10"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:strainer",
+      "b": "HYD-02:흡입 스트레이너",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:strainer",
-      "b": "P-SUC-STR",
-      "props": {
-        "source_text": "P-SUC-STR"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-02",
-      "b": "HYD-02:valve",
+      "b": "HYD-02:전환 밸브",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-02:valve",
-      "b": "P-VLV-COIL",
-      "props": {
-        "source_text": "P-VLV-COIL"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:cooler",
+      "b": "HYD-03:오일 쿨러",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:cooler",
-      "b": "P-CLR-CORE",
-      "props": {
-        "source_text": "HI-CC-45A"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:fan",
+      "b": "HYD-03:쿨러 팬",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:fan",
-      "b": "P-FAN-BRG",
-      "props": {
-        "source_text": "P-FAN-BRG"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:pump-a",
+      "b": "HYD-03:주 펌프 (A)",
       "props": {}
     },
     {
       "type": "INSTALLED_UNIT",
-      "a": "HYD-03:pump-a",
-      "b": "unit:KP-2002-087",
+      "a": "HYD-03:주 펌프 (A)",
+      "b": "KP-2002-087",
       "props": {
         "current": true
       }
     },
     {
-      "type": "USES_PART",
-      "a": "HYD-03:pump-a",
-      "b": "P-PMP-SEAL",
-      "props": {
-        "source_text": "PS-4510"
-      }
-    },
-    {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:motor",
+      "b": "HYD-03:구동 모터",
       "props": {}
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:coupling",
+      "b": "HYD-03:커플링",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:coupling",
-      "b": "P-CPL-ELM",
-      "props": {
-        "source_text": "ROTEX-24-98A"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:tank",
+      "b": "HYD-03:작동유 탱크",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:tank",
-      "b": "P-HYD-OIL",
-      "props": {
-        "source_text": "P-HYD-OIL"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:rtn-filter",
+      "b": "HYD-03:리턴 필터",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:rtn-filter",
-      "b": "P-RTN-FLT",
-      "props": {
-        "source_text": "HI-RF-10"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:strainer",
+      "b": "HYD-03:흡입 스트레이너",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:strainer",
-      "b": "P-SUC-STR",
-      "props": {
-        "source_text": "HI-SS-45"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-03",
-      "b": "HYD-03:valve",
+      "b": "HYD-03:전환 밸브",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-03:valve",
-      "b": "P-VLV-COIL",
-      "props": {
-        "source_text": "D03-24VDC"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:cooler",
+      "b": "HYD-04:수냉 열교환기",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-04:cooler",
-      "b": "P-CLR-PLT",
-      "props": {
-        "source_text": "수냉 플레이트 팩 (P-CLR-PLT)"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:pump-a",
+      "b": "HYD-04:주 펌프 (A)",
       "props": {}
     },
     {
       "type": "INSTALLED_UNIT",
-      "a": "HYD-04:pump-a",
-      "b": "unit:KP-2407-310",
+      "a": "HYD-04:주 펌프 (A)",
+      "b": "KP-2407-310",
       "props": {
         "current": true
       }
     },
     {
-      "type": "USES_PART",
-      "a": "HYD-04:pump-a",
-      "b": "P-PMP-SEAL-HT",
-      "props": {
-        "source_text": "고온형 축 씰 키트 (P-PMP-SEAL-HT)"
-      }
-    },
-    {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:motor",
+      "b": "HYD-04:구동 모터",
       "props": {}
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:coupling",
+      "b": "HYD-04:커플링",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-04:coupling",
-      "b": "P-CPL-ELM",
-      "props": {
-        "source_text": "P-CPL-ELM"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:tank",
+      "b": "HYD-04:작동유 탱크",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-04:tank",
-      "b": "P-HYD-OIL",
-      "props": {
-        "source_text": "P-HYD-OIL"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:rtn-filter",
+      "b": "HYD-04:리턴 필터",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-04:rtn-filter",
-      "b": "P-RTN-FLT",
-      "props": {
-        "source_text": "P-RTN-FLT"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:strainer",
+      "b": "HYD-04:흡입 스트레이너",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-04:strainer",
-      "b": "P-SUC-STR",
-      "props": {
-        "source_text": "P-SUC-STR"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-04",
-      "b": "HYD-04:valve",
+      "b": "HYD-04:전환 밸브",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-04:valve",
-      "b": "P-VLV-COIL",
-      "props": {
-        "source_text": "P-VLV-COIL"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-07",
-      "b": "HYD-07:pump",
+      "b": "HYD-07:펌프",
       "props": {}
     },
     {
       "type": "INSTALLED_UNIT",
-      "a": "HYD-07:pump",
-      "b": "unit:GP-1709-004",
+      "a": "HYD-07:펌프",
+      "b": "GP-1709-004",
       "props": {
         "current": true
       }
     },
     {
-      "type": "USES_PART",
-      "a": "HYD-07:pump",
-      "b": "P-PMP-SEAL-22",
-      "props": {
-        "source_text": "P-PMP-SEAL-22"
-      }
-    },
-    {
       "type": "HAS_COMPONENT",
       "a": "HYD-07",
-      "b": "HYD-07:motor",
+      "b": "HYD-07:모터",
       "props": {}
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-07",
-      "b": "HYD-07:coupling",
+      "b": "HYD-07:커플링",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-07:coupling",
-      "b": "P-CPL-ELM",
-      "props": {
-        "source_text": "P-CPL-ELM"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-07",
-      "b": "HYD-07:tank",
+      "b": "HYD-07:탱크",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-07:tank",
-      "b": "P-HYD-OIL",
-      "props": {
-        "source_text": "P-HYD-OIL"
-      }
     },
     {
       "type": "HAS_COMPONENT",
       "a": "HYD-07",
-      "b": "HYD-07:rtn-filter",
+      "b": "HYD-07:리턴 필터",
       "props": {}
-    },
-    {
-      "type": "USES_PART",
-      "a": "HYD-07:rtn-filter",
-      "b": "P-RTN-FLT",
-      "props": {
-        "source_text": "P-RTN-FLT"
-      }
     },
     {
       "type": "INSTALLED_UNIT",
-      "a": "HYD-02:pump-a",
-      "b": "unit:KP-1902-551",
+      "a": "HYD-02:주 펌프 (A)",
+      "b": "KP-1902-551",
       "props": {
         "current": false
       }
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:cooler",
+      "a": "HYD-01:오일 쿨러",
       "b": "HYD-01:TS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS1",
-      "b": "quantity:TS1",
+      "b": "유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:cooler",
+      "a": "HYD-01:오일 쿨러",
       "b": "HYD-01:TS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS2",
-      "b": "quantity:TS2",
+      "b": "쿨러 출구 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:tank",
+      "a": "HYD-01:작동유 탱크",
       "b": "HYD-01:TS3",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS3",
-      "b": "quantity:TS3",
+      "b": "탱크 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:pump-a",
+      "a": "HYD-01:주 펌프 (A)",
       "b": "HYD-01:PS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS1",
-      "b": "quantity:PS1",
+      "b": "토출 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:valve",
+      "a": "HYD-01:전환 밸브",
       "b": "HYD-01:PS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS2",
-      "b": "quantity:PS2",
+      "b": "시스템 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:rtn-filter",
+      "a": "HYD-01:리턴 필터",
       "b": "HYD-01:PS4",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS4",
-      "b": "quantity:PS4",
+      "b": "필터 차압",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:motor",
+      "a": "HYD-01:구동 모터",
       "b": "HYD-01:EPS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:EPS1",
-      "b": "quantity:EPS1",
+      "b": "모터 출력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:pump-a",
+      "a": "HYD-01:주 펌프 (A)",
       "b": "HYD-01:FS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:FS1",
-      "b": "quantity:FS1",
+      "b": "유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:cooler",
+      "a": "HYD-01:오일 쿨러",
       "b": "HYD-01:FS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:FS2",
-      "b": "quantity:FS2",
+      "b": "냉각 회로 유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-01:fan",
+      "a": "HYD-01:쿨러 팬",
       "b": "HYD-01:VS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-01:VS1",
-      "b": "quantity:VS1",
+      "b": "팬 진동",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:cooler",
+      "a": "HYD-02:오일 쿨러",
       "b": "HYD-02:TS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS1",
-      "b": "quantity:TS1",
+      "b": "유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:cooler",
+      "a": "HYD-02:오일 쿨러",
       "b": "HYD-02:TS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS2",
-      "b": "quantity:TS2",
+      "b": "쿨러 출구 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:tank",
+      "a": "HYD-02:작동유 탱크",
       "b": "HYD-02:TS3",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS3",
-      "b": "quantity:TS3",
+      "b": "탱크 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:pump-a",
+      "a": "HYD-02:주 펌프 (A)",
       "b": "HYD-02:PS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS1",
-      "b": "quantity:PS1",
+      "b": "토출 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:valve",
+      "a": "HYD-02:전환 밸브",
       "b": "HYD-02:PS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS2",
-      "b": "quantity:PS2",
+      "b": "시스템 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:rtn-filter",
+      "a": "HYD-02:리턴 필터",
       "b": "HYD-02:PS4",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS4",
-      "b": "quantity:PS4",
+      "b": "필터 차압",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:motor",
+      "a": "HYD-02:구동 모터",
       "b": "HYD-02:EPS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:EPS1",
-      "b": "quantity:EPS1",
+      "b": "모터 출력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:pump-a",
+      "a": "HYD-02:주 펌프 (A)",
       "b": "HYD-02:FS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:FS1",
-      "b": "quantity:FS1",
+      "b": "유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:cooler",
+      "a": "HYD-02:오일 쿨러",
       "b": "HYD-02:FS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:FS2",
-      "b": "quantity:FS2",
+      "b": "냉각 회로 유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-02:fan",
+      "a": "HYD-02:쿨러 팬",
       "b": "HYD-02:VS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-02:VS1",
-      "b": "quantity:VS1",
+      "b": "팬 진동",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:cooler",
+      "a": "HYD-03:오일 쿨러",
       "b": "HYD-03:TS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS1",
-      "b": "quantity:TS1",
+      "b": "유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:cooler",
+      "a": "HYD-03:오일 쿨러",
       "b": "HYD-03:TS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS2",
-      "b": "quantity:TS2",
+      "b": "쿨러 출구 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:tank",
+      "a": "HYD-03:작동유 탱크",
       "b": "HYD-03:TS3",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS3",
-      "b": "quantity:TS3",
+      "b": "탱크 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:pump-a",
+      "a": "HYD-03:주 펌프 (A)",
       "b": "HYD-03:PS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS1",
-      "b": "quantity:PS1",
+      "b": "토출 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:valve",
+      "a": "HYD-03:전환 밸브",
       "b": "HYD-03:PS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS2",
-      "b": "quantity:PS2",
+      "b": "시스템 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:rtn-filter",
+      "a": "HYD-03:리턴 필터",
       "b": "HYD-03:PS4",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS4",
-      "b": "quantity:PS4",
+      "b": "필터 차압",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:motor",
+      "a": "HYD-03:구동 모터",
       "b": "HYD-03:EPS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:EPS1",
-      "b": "quantity:EPS1",
+      "b": "모터 출력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:pump-a",
+      "a": "HYD-03:주 펌프 (A)",
       "b": "HYD-03:FS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:FS1",
-      "b": "quantity:FS1",
+      "b": "유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:cooler",
+      "a": "HYD-03:오일 쿨러",
       "b": "HYD-03:FS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:FS2",
-      "b": "quantity:FS2",
+      "b": "냉각 회로 유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-03:fan",
+      "a": "HYD-03:쿨러 팬",
       "b": "HYD-03:VS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-03:VS1",
-      "b": "quantity:VS1",
+      "b": "팬 진동",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:cooler",
+      "a": "HYD-04:수냉 열교환기",
       "b": "HYD-04:TS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS1",
-      "b": "quantity:TS1",
+      "b": "유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:cooler",
+      "a": "HYD-04:수냉 열교환기",
       "b": "HYD-04:TS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS2",
-      "b": "quantity:TS2",
+      "b": "쿨러 출구 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:tank",
+      "a": "HYD-04:작동유 탱크",
       "b": "HYD-04:TS3",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS3",
-      "b": "quantity:TS3",
+      "b": "탱크 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:pump-a",
+      "a": "HYD-04:주 펌프 (A)",
       "b": "HYD-04:PS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS1",
-      "b": "quantity:PS1",
+      "b": "토출 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:valve",
+      "a": "HYD-04:전환 밸브",
       "b": "HYD-04:PS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS2",
-      "b": "quantity:PS2",
+      "b": "시스템 압력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:rtn-filter",
+      "a": "HYD-04:리턴 필터",
       "b": "HYD-04:PS4",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS4",
-      "b": "quantity:PS4",
+      "b": "필터 차압",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:motor",
+      "a": "HYD-04:구동 모터",
       "b": "HYD-04:EPS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:EPS1",
-      "b": "quantity:EPS1",
+      "b": "모터 출력",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:pump-a",
+      "a": "HYD-04:주 펌프 (A)",
       "b": "HYD-04:FS1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:FS1",
-      "b": "quantity:FS1",
+      "b": "유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-04:cooler",
+      "a": "HYD-04:수냉 열교환기",
       "b": "HYD-04:FS2",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-04:FS2",
-      "b": "quantity:CW-FLOW",
+      "b": "냉각수 유량",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-07:tank",
+      "a": "HYD-07:탱크",
       "b": "HYD-07:TI-1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-07:TI-1",
-      "b": "quantity:TS3",
+      "b": "탱크 유온",
       "props": {}
     },
     {
       "type": "MONITORED_BY",
-      "a": "HYD-07:pump",
+      "a": "HYD-07:펌프",
       "b": "HYD-07:PI-1",
       "props": {}
     },
     {
       "type": "OBSERVES",
       "a": "HYD-07:PI-1",
-      "b": "quantity:PS1",
+      "b": "토출 압력",
       "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:오일 쿨러",
+      "b": "P-CLR-CORE",
+      "props": {
+        "source_text": "쿨러 코어 (P-CLR-CORE)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:쿨러 팬",
+      "b": "P-FAN-BRG",
+      "props": {
+        "source_text": "팬 베어링 (P-FAN-BRG)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:주 펌프 (A)",
+      "b": "P-PMP-SEAL",
+      "props": {
+        "source_text": "펌프 축 씰 키트 (P-PMP-SEAL)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:커플링",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "커플링 탄성체 (P-CPL-ELM)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:작동유 탱크",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "작동유 VG46 (P-HYD-OIL)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:리턴 필터",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "리턴 필터 엘리먼트 (P-RTN-FLT)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:흡입 스트레이너",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "흡입 스트레이너 (P-SUC-STR)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:전환 밸브",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "솔레노이드 코일 (P-VLV-COIL)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:오일 쿨러",
+      "b": "P-CLR-CORE",
+      "props": {
+        "source_text": "P-CLR-CORE"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:쿨러 팬",
+      "b": "P-FAN-BRG",
+      "props": {
+        "source_text": "FB-6205"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:주 펌프 (A)",
+      "b": "P-PMP-SEAL",
+      "props": {
+        "source_text": "P-PMP-SEAL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:커플링",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "P-CPL-ELM"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:작동유 탱크",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "P-HYD-OIL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:리턴 필터",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "RF-10"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:흡입 스트레이너",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "P-SUC-STR"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:전환 밸브",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "P-VLV-COIL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:오일 쿨러",
+      "b": "P-CLR-CORE",
+      "props": {
+        "source_text": "HI-CC-45A"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:쿨러 팬",
+      "b": "P-FAN-BRG",
+      "props": {
+        "source_text": "P-FAN-BRG"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:주 펌프 (A)",
+      "b": "P-PMP-SEAL",
+      "props": {
+        "source_text": "PS-4510"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:커플링",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "ROTEX-24-98A"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:작동유 탱크",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "P-HYD-OIL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:리턴 필터",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "HI-RF-10"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:흡입 스트레이너",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "HI-SS-45"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:전환 밸브",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "D03-24VDC"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:수냉 열교환기",
+      "b": "P-CLR-PLT",
+      "props": {
+        "source_text": "수냉 플레이트 팩 (P-CLR-PLT)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:주 펌프 (A)",
+      "b": "P-PMP-SEAL-HT",
+      "props": {
+        "source_text": "고온형 축 씰 키트 (P-PMP-SEAL-HT)"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:커플링",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "P-CPL-ELM"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:작동유 탱크",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "P-HYD-OIL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:리턴 필터",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "P-RTN-FLT"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:흡입 스트레이너",
+      "b": "P-SUC-STR",
+      "props": {
+        "source_text": "P-SUC-STR"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-04:전환 밸브",
+      "b": "P-VLV-COIL",
+      "props": {
+        "source_text": "P-VLV-COIL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:펌프",
+      "b": "P-PMP-SEAL-22",
+      "props": {
+        "source_text": "P-PMP-SEAL-22"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:커플링",
+      "b": "P-CPL-ELM",
+      "props": {
+        "source_text": "P-CPL-ELM"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:탱크",
+      "b": "P-HYD-OIL",
+      "props": {
+        "source_text": "P-HYD-OIL"
+      }
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-07:리턴 필터",
+      "b": "P-RTN-FLT",
+      "props": {
+        "source_text": "P-RTN-FLT"
+      }
     }
   ]
 }

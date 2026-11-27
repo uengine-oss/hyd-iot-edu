@@ -1,9 +1,10 @@
 {
   "classes": {
     "Asset": {
-      "meaning": "개별 설비(설비코드 기준). 기능위치·실물 일련번호를 속성으로 둔다",
+      "meaning": "설비 대장에 올려 한 대씩 관리하는 기계",
       "required": {
         "id": "string",
+        "code": "string",
         "name": "string",
         "model": "string",
         "status": "string"
@@ -12,11 +13,21 @@
         "maker": "string",
         "serial": "string",
         "functional_location": "string",
-        "installed": "string"
+        "installed": "date"
+      },
+      "source": {
+        "code": "설비코드",
+        "name": "설비명",
+        "model": "모델",
+        "status": "상태",
+        "maker": "제조사",
+        "serial": "일련번호",
+        "functional_location": "기능위치",
+        "installed": "설치일"
       }
     },
     "Component": {
-      "meaning": "설비 안의 정비 가능 품목이 놓인 자리. 기능 자리 기준 ID(설비코드:품목)이고, 그 자리에 달린 실물은 Unit",
+      "meaning": "설비를 이루는 기계 하나하나가 놓이는 자리",
       "required": {
         "id": "string",
         "name": "string",
@@ -24,48 +35,77 @@
       },
       "optional": {
         "aliases": "list"
+      },
+      "source": {
+        "name": "구성요소",
+        "group": "계통",
+        "aliases": "다른이름"
       }
     },
     "Sensor": {
-      "meaning": "설비별 계측 채널",
+      "meaning": "구성 요소에 붙어 값을 재는 계기",
       "required": {
         "id": "string",
         "tag": "string",
         "unit": "string"
       },
       "optional": {
+        "name": "string",
         "normal": "number",
         "limit": "number",
-        "limit_direction": [
-          "upper",
-          "lower"
-        ],
-        "source_unit": "string"
+        "limit_direction": "string"
+      },
+      "source": {
+        "tag": "태그",
+        "name": "센서명",
+        "unit": "단위",
+        "normal": "정상값",
+        "limit": "한계",
+        "limit_direction": "한계구분"
       }
     },
     "Quantity": {
-      "meaning": "재는 물리량과 기준 단위. 붙은 자리가 다르면 다른 물리량(쿨러 쪽 유온 · 탱크 유온)",
-      "required": {
-        "id": "string",
-        "name": "string",
-        "unit": "string"
-      }
-    },
-    "Part": {
-      "meaning": "사내 품번 하나로 관리하는 부품 품목",
+      "meaning": "센서가 재는 것. 같은 것을 재는 센서를 여기에 모은다",
       "required": {
         "id": "string",
         "name": "string"
       },
       "optional": {
+        "unit": "string"
+      },
+      "source": {
+        "name": "물리량",
+        "unit": "기준단위"
+      }
+    },
+    "Part": {
+      "meaning": "구성 요소 안에서 닳으면 갈아 끼우는 것. 사내 품번마다 하나이고 다른 표기는 다른 이름으로 남긴다",
+      "required": {
+        "id": "string",
+        "part_no": "string",
+        "name": "string"
+      },
+      "optional": {
         "other_codes": "list"
+      },
+      "source": {
+        "part_no": "품번",
+        "name": "품명",
+        "other_codes": "다른표기"
       }
     },
     "Unit": {
-      "meaning": "일련번호가 붙은 실물 한 대(그 자리에 지금 달린 것 · 전에 달렸다가 철거된 것)",
+      "meaning": "구성 요소 자리에 달리는 일련번호가 붙은 기계 한 대",
       "required": {
         "id": "string",
         "serial": "string"
+      },
+      "optional": {
+        "note": "string"
+      },
+      "source": {
+        "serial": "일련번호",
+        "note": "비고"
       }
     }
   },
@@ -73,22 +113,36 @@
     "HAS_COMPONENT": {
       "from": "Asset",
       "to": "Component",
-      "cardinality": "1:N"
+      "reads": "가진다",
+      "cardinality": "1:N",
+      "at_least_one": [
+        "to"
+      ]
     },
     "MONITORED_BY": {
       "from": "Component",
       "to": "Sensor",
-      "cardinality": "1:N"
+      "reads": "감시된다",
+      "cardinality": "1:N",
+      "at_least_one": [
+        "to"
+      ]
     },
     "OBSERVES": {
       "from": "Sensor",
       "to": "Quantity",
-      "cardinality": "N:1"
+      "reads": "잰다",
+      "cardinality": "N:1",
+      "at_least_one": [
+        "from"
+      ]
     },
     "USES_PART": {
       "from": "Component",
       "to": "Part",
-      "cardinality": "N:1",
+      "reads": "쓴다",
+      "cardinality": "N:M",
+      "at_least_one": [],
       "properties": {
         "source_text": "string"
       }
@@ -96,18 +150,29 @@
     "INSTALLED_UNIT": {
       "from": "Component",
       "to": "Unit",
+      "reads": "달고 있다",
       "cardinality": "1:N",
+      "at_least_one": [
+        "to"
+      ],
       "properties": {
         "current": "boolean"
-      },
-      "note": "current=true가 지금 달린 실물, false가 철거된 실물"
+      }
     }
   },
-  "identity": "id는 전체 그래프에서 고유.",
-  "constraints": [
-    "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번, 실물은 unit:일련번호",
-    "철거된 실물은 그 자리의 지난 실물(INSTALLED_UNIT current=false)로 남긴다",
-    "limit 생략은 0과 다르다. normal 생략은 미확인",
-    "단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다"
-  ]
+  "identity": {
+    "Asset": "{설비코드}",
+    "Component": "{설비코드}:{구성요소}",
+    "Sensor": "{설비코드}:{태그}",
+    "Quantity": "{물리량}",
+    "Part": "{품번}",
+    "Unit": "{일련번호}"
+  },
+  "links": {
+    "설비-구성 요소": "HAS_COMPONENT",
+    "구성 요소-센서": "MONITORED_BY",
+    "센서-물리량": "OBSERVES",
+    "구성 요소-부품": "USES_PART",
+    "구성 요소-실물": "INSTALLED_UNIT"
+  }
 }

@@ -20,12 +20,17 @@ def rel(path):
 
 
 def read_text(path):
-    """(글, 글자 방식). UTF-8(BOM 포함)로 읽고, 안 되면 CP949로 읽는다 — 어느 쪽으로 읽었는지 함께 돌려준다."""
+    """(글, 글자 방식). UTF-8(BOM 포함)로만 읽는다 — 다른 글자표로 저장된 파일은 그 줄을 짚고 멈춘다."""
     data = Path(path).read_bytes()
     try:
         return data.decode('utf-8-sig'), 'UTF-8'
-    except UnicodeDecodeError:
-        return data.decode('cp949'), 'CP949'
+    except UnicodeDecodeError:      # 다른 글자표로 조용히 바꿔 읽지 않는다 — 그 줄을 짚고 멈춘다
+        for n, line in enumerate(data.split(b'\n'), 1):
+            try:
+                line.decode('utf-8')
+            except UnicodeDecodeError:
+                raise Stop(f'{rel(path)}:{n}: UTF-8로 저장되지 않은 글자가 있습니다 — Codex에게 「이 파일을 UTF-8로 다시 저장해 줘」라고 부탁합니다(한글이 다른 글자표로 저장됐습니다).')
+        raise
 
 
 def read_table(path):

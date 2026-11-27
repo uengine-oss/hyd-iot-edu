@@ -7,9 +7,9 @@ for _stream in (sys.stdout, sys.stderr):
 import hashlib as _h
 _PROVIDED = {
  "app/ui/render.py": "f9170a056453a35cc5583eb052eefba6450e29eb6e6fcaf264a896b66cf7be58",
- "app/utils/actions.py": "29faf578b01fd1f2129f158a92e2365da1bd71c8437bd4e06732ded5a814764e",
- "app/utils/model.py": "70ed078edc3e128700b9f87cd37d471894724501cd3d257d6355d5d999317af8",
- "app/utils/results.py": "25458cd98ea82bbcc688cbba9bfd2e746bcd62d8121da1f33da764fbb06ece6a",
+ "app/utils/actions.py": "611796abacebe01a707a19672faca04c0a2c82859f2ee2ae7c09927c91bd16c1",
+ "app/utils/model.py": "e1710842efdb3994a7b0df98d000364c2f83260f5c0307c6a574d27c9b6e58fc",
+ "app/utils/results.py": "3637e4ec424d1b2eac77f77fce80fe1b9b3be4e0a90268548e3b7a70c54102f7",
  "run.py": "719e59ea92ccad25b31355ef67fd096c0ff47751ae8cbb0944420d185f38d10f"
 }
 def provided_errors(root):
@@ -105,7 +105,9 @@ try:
             for key,v in props.items():
                 if key in req:continue
                 if key in opt:check_value(f'{lab} {id}',key,v,opt[key])
-                else:warnings.append(f'{lab}에 정의되지 않은 속성 {key} ({id})')
+                else:errors.append(f'{lab} {id}: 스키마에 정의되지 않은 속성 {key}')
+            for key,v in props.items():
+                if isinstance(v,list) and len(set(map(str,v)))!=len(v):errors.append(f'{lab} {id}: 목록 속성 {key}에 같은 값이 두 번 — '+' · '.join(map(str,v)))
     seen=set()
     for r in rels:
         t=r.get('type');a=r.get('a');b=r.get('b');props=r.get('props',{}) or {}
@@ -123,7 +125,7 @@ try:
             if k not in props:errors.append(f'{t} {a}→{b}: 필수 속성 {k} 없음')
         for k,v in props.items():
             if k in pspec:check_value(f'{t} {a}→{b}',k,v,pspec[k])
-            elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
+            elif k!='id':errors.append(f'{t} {a}→{b}: 스키마에 정의되지 않은 속성 {k}')
     # 카디널리티(시작 쪽 수:끝 쪽 수) — 「1」 쪽은 많아야 하나. 그래프의 실제 연결 수가 적은 수를 넘으면 그 대상을 짚는다.
     ONE={'1','0..1'};MANY={'N','M','0..N','1..N','*'}
     out_n={};in_n={}
@@ -142,11 +144,12 @@ try:
             over=sorted((x,len(v)) for (tt,x),v in count.items() if tt==t and len(v)>1)
             if over:errors.append(f'{t} 카디널리티 {card} 어긋남: {word} 많아야 하나인데 둘 이상인 대상 {len(over)}개 — '+', '.join(f'{x} {n}개' for x,n in over[:5])+(' …' if len(over)>5 else ''))
     for t,spec in relations.items():
-        if not (isinstance(spec,dict) and spec.get('at_least_one') is True):continue
-        starts=spec.get('from');starts=starts if isinstance(starts,list) else [starts]
-        has={r.get('a') for r in rels if r.get('type')==t}
-        lone=sorted(i for i,labs in labels_by_id.items() if any(x in starts for x in labs) and i not in has)
-        if lone:errors.append(f'{t} 끝이 적어도 하나 어긋남: 이 관계가 하나도 없는 시작 쪽 인스턴스 {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))
+        least=spec.get('at_least_one') if isinstance(spec,dict) else None
+        for side in (least if isinstance(least,list) else []):
+            mine=spec.get(side);mine=mine if isinstance(mine,list) else [mine]
+            has={r.get('a' if side=='from' else 'b') for r in rels if r.get('type')==t}
+            lone=sorted(i for i,labs in labels_by_id.items() if any(x in mine for x in labs) and i not in has)
+            if lone:errors.append(f'{t} 적어도 하나 어긋남: 이 관계가 하나도 없는 {"/".join(map(str,mine))} {len(lone)}개 — '+', '.join(lone[:5])+(' …' if len(lone)>5 else ''))
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:

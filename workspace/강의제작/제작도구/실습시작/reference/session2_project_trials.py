@@ -5,7 +5,8 @@
 - 갈래마다 결과 화면의 대조(기대 답 ↔ 모델에 물은 답)가 줄마다 같음이고, 결정 지점마다 갈래가 다르면 그 질문의 답이 실제로 다르다.
 - 식별자 틀을 달리한 사본(갈래 E에 session2_answers.OTHER_IDS — 설비 · 부품에 머리를 붙이고 센서 · 구성 요소의 꼴을 바꿈)도 같은 기대 답(설비 코드 · 품번으로 묻는 줄)과
   줄마다 같음이고 그 답이 갈래 E와 같으며, 모델을 설비 코드 · 사내 품번 · 태그로 되짚으면 생성 정답 구조와 같다. 질문 1의 항목을 원자료 이름으로 적어도 다른 이름으로 찾아 같음이다.
-- 스키마 표의 선택을 바꾸면 결과가 따라 바뀐다(schema_choices): 필수 · 끝이 적어도 하나 · 자료형 · 단위 · 관계 방향 · 빠진 속성 · 식별자에 쓴 빈 칸, 내가 더한 질문 4의 둘째 바퀴.
+- 스키마 표의 선택을 바꾸면 결과가 따라 바뀐다(schema_choices): 필수 · 적어도 하나 · 자료형 · 단위 · 카디널리티 · 빠진 속성 · 식별자에 쓴 빈 칸, 내가 더한 질문 4의 둘째 바퀴.
+  관계의 화살표는 거꾸로 그어도(카디널리티 · 적어도 하나를 함께 뒤집으면) 답이 같고, 화면이 그 줄을 거꾸로 읽은 문장으로 보인다. 카디널리티는 자료보다 넓게 적어도 어긋남이 아니다.
 - 빈 틀을 일부러 망가뜨리면(카디널리티 · 지난 실물 · 물리량 이름 · 빈 결정 · 처리 안 한 철거 줄 · 한 물리량에 섞인 단위) 제공 코드가 그 줄을 짚고 멈추고,
   교체부품 칸의 표기를 교차표에 없는 글로 바꾸면 잇지 않고 화면에 보인다. 모델을 망가뜨리면(ID 중복 · 끝점 없음 · 관계 방향) 구조 검사가 잡는다.
 - 학생 ZIP과 완성본 ZIP을 새 폴더에 풀어 첫 명령과 재실행이 된다.
@@ -251,9 +252,14 @@ def field_damage(folder, files):
     rules = P.convert(files['결과/quantity_rules.py'])
     (gone, now, _), = A.removed_rows()
     stops = {
-        'cardinality-too-tight': ('app/features/relations.csv', rel.replace('HAS_COMPONENT,설비,구성 요소,1:N', 'HAS_COMPONENT,설비,구성 요소,1:1'), 'names', 'relations.csv:3: HAS_COMPONENT 카디널리티 1:1'),
-        'cardinality-unknown': ('app/features/relations.csv', rel.replace('OBSERVES,센서,물리량,N:1', 'OBSERVES,센서,물리량,여럿'), 'relations', '카디널리티 「여럿」'),
-        'relation-between-unlinked-classes': ('app/features/relations.csv', rel.replace('OBSERVES,센서,물리량,N:1', 'OBSERVES,설비,물리량,N:1'), 'relations', '이을 수 있는 짝은'),
+        'cardinality-too-tight': ('app/features/relations.csv', rel.replace('HAS_COMPONENT,가진다,설비,구성 요소,1:N', 'HAS_COMPONENT,가진다,설비,구성 요소,1:1'), 'names', 'relations.csv:3: HAS_COMPONENT 카디널리티 1:1'),
+        'cardinality-unknown': ('app/features/relations.csv', rel.replace('OBSERVES,잰다,센서,물리량,N:1', 'OBSERVES,잰다,센서,물리량,여럿'), 'relations', '카디널리티 「여럿」'),
+        'relation-between-unlinked-classes': ('app/features/relations.csv', rel.replace('OBSERVES,잰다,센서,물리량,N:1', 'OBSERVES,잰다,설비,물리량,N:1'), 'relations', '이을 수 있는 짝은'),
+        'relation-without-reading': ('app/features/relations.csv', rel.replace('OBSERVES,잰다,센서,물리량,N:1', 'OBSERVES,,센서,물리량,N:1'), 'relations', '읽는_말 칸이 비었습니다'),
+        'at-least-one-unknown': ('app/features/relations.csv', rel.replace('OBSERVES,잰다,센서,물리량,N:1,시작마다', 'OBSERVES,잰다,센서,물리량,N:1,예'), 'relations', '적어도_하나 「예」'),
+        'decision-without-file-line': ('app/features/decisions.csv', '\n'.join('같은 물리량의 범위,종류로 묶음,한 번에 모아 보려고,온도 센서가 한 묶음' if x.startswith('같은 물리량의 범위,') else x for x in P.convert(files['결과/정한_것.csv']).split('\n')),
+                                       'quantities', '근거에 파일:줄이 없습니다'),
+        'question-marks-instead-of-korean': ('app/features/classes.csv', P.convert(files['결과/클래스.csv']).replace('센서,' + A.MEANING['센서'] + ',', '센서,?? ??? ?? ?? ?? ??,'), 'classes', 'classes.csv:5: 한글이 「?」로 깨진 채 저장됐습니다'),
         'class-without-meaning': ('app/features/classes.csv', P.convert(files['결과/클래스.csv']).replace('센서,' + A.MEANING['센서'] + ',', '센서,,'), 'classes', '의미 칸이 비었습니다'),
         'property-column-not-in-table': ('app/features/properties.csv', P.convert(files['결과/속성.csv']).replace('센서,tag,태그,', '센서,tag,태그번호,'), 'properties', '원자료_칸 「태그번호」'),
         'identifier-from-blank-cell': ('app/features/classes.csv', P.convert(files['결과/클래스.csv']).replace('{설비코드}:{구성요소}', '{설비코드}:{구성요소}:{일련번호}'), 'names', '일련번호 칸이 이 행에서 비었습니다'),
@@ -279,6 +285,38 @@ def field_damage(folder, files):
         if name == 'empty-decision':
             assert '같은 물리량의 범위' in text, text[-600:]
         out.append({'damage': name, 'stopped_with': want})
+    # 표를 UTF-8이 아닌 글자표(cp949)로 저장하면: 조용히 바꿔 읽지 않고 그 파일:줄과 할 일을 한국어로 말하며 멈춘다(영어 codec 오류가 나오지 않는다)
+    for name, path, action in (('classes-saved-as-cp949', 'app/features/classes.csv', 'classes'), ('expected-saved-as-cp949', 'app/features/expected.csv', 'expected'),
+                               ('rules-saved-as-cp949', 'app/features/quantity_rules.py', 'quantities')):
+        target = folder / path
+        original = target.read_bytes()
+        target.write_bytes(original.decode('utf-8').encode('cp949', errors='replace'))
+        try:
+            text = command(folder, 'run.py', action, '--no-open', ok=False)
+            assert path + ':' in text and 'UTF-8로 저장되지 않은 글자가 있습니다' in text and 'codec' not in text, (name, text[-600:])
+        finally:
+            target.write_bytes(original)
+        out.append({'damage': name, 'stopped_with': 'UTF-8로 저장되지 않은 글자가 있습니다', 'file_and_line': True})
+    # 규칙 코드가 아직 빈 틀이면: 빈 오류 글이 아니라 무엇이 비었는지 말한다. 물리량 단계는 그 단계의 결정만 본다(자리와 실물 결정이 비어 있어도 돈다)
+    target = folder / 'app/features/quantity_rules.py'
+    original = target.read_bytes()
+    target.write_text(P.convert(A.QUANTITY_RULES_BLANK), encoding='utf-8', newline='\n')
+    try:
+        text = command(folder, 'run.py', 'quantities', '--no-open')
+        assert '아직 비어 있습니다' in text and 'quantity_rules.py' in text and 'same_quantity' in text, text[-400:]
+    finally:
+        target.write_bytes(original)
+    out.append({'damage': 'blank-quantity-rules', 'says_what_is_blank': True})
+    target = folder / 'app/features/decisions.csv'
+    original = target.read_bytes()
+    target.write_text('\n'.join('구성 요소 자리와 그 실물,,,' if x.startswith('구성 요소 자리와 그 실물,') else x for x in original.decode('utf-8').split('\n')), encoding='utf-8', newline='\n')
+    try:
+        command(folder, 'run.py', 'quantities', '--no-open')
+        text = command(folder, 'run.py', 'parts', '--no-open', ok=False)
+        assert 'decisions.csv:' in text and '구성 요소 자리와 그 실물' in text, text[-400:]
+    finally:
+        target.write_bytes(original)
+    out.append({'damage': 'other-decision-empty', 'quantities_runs': True, 'model_writing_stops': True})
     # 교차표에 없는 표기: 짐작해 잇지 않고 「사내 품번을 찾지 못한 교체부품 칸」에 보인다. 그 부품의 사용 설비에서 그 설비가 빠져 대조가 「다름」이 된다.
     target = folder / 'data/components.csv'
     original = target.read_bytes()
@@ -340,16 +378,24 @@ def schema_choices(folder, branch):
         found = cards('parts', '원자료가 내 스키마 표와 어긋나는 곳')
         assert found and found[0]['badge'] == f'{empty}곳' and 'relations.csv:' in found[0]['lines'][0][1], found
         failed = command(folder, 'run.py', 'check', '--no-open', ok=False)
-        assert '끝이 적어도 하나 어긋남' in failed and f'{empty}개' in failed, failed[-400:]
+        assert '적어도 하나 어긋남' in failed and f'{empty}개' in failed, failed[-400:]
         return {'components_without_part': empty, 'check_fails': True}
-    tried('uses-part-at-least-one', {'relations.csv': text('relations.csv').replace('USES_PART,구성 요소,부품,N:1,아니오,', 'USES_PART,구성 요소,부품,N:1,예,')}, at_least_one_part)
+    tried('uses-part-at-least-one', {'relations.csv': text('relations.csv').replace('USES_PART,쓴다,구성 요소,부품,N:M,없음,', 'USES_PART,쓴다,구성 요소,부품,N:M,시작마다,')}, at_least_one_part)
 
-    def looser_cardinality():      # 카디널리티를 원자료의 실제 연결보다 넓게 적으면 모델은 서지만 그 관계가 화면에 짚인다
+    def narrower_cardinality():      # 참조 답은 이론대로 N:M이다. 지금 자료에서 센 N:1로 적어도 받는다 — 둘 다 경고 없이 서고 넣기 전 검증을 통과한다(자료의 개수에 맞추라고 하지 않는다)
         first = blocks(folder, 'parts')
-        loose = [r for b in first if b['kind'] == 'table' and b['title'].startswith('관계마다 적은 카디널리티') for r in b['rows'] if r[5] != '맞음']
-        assert first[0]['state'] == 'warn' and '넓게 적은 관계 1개' in first[0]['text'] and len(loose) == 1 and loose[0][1] == 'USES_PART', (first[0], loose)
-        return {'verdict': 'warn', 'relation_shown': loose[0][1]}
-    tried('uses-part-cardinality-looser-than-data', {'relations.csv': text('relations.csv').replace('USES_PART,구성 요소,부품,N:1,', 'USES_PART,구성 요소,부품,N:M,')}, looser_cardinality)
+        assert first[0]['state'] == 'ok' and '넓게' not in json.dumps(first, ensure_ascii=False), first[0]
+        command(folder, 'run.py', 'check', '--no-open')
+        return {'verdict': first[0]['state'], 'check': 'pass'}
+    base = blocks(folder, 'parts')
+    assert base[0]['state'] == 'ok' and '넓게' not in json.dumps(base, ensure_ascii=False), base[0]      # N:M(참조 답) — 경고 없음
+    tried('uses-part-n-to-1-as-counted-in-data', {'relations.csv': text('relations.csv').replace('USES_PART,쓴다,구성 요소,부품,N:M,', 'USES_PART,쓴다,구성 요소,부품,N:1,')}, narrower_cardinality)
+
+    def too_tight():      # 「많아야 하나」로 정한 쪽에 실제로 둘 이상 이어지면 그 관계 표 줄과 원자료 줄을 짚고 멈춘다
+        stopped = command(folder, 'run.py', 'parts', '--no-open', ok=False)
+        assert 'relations.csv:' in stopped and 'USES_PART 카디널리티 1:1' in stopped and 'components.csv:' in stopped, stopped[-400:]
+        return {'model_stops': True}
+    tried('uses-part-1-to-1', {'relations.csv': text('relations.csv').replace('USES_PART,쓴다,구성 요소,부품,N:M,', 'USES_PART,쓴다,구성 요소,부품,1:1,')}, too_tight)
 
     def id_without_asset_code():      # 센서 식별자에서 설비 코드를 빼면 같은 태그의 센서가 한 식별자로 겹치고, 모델을 만들다 그 줄에서 멈춘다
         shown = blocks(folder, 'classes')
@@ -372,14 +418,41 @@ def schema_choices(folder, branch):
         return {'quantities': written, 'rows_different': len(off)}
     tried('quantity-rule-by-written-name-only', {'quantity_rules.py': "def same_quantity(a, b):\n    return a['재는것'] == b['재는것']\n\n\ndef quantity_name(members):\n    return members[0]['재는것']\n"}, rule_by_written_name)
 
-    def reversed_direction():      # 관계를 반대 방향으로 저장하면 그 관계를 지나는 질문이 찾지 못한다(모델과 구조 검사는 그대로 선다)
+    before = states()
+    assert before and all(state == '같음' for _, state, _ in before), before
+
+    def reversed_direction():      # 화살표를 거꾸로 긋고 카디널리티 · 적어도 하나를 함께 뒤집으면: 질문의 답은 그대로다(찾을 때는 거꾸로 따라가도 된다). 화면은 그 줄을 거꾸로 읽은 문장으로 보인다
+        said = [dict(c['lines'])['문장으로 읽기'] for c in cards('relations', '관계마다 내가 정한 것') if c['badge'] == 'HAS_COMPONENT']
+        assert len(said) == 1 and said[0].startswith('구성 요소 「') and '→ 가진다 → 설비 「' in said[0], said
         command(folder, 'run.py', 'parts', '--no-open')
         command(folder, 'run.py', 'check', '--no-open')
         got = states()
-        lost = [k for k, state, answer in got if '찾지 못함' in answer]
-        assert lost and all(state != '같음' for k, state, answer in got if k.startswith(('1 |', '2 |'))), got
-        return {'questions_blocked': len(lost), 'model_and_check_still_pass': True}
-    tried('has-component-reversed', {'relations.csv': text('relations.csv').replace('HAS_COMPONENT,설비,구성 요소,1:N,예,', 'HAS_COMPONENT,구성 요소,설비,N:1,예,')}, reversed_direction)
+        assert got == before, [x for x in got if x not in before]
+        return {'sentence_shown': said[0], 'answers_unchanged': len(got), 'model_and_check_pass': True}
+    tried('has-component-reversed', {'relations.csv': text('relations.csv').replace('HAS_COMPONENT,가진다,설비,구성 요소,1:N,종료마다,', 'HAS_COMPONENT,가진다,구성 요소,설비,N:1,시작마다,')}, reversed_direction)
+
+    def reversed_only_arrow():      # 화살표만 거꾸로 긋고 카디널리티를 그대로 두면: 「구성 요소 하나에 설비 여럿」이 되어 원자료의 실제 연결에서 걸린다
+        stopped = command(folder, 'run.py', 'names', '--no-open', ok=False)
+        assert 'relations.csv:3: HAS_COMPONENT 카디널리티 1:N' in stopped and '많아야 하나인데' in stopped, stopped[-400:]
+        return {'model_stops_on': 'relations.csv:3'}
+    tried('has-component-reversed-cardinality-kept', {'relations.csv': text('relations.csv').replace('HAS_COMPONENT,가진다,설비,구성 요소,1:N,종료마다,', 'HAS_COMPONENT,가진다,구성 요소,설비,1:N,종료마다,')}, reversed_only_arrow)
+
+    def alias_not_kept():      # 구성 요소의 다른 이름을 속성으로 담지 않으면: 원자료 이름으로 적은 기대 답 줄은 찾지 못하고, 그 줄이 까닭을 말한다
+        command(folder, 'run.py', 'parts', '--no-open')
+        off = [x for x in states() if x[1] != '같음']
+        assert len(off) == 1 and raw_name in off[0][0] and '「다른이름」 칸을 담은 속성이 없어' in off[0][2], off
+        return {'rows_different': 1, 'row_says_why': True}
+    (_, _, removed), = A.removed_rows()
+    canon, raw_name = B.CANON_NAME[D.REMOVED_PUMP[1]] + ' 실물', removed['구성요소'] + ' 실물'
+    assert text('expected.csv').count(',' + canon + ',') == 1 and canon != raw_name
+    with_raw_name = text('expected.csv').replace(',' + canon + ',', ',' + raw_name + ',')
+    tried('component-aliases-not-in-schema', {'properties.csv': '\n'.join(x for x in text('properties.csv').split('\n') if not x.startswith('구성 요소,aliases,')), 'expected.csv': with_raw_name}, alias_not_kept)
+
+    def raw_name_found():      # 다른 이름을 담았으면 원자료 이름으로 적은 줄도 같은 구성 요소로 찾는다
+        got = states()
+        assert all(state == '같음' for _, state, _ in got), [x for x in got if x[1] != '같음']
+        return {'all_rows_same': len(got)}
+    tried('expected-item-written-with-raw-name', {'expected.csv': with_raw_name}, raw_name_found)
 
     def missing_property():      # 답에 필요한 원자료 칸을 담은 속성이 스키마에 없으면 그 질문은 답할 수 없다
         command(folder, 'run.py', 'parts', '--no-open')
@@ -396,44 +469,63 @@ def schema_choices(folder, branch):
         return {'quantities_with_mixed_units': len(mixed), 'rows_different': len(got)}
     tried('sensor-numbers-as-written', {'properties.csv': text('properties.csv').replace(',수,아니오,기준 단위,', ',수,아니오,적힌 그대로,')}, unit_as_written)
 
+    # 둘째 바퀴 — 새 질문(질문 4): 가동 중인 설비 가운데 가장 먼저 설치한 것. 기대 답은 원자료(설비 대장)에서 따로 세고, 세 질문만 보던 스키마에는 설치일 속성이 없다.
+    assert '설비,installed,' not in text('properties.csv'), '세 질문만 답하는 참조 스키마에 둘째 바퀴의 속성이 미리 들어 있음'
+    running = [r for r in assets if r['상태'] == '가동']
+    first = min(r['설치일'] for r in running)
+    want = ' · '.join(sorted(r['설비코드'] for r in running if r['설치일'] == first))
+    asked = A.lap_question()
+    assert asked[3] == want, (asked, want)
+    line = P.convert(','.join(asked)) + '\n'
+    lap_row = ','.join(A.LAP_ROW)
+    assert lap_row.startswith('설비,installed,설치일,날짜,')
+    with_lap = text('properties.csv') + P.convert(lap_row) + '\n'
+    q4 = lambda: next((state, answer) for k, state, answer in states() if k.startswith('4 |'))
+    without = text('properties.csv')
+    lap = {}
+
     def wrong_type():      # 날짜로 적힌 칸을 수로 정하면 그 값이 수로 읽히지 않는다
         hit = cards('properties', '원자료와 어긋나는 속성')
         assert len(hit) == 1 and f'수로 읽을 수 없는 값 {len(assets)}' in hit[0]['badge'], hit
         command(folder, 'run.py', 'parts', '--no-open')
         assert '이어야 함' in command(folder, 'run.py', 'check', '--no-open', ok=False)
         return {'values_not_readable': len(assets), 'check_fails': True}
-    tried('installed-as-number', {'properties.csv': text('properties.csv').replace('설비,installed,설치일,날짜,', '설비,installed,설치일,수,')}, wrong_type)
+    tried('installed-as-number', {'properties.csv': with_lap.replace('설비,installed,설치일,날짜,', '설비,installed,설치일,수,')}, wrong_type)
 
-    # 둘째 바퀴 — 새 질문(질문 4): 가동 중인 설비 가운데 가장 먼저 설치한 것. 기대 답은 원자료(설비 대장)에서 따로 센다.
-    running = [r for r in assets if r['상태'] == '가동']
-    first = min(r['설치일'] for r in running)
-    want = ' · '.join(sorted(r['설비코드'] for r in running if r['설치일'] == first))
-    line = f'4,설비.status = 가동 & 설비.installed 가장 이른,code,{want},data/equipment.csv 설치일 · 상태 칸\n'
-    q4 = lambda: next((state, answer) for k, state, answer in states() if k.startswith('4 |'))
-    without = '\n'.join(x for x in text('properties.csv').split('\n') if not x.startswith('설비,installed,'))
-    lap = {}
+    def asked_by_column_name():      # 물을_값에 속성 이름 대신 원자료 칸 이름을 적으면: 멈추지 않고 그 줄이 까닭을 말한다
+        got = q4()
+        assert got[0] != '같음' and '답할 수 없음(설비 클래스에 속성 「설치일」이 없음 — 물을_값과 항목에는 원자료 칸 이름이 아니라' in got[1], got
+        return {'answer': got[1]}
+    tried('second-lap-asked-with-column-name', {'expected.csv': text('expected.csv') + line.replace('설비.installed 가장 이른', '설비.설치일 가장 이른')}, asked_by_column_name)
+
+    def unreadable_question():      # 꼴을 읽지 못하는 질문 4는 기대 답 표의 그 줄을 짚고 멈춘다
+        stopped = command(folder, 'run.py', 'query', '--no-open', ok=False)
+        assert f'expected.csv:{len(text("expected.csv").splitlines()) + 1}: 질문 4의 물을_값' in stopped, stopped[-400:]
+        return {'stopped_with_line': True}
+    tried('second-lap-question-not-readable', {'expected.csv': text('expected.csv') + line.replace('설비.installed 가장 이른', '가장 먼저 설치한 설비')}, unreadable_question)
 
     def no_property():
         command(folder, 'run.py', 'parts', '--no-open')
         lap['없음'] = q4()
         assert lap['없음'][0] != '같음' and '답할 수 없음(설비 클래스에 속성 「installed」' in lap['없음'][1], lap
         return {'answer': lap['없음'][1]}
-    tried('second-lap-property-missing', {'properties.csv': without, 'expected.csv': text('expected.csv') + line}, no_property)
+    tried('second-lap-property-missing', {'expected.csv': text('expected.csv') + line}, no_property)
 
     def as_text():
         command(folder, 'run.py', 'parts', '--no-open')
         lap['글자'] = q4()
         assert lap['글자'][0] != '같음' and '견줄 수 없음' in lap['글자'][1] and '글자' in lap['글자'][1], lap
         return {'answer': lap['글자'][1]}
-    tried('second-lap-date-kept-as-text', {'properties.csv': text('properties.csv').replace('설비,installed,설치일,날짜,', '설비,installed,설치일,글자,'), 'expected.csv': text('expected.csv') + line}, as_text)
+    tried('second-lap-date-kept-as-text', {'properties.csv': with_lap.replace('설비,installed,설치일,날짜,', '설비,installed,설치일,글자,'), 'expected.csv': text('expected.csv') + line}, as_text)
 
     def as_date():
+        command(folder, 'run.py', 'parts', '--no-open')
         got = states()
         assert got and all(state == '같음' for _, state, _ in got), [x for x in got if x[1] != '같음']
         assert next(answer for k, _, answer in got if k.startswith('4 |')) == want
         command(folder, 'run.py', 'check', '--no-open')
         return {'answer': want, 'all_rows_same': len(got), 'check': 'pass'}
-    tried('second-lap-date', {'expected.csv': text('expected.csv') + line}, as_date)
+    tried('second-lap-date', {'properties.csv': with_lap, 'expected.csv': text('expected.csv') + line}, as_date)
     command(folder, 'run.py', 'check', '--no-open')
     return out
 
@@ -457,8 +549,9 @@ def fresh_packages(starter, work):
     assert 'Errno' not in early and str(work.anchor) not in early and str(folder.parent.name) not in early, early[-400:]
     assert not (folder / 'app/features/name_rules.py').exists(), '구성 요소 이름 맞추기는 제공 코드가 한다 — 학생 빈 틀이 남아 있음'
     records.append({'fresh_starter': True, 'first_command': 'python run.py --no-open', 'actual_blocks': len(data['blocks']), 'blank_feature_stops': True, 'query_before_model_stops_with_next_command': True})
-    archive = starter.parent / (starter.name + '-completed.zip')
-    if archive.exists():
+    # 완성본은 검증 사본에서는 랩 폴더 옆에, 정본에서는 회차의 완성본/ 폴더에 있다
+    archive = next((p for p in (starter.parent / (starter.name + '-completed.zip'), starter.parent.parent / '완성본' / (starter.name + '-completed.zip')) if p.exists()), None)
+    if archive:
         with zipfile.ZipFile(archive) as z:
             z.extractall(work / 'received-completed')
         folder = work / 'received-completed' / starter.name
@@ -466,7 +559,10 @@ def fresh_packages(starter, work):
         for action in ('parts', 'query', 'check'):
             command(folder, 'run.py', action, '--no-open')
         assert all((folder / 'output' / name).read_bytes() == data for name, data in before.items())
-        records.append({'fresh_completed': True, 'regenerated_models_equal': True, 'check': 'pass'})
+        rows = [r for block in blocks(folder, 'query') if block['kind'] == 'compare' for r in block['rows']]
+        asked = sorted({r['key'].split(' |')[0] for r in rows})
+        assert asked == ['1', '2', '3', '4'] and all(r['state'] == '같음' for r in rows), (asked, [r for r in rows if r['state'] != '같음'])      # 완성본은 가이드의 끝 상태(둘째 바퀴의 질문 4까지)
+        records.append({'fresh_completed': True, 'regenerated_models_equal': True, 'check': 'pass', 'questions_answered': asked, 'rows_same': len(rows)})
     return records
 
 

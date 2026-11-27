@@ -17,7 +17,7 @@ NAMES = {
     '행_처리.csv': 'row_rules.csv', '기대_답.csv': 'expected.csv',
     '정한_것.csv': 'decisions.csv', '요구사항.md': 'requirements.md', '검증_기록.md': 'review.md',
     '자료_검토.md': 'provenance.md', '센서_변경.csv': 'sensor_changes.csv',
-    '설비_대장_변경.csv': 'equipment_changes.csv', '구성요소_변경.csv': 'component_changes.csv', '품번_교차표_변경.csv': 'part_alias_changes.csv',
+    '스키마_추가.csv': 'schema_additions.csv', '설비_대장_변경.csv': 'equipment_changes.csv', '구성요소_변경.csv': 'component_changes.csv', '품번_교차표_변경.csv': 'part_alias_changes.csv',
 }
 
 

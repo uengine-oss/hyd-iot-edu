@@ -1,3 +1,5 @@
 // 제공 빈 틀
 // 적재 쿼리 파일 — 쿼리마다 바로 위에 「// 넣을 것: <종류 또는 관계>」 한 줄, 행은 $rows로 받음(python run.py load가 실행).
-// 여기에 쓰는 것은 Asset · USES_PART · INSTALLED_UNIT 셋입니다. 나머지 종류 · 관계의 쿼리는 app/utils/load_provided.cypher에 있고, 두 파일이 함께 실행됩니다.
+// 여기에 쓰는 것은 셋입니다: Asset 노드, 설비와 구성 요소를 잇는 관계, 구성 요소와 부품을 잇는 관계(관계 이름과 시작 · 종료는 data/model/schema.json에 있습니다).
+// Asset의 행은 data/equipment.csv의 줄 그대로입니다(열 이름과 값이 모두 글자). 관계의 행은 {a: 시작 쪽 식별자, b: 종료 쪽 식별자, props: 관계에 붙는 값}입니다.
+// 나머지 종류 · 관계는 제공 코드가 넣고, 실행한 쿼리는 output/load_provided.cypher에 남습니다.

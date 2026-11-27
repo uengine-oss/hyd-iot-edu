@@ -153,10 +153,87 @@ def guard(path, parts):
 
 
 def read(path):
+    """UTF-8로 저장된 글만 읽는다. 다른 글자표로 저장된 파일은 조용히 바꿔 읽지 않고 그 줄을 짚고 멈춘다."""
     p = Path(path)
     if not p.is_file():
         raise RuntimeError(f'{path}: 파일이 없습니다.')
-    return p.read_text(encoding='utf-8-sig')
+    data = p.read_bytes()
+    try:
+        return data.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        for n, line in enumerate(data.split(b'\n'), 1):
+            try:
+                line.decode('utf-8')
+            except UnicodeDecodeError:
+                raise RuntimeError(f'{path}:{n}: UTF-8로 저장되지 않은 글자가 있습니다 — Codex에게 「이 파일을 UTF-8로 다시 저장해 줘」라고 부탁합니다(한글이 다른 글자표로 저장됐습니다).')
+        raise
+
+
+TYPE_NAMES = {'글자': 'string', '수': 'number', '날짜': 'date', '목록': 'list'}
+ADDITIONS = '결과/스키마_추가.csv'
+
+
+def schema_in_use():
+    """지금 쓰는 모델의 스키마(schema.json)에, 내가 더하기로 정한 속성(결과/스키마_추가.csv — 그 파일이 있는 랩만)을 얹은 것. 꼴이 어긋난 줄은 파일:줄로 짚고 멈춘다."""
+    path, _ = model_graph()
+    schema = json.loads(read(path.with_name('schema.json')))
+    more = HERE / ADDITIONS
+    if not more.is_file():
+        return schema
+    lines = [(n, x) for n, x in enumerate(read(more).splitlines(), 1) if x.strip() and not x.lstrip().startswith('#')]
+    need = ['클래스', '속성', '자료형', '필수', '근거']
+    if not lines or [c.strip() for c in next(csv.reader([lines[0][1]]))] != need:
+        raise RuntimeError(f'{ADDITIONS}: 열 이름이 ' + ','.join(need) + '이어야 합니다(받은 빈 틀의 열 이름을 바꾸지 않습니다).')
+    for n, x in lines[1:]:
+        cells = [c.strip() for c in next(csv.reader([x]))]
+        if len(cells) != len(need):
+            raise RuntimeError(f'{ADDITIONS}:{n}: 칸 수({len(cells)})가 열 이름({len(need)}칸)과 다릅니다 — 값 안에 쉼표가 있으면 그 값을 큰따옴표로 감쌉니다.')
+        label, name, kind, required, why = cells
+        spec = schema['classes'].get(label)
+        if spec is None:
+            raise RuntimeError(f'{ADDITIONS}:{n}: 클래스 「{label}」 — 지금 모델의 클래스(레이블)는 {" · ".join(sorted(schema["classes"]))}입니다.')
+        if not re.fullmatch(r'[a-z][a-z0-9_]*', name) or name == 'id':
+            raise RuntimeError(f'{ADDITIONS}:{n}: 속성 「{name}」 — 속성 이름은 영어 소문자 · 숫자 · 밑줄로 씁니다(id는 식별자 자리라 쓰지 않습니다).')
+        if name in spec.get('required', {}) or name in spec.get('optional', {}):
+            raise RuntimeError(f'{ADDITIONS}:{n}: {label}에는 속성 「{name}」이 이미 있습니다 — 여기에는 스키마에 없던 속성만 적습니다.')
+        if kind not in TYPE_NAMES or required not in ('예', '아니오'):
+            raise RuntimeError(f'{ADDITIONS}:{n}: 자료형은 {" · ".join(TYPE_NAMES)} 가운데 하나, 필수는 예 · 아니오 가운데 하나입니다.')
+        if not why:
+            raise RuntimeError(f'{ADDITIONS}:{n}: 근거 칸이 비었습니다 — 이 속성을 왜 더하는지 적습니다.')
+        spec.setdefault('required' if required == '예' else 'optional', {})[name] = TYPE_NAMES[kind]
+    return schema
+
+
+def fits(value, spec):
+    """값이 스키마에 적힌 자료형(또는 허용 값 목록)에 맞는가. 값 없음은 맞는 것으로 본다(필수는 구조 검사가 본다)."""
+    if value is None:
+        return True
+    if isinstance(spec, list):
+        return value in spec
+    kind = 'boolean' if isinstance(value, bool) else 'number' if isinstance(value, (int, float)) else 'string' if isinstance(value, str) else 'list' if isinstance(value, list) else type(value).__name__
+    if spec == 'date':
+        return kind == 'string' and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}', value))
+    return {'integer': 'number'}.get(spec, spec) == kind and not (spec == 'integer' and isinstance(value, float) and value != int(value))
+
+
+def against_schema(graph, schema):
+    """그래프의 노드 속성을 스키마에 대어 본다 — [(식별자, 속성, 무엇이 어긋났나, 값)]. 어긋남 = 스키마에 없는 속성 · 자료형이 다름 · 목록에 같은 값이 두 번."""
+    out = []
+    for n in graph['nodes']:
+        i = n['props'].get('id')
+        for label in n['labels']:
+            spec = schema['classes'].get(label)
+            if spec is None:
+                continue
+            types = {'id': 'string', **spec.get('required', {}), **spec.get('optional', {})}
+            for k, v in n['props'].items():
+                if k not in types:
+                    out.append((i, k, '스키마에 없는 속성', v))
+                elif not fits(v, types[k]):
+                    out.append((i, k, f'자료형이 다름(스키마 {types[k]})', v))
+                elif isinstance(v, list) and len(set(map(str, v))) != len(v):
+                    out.append((i, k, '목록에 같은 값이 두 번', v))
+    return out
 
 
 def run_file(path):
@@ -265,8 +342,14 @@ def load_file(path, graph=None):
 CHANGE = re.compile(r'^\s*//\s*반영할 것:\s*(\S+)\s+(\S+)\s*$')
 
 
-def load_plan(path, graph=None):
-    """적재 파일 → [(줄, 대상, 쿼리, 넘길 행)]. 쿼리마다 머리 주석 `// 넣을 것: <종류 또는 관계>`가 있어야 하고, 그 종류의 노드 props(또는 그 관계의 {a, b, props})를 $rows로 넘긴다."""
+def raw_rows(name):
+    """원자료 표의 줄을 적힌 그대로 — [{열 이름: 값}]. 열 이름과 값은 모두 글자다(숫자 · 빈 칸도 글자)."""
+    return [{k: (v or '').strip() for k, v in row.items()} for row in csv.DictReader(io.StringIO(read(HERE / ('입력/자료/' + name))))]
+
+
+def load_plan(path, graph=None, raw=None):
+    """적재 파일 → [(줄, 대상, 쿼리, 넘길 행)]. 쿼리마다 머리 주석 `// 넣을 것: <종류 또는 관계>`가 있어야 하고, 그 종류의 노드 props(또는 그 관계의 {a, b, props})를 $rows로 넘긴다.
+    raw = {종류: 원자료 표 이름} — 그 종류의 쿼리에는 모델 파일의 노드 대신 원자료 표의 줄을 적힌 그대로 넘긴다(열 이름 → 속성 짝은 쿼리가 정한다)."""
     if graph is None:
         _, graph = model_graph()
     nodes, rels = {}, {}
@@ -274,6 +357,12 @@ def load_plan(path, graph=None):
         nodes.setdefault(n['labels'][0], []).append(n['props'])
     for r in graph['rels']:
         rels.setdefault(r['type'], []).append({'a': r['a'], 'b': r['b'], 'props': r.get('props', {})})
+    for label, name in (raw or {}).items():
+        table = raw_rows(name)
+        if label in nodes and len(table) != len(nodes[label]):
+            raise RuntimeError(f'입력/자료/{name}: 줄 수({len(table)})가 모델의 {label} 수({len(nodes[label])})와 달라 이 표의 줄을 그대로 넘길 수 없습니다.')
+        if label in nodes:
+            nodes[label] = table
     parts = statements(read(path))
     guard(path, parts)
     plan = []
@@ -290,11 +379,41 @@ def load_plan(path, graph=None):
     return plan
 
 
-def load_files(mine, provided):
-    """제공 적재 쿼리(provided)와 내 적재 쿼리(mine)를 함께 실행한다 — 제공 쿼리의 노드 → 내 쿼리(적힌 차례) → 제공 쿼리의 관계. 관계는 양 끝 노드가 먼저 있어야 이어진다.
+def student_targets(schema, student):
+    """내 적재 쿼리 몫인 종류 · 관계 이름. student = 종류(레이블) 이름이거나 두 클래스의 짝(스키마 links의 이름 — 그 짝을 잇는 관계 이름은 스키마에서 읽는다)."""
+    links = schema.get('links') or {}
+    lost = [x for x in student if '-' in x and x not in links]
+    if lost:
+        path, _ = model_graph()
+        raise RuntimeError(f'{path.with_name("schema.json")}: 설계 실습이 쓴 모델 파일의 꼴이 아닙니다 — 관계 이름을 읽을 links에 {" · ".join(lost)}가 없습니다. '
+                           '설계 실습 폴더에서 python run.py parts가 쓴 output/schema.json과 graph.json을 고치지 않고 함께 복사했는지 봅니다.')
+    return [links[x] if x in links else x for x in student]
+
+
+def provided_queries(graph, schema, skip):
+    """제공 적재 쿼리 — 지금 모델의 종류 · 관계 가운데 내 몫(skip)을 뺀 것을 넣는다. 노드는 모델 파일의 인스턴스 한 줄을 그대로, 관계는 스키마의 시작 · 종료 클래스로 양 끝을 찾아 잇는다."""
+    labels = sorted({n['labels'][0] for n in graph['nodes']} - set(skip))
+    types = sorted({r['type'] for r in graph['rels']} - set(skip))
+    lines = ['// 제공 적재 쿼리 — ' + ' · '.join(labels + types) + '. python run.py load가 내 쿼리(결과/load.cypher)와 함께 실행한 것입니다. 이 파일은 실행할 때마다 다시 쓰입니다.', '']
+    for l in labels:
+        lines += [f'// 넣을 것: {l}', f'UNWIND $rows AS row MERGE (n:`{l}` {{id: row.id}}) ON CREATE SET n = row;', '']
+    for t in types:
+        spec = schema.get('relations', {}).get(t, {})
+        a, b = (':`' + spec['from'] + '`' if isinstance(spec.get('from'), str) else ''), (':`' + spec['to'] + '`' if isinstance(spec.get('to'), str) else '')
+        lines += [f'// 넣을 것: {t}', f'UNWIND $rows AS row MATCH (a{a} {{id: row.a}}), (b{b} {{id: row.b}}) MERGE (a)-[r:`{t}`]->(b) ON CREATE SET r += row.props;', '']
+    return '\n'.join(lines).rstrip() + '\n'
+
+
+def load_files(mine, student, raw=None):
+    """내 적재 쿼리(mine)와 제공 적재 쿼리를 함께 실행한다 — 제공 쿼리의 노드 → 내 쿼리(적힌 차례) → 제공 쿼리의 관계. 관계는 양 끝 노드가 먼저 있어야 이어진다.
+    제공 쿼리는 내 몫(student_targets)을 뺀 종류 · 관계만 넣고, 실행한 글은 output/load_provided.cypher에 남긴다.
     돌려주는 것: ([(파일, 줄, 대상, 넘긴 행 수, 결과)], 어느 쿼리도 넣지 않은 종류 · 관계)."""
-    _, graph = model_graph()
-    own = load_plan(mine, graph)
+    path, graph = model_graph()
+    schema = json.loads(read(path.with_name('schema.json')))
+    own = load_plan(mine, graph, raw)
+    provided = HERE / 'output/load_provided.cypher'
+    provided.parent.mkdir(exist_ok=True)
+    provided.write_text(provided_queries(graph, schema, student_targets(schema, student)), encoding='utf-8', newline='\n')
     given = load_plan(provided, graph)
     order = [(provided, x) for x in given if x[4]] + [(mine, x) for x in own] + [(provided, x) for x in given if not x[4]]
     out = []
@@ -310,7 +429,7 @@ def load_files(mine, provided):
 
 
 def seek_plan(statement, rows):
-    """쿼리를 실행하지 않고 DB가 세운 실행 계획(EXPLAIN)에서 노드를 찾는 연산자 이름만 뽑는다 — 식별자로 바로 찾는지(…IndexSeek), 훑는지(…Scan)."""
+    """쿼리를 실행하지 않고, DB가 그 쿼리를 어떻게 처리할지 미리 답한 것(EXPLAIN)에서 노드를 찾는 법의 이름만 뽑는다 — 식별자로 바로 찾는지(…Seek), 하나씩 다 보는지(…Scan)."""
     body = json.dumps({'statements': [{'statement': 'EXPLAIN ' + statement, 'parameters': {'rows': rows[:1]}}]}).encode()
     req = urllib.request.Request(endpoint(), body, {'Content-Type': 'application/json', 'Accept': 'application/json'})
     try:
@@ -333,9 +452,9 @@ def seek_plan(statement, rows):
     return found
 
 
-def tried(queries):
+def rolled_back(queries):
     """쿼리들([(쿼리, 넣을 값)])을 한 트랜잭션에서 차례로 실행해 보고, 받아 주든 거절하든 모두 되돌려 랩 DB에 남기지 않는다.
-    돌려주는 것: ([쿼리마다 {'stats', 'columns', 'rows'}] — 거절된 쿼리 앞까지, DB가 거절하며 한 말 또는 None)."""
+    돌려주는 것: (DB가 돌려준 결과 목록 — 거절된 쿼리 앞까지, DB가 거절하며 한 말 또는 None)."""
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     body = json.dumps({'statements': [{'statement': s, 'parameters': p, 'includeStats': True} for s, p in queries]}).encode()
     try:
@@ -344,12 +463,18 @@ def tried(queries):
         if not data.get('errors'):      # 오류가 난 트랜잭션은 DB가 되돌린다
             with urllib.request.urlopen(urllib.request.Request(data['commit'].removesuffix('/commit'), headers=headers, method='DELETE'), timeout=60) as r:
                 if json.loads(r.read()).get('errors'):
-                    raise RuntimeError('실험한 트랜잭션을 되돌리지 못했습니다.')
+                    raise RuntimeError('해 본 트랜잭션을 되돌리지 못했습니다.')
     except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
         raise LabDbOff(f'랩 DB 꺼짐 — 연결하지 못했습니다({e}). python lab_db.py 로 DB를 다시 준비하세요.')
+    return data['results'], ('; '.join(e.get('message', '').split('\n')[0] for e in data['errors']) or None) if data.get('errors') else None
+
+
+def tried(queries):
+    """rolled_back의 결과를 쿼리마다 {'stats', 'columns', 'rows'}로 — 넣기 전 실험이 쓴다."""
+    results, refused = rolled_back(queries)
     done = [{'stats': {k: v for k, v in x.get('stats', {}).items() if isinstance(v, int) and not isinstance(v, bool) and v},
-             'columns': x['columns'], 'rows': [d['row'] for d in x['data']]} for x in data['results']]
-    return done, ('; '.join(e.get('message', '').split('\n')[0] for e in data['errors']) or None) if data.get('errors') else None
+             'columns': x['columns'], 'rows': [d['row'] for d in x['data']]} for x in results]
+    return done, refused
 
 
 def change_rows():
@@ -360,6 +485,51 @@ def change_rows():
         for n, row in enumerate(csv.DictReader(io.StringIO(text)), 2):
             out.setdefault((p.name, (row.get('변경') or '').strip()), []).append((n, {k: (v or '').strip() for k, v in row.items()}))
     return out
+
+
+def change_plan(path):
+    """수정 쿼리 파일 → ([(쿼리 줄, 수정본 파일, 변경, 쿼리)], 수정본의 줄들). 쿼리마다 머리 주석 `// 반영할 것: <수정본 파일 이름> <변경>`이 있어야 한다."""
+    rows = change_rows()
+    have = ' / '.join(f'{name} {kind}' for name, kind in sorted(rows))
+    parts = statements(read(path))
+    guard(path, parts)
+    plan = []
+    for line, s, notes in parts:
+        heads = [m.groups() for m in (CHANGE.match(x) for x in notes) if m]
+        if len(heads) != 1:
+            raise RuntimeError(f'{path}:{line}: 쿼리 바로 위에 `// 반영할 것: <수정본 파일 이름> <변경>` 주석이 한 줄 있어야 합니다(수정본에 있는 것: {have}).')
+        if heads[0] not in rows:
+            raise RuntimeError(f'{path}:{line}: 「{heads[0][0]} {heads[0][1]}」에 해당하는 수정본 줄이 없습니다(수정본에 있는 것: {have}).')
+        if '$rows' not in s:
+            raise RuntimeError(f'{path}:{line}: 수정본의 줄은 $rows로 받습니다(UNWIND $rows AS row …). 값을 쿼리에 직접 적지 않습니다.')
+        plan.append((line, heads[0][0], heads[0][1], s))
+    return plan, rows
+
+
+EXPORT = ['MATCH (n) RETURN labels(n) AS labels, properties(n) AS props', 'MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id AS a, b.id AS b, properties(r) AS props']
+
+
+def exported(res):
+    """EXPORT 두 쿼리의 결과 → graph.json과 같은 꼴(차례를 고정한다)."""
+    nodes = sorted(({'labels': sorted(r['row'][0]), 'props': r['row'][1]} for r in res[0]['data']), key=lambda n: (n['labels'], str(n['props'].get('id'))))
+    rels = sorted(({'type': r['row'][0], 'a': r['row'][1], 'b': r['row'][2], 'props': r['row'][3]} for r in res[1]['data']),
+                  key=lambda r: (r['type'], str(r['a']), str(r['b']), json.dumps(r['props'], ensure_ascii=False, sort_keys=True)))
+    return {'nodes': nodes, 'rels': rels}
+
+
+def apply_changes_tried(path):
+    """같은 수정 쿼리를 한 번 더 실행하면 그래프가 어떻게 되는지 — 되돌리는 트랜잭션에서 해 보고 랩 DB에는 남기지 않는다. 돌려주는 것: 한 번 더 실행한 뒤의 그래프(내보내기 꼴)."""
+    plan, rows = change_plan(path)
+    queries = [(s, {'rows': [row]}) for line, name, kind, s in plan for n, row in rows[(name, kind)]]
+    results, refused = rolled_back(queries + [(q, {}) for q in EXPORT])
+    if refused:
+        raise RuntimeError(f'{path}: 같은 수정을 한 번 더 실행하니 DB가 거절했습니다 — {refused}')
+    return exported(results[-2:])
+
+
+def clear():
+    """이 폴더 랩 DB의 노드와 관계를 모두 지운다(걸어 둔 제약은 그대로). 제공 코드의 되돌리기 기능만 쓴다 — 쿼리 파일에 적은 전체 삭제는 guard가 막는다."""
+    cypher([('MATCH (n) DETACH DELETE n', {})])
 
 
 def apply_changes(path):
@@ -558,12 +728,7 @@ def count():
 
 
 def export_graph():
-    res = cypher([('MATCH (n) RETURN labels(n) AS labels, properties(n) AS props', {}),
-                  ('MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id AS a, b.id AS b, properties(r) AS props', {})])
-    nodes = sorted(({'labels': sorted(r['row'][0]), 'props': r['row'][1]} for r in res[0]['data']), key=lambda n: (n['labels'], str(n['props'].get('id'))))
-    rels = sorted(({'type': r['row'][0], 'a': r['row'][1], 'b': r['row'][2], 'props': r['row'][3]} for r in res[1]['data']),
-                  key=lambda r: (r['type'], str(r['a']), str(r['b']), json.dumps(r['props'], ensure_ascii=False, sort_keys=True)))
-    return {'nodes': nodes, 'rels': rels}
+    return exported(cypher([(q, {}) for q in EXPORT]))
 
 
 def export(path):
