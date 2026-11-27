@@ -114,6 +114,7 @@ export function drawInPage(a){
     const [x,y,w,h]=it.at.map(X),c=10*k;if(!inside(x,y,w,h))return {error:`칸 「${id}」이 화면 밖 — 프레임 px ${JSON.stringify(it.at)}`};
     stroke(group(id),`M ${x+c} ${y} Q ${x+w/2} ${y+j()} ${x+w-c} ${y} Q ${x+w} ${y} ${x+w} ${y+c} Q ${x+w+j()} ${y+h/2} ${x+w} ${y+h-c} Q ${x+w} ${y+h} ${x+w-c} ${y+h} Q ${x+w/2} ${y+h+j()} ${x+c} ${y+h} Q ${x} ${y+h} ${x} ${y+h-c} Q ${x+j()} ${y+h/2} ${x} ${y+c} Q ${x} ${y} ${x+c+4*k} ${y-k}`,ink);
     const e=el('div',`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;box-sizing:border-box;padding:0 ${12*k}px;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-line;color:${ink};font:600 ${size}px/1.35 ${S.font}`,f);
+    if(it.fill!=null){if(it.fill!=='black')return {error:`칸 「${id}」의 fill은 'black'만 — ${it.fill}`};e.style.background='#000';}   // 속이 안 보이는 상자(06-1 블랙박스)
     e.dataset.pen=id;const sp=el('span','',e);sp.className='pen-text';sp.textContent=it.text||'';write(e,(it.text||'').length);
    }else if(it.kind==='text'){
     const [x,y]=it.at.map(X);const e=el('div',`position:absolute;left:${x}px;top:${y}px;white-space:pre;color:${ink};font:600 ${size}px/1.35 ${S.font}`,f);
@@ -208,7 +209,7 @@ export function drawLayer({p,serial,sleep,clock,cue}){
   try{await page(`강조(${shape})`,{op:'mark',id:i,shape,rects:hl.list[i].rects});}catch(e){hl.list[i].end=clock();hl.list[i].endBy='그리지 못함';gone.add(i);await sync();throw e;}
   await sync();return hl.list[i];
  };
- // 펜 그림: def = {id, board:[x, y, w, h], items:[{id, kind:'box', at:[x, y, w, h], text} | {id, kind:'arrow', from, to, route:'under'|'over', drop} | {id, kind:'text', at:[x, y], text, size, color:'red'}]} — 프레임 px.
+ // 펜 그림: def = {id, board:[x, y, w, h], items:[{id, kind:'box', at:[x, y, w, h], text, fill:'black'(속을 까맣게 — 생략 가능)} | {id, kind:'arrow', from, to, route:'under'|'over', drop} | {id, kind:'text', at:[x, y], text, size, color:'red'}]} — 프레임 px.
  d.pen=(def,move)=>{
   const bad=m=>{throw Error(`${who()}: 펜 그림 정의 — ${m}`);};
   if(!def?.id||!Array.isArray(def.board)||def.board.length!==4||!Array.isArray(def.items))bad('{id, board:[x, y, w, h], items:[…]} 꼴이 아님');

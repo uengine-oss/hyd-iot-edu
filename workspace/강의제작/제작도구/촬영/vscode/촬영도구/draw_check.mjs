@@ -157,6 +157,7 @@ const BROKEN={
  penid:['dc-9007','정의에 없는 것: q9',c=>c.pen(FLOW).draw('q9')],
  nonote:['dc-9008','떠 있는 글상자가 없음',c=>c.note(null)],
  left:['dc-9009','구간 끝에 펜 그림',c=>c.pen(FLOW).show()],
+ fill:['dc-9010',"fill은 'black'만",c=>c.pen({...FLOW,id:'칠',items:[{id:'x',kind:'box',at:[160,400,340,130],text:'x',fill:'gray'}]}).draw('x')],
 };
 export default async function seg(ctx){
  if(!CASE)return main_seg(ctx);

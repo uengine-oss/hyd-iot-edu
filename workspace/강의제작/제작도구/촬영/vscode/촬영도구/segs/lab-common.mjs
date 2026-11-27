@@ -375,30 +375,51 @@ export async function codexSubmit(c, ctx) {
 // 응답이 끝나기를 기다린다(촬영준비 길 9): 화면이 아니라 <CODEX_HOME>/sessions의 rollout 기록에서 since 뒤의 task_complete를 찾는다.
 // CODEX_HOME은 웹 VS Code 서버를 켠 값(촬영준비 길 1)을 실행할 때 환경변수로 준다(CODEX_HOME=… ./run.sh rec …).
 // 돌려주는 값 = {message: 끝난 답, used: 계정 한도 사용률 %, ms: 보낸 뒤 걸린 시간, file}. 기록에 오류 사건이 있으면 그 글로 멈춘다(한도 · 로그인).
-export async function codexWait(ctx, since, timeout = 180000) {
+// codexDone = 기록을 한 번만 읽어, 끝났으면 codexWait과 같은 값을, 아직이면 {done: false, seen}을 돌려준다(기다리지 않는다 — 답이 늦을 때만 하는 기다림 말을 고를 때 쓴다).
+export async function codexDone(since) {
  const home = process.env.CODEX_HOME;
- if (!home) throw Error('CODEX_HOME 없음 — 웹 VS Code 서버를 켠 값(촬영준비 길 1)을 CODEX_HOME=… ./run.sh 앞에 준다 (segs/lab-common.mjs codexWait)');
+ if (!home) throw Error('CODEX_HOME 없음 — 웹 VS Code 서버를 켠 값(촬영준비 길 1)을 CODEX_HOME=… ./run.sh 앞에 준다 (segs/lab-common.mjs codexDone)');
  const root = home.replace(/\\/g, '/') + '/sessions';
  let seen = [];
- for (;;) {
-  for (const rel of await fs.readdir(root, {recursive: true})) {
-   const file = root + '/' + rel.replace(/\\/g, '/');
-   if (!/rollout-[^/]*\.jsonl$/.test(file) || (await fs.stat(file)).mtimeMs < since) continue;
-   let used = null; seen = [];
-   for (const line of (await fs.readFile(file, 'utf8')).split('\n')) {
-    if (!line.trim()) continue;
-    let o; try { o = JSON.parse(line); } catch { continue; }   // 쓰는 중인 마지막 줄
-    if (Date.parse(o.timestamp) < since - 2000) continue;
-    const p = o.payload ?? {}; seen.push(p.type ?? o.type);
-    if (p.rate_limits?.primary) used = p.rate_limits.primary.used_percent;
-    if (o.type === 'event_msg' && /error/.test(p.type ?? '')) throw Error('Codex 오류 사건 ' + p.type + ': ' + String(p.message ?? JSON.stringify(p)).slice(0, 400) + ' (' + file + ')');
-    if (o.type === 'event_msg' && p.type === 'task_complete') return {message: p.last_agent_message, used, ms: Date.parse(o.timestamp) - since, file};
-   }
+ for (const rel of await fs.readdir(root, {recursive: true})) {
+  const file = root + '/' + rel.replace(/\\/g, '/');
+  if (!/rollout-[^/]*\.jsonl$/.test(file) || (await fs.stat(file)).mtimeMs < since) continue;
+  let used = null; seen = [];
+  for (const line of (await fs.readFile(file, 'utf8')).split('\n')) {
+   if (!line.trim()) continue;
+   let o; try { o = JSON.parse(line); } catch { continue; }   // 쓰는 중인 마지막 줄
+   if (Date.parse(o.timestamp) < since - 2000) continue;
+   const p = o.payload ?? {}; seen.push(p.type ?? o.type);
+   if (p.rate_limits?.primary) used = p.rate_limits.primary.used_percent;
+   if (o.type === 'event_msg' && /error/.test(p.type ?? '')) throw Error('Codex 오류 사건 ' + p.type + ': ' + String(p.message ?? JSON.stringify(p)).slice(0, 400) + ' (' + file + ')');
+   if (o.type === 'event_msg' && p.type === 'task_complete') return {done: true, message: p.last_agent_message, used, ms: Date.parse(o.timestamp) - since, file};
   }
-  if (Date.now() - since > timeout) throw Error('Codex 응답이 ' + Math.round(timeout / 1000) + '초 안에 끝나지 않음 — 마지막 사건: ' + seen.slice(-5).join(' · ') + ' (segs/lab-common.mjs codexWait)');
+ }
+ return {done: false, seen};
+}
+export async function codexWait(ctx, since, timeout = 180000) {
+ for (;;) {
+  const r = await codexDone(since);
+  if (r.done) return r;
+  if (Date.now() - since > timeout) throw Error('Codex 응답이 ' + Math.round(timeout / 1000) + '초 안에 끝나지 않음 — 마지막 사건: ' + r.seen.slice(-5).join(' · ') + ' (segs/lab-common.mjs codexWait)');
   await ctx.sleep(1000);
  }
 }
+// 기다림 말(영상 V-14): 앞 말이 끝날 때까지 기다린 뒤, 답이 아직이면 ids를 차례로 말한다 — 말할 때마다 다시 보고, 답이 오면 남은 말은 건너뛴다. 돌려주는 값 = 말한 큐 id 목록.
+// 리허설은 말 길이가 0이라 답보다 먼저 오므로, 기다림 말 큐도 조작 검사에 세려고 늘 말하는 것으로 센다.
+// 말할지는 큐 사이 쉼(PAUSE.cue)까지 지난 뒤 — 말이 막 시작하려는 때 — 정하고, 말하기로 하면 쉼 없이 바로 시작한다(그 쉼 동안 답이 오면 건너뛴다).
+export async function waitLines(ctx, since, ids) {
+ const said = [];
+ for (const id of ids) {
+  const q = ctx.__cue; if (q && !ctx.rehearsal) { const w = q.t0 + q.dur + PAUSE.cue - Date.now(); if (w > 0) await ctx.sleep(w); }
+  if (!ctx.rehearsal && (await codexDone(since)).done) break;
+  await ctx.say(id, null, {gap: 0}); said.push(id);
+  ctx.__cue = {id, text: '', dur: await waitLineDur(ctx, id), from: 0, t0: Date.now()};
+ }
+ if (said.length && !ctx.rehearsal) { const q = ctx.__cue, w = q.t0 + q.dur - Date.now(); if (w > 0) await ctx.sleep(w); }
+ return said;
+}
+const waitLineDur = async (ctx, id) => ctx.rehearsal ? 0 : JSON.parse(await fs.readFile(ctx.audio + '/' + id + '.json', 'utf8')).duration_ms;
 // 그림 한 장을 화면 가득 띄운다(녹화 전) — 웹 VS Code 밖의 화면(06-1 여는 장의 사용자 녹화 첫 프레임) 위에 펜 그림 · 글상자를 그릴 때 쓴다. file = 그림의 절대 경로.
 // 16:9가 아니면 찌그러지므로 멈춘다. 둘째 페이지에서 쓴다(PAGE=1 — 첫 페이지의 웹 VS Code를 떠나지 않게).
 export async function imageView(c, ctx, file) {
