@@ -39,7 +39,7 @@ export const LABS = {
  p305: {dir: 'D:/HYD-Practice/p305p-a187ceba/action-review-lab', zip: OUT + '실전반/실습/03회차/랩/action-review-lab.zip', features: 5, cues: '실전_03_05_조치검토_큐.json'},
  p307: {dir: 'D:/HYD-Practice/p307p-e0076eb3/condition-extract-lab', zip: OUT + '실전반/실습/03회차/랩/condition-extract-lab.zip', features: 8, cues: '실전_03_07_지식추출_큐.json'},
  wv: {dir: 'D:/HYD-Practice/wvp-4f7cf853/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 7, cues: '통합_02_06-1_VSCode랩시작하기_큐.json', readme: false},
- // wo = 06-2는 06-1을 찍은 그 폴더에 이어 찍는다(학생이 06-1에서 연 폴더에서 설계를 시작한다). 07은 이 폴더에서 06-2가 만든 모델을 가져가므로 07을 다 찍을 때까지 보존한다.
+ // wo = 06-2는 06-1을 찍은 그 폴더에 이어 찍는다(학생이 06-1에서 연 폴더에서 설계를 시작한다). 07(wg)은 이 폴더의 모델을 가져가지 않고 그래프 랩 ZIP에 든 모델을 쓴다(07 대본 wg0202).
  wo: {dir: 'D:/HYD-Practice/wvp-4f7cf853/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 7, cues: '통합_02_06-2_온톨로지설계_큐.json', readme: false},
  wg: {dir: 'D:/HYD-Practice/wgp-ba8da7d5/graph-lab', zip: OUT + '통합반/실습/02회차/랩/graph-lab.zip', features: 7, cues: '통합_02_07_그래프구현과검증_큐.json', readme: false},
  // ws = 06-2 4장을 랩 한 바퀴 5분으로 줄인 예시(판정/샘플5분_대본.md). 폴더는 06-2 2 · 3장을 학생 역 Codex로 마친 상태로 만든 뒤 쓰고(app/features의 표를 Codex가 채웠다), 그 상태의 사본을 옆 폴더 _3장끝/에 둔다.
