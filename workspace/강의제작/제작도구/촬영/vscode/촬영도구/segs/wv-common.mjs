@@ -414,7 +414,9 @@ export async function answerScroll(c, ctx, to = undefined) {
    try { const r = await f.evaluate('(() => { const e = ' + SCROLLER + '; return e ? {top: e.scrollTop, area: e.clientWidth * e.clientHeight} : null; })()'); if (r) hits.push([f, r]); }
    catch (e) { if (!/detached|destroyed|closed|navigat/i.test(String(e?.message ?? e))) throw e; }
   }
-  if (!hits.length) { if (to === undefined) return null; throw Error((ctx.cueId ?? '(녹화 전)') + ': Codex 대화 칸에 굴릴 답이 없음 (segs/wv-common.mjs answerScroll)'); }
+  // 굴릴 칸이 없음 = 답이 패널 한 화면에 다 들어와 굴릴 것이 없다(wv06a-b1의 짧은 답). 그 모습의 굴린 자리는 0이다.
+  // 앞 take가 굴려 둔 자리(0보다 큰 값)를 맞추라는데 지금 굴릴 칸이 없으면 앞 take와 화면이 다르므로 멈춘다.
+  if (!hits.length) { if (to === undefined || to === 'end' || to === 0) return 0; throw Error((ctx.cueId ?? '(녹화 전)') + ': Codex 대화 칸이 한 화면에 다 들어와 굴릴 수 없는데 앞 take의 굴린 자리는 ' + to + ' (segs/wv-common.mjs answerScroll)'); }
   const [f, r] = hits.sort((a, b) => b[1].area - a[1].area)[0];
   if (to === undefined) return r.top;
   return f.evaluate('(to => { const e = ' + SCROLLER + '; e.scrollTop = to === "end" ? e.scrollHeight : to; return e.scrollTop; })(' + JSON.stringify(to) + ')');
